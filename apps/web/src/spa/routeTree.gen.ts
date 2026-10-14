@@ -9,50 +9,1027 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
+import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
+import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
+import { Route as AuthenticatedBillingReturnRouteImport } from './routes/_authenticated/billing.return'
+import { Route as AuthenticatedPProjectRouteImport } from './routes/_authenticated/p.$project'
+import { Route as AuthenticatedSettingsBillingRouteImport } from './routes/_authenticated/settings_.billing'
+import { Route as AuthenticatedVPersonaRouteImport } from './routes/_authenticated/v.$persona'
+import { Route as AuthenticatedVoicesIndexRouteImport } from './routes/_authenticated/voices.index'
+import { Route as AuthenticatedVoicesNewRouteImport } from './routes/_authenticated/voices_.new'
+import { Route as AuthenticatedAppNewPreviewRouteImport } from './routes/_authenticated/app.new_.preview'
+import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
+import { Route as AuthenticatedAppSettingsAccountRouteImport } from './routes/_authenticated/app.settings.account'
+import { Route as AuthenticatedAppSettingsBillingRouteImport } from './routes/_authenticated/app.settings.billing'
+import { Route as AuthenticatedAppSettingsDataRouteImport } from './routes/_authenticated/app.settings.data'
+import { Route as AuthenticatedAppSettingsIntegrationsRouteImport } from './routes/_authenticated/app.settings.integrations'
+import { Route as AuthenticatedAppSettingsNotificationsRouteImport } from './routes/_authenticated/app.settings.notifications'
+import { Route as AuthenticatedAppSettingsPreferencesRouteImport } from './routes/_authenticated/app.settings.preferences'
+import { Route as AuthenticatedPProjectIndexRouteImport } from './routes/_authenticated/p.$project.index'
+import { Route as AuthenticatedPProjectExportRouteImport } from './routes/_authenticated/p.$project.export'
+import { Route as AuthenticatedPProjectFiguresRouteImport } from './routes/_authenticated/p.$project.figures'
+import { Route as AuthenticatedPProjectImportRouteImport } from './routes/_authenticated/p.$project.import'
+import { Route as AuthenticatedPProjectOutlineRouteImport } from './routes/_authenticated/p.$project.outline'
+import { Route as AuthenticatedPProjectRunRouteImport } from './routes/_authenticated/p.$project.run'
+import { Route as AuthenticatedPProjectSettingsRouteImport } from './routes/_authenticated/p.$project.settings'
+import { Route as AuthenticatedPProjectUsageRouteImport } from './routes/_authenticated/p.$project.usage'
+import { Route as AuthenticatedPProjectVisualizeRouteImport } from './routes/_authenticated/p.$project.visualize'
+import { Route as AuthenticatedAppUsageRRunIdRouteImport } from './routes/_authenticated/app.usage.r.$runId'
+import { Route as AuthenticatedPProjectAArtifactIdRouteImport } from './routes/_authenticated/p.$project.a.$artifactId'
+import { Route as AuthenticatedPProjectEditDraftIdRouteImport } from './routes/_authenticated/p.$project.edit.$draftId'
+import { Route as AuthenticatedPProjectFFidRouteImport } from './routes/_authenticated/p.$project.f.$fid'
+import { Route as AuthenticatedPProjectFiguresFigureIdRouteImport } from './routes/_authenticated/p.$project.figures_.$figureId'
+import { Route as AuthenticatedPProjectImportPreviewRouteImport } from './routes/_authenticated/p.$project.import_.preview'
+import { Route as AuthenticatedPProjectObligationsNewRouteImport } from './routes/_authenticated/p.$project.obligations.new'
+import { Route as AuthenticatedPProjectOutlinePromoteRouteImport } from './routes/_authenticated/p.$project.outline_.promote'
+import { Route as AuthenticatedPProjectRRunIdRouteImport } from './routes/_authenticated/p.$project.r.$runId'
+import { Route as AuthenticatedPProjectReviewRunIdRouteImport } from './routes/_authenticated/p.$project.review.$runId'
+import { Route as AuthenticatedPProjectRevisionsCidRouteImport } from './routes/_authenticated/p.$project.revisions.$cid'
+import { Route as AuthenticatedPProjectVVRouteImport } from './routes/_authenticated/p.$project.v.$v'
+import { Route as AuthenticatedPProjectVoiceReseedRouteImport } from './routes/_authenticated/p.$project.voice.reseed'
+import { Route as AuthenticatedPProjectVNDiffMRouteImport } from './routes/_authenticated/p.$project.v.$n.diff.$m'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/app/',
+  path: '/app/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppInboxRoute = AuthenticatedAppInboxRouteImport.update({
+  id: '/app/inbox',
+  path: '/app/inbox',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
+  id: '/app/new',
+  path: '/app/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppSettingsRoute =
+  AuthenticatedAppSettingsRouteImport.update({
+    id: '/app/settings',
+    path: '/app/settings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBillingReturnRoute =
+  AuthenticatedBillingReturnRouteImport.update({
+    id: '/billing/return',
+    path: '/billing/return',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPProjectRoute = AuthenticatedPProjectRouteImport.update({
+  id: '/p/$project',
+  path: '/p/$project',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsBillingRoute =
+  AuthenticatedSettingsBillingRouteImport.update({
+    id: '/settings_/billing',
+    path: '/settings/billing',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVPersonaRoute = AuthenticatedVPersonaRouteImport.update({
+  id: '/v/$persona',
+  path: '/v/$persona',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedVoicesIndexRoute =
+  AuthenticatedVoicesIndexRouteImport.update({
+    id: '/voices/',
+    path: '/voices/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVoicesNewRoute = AuthenticatedVoicesNewRouteImport.update({
+  id: '/voices_/new',
+  path: '/voices/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppNewPreviewRoute =
+  AuthenticatedAppNewPreviewRouteImport.update({
+    id: '/app/new_/preview',
+    path: '/app/new/preview',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAppSettingsIndexRoute =
+  AuthenticatedAppSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsAccountRoute =
+  AuthenticatedAppSettingsAccountRouteImport.update({
+    id: '/account',
+    path: '/account',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsBillingRoute =
+  AuthenticatedAppSettingsBillingRouteImport.update({
+    id: '/billing',
+    path: '/billing',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsDataRoute =
+  AuthenticatedAppSettingsDataRouteImport.update({
+    id: '/data',
+    path: '/data',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsIntegrationsRoute =
+  AuthenticatedAppSettingsIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsNotificationsRoute =
+  AuthenticatedAppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsPreferencesRoute =
+  AuthenticatedAppSettingsPreferencesRouteImport.update({
+    id: '/preferences',
+    path: '/preferences',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedPProjectIndexRoute =
+  AuthenticatedPProjectIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectExportRoute =
+  AuthenticatedPProjectExportRouteImport.update({
+    id: '/export',
+    path: '/export',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectFiguresRoute =
+  AuthenticatedPProjectFiguresRouteImport.update({
+    id: '/figures',
+    path: '/figures',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectImportRoute =
+  AuthenticatedPProjectImportRouteImport.update({
+    id: '/import',
+    path: '/import',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectOutlineRoute =
+  AuthenticatedPProjectOutlineRouteImport.update({
+    id: '/outline',
+    path: '/outline',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectRunRoute =
+  AuthenticatedPProjectRunRouteImport.update({
+    id: '/run',
+    path: '/run',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectSettingsRoute =
+  AuthenticatedPProjectSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectUsageRoute =
+  AuthenticatedPProjectUsageRouteImport.update({
+    id: '/usage',
+    path: '/usage',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectVisualizeRoute =
+  AuthenticatedPProjectVisualizeRouteImport.update({
+    id: '/visualize',
+    path: '/visualize',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedAppUsageRRunIdRoute =
+  AuthenticatedAppUsageRRunIdRouteImport.update({
+    id: '/app/usage/r/$runId',
+    path: '/app/usage/r/$runId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPProjectAArtifactIdRoute =
+  AuthenticatedPProjectAArtifactIdRouteImport.update({
+    id: '/a/$artifactId',
+    path: '/a/$artifactId',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectEditDraftIdRoute =
+  AuthenticatedPProjectEditDraftIdRouteImport.update({
+    id: '/edit/$draftId',
+    path: '/edit/$draftId',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectFFidRoute =
+  AuthenticatedPProjectFFidRouteImport.update({
+    id: '/f/$fid',
+    path: '/f/$fid',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectFiguresFigureIdRoute =
+  AuthenticatedPProjectFiguresFigureIdRouteImport.update({
+    id: '/figures_/$figureId',
+    path: '/figures/$figureId',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectImportPreviewRoute =
+  AuthenticatedPProjectImportPreviewRouteImport.update({
+    id: '/import_/preview',
+    path: '/import/preview',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectObligationsNewRoute =
+  AuthenticatedPProjectObligationsNewRouteImport.update({
+    id: '/obligations/new',
+    path: '/obligations/new',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectOutlinePromoteRoute =
+  AuthenticatedPProjectOutlinePromoteRouteImport.update({
+    id: '/outline_/promote',
+    path: '/outline/promote',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectRRunIdRoute =
+  AuthenticatedPProjectRRunIdRouteImport.update({
+    id: '/r/$runId',
+    path: '/r/$runId',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectReviewRunIdRoute =
+  AuthenticatedPProjectReviewRunIdRouteImport.update({
+    id: '/review/$runId',
+    path: '/review/$runId',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectRevisionsCidRoute =
+  AuthenticatedPProjectRevisionsCidRouteImport.update({
+    id: '/revisions/$cid',
+    path: '/revisions/$cid',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectVVRoute = AuthenticatedPProjectVVRouteImport.update({
+  id: '/v/$v',
+  path: '/v/$v',
+  getParentRoute: () => AuthenticatedPProjectRoute,
+} as any)
+const AuthenticatedPProjectVoiceReseedRoute =
+  AuthenticatedPProjectVoiceReseedRouteImport.update({
+    id: '/voice/reseed',
+    path: '/voice/reseed',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
+const AuthenticatedPProjectVNDiffMRoute =
+  AuthenticatedPProjectVNDiffMRouteImport.update({
+    id: '/v/$n/diff/$m',
+    path: '/v/$n/diff/$m',
+    getParentRoute: () => AuthenticatedPProjectRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/usage': typeof AuthenticatedUsageRoute
+  '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
+  '/billing/return': typeof AuthenticatedBillingReturnRoute
+  '/p/$project': typeof AuthenticatedPProjectRouteWithChildren
+  '/settings/billing': typeof AuthenticatedSettingsBillingRoute
+  '/v/$persona': typeof AuthenticatedVPersonaRoute
+  '/voices/new': typeof AuthenticatedVoicesNewRoute
+  '/app/': typeof AuthenticatedAppIndexRoute
+  '/voices/': typeof AuthenticatedVoicesIndexRoute
+  '/app/new/preview': typeof AuthenticatedAppNewPreviewRoute
+  '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
+  '/app/settings/data': typeof AuthenticatedAppSettingsDataRoute
+  '/app/settings/integrations': typeof AuthenticatedAppSettingsIntegrationsRoute
+  '/app/settings/notifications': typeof AuthenticatedAppSettingsNotificationsRoute
+  '/app/settings/preferences': typeof AuthenticatedAppSettingsPreferencesRoute
+  '/p/$project/export': typeof AuthenticatedPProjectExportRoute
+  '/p/$project/figures': typeof AuthenticatedPProjectFiguresRoute
+  '/p/$project/import': typeof AuthenticatedPProjectImportRoute
+  '/p/$project/outline': typeof AuthenticatedPProjectOutlineRoute
+  '/p/$project/run': typeof AuthenticatedPProjectRunRoute
+  '/p/$project/settings': typeof AuthenticatedPProjectSettingsRoute
+  '/p/$project/usage': typeof AuthenticatedPProjectUsageRoute
+  '/p/$project/visualize': typeof AuthenticatedPProjectVisualizeRoute
+  '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
+  '/p/$project/': typeof AuthenticatedPProjectIndexRoute
+  '/app/usage/r/$runId': typeof AuthenticatedAppUsageRRunIdRoute
+  '/p/$project/a/$artifactId': typeof AuthenticatedPProjectAArtifactIdRoute
+  '/p/$project/edit/$draftId': typeof AuthenticatedPProjectEditDraftIdRoute
+  '/p/$project/f/$fid': typeof AuthenticatedPProjectFFidRoute
+  '/p/$project/figures/$figureId': typeof AuthenticatedPProjectFiguresFigureIdRoute
+  '/p/$project/import/preview': typeof AuthenticatedPProjectImportPreviewRoute
+  '/p/$project/obligations/new': typeof AuthenticatedPProjectObligationsNewRoute
+  '/p/$project/outline/promote': typeof AuthenticatedPProjectOutlinePromoteRoute
+  '/p/$project/r/$runId': typeof AuthenticatedPProjectRRunIdRoute
+  '/p/$project/review/$runId': typeof AuthenticatedPProjectReviewRunIdRoute
+  '/p/$project/revisions/$cid': typeof AuthenticatedPProjectRevisionsCidRoute
+  '/p/$project/v/$v': typeof AuthenticatedPProjectVVRoute
+  '/p/$project/voice/reseed': typeof AuthenticatedPProjectVoiceReseedRoute
+  '/p/$project/v/$n/diff/$m': typeof AuthenticatedPProjectVNDiffMRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/usage': typeof AuthenticatedUsageRoute
+  '/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/app/new': typeof AuthenticatedAppNewRoute
+  '/billing/return': typeof AuthenticatedBillingReturnRoute
+  '/settings/billing': typeof AuthenticatedSettingsBillingRoute
+  '/v/$persona': typeof AuthenticatedVPersonaRoute
+  '/voices/new': typeof AuthenticatedVoicesNewRoute
+  '/app': typeof AuthenticatedAppIndexRoute
+  '/voices': typeof AuthenticatedVoicesIndexRoute
+  '/app/new/preview': typeof AuthenticatedAppNewPreviewRoute
+  '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
+  '/app/settings/data': typeof AuthenticatedAppSettingsDataRoute
+  '/app/settings/integrations': typeof AuthenticatedAppSettingsIntegrationsRoute
+  '/app/settings/notifications': typeof AuthenticatedAppSettingsNotificationsRoute
+  '/app/settings/preferences': typeof AuthenticatedAppSettingsPreferencesRoute
+  '/p/$project/export': typeof AuthenticatedPProjectExportRoute
+  '/p/$project/figures': typeof AuthenticatedPProjectFiguresRoute
+  '/p/$project/import': typeof AuthenticatedPProjectImportRoute
+  '/p/$project/outline': typeof AuthenticatedPProjectOutlineRoute
+  '/p/$project/run': typeof AuthenticatedPProjectRunRoute
+  '/p/$project/settings': typeof AuthenticatedPProjectSettingsRoute
+  '/p/$project/usage': typeof AuthenticatedPProjectUsageRoute
+  '/p/$project/visualize': typeof AuthenticatedPProjectVisualizeRoute
+  '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
+  '/p/$project': typeof AuthenticatedPProjectIndexRoute
+  '/app/usage/r/$runId': typeof AuthenticatedAppUsageRRunIdRoute
+  '/p/$project/a/$artifactId': typeof AuthenticatedPProjectAArtifactIdRoute
+  '/p/$project/edit/$draftId': typeof AuthenticatedPProjectEditDraftIdRoute
+  '/p/$project/f/$fid': typeof AuthenticatedPProjectFFidRoute
+  '/p/$project/figures/$figureId': typeof AuthenticatedPProjectFiguresFigureIdRoute
+  '/p/$project/import/preview': typeof AuthenticatedPProjectImportPreviewRoute
+  '/p/$project/obligations/new': typeof AuthenticatedPProjectObligationsNewRoute
+  '/p/$project/outline/promote': typeof AuthenticatedPProjectOutlinePromoteRoute
+  '/p/$project/r/$runId': typeof AuthenticatedPProjectRRunIdRoute
+  '/p/$project/review/$runId': typeof AuthenticatedPProjectReviewRunIdRoute
+  '/p/$project/revisions/$cid': typeof AuthenticatedPProjectRevisionsCidRoute
+  '/p/$project/v/$v': typeof AuthenticatedPProjectVVRoute
+  '/p/$project/voice/reseed': typeof AuthenticatedPProjectVoiceReseedRoute
+  '/p/$project/v/$n/diff/$m': typeof AuthenticatedPProjectVNDiffMRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/usage': typeof AuthenticatedUsageRoute
+  '/_authenticated/app/inbox': typeof AuthenticatedAppInboxRoute
+  '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
+  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
+  '/_authenticated/billing/return': typeof AuthenticatedBillingReturnRoute
+  '/_authenticated/p/$project': typeof AuthenticatedPProjectRouteWithChildren
+  '/_authenticated/settings_/billing': typeof AuthenticatedSettingsBillingRoute
+  '/_authenticated/v/$persona': typeof AuthenticatedVPersonaRoute
+  '/_authenticated/voices_/new': typeof AuthenticatedVoicesNewRoute
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/voices/': typeof AuthenticatedVoicesIndexRoute
+  '/_authenticated/app/new_/preview': typeof AuthenticatedAppNewPreviewRoute
+  '/_authenticated/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
+  '/_authenticated/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
+  '/_authenticated/app/settings/data': typeof AuthenticatedAppSettingsDataRoute
+  '/_authenticated/app/settings/integrations': typeof AuthenticatedAppSettingsIntegrationsRoute
+  '/_authenticated/app/settings/notifications': typeof AuthenticatedAppSettingsNotificationsRoute
+  '/_authenticated/app/settings/preferences': typeof AuthenticatedAppSettingsPreferencesRoute
+  '/_authenticated/p/$project/export': typeof AuthenticatedPProjectExportRoute
+  '/_authenticated/p/$project/figures': typeof AuthenticatedPProjectFiguresRoute
+  '/_authenticated/p/$project/import': typeof AuthenticatedPProjectImportRoute
+  '/_authenticated/p/$project/outline': typeof AuthenticatedPProjectOutlineRoute
+  '/_authenticated/p/$project/run': typeof AuthenticatedPProjectRunRoute
+  '/_authenticated/p/$project/settings': typeof AuthenticatedPProjectSettingsRoute
+  '/_authenticated/p/$project/usage': typeof AuthenticatedPProjectUsageRoute
+  '/_authenticated/p/$project/visualize': typeof AuthenticatedPProjectVisualizeRoute
+  '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
+  '/_authenticated/p/$project/': typeof AuthenticatedPProjectIndexRoute
+  '/_authenticated/app/usage/r/$runId': typeof AuthenticatedAppUsageRRunIdRoute
+  '/_authenticated/p/$project/a/$artifactId': typeof AuthenticatedPProjectAArtifactIdRoute
+  '/_authenticated/p/$project/edit/$draftId': typeof AuthenticatedPProjectEditDraftIdRoute
+  '/_authenticated/p/$project/f/$fid': typeof AuthenticatedPProjectFFidRoute
+  '/_authenticated/p/$project/figures_/$figureId': typeof AuthenticatedPProjectFiguresFigureIdRoute
+  '/_authenticated/p/$project/import_/preview': typeof AuthenticatedPProjectImportPreviewRoute
+  '/_authenticated/p/$project/obligations/new': typeof AuthenticatedPProjectObligationsNewRoute
+  '/_authenticated/p/$project/outline_/promote': typeof AuthenticatedPProjectOutlinePromoteRoute
+  '/_authenticated/p/$project/r/$runId': typeof AuthenticatedPProjectRRunIdRoute
+  '/_authenticated/p/$project/review/$runId': typeof AuthenticatedPProjectReviewRunIdRoute
+  '/_authenticated/p/$project/revisions/$cid': typeof AuthenticatedPProjectRevisionsCidRoute
+  '/_authenticated/p/$project/v/$v': typeof AuthenticatedPProjectVVRoute
+  '/_authenticated/p/$project/voice/reseed': typeof AuthenticatedPProjectVoiceReseedRoute
+  '/_authenticated/p/$project/v/$n/diff/$m': typeof AuthenticatedPProjectVNDiffMRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/usage'
+    | '/app/inbox'
+    | '/app/new'
+    | '/app/settings'
+    | '/billing/return'
+    | '/p/$project'
+    | '/settings/billing'
+    | '/v/$persona'
+    | '/voices/new'
+    | '/app/'
+    | '/voices/'
+    | '/app/new/preview'
+    | '/app/settings/account'
+    | '/app/settings/billing'
+    | '/app/settings/data'
+    | '/app/settings/integrations'
+    | '/app/settings/notifications'
+    | '/app/settings/preferences'
+    | '/p/$project/export'
+    | '/p/$project/figures'
+    | '/p/$project/import'
+    | '/p/$project/outline'
+    | '/p/$project/run'
+    | '/p/$project/settings'
+    | '/p/$project/usage'
+    | '/p/$project/visualize'
+    | '/app/settings/'
+    | '/p/$project/'
+    | '/app/usage/r/$runId'
+    | '/p/$project/a/$artifactId'
+    | '/p/$project/edit/$draftId'
+    | '/p/$project/f/$fid'
+    | '/p/$project/figures/$figureId'
+    | '/p/$project/import/preview'
+    | '/p/$project/obligations/new'
+    | '/p/$project/outline/promote'
+    | '/p/$project/r/$runId'
+    | '/p/$project/review/$runId'
+    | '/p/$project/revisions/$cid'
+    | '/p/$project/v/$v'
+    | '/p/$project/voice/reseed'
+    | '/p/$project/v/$n/diff/$m'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/settings'
+    | '/usage'
+    | '/app/inbox'
+    | '/app/new'
+    | '/billing/return'
+    | '/settings/billing'
+    | '/v/$persona'
+    | '/voices/new'
+    | '/app'
+    | '/voices'
+    | '/app/new/preview'
+    | '/app/settings/account'
+    | '/app/settings/billing'
+    | '/app/settings/data'
+    | '/app/settings/integrations'
+    | '/app/settings/notifications'
+    | '/app/settings/preferences'
+    | '/p/$project/export'
+    | '/p/$project/figures'
+    | '/p/$project/import'
+    | '/p/$project/outline'
+    | '/p/$project/run'
+    | '/p/$project/settings'
+    | '/p/$project/usage'
+    | '/p/$project/visualize'
+    | '/app/settings'
+    | '/p/$project'
+    | '/app/usage/r/$runId'
+    | '/p/$project/a/$artifactId'
+    | '/p/$project/edit/$draftId'
+    | '/p/$project/f/$fid'
+    | '/p/$project/figures/$figureId'
+    | '/p/$project/import/preview'
+    | '/p/$project/obligations/new'
+    | '/p/$project/outline/promote'
+    | '/p/$project/r/$runId'
+    | '/p/$project/review/$runId'
+    | '/p/$project/revisions/$cid'
+    | '/p/$project/v/$v'
+    | '/p/$project/voice/reseed'
+    | '/p/$project/v/$n/diff/$m'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/_authenticated/settings'
+    | '/_authenticated/usage'
+    | '/_authenticated/app/inbox'
+    | '/_authenticated/app/new'
+    | '/_authenticated/app/settings'
+    | '/_authenticated/billing/return'
+    | '/_authenticated/p/$project'
+    | '/_authenticated/settings_/billing'
+    | '/_authenticated/v/$persona'
+    | '/_authenticated/voices_/new'
+    | '/_authenticated/app/'
+    | '/_authenticated/voices/'
+    | '/_authenticated/app/new_/preview'
+    | '/_authenticated/app/settings/account'
+    | '/_authenticated/app/settings/billing'
+    | '/_authenticated/app/settings/data'
+    | '/_authenticated/app/settings/integrations'
+    | '/_authenticated/app/settings/notifications'
+    | '/_authenticated/app/settings/preferences'
+    | '/_authenticated/p/$project/export'
+    | '/_authenticated/p/$project/figures'
+    | '/_authenticated/p/$project/import'
+    | '/_authenticated/p/$project/outline'
+    | '/_authenticated/p/$project/run'
+    | '/_authenticated/p/$project/settings'
+    | '/_authenticated/p/$project/usage'
+    | '/_authenticated/p/$project/visualize'
+    | '/_authenticated/app/settings/'
+    | '/_authenticated/p/$project/'
+    | '/_authenticated/app/usage/r/$runId'
+    | '/_authenticated/p/$project/a/$artifactId'
+    | '/_authenticated/p/$project/edit/$draftId'
+    | '/_authenticated/p/$project/f/$fid'
+    | '/_authenticated/p/$project/figures_/$figureId'
+    | '/_authenticated/p/$project/import_/preview'
+    | '/_authenticated/p/$project/obligations/new'
+    | '/_authenticated/p/$project/outline_/promote'
+    | '/_authenticated/p/$project/r/$runId'
+    | '/_authenticated/p/$project/review/$runId'
+    | '/_authenticated/p/$project/revisions/$cid'
+    | '/_authenticated/p/$project/v/$v'
+    | '/_authenticated/p/$project/voice/reseed'
+    | '/_authenticated/p/$project/v/$n/diff/$m'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/usage': {
+      id: '/_authenticated/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthenticatedUsageRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
+      path: '/app'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/inbox': {
+      id: '/_authenticated/app/inbox'
+      path: '/app/inbox'
+      fullPath: '/app/inbox'
+      preLoaderRoute: typeof AuthenticatedAppInboxRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/new': {
+      id: '/_authenticated/app/new'
+      path: '/app/new'
+      fullPath: '/app/new'
+      preLoaderRoute: typeof AuthenticatedAppNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/settings': {
+      id: '/_authenticated/app/settings'
+      path: '/app/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/billing/return': {
+      id: '/_authenticated/billing/return'
+      path: '/billing/return'
+      fullPath: '/billing/return'
+      preLoaderRoute: typeof AuthenticatedBillingReturnRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/p/$project': {
+      id: '/_authenticated/p/$project'
+      path: '/p/$project'
+      fullPath: '/p/$project'
+      preLoaderRoute: typeof AuthenticatedPProjectRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings_/billing': {
+      id: '/_authenticated/settings_/billing'
+      path: '/settings/billing'
+      fullPath: '/settings/billing'
+      preLoaderRoute: typeof AuthenticatedSettingsBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/v/$persona': {
+      id: '/_authenticated/v/$persona'
+      path: '/v/$persona'
+      fullPath: '/v/$persona'
+      preLoaderRoute: typeof AuthenticatedVPersonaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/voices/': {
+      id: '/_authenticated/voices/'
+      path: '/voices'
+      fullPath: '/voices/'
+      preLoaderRoute: typeof AuthenticatedVoicesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/voices_/new': {
+      id: '/_authenticated/voices_/new'
+      path: '/voices/new'
+      fullPath: '/voices/new'
+      preLoaderRoute: typeof AuthenticatedVoicesNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/new_/preview': {
+      id: '/_authenticated/app/new_/preview'
+      path: '/app/new/preview'
+      fullPath: '/app/new/preview'
+      preLoaderRoute: typeof AuthenticatedAppNewPreviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/app/settings/': {
+      id: '/_authenticated/app/settings/'
+      path: '/'
+      fullPath: '/app/settings/'
+      preLoaderRoute: typeof AuthenticatedAppSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/account': {
+      id: '/_authenticated/app/settings/account'
+      path: '/account'
+      fullPath: '/app/settings/account'
+      preLoaderRoute: typeof AuthenticatedAppSettingsAccountRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/billing': {
+      id: '/_authenticated/app/settings/billing'
+      path: '/billing'
+      fullPath: '/app/settings/billing'
+      preLoaderRoute: typeof AuthenticatedAppSettingsBillingRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/data': {
+      id: '/_authenticated/app/settings/data'
+      path: '/data'
+      fullPath: '/app/settings/data'
+      preLoaderRoute: typeof AuthenticatedAppSettingsDataRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/integrations': {
+      id: '/_authenticated/app/settings/integrations'
+      path: '/integrations'
+      fullPath: '/app/settings/integrations'
+      preLoaderRoute: typeof AuthenticatedAppSettingsIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/notifications': {
+      id: '/_authenticated/app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/app/settings/notifications'
+      preLoaderRoute: typeof AuthenticatedAppSettingsNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/preferences': {
+      id: '/_authenticated/app/settings/preferences'
+      path: '/preferences'
+      fullPath: '/app/settings/preferences'
+      preLoaderRoute: typeof AuthenticatedAppSettingsPreferencesRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/p/$project/': {
+      id: '/_authenticated/p/$project/'
+      path: '/'
+      fullPath: '/p/$project/'
+      preLoaderRoute: typeof AuthenticatedPProjectIndexRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/export': {
+      id: '/_authenticated/p/$project/export'
+      path: '/export'
+      fullPath: '/p/$project/export'
+      preLoaderRoute: typeof AuthenticatedPProjectExportRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/figures': {
+      id: '/_authenticated/p/$project/figures'
+      path: '/figures'
+      fullPath: '/p/$project/figures'
+      preLoaderRoute: typeof AuthenticatedPProjectFiguresRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/import': {
+      id: '/_authenticated/p/$project/import'
+      path: '/import'
+      fullPath: '/p/$project/import'
+      preLoaderRoute: typeof AuthenticatedPProjectImportRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/outline': {
+      id: '/_authenticated/p/$project/outline'
+      path: '/outline'
+      fullPath: '/p/$project/outline'
+      preLoaderRoute: typeof AuthenticatedPProjectOutlineRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/run': {
+      id: '/_authenticated/p/$project/run'
+      path: '/run'
+      fullPath: '/p/$project/run'
+      preLoaderRoute: typeof AuthenticatedPProjectRunRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/settings': {
+      id: '/_authenticated/p/$project/settings'
+      path: '/settings'
+      fullPath: '/p/$project/settings'
+      preLoaderRoute: typeof AuthenticatedPProjectSettingsRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/usage': {
+      id: '/_authenticated/p/$project/usage'
+      path: '/usage'
+      fullPath: '/p/$project/usage'
+      preLoaderRoute: typeof AuthenticatedPProjectUsageRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/visualize': {
+      id: '/_authenticated/p/$project/visualize'
+      path: '/visualize'
+      fullPath: '/p/$project/visualize'
+      preLoaderRoute: typeof AuthenticatedPProjectVisualizeRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/app/usage/r/$runId': {
+      id: '/_authenticated/app/usage/r/$runId'
+      path: '/app/usage/r/$runId'
+      fullPath: '/app/usage/r/$runId'
+      preLoaderRoute: typeof AuthenticatedAppUsageRRunIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/p/$project/a/$artifactId': {
+      id: '/_authenticated/p/$project/a/$artifactId'
+      path: '/a/$artifactId'
+      fullPath: '/p/$project/a/$artifactId'
+      preLoaderRoute: typeof AuthenticatedPProjectAArtifactIdRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/edit/$draftId': {
+      id: '/_authenticated/p/$project/edit/$draftId'
+      path: '/edit/$draftId'
+      fullPath: '/p/$project/edit/$draftId'
+      preLoaderRoute: typeof AuthenticatedPProjectEditDraftIdRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/f/$fid': {
+      id: '/_authenticated/p/$project/f/$fid'
+      path: '/f/$fid'
+      fullPath: '/p/$project/f/$fid'
+      preLoaderRoute: typeof AuthenticatedPProjectFFidRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/figures_/$figureId': {
+      id: '/_authenticated/p/$project/figures_/$figureId'
+      path: '/figures/$figureId'
+      fullPath: '/p/$project/figures/$figureId'
+      preLoaderRoute: typeof AuthenticatedPProjectFiguresFigureIdRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/import_/preview': {
+      id: '/_authenticated/p/$project/import_/preview'
+      path: '/import/preview'
+      fullPath: '/p/$project/import/preview'
+      preLoaderRoute: typeof AuthenticatedPProjectImportPreviewRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/obligations/new': {
+      id: '/_authenticated/p/$project/obligations/new'
+      path: '/obligations/new'
+      fullPath: '/p/$project/obligations/new'
+      preLoaderRoute: typeof AuthenticatedPProjectObligationsNewRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/outline_/promote': {
+      id: '/_authenticated/p/$project/outline_/promote'
+      path: '/outline/promote'
+      fullPath: '/p/$project/outline/promote'
+      preLoaderRoute: typeof AuthenticatedPProjectOutlinePromoteRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/r/$runId': {
+      id: '/_authenticated/p/$project/r/$runId'
+      path: '/r/$runId'
+      fullPath: '/p/$project/r/$runId'
+      preLoaderRoute: typeof AuthenticatedPProjectRRunIdRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/review/$runId': {
+      id: '/_authenticated/p/$project/review/$runId'
+      path: '/review/$runId'
+      fullPath: '/p/$project/review/$runId'
+      preLoaderRoute: typeof AuthenticatedPProjectReviewRunIdRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/revisions/$cid': {
+      id: '/_authenticated/p/$project/revisions/$cid'
+      path: '/revisions/$cid'
+      fullPath: '/p/$project/revisions/$cid'
+      preLoaderRoute: typeof AuthenticatedPProjectRevisionsCidRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/v/$v': {
+      id: '/_authenticated/p/$project/v/$v'
+      path: '/v/$v'
+      fullPath: '/p/$project/v/$v'
+      preLoaderRoute: typeof AuthenticatedPProjectVVRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/voice/reseed': {
+      id: '/_authenticated/p/$project/voice/reseed'
+      path: '/voice/reseed'
+      fullPath: '/p/$project/voice/reseed'
+      preLoaderRoute: typeof AuthenticatedPProjectVoiceReseedRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
+    }
+    '/_authenticated/p/$project/v/$n/diff/$m': {
+      id: '/_authenticated/p/$project/v/$n/diff/$m'
+      path: '/v/$n/diff/$m'
+      fullPath: '/p/$project/v/$n/diff/$m'
+      preLoaderRoute: typeof AuthenticatedPProjectVNDiffMRouteImport
+      parentRoute: typeof AuthenticatedPProjectRoute
     }
   }
 }
 
+interface AuthenticatedAppSettingsRouteChildren {
+  AuthenticatedAppSettingsAccountRoute: typeof AuthenticatedAppSettingsAccountRoute
+  AuthenticatedAppSettingsBillingRoute: typeof AuthenticatedAppSettingsBillingRoute
+  AuthenticatedAppSettingsDataRoute: typeof AuthenticatedAppSettingsDataRoute
+  AuthenticatedAppSettingsIntegrationsRoute: typeof AuthenticatedAppSettingsIntegrationsRoute
+  AuthenticatedAppSettingsNotificationsRoute: typeof AuthenticatedAppSettingsNotificationsRoute
+  AuthenticatedAppSettingsPreferencesRoute: typeof AuthenticatedAppSettingsPreferencesRoute
+  AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
+}
+
+const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildren =
+  {
+    AuthenticatedAppSettingsAccountRoute: AuthenticatedAppSettingsAccountRoute,
+    AuthenticatedAppSettingsBillingRoute: AuthenticatedAppSettingsBillingRoute,
+    AuthenticatedAppSettingsDataRoute: AuthenticatedAppSettingsDataRoute,
+    AuthenticatedAppSettingsIntegrationsRoute:
+      AuthenticatedAppSettingsIntegrationsRoute,
+    AuthenticatedAppSettingsNotificationsRoute:
+      AuthenticatedAppSettingsNotificationsRoute,
+    AuthenticatedAppSettingsPreferencesRoute:
+      AuthenticatedAppSettingsPreferencesRoute,
+    AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
+  }
+
+const AuthenticatedAppSettingsRouteWithChildren =
+  AuthenticatedAppSettingsRoute._addFileChildren(
+    AuthenticatedAppSettingsRouteChildren,
+  )
+
+interface AuthenticatedPProjectRouteChildren {
+  AuthenticatedPProjectExportRoute: typeof AuthenticatedPProjectExportRoute
+  AuthenticatedPProjectFiguresRoute: typeof AuthenticatedPProjectFiguresRoute
+  AuthenticatedPProjectImportRoute: typeof AuthenticatedPProjectImportRoute
+  AuthenticatedPProjectOutlineRoute: typeof AuthenticatedPProjectOutlineRoute
+  AuthenticatedPProjectRunRoute: typeof AuthenticatedPProjectRunRoute
+  AuthenticatedPProjectSettingsRoute: typeof AuthenticatedPProjectSettingsRoute
+  AuthenticatedPProjectUsageRoute: typeof AuthenticatedPProjectUsageRoute
+  AuthenticatedPProjectVisualizeRoute: typeof AuthenticatedPProjectVisualizeRoute
+  AuthenticatedPProjectIndexRoute: typeof AuthenticatedPProjectIndexRoute
+  AuthenticatedPProjectAArtifactIdRoute: typeof AuthenticatedPProjectAArtifactIdRoute
+  AuthenticatedPProjectEditDraftIdRoute: typeof AuthenticatedPProjectEditDraftIdRoute
+  AuthenticatedPProjectFFidRoute: typeof AuthenticatedPProjectFFidRoute
+  AuthenticatedPProjectFiguresFigureIdRoute: typeof AuthenticatedPProjectFiguresFigureIdRoute
+  AuthenticatedPProjectImportPreviewRoute: typeof AuthenticatedPProjectImportPreviewRoute
+  AuthenticatedPProjectObligationsNewRoute: typeof AuthenticatedPProjectObligationsNewRoute
+  AuthenticatedPProjectOutlinePromoteRoute: typeof AuthenticatedPProjectOutlinePromoteRoute
+  AuthenticatedPProjectRRunIdRoute: typeof AuthenticatedPProjectRRunIdRoute
+  AuthenticatedPProjectReviewRunIdRoute: typeof AuthenticatedPProjectReviewRunIdRoute
+  AuthenticatedPProjectRevisionsCidRoute: typeof AuthenticatedPProjectRevisionsCidRoute
+  AuthenticatedPProjectVVRoute: typeof AuthenticatedPProjectVVRoute
+  AuthenticatedPProjectVoiceReseedRoute: typeof AuthenticatedPProjectVoiceReseedRoute
+  AuthenticatedPProjectVNDiffMRoute: typeof AuthenticatedPProjectVNDiffMRoute
+}
+
+const AuthenticatedPProjectRouteChildren: AuthenticatedPProjectRouteChildren = {
+  AuthenticatedPProjectExportRoute: AuthenticatedPProjectExportRoute,
+  AuthenticatedPProjectFiguresRoute: AuthenticatedPProjectFiguresRoute,
+  AuthenticatedPProjectImportRoute: AuthenticatedPProjectImportRoute,
+  AuthenticatedPProjectOutlineRoute: AuthenticatedPProjectOutlineRoute,
+  AuthenticatedPProjectRunRoute: AuthenticatedPProjectRunRoute,
+  AuthenticatedPProjectSettingsRoute: AuthenticatedPProjectSettingsRoute,
+  AuthenticatedPProjectUsageRoute: AuthenticatedPProjectUsageRoute,
+  AuthenticatedPProjectVisualizeRoute: AuthenticatedPProjectVisualizeRoute,
+  AuthenticatedPProjectIndexRoute: AuthenticatedPProjectIndexRoute,
+  AuthenticatedPProjectAArtifactIdRoute: AuthenticatedPProjectAArtifactIdRoute,
+  AuthenticatedPProjectEditDraftIdRoute: AuthenticatedPProjectEditDraftIdRoute,
+  AuthenticatedPProjectFFidRoute: AuthenticatedPProjectFFidRoute,
+  AuthenticatedPProjectFiguresFigureIdRoute:
+    AuthenticatedPProjectFiguresFigureIdRoute,
+  AuthenticatedPProjectImportPreviewRoute:
+    AuthenticatedPProjectImportPreviewRoute,
+  AuthenticatedPProjectObligationsNewRoute:
+    AuthenticatedPProjectObligationsNewRoute,
+  AuthenticatedPProjectOutlinePromoteRoute:
+    AuthenticatedPProjectOutlinePromoteRoute,
+  AuthenticatedPProjectRRunIdRoute: AuthenticatedPProjectRRunIdRoute,
+  AuthenticatedPProjectReviewRunIdRoute: AuthenticatedPProjectReviewRunIdRoute,
+  AuthenticatedPProjectRevisionsCidRoute:
+    AuthenticatedPProjectRevisionsCidRoute,
+  AuthenticatedPProjectVVRoute: AuthenticatedPProjectVVRoute,
+  AuthenticatedPProjectVoiceReseedRoute: AuthenticatedPProjectVoiceReseedRoute,
+  AuthenticatedPProjectVNDiffMRoute: AuthenticatedPProjectVNDiffMRoute,
+}
+
+const AuthenticatedPProjectRouteWithChildren =
+  AuthenticatedPProjectRoute._addFileChildren(
+    AuthenticatedPProjectRouteChildren,
+  )
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
+  AuthenticatedAppInboxRoute: typeof AuthenticatedAppInboxRoute
+  AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
+  AuthenticatedBillingReturnRoute: typeof AuthenticatedBillingReturnRoute
+  AuthenticatedPProjectRoute: typeof AuthenticatedPProjectRouteWithChildren
+  AuthenticatedSettingsBillingRoute: typeof AuthenticatedSettingsBillingRoute
+  AuthenticatedVPersonaRoute: typeof AuthenticatedVPersonaRoute
+  AuthenticatedVoicesNewRoute: typeof AuthenticatedVoicesNewRoute
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedVoicesIndexRoute: typeof AuthenticatedVoicesIndexRoute
+  AuthenticatedAppNewPreviewRoute: typeof AuthenticatedAppNewPreviewRoute
+  AuthenticatedAppUsageRRunIdRoute: typeof AuthenticatedAppUsageRRunIdRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUsageRoute: AuthenticatedUsageRoute,
+  AuthenticatedAppInboxRoute: AuthenticatedAppInboxRoute,
+  AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
+  AuthenticatedBillingReturnRoute: AuthenticatedBillingReturnRoute,
+  AuthenticatedPProjectRoute: AuthenticatedPProjectRouteWithChildren,
+  AuthenticatedSettingsBillingRoute: AuthenticatedSettingsBillingRoute,
+  AuthenticatedVPersonaRoute: AuthenticatedVPersonaRoute,
+  AuthenticatedVoicesNewRoute: AuthenticatedVoicesNewRoute,
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedVoicesIndexRoute: AuthenticatedVoicesIndexRoute,
+  AuthenticatedAppNewPreviewRoute: AuthenticatedAppNewPreviewRoute,
+  AuthenticatedAppUsageRRunIdRoute: AuthenticatedAppUsageRRunIdRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

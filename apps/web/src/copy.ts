@@ -2264,6 +2264,14 @@ export const COPY = {
     noJsSsr: "Open the server-rendered version",
   },
 
+  // SPA.4 — the client route-error boundary's generic strings (the §5.9 "a banner, never a stack
+  // trace" posture; per-surface error copy lands with the surface tickets).
+  spaError: {
+    heading: "Something didn't load",
+    body: "The page hit an error — try reloading, or open the server-rendered version.",
+    retry: "Reload",
+  },
+
   footer: "Rhēma",
 } as const;
 

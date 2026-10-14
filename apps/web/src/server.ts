@@ -44,7 +44,7 @@ import {
 import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
-import { feedRowsFor } from "./feed-labels.js";
+import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
 import type { TimelineDto, RunSheetContextDto, GateCardDto, ProjectSettingsPatch } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
@@ -509,6 +509,16 @@ export function createWebApp(deps: WebDeps): Hono {
       });
       return c.json({ error: "session_unavailable" }, 502);
     }
+  });
+
+  // SPA.4 (REQ-BFF-24; spec R12) — the standalone long-stale feed-label read the SPA's
+  // `["feed-labels"]` query consumes. The maps stay server-owned (deploy-versioned COPY, the same
+  // `feedLabelMaps()` object SSR embeds as data-feed-labels); the client formatter stays
+  // fail-closed. Session-gated like every BFF read — the api remains the auth oracle.
+  app.get("/bff/feed-labels", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    return c.json(feedLabelMaps());
   });
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------

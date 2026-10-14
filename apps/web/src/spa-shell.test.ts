@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { Context } from "hono";
 import { createWebApp, type WebDeps } from "./server.js";
 import { renderSpaShell, spaManifestEntry, type SpaBootPayload } from "./spa-shell.js";
+import { feedLabelMaps } from "./feed-labels.js";
 import type { DataSource } from "./data.js";
 
 // SPA.3 — REQ-BND-1..5, 11, 12; REQ-SEQ-8; REQ-INV-1/6/7; REQ-FW-3/10; REQ-TL-4/5/7; REQ-TST-5.
@@ -211,6 +212,26 @@ describe("GET /session — the same-origin session probe (REQ-BND-6)", () => {
     const res = await app.request("/session");
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: "session_unavailable" });
+  });
+});
+
+describe("GET /bff/feed-labels — the standalone long-stale label read (REQ-BFF-24; spec R12)", () => {
+  it("anonymous ⇒ 401 — the BFF reads sit behind the session gate", async () => {
+    const app = createWebApp(spaDeps({ session: () => null }));
+    const res = await app.request("/bff/feed-labels");
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("authenticated ⇒ the same server-built maps the SSR embed ships (deploy-versioned copy)", async () => {
+    const app = createWebApp(spaDeps());
+    const res = await app.request("/bff/feed-labels");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ReturnType<typeof feedLabelMaps>;
+    expect(body.t).toBeDefined();
+    expect(body.enums.phase).toBeDefined();
+    expect(body.enums.kind).toBeDefined();
+    expect(body.t["run.state_changed"]).toBeDefined();
   });
 });
 
