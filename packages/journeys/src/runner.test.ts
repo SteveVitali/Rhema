@@ -173,6 +173,29 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
     expect(r.results[0]!.outcome).toBe("pass");
   });
 
+  it("REQ-ED-12 — a forced-SSR document (data-ssr-cause) under --expect-renderer spa is honored, not flagged", async () => {
+    // ARMB-1 — the Page family's forced arm (phone UA / showcase row) is the spec-mandated
+    // renderer for that request; the assert keys the exemption on the cause stamp, so an
+    // unstamped ssr doc on a gated route still fails (the G9 case above).
+    const FORCED =
+      '<html data-renderer="ssr" data-route="/p/$project" data-mounted data-ssr-cause="showcase">';
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/p/showcase", docHtml: FORCED }),
+    ]);
+    const r = await run(
+      [step("G12", "green")],
+      {
+        G12: async (ctx) => {
+          const { page } = await ctx.anon();
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+        },
+      },
+      false,
+      { browser, expectRenderer: "spa" },
+    );
+    expect(r.results[0]!.outcome).toBe("pass");
+  });
+
   it("a foreign-origin or non-HTML document never trips the renderer check", async () => {
     const foreign = fakeCtxPage({ docUrl: "https://checkout.stripe.com/c/pay/cs_1", docHtml: "<html/>" });
     const img = fakeCtxPage({

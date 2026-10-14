@@ -3958,6 +3958,7 @@ export function createWebApp(deps: WebDeps): Hono {
         explainersDismissed,
         ...(projectVoice ? { projectVoice } : {}),
         compact: isPhoneRequest(c),
+        ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
         ...(derror
           ? {
               triage: {
@@ -5397,6 +5398,7 @@ export function createWebApp(deps: WebDeps): Hono {
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
           compact: isPhoneRequest(c),
+          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
         }),
       );
     }
@@ -5500,6 +5502,7 @@ export function createWebApp(deps: WebDeps): Hono {
             ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
           },
           compact: phone,
+          ssrCause: phone ? "phone" : "showcase",
           page: {
             slug,
             projectId: row.id,
@@ -5590,6 +5593,7 @@ export function createWebApp(deps: WebDeps): Hono {
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
           compact: isPhoneRequest(c),
+          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
           dwellSurface: "page",
         }),
       );
@@ -5661,6 +5665,7 @@ export function createWebApp(deps: WebDeps): Hono {
             docJson: docJsonFor(doc),
             readOnly: true,
           },
+          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
           dwellSurface: "page",
         }),
       );

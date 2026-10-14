@@ -79,6 +79,9 @@ export function renderDocument(
   const htmlAttrs =
     `lang="en" data-theme="${resolved}"` +
     ` data-renderer="ssr" data-route="${escapeHtml(routeId)}" data-mounted` +
+    // REQ-ED-12 (ARMB-1) — the Page family's forced arm self-reports WHY it served SSR so the
+    // journeys renderer asserts can honor the mandated verdict instead of flagging it.
+    (data.ssrCause ? ` data-ssr-cause="${escapeHtml(data.ssrCause)}"` : "") +
     (pref ? ` data-app-theme="${escapeHtml(pref)}"` : "") +
     (data.paperTheme ? ` data-paper="${escapeHtml(data.paperTheme)}"` : "") +
     (data.project?.slug ? ` data-project="${escapeHtml(data.project.slug)}"` : "");

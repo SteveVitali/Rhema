@@ -72,10 +72,25 @@ export function onOurOrigin(pageUrl: string, webBaseUrl: string): boolean {
   }
 }
 
+/** The REQ-ED-12 forced-SSR cause vocabulary — the only verdicts the Page arm may self-report. */
+export type SsrCause = "phone" | "showcase";
+
 /** Extract the `<html data-renderer>` marker from a served document body (the runner's check). */
 export function rendererOfDocument(html: string): RendererName | null {
   const m = /<html[^>]*\bdata-renderer="(ssr|spa)"/.exec(html);
   return (m?.[1] as RendererName | undefined) ?? null;
+}
+
+/**
+ * Extract the REQ-ED-12 `<html data-ssr-cause>` stamp (ARMB-1). Only the Page family's forced-SSR
+ * arm emits it — a phone UA or a `showcase: true` row is a server verdict the renderer assert must
+ * HONOR, not flag (the `--expect-renderer spa` contract asserts the renderer the spec mandates:
+ * spa on every gated doc, ssr on the forced arms). Absent ⇒ this is not a forced verdict — an `ssr`
+ * doc without the stamp on a gated route is still a violation.
+ */
+export function ssrCauseOfDocument(html: string): SsrCause | null {
+  const m = /<html[^>]*\bdata-ssr-cause="(phone|showcase)"/.exec(html);
+  return (m?.[1] as SsrCause | undefined) ?? null;
 }
 
 /**
@@ -105,7 +120,14 @@ export async function awaitMounted(
           // a scoped leg asserts the renderer only under the gated surfaces' path set — a
           // document outside the set reports its own flag's verdict (design/29 §coexistence).
           const assertable = gatedRoutes == null || (docRoute != null && gatedRoutes.indexOf(docRoute) >= 0);
-          if (assertable && el.getAttribute("data-renderer") !== wantRenderer) return false;
+          // REQ-ED-12 — the forced-SSR arm self-reports its cause; waiting on a mandated SSR
+          // verdict to flip to spa would just lapse the timeout on a correct document.
+          if (
+            assertable &&
+            el.getAttribute("data-renderer") !== wantRenderer &&
+            !el.hasAttribute("data-ssr-cause")
+          )
+            return false;
         }
         return true;
       },
@@ -119,6 +141,7 @@ export async function awaitMounted(
         route: document.documentElement.getAttribute("data-route"),
         renderer: document.documentElement.getAttribute("data-renderer"),
         mounted: document.documentElement.hasAttribute("data-mounted"),
+        ssrCause: document.documentElement.getAttribute("data-ssr-cause"),
       }))
       .catch(() => null);
     throw new Error(
