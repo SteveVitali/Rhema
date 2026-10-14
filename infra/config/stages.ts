@@ -326,8 +326,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — the metered flip is operator-paused; ship dark (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     // SPA.10 — the `usage` flag flips on dev (the surface's per-ticket dev line; REQ-SEQ-3/9).
-    // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.1's own commit.
-    spaSurfaces: ["usage"],
+    // SPA.11 — `inbox` joins on dev only; prod waits for its own SPAF flip ticket.
+    // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
+    spaSurfaces: ["usage", "inbox"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

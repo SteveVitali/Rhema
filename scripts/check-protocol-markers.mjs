@@ -55,10 +55,12 @@ const SENTINEL_EXCLUDE_DIRS = new Set(["node_modules", "dist", ".turbo", "upstre
 const TEXT_EXT = new Set([".js", ".mjs", ".cjs", ".json", ".html", ".css", ".map", ".txt", ".yaml", ".yml"]);
 
 /** `apps/web/src/*` sources allowed inside the SPA bundle graph (shared leaf modules the client
- *  imports by design — COPY table, doc meta, the DOM-contract manifest, the boot wire shape).
+ *  imports by design — COPY table, doc meta, the DOM-contract manifest, the boot wire shape, the
+ *  SPA.11 gate-card composition shared SSR↔SPA).
  *  Anything else under apps/web/src (server.ts, data.ts, pages.tsx, render.tsx, client islands…)
  *  reaching a `public/spa` map is server/island code bundled for the browser — a violation. */
-const SPA_WEB_SRC_ALLOW = /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.)/;
+const SPA_WEB_SRC_ALLOW =
+  /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.|gate-card\.)/;
 
 /** Extra provenance bans applied only inside the SPA bundle's maps (REQ-FW-9's emitted-graph leg):
  *  `@rhema/api-client` is `import type`-only in the client — any dist file in the map means a

@@ -185,11 +185,31 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  // SPA.11 — R8 split per-surface (REQ-VFY-8): each leg gates its own flag; the composite "R8"
+  // id is gone. Owner stays UX.1 (a split never re-assigns ownership).
   {
-    id: "R8",
+    id: "R8.showcase",
     journey: "returning",
     asserts:
-      "signed-in /showcase resolves to the workspace Showcase (or the static sample); Preferences lists only launched workflows; the Inbox waiting count equals its Needs-you rows and every row names its project",
+      "signed-in /showcase resolves to the workspace Showcase (or the static sample) — never another tenant's",
+    owner: "UX.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "R8.prefs",
+    journey: "returning",
+    asserts:
+      "Preferences lists only launched workflows — no unlaunched rows or unavailable-workflow copy",
+    owner: "UX.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "R8.inbox",
+    journey: "returning",
+    asserts:
+      "the Inbox waiting count equals its Needs-you rows and every row names its project",
     owner: "UX.1",
     expected: "green",
     paid: false,
@@ -385,11 +405,22 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  // SPA.11 — T2 split per-surface (REQ-VFY-8): `inbox` gates on T2.badge, `settings` on T2.matrix;
+  // the composite "T2" id is gone. Owner stays STB.5a.
   {
-    id: "T2",
+    id: "T2.badge",
     journey: "both",
     asserts:
-      "the Inbox badge equals its rendered Needs-you rows, every row carries an open link, and the notification matrix + quiet-hours controls render actionable (D-P1.19-1's free half)",
+      "the Inbox badge equals its rendered Needs-you rows and every row carries an open link",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T2.matrix",
+    journey: "both",
+    asserts:
+      "the notification matrix + quiet-hours controls render actionable (D-P1.19-1's free half)",
     owner: "STB.5a",
     expected: "green",
     paid: false,

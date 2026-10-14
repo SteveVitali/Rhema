@@ -139,9 +139,9 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
 
   it("a boot-seeded principal satisfies the gate without a fetch — a seed, consumed once", async () => {
     const f = sessionFetch(200);
-    // Mount a leaf with no read of its own (inbox stays stubbed until SPA.11) — the assertion
-    // isolates the session seed: not even one fetch fires.
-    await mountAt("/app/inbox", bootFor({ "/app/inbox": "spa" }), f);
+    // Mount a leaf with no read of its own (/app/new stays stubbed until its owner ticket) — the
+    // assertion isolates the session seed: not even one fetch fires.
+    await mountAt("/app/new", bootFor({ "/app/new": "spa" }), f);
     expect(assignSpy).not.toHaveBeenCalled();
     expect(f).not.toHaveBeenCalled();
   });
@@ -149,14 +149,15 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
 
 describe("head manager (REQ-BND-8, REQ-UX-7/9)", () => {
   it("rewrites document.title through docMetaFor on nav", async () => {
-    const boot = bootFor({ "/usage": "spa", "/app/inbox": "spa" });
+    // /app/new is a still-stubbed leaf — the title leg doesn't need a fetch stub for the twin.
+    const boot = bootFor({ "/usage": "spa", "/app/new": "spa" });
     const { router } = await mountAt("/usage", boot);
     expect(document.title).toBe("Usage · Rhēma");
     await act(async () => {
-      await router.navigate({ to: "/app/inbox" });
+      await router.navigate({ to: "/app/new" });
     });
-    expect(document.title).toBe("Inbox · Rhēma");
-    expect(document.documentElement.getAttribute("data-route")).toBe("/app/inbox");
+    expect(document.title).toBe("New project · Rhēma");
+    expect(document.documentElement.getAttribute("data-route")).toBe("/app/new");
   });
 
   it("moves focus to the route's h1 and announces via the polite live region", async () => {

@@ -2069,14 +2069,11 @@ const N10: StepFn = async (ctx) => {
   }
 };
 
-/** UX.1 — R8 (GREEN, $0): the signed-in legs. `/showcase` resolves to the workspace's own Showcase
- *  (the dossier redirect) or the static sample — never another tenant's; Preferences lists ONLY
- *  the launched workflows (no "1.x"/unlaunched rows); the Inbox's waiting count IS its Needs-you
- *  row count and a project name rides each row. */
-const R8: StepFn = async (ctx) => {
+/** UX.1 — R8.showcase (GREEN, $0): the signed-in /showcase leg. `/showcase` resolves to the
+ *  workspace's own Showcase (the dossier redirect) or the static sample — never another tenant's.
+ *  SPA.11 split R8 into per-surface legs (REQ-VFY-8) — prefs is R8.prefs, inbox is R8.inbox. */
+const R8_SHOWCASE: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  // /showcase — signed-in resolves to the tenant's Showcase project or the sample page; either way
-  // it must render a dossier surface and never a foreign slug.
   await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
   const scBody = (await page.textContent("body")) ?? "";
   const onShowcase = /\/showcase$/.test(page.url()) || /\/p\/[^/]+/.test(page.url());
@@ -2084,7 +2081,13 @@ const R8: StepFn = async (ctx) => {
   if (!/The Politics of Visibility|Showcase/i.test(scBody)) {
     throw new Error("signed-in /showcase renders neither the workspace Showcase nor the sample");
   }
-  // Preferences — every rigor-by-workflow row must be a launched workflow; nothing unlaunched shows.
+  assertBundleParity(ctx);
+};
+
+/** UX.1 — R8.prefs (GREEN, $0): the Preferences leg — every rigor-by-workflow row is a launched
+ *  workflow; nothing unlaunched shows (no "1.x" rows or unavailable-workflow copy). */
+const R8_PREFS: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
   await gotoOk(page, `${ctx.webBaseUrl}/app/settings/preferences`);
   const prefNames = await page
     .locator('select[name^="rigor_"]')
@@ -2098,8 +2101,14 @@ const R8: StepFn = async (ctx) => {
   if (/\b1\.x\b|not yet available|isn't available/i.test(prefBody)) {
     throw new Error("Preferences copy still references unavailable workflows");
   }
-  // Inbox — the "waiting on your call" count equals the Needs-you row count, verbatim.
-  await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
+  assertBundleParity(ctx);
+};
+
+/** UX.1 — R8.inbox (GREEN, $0): the Inbox leg — the "waiting on your call" count IS its Needs-you
+ *  row count, and a project name rides each row. The `inbox` flag gates on this leg (REQ-VFY-8). */
+const R8_INBOX: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`, ctx);
   const badge = await page.locator("[data-inbox-badge]").textContent().catch(() => null);
   const blocked = await page.locator('[data-inbox-section="blocked"] [data-inbox-row]').count();
   const n = badge ? Number((/\d+/.exec(badge) ?? [NaN])[0]) : NaN;
@@ -2116,6 +2125,7 @@ const R8: StepFn = async (ctx) => {
       throw new Error(`Inbox row ${i} carries no project name`);
     }
   }
+  assertBundleParity(ctx);
 };
 
 // ---- DEF.4 — R9 (RED→DEF.4; paid): the §14.4 refund window end-to-end on the flagged tenant.
@@ -2320,7 +2330,10 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   R5,
   R6,
   R7,
-  R8,
+  // SPA.11 — R8 split per-surface (REQ-VFY-8): the composite id is gone; each leg gates its own flag.
+  "R8.showcase": R8_SHOWCASE,
+  "R8.prefs": R8_PREFS,
+  "R8.inbox": R8_INBOX,
   R9,
   // SPA.6 — the P1/X1 splits (REQ-VFY-8): per-surface legs replacing the composite ids.
   "P1.public": P1_PUBLIC,
