@@ -2920,7 +2920,7 @@ export function VoiceNewPage(): ReactNode {
         </label>
         <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
           {VC.new.sampleUrlLabel}
-          <input name="sample_url" type="url" placeholder="https://…" style={fieldStyle} />
+          <input name="sample_url" type="url" placeholder={VC.urlPlaceholder} style={fieldStyle} />
         </label>
         <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.sampleUrlHint}</p>
         <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.sampleHint}</p>
@@ -3097,7 +3097,7 @@ function VoiceGateCardView({ pid, gate }: { pid: string; gate: NonNullable<Voice
       ) : null}
       {card.waitingUntil ? (
         <p data-gate-waiting="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "6px 0 0" }}>
-          Available after {new Date(card.waitingUntil).toLocaleString("en-US", { timeZone: "UTC" })}
+          {fmt(VC.detail.gateWaitingFmt, { at: new Date(card.waitingUntil).toLocaleString("en-US", { timeZone: "UTC" }) })}
         </p>
       ) : null}
       <form method="post" action={`/v/${pid}/gates/${gate.gateId}`} style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
@@ -3171,7 +3171,7 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
   return (
     <li data-source={conn.id} data-provider={conn.provider} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "8px 12px", fontSize: "13px" }}>
       <div style={{ display: "flex", gap: "10px", alignItems: "baseline", flexWrap: "wrap" }}>
-        <strong>{conn.provider === "substack" ? "Substack" : conn.provider === "substack_export" ? "Substack export" : conn.provider === "url" ? "URL" : conn.provider}</strong>
+        <strong>{VC.detail.providerLabel[conn.provider] ?? conn.provider}</strong>
         <span style={{ color: "var(--shell-fg-muted)", fontSize: "12px" }}>{conn.handle ?? ""}</span>
         <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
           {fmt(VC.detail.sourceItemsFmt, { included: String(conn.included), items: String(conn.items) })}
@@ -3277,7 +3277,7 @@ function VoiceSourcesPane({ pid, connections, samples }: { pid: string; connecti
           <input type="hidden" name="provider" value="url" />
           <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
             {VC.detail.linkUrlLabel}
-            <input name="url" type="url" placeholder="https://…" style={{ ...fieldStyle, marginTop: "2px" }} />
+            <input name="url" type="url" placeholder={VC.urlPlaceholder} style={{ ...fieldStyle, marginTop: "2px" }} />
           </label>
           <button type="submit" data-link-url="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkUrlCta}</button>
         </form>
@@ -3477,7 +3477,7 @@ export function VoiceDetailPage(): ReactNode {
                 <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--sev-major)", margin: "0 0 4px" }}>{VC.detail.deleteVoiceHeading}</h2>
                 <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{VC.detail.deleteVoiceNote}</p>
                 <form method="post" action={`/v/${pid}/delete`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <input name="confirm" placeholder="delete" style={{ ...fieldStyle, maxWidth: "14ch" }} />
+                  <input name="confirm" placeholder={VC.detail.deletePlaceholder} style={{ ...fieldStyle, maxWidth: "14ch" }} />
                   <button type="submit" data-delete-voice="true" style={{ padding: "6px 14px", borderRadius: "8px", border: "1px solid var(--sev-major)", background: "none", color: "var(--sev-major)", fontSize: "13px", cursor: "pointer" }}>
                     {VC.detail.deleteVoiceCta}
                   </button>
@@ -3642,7 +3642,7 @@ export function VoiceDetailPage(): ReactNode {
               <form method="post" action={`/v/${pid}/samples/url`} style={{ marginTop: "10px" }}>
                 <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                   {VC.detail.addSampleUrlLabel}
-                  <input name="url" type="url" placeholder="https://…" style={fieldStyle} />
+                  <input name="url" type="url" placeholder={VC.urlPlaceholder} style={fieldStyle} />
                 </label>
                 <button type="submit" data-add-url="true" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
                   {VC.detail.addUrlCta}
@@ -3679,7 +3679,7 @@ export function VoiceDetailPage(): ReactNode {
                     <>
                       <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0", display: "inline" }}>
                         {sec.key}
-                        {sec.advanced ? <span style={{ color: "var(--shell-fg-faint)", fontWeight: 400 }}> (Advanced)</span> : null}
+                        {sec.advanced ? <span style={{ color: "var(--shell-fg-faint)", fontWeight: 400 }}> {VC.detail.advancedTag}</span> : null}
                       </h3>
                       {sec.key === "voice-measures" ? (
                         d.measures ? (
@@ -3783,7 +3783,7 @@ export function VoiceReseedPage(): ReactNode {
       {preview && compact !== true ? (
         <>
           {!preview.charterFound ? (
-            <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>No charter yet — the reseed writes one.</p>
+            <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.reseedNoCharter}</p>
           ) : (
             <pre data-reseed-diff="true" style={{ fontSize: "12px", maxWidth: "88ch", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px" }}>
               {preview.diff.map((l, i) => (
@@ -3795,13 +3795,11 @@ export function VoiceReseedPage(): ReactNode {
             </pre>
           )}
           <p data-guidance-preserved={preview.guidancePreserved ? "true" : "false"} style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "8px" }}>
-            {preview.guidancePreserved
-              ? "Your guidance lines carry over verbatim — the diff above never touches them."
-              : "Guidance would be lost — the adopt will NOT reseed."}
+            {preview.guidancePreserved ? VC.detail.reseedGuidanceKept : VC.detail.reseedGuidanceLost}
           </p>
           <form method="post" action={`/p/${slug}/voice/adopt`} style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
             <button type="submit" name="reseed" value="true" data-adopt-reseed="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-              {VC.detail.adoptCta} + reseed
+              {VC.detail.adoptReseedCta}
             </button>
             <button type="submit" name="reseed" value="false" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
               {VC.detail.adoptCta}

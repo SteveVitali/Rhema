@@ -111,6 +111,13 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   `preview-stack.mjs config pr-<n> rhema:spaSurfaces "<prior set>,<key>"` in a surface ticket's
   preview legs (design/29 §per-flip runbook). Never committed; prod/dev flips are committed
   stage-fact edits instead (REQ-SEQ-10 — a prod flip is its own operator-merged PR).
+- `rhema:uploadCorsOrigins` — SPA.13's REQ-BFF-16 companion: a CSV of extra `https://` origins the
+  `user-content` bucket's CORS block admits for the browser's presign→direct-PUT upload leg
+  (PUT-only, the signed-URL headers only, never a wildcard). The stage's own app origin is admitted
+  unconditionally (`domains.app`, or `https://<stack>.rhema.dev` without one), so the key exists for
+  previews whose serving host differs from the deployed origin — set via
+  `preview-stack.mjs config pr-<n> rhema:uploadCorsOrigins "https://host1,https://host2"`; unset is
+  the normal case.
 - `rhema:resendApiKey` — MAINT.6's NON-PROD-only secret config (Pulumi secret). On a preview/dev
   stack it carries the REAL Resend key — `preview-stack.mjs resend-pull` pipes the operator-seeded
   shared SM `rhema-nonprod-resend-api-key` into it — so that stack's `resend-api-key` SM version

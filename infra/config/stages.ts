@@ -330,8 +330,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA.12 — `settings` joins on dev only (its 7 routes ride the one surface flag; prod waits
     // for its own SPAF flip ticket — the /app/settings/billing leaf answers to `billing`, not
     // this flag).
+    // SPA.13 — `voices` joins on dev only (its 4 routes ride the one flag; prod waits for its
+    // own SPAF flip ticket — REQ-SEQ-10 keeps the prod flip operator-controlled).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

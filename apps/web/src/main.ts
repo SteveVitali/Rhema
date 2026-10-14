@@ -114,6 +114,9 @@ export function startWebServer(): void {
     spaOverrides: process.env.SPA_OVERRIDES === "1",
     // P1.03 — the Page's collab transport (the LB path-routes /collab to the collab service).
     ...(process.env.COLLAB_WS_URL ? { collabWsUrl: process.env.COLLAB_WS_URL } : {}),
+    // SPA.13 (REQ-BFF-16) — the GCS upload origin CSP admits for the browser's direct-PUT leg;
+    // unset ⇒ the v4-signer default in createWebApp.
+    ...(process.env.GCS_UPLOAD_ORIGIN ? { gcsUploadOrigin: process.env.GCS_UPLOAD_ORIGIN } : {}),
     // JOURNEY.1 — the image-baked deploy SHA for /healthz provenance.
     ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
     // OBS.1 — the Cloud Logging trace join field (app error lines join the LB's trace-sampled log).

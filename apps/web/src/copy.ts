@@ -917,6 +917,9 @@ export const COPY = {
     listEmpty: "No voices yet — describe one and add a writing sample.",
     newCta: "New voice",
     sampleCountFmt: "{n} samples",
+    // The shared URL placeholder — the create sheet, the link-source row, and the add-sample row
+    // all carry it (SPA.13's copy containment needs a leaf, not an attribute literal).
+    urlPlaceholder: "https://…",
     // P1.14 — the §9.1 three-group destination.
     groups: {
       yours: "Your voices",
@@ -992,6 +995,7 @@ export const COPY = {
       gateApprove: "Approve — build the profile",
       gateWait: "Wait — keep thinking",
       gateStop: "Stop the build",
+      gateWaitingFmt: "Available after {at}",
       // P1.14 — the corrections ledger (§9.4 "Correct this in your description").
       correctionsHeading: "Corrections",
       correctionsEmpty: "No corrections yet.",
@@ -1017,6 +1021,7 @@ export const COPY = {
       calibrationWithinFmt: "{n} of {total} within one band",
       calibrationTable: { feature: "Feature", target: "Profile target", prediction: "Prediction", real: "Held-out piece", band: "Within band" },
       measuresHeading: "Voice measures",
+      advancedTag: "(Advanced)",
       profileHeading: "Profile",
       profileEmpty: "No profile yet — a build writes one.",
       sectionEmpty: "not written yet",
@@ -1026,9 +1031,13 @@ export const COPY = {
       projectsHeading: "Projects",
       snapshotsHeading: "Snapshots",
       adoptCta: "Adopt the refreshed profile",
+      adoptReseedCta: "Adopt the refreshed profile + reseed",
       adoptReseedLabel: "and reseed the charter (guidance lines are never rewritten)",
       forkProjectCta: "Fork under a different voice",
       reseedPreviewCta: "Preview the charter diff",
+      reseedNoCharter: "No charter yet — the reseed writes one.",
+      reseedGuidanceKept: "Your guidance lines carry over verbatim — the diff above never touches them.",
+      reseedGuidanceLost: "Guidance would be lost — the adopt will NOT reseed.",
       voiceLockedNotice: "The voice is set once drafts exist — adopt the refreshed profile or fork under a different voice.",
       seedHeading: "Description",
       agentDraftedMark: "Drafted by Rhēma — correct it",
@@ -1063,6 +1072,11 @@ export const COPY = {
       neverSynced: "not synced yet",
       sourceItemsFmt: "{included} of {items} included",
       paywallBadge: "Paywalled — import your export",
+      providerLabel: {
+        substack: "Substack",
+        substack_export: "Substack export",
+        url: "URL",
+      } as Record<string, string>,
       stateBadge: {
         new: "New",
         included: "Included",
@@ -1091,6 +1105,7 @@ export const COPY = {
       deleteVoiceHeading: "Delete this voice",
       deleteVoiceNote: "Deletes the voice, its samples, and profile data. Type “delete” to confirm.",
       deleteVoiceCta: "Delete voice",
+      deletePlaceholder: "delete",
       addSampleLabel: "Paste a new sample",
       addSampleUrlLabel: "Or add a sample by URL",
       addSampleFileLabel: "Or upload a file (.md, .txt, .html)",

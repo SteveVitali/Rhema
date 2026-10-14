@@ -44,12 +44,15 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
       } else {
         expect(v.term).toBe("Advanced");
         // the §5.13 Files pane's Advanced disclosure (section label + the per-section "Show working"
-        // disclosure) is the same sanctioned role as the run sheet's.
+        // disclosure) is the same sanctioned role as the run sheet's. SPA.13 — `voice.detail.advancedTag`
+        // is the same §6.5 progressive-disclosure tag: the "(Advanced)" suffix the voice-measures
+        // section headings carried inline in the SSR; lifting it to a leaf did not change its role.
         expect([
           "runSheet.advanced",
           "report.advancedHeading",
           "files.sectionLabel.advanced",
           "files.advanced",
+          "voice.detail.advancedTag",
         ]).toContain(v.key);
       }
     }

@@ -1,0 +1,48 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+// SPA.13 (REQ-BFF-16; design/22 §5/E-2) — the voices surface is the first browser-upload consumer:
+// the SPA's presign→direct-PUT leg PUTs bytes straight to the `user-content` bucket's `quarantine/`
+// prefix, so the bucket needs a CORS block scoped to PUT + the signed-URL extension headers and an
+// EXPLICIT origin list (the app origin + operator-added `rhema:uploadCorsOrigins` — never a
+// wildcard). data.ts is a Pulumi program, not a pure function, so these are structural assertions
+// over the source — the same style as compute.test.ts's HOT.1 sweep.
+
+const SRC = readFileSync(fileURLToPath(new URL("./data.ts", import.meta.url)), "utf8");
+const INDEX_SRC = readFileSync(fileURLToPath(new URL("./index.ts", import.meta.url)), "utf8");
+
+describe("SPA.13 — user-content bucket CORS for the browser's direct-PUT upload leg", () => {
+  it("the quarantine bucket (user-content) carries a CORS block, and only it does", () => {
+    // The cors block is conditioned on b === "user-content" — artifacts/benchmark-enclave stay
+    // CORS-less (the upload surface never touches them).
+    expect(SRC).toContain('b === "user-content"');
+    expect(SRC.match(/cors:/g) ?? []).toHaveLength(1);
+  });
+
+  it("admits PUT only — never a broad method list", () => {
+    expect(SRC).toContain('methods: ["PUT"]');
+  });
+
+  it("admits the signed-URL extension headers the v4 presigner requires", () => {
+    // `presignQuarantinePut` binds `x-goog-content-length-range` into the signature; the browser
+    // echoes it verbatim, so the preflight's allow-headers must carry it (plus Content-Type).
+    expect(SRC).toContain("x-goog-content-length-range");
+    expect(SRC).toContain('"Content-Type"');
+  });
+
+  it("sources origins explicitly — the app origin + operator config, never a wildcard", () => {
+    expect(SRC).toContain("cfg.domains.app");
+    expect(SRC).toContain("args.uploadCorsOrigins");
+    // No wildcard origin anywhere in the cors block.
+    expect(SRC).not.toContain('origins: ["*"]');
+    expect(SRC).not.toMatch(/origins:\s*\[[^\]]*"\*"/);
+  });
+
+  it("index.ts plumbs `rhema:uploadCorsOrigins` (CSV, https-only) into createData", () => {
+    expect(INDEX_SRC).toContain('rhemaConfig.get("uploadCorsOrigins")');
+    expect(INDEX_SRC).toContain("uploadCorsOrigins:");
+    // Anything not an https origin is dropped before it reaches the bucket config.
+    expect(INDEX_SRC).toContain("/^https:\\/\\//.test(o)");
+  });
+});

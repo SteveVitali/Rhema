@@ -89,6 +89,11 @@ const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImag
 // `preview-stack.mjs config` overrides the stage fact for THIS stack only (never committed —
 // the git-visible `StageConfig.spaSurfaces` stays the source of truth for dev/prod flips).
 const spaSurfaces = rhemaConfig.get("spaSurfaces");
+// SPA.13 (REQ-BFF-16) — extra app origins the user-content bucket's CORS block admits for the
+// browser's presign→direct-PUT upload leg. A CSV of https origins set via the same
+// `preview-stack.mjs config` path — non-prod app origins are deploy-generated hosts, so they ride
+// config, never a committed wildcard. Prod's domains.app is admitted unconditionally in data.ts.
+const uploadCorsOrigins = rhemaConfig.get("uploadCorsOrigins");
 // OPS.1 — deploy-provenance inputs for the non-prod migrate Job's `deployments` row (REQ-ARCH-39):
 // the chain-tip SHA the images were built at + the computed protocols version; unset ⇒ the migrate
 // Job skips the record leg (a bare `pulumi preview` stays clean).
@@ -123,7 +128,21 @@ const generatedPostgresPassword =
     ? new random.RandomPassword("rhema-postgres-password", { length: 32, special: false })
     : undefined;
 const postgresPassword = alloydbPassword ?? generatedPostgresPassword?.result;
-const data = createData({ stack, cfg, region, network, alloydbPassword: postgresPassword });
+const data = createData({
+  stack,
+  cfg,
+  region,
+  network,
+  alloydbPassword: postgresPassword,
+  ...(uploadCorsOrigins
+    ? {
+        uploadCorsOrigins: uploadCorsOrigins
+          .split(",")
+          .map((o) => o.trim())
+          .filter((o) => /^https:\/\//.test(o)), // SPA.13 — https origins only; anything else is dropped
+      }
+    : {}),
+});
 
 // SEC.1 (REQ-SPEC-30; REQ-ARCH-30) — the user-serving role's credential is generated HERE (never
 // operator-handled, never committed): `rhema_app_login`'s password is a @pulumi/random secret output

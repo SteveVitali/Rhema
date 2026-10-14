@@ -22,6 +22,15 @@ export interface DataArgs {
    * the provider generates one (a dev/preview posture; prod sets it).
    */
   alloydbPassword?: pulumi.Input<string>;
+  /**
+   * SPA.13 (REQ-BFF-16; design/22 §5/E-2) — EXTRA app origins the `user-content` bucket's CORS block
+   * admits for the browser's presign→direct-PUT leg, from the `rhema:uploadCorsOrigins` stack config
+   * (operator-set per stack, never committed). Non-prod app origins are deploy-generated run.app/LB
+   * hosts the stage facts can't name ahead of time, so the allowlist rides config — the same
+   * never-committed mechanism `rhema:spaSurfaces` uses. Prod's `domains.app` is admitted
+   * unconditionally; the list stays explicit — NO wildcard origin.
+   */
+  uploadCorsOrigins?: readonly string[];
 }
 
 export interface Data {
@@ -188,6 +197,27 @@ export function createData(args: DataArgs): Data {
         b === "benchmark-enclave"
           ? { logBucket: accessLogs.name, logObjectPrefix: "benchmark-enclave-access/" }
           : undefined,
+      // SPA.13 (REQ-BFF-16; design/22 §5/E-2) — the browser's presign→direct-PUT leg needs bucket
+      // CORS on the `user-content` bucket (the quarantine prefix lives there — iam.ts's
+      // fetcher-quarantine-creator condition). PUT only, the signed-URL extension headers only,
+      // and an EXPLICIT origin list (the app origin + operator-added `rhema:uploadCorsOrigins`) —
+      // never a wildcard. Landing dark: nothing else reads this block and the CSP admission is
+      // likewise inert until a flipped surface calls /bff/import/presign.
+      ...(b === "user-content"
+        ? {
+            cors: [
+              {
+                origins: [
+                  ...(cfg.domains ? [`https://${cfg.domains.app}`] : [`https://${stack}.rhema.dev`]),
+                  ...(args.uploadCorsOrigins ?? []),
+                ],
+                methods: ["PUT"],
+                responseHeaders: ["Content-Type", "x-goog-content-length-range"],
+                maxAgeSeconds: 3600,
+              },
+            ],
+          }
+        : {}),
     });
   }
 

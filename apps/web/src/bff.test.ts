@@ -723,3 +723,477 @@ describe("POST /app/inbox/read + /read-all — the JSON mutation branches (SPA.1
     expect(form.headers.get("location")).toBe("/login");
   });
 });
+
+// ---- SPA.13 — the voices surface twins + mutations (REQ-BFF-1/2/3/9/11/16, REQ-DAT-4/6) --------
+
+describe("GET /bff/voices — the §9.1 three-group twin (SPA.13; REQ-BFF-1/9)", () => {
+  const GROUPS = { voices: [{ personaId: "p1", name: "Voice One" }], groups: {} };
+  const webDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        listVoiceGroups: async () => GROUPS,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns the aggregate payload — the library DTO verbatim", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/voices", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ voices: GROUPS });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("a degraded seam lands {voices:null} — never a fabricated list", async () => {
+    const res = await createWebApp(
+      webDeps({ listVoiceGroups: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/voices", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ voices: null });
+  });
+
+  it("an upstream 401 is NOT swallowed — the unauthenticated envelope answers", async () => {
+    const res = await createWebApp(
+      webDeps({ listVoiceGroups: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/voices", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp({ ...webDeps({}), session: () => null }).request("/bff/voices", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("GET /bff/voices/new — the creation-sheet twin (SPA.13)", () => {
+  const webDeps = (): WebDeps =>
+    ({ session: () => SESSION, dataSource: { listProjects: async () => ROWS } as DataSource }) as WebDeps;
+
+  it("returns {voiceNew:{}} — the sheet composes no remote reads today", async () => {
+    const res = await createWebApp(webDeps()).request("/bff/voices/new", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ voiceNew: {} });
+  });
+
+  it("registration order — 'new' does NOT land on /bff/voices/:persona", async () => {
+    const res = await createWebApp(webDeps()).request("/bff/voices/new", {
+      headers: { accept: "application/json" },
+    });
+    // A param-route hit would call getVoice("new") — absent seam ⇒ TypeError ⇒ 500, never 200.
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("GET /bff/voices/:persona — the five-tab detail twin (SPA.13; REQ-BFF-1/9)", () => {
+  const VOICE = {
+    detail: { persona: { id: "p1", display_name: "Voice One" }, tier: "quick" },
+  };
+  const ESTIMATE = { estimateCredits: 60, capCredits: 150 };
+  const PLAN = { route: { scope: "delta", sentence: "Re-run the changed phases." } };
+  const CONNECTIONS = { connections: [{ id: "cn1", provider: "substack" }] };
+  const SAMPLE_DETAIL = { item: { id: "s2" }, versions: [] };
+  const webDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getVoice: async () => VOICE.detail,
+        estimateVoice: async () => ESTIMATE,
+        getVoiceUpdatePlan: async () => PLAN,
+        listVoiceConnections: async () => CONNECTIONS,
+        getVoiceSample: async () => SAMPLE_DETAIL,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns detail + estimate + updatePlan; the samples seams stay absent off-tab", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/voices/p1", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.voice.detail).toEqual(VOICE.detail);
+    expect(body.voice.estimate).toEqual(ESTIMATE);
+    expect(body.voice.updatePlan).toEqual(PLAN);
+    expect(body.voice.connections).toBeUndefined();
+    expect(body.voice.sampleDetail).toBeUndefined();
+  });
+
+  it("?tab=samples&sample=s2 pulls the connections + drawer seams; tab echoes verbatim", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/voices/p1?tab=samples&sample=s2", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.voice.connections).toEqual(CONNECTIONS);
+    expect(body.voice.sampleDetail).toEqual(SAMPLE_DETAIL);
+    expect(body.voice.tab).toBe("samples");
+  });
+
+  it("?tab=samples without ?sample — connections land, the drawer seam never runs", async () => {
+    const seen = vi.fn(async () => SAMPLE_DETAIL);
+    const res = await createWebApp(webDeps({ getVoiceSample: seen })).request(
+      "/bff/voices/p1?tab=samples",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.voice.connections).toEqual(CONNECTIONS);
+    expect(body.voice.sampleDetail).toBeUndefined();
+    expect(seen).not.toHaveBeenCalled();
+  });
+
+  it("a missed persona → 404 {error:not_found} — the document's own answer", async () => {
+    const res = await createWebApp(
+      webDeps({ getVoice: async () => { throw new ApiError(404, "x"); } }),
+    ).request("/bff/voices/nope", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("a degraded estimate/connection seam lands absent, not fabricated", async () => {
+    const res = await createWebApp(
+      webDeps({
+        estimateVoice: async () => { throw new ApiError(503, "x"); },
+        listVoiceConnections: async () => { throw new ApiError(503, "x"); },
+      }),
+    ).request("/bff/voices/p1?tab=samples", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.voice.estimate).toBeUndefined();
+    expect(body.voice.connections).toBeUndefined();
+    expect(body.voice.detail).toEqual(VOICE.detail);
+  });
+
+  it("an upstream 401 is NOT swallowed — the unauthenticated envelope answers", async () => {
+    const res = await createWebApp(
+      webDeps({ estimateVoice: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/voices/p1", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+});
+
+describe("GET /bff/p/:slug/voice/reseed — the §9.6 preview twin (SPA.13; REQ-BFF-11, REQ-DAT-6)", () => {
+  const PREVIEW = { current: "s1", proposed: "s2", diff: [] };
+  const webDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getVoiceReseedPreview: async () => PREVIEW,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns slug + projectId + preview — the back-link needs no second read", async () => {
+    const seen: string[] = [];
+    const res = await createWebApp(
+      webDeps({
+        getVoiceReseedPreview: async (_s: unknown, projectId: string) => {
+          seen.push(projectId);
+          return PREVIEW;
+        },
+      }),
+    ).request("/bff/p/the-politics-of-visibility/voice/reseed", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      voiceReseed: { slug: "the-politics-of-visibility", projectId: "proj_pv", preview: PREVIEW },
+    });
+    expect(seen).toEqual(["proj_pv"]); // slug→id through the memo — never the slug upstream
+  });
+
+  it("an unknown slug → 404 {error:not_found} — the document's own answer", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/p/nope/voice/reseed", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("a missed preview → the same 404 the document gives (SSR degrade parity)", async () => {
+    const res = await createWebApp(
+      webDeps({ getVoiceReseedPreview: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/p/the-politics-of-visibility/voice/reseed", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp({ ...webDeps({}), session: () => null }).request(
+      "/bff/p/the-politics-of-visibility/voice/reseed",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("POST /bff/import/presign — the REQ-BFF-16 mint (SPA.13)", () => {
+  const PRE = {
+    url: "https://storage.example.test/quarantine/w1/u1",
+    key: "quarantine/w1/u1",
+    maxBytes: 10_000_000,
+    requiredHeaders: { "content-type": "text/markdown" },
+  };
+  const webDeps = (over: Partial<DataSource>, omit = false): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        ...(omit ? {} : { presignImportUpload: async () => PRE }),
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns the signed-URL contract verbatim — the browser PUTs, the BFF never proxies", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/import/presign", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(PRE);
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("a web build without the seam → 503 {error:upload_unavailable} (the payload's own refusal)", async () => {
+    const res = await createWebApp(webDeps({}, true)).request("/bff/import/presign", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "upload_unavailable" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp({ ...webDeps({}), session: () => null }).request(
+      "/bff/import/presign",
+      { ...jsonPost, body: "{}" },
+    );
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("POST /voices/new — the create sheet's JSON dual-mode (SPA.13; REQ-BFF-1/2/16)", () => {
+  const voiceDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        createVoice: async () => ({ personaId: "p_new" }),
+        addVoiceSample: async () => ({}),
+        buildVoice: async () => ({ runId: "r1" }),
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("a JSON save creates the persona and answers {ok, redirect:'/v/p_new'}", async () => {
+    const create = vi.fn(async () => ({ personaId: "p_new" }));
+    const res = await createWebApp(voiceDeps({ createVoice: create })).request("/voices/new", {
+      ...jsonPost,
+      body: JSON.stringify({ name: "Voice Two", mode: "self", intent: "save" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/v/p_new" });
+    expect(res.headers.get("location")).toBeNull();
+    expect(create).toHaveBeenCalledWith(expect.anything(), { name: "Voice Two", mode: "self" });
+  });
+
+  it("quarantineKey — the presign leg's key reaches addVoiceSample; no bytes transit the BFF", async () => {
+    const add = vi.fn(async () => ({}));
+    const res = await createWebApp(voiceDeps({ addVoiceSample: add })).request("/voices/new", {
+      ...jsonPost,
+      body: JSON.stringify({ name: "Upload Voice", intent: "save", quarantineKey: "quarantine/w1/u1", sample_title: "Essay" }),
+    });
+    expect(res.status).toBe(200);
+    expect(add).toHaveBeenCalledWith(expect.anything(), "p_new", {
+      quarantineKey: "quarantine/w1/u1",
+      title: "Essay",
+    });
+  });
+
+  it("missing name → the JSON refusal carries the document's own copy + stable code", async () => {
+    const res = await createWebApp(voiceDeps({})).request("/voices/new", {
+      ...jsonPost,
+      body: JSON.stringify({ intent: "save" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "name_required", detail: "A name is required." });
+  });
+
+  it("a refused build redirects to ?build_failed=1 — the notice the document would flash", async () => {
+    const res = await createWebApp(
+      voiceDeps({ buildVoice: async () => { throw new ApiError(422, "x"); } }),
+    ).request("/voices/new", {
+      ...jsonPost,
+      body: JSON.stringify({ name: "V", intent: "build", sample_text: "words" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/v/p_new?build_failed=1" });
+  });
+
+  it("the form post keeps its 302 — the no-JS leg is untouched", async () => {
+    const res = await createWebApp(voiceDeps({})).request("/voices/new", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ name: "Voice Two", intent: "save" }).toString(),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/v/p_new");
+  });
+
+  it("no session: JSON callers get 401 JSON, form callers get the /login redirect", async () => {
+    const app = createWebApp(voiceDeps({}, () => null));
+    const json = await app.request("/voices/new", { ...jsonPost, body: JSON.stringify({ name: "x" }) });
+    expect(json.status).toBe(401);
+    expect(json.headers.get("location")).toBeNull();
+    const form = await app.request("/voices/new", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "name=x",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+  });
+});
+
+describe("POST /v/:persona/* — representative voices mutations, both modes (SPA.13)", () => {
+  const voiceDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        saveVoiceSeed: async () => ({}),
+        addVoiceSample: async () => ({}),
+        setVoiceSampleIncluded: async () => ({}),
+        confirmVoiceConnection: async () => ({}),
+        decideRunGate: async () => ({}),
+        deleteVoice: async () => ({}),
+        adoptProjectVoice: async () => ({}),
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("seed save: JSON → {ok, redirect:'…?saved=1'}; the registers CSV decodes verbatim", async () => {
+    const save = vi.fn(async () => ({}));
+    const res = await createWebApp(voiceDeps({ saveVoiceSeed: save })).request("/v/p1/seed", {
+      ...jsonPost,
+      body: JSON.stringify({ description: "revised seed", byline: "B", registers: "essay, review" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/v/p1?saved=1" });
+    expect(save).toHaveBeenCalledWith(expect.anything(), "p1", {
+      description: "revised seed",
+      byline: "B",
+      registers: ["essay", "review"],
+    });
+  });
+
+  it("add sample: JSON quarantineKey reaches the seam; form text posts the 302 floor", async () => {
+    const add = vi.fn(async () => ({}));
+    const app = createWebApp(voiceDeps({ addVoiceSample: add }));
+    const json = await app.request("/v/p1/samples", {
+      ...jsonPost,
+      body: JSON.stringify({ quarantineKey: "quarantine/w1/u1", title: "T" }),
+    });
+    expect(await json.json()).toEqual({ ok: true, redirect: "/v/p1?added=1" });
+    expect(add).toHaveBeenCalledWith(expect.anything(), "p1", { quarantineKey: "quarantine/w1/u1", title: "T" });
+    const form = await app.request("/v/p1/samples", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ text: "pasted words" }).toString(),
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/v/p1?added=1");
+    expect(add).toHaveBeenCalledWith(expect.anything(), "p1", { text: "pasted words" });
+  });
+
+  it("confirm: JSON arrays and a repeated-field form post fold to the same items list", async () => {
+    const confirm = vi.fn(async () => ({}));
+    const app = createWebApp(voiceDeps({ confirmVoiceConnection: confirm }));
+    const json = await app.request("/v/p1/connections/c1/confirm", {
+      ...jsonPost,
+      body: JSON.stringify({ known: ["e1", "e2"], include: "e1" }),
+    });
+    expect(await json.json()).toEqual({ ok: true, redirect: "/v/p1?tab=samples" });
+    expect(confirm).toHaveBeenCalledWith(expect.anything(), "p1", "c1", {
+      items: [
+        { externalId: "e1", include: true },
+        { externalId: "e2", include: false },
+      ],
+    });
+    const form = await app.request("/v/p1/connections/c1/confirm", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "known=e1&known=e2&include=e1&include=e2",
+    });
+    expect(form.status).toBe(302);
+    expect(confirm).toHaveBeenLastCalledWith(expect.anything(), "p1", "c1", {
+      items: [
+        { externalId: "e1", include: true },
+        { externalId: "e2", include: true },
+      ],
+    });
+  });
+
+  it("the gate decision requires runId — a stale page's POST without it is a no-op", async () => {
+    const decide = vi.fn(async () => ({}));
+    const app = createWebApp(voiceDeps({ decideRunGate: decide }));
+    await app.request("/v/p1/gates/g1", { ...jsonPost, body: JSON.stringify({ action: "approve" }) });
+    expect(decide).not.toHaveBeenCalled();
+    const res = await app.request("/v/p1/gates/g1", {
+      ...jsonPost,
+      body: JSON.stringify({ runId: "r9", action: "approve" }),
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/v/p1" });
+    expect(decide).toHaveBeenCalledWith(expect.anything(), "r9", "g1", { action: "approve" });
+  });
+
+  it("the typed delete: confirm='delete' removes; any other body lands back on the voice", async () => {
+    const del = vi.fn(async () => ({}));
+    const app = createWebApp(voiceDeps({ deleteVoice: del }));
+    const res = await app.request("/v/p1/delete", {
+      ...jsonPost,
+      body: JSON.stringify({ confirm: "delete" }),
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/voices" });
+    expect(del).toHaveBeenCalledWith(expect.anything(), "p1");
+    const back = await app.request("/v/p1/delete", { ...jsonPost, body: "{}" });
+    expect(await back.json()).toEqual({ ok: true, redirect: "/v/p1" });
+    expect(del).toHaveBeenCalledTimes(1);
+  });
+
+  it("the reseed adopt posts {reseed:true} through the slug-resolved row; unknown slug → 404", async () => {
+    const adopt = vi.fn(async () => ({}));
+    const app = createWebApp(voiceDeps({ adoptProjectVoice: adopt }));
+    const res = await app.request("/p/the-politics-of-visibility/voice/adopt", {
+      ...jsonPost,
+      body: JSON.stringify({ reseed: "true" }),
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+    expect(adopt).toHaveBeenCalledWith(expect.anything(), "proj_pv", { reseed: true });
+    const miss = await app.request("/p/nope/voice/adopt", { ...jsonPost, body: "{}" });
+    expect(miss.status).toBe(404);
+    expect(await miss.json()).toEqual({ error: "not_found" });
+  });
+});
