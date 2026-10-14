@@ -106,7 +106,7 @@ updatedAt:       2026-10-14T19:05:00Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| G1 | Open BL-row + open DEFERRALS census → per-row disposition (decompose / operator / defer / drop) — the artifact that lets `projectStatus` close when the round lands | S | open | |
+| G1 | Open BL-row + open DEFERRALS census → per-row disposition (decompose / operator / defer / drop) — the artifact that lets `projectStatus` close when the round lands | S | done | r5_g1_dispositions.md — 55 open BL + ~203 owed D rows all dispositioned; 17 zombies; 28+13 DROPs; stream-A = 3 tickets; REQ-G1-1..5 |
 
 ## O. Spec synthesis & review process
 
