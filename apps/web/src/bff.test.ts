@@ -433,3 +433,95 @@ describe("GET /bff/usage — the reference read twin (REQ-BFF-1/8/9, REQ-DAT-1/4
     expect(res.headers.get("location")).toBeNull();
   });
 });
+
+describe("GET /bff/p/:slug/usage — the level-2 project rollup twin (SPA.10; REQ-BFF-11, REQ-DAT-4/6)", () => {
+  const PROJECT_USAGE = {
+    projectId: "proj_pv",
+    projectName: "The Politics of Visibility",
+    totalCredits: 88,
+    runs: [
+      { runId: "run_1", at: "2026-10-02T00:00:00Z", workflow: "review", state: "finished", credits: 40, estimateCredits: 50, capCredits: 60 },
+      { runId: "run_2", at: "2026-10-03T00:00:00Z", workflow: "write", state: "finished", credits: 48, estimateCredits: 55, capCredits: 70 },
+    ],
+  };
+  const webDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getUsageProject: async () => PROJECT_USAGE,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns the typed rollup with the slug attached (the back-link needs no second read)", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/p/the-politics-of-visibility/usage", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ usageProject: { ...PROJECT_USAGE, slug: "the-politics-of-visibility" } });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("resolves slug→id through the seam — the project id, not the slug, reaches the api read", async () => {
+    const seen: string[] = [];
+    const res = await createWebApp(
+      webDeps({
+        getUsageProject: async (_s: unknown, projectId: string) => {
+          seen.push(projectId);
+          return PROJECT_USAGE;
+        },
+      }),
+    ).request("/bff/p/the-politics-of-visibility/usage", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(seen).toEqual(["proj_pv"]);
+  });
+
+  it("an unknown slug → 404 {error:not_found} — the document's own answer, preserved", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/p/nope/usage", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("a missed rollup read → the same 404 the document gives (SSR degrade parity)", async () => {
+    const res = await createWebApp(
+      webDeps({ getUsageProject: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/p/the-politics-of-visibility/usage", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("an upstream 401 is NOT swallowed — the unauthenticated envelope answers", async () => {
+    const res = await createWebApp(
+      webDeps({ getUsageProject: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/p/the-politics-of-visibility/usage", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp({ ...webDeps({}), session: () => null }).request(
+      "/bff/p/the-politics-of-visibility/usage",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("a cross-tenant slug never reaches the read — listProjects scopes resolution (REQ-DAT-6)", async () => {
+    const seen: string[] = [];
+    const res = await createWebApp(
+      webDeps({
+        getUsageProject: async (_s: unknown, projectId: string) => {
+          seen.push(projectId);
+          return PROJECT_USAGE;
+        },
+      }),
+    ).request("/bff/p/foreign-tenant-slug/usage", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(404);
+    expect(seen).toEqual([]); // the slug resolved to no row — the upstream read never ran
+  });
+});

@@ -96,7 +96,7 @@ afterEach(() => {
 });
 
 describe("router mount + settle markers (REQ-VFY-3)", () => {
-  it("a flipped route mounts the surface stub and stamps data-route + data-mounted", async () => {
+  it("a flipped route mounts its leaf and stamps data-route + data-mounted", async () => {
     await mountAt("/usage", bootFor({ "/usage": "spa" }));
     expect(document.documentElement.getAttribute("data-route")).toBe("/usage");
     expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
@@ -139,7 +139,9 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
 
   it("a boot-seeded principal satisfies the gate without a fetch — a seed, consumed once", async () => {
     const f = sessionFetch(200);
-    await mountAt("/usage", bootFor({ "/usage": "spa" }), f);
+    // Mount a leaf with no read of its own (inbox stays stubbed until SPA.11) — the assertion
+    // isolates the session seed: not even one fetch fires.
+    await mountAt("/app/inbox", bootFor({ "/app/inbox": "spa" }), f);
     expect(assignSpy).not.toHaveBeenCalled();
     expect(f).not.toHaveBeenCalled();
   });
