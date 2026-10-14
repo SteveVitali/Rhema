@@ -332,8 +332,14 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // this flag).
     // SPA.13 — `voices` joins on dev only (its 4 routes ride the one flag; prod waits for its
     // own SPAF flip ticket — REQ-SEQ-10 keeps the prod flip operator-controlled).
+    // SPA.14 — `onboarding` joins on dev only, and `ide-chrome` rides with it: the
+    // /app/new* legs gate on `onboarding` alone, the /p/:p/import* legs AND `ide-chrome`
+    // (REQ-SEQ-2). `ide-chrome` alone unlocks nothing else — every key in
+    // SPA_IDE_FRAMED_SURFACES (export/dossier/run-sheet/run-report/editor) is still dark,
+    // so the AND resolves true ONLY for the two import legs. Prod waits for its own
+    // SPAF flip tickets.
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

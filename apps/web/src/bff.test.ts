@@ -1197,3 +1197,404 @@ describe("POST /v/:persona/* — representative voices mutations, both modes (SP
     expect(await miss.json()).toEqual({ error: "not_found" });
   });
 });
+
+// ---- SPA.14 — the `onboarding` surface's twins + JSON mutation branches (REQ-BFF-1/2/3/4/9/11/
+// 15/16, REQ-DAT-1/4/6/9; the /app/new* legs gate on `onboarding` alone, the /p/:p/import* legs
+// AND `ide-chrome` — the BFF routes themselves are renderer-blind, so the tests pin payload +
+// envelope shape, never the flag consult). ----
+
+const CONVERSION = {
+  sourceFormat: "md",
+  markdown: "# Hello\n\nBody text.",
+  title: "Hello",
+  counts: { words: 3, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
+  warnings: [],
+  unconverted: [],
+  quality: "clean",
+  qualityNotes: [],
+};
+
+const onboardingDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+  ({
+    session,
+    dataSource: {
+      checkSession: async () => true,
+      listProjects: async () => ROWS,
+      listProtocolCards: async () => [{ id: "essay", name: "Essay" }],
+      listVoices: async () => [{ personaId: "p1", name: "Voice One" }],
+      ...over,
+    } as DataSource,
+  }) as WebDeps;
+
+describe("GET /bff/app/new — the new-project sheet twin (SPA.14; REQ-BFF-1/8/9)", () => {
+  it("returns the sheet's two reads verbatim", async () => {
+    const res = await createWebApp(onboardingDeps({})).request("/bff/app/new", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.newProject.protocols).toEqual([{ id: "essay", name: "Essay" }]);
+    expect(body.newProject.voices).toEqual([{ personaId: "p1", name: "Voice One" }]);
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("a degraded seam lands null — the leaf tells degraded from empty, never a fabricated list", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        listProtocolCards: async () => { throw new ApiError(503, "x"); },
+        listVoices: async () => { throw new ApiError(503, "x"); },
+      }),
+    ).request("/bff/app/new", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ newProject: { protocols: null, voices: null } });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp(onboardingDeps({}, () => null)).request("/bff/app/new", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("GET /bff/app/new/preview — the workspace poll twin (SPA.14; REQ-BFF-1/15)", () => {
+  it("missing qk answers the document's own redirect leg as {ok,redirect}", async () => {
+    const res = await createWebApp(onboardingDeps({})).request("/bff/app/new/preview", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app/new?entry=draft" });
+  });
+
+  it("pending carries the server-owned cadence (pollAfterSeconds)", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ previewWorkspaceImport: async () => ({ status: "pending", quarantineKey: "q1" }) }),
+    ).request("/bff/app/new/preview?entry=draft&qk=q1&src=draft.md", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.newProjectPreview.status).toBe("pending");
+    expect(body.newProjectPreview.quarantineKey).toBe("q1");
+    expect(body.newProjectPreview.pollAfterSeconds).toBe(5);
+    expect(body.newProjectPreview.sourceLabel).toBe("draft.md");
+  });
+
+  it("ready carries the §5.3 payload + the server-resolved title (typed → H1 → stem)", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        previewWorkspaceImport: async () => ({ status: "ready", preview: CONVERSION, quarantineKey: "q1" }),
+      }),
+    ).request("/bff/app/new/preview?entry=draft&qk=q1&src=draft.md", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.newProjectPreview.status).toBe("ready");
+    expect(body.newProjectPreview.resolvedTitle).toBe("Hello"); // the document's own H1 beats the stem
+    expect(body.newProjectPreview.convertedMarkdown).toBe(CONVERSION.markdown);
+    expect(body.newProjectPreview.countLine).toContain("3 words");
+  });
+
+  it("a failed read-back answers the redirect leg, never an error page", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ previewWorkspaceImport: async () => { throw new ApiError(500, "x"); } }),
+    ).request("/bff/app/new/preview?entry=draft&qk=q1", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app/new?entry=draft" });
+  });
+});
+
+describe("GET /bff/p/:slug/import — the import sheet twin (SPA.14; REQ-BFF-11, REQ-DAT-6)", () => {
+  it("returns project facts + the ide bag for the chrome publish", async () => {
+    const res = await createWebApp(onboardingDeps({})).request(
+      "/bff/p/the-politics-of-visibility/import",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.import.project.slug).toBe("the-politics-of-visibility");
+    expect(body.import.project.title).toBe("The Politics of Visibility");
+    expect(body.import.ide.projectId).toBe("proj_pv");
+    expect(body.import.ide.palette).toBeTruthy();
+    expect(JSON.parse(body.import.ide.palette).projectSlug).toBe("the-politics-of-visibility");
+  });
+
+  it("a missed slug is the document's own not_found", async () => {
+    const res = await createWebApp(onboardingDeps({})).request("/bff/p/nope/import", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+});
+
+describe("GET /bff/p/:slug/import/preview — the project poll twin (SPA.14; REQ-BFF-11/15)", () => {
+  it("missing qk answers the document's own ../import bounce as {ok,redirect}", async () => {
+    const res = await createWebApp(onboardingDeps({})).request(
+      "/bff/p/the-politics-of-visibility/import/preview",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/import" });
+  });
+
+  it("pending carries pending:true + the server-owned cadence", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ previewImport: async () => ({ status: "pending", quarantineKey: "q1" }) }),
+    ).request("/bff/p/the-politics-of-visibility/import/preview?qk=q1&src=paper.docx", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.importPreview.conversion.pending).toBe(true);
+    expect(body.importPreview.conversion.quarantineKey).toBe("q1");
+    expect(body.importPreview.conversion.pollAfterSeconds).toBe(5);
+    // the shell titles itself with the SOURCE label, verbatim from the document
+    expect(body.importPreview.project.title).toBe("paper.docx");
+  });
+
+  it("ready carries the conversion payload verbatim (toConversionData)", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        previewImport: async () => ({ status: "ready", preview: CONVERSION, quarantineKey: "q1" }),
+      }),
+    ).request("/bff/p/the-politics-of-visibility/import/preview?qk=q1&src=paper.docx", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.importPreview.conversion.projectSlug).toBe("the-politics-of-visibility");
+    expect(body.importPreview.conversion.convertedMarkdown).toBe(CONVERSION.markdown);
+    expect(body.importPreview.conversion.quarantineKey).toBe("q1");
+    expect(body.importPreview.conversion.sourceText).toBe("(the uploaded source — already converted)");
+  });
+});
+
+describe("POST /app/new — the sheet's JSON dual-mode (SPA.14; REQ-BFF-1/2/3/15/16)", () => {
+  it("scratch without a title → 400 {error:title_required}, never a silent redirect", async () => {
+    const res = await createWebApp(onboardingDeps({})).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "scratch" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "title_required", detail: "A title is required." });
+  });
+
+  it("scratch create answers {ok,redirect:'/p/x?created=scratch'}", async () => {
+    const create = vi.fn(async () => ({ slug: "fresh-project" }));
+    const res = await createWebApp(onboardingDeps({ createProject: create })).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "scratch", title: "Fresh" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/fresh-project?created=scratch" });
+    expect(create).toHaveBeenCalled();
+  });
+
+  it("an upload entry without bytes/paste/quarantineKey → 400 {error:source_required}", async () => {
+    const res = await createWebApp(onboardingDeps({})).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "source_required", detail: "Upload a file or paste the text." });
+  });
+
+  it("quarantineKey+fileName replays the presign→PUT leg — the BFF never proxies bytes", async () => {
+    const seen = vi.fn(async () => ({ status: "pending", quarantineKey: "q1" }));
+    const res = await createWebApp(onboardingDeps({ previewWorkspaceImport: seen })).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T", quarantineKey: "q1", fileName: "draft.md" }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen).toHaveBeenCalledWith(expect.anything(), { quarantineKey: "q1", fileName: "draft.md" });
+  });
+
+  it("pending answers {ok,pending:{pollAfterSeconds},redirect:<poll-url>} — server-owned cadence", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ previewWorkspaceImport: async () => ({ status: "pending", quarantineKey: "q1" }) }),
+    ).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T", quarantineKey: "q1", fileName: "draft.md" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.pending.pollAfterSeconds).toBe(5);
+    expect(body.redirect).toContain("/app/new/preview?");
+    expect(body.redirect).toContain("qk=q1");
+    expect(body.redirect).toContain("entry=draft");
+  });
+
+  it("ready answers the §5.3 inline payload — {ok,data:{form,preview}}", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        previewWorkspaceImport: async () => ({ status: "ready", preview: CONVERSION, quarantineKey: "q1" }),
+      }),
+    ).request("/app/new", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", quarantineKey: "q1", fileName: "draft.md" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.data.form.title).toBe("Hello"); // resolved: typed → H1 → stem
+    expect(body.data.preview.quarantineKey).toBe("q1");
+    expect(body.data.preview.convertedMarkdown).toBe(CONVERSION.markdown);
+  });
+
+  it("a form post keeps the SSR branch — a 302 + Location, never a JSON body", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ createProject: async () => ({ slug: "fresh-project" }) }),
+    ).request("/app/new", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "entry=scratch&title=Fresh",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/fresh-project?created=scratch");
+  });
+
+  it("no session → 401 JSON / redirect for the form post", async () => {
+    const app = createWebApp(onboardingDeps({}, () => null));
+    const json = await app.request("/app/new", { ...jsonPost, body: "{}" });
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const form = await app.request("/app/new", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "entry=scratch",
+    });
+    expect(form.status).toBe(302);
+  });
+});
+
+describe("POST /app/new/create — the preview's create JSON dual-mode (SPA.14)", () => {
+  it("conversion_pending 409 answers the pending contract, never an error", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        createProject: async () => { throw new ApiError(409, "/x", "pending", "conversion_pending"); },
+      }),
+    ).request("/app/new/create", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T", qk: "q1" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.pending.pollAfterSeconds).toBe(5);
+    expect(body.redirect).toContain("/app/new/preview?");
+  });
+
+  it("success answers the identical flash-parameterized redirect — ?created + ?hc verbatim", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ createProject: async () => ({ slug: "fresh-project" }) }),
+    ).request("/app/new/create", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T", qk: "q1", heldToken: "hold_abc" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.redirect).toBe("/p/fresh-project?created=draft&hc=hold_abc");
+  });
+
+  it("fix_now on a draft lands on the version route — the SSR's own target", async () => {
+    const res = await createWebApp(
+      onboardingDeps({ createProject: async () => ({ slug: "fresh-project", draftN: 3 }) }),
+    ).request("/app/new/create", {
+      ...jsonPost,
+      body: JSON.stringify({ entry: "draft", title: "T", qk: "q1", action: "fix_now" }),
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/fresh-project/v/3?created=draft" });
+  });
+});
+
+describe("POST /p/:slug/import/preview + /import/create — the JSON dual-modes (SPA.14)", () => {
+  it("preview: quarantineKey+fileName replays the presign leg; pending → {ok,pending,redirect}", async () => {
+    const seen = vi.fn(async () => ({ status: "pending", quarantineKey: "q1" }));
+    const res = await createWebApp(onboardingDeps({ previewImport: seen })).request(
+      "/p/the-politics-of-visibility/import/preview",
+      { ...jsonPost, body: JSON.stringify({ quarantineKey: "q1", fileName: "paper.docx" }) },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.pending.pollAfterSeconds).toBe(5);
+    expect(body.redirect).toBe("/p/the-politics-of-visibility/import/preview?qk=q1&src=paper.docx");
+    expect(seen).toHaveBeenCalledWith(expect.anything(), {
+      projectSlug: "the-politics-of-visibility",
+      text: "",
+      fileName: "paper.docx",
+      quarantineKey: "q1",
+    });
+  });
+
+  it("preview: ready answers {ok,data:{conversion}} — the document's POST-time preview", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        previewImport: async () => ({ status: "ready", preview: CONVERSION, quarantineKey: "q1" }),
+      }),
+    ).request(
+      "/p/the-politics-of-visibility/import/preview",
+      { ...jsonPost, body: JSON.stringify({ quarantineKey: "q1", fileName: "paper.docx" }) },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.data.conversion.projectSlug).toBe("the-politics-of-visibility");
+    expect(body.data.conversion.convertedMarkdown).toBe(CONVERSION.markdown);
+  });
+
+  it("create: conversion_pending 409 → {ok,pending,redirect}; success → {ok,redirect:'/p/:slug'}", async () => {
+    const pending = await createWebApp(
+      onboardingDeps({
+        createImport: async () => { throw new ApiError(409, "/x", "pending", "conversion_pending"); },
+      }),
+    ).request("/p/the-politics-of-visibility/import/create", {
+      ...jsonPost,
+      body: JSON.stringify({ qk: "q1", fileName: "paper.docx" }),
+    });
+    expect(pending.status).toBe(200);
+    const pb = await pending.json();
+    expect(pb.ok).toBe(true);
+    expect(pb.pending.pollAfterSeconds).toBe(5);
+    expect(pb.redirect).toBe("/p/the-politics-of-visibility/import/preview?qk=q1&src=paper.docx");
+
+    const done = await createWebApp(
+      onboardingDeps({ createImport: async () => ({ draftId: "d1" }) }),
+    ).request("/p/the-politics-of-visibility/import/create", {
+      ...jsonPost,
+      body: JSON.stringify({ qk: "q1" }),
+    });
+    expect(await done.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+  });
+
+  it("a refused create passes the api's error through verbatim at its status", async () => {
+    const res = await createWebApp(
+      onboardingDeps({
+        createImport: async () => { throw new ApiError(422, "/x", "refused", "invalid_quarantine_key", "expired"); },
+      }),
+    ).request("/p/the-politics-of-visibility/import/create", {
+      ...jsonPost,
+      body: JSON.stringify({ qk: "q1" }),
+    });
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toBe("invalid_quarantine_key");
+    expect(body.detail).toBe("expired");
+  });
+
+  it("no session → 401 JSON on both mutation legs", async () => {
+    const app = createWebApp(onboardingDeps({}, () => null));
+    for (const path of ["/p/the-politics-of-visibility/import/preview", "/p/the-politics-of-visibility/import/create"]) {
+      const res = await app.request(path, { ...jsonPost, body: "{}" });
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "unauthenticated" });
+    }
+  });
+});

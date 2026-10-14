@@ -37,7 +37,6 @@ import {
   type ChatDeskLabels,
   type VersionRailLabels,
   type CompareLabels,
-  type FilesPaneLabels,
   type MarginLabels,
   type FindingsDeskLabels,
   type WhatChangedLabels,
@@ -127,6 +126,9 @@ import {
 } from "./gate-card.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
+// SPA.14 — the FilesPane label bag moved to its own module (gate-card precedent): the SSR pages
+// AND the onboarding SPA surface render the same composition.
+import { filesLabels } from "./files-labels.js";
 // SPA.12 — the Approvals-settings section moved to its own module (gate-card precedent): the SSR
 // pages AND the settings SPA surface render the same composition.
 import { ApprovalSettingsSection } from "./approval-settings.js";
@@ -2401,8 +2403,6 @@ export function RevisionPage(): ReactNode {
 
 const VR = COPY.versions;
 const CP = COPY.compare;
-const FP = COPY.files;
-
 const railLabels: VersionRailLabels = {
   outline: VR.outline,
   originLabel: (origin) => VR.originLabel[origin] ?? origin,
@@ -2444,28 +2444,6 @@ const compareLabels: CompareLabels = {
   commentPlaceholder: V.commentPlaceholder,
   commentSubmit: V.commentSubmit,
   moves: whatChangedLabels,
-};
-
-const filesLabels: FilesPaneLabels = {
-  sectionLabel: (key) => FP.sectionLabel[key] ?? key,
-  provenanceLabel: (p) =>
-    p.actor === "you"
-      ? FP.provenanceYou
-      : p.runId
-        ? fmt(FP.provenanceRunFmt, {
-            seat: p.seat ?? FP.provenanceSystem,
-            workflow: p.workflow ?? "",
-            phase: p.phase ?? "",
-          })
-        : FP.provenanceSystem,
-  lockTitle: (lock) => FP.lockTitle[lock] ?? lock,
-  lockIcon: (lock) => FP.lockIcon[lock] ?? "🔒",
-  freshnessLabel: (n, stale) => fmt(stale ? FP.freshnessStaleFmt : FP.freshnessFmt, { n }),
-  sealedFmt: (n) => fmt(FP.sealedFmt, { n }),
-  advancedDisclosure: FP.advanced,
-  empty: FP.empty,
-  wordsFmt: (n) => fmt(FP.wordsFmt, { n }),
-  readOnlyNote: FP.readOnlyNote,
 };
 
 /** Auth-gated: the §5.8 compare page (`/p/:slug/v/:n/diff/:m`) — three read-only layouts over the ONE

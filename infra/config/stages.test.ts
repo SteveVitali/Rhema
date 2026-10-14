@@ -116,11 +116,13 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
 describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", () => {
   it("dev + prod carry the flipped surfaces; preview ships [] (REQ-SEQ-5/10)", () => {
     // SPA.10 flipped `usage` on dev; SPA.11 added `inbox` on dev; SPA.12 added `settings` on dev;
-    // SPA.13 added `voices` on dev; SPAF.1 was `usage`'s prod flip, SPAF.2 `inbox`'s, SPAF.3
-    // `settings`'s, SPAF.4 `voices`'s — each a one-line operator-merged stage-fact commit, in
-    // flip order. Prod now matches dev on all four surfaces.
+    // SPA.13 added `voices` on dev; SPA.14 added `onboarding` + `ide-chrome` on dev (the
+    // /p/:p/import* legs' REQ-SEQ-2 AND-gate — `ide-chrome` alone unlocks nothing since no
+    // SPA_IDE_FRAMED_SURFACES key is flipped); SPAF.1 was `usage`'s prod flip, SPAF.2 `inbox`'s,
+    // SPAF.3 `settings`'s, SPAF.4 `voices`'s — each a one-line operator-merged stage-fact
+    // commit, in flip order. Prod stays on the four SPAF-flipped surfaces.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
-    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices"]);
+    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome"]);
     expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices"]); // SPAF.1…SPAF.4 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
