@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { createTestDb } from "../testing/pglite.js";
 import {
+  applySuggestionToMarkdown,
+  resolveAnchor,
+  splitMarkdownBlocks,
+} from "@rhema/findings-core";
+import {
   seedShowcaseProject,
   seedWritableDossier,
   seedDeliveredRunReport,
+  seedOpenApprovalGate,
   SHOWCASE_FIXTURE_CLAIMS,
+  SHOWCASE_FIXTURE_FINDINGS,
+  SHOWCASE_FIXTURE_V2_MD,
   type ShowcaseSeedDeps,
 } from "./showcase.js";
 import { SHOWCASE_SLUG, SHOWCASE_TITLE, findingEvidenceSchema } from "@rhema/contracts";
@@ -179,7 +187,9 @@ describe("the Showcase dossier seed (§15.4)", () => {
     // suggestion-bearing anchor (the T13F Apply leg's arm) + the triage ledger rows.
     const findings = (
       await db.query(
-        `select count(*)::int n, count(*) filter (where suggestion is not null)::int sug
+        `select count(*)::int n,
+                count(*) filter (where suggestion is not null and suggestion ? 'replacement'
+                                  and anchor is not null)::int sug
            from findings where correspondence_id = $1`,
         [w.reviewCorrId],
       )
@@ -312,6 +322,76 @@ describe("the Showcase dossier seed (§15.4)", () => {
       ])
     ).rows[0] as { n: number };
     expect(sxN.n).toBe(1);
+    await db.close();
+  });
+
+  // FIX.1 (REQ-FIX-T13F) — the Apply substrate pin: the fixture's suggestion-bearing finding
+  // carries a canonical `{replacement}` + an anchor that resolves EXACT against the V2 working
+  // head (the api splices `suggestion.replacement` at the resolved span verbatim — a drift between
+  // the quote/offsets and the V2 text strands T13F's Apply leg on `anchor_lost`).
+  it("the Apply arm's anchor resolves exact against the V2 working head and the splice lands", () => {
+    const f = SHOWCASE_FIXTURE_FINDINGS[0] as {
+      readonly anchor?: Parameters<typeof resolveAnchor>[0];
+      readonly suggestion?: { readonly replacement?: string };
+    };
+    const blocks = splitMarkdownBlocks(SHOWCASE_FIXTURE_V2_MD);
+    const res = resolveAnchor(f.anchor, blocks);
+    expect(res.method).toBe("exact");
+    expect(res.blockId).toBe("b7");
+    const splice = applySuggestionToMarkdown(
+      SHOWCASE_FIXTURE_V2_MD,
+      f.anchor,
+      f.suggestion?.replacement ?? "",
+    );
+    expect(splice.ok).toBe(true);
+    if (splice.ok) expect(splice.markdown).toContain(f.suggestion?.replacement ?? "");
+  });
+
+  // FIX.1 (REQ-FIX-T15) — the seeded open `approve_triage` gate: `waiting_gate` run + unresolved,
+  // unheld, blocking gate row — the four predicates the Inbox's group-1a query AND the gate list's
+  // `(blocking or waiting_gate)` read both key on. Idempotent on an already-parked run.
+  it("the open-gate seed parks the review run at an unresolved blocking approve_triage gate", async () => {
+    const db = await createTestDb();
+    const { workspaceId, ownerId } = await ownerAndWorkspace(db);
+    const w = await seedWritableDossier(db, {
+      ...depsFor(workspaceId, ownerId),
+      slugBase: "jrn-gate",
+      title: "JRN gated dossier",
+      seedLabel: "journey-gate-seed",
+    });
+    const g = await seedOpenApprovalGate(db, depsFor(workspaceId, ownerId), { runId: w.reviewRunId });
+    const run = (
+      await db.query(`select state from runs where id = $1`, [w.reviewRunId])
+    ).rows[0] as { state: string };
+    expect(run.state).toBe("waiting_gate");
+    const gate = (
+      await db.query(
+        `select kind, blocking, held, resolved_at, on_expiry, deadline_at from gates where id = $1`,
+        [g.gateId],
+      )
+    ).rows[0] as {
+      kind: string;
+      blocking: boolean;
+      held: boolean;
+      resolved_at: string | null;
+      on_expiry: string;
+      deadline_at: string | null;
+    };
+    expect(gate).toEqual({
+      kind: "approve_triage",
+      blocking: true,
+      held: false,
+      resolved_at: null,
+      on_expiry: "wait",
+      deadline_at: null,
+    });
+    // idempotent — a second call returns the same gate, writes no second row.
+    const g2 = await seedOpenApprovalGate(db, depsFor(workspaceId, ownerId), { runId: w.reviewRunId });
+    expect(g2).toEqual(g);
+    const n = (
+      await db.query(`select count(*)::int n from gates where run_id = $1`, [w.reviewRunId])
+    ).rows[0] as { n: number };
+    expect(n.n).toBe(1);
     await db.close();
   });
 });

@@ -1208,8 +1208,7 @@ const R4: StepFn = async (ctx) => {
   const phone = await ctx.browser.newContext({
     baseURL: ctx.webBaseUrl,
     storageState: await context.storageState(),
-    userAgent:
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    userAgent: IPHONE_USER_AGENT,
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
@@ -1575,6 +1574,13 @@ async function rectsOverlap(a: { x: number; y: number; w: number; h: number } | 
 //    a flip touches (`--steps P1` still selects the whole family by id-prefix). The probes are the
 //    composite's verbatim; shared setup/assert helpers are hoisted.
 const MOBILE_HEADERS = { "sec-ch-ua-mobile": "?1" };
+/** The one mobile UA the phone-capability legs ride (FIX.1 / REQ-FIX-P1D): `sec-ch-ua-mobile`
+ *  injected through `setExtraHTTPHeaders` LOSES to Chromium's own desktop UA-CH on the wire —
+ *  proven live 2026-10-15 (`data-device="desktop"` under `?1`). A real mobile `userAgent` makes
+ *  Chromium emit the hint natively AND satisfies `isPhoneRequest`'s `/Mobi|iPhone|Android/i`
+ *  fallback, so `data-device="phone"` is the leg's own classification seam. */
+const IPHONE_USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 const PHONE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 
@@ -1958,32 +1964,77 @@ const P1_FIGURES: StepFn = async (ctx) => {
  *  construction (manifest hooks, never renderer internals). `expected:"red"` until its first
  *  preview leg (the Resend secret blocker — D-SPA.21-1). */
 const P1_DOSSIER: StepFn = async (ctx) => {
-    const { context, page } = await ctx.returningUser("a");
-    await context.setExtraHTTPHeaders({ ...MOBILE_HEADERS });
-    await page.setViewportSize(PHONE_VIEWPORT);
-
-    // The workspace Showcase resolves to its dossier (or the /showcase dossier surface — both
-    // carry the dossier's Page contract).
-    await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
-    if (!/review\/|\/showcase$/.test(new URL(page.url()).pathname)) {
-      const link = page.locator('a[href*="/review/"]').first();
-      const href = await link.getAttribute("href").catch(() => null);
-      if (!href) throw new Error(`phone /showcase rendered no dossier link (${page.url()})`);
-      await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
+    // FIX.1 (REQ-FIX-P1D) — a REAL mobile context: `sec-ch-ua-mobile` set through
+    // `extraHTTPHeaders` loses to Chromium's own desktop UA-CH on the wire (the 2026-10-15 live
+    // read: `data-renderer="spa"` + `data-device="desktop"` + 1 bulk-control element — a harness
+    // defect, not a product defect). A real mobile `userAgent` on the context makes Chromium emit
+    // the hint natively (the 2026-10-15 control arm: Android UA + hint → `data-device="phone"`,
+    // zero bulk controls); `isPhoneRequest`'s UA fallback classifies it identically.
+    const { context } = await ctx.returningUser("a");
+    const phone = await ctx.browser.newContext({
+      baseURL: ctx.webBaseUrl,
+      storageState: await context.storageState(),
+      userAgent: IPHONE_USER_AGENT,
+      viewport: PHONE_VIEWPORT,
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      const page = await phone.newPage();
+      // The workspace Showcase resolves to its dossier (or the /showcase dossier surface — both
+      // carry the dossier's Page contract).
+      await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+      if (!/review\/|\/showcase$/.test(new URL(page.url()).pathname)) {
+        const link = page.locator('a[href*="/review/"]').first();
+        const href = await link.getAttribute("href").catch(() => null);
+        if (!href) throw new Error(`phone /showcase rendered no dossier link (${page.url()})`);
+        await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
+      }
+      // The leg's own classification seam BEFORE the capability asserts. A phone-classified
+      // Page-family GET serves forced-SSR — `data-renderer="ssr"` + `data-ssr-cause="phone"`
+      // (the SSR document carries NO `data-device`; that attr is the SPA shell's vocabulary). A
+      // `data-device="desktop"` SPA document here is the 2026-10-15 harness failure verbatim;
+      // `data-device="phone"` on a SPA shell would be the product's forced-SSR verdict not firing.
+      const html = page.locator("html");
+      const [renderer, ssrCause, device] = await Promise.all([
+        html.getAttribute("data-renderer"),
+        html.getAttribute("data-ssr-cause"),
+        html.getAttribute("data-device"),
+      ]);
+      const phoneClassified = ssrCause === "phone" || device === "phone";
+      if (!phoneClassified) {
+        throw new Error(
+          `the dossier did not classify the real-mobile context as phone ` +
+            `(data-renderer=${JSON.stringify(renderer)} data-ssr-cause=${JSON.stringify(ssrCause)} ` +
+            `data-device=${JSON.stringify(device)} @ ${new URL(page.url()).pathname}) — ` +
+            `a "desktop" read is the harness defect FIX.1 retires; the §10.1 sweep would read the desktop arm`,
+        );
+      }
+      if (renderer === "spa") {
+        throw new Error(
+          `the phone-classified dossier served data-renderer="spa" — the REQ-ED-12 forced-SSR ` +
+            `verdict did not fire (a product defect, not a harness miss)`,
+        );
+      }
+      await assertNoOverflow(page, `dossier @390×844 (${new URL(page.url()).pathname})`);
+      if (
+        (await page.locator("[data-letter-view]").count()) === 0 ||
+        (await page.locator("[data-finding]").count()) === 0
+      ) {
+        throw new Error(`phone dossier rendered neither the letter nor the findings (${page.url()})`);
+      }
+      // §10.1 — the phone dossier never mounts the desk affordances: the bulk controls AND the
+      // per-finding Apply verb are desktop-capability-only (the ratified Q-1 extension).
+      for (const sel of ["[data-bulk-controls]", "[data-apply]"]) {
+        if ((await page.locator(sel).count()) > 0) {
+          throw new Error(`the phone dossier mounts the affordance §10.1 withholds (${sel})`);
+        }
+      }
+      await assertAxeClean(page, "phone dossier");
+      await page.screenshot({ path: join(ctx.outDir, "p1-dossier-390.png"), fullPage: true });
+    } finally {
+      await phone.close();
     }
-    await assertNoOverflow(page, `dossier @390×844 (${new URL(page.url()).pathname})`);
-    if (
-      (await page.locator("[data-letter-view]").count()) === 0 ||
-      (await page.locator("[data-finding]").count()) === 0
-    ) {
-      throw new Error(`phone dossier rendered neither the letter nor the findings (${page.url()})`);
-    }
-    // §10.1 — the phone dossier never mounts the bulk affordances (they are desk-pane-only).
-    if ((await page.locator("[data-bulk-controls]").count()) > 0) {
-      throw new Error("the phone dossier mounts the bulk affordances §10.1 withholds");
-    }
-    await assertAxeClean(page, "phone dossier");
-    await page.screenshot({ path: join(ctx.outDir, "p1-dossier-390.png"), fullPage: true });
 };
 
 /** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
@@ -2536,6 +2587,16 @@ const T17: StepFn = async (ctx) => {
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("t17"), FREE_FIXTURE);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
   await page.waitForSelector("[data-page-view]", { timeout: 20_000 });
+  // REQ-FIX-T17 (ratified Q-T17, leg-side arm first): the mount attribute lands before the PM
+  // view paints its first block — clicking the source toggle against an empty view races the
+  // hydration commit. Await the canonical fixture text INSIDE the view before interacting.
+  await page.waitForFunction(
+    () =>
+      document.querySelector("[data-page-view]")?.textContent?.includes("The committee met on Tuesday") ===
+      true,
+    null,
+    { timeout: 20_000 },
+  );
   const renderer = await page.evaluate(
     () => document.documentElement.getAttribute("data-renderer"),
   );

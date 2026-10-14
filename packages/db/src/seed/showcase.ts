@@ -224,7 +224,21 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     // HOT.1 — canonical evidence shape (verdict + urls); `accessed` is stamped at insert with the
     // seed's `now`, the same stamp the claim rows' `accessed_at` gets.
     evidence: { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] },
-    suggestion: { action: "replace", text: "Carry the correction in the open: name the figure, name the real count, keep the lesson." },
+    // FIX.1 (REQ-FIX-T13F) — the canonical Apply substrate the api's route consumes verbatim:
+    // `suggestion.replacement` is the literal text spliced into the working head, and `anchor`
+    // resolves against the V2 head's block map (`b7` — the correction paragraph;
+    // `splitMarkdownBlocks` pins the offsets — the fixture test resolves it end-to-end).
+    suggestion: {
+      replacement:
+        "the recorded figure is about 560,000 households — the 3.1 million figure was a secondary-source error",
+    },
+    anchor: {
+      blockId: "b7",
+      quote: "the recorded figure is about 560,000 households",
+      startOffset: 124,
+      endOffset: 171,
+      confidence: 1,
+    },
     rubricDims: ["evidence_accuracy", "intellectual_honesty"],
   },
   {
@@ -400,8 +414,12 @@ async function seedDossierProject(
     };
   }
 
-  // REQ-POS-3 — validate the fixture before any row lands.
-  assertShowcaseFixture({ claims: SHOWCASE_FIXTURE_CLAIMS }, "SHOWCASE_FIXTURE");
+  // REQ-POS-3 + REQ-FIX-T13F — validate the fixture before any row lands (the contradicted
+  // tier-1 claim AND the Apply substrate: a {replacement} suggestion + schema-valid anchor).
+  assertShowcaseFixture(
+    { claims: SHOWCASE_FIXTURE_CLAIMS, findings: SHOWCASE_FIXTURE_FINDINGS },
+    "SHOWCASE_FIXTURE",
+  );
 
   const now = deps.clock?.now() ?? new Date();
   const projectId = deps.ids();
@@ -548,8 +566,9 @@ async function seedDossierProject(
     if (i === 0) firstFindingId = findingId;
     await db.query(
       `insert into findings (id, correspondence_id, draft_id, ordinal, kind, severity, origin,
-                             reconciliation, title, body, evidence, suggestion, rubric_dims, letter_section)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+                             reconciliation, title, body, evidence, suggestion, rubric_dims,
+                             letter_section, anchor)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [
         findingId, corrId, v1Id, i, f.kind, f.severity, f.origin,
         "reconciliation" in f ? f.reconciliation : null,
@@ -562,6 +581,7 @@ async function seedDossierProject(
           : null,
         "suggestion" in f ? JSON.stringify(f.suggestion) : null,
         [...f.rubricDims], f.letterSection,
+        "anchor" in f ? JSON.stringify(f.anchor) : null,
       ],
     );
     // the triage ledger: blocking/major findings open obligations (the two the response resolved are
@@ -723,4 +743,45 @@ export async function seedDeliveredRunReport(
     );
   }
   return res;
+}
+
+// ---- FIX.1 — the open-gate fixture (T15's `?gate=` deep-link leg, REQ-FIX-T15) -----------------
+
+/**
+ * Park a seeded review run at an unresolved `approve_triage` gate so the Inbox's group-1a query
+ * (`g.resolved_at is null and g.held = false and r.state = 'waiting_gate'`, owner-scoped) emits the
+ * row whose `/p/<slug>/review/<runId>?gate=<id>` deep link mounts `data-focused-gate`. The run keeps
+ * its review correspondence — the deep link's dossier read resolves — and the approve_triage card
+ * falls back to the project's latest review correspondence for its triage rows.
+ * Idempotent: an already-parked unresolved gate returns as-is; a resolved/none seeds a fresh one.
+ */
+export async function seedOpenApprovalGate(
+  db: MigrationDb,
+  deps: Pick<ShowcaseSeedDeps, "ids" | "clock">,
+  args: { runId: string; kind?: string },
+): Promise<{ gateId: string }> {
+  const kind = args.kind ?? "approve_triage";
+  const existing = (
+    await db.query(
+      `select g.id from gates g join runs r on r.id = g.run_id
+        where g.run_id = $1 and g.resolved_at is null and g.held = false and r.state = 'waiting_gate'
+        order by g.opened_at limit 1`,
+      [args.runId],
+    )
+  ).rows[0] as { id: string } | undefined;
+  if (existing) return { gateId: existing.id };
+  const now = deps.clock?.now() ?? new Date();
+  // The park half — the run's state IS the gate's visibility predicate (the row only lists while
+  // the run waits on it).
+  await db.query(`update runs set state = 'waiting_gate', state_since = $2 where id = $1`, [
+    args.runId,
+    now.toISOString(),
+  ]);
+  const gateId = deps.ids();
+  await db.query(
+    `insert into gates (id, run_id, kind, opened_at, deadline_at, blocking, on_expiry, held)
+     values ($1,$2,$3,$4,null,true,'wait',false)`,
+    [gateId, args.runId, kind, now.toISOString()],
+  );
+  return { gateId };
 }
