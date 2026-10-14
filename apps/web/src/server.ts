@@ -63,6 +63,8 @@ import {
   type WorkflowKey,
   figureIdFromRef,
   STRIPE_HOSTED_ORIGINS,
+  GOOGLE_OAUTH_ORIGINS,
+  isGoogleOAuthRedirect,
   isStripeHostedRedirect,
   isLaunchedWorkflow,
 } from "@rhema/contracts";
@@ -186,6 +188,19 @@ function loginErrorFor(reason: string | undefined): string {
 
 const defaultBeginAuth = async (method: string): Promise<AuthOutcome> =>
   method === "google" ? { redirect: "/auth/google/start" } : { sent: true };
+
+/**
+ * MAINT.5 — the OAuth redirect target a `beginAuth` outcome may hand the browser. Relative paths are
+ * same-origin (the offline stub's `/auth/google/start`); an absolute URL must be a Google OAuth hosted
+ * origin — the CSP `form-action` allowlist's other half, mirroring `stripeRedirectTarget`. A refused
+ * target renders `auth_unavailable`, never a followed URL we didn't vet.
+ */
+function oauthRedirectTarget(url: string, log: (msg: string) => void): string | null {
+  if (!/^https?:\/\//.test(url)) return url;
+  if (isGoogleOAuthRedirect(url)) return url;
+  log(`[web] auth: refusing non-Google OAuth redirect target ${url.slice(0, 80)}`);
+  return null;
+}
 
 /**
  * BILL.3 (REQ-BILL-16) — map a billing POST failure's stable api code to truthful copy. The generic
@@ -332,7 +347,10 @@ export function createWebApp(deps: WebDeps): Hono {
     // credits POST 302s to buy.stripe.com; Checkout/Portal POSTs 302 to checkout./billing.stripe.com).
     // The allowlist is the contracts' STRIPE_HOSTED_ORIGINS — the same list the redirect validator
     // enforces, so CSP can never admit a host we would not redirect to.
-    `form-action 'self' ${STRIPE_HOSTED_ORIGINS.join(" ")}`;
+    // MAINT.5: same defect class for OAuth — POST /login 302s to accounts.google.com, and Chromium
+    // applies `form-action` to that redirect target; GOOGLE_OAUTH_ORIGINS is likewise shared with the
+    // redirect-target validator below.
+    `form-action 'self' ${STRIPE_HOSTED_ORIGINS.join(" ")} ${GOOGLE_OAUTH_ORIGINS.join(" ")}`;
   app.use("*", async (c, next) => {
     await next();
     const res = c.res;
@@ -1683,7 +1701,15 @@ export function createWebApp(deps: WebDeps): Hono {
       );
     }
     if (outcome.redirect) {
-      return c.redirect(outcome.redirect);
+      const target = oauthRedirectTarget(outcome.redirect, (m) => console.error(m));
+      if (!target) {
+        return renderSignup(
+          c,
+          { error: signupErrorFor("auth_unavailable", signupOpen), code, email, entry, src, held },
+          400,
+        );
+      }
+      return c.redirect(target);
     }
     return renderSignup(c, { sent: true, email, entry, src, held }, 200);
   });
@@ -1803,7 +1829,13 @@ export function createWebApp(deps: WebDeps): Hono {
         outcome.error === "rate_limited" ? 429 : 400,
       );
     }
-    if (outcome.redirect) return c.redirect(outcome.redirect);
+    if (outcome.redirect) {
+      const target = oauthRedirectTarget(outcome.redirect, (m) => console.error(m));
+      if (!target) {
+        return renderLogin({ error: COPY.login.errorSignupUnavailable, code, email }, 400);
+      }
+      return c.redirect(target);
+    }
     return renderLogin({ sent: true, email }, 200);
   });
 

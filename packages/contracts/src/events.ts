@@ -133,7 +133,13 @@ export const RUN_EVENTS = {
     density: "verbose",
     payload: z.object({
       query: boundedText,
-      resultCount: z.number().int(),
+      // `null` = the search ran but its result-set size was never observed in the mapped stream.
+      // The proxy-injected SERVER `web_search` is the only search path (P0.15i dropped the client
+      // tool), and its results arrive inline as `web_search_tool_result` blocks — never as a
+      // `tool_result` the mapper can count (RES.3). Fabricating `0` there made Leg-1a
+      // (`01M48VNKY6F263TCQRVBJ8JRQA`) read as "searches returned nothing" when billing shows 17
+      // executed + billed; a REAL empty result set still reports `0`.
+      resultCount: z.number().int().nullable(),
       agentLabel: boundedText,
     }),
   },

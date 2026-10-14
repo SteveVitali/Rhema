@@ -247,6 +247,61 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 94 | `94_MAINT.3__funded-window-repairs.md` | maint | funded-window defect repairs (D-STB.5b-4/-5, entitlement interception, N4/N9 substrate) — $0 |
 | 95 | `95_MAINT.4__oauth-signin-throttle.md` | maint | better-auth's default `/sign-in/*` limiter keys a global shared bucket under ADR-040 → "Continue with Google" 429s; disable + app-channel throttle — $0 |
 | 96 | `96_RES.3__leg1a-zero-coverage-diagnosis.md` | maint | Leg-1a zero-coverage diagnosis (read-only prod reads; fix if contained) — $0 |
+| 97 | `97_MAINT.5__oauth-form-action-csp.md` | maint | CSP `form-action` blocks the POST /login → accounts.google.com 302 (Chromium checks redirect targets) — admit `GOOGLE_OAUTH_ORIGINS` + validate target — $0 |
+
+### Round 4 — frontend SPA migration (spec: `docs/frontend-spa-spec.md`, ratified 2026-10-08)
+
+| 98 | `98_SPA.1__vite-toolchain-adr106.md` | R4 foundations | ADR-106 + Vite toolchain scoped to src/spa→public/spa, pins, tsconfig.spa, bundle-budget gate, licenses |
+| 99 | `99_SPA.2__flag-plumbing.md` | R4 foundations | SPA_SURFACES parse → WebDeps → deps.spa consult (fixed order + overrides + ide-chrome AND-gate) → StageConfig/Pulumi wiring |
+| 100 | `100_SPA.3__shell-document-markers.md` | R4 foundations | SPA shell document (head contract + data-spa-boot + manifest tags) + dual-renderer data-renderer/data-route/data-mounted markers + catch-all split |
+| 101 | `101_SPA.4__spa-skeleton.md` | R4 foundations | SPA skeleton: router tree (all routes day one), beforeLoad auth gate, bffFetch, GET /session + boot, SsrHandoff, head manager, settle markers |
+| 102 | `102_SPA.5__bff-conventions.md` | R4 foundations | BFF machinery: /bff/* twins, wantsJson envelope {ok,redirect,flash,data,pending,url}, {url} validators, slug memo, telemetry, typed-seam promotion |
+| 103 | `103_SPA.6__journey-harness.md` | R4 foundations | Journey harness: --expect-renderer/--surface, SURFACE_GATES, settle helpers, renderer-agnostic probe re-spec, x-rhema-renderer injection |
+| 104 | `104_SPA.7__dom-contract-rtl.md` | R4 foundations | dom-contract.ts manifest keyed by surface + check:dom-contract lint + Vitest/happy-dom/RTL/axe component-test stack |
+| 105 | `105_SPA.8__safety-gates.md` | R4 foundations | Safety-gate repair: marker scan over public/spa + planted sentinels + sourcemap provenance; SPA import lint; no-cookies + env-leak + SPDX on SPA output |
+| 106 | `106_SPA.9__ide-chrome-layout.md` | R4 foundations | ide-chrome React layout: panes, palette, scoped keymap, SSE feed binding — dark until export flip |
+| 107 | `107_SPA.10__surface-usage.md` | R4 surfaces | Surface flip: usage (/usage, /p/:p/usage) — BFF twins + components + tests + journey legs + dev flag |
+| 108 | `108_SPAF.1__prod-flip-usage.md` | R4 prod flips | **flip** — STAGES.prod.spaSurfaces += usage; minimal PR + deploy + nightly-green gate |
+| 109 | `109_SPA.11__surface-inbox.md` | R4 surfaces | Surface flip: inbox (/app/inbox) — twin + 2 mutations |
+| 110 | `110_SPAF.2__prod-flip-inbox.md` | R4 prod flips | **flip** — prod += inbox |
+| 111 | `111_SPA.12__surface-settings.md` | R4 surfaces | Surface flip: settings (/app/settings* + /p/:p/settings, one flip across 6+1 sub-pages) + confirm-email POST |
+| 112 | `112_SPAF.3__prod-flip-settings.md` | R4 prod flips | **flip** — prod += settings |
+| 113 | `113_SPA.13__surface-voices.md` | R4 surfaces | Surface flip: voices (/voices*, reseed) — 15+ writes, multipart/presign; **lands the connect-src+GCS-CORS upload prereq dark** |
+| 114 | `114_SPAF.4__prod-flip-voices.md` | R4 prod flips | **flip** — prod += voices |
+| 115 | `115_SPA.14__surface-onboarding.md` | R4 surfaces | Surface flip: onboarding (/app/new*, /p/:p/import* — import legs await ide-chrome via AND-gate) |
+| 116 | `116_SPAF.5__prod-flip-onboarding.md` | R4 prod flips | **flip** — prod += onboarding |
+| 117 | `117_SPA.15__surface-project-home.md` | R4 surfaces | Surface flip: project-home (/app) — server precedence redirects stay ahead of flag |
+| 118 | `118_SPAF.6__prod-flip-project-home.md` | R4 prod flips | **flip** — prod += project-home |
+| 119 | `119_SPA.16__surface-billing.md` | R4 surfaces | Surface flip: billing — Stripe {url} hand-offs via validated envelope |
+| 120 | `120_SPAF.7__prod-flip-billing.md` | R4 prod flips | **flip** — prod += billing |
+| 121 | `121_SPA.17__surface-export-ide-chrome.md` | R4 surfaces | Surface flip: export + ide-chrome — first IDE-framed flip; flips both flags together |
+| 122 | `122_SPAF.8__prod-flip-export.md` | R4 prod flips | **flip** — prod += export + ide-chrome |
+| 123 | `123_SPA.18__surface-outline.md` | R4 surfaces | Surface flip: outline — island→Query mutations + refetchInterval; ed.* → structured JSON |
+| 124 | `124_SPAF.9__prod-flip-outline.md` | R4 prod flips | **flip** — prod += outline |
+| 125 | `125_SPA.19__surface-figures.md` | R4 surfaces | Surface flip: figures (/p/:p/figures*, /visualize) |
+| 126 | `126_SPAF.10__prod-flip-figures.md` | R4 prod flips | **flip** — prod += figures |
+| 127 | `127_SPA.20__surface-run-sheet.md` | R4 surfaces | Surface flip: run-sheet (/p/:p/run) — var R= → typed estimate DTO; rhema_fp mint preserved |
+| 128 | `128_SPAF.11__prod-flip-run-sheet.md` | R4 prod flips | **flip** — prod += run-sheet |
+| 129 | `129_SPA.21__surface-dossier.md` | R4 surfaces | Surface flip: dossier (/p/:p/review/:runId, /obligations/new) — client-ported filters; **owes the seeded-dossier mutation journey steps first** |
+| 130 | `130_SPAF.12__prod-flip-dossier.md` | R4 prod flips | **flip** — prod += dossier |
+| 131 | `131_SPA.22__surface-run-report.md` | R4 surfaces | Surface flip: run-report (/p/:p/r/:runId) — SSE live meter preserved; **owes the delivered-run-report render step first** |
+| 132 | `132_SPAF.13__prod-flip-run-report.md` | R4 prod flips | **flip** — prod += run-report |
+| 133 | `133_SPA.23__editor-mount.md` | R4 surfaces | Surface flip: editor part 1 — Page mount, PageSessionRegistry, DOM parity part 1, forced-SSR posture |
+| 134 | `134_SPA.24__editor-collab-binding.md` | R4 surfaces | Surface flip: editor part 2 — collab wire verbatim, 4-layer autosave, provenance/undo separation, lock poll, 29-row parity; dead-code drops land here |
+| 135 | `135_SPAF.14__prod-flip-editor.md` | R4 prod flips | **flip** — prod += editor (last surface; REQ-ED-13) |
+| 136 | `136_SPA.25__source-mode-revival.md` | R4 cleanup | REQ-ED-17: Source-mode revival — designed CodeMirror-class rebuild on the SPA mount (R20) |
+| 137 | `137_SPA.26__island-retirement.md` | R4 cleanup | Island-bundle retirement: page.js/ide.js/outline.js/editor.js + CLIENT_ENTRIES shrink + parity retarget + stale manifest cleanup |
+| 138 | `138_SPA.27__ssr-deletion-wave.md` | R4 cleanup | SSR deletion wave: migrated surfaces' render paths + HTML-string test retirement (REQ-TST-1, all-flags-baked gate) |
+| 139 | `139_SPA.28__override-machinery-removal.md` | R4 cleanup | Override removal: ?ssr=1/x-rhema-renderer/SPA_OVERRIDES gone; deps.spa collapses to forced-SSR checks |
+| 140 | `140_SPACAP.1__capstone-gap-analysis.md` | tail | **capstone** — whole-build gap analysis + COVERAGE_MATRIX.csv over the SPA REQ ids |
+| 141 | `141_SPACAP.2__capstone-composed-verification.md` | tail | **capstone** — composed verification: full journey suite --expect-renderer spa on prod + two-tenant BFF probe + public SSR regression |
+| 142 | `142_SPACAP.3__capstone-closure.md` | tail | **capstone** — close routed gaps; the ACCEPTED-deviations list |
+| 143 | `143_GATE-ACCEPT.SPA__spa-accepted-deviations.md` | tail | **gate** — operator signs the SPA accepted-deviations list |
+| 144 | `144_SPAREC.1__backlog-and-readiness.md` | tail | **reconcile** — backlog + operational readiness (mode=backlog) |
+| 145 | `145_SPAREC.2__spec-reconciliation.md` | tail | **reconcile** — spec reconciliation (mode=spec) |
+| 146 | `146_SPAREC.3__integration-plan.md` | tail | **reconcile** — integration/merge plan for the SPA stack (mode=integration; never merges) |
+| 147 | `147_SPADOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs (SPA era) |
+| 148 | `148_SPADOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs (SPA era) |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
@@ -360,6 +415,24 @@ operator merges); H2/G2 and any §16.4 efficacy claim (D5); BL-31 matcher-3 tuni
 data); working copies / suggestion reconciliation (still 1.x — EDIT.1 forks to v(N+1)); new 1.x features of any kind.
 
 ## Requirement-ID → ticket index (authoritative for coverage)
+
+**Round-4 SPA families** (`docs/frontend-spa-spec.md` — `REQ-[A-Z]+-[0-9]+`; derived from the ticket stamp lists):
+
+**REQ-INV** (route inventory): 1,6,7→SPA.3 · 2→SPA.4 · 3,4,5→SPA.5 · 8→SPA.26 · per-surface legs→SPA.10–24
+**REQ-ISL** (island contracts): 1–8,16→SPA.24 · 9,10,14,15→SPA.9 · 11,12→SPA.3 · 13→SPA.14 · ISL-1 retirement leg→SPA.26
+**REQ-DAT** (data layer): 1–6,8,9–14→SPA.5 + per-surface twins · 7,13 (checkSession leg)→SPA.4 · 9→SPA.13 · 13 (transports)→SPA.22
+**REQ-TST** (test surfaces): 1,6,9→SPA.27 + per-surface · 2→SPA.7 · 3,4→SPA.8 · 5→SPA.3 · 7→SPA.6 · 8→SPA.26
+**REQ-FW** (framework): 1–11→SPA.4 · 3→SPA.2 (flag leg) · 9→SPA.8 · 12→SPA.1
+**REQ-TL** (toolchain): 1,2,3,6,8,10,11,12→SPA.1 · 4,5,7→SPA.3 · 9→SPA.4 · 13→SPA.6/13/26 · 14→SPA.8
+**REQ-BFF** (BFF): conventions 1–30→SPA.5 · 13 (WSS)→SPA.24 · 16→SPA.13/14 · 18,20→SPA.4 · 22→SPA.23 · 24→SPA.9 · per-surface endpoints→SPA.10–24
+**REQ-ED** (editor): 1,2,4,6,12,13,14→SPA.23 · 3,5,7–11,15,16→SPA.24 · 17→SPA.25 · 12 (forever-SSR leg)→SPA.27/28
+**REQ-UX**: 1,2,6,7,9,11,12→SPA.4 · 8,16 (chrome leg)→SPA.9 · 3,4,5,10,13,14,15,16→per-surface tickets (polish budget)
+**REQ-NAV**: 1–5,7,9–11→SPA.4 · 6→SPA.23 · 8→SPA.9
+**REQ-BND** (boundary): 1–5,12→SPA.3 · 6–10→SPA.4 · 11→SPA.2/SPA.3
+**REQ-VFY**: 1,2,6→SPA.7 · 3→SPA.4 · 4,7,8,10→SPA.6 + per-surface legs · 5→SPA.23 · 9→every surface ticket
+**REQ-SAFE**: 1–5,8,9,10→SPA.8 · 6→SPA.5 · 7→SPA.1 · 9 (CI-order leg)→SPA.1
+**REQ-SEQ**: 1–4→SPA.2 · 5→SPA.10 (entry gate) · 6→SPAF rows + SPA.17 (paired flip) · 7→SPA.6+surfaces · 8→SPA.3 · 9→surface tickets · 10→SPAF rows + SPA.26 entry gate · 11,12→all + SPA.26–28
+
 
 MVP-binding IDs map to exactly one owner ticket (annotations name partial implementations
 elsewhere). Families:
@@ -572,6 +645,8 @@ has exactly one owner.
 
 ## Plan extensions (append-only: inserts, splits, rounds)
 
+- **2026-10-07 — ROUND 4 (frontend SPA migration; `docs/frontend-spa-spec.md` canonical v1.0, operator-ratified 2026-10-08).** 51 rows appended under the `### Round 4` banner: 9 foundations (SPA.1–9), 13 surface tickets + editor split in two (SPA.10–24), 14 prod-flip PRs (SPAF.1–14 — one line each, ≥1 nightly green between flips), 4 cleanup tickets (SPA.25–28 — Source-mode revival per operator ruling Q-8, island retirement, SSR deletion wave, override removal), and the full v2 tail (SPACAP.1–3, GATE-ACCEPT.SPA, SPAREC.1–3, SPADOC.1–2). Stacks on the round-3 chain tip; `mergePolicy: OPERATOR`; the declared rebase checkpoint sits at the foundations↔surfaces boundary (spec R24). Decomposition prompt: `docs/decomposition-prompt.md`.
+
 Run-time inserts and splits, recorded here and reflected in the chain table + `docs/build/LEDGER.md` PHASE LOG.
 The Phase-0 `P0.15*` sub-tickets were each **synthesized from the previous ticket's live blockers** — the
 validation-first live bring-up (spec §17) surfaced work the offline decomposition could not foresee. They keep
@@ -664,3 +739,7 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   prod log evidence 26×200/8×429 on `sign-in/social`. RES.3 is the read-only Leg-1a zero-coverage
   diagnosis (`01M48VNKY6F263TCQRVBJ8JRQA` — 9/9 unverifiable, 0 `claim_sources`). Trigger: operator
   report + the funded window's §B.4 finding; live legs owed, ledgered.
+- **2026-10-07 — INSERT** `97_MAINT.5` (stacked PR; $0): MAINT.4's deploy exposed the second stacked
+  OAuth defect — Chromium enforces CSP `form-action` on a form POST's redirect TARGET, so the healthy
+  302 to `accounts.google.com` was silently blocked (same class as BILL.3's Stripe hand-off, ADR-027).
+  Trigger: operator report post-deploy + headless-browser reproduction.

@@ -166,6 +166,29 @@ describe("AC1 — invite gating", () => {
     expect(res.headers.get("location")).toBe("/auth/google/start");
   });
 
+  it("MAINT.5 — Google redirects to an absolute accounts.google.com URL (the CSP form-action target)", async () => {
+    const google = "https://accounts.google.com/o/oauth2/v2/auth?state=x";
+    const app = createWebApp(makeDeps({ beginAuth: async () => ({ redirect: google }) }));
+    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(google);
+    // and the CSP the page carries admits that origin as a form-action redirect target
+    const page = await app.request("/login");
+    const csp = page.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("form-action 'self'");
+    expect(csp).toContain("https://accounts.google.com");
+  });
+
+  it("MAINT.5 — a non-Google absolute redirect target is refused, never followed", async () => {
+    const app = createWebApp(
+      makeDeps({ beginAuth: async () => ({ redirect: "https://evil.example/steal?state=x" }) }),
+    );
+    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    expect(res.status).toBe(400);
+    expect(res.headers.get("location")).toBeNull();
+    expect(await res.text()).toContain("try again shortly");
+  });
+
   it("Google validates the invite code-only (email resolved by OAuth, not required pre-auth)", async () => {
     const seen: (string | undefined)[] = [];
     const checkInvite: DataSource["checkInvite"] = async (code, email) => {
