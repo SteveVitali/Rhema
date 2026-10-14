@@ -42,6 +42,24 @@ export function wantsJson(c: Context): boolean {
   );
 }
 
+/**
+ * The dual-mode body read (SPA.12 — the settings mutation grammar): a `content-type:
+ * application/json` request parses `c.req.json()`; anything else (urlencoded, multipart) parses
+ * `c.req.parseBody()` — keyed on CONTENT-TYPE, not `wantsJson`, so a form post that merely
+ * accepts a JSON answer still reads its fields. Returns a flat `Record<string, unknown>` either
+ * way; a malformed/absent body lands `{}` — every field lookup downstream degrades exactly like
+ * an absent form field.
+ */
+export async function bodyFields(c: Context): Promise<Record<string, unknown>> {
+  if ((c.req.header("content-type") ?? "").includes("application/json")) {
+    const j = (await c.req.json().catch(() => null)) as unknown;
+    return j != null && typeof j === "object" && !Array.isArray(j)
+      ? (j as Record<string, unknown>)
+      : {};
+  }
+  return (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+}
+
 /** A 202-class pending marker — cadence stays server-owned (`pollAfterSeconds`). */
 export interface MutationPending {
   readonly pollAfterSeconds?: number;

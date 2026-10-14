@@ -50,7 +50,7 @@ import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
-import { bffRoute, mutationOutcome, projectRow as bffProjectRow, swallowDegraded, wantsJson } from "./bff.js";
+import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -610,6 +610,113 @@ export function createWebApp(deps: WebDeps): Hono {
       return c.json({ items: list, badge: badge ?? 0, gateCards });
     }),
   );
+
+  // ---- SPA.12 — the `settings` surface's read twins (REQ-BFF-1/8/9/16, REQ-DAT-1/4;
+  //  design/22 §2 settings rows). Each mirrors its document handler's composition verbatim —
+  //  the same seams, the same best-effort degrade (`swallowDegraded` lands `null` so the SPA
+  //  renders the section's own `data-settings-unavailable` state, never a fabricated value;
+  //  an upstream 401 rethrows into the unauthenticated envelope). ----
+  app.get(
+    "/bff/settings/account",
+    bffRoute(deps, async (c, session) => {
+      const account = await Promise.resolve()
+        .then(() => deps.dataSource.getAccountSettings?.(session))
+        .catch(swallowDegraded);
+      return c.json({ account: account ?? null });
+    }),
+  );
+  app.get(
+    "/bff/settings/preferences",
+    bffRoute(deps, async (c, session) => {
+      const preferences = await Promise.resolve()
+        .then(() => deps.dataSource.getPreferencesSettings?.(session))
+        .catch(swallowDegraded);
+      return c.json({ preferences: preferences ?? null });
+    }),
+  );
+  app.get(
+    "/bff/settings/notifications",
+    bffRoute(deps, async (c, session) => {
+      // The document's composition verbatim: the prefs read + the project list mapped to
+      // {id,title} (the per-project run_progress opt-in rows) — off the request-scoped memo.
+      const [notif, rows] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getNotificationPrefs?.(session))
+          .catch(swallowDegraded),
+        projectRows(c, deps.dataSource, session)
+          .then((list) => list.map((r) => ({ id: r.id, title: r.title })))
+          .catch(swallowDegraded),
+      ]);
+      return c.json({
+        notifications:
+          notif == null ? null : { ...notif, projects: rows ?? [] },
+      });
+    }),
+  );
+  app.get(
+    "/bff/settings/integrations",
+    bffRoute(deps, async (c, session) => {
+      const integrations = await Promise.resolve()
+        .then(() => deps.dataSource.getIntegrationsSettings?.(session))
+        .catch(swallowDegraded);
+      return c.json({ integrations: integrations ?? null });
+    }),
+  );
+  app.get(
+    "/bff/settings/data",
+    bffRoute(deps, async (c, session) => {
+      // The document's three-way compose: privacy toggle + the §14.7 Data read + the latest
+      // account-export state. The notice/import-count flash params stay URL state (the leaf's
+      // validated search) — they are never payload.
+      const [privacy, data, acct] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getPrivacySettings(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getDataSettings?.(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getAccountExportState?.(session))
+          .then((r) => r ?? { export: null })
+          .catch(swallowDegraded),
+      ]);
+      return c.json({
+        privacy: { analyticsOptOut: privacy?.analyticsOptOut ?? false },
+        data: data ?? null,
+        accountExport: { export: acct?.export ?? null },
+      });
+    }),
+  );
+  // design/22 §2 `p.settings` row (REQ-BFF-11, REQ-DAT-4/6) — the `/p/:slug/settings` document's
+  // aggregate: slug→id through the request memo, `getProjectSettings` (a miss is the document's
+  // own 404), the P1.09 approval-settings read as the best-effort join.
+  app.get(
+    "/bff/p/:slug/settings",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug");
+      const row = slug ? await bffProjectRow(c, deps.dataSource, session, slug) : null;
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const [settings, approvalSettings] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getProjectSettings?.(session, row.id))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getApprovalSettings?.(session, row.id))
+          .catch(swallowDegraded),
+      ]);
+      if (!settings) return c.json({ error: "not_found" }, 404);
+      return c.json({
+        projectSettings: {
+          slug,
+          settings,
+          ...(approvalSettings ? { approvalSettings } : {}),
+        },
+      });
+    }),
+  );
+  // REQ-BFF-21 (design/22 §7.1) — the one-shot email-confirm consume; the convention handler
+  // carries the both-200 redirect arms + the replay-safe swallow.
+  app.post("/bff/settings/account/confirm-email", confirmEmailHandler(deps));
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
@@ -2642,10 +2749,14 @@ export function createWebApp(deps: WebDeps): Hono {
       },
     }));
   });
+  // SPA.12 — the `wantsJson` split (REQ-BFF-1/2/3): JSON callers post the same flat field
+  // vocabulary and get the `{ok:true, redirect}` envelope (the redirect IS the flash URL the
+  // 302 would carry); form posts keep the 302 verbatim. No session → JSON callers get
+  // `{error:"unauthenticated"}` 401, form callers keep the /login bounce.
   app.post("/app/settings/account", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const req: { name?: string; byline?: string | null; image?: string | null } = {};
     if (typeof form.name === "string" && form.name.trim() !== "") req.name = form.name.trim();
     if (typeof form.byline === "string") req.byline = form.byline.trim() === "" ? null : form.byline.trim();
@@ -2653,52 +2764,52 @@ export function createWebApp(deps: WebDeps): Hono {
     await Promise.resolve()
       .then(() => deps.dataSource.updateAccountSettings?.(session, req))
       .catch(() => undefined);
-    return c.redirect("/app/settings/account?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/account?saved=1" });
   });
   app.post("/app/settings/account/email", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const email = typeof form.email === "string" ? form.email : "";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.requestEmailChange?.(session, email))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return c.redirect(`/app/settings/account?notice=${ok ? "email-pending" : "email-invalid"}`);
+    return mutationOutcome(c, { redirect: `/app/settings/account?notice=${ok ? "email-pending" : "email-invalid"}` });
   });
   app.post("/app/settings/sessions/revoke", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const sessionId = typeof form.sessionId === "string" ? form.sessionId : "";
     if (sessionId) {
       await Promise.resolve()
         .then(() => deps.dataSource.revokeSession?.(session, sessionId))
         .catch(() => undefined);
     }
-    return c.redirect("/app/settings/account?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/account?saved=1" });
   });
 
   // ---- REQ-ACCT-4 — delete account: typed confirmation → the 14-day grace; cancel inside it. ----
   app.post("/app/settings/account/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const confirmation = typeof form.confirmation === "string" ? form.confirmation : "";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.requestAccountDeletion?.(session, confirmation))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return c.redirect(`/app/settings/data?notice=${ok ? "deletion-scheduled" : "confirmation-required"}`);
+    return mutationOutcome(c, { redirect: `/app/settings/data?notice=${ok ? "deletion-scheduled" : "confirmation-required"}` });
   });
   app.post("/app/settings/account/delete/cancel", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelAccountDeletion?.(session))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return c.redirect(`/app/settings/data?notice=${ok ? "deletion-cancelled" : "cancel-failed"}`);
+    return mutationOutcome(c, { redirect: `/app/settings/data?notice=${ok ? "deletion-cancelled" : "cancel-failed"}` });
   });
 
   // ---- Preferences ----
@@ -2723,8 +2834,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // the consent threshold clamps at 1,000 (REQ-BILL-4), the theme write rides P1.01's endpoint.
   app.post("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const prefs: Record<string, unknown> = {};
     const tier = form.defaultModelTier;
     prefs.defaultModelTier = tier === "base" || tier === "balanced" || tier === "frontier" ? tier : null;
@@ -2761,7 +2872,7 @@ export function createWebApp(deps: WebDeps): Hono {
         ? Promise.resolve().then(() => deps.dataSource.setTheme?.(session, appTheme))
         : Promise.resolve(),
     ]).catch(() => undefined);
-    return c.redirect("/app/settings/preferences?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/preferences?saved=1" });
   });
 
   // ---- Notifications (P1.19's server-side store; the api rejects the non-configurable rows) ----
@@ -2789,8 +2900,8 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const email: Record<string, boolean> = {};
     const inApp: Record<string, boolean> = {};
     const project: Record<string, { run_progress?: boolean }> = {};
@@ -2842,7 +2953,7 @@ export function createWebApp(deps: WebDeps): Hono {
         break;
       }
     }
-    return c.redirect(`/app/settings/notifications?${ok ? "saved=1" : "notice=rejected"}`);
+    return mutationOutcome(c, { redirect: `/app/settings/notifications?${ok ? "saved=1" : "notice=rejected"}` });
   });
 
   // ---- Integrations (REQ-ACCT-2's uniform cards; disconnect drops the credential now) ----
@@ -2865,11 +2976,11 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/settings/integrations/:id/disconnect", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await Promise.resolve()
       .then(() => deps.dataSource.disconnectIntegration?.(session, c.req.param("id")))
       .catch(() => undefined);
-    return c.redirect("/app/settings/integrations?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/integrations?saved=1" });
   });
 
   // ---- Data (Q-12 minimal): privacy toggles + support access + posture copy + export + delete ----
@@ -2916,38 +3027,45 @@ export function createWebApp(deps: WebDeps): Hono {
   // The REQ-PROD-15 toggle's new home — the checkbox posts "on" when EXCLUDE is checked.
   app.post("/app/settings/data/privacy", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
-    await deps.dataSource.setAnalyticsOptOut(session, form.analyticsOptOut === "on");
-    return c.redirect("/app/settings/data?saved=1");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
+    try {
+      // Unswallowed verbatim (the document path 500s on a failed write) — but a JSON caller
+      // always earns the {error} envelope at the preserved status, never an HTML 500.
+      await deps.dataSource.setAnalyticsOptOut(session, form.analyticsOptOut === "on");
+    } catch (e) {
+      if (wantsJson(c)) return bffFail(c, e, { msg: "settings_privacy_write_failed" });
+      throw e;
+    }
+    return mutationOutcome(c, { redirect: "/app/settings/data?saved=1" });
   });
   // REQ-VIS-11 — the 72-h support grant; revoke is a no-op-safe write either way.
   app.post("/app/settings/data/support-access", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setSupportAccess?.(session, form.enabled === "on"))
       .catch(() => undefined);
-    return c.redirect("/app/settings/data?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/data?saved=1" });
   });
   // Q-26 — the preference-learning toggle stores the opt-OUT (default-on ⇒ unchecked box = optOut).
   app.post("/app/settings/data/preference-learning", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setPreferenceOptOut?.(session, form.learning !== "on"))
       .catch(() => undefined);
-    return c.redirect("/app/settings/data?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/data?saved=1" });
   });
   // P1.18 — "Export everything" (REQ-ACCT-3): queue the account zip; the build + emailed link are
   // the worker's. A repeat click dedupes server-side (the same row answers).
   app.post("/app/settings/data/export", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await deps.dataSource.requestAccountExport?.(session).catch(() => undefined);
-    return c.redirect("/app/settings/data?notice=requested");
+    return mutationOutcome(c, { redirect: "/app/settings/data?notice=requested" });
   });
   // The in-app download of the ready zip — presigned through the api.
   app.get("/app/settings/data/export/download", async (c) => {
@@ -2960,24 +3078,27 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!dl) return c.redirect("/app/settings/data?notice=expired");
     return c.redirect(dl.downloadUrl, 302);
   });
-  // The restore half — upload an export zip; the api replays it idempotently.
+  // The restore half — upload an export zip; the api replays it idempotently. SPA.12: the
+  // transport stays multipart forever (a file never enters a JSON body — REQ-BFF-17); a caller
+  // that merely ACCEPTS json (the SPA posts FormData with accept: application/json) gets the
+  // envelope's redirect instead of the 302 — the notice vocabulary lands verbatim either way.
   app.post("/app/settings/data/import", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await c.req.parseBody();
     const file = form.archive;
     const bytes =
       file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
         ? new Uint8Array(await (file as File).arrayBuffer())
         : null;
-    if (!bytes) return c.redirect("/app/settings/data?notice=importFailed");
+    if (!bytes) return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
     try {
-      if (!deps.dataSource.importAccountExport) return c.redirect("/app/settings/data?notice=importFailed");
+      if (!deps.dataSource.importAccountExport) return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
       const r = await deps.dataSource.importAccountExport(session, bytes);
-      if (r.deduped) return c.redirect("/app/settings/data?notice=deduped");
-      return c.redirect(`/app/settings/data?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}`);
+      if (r.deduped) return mutationOutcome(c, { redirect: "/app/settings/data?notice=deduped" });
+      return mutationOutcome(c, { redirect: `/app/settings/data?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}` });
     } catch {
-      return c.redirect("/app/settings/data?notice=importFailed");
+      return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
     }
   });
 
@@ -3034,11 +3155,13 @@ export function createWebApp(deps: WebDeps): Hono {
   // "keep" (venue/protocol). A protocol change stamps the marker the next Review's scope card carries.
   app.post("/p/:project/settings", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find((r) => r.slug === slug);
+    // A JSON caller never gets an HTML not-found — the {error} envelope at 404 is the twin's own
+    // answer (REQ-BFF-4); the form leg keeps the notFoundElement document.
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const patch: ProjectSettingsPatch = {};
     if (typeof form.venue === "string") patch.venue = form.venue.trim() === "" ? null : form.venue.trim();
     if (typeof form.protocolId === "string" && form.protocolId !== "") patch.protocolId = form.protocolId;
@@ -3078,17 +3201,17 @@ export function createWebApp(deps: WebDeps): Hono {
       .then(() => deps.dataSource.updateProjectSettings?.(session, row.id, patch))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return c.redirect(`/p/${slug}/settings?${ok ? "saved=1" : "notice=invalid"}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/settings?${ok ? "saved=1" : "notice=invalid"}` });
   });
   // REQ-GATE-10's edit half — a standing rule's body/workflows update in place (retire stays a
   // separate row-level action; guidance never deletes).
   app.post("/p/:project/settings/guidance/:gid", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const body = typeof form.body === "string" ? form.body.trim() : "";
     if (body !== "") {
       const workflows =
@@ -3099,7 +3222,7 @@ export function createWebApp(deps: WebDeps): Hono {
         .then(() => deps.dataSource.updateGuidance?.(session, row.id, c.req.param("gid"), { body, workflows }))
         .catch(() => undefined);
     }
-    return c.redirect(`/p/${slug}/settings?saved=1`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/settings?saved=1` });
   });
   app.get("/usage", async (c) => {
     const session = deps.session(c);
@@ -3708,11 +3831,11 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-GATE-10) + the one-time explainers (§5.11). Plain forms; the api re-validates everything. ----
   app.post("/p/:project/settings/approvals", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const policy =
       form.policy === "named" || form.policy === "wait_each" || form.policy === "run_to_completion"
         ? form.policy
@@ -3735,7 +3858,7 @@ export function createWebApp(deps: WebDeps): Hono {
         typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
           ? form.returnTo
           : `/p/${slug}`;
-      return c.redirect(`${back}?approvals=saved`);
+      return mutationOutcome(c, { redirect: `${back}?approvals=saved` });
     } catch (e) {
       // an illegal override (REQ-SPEC-1) re-renders with the notice, never a silent write.
       if (e instanceof ApiError && e.status === 422) {
@@ -3743,7 +3866,7 @@ export function createWebApp(deps: WebDeps): Hono {
           typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
             ? form.returnTo
             : `/p/${slug}`;
-        return c.redirect(`${back}?approvals=invalid`);
+        return mutationOutcome(c, { redirect: `${back}?approvals=invalid` });
       }
       throw e;
     }
@@ -3751,11 +3874,11 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/guidance", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const body = typeof form.body === "string" ? form.body.trim() : "";
     const workflows =
       typeof form.workflows === "string" && form.workflows.trim() !== ""
@@ -3771,25 +3894,25 @@ export function createWebApp(deps: WebDeps): Hono {
       typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
         ? form.returnTo
         : `/p/${slug}`;
-    return c.redirect(back);
+    return mutationOutcome(c, { redirect: back });
   });
 
   // Retire (§6.5; REQ-GATE-10): active=false, never deleted. "Edit" = retire + the Add form posts the
   // replacement (the settings section composes the two).
   app.post("/p/:project/guidance/:gid/retire", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody().catch(() => ({}));
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     await deps.dataSource.retireGuidance?.(session, row.id, c.req.param("gid"));
     const back =
       typeof (form as Record<string, unknown>).returnTo === "string" &&
         ((form as Record<string, unknown>).returnTo as string).startsWith("/p/")
         ? ((form as Record<string, unknown>).returnTo as string)
         : `/p/${slug}`;
-    return c.redirect(back);
+    return mutationOutcome(c, { redirect: back });
   });
 
   // the one-time inline explainer's dismiss (§5.11/§6.4 — once per user, never a modal).

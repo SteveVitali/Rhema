@@ -45,10 +45,19 @@ export function setSessionExpiredHandler(fn: () => void): void {
  * The one JSON transport. `path` is a same-origin `/…` path (absolute/other-origin URLs are
  * rejected — the cookie must never ride a cross-origin request, REQ-DAT-7). `init.json` is the
  * structured request body (POSTs are caller-driven; there is no client-side retry).
+ * `init.form` is the SPA.12 import leg (REQ-BFF-17): a multipart body never becomes a JSON field —
+ * the FormData rides verbatim (the browser sets the multipart content-type + boundary) while the
+ * `accept` header still selects the server's JSON envelope over the 302.
  */
-export async function bffFetch<T>(path: string, init?: { method?: string; json?: unknown }): Promise<T> {
+export async function bffFetch<T>(
+  path: string,
+  init?: { method?: string; json?: unknown; form?: FormData },
+): Promise<T> {
   if (!path.startsWith("/") || path.startsWith("//")) {
     throw new BffError(0, "bff_path_must_be_same_origin");
+  }
+  if (init?.json !== undefined && init?.form !== undefined) {
+    throw new BffError(0, "bff_body_ambiguous");
   }
   const res = await fetch(path, {
     method: init?.method ?? "GET",
@@ -58,6 +67,7 @@ export async function bffFetch<T>(path: string, init?: { method?: string; json?:
       ...(init?.json !== undefined ? { "content-type": "application/json" } : {}),
     },
     ...(init?.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
+    ...(init?.form !== undefined ? { body: init.form } : {}),
   });
   if (res.status === 401) {
     // The session ended server-side — drop the cached principal and hand the document to /login.

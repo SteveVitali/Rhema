@@ -4,10 +4,10 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { PendingShell, surfaceComponent } from "../../states.js";
-import { strParam, validateSearchParams } from "../../search.js";
+import { flagParam, strParam, validateSearchParams } from "../../search.js";
 
 export const Route = createFileRoute("/_authenticated/settings_/billing")({
-  validateSearch: validateSearchParams({ saved: strParam, notice: strParam }),
+  validateSearch: validateSearchParams({ saved: flagParam, notice: strParam }),
   pendingComponent: PendingShell,
   component: surfaceComponent("/settings/billing"),
 });
