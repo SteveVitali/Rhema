@@ -74,7 +74,7 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
     legNotes: {
       T2: "the notification-matrix leg",
       R8: "the Preferences leg",
-      T3: "the account zip / data-rights legs",
+      T3: "the account zip / rights-export legs",
     },
   }),
   voices: gate("voices", ["T5", "X1.voices"]),
