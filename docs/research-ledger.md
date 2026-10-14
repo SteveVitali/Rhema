@@ -77,7 +77,7 @@ updatedAt:       2026-10-14T19:05:00Z
 | C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | in-progress | |
 | C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | in-progress | |
 | C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | in-progress | |
-| C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | in-progress | |
+| C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | done | `docs/research/r5_c5_bl22-78-residuals.md` — 3 of 5 BL-22 residuals already discharged; true set = T8+T7-dest (clock), T16+T15 (substrate), 3 BL-78 live legs |
 
 ## D. Ops & stage residuals
 
