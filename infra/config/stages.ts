@@ -374,11 +374,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
     // SPAF.1 — `usage` is the first prod surface flip; SPAF.2 — `inbox` joins it; SPAF.3 —
-    // `settings` joins them; SPAF.4 — `voices` joins them (REQ-SEQ-10): each prod flip is a
-    // one-line stage-fact commit, operator-merged + `pulumi up`-deployed; rollback = revert
-    // this line + redeploy. ≥ one nightly green on prod precedes the NEXT surface's prod
-    // flip. Order is flip order — never re-sort.
-    spaSurfaces: ["usage", "inbox", "settings", "voices"],
+    // `settings` joins them; SPAF.4 — `voices` joins them; SPAF.5 — `onboarding` joins them
+    // (REQ-SEQ-10): each prod flip is a one-line stage-fact commit, operator-merged +
+    // `pulumi up`-deployed; rollback = revert this line + redeploy. ≥ one nightly green on
+    // prod precedes the NEXT surface's prod flip. Order is flip order — never re-sort.
+    // `ide-chrome` stays dark on prod until SPAF.8 — the /p/:p/import* legs AND-gate on it,
+    // so they keep serving SSR even with `onboarding` flagged.
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
