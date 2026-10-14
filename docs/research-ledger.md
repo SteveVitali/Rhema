@@ -16,8 +16,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        A1
-lastCompleted:   (none)
+nextUnit:        A2
+lastCompleted:   B1
 blockedOn:       (nothing)
 pauseRequested:  false
 returnPass:      (none)
@@ -26,7 +26,7 @@ specOut:         docs/post-spa-disposition-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-14T18:50:14Z
+updatedAt:       2026-10-14T19:05:00Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
@@ -55,52 +55,52 @@ updatedAt:       2026-10-14T18:50:14Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| A1 | Anchor census: every `<a href>` / injected-HTML link in `spa/` + shared SSR components, classified by destination class (in-tree / SPA_PUBLIC / forced-SSR-family / `reloadDocument` stub / external / `download` / `target` / modifier attrs) → the interception decision table | R | open | |
-| A2 | TanStack Router API surface for href→route resolution at runtime (`matchRoute`/`buildLocation`/`flatRoutes`, `reloadDocument` stub behavior under `router.navigate`, `<Link>`'s own skip semantics) — what a delegated handler can reuse | R | open | |
+| A1 | Anchor census: every `<a href>` / injected-HTML link in `spa/` + shared SSR components, classified by destination class (in-tree / SPA_PUBLIC / forced-SSR-family / `reloadDocument` stub / external / `download` / `target` / modifier attrs) → the interception decision table | R | in-progress | |
+| A2 | TanStack Router API surface for href→route resolution at runtime (`matchRoute`/`buildLocation`/`flatRoutes`, `reloadDocument` stub behavior under `router.navigate`, `<Link>`'s own skip semantics) — what a delegated handler can reuse | R | in-progress | |
 | A3 | Mechanism design: delegated document-level interceptor vs dual-renderer `<NavLink>` vs hybrid — skip-list semantics, `twinForcesSsr`/`SsrHandoff` interplay, scroll/focus/title duties on client navs, history parity (push vs replace) | D | open | |
 | A4 | Verification design: the settle-contract extension that lets journeys + dom-contract *see* nav mechanism (counter hook / performance entries); a client-nav chain leg (`/app`→`/p/:p`→`/v/working`) asserting zero document loads; REQ-NAV-6 keep-alive proof once navs stay in-router | D | open | |
-| A5 | Dormant-machinery audit: what becomes live once navs are client-side (intent prefetch, scrollRestoration, keymap `router.navigate` chords, focus/aria-live, Query-cache reuse, PageSessionRegistry) — what needs verification or fixing | R | open | |
+| A5 | Dormant-machinery audit: what becomes live once navs are client-side (intent prefetch, scrollRestoration, keymap `router.navigate` chords, focus/aria-live, Query-cache reuse, PageSessionRegistry) — what needs verification or fixing | R | in-progress | |
 
 ## B. Test economics (funded-window prerequisite ⚑)
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| B1 | Spend audit: per-leg USD from `usage_records`/ledger rows for the funded-window set + the $58.08 baseline week — top burners by model-tier × phases × fixture size | R | open | |
-| B2 | Entitlement/model-tier routing surface: how run tiers resolve (`is_test` tenant path), whether a cheaper test tier preserves REQ-SPEC-32 money-truthfulness (debit = metered burn at the tier actually run) | R | open | |
+| B1 | Spend audit: per-leg USD from `usage_records`/ledger rows for the funded-window set + the $58.08 baseline week — top burners by model-tier × phases × fixture size | R | done | `docs/research/r5_b1_spend-audit.md` — ~$153.60/30d on is_test; cache-read tokens dominate (fixture caps don't bound); `verifier`@balanced ~$6.60/call; editor-family ~85% |
+| B2 | Entitlement/model-tier routing surface: how run tiers resolve (`is_test` tenant path), whether a cheaper test tier preserves REQ-SPEC-32 money-truthfulness (debit = metered burn at the tier actually run) | R | in-progress | |
 | B3 | Lever + guard design: ranked levers (tier routing, fixture sizing, per-leg USD caps, deterministic providers for non-model legs, phase reduction) → the regime the funded window opens under; weekly guard + per-ticket cap + tripwire composition | D | open | |
 
 ## C. Fixture substrate & owed free legs
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| C1 | T17 source-view canonical-markdown seeding — what fixture, where it lives, who mints it | R | open | |
-| C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | open | |
-| C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | open | |
-| C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | open | |
-| C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | open | |
+| C1 | T17 source-view canonical-markdown seeding — what fixture, where it lives, who mints it | R | in-progress | |
+| C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | in-progress | |
+| C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | in-progress | |
+| C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | in-progress | |
+| C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | in-progress | |
 
 ## D. Ops & stage residuals
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | open | |
-| D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | open | |
-| D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | open | |
-| D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | open | |
+| D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | in-progress | |
+| D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | in-progress | |
+| D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | in-progress | |
+| D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | in-progress | |
 
 ## E. Memory & spec hygiene
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| E1 | BL-02 validator hygiene: DEFERRALS status-cell normalization, upstream agent-skills patch list, GATE-ACCEPT false-positive fix — enumerate precisely | R | open | |
-| E2 | BL-05 REC.2 reconciliation scope: which GATE-ACCEPT deviations + ADR triggers + the nav deviation fold back into `rhema-design-spec`/`frontend-spa-spec` | R | open | |
-| E3 | BL-73 Later-scope census: confirm the 33 MISSING matrix rows are spec-scheduled Later (not lost work) | R | open | |
+| E1 | BL-02 validator hygiene: DEFERRALS status-cell normalization, upstream agent-skills patch list, GATE-ACCEPT false-positive fix — enumerate precisely | R | in-progress | |
+| E2 | BL-05 REC.2 reconciliation scope: which GATE-ACCEPT deviations + ADR triggers + the nav deviation fold back into `rhema-design-spec`/`frontend-spa-spec` | R | in-progress | |
+| E3 | BL-73 Later-scope census: confirm the 33 MISSING matrix rows are spec-scheduled Later (not lost work) | R | in-progress | |
 
 ## F. Funded-window leg census
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| F1 | Enumerate every ledgered paid leg (BL-16…21, 56, 66–72, 78/79 residuals + D-CAP.2-1's 21 steps): registry id, what it verifies, spend class, blocker → the ticket-able list under the B3 regime | R | open | |
+| F1 | Enumerate every ledgered paid leg (BL-16…21, 56, 66–72, 78/79 residuals + D-CAP.2-1's 21 steps): registry id, what it verifies, spend class, blocker → the ticket-able list under the B3 regime | R | in-progress | |
 
 ## G. Disposition map
 
@@ -133,3 +133,4 @@ updatedAt:       2026-10-14T18:50:14Z
 ## Change log
 
 - 2026-10-14T18:50:14Z — ledger created by synthesize-spec mode=plan; brief `docs/post-spa-disposition-brief.md`; round-4 ledger frozen at `docs/research-ledger-frontend-spa.md`.
+- 2026-10-14T19:05:00Z — B1 done (`docs/research/r5_b1_spend-audit.md`): test-tenant spend ~$153.60/30d; cache-read tokens dominate → per-call tier is the lever, not fixture size; `verifier`@balanced ~$6.60/call; editor-family ~85%. Research rows A1/A2/A5/B2/C1–C5/D1–D4/E1–E3/F1 dispatched to fresh contexts.
