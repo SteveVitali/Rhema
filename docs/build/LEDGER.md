@@ -31,7 +31,6 @@ manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md + docs/frontend-spa-spec.md (round-4 spec — additive)
 memoryRoot:      docs/build
 dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operator ruling 2026-10-08: subagent)
-harness:         devin-cli/swe-2/subagent   # BM-HARNESS-01
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
@@ -40,6 +39,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           5                  # post-spa disposition — spec docs/post-spa-disposition-spec.md (ratified 2026-10-15)
+harness:         devin-cli/swe-2/subagent   # BM-HARNESS-01
 updatedAt:       2026-10-14T20:32:15Z         # ROUND 5 decomposed — 26 rows appended under the Round 5 banner
 ```
 
@@ -470,3 +470,11 @@ run-time `P0.15b…P0.15i` inserts are `inserted` events. Reconstructed by MAINT
 - 2026-10-14T16:30:00Z — **ARMB — Arm B tip deploy EXECUTED + corrective wave (live prod; run ledger `runs/ARMB-2026-10-14.md`)** — operator election per §R4.11 (GATE DECISIONS row 2026-10-14). Tip `b35473d` deployed → image set + `pulumi up` update 148 → provenance PASS both services → deployments row. First compressed run found a real defect (Vite `base` defaulted to `/` — lazy chunks 404'd under `/assets/*`; served subtree is `/assets/spa/*`). Corrective ARMB.1 (`d5a74cc`, PR #170): top-level `base:"/assets/spa/"` + config-object regression test + `data-ssr-cause` forced-SSR marker with settle/runner exemption. Rebuilt (Cloud Build `fca67583`) → `pulumi up` update **149** → provenance PASS → `prod:d5a74cc` row. Rerun: **zero bundle-parity failures**, P1.outline/figures FLIP-ready, forced-SSR legs settle. Residuals root-caused live (§7 of the run ledger): T5 = benign `ERR_ABORTED` from an unconsumed PUT response body (object landed byte-complete; chain completed) — **ARMB.2 drains it** (`voices.tsx`/`onboarding.tsx`, branch `stevevitali/armb-2-put-drain-harness-settle`, head `57d4e24`); N8/T7 = harness races vs SPA-nav timing + pg-boss send-it commit lag (both fixed in ARMB.2); N4 = tracked EST.1/ACT.1 selector-order drift (fixed in ARMB.2); N9 = tracked jrn-a billing-fixture drift (operator prod-data write); T3 = D-STB.5a-2; T17/T8/P1.dossier/R6F/T12F/T13F = owed-by-design or env legs. **ARMB.2 deploy pending** — web-only code change rides the next image-set build.
 - 2026-10-14T18:15:00Z — **ARMB.2 done + deployed (PR #171 · `ffbb8ad` live on prod)** — PUT-drain app fix (voices/onboarding presign bodies) + journey settle fixes (N8 click-target + leg-B href/settle races, N4 count-probe, T7 purge poll, T3 notice-URL waits). Cloud Build `d16ff6db` → `pulumi up` **150** → provenance PASS → `deployments` `prod:ffbb8ad`. Free suite at the tip: **32 PASS · 3 FLIP (R6F/P1.outline/P1.figures) · 4 owed · 1 FAIL** — N9 is the tracked jrn-a billing-fixture reseat (operator prod write); zero unexplained regressions. Reports `reports/2026-10-14_ARMB2-*` + `2026-10-15_ARMB2-*`; run ledger `runs/ARMB-2026-10-14.md` §9–11.
 - 2026-10-14T23:55:00Z — **ROUND 5 decomposed (mode=extend; spec `docs/post-spa-disposition-spec.md` ratified 2026-10-15)** — 26 rows (150–175) appended under the manifest's `### Round 5` banner: HUMAN-H8/H9 markers, HYGIENE.1, FIX.1, VERIF.1/2, NAVC.1–4 (delegated interceptor + settle contract + session invariants + R10 legs), R5ECON.1–3 (guard repairs → testCheapRoute arm → funded regime), R5OPS.1, BL38.1 (gated prod cleanup), COST.1 skeleton (H9-gated), GATE-R5F + FUNDED.1 skeleton, tail R5CAP.1/R5CAP.3/GATE-ACCEPT.R5/R5REC.1–3/R5DOC.1–2. chainTip → `stevevitali/r5-synthesis`; nextTicket → HYGIENE.1. Decomposition prompt: `docs/decomposition-prompt.md`. Phase-4 adversarial review of the split follows before dispatch.
+
+## PHASE LOG — Round 5
+
+_Rotation convention (REQ-MEM-4, HYGIENE.1 — documented in docs/build/README.md): the phase log rotates
+one `## PHASE LOG — Round <n>` region per build round; the new round's heading is appended after the
+previous region's last line so older regions stay byte-frozen (append-only) and the checker judges only
+the current region. The three 2026-10-14 entries directly above this heading (ARMB, ARMB.2, the round-5
+decomposition) predate the convention and remain in the prior region verbatim._
