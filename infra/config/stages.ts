@@ -338,8 +338,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA_IDE_FRAMED_SURFACES (export/dossier/run-sheet/run-report/editor) is still dark,
     // so the AND resolves true ONLY for the two import legs. Prod waits for its own
     // SPAF flip tickets.
+    // SPA.15 — `project-home` joins on dev only (the /app list leaf; the document's
+    // verified/showcase/held precedence stays server-side ahead of the consult).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

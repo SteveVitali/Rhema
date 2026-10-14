@@ -580,6 +580,59 @@ export function createWebApp(deps: WebDeps): Hono {
     }),
   );
 
+  // SPA.15 (REQ-BFF-1/8/9/11, REQ-DAT-4/12; design/22 §2 `app` row) — the `/app` document's read
+  // twin: the project list + the home aggregate's seams as RAW DTOs (`rows`, `voices`, `groupBy`,
+  // `balance`, `protocols`, `deletedRows`, `search`). Filtering (`?voice`/`?protocol`/`?sort`/
+  // `?archived`) and the row→view mapping (`toProjectRowView`/`groupByAttention`/`groupByVoice`)
+  // run CLIENT-side off the shared `state-map.ts` seam — the twin ships no view models (design/22
+  // F10: the mapper is pure COPY+DTO, bundle-portable). `?q=` still drives the server-side
+  // `searchProjects` read (search is never client-derivable) and `?deleted=1` gates the deleted
+  // scope read. Degrade semantics mirror the document: `listProjects` stays load-bearing (uncaught —
+  // `bffFail` maps an upstream 401 to `unauthenticated`); every optional seam rides
+  // `swallowDegraded` (a miss lands the SSR's composed default; a mid-session 401 rethrows into the
+  // unauthenticated envelope). The document's `?verified=1` mint + showcase/held precedence are
+  // PRE-SHELL server acts — they never reach the twin (the shell is only served after precedence).
+  app.get(
+    "/bff/app",
+    bffRoute(deps, async (c, session) => {
+      const q = (c.req.query("q") ?? "").trim();
+      const showDeleted = c.req.query("deleted") === "1";
+      const [rows, voices, groupBy, bal, search, protocols, deletedRows] = await Promise.all([
+        deps.dataSource.listProjects(session),
+        Promise.resolve()
+          .then(() => deps.dataSource.listVoices(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getProjectGrouping(session))
+          .catch(swallowDegraded),
+        // PRB.12 — the §14.5 level-0 balance chip rides the nav (best-effort, verbatim).
+        deps.dataSource.getBillingBalance(session).catch(swallowDegraded),
+        q
+          ? Promise.resolve()
+              .then(() => deps.dataSource.searchProjects(session, q))
+              .catch(swallowDegraded)
+          : Promise.resolve(null),
+        Promise.resolve()
+          .then(() => deps.dataSource.listProtocolCards(session))
+          .catch(swallowDegraded),
+        showDeleted
+          ? Promise.resolve()
+              .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
+              .catch(swallowDegraded)
+          : Promise.resolve([]),
+      ]);
+      return c.json({
+        rows,
+        voices: voices ?? [],
+        groupBy: groupBy ?? "attention",
+        balance: bal ? { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } : null,
+        protocols: protocols ?? [],
+        deletedRows: deletedRows ?? [],
+        ...(search != null ? { search: { q, results: search } } : {}),
+      });
+    }),
+  );
+
   // SPA.11 (REQ-BFF-1/8/9, REQ-DAT-4; design/22 §2 `inbox` row) — the `/app/inbox` document's typed
   // read twin: `{items, badge, gateCards}` — the SAME aggregate the SSR handler composes, gate cards
   // keyed by inbox-item id so an expanded row mounts the real §6.4 card without a second read.
@@ -2472,13 +2525,16 @@ export function createWebApp(deps: WebDeps): Hono {
   // returns to the home (filter/search query params are dropped — grouping is the whole-page mode).
   app.post("/app/grouping", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    // SPA.15 — the `wantsJson` split (REQ-BFF-1/2/3): a JSON caller posts `{groupBy}` and gets the
+    // `{ok:true, redirect:"/app"}` envelope (the 302's target verbatim — grouping drops the live
+    // filters, same as the form post); the form post's 302 is unchanged.
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const groupBy = form.groupBy === "voice" ? "voice" : "attention";
     await Promise.resolve()
       .then(() => deps.dataSource.setProjectGrouping(session, groupBy))
       .catch(() => undefined);
-    return c.redirect("/app");
+    return mutationOutcome(c, { redirect: "/app" });
   });
 
   // ---- P1.04 — the §5.3 new-project sheet: exactly three entries (scratch / outline / draft) ----
@@ -2857,14 +2913,16 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/duplicate", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const copy = await Promise.resolve()
       .then(() => deps.dataSource.duplicateProject(session, row.id))
       .catch(() => null);
-    return c.redirect(copy ? `/p/${copy.slug}` : `/p/${slug}`);
+    // SPA.15 — the redirect's wording is verbatim (the copy's page, or the source row on a
+    // swallowed write); a JSON caller receives it as the envelope's `redirect`, never a 302.
+    return mutationOutcome(c, { redirect: copy ? `/p/${copy.slug}` : `/p/${slug}` });
   });
 
   for (const [suffix, call] of [
@@ -2874,31 +2932,33 @@ export function createWebApp(deps: WebDeps): Hono {
   ] as const) {
     app.post(`/p/:project/${suffix}`, async (c) => {
       const session = deps.session(c);
-      if (!session) return c.redirect("/login");
+      // SPA.15 — the row actions' JSON branch (REQ-BFF-1/2/3): `{ok:true, redirect:"/app"}`; the
+      // swallowed write stays swallowed (a refused action repaints truth on the list refetch).
+      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project");
       const row = await projectRowFor(session, slug);
-      if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
       await Promise.resolve()
         .then(() => call(deps.dataSource, session, row.id))
         .catch(() => undefined);
-      return c.redirect("/app");
+      return mutationOutcome(c, { redirect: "/app" });
     });
   }
 
   // Restore resolves against the DELETED rows (the live list never carries them — §5.2's 30-day window).
   app.post("/p/:project/restore", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const deleted = await Promise.resolve()
       .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
       .catch(() => []);
     const row = deleted.find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     await Promise.resolve()
       .then(() => deps.dataSource.restoreProject(session, row.id))
       .catch(() => undefined);
-    return c.redirect("/app?deleted=1");
+    return mutationOutcome(c, { redirect: "/app?deleted=1" });
   });
 
   // ---- P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): the global blocked-on-you →

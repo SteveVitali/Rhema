@@ -579,6 +579,30 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   "project-home": [
     a("data-project-row", "conditional", "ui/project-list.tsx"),
     a("data-menu-form", "conditional", "ui/project-list.tsx"),
+    // SPA.15 — the /app controls bar + sections the twin now emits (the hooks were always in the
+    // SSR markup; the SPA's direction-2 scan makes them load-bearing declarations).
+    a("data-group-by", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    a("data-filter-form", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    a("data-archived-toggle", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    a("data-deleted-toggle", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    a("data-search-results", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    a("data-archived-section", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    // the row anatomy the shared mapper paints (ui/project-list.tsx emitters — asserted by the
+    // parity tests so a journey may always probe them, either renderer).
+    a("data-indicator", "conditional", "ui/project-list.tsx"),
+    a("data-menu-action", "conditional", "ui/project-list.tsx"),
+    a("data-disabled-reason", "conditional", "ui/project-list.tsx"),
+    a("data-collapsed-marker", "conditional", "ui/project-list.tsx"),
+    a("data-cue-when-closed", "conditional", "ui/project-list.tsx"),
+    a("data-cue-when-open", "conditional", "ui/project-list.tsx"),
+    a("data-group", "conditional", "ui/project-list.tsx", "the group's ul root"),
+    n("q", "conditional", "pages.tsx / spa/surfaces/project-home.tsx", "the §5.2 search input"),
+    n("groupBy", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    n("voice", "conditional", "pages.tsx / spa/surfaces/project-home.tsx", "hidden filter carry"),
+    n("protocol", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    n("sort", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    n("archived", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
+    n("deleted", "conditional", "pages.tsx / spa/surfaces/project-home.tsx"),
     a("data-rename-form", "conditional", "pages.tsx project menu"),
     a("data-duplicate-form", "conditional", "pages.tsx"),
     a("data-fork-project", "conditional", "pages.tsx"),

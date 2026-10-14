@@ -1598,3 +1598,272 @@ describe("POST /p/:slug/import/preview + /import/create — the JSON dual-modes 
     }
   });
 });
+
+describe("GET /bff/app — the §5.2 project-home aggregate twin (SPA.15; REQ-BFF-1/8/9, REQ-DAT-4/12)", () => {
+  const VOICES = [{ personaId: "pers_1", name: "Lead", status: { pill: "Ready" } }];
+  const PROTOCOLS = [{ id: "proto_1", name: "Standard" }];
+  const HITS = [{ kind: "project", projectId: "proj_pv", slug: "the-politics-of-visibility", title: "The Politics of Visibility", snippet: "…" }];
+  const DELETED = [{ id: "proj_del", slug: "gone", title: "Gone", deletedAt: "2026-10-01T00:00:00Z" }];
+  const BAL = { spendableCredits: 12_000, heldCredits: 400 };
+  const homeDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        listVoices: async () => VOICES,
+        getProjectGrouping: async () => "voice",
+        getBillingBalance: async () => BAL,
+        searchProjects: async () => HITS,
+        listProtocolCards: async () => PROTOCOLS,
+        listDeletedProjects: async () => DELETED,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns the aggregate — raw DTOs; deletedRows empty without ?deleted=1; no search key without ?q", async () => {
+    const res = await createWebApp(homeDeps({})).request("/bff/app", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      rows: ROWS,
+      voices: VOICES,
+      groupBy: "voice",
+      balance: { spendableCredits: 12_000, heldCredits: 400 },
+      protocols: PROTOCOLS,
+      deletedRows: [],
+    });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("?deleted=1 gates the deleted-scope read — the rows land on the twin", async () => {
+    let calls = 0;
+    const res = await createWebApp(
+      homeDeps({ listDeletedProjects: async () => { calls++; return DELETED as never; } }),
+    ).request("/bff/app?deleted=1", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(calls).toBe(1);
+    expect(body.deletedRows).toEqual(DELETED);
+  });
+
+  it("?q= drives the server-side searchProjects — {search:{q,results}} rides the payload", async () => {
+    const seen: string[] = [];
+    const res = await createWebApp(
+      homeDeps({ searchProjects: async (_s: unknown, q: string) => { seen.push(q); return HITS as never; } }),
+    ).request("/bff/app?q=politics", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(seen).toEqual(["politics"]);
+    expect((await res.json()).search).toEqual({ q: "politics", results: HITS });
+  });
+
+  it("a ?q= that trims to empty never reaches searchProjects", async () => {
+    let calls = 0;
+    const res = await createWebApp(
+      homeDeps({ searchProjects: async () => { calls++; return HITS as never; } }),
+    ).request("/bff/app?q=%20%20", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(calls).toBe(0);
+    expect((await res.json()).search).toBeUndefined();
+  });
+
+  it("degraded optional seams land the SSR's composed defaults — groupBy attention, null balance, empty seams", async () => {
+    const res = await createWebApp(
+      homeDeps({
+        listVoices: async () => { throw new ApiError(503, "x"); },
+        getProjectGrouping: async () => { throw new ApiError(503, "x"); },
+        getBillingBalance: async () => { throw new ApiError(503, "x"); },
+        listProtocolCards: async () => { throw new ApiError(503, "x"); },
+        listDeletedProjects: async () => { throw new ApiError(503, "x"); },
+      }),
+    ).request("/bff/app?deleted=1", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      rows: ROWS,
+      voices: [],
+      groupBy: "attention",
+      balance: null,
+      protocols: [],
+      deletedRows: [],
+    });
+  });
+
+  it("a degraded search seam omits the search key — the SSR's undefined-search path", async () => {
+    const res = await createWebApp(
+      homeDeps({ searchProjects: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/app?q=x", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).search).toBeUndefined();
+  });
+
+  it("an upstream 401 in an optional seam is NOT swallowed — the unauthenticated envelope answers", async () => {
+    const res = await createWebApp(
+      homeDeps({ listVoices: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/app", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("a load-bearing listProjects failure maps through bffFail (upstream 5xx → 502)", async () => {
+    const res = await createWebApp(
+      homeDeps({ listProjects: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/app", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "upstream_unavailable" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp(homeDeps({}, () => null)).request("/bff/app", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("POST /app/grouping + /p/:slug/* — the project-home mutation JSON branches (SPA.15; REQ-BFF-1/2/3)", () => {
+  const homeMutDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        listVoices: async () => [],
+        getProjectGrouping: async () => "attention",
+        setProjectGrouping: async () => undefined,
+        duplicateProject: async () => ({ ...ROWS[0], id: "proj_copy", slug: "the-copy" }),
+        archiveProject: async () => undefined,
+        unarchiveProject: async () => undefined,
+        deleteProject: async () => undefined,
+        restoreProject: async () => undefined,
+        listDeletedProjects: async () => [{ id: "proj_del", slug: "gone", title: "Gone" }],
+        getBillingBalance: async () => null,
+        listProtocolCards: async () => [],
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("POST /app/grouping — JSON caller gets {ok,redirect:'/app'}; the write ran with the parsed value", async () => {
+    const seen: string[] = [];
+    const res = await createWebApp(
+      homeMutDeps({ setProjectGrouping: async (_s: unknown, g: string) => { seen.push(g); } }),
+    ).request("/app/grouping", {
+      ...jsonPost,
+      body: JSON.stringify({ groupBy: "voice" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app" });
+    expect(seen).toEqual(["voice"]);
+  });
+
+  it("POST /app/grouping — a form post still 302s to /app (SSR behaviour verbatim)", async () => {
+    const res = await createWebApp(homeMutDeps({})).request("/app/grouping", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "groupBy=voice",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app");
+  });
+
+  it("POST /app/grouping — no session → 401 JSON vs the form's /login redirect", async () => {
+    const json = await createWebApp(homeMutDeps({}, () => null)).request("/app/grouping", {
+      ...jsonPost,
+      body: JSON.stringify({ groupBy: "voice" }),
+    });
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const form = await createWebApp(homeMutDeps({}, () => null)).request("/app/grouping", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "groupBy=voice",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+  });
+
+  it("POST /p/:slug/duplicate — JSON caller gets the copy's /p/<slug> as the envelope's redirect", async () => {
+    const res = await createWebApp(homeMutDeps({})).request("/p/the-politics-of-visibility/duplicate", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-copy" });
+  });
+
+  it("POST /p/:slug/duplicate — a swallowed write redirects to the SOURCE slug (SSR verbatim)", async () => {
+    const res = await createWebApp(
+      homeMutDeps({ duplicateProject: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/p/the-politics-of-visibility/duplicate", { ...jsonPost, body: "{}" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+  });
+
+  it("POST /p/:slug/duplicate — an unknown slug answers {error:not_found} 404 vs the form's not-found document", async () => {
+    const json = await createWebApp(homeMutDeps({})).request("/p/nope/duplicate", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(json.status).toBe(404);
+    expect(await json.json()).toEqual({ error: "not_found" });
+    const form = await createWebApp(homeMutDeps({})).request("/p/nope/duplicate", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "",
+    });
+    expect(form.status).toBe(404);
+  });
+
+  for (const suffix of ["archive", "unarchive", "delete"] as const) {
+    it(`POST /p/:slug/${suffix} — JSON caller gets {ok,redirect:'/app'}; form still 302s`, async () => {
+      const method = `${suffix}Project`;
+      const calls: string[] = [];
+      const json = await createWebApp(
+        homeMutDeps({ [method]: async (_s: unknown, id: string) => { calls.push(id); } } as Partial<DataSource>),
+      ).request(`/p/the-politics-of-visibility/${suffix}`, { ...jsonPost, body: "{}" });
+      expect(json.status).toBe(200);
+      expect(await json.json()).toEqual({ ok: true, redirect: "/app" });
+      expect(calls).toEqual(["proj_pv"]); // slug→id resolved through the session-scoped list
+      const form = await createWebApp(homeMutDeps({})).request(`/p/the-politics-of-visibility/${suffix}`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "",
+      });
+      expect(form.status).toBe(302);
+      expect(form.headers.get("location")).toBe("/app");
+    });
+  }
+
+  it("POST /p/:slug/restore — resolves against the DELETED list, redirects to /app?deleted=1", async () => {
+    const calls: string[] = [];
+    const res = await createWebApp(
+      homeMutDeps({ restoreProject: async (_s: unknown, id: string) => { calls.push(id); } }),
+    ).request("/p/gone/restore", { ...jsonPost, body: "{}" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app?deleted=1" });
+    expect(calls).toEqual(["proj_del"]);
+  });
+
+  it("POST /p/:slug/restore — an active (non-deleted) slug answers {error:not_found}", async () => {
+    const res = await createWebApp(homeMutDeps({})).request("/p/the-politics-of-visibility/restore", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("row mutations with no session → 401 JSON, never a redirect", async () => {
+    const app = createWebApp(homeMutDeps({}, () => null));
+    for (const path of [
+      "/p/the-politics-of-visibility/duplicate",
+      "/p/the-politics-of-visibility/archive",
+      "/p/gone/restore",
+    ]) {
+      const res = await app.request(path, { ...jsonPost, body: "{}" });
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "unauthenticated" });
+    }
+  });
+});

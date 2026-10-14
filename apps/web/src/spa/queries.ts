@@ -17,6 +17,9 @@ import type {
   NotificationPrefsDto,
   PreferencesSettingsDto,
   PrincipalDto,
+  ProjectGroupByDto,
+  ProjectRow,
+  ProjectSearchHitDto,
   ProjectSettingsDto,
   ProtocolCardDto,
   TimelineDto,
@@ -500,6 +503,46 @@ export const projectImportPreviewQuery = (slug: string, search: { readonly qk?: 
       const c = q.state.data?.importPreview?.conversion;
       return c?.pending === true ? ((c.pollAfterSeconds ?? 3) * 1000) : false;
     },
+    retry: retryPolicy,
+  });
+};
+
+// ---- SPA.15 — the `project-home` surface's twin (REQ-BFF-1/8/9, REQ-DAT-4; design/22 §2 `app`
+// row). `GET /bff/app` ships RAW DTOs — the row→view mapping (`toProjectRowView`, `groupByAttention`
+// /`groupByVoice`) and the voice/protocol/sort/archived filters run client-side off the shared
+// `state-map.ts` seam (design/22 F10 — the mapper is pure COPY+DTO, bundle-portable). Only `?q=` and
+// `?deleted=1` drive server reads (search + the deleted scope are never client-derivable), so they
+// alone ride the key — the display filters re-render from the cached aggregate. Project mutations
+// invalidate the `["bff","app"]` prefix (REQ-BFF-10's list key). ----
+
+/** `GET /bff/app` — the §5.2 home aggregate (the document's seam composition, raw DTOs). */
+export interface BffAppHomeTwin {
+  readonly rows: readonly ProjectRow[];
+  readonly voices: readonly VoiceListRowDto[];
+  readonly groupBy: ProjectGroupByDto;
+  /** the §14.5 level-0 chip — null when the billing seam degraded (SSR's absent-`bal` verbatim). */
+  readonly balance: { readonly spendableCredits: number; readonly heldCredits: number } | null;
+  readonly protocols: readonly ProtocolCardDto[];
+  /** the 30-day restore window — present only when `?deleted=1` rode the read. */
+  readonly deletedRows: readonly ProjectRow[];
+  /** set when `?q=` ran — the server-side hits replace the groups (§5.2's interim search). */
+  readonly search?: { readonly q: string; readonly results: readonly ProjectSearchHitDto[] };
+}
+
+/** The read-driving search params — display filters (`voice`/`protocol`/`sort`/`archived`) never reach the twin. */
+export interface ProjectHomeSearch {
+  readonly q?: string;
+  readonly deleted?: string;
+}
+
+export const projectHomeQuery = (s: ProjectHomeSearch = {}) => {
+  const qs = new URLSearchParams();
+  if (s.q != null && s.q !== "") qs.set("q", s.q);
+  if (s.deleted === "1") qs.set("deleted", "1");
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return queryOptions({
+    queryKey: ["bff", "app", { q: s.q ?? null, deleted: s.deleted === "1" }],
+    queryFn: () => bffFetch<BffAppHomeTwin>(`/bff/app${suffix}`),
     retry: retryPolicy,
   });
 };
