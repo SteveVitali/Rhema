@@ -1,11 +1,11 @@
 # Rhēma — Post-SPA disposition spec (round 5)
 
-*Status: REVISED DRAFT pending operator ratification (§10). Synthesized 2026-10-15 from the
+*Status: RATIFIED 2026-10-15 — all §10 rulings taken as recommended (Q-ECON.e=server-default+opt-outs, Q-ECON.f=~$60 headroom, Q-POSTURE=posture-first, Q-5=confirm-after-dry-run + literal DROP closes; remaining register rows ratified as recommended). Synthesized 2026-10-15 from the
 round-5 research ledger (`docs/research-ledger.md`, 22 rows) + `docs/research/r5_*.md`;
 adversarial review O2 returned REVISE with 22 findings — all dispositioned in this revision
 (the per-finding log lives in `docs/research/r5_o2_review-dispositions.md`). Amends
 `docs/frontend-spa-spec.md` §7/§14 and `docs/rhema-design-spec.md` where named. REQ ids are
-normative; `⚑` marks operator-ruling surfaces. Decomposition runs only after §10 ratifies.*
+normative; `⚑` marks operator-ruling surfaces. Decomposition proceeds under the ratified rulings.*
 
 Round 4's chain is live on prod at `ffbb8ad`: the SPA shell serves every authenticated
 document, public funnel + forced-SSR Page family still serve SSR, all free journey legs

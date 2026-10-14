@@ -16,7 +16,7 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        O3 (operator ratification)
+nextUnit:        O4 (decomposition-prompt.md)
 lastCompleted:   G1 (all 22 research/design rows done)
 blockedOn:       (nothing)
 pauseRequested:  false
@@ -26,7 +26,7 @@ specOut:         docs/post-spa-disposition-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-14T20:17:11Z
+updatedAt:       2026-10-14T20:21:25Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
@@ -114,7 +114,7 @@ updatedAt:       2026-10-14T20:17:11Z
 |---|---|---|---|---|
 | O1 | Draft the spec from the ledger notes | S | done | docs/post-spa-disposition-spec.md drafted — all streams synthesized; NAVC collision renumbered (A5→16..24) |
 | O2 | Fresh-context adversarial review (consistency, coverage of every ledger row, MVP realism, self-contradiction) | S | done | REVISE — 4 blockers + 9 majors; all 22 dispositioned in revised spec; r5_o2_review-dispositions.md |
-| O3 | Operator ratification round — §Q answers → canonical | S | open | |
+| O3 | Operator ratification round — §Q answers → canonical | S | done | Ratified 2026-10-15 — all recommendations accepted (Q-ECON.e=server-default, Q-ECON.f=~$60, Q-POSTURE=first, Q-5=confirm+literal) |
 | O4 | `docs/decomposition-prompt.md` hand-off to decompose-spec | S | open | |
 
 ## Q. Operator decisions register
