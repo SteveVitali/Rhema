@@ -16,7 +16,7 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        O2
+nextUnit:        O3 (operator ratification)
 lastCompleted:   G1 (all 22 research/design rows done)
 blockedOn:       (nothing)
 pauseRequested:  false
@@ -26,7 +26,7 @@ specOut:         docs/post-spa-disposition-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-14T20:04:24Z
+updatedAt:       2026-10-14T20:17:11Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
@@ -113,7 +113,7 @@ updatedAt:       2026-10-14T20:04:24Z
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
 | O1 | Draft the spec from the ledger notes | S | done | docs/post-spa-disposition-spec.md drafted — all streams synthesized; NAVC collision renumbered (A5→16..24) |
-| O2 | Fresh-context adversarial review (consistency, coverage of every ledger row, MVP realism, self-contradiction) | S | open | |
+| O2 | Fresh-context adversarial review (consistency, coverage of every ledger row, MVP realism, self-contradiction) | S | done | REVISE — 4 blockers + 9 majors; all 22 dispositioned in revised spec; r5_o2_review-dispositions.md |
 | O3 | Operator ratification round — §Q answers → canonical | S | open | |
 | O4 | `docs/decomposition-prompt.md` hand-off to decompose-spec | S | open | |
 
