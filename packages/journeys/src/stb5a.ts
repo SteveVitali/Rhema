@@ -443,6 +443,10 @@ const T3: StepFn = async (ctx) => {
     buffer: Buffer.from(zipBytes),
   });
   await importForm.locator('button[type="submit"]').click();
+  // SPA timing: the import POST runs async and the {ok,redirect} envelope lands as an in-router
+  // nav — no document loads, so settleNav resolves instantly while the upload is still in flight.
+  // Wait for the flash URL itself (imported/deduped/importFailed all carry ?notice=).
+  await b.page.waitForURL(/[?&]notice=/, { timeout: 30_000 }).catch(() => undefined);
   await settleNav(b.page, ctx);
   if (!/notice=imported/.test(b.page.url())) {
     defects.push(`the import did not land on notice=imported (${b.page.url()}) — D-STB.5a-2`);
@@ -468,6 +472,8 @@ const T3: StepFn = async (ctx) => {
       buffer: Buffer.from(zipBytes),
     });
     await again.locator('button[type="submit"]').click();
+    // same SPA timing as the first import — the deduped verdict rides an in-router redirect.
+    await b.page.waitForURL(/[?&]notice=/, { timeout: 30_000 }).catch(() => undefined);
     await settleNav(b.page, ctx);
     if (!/notice=deduped/.test(b.page.url()) && (await b.page.locator('[data-import-notice="deduped"]').count()) === 0) {
       defects.push(`the re-import did not report deduped (${b.page.url()})`);
