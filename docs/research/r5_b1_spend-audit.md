@@ -62,3 +62,6 @@ T11–T13, BL-21) could reuse a seeded review rather than re-running the editor 
 - REQ-ECON-2: test-tenant runs MUST debit at the tier actually run (REQ-SPEC-32 preserved).
 - REQ-ECON-3: artifact-reuse (seeded delivered review) SHOULD replace re-running the editor
   pipeline for legs whose object is the surface, not the model.
+
+---
+*Amended 2026-10-15 per B3-F3: the ~$48.36 / 212-row `model='base'` `source='proxy'` population is NOT proxy-metered burn — `meterResponse` cannot emit a tier label (`rateForModel` throws `UnknownModelError` on unpriceable ids; `rates.ts:91-99`). These are `seedDeliveredRunReport` fixture rows (`db/src/seed/showcase.ts:675-725`, `provider_request_id='req_jrn_report_*'`) — see `r5_b3_lever-guard-design.md` F3 / REQ-ECON-6. The guard's unfiltered `source='proxy'` sum therefore counts fixture fiction.*
