@@ -468,9 +468,13 @@ describe("SEC.2 — form order: email leads in open mode on BOTH forms", () => {
       const formAt = html.indexOf(`action="${path}"`);
       expect(formAt).toBeGreaterThanOrEqual(0);
       const body = html.slice(formAt);
-      const codeAt = body.indexOf('name="code" required');
+      const codeAt = body.indexOf('name="code"');
       const emailAt = body.indexOf('name="email"');
-      expect(codeAt).toBeGreaterThanOrEqual(0); // required attr on the code input
+      expect(codeAt).toBeGreaterThanOrEqual(0);
+      // The code input carries `required` — attribute presence on the tag, not a serialization pin
+      // (React 19 emits boolean attrs as `required=""` and orders attrs differently than 18).
+      const codeInputTag = body.slice(body.lastIndexOf("<input", codeAt), body.indexOf(">", codeAt) + 1);
+      expect(codeInputTag).toMatch(/\brequired(\s*=\s*"[^"]*")?/);
       expect(emailAt).toBeGreaterThanOrEqual(0);
       expect(codeAt).toBeLessThan(emailAt); // invite-first ordering
       expect(body.slice(0, codeAt)).not.toContain("<details"); // bare — not behind a disclosure

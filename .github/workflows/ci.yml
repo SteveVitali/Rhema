@@ -219,6 +219,12 @@ jobs:
       # committed `@rhema/protocols` at export) and the `@rhema/evals` stub (RHEMA_EVALS_PATH unset).
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build --filter=@rhema/protocols-stub --filter=@rhema/evals
+      # REQ-SAFE-9 / REQ-TL-3 (SPA.1): build the real @rhema/web bundle — including the Vite SPA
+      # output at apps/web/public/spa/ — BEFORE the marker scan and the bundle-budget gate so both
+      # read real artifacts, never an absent dir. The `...` pulls workspace deps (api-client dist is
+      # a scan target too).
+      - name: build @rhema/web (islands + SPA output)
+        run: pnpm turbo build --filter=@rhema/web...
       - name: gitleaks (no secrets in the repo — REQ-ARCH-30)
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -233,3 +239,7 @@ jobs:
         run: pnpm check:protocol-markers
       - name: never-cookies — no credential field/header/input on the ingestion surface (AC-I-B, REQ-INGEST-5)
         run: pnpm check:no-cookies
+      # REQ-SAFE-7 (SPA.1): gzip ceilings over public/spa — runs AFTER the SPA build (fail-closed if
+      # the manifest is absent) and after the scan gates, per the REQ-SAFE-9 step order.
+      - name: SPA bundle budget (REQ-SAFE-7)
+        run: pnpm check:spa-budget

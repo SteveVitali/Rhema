@@ -13,6 +13,11 @@ RUN corepack enable
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @rhema/web... build
+# SPA.1 / REQ-TL-6: `vite build` emits hidden sourcemaps under public/spa/assets/*.map for the CI
+# provenance scan only — strip them so they never ship inside the runtime image (the /assets/spa/*
+# name gate also refuses to serve them; belt and suspenders). Fail-closed: a missing public/spa
+# means `vite build` silently skipped — refuse the image.
+RUN find /repo/apps/web/public/spa -name '*.map' -type f -delete
 RUN pnpm --filter @rhema/web --prod deploy --legacy /bundle
 
 # ---- runtime: non-root, minimal ----

@@ -56,6 +56,15 @@ Build `apps/web` as **React Router v7 SSR in declarative/library mode**, compile
   the free param-matching/manifest; the declarative-mode middle ground keeps React Router meaningfully in the
   loop at no real cost.
 
+## Amended 2026-10-08 — Vite admitted for the auth'd SPA scope (ADR-106)
+
+ADR-106 amends this ruling for the authenticated-surface scope: the auth'd app migrates to a real
+TanStack Router + Query SPA built by Vite (`apps/web/vite.config.ts`, `src/spa` → `public/spa`). The
+"no bundler" posture was scoped to the REQ-BETA-21 throwaway shell — both stated revisit conditions
+(a real SPA arriving; a bundler the green gate can carry) are met rather than violated. The public
+SSR documents and the esbuild island pipeline are unchanged and keep building under `tsc -b` +
+`build-client.mjs` — Vite owns only `src/spa/**`.
+
 ## Revisit trigger
 
 P1.01 (design-system + IDE shell) replaces this shell wholesale — it is stopgap #2 of the two REQ-BETA-21

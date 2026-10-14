@@ -113,9 +113,9 @@ export default tseslint.config(
     languageOptions: { sourceType: "module", globals: nodeGlobals },
   },
   {
-    // The web client bundle sources (PRB.07 editor + P1.01 ide) run in the browser — DOM globals, not
-    // Node's.
-    files: ["apps/web/src/client/**/*.ts"],
+    // The web client bundle sources (PRB.07 editor + P1.01 ide) and the SPA sources (SPA.1,
+    // apps/web/src/spa — the Vite graph) run in the browser — DOM globals, not Node's.
+    files: ["apps/web/src/client/**/*.ts", "apps/web/src/spa/**/*.ts", "apps/web/src/spa/**/*.tsx"],
     languageOptions: {
       globals: {
         document: "readonly",

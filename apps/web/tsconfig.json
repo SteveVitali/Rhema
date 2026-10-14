@@ -40,6 +40,9 @@
   "exclude": [
     "dist",
     "src/client",
+    // The Vite SPA graph (SPA.1) is owned by tsconfig.spa.json — DOM lib + Bundler resolution; the
+    // tsc -b server graph must not compile it (it ships to browsers, never through dist/).
+    "src/spa",
     "**/*.test.ts",
     "**/*.test.tsx"
   ]
