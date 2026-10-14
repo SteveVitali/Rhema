@@ -57,3 +57,11 @@ Reports: `docs/build/reports/2026-10-14_ARMB2-harness-legs*/`, `2026-10-15_ARMB2
 `d16ff6db`, all ten images re-pinned). Deployed-SHA verification
 (`reports/2026-10-14_ARMB2-deployed-legs/`): **T5, N4, N8, T7 — all PASS**; spend $0.
 Full free suite running against the deployed SHA.
+
+## Free-suite result (deployed ffbb8ad, 2026-10-14)
+
+`reports/2026-10-14_ARMB2-free-suite/`: **32 PASS, 3 FLIP→green, 4 owed, 1 FAIL.**
+The sole FAIL is N9 — the tracked jrn-a billing-fixture reseat (D-OBS.1-3; operator prod-data
+write). T3's failure in that sweep was a further settle race (submit → `settleNav` resolves
+instantly on the in-router redirect) — fixed in `stb5a.ts` (both import submits now
+`waitForURL(/[?&]notice=/)`); **T3 verified PASS** at `ffbb8ad` (`2026-10-14_ARMB2-t3b/`).
