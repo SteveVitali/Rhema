@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      HYGIENE.1          # round-5 chain opens at row 150 (HUMAN marker) → first dispatchable is 151
-lastCompleted:   SPADOC.2           # 2026-10-10 (row 148); round-5 chain opens at 150_HUMAN-H8/151_HYGIENE.1
+nextTicket:      FIX.1              # manifest row 152 (152_FIX.1__journey-fixture-repairs.md)
+lastCompleted:   HYGIENE.1          # 2026-10-14 (row 151); PR #172 on stevevitali/r5-synthesis (mergePolicy OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (nothing)          # GD-MAINT.4-1 waived the inherited privsep CI red 2026-10-07; remaining live legs gate on a FUNDED window + operator rows
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r5-synthesis # round 5 stacks here
+chainTip:        stevevitali/hygiene-1-memory-hygiene # round 5 stacks here (HYGIENE.1 head)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           5                  # post-spa disposition — spec docs/post-spa-disposition-spec.md (ratified 2026-10-15)
 harness:         devin-cli/swe-2/subagent   # BM-HARNESS-01
-updatedAt:       2026-10-14T20:32:15Z         # ROUND 5 decomposed — 26 rows appended under the Round 5 banner
+updatedAt:       2026-10-14T21:26:38Z         # HYGIENE.1 closed — parser alignment + 96 cell normalizations + index/anchor/backlog fixes
 ```
 
 ## OPEN FINDINGS
@@ -478,3 +478,5 @@ one `## PHASE LOG — Round <n>` region per build round; the new round's heading
 previous region's last line so older regions stay byte-frozen (append-only) and the checker judges only
 the current region. The three 2026-10-14 entries directly above this heading (ARMB, ARMB.2, the round-5
 decomposition) predate the convention and remain in the prior region verbatim._
+
+- 2026-10-14T21:26:38Z — HYGIENE.1 done — build-memory hygiene + status-cell normalization (docs/tooling-only, $0; PR #172 on stevevitali/r5-synthesis, unmerged; mergePolicy OPERATOR) — branch stevevitali/hygiene-1-memory-hygiene @ 6fc0ac3. Ships: committed REQ-MEM-2 census tools + report (320 rows, 78 parser disagreements — normative edit list); upstream agent-skills@e981ec5 flips check-build-memory.sh to positional first-canonical-token at all 3 status consumers + v2-positional-status fixture (run-tests 18/18); 96 DEFERRALS cell flips — 55 G1 ALREADY-DONE → DONE (incl. 28 D-SPAF.*-1/-2), 41 DROP → WONTFIX + literal DROPPED 2026-10-14: closes; tails verbatim, zero rows deleted; owed set 203 → 107. BACKLOG: BL-16/17/21 closed, BL-73 dated DEFER note, ADR-094 → BL-77. BUILD_INDEX seq 177 = ARMB.2 + naming convention in build/README. COVERAGE_MATRIX REQ-IDE-20/-21 §5.3 → §6.6. LEDGER: harness key re-slotted; ## PHASE LOG — Round 5 region opened (REQ-MEM-4 rotation convention). Verify: check-build-memory 0 violations (8 pre-existing-class warnings) · check-history --staged 0/0 (98 dates, 37,446 protected lines) · check-append-only vs 27f8672 OK · check-backlog clean (369 expected) · turbo 135/135 · pnpm test 5,575 pass / 4 skip / 0 fail (489 files; parity fixture 6/6) · normalize --verify 106/106. Deferrals: none opened, 96 normalized-closed. ci: pending at closeout (typecheck/lint/unit reported pending — the recurring first-read class). runs/HYGIENE.1.md · pr/HYGIENE.1.md. lastCompleted → HYGIENE.1 · nextTicket → FIX.1 (row 152) · chainTip → stevevitali/hygiene-1-memory-hygiene · projectStatus IN_PROGRESS.
