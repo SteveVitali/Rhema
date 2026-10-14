@@ -368,8 +368,13 @@ async function sheetFigure(
   query: string,
 ): Promise<{ credits: number; band: { low: number; high: number } | null }> {
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&${query}`);
-  const creditsLine = (await page.textContent("[data-credits-line]")) ?? "";
-  const timeLine = (await page.textContent("[data-time-line]")) ?? "";
+  // Post-settle the estimate-box variant is final — probe with count(), never a waiting
+  // textContent: the §14.3 Included variant carries no data-credits-line and a waiting read
+  // would burn the whole timeout before the fallback could run (ACT.1 trial tenants).
+  const creditsEl = page.locator("[data-credits-line]").first();
+  const timeEl = page.locator("[data-time-line]").first();
+  const creditsLine = ((await creditsEl.count()) > 0 ? await creditsEl.textContent() : null) ?? "";
+  const timeLine = ((await timeEl.count()) > 0 ? await timeEl.textContent() : null) ?? "";
   if (creditsLine) return { credits: creditsOf(creditsLine), band: bandOf(timeLine) };
   if ((await page.locator("[data-included='true']").count()) === 0) {
     throw new Error(`run sheet renders neither a credits line nor the Included variant`);
@@ -606,6 +611,9 @@ const N8: StepFn = async (ctx) => {
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("n8"), PAID_FIXTURE);
   // the Edit source IS the /v/working entry — click it, never type the URL
   const edit = page.locator('a[data-edit-source]').first();
+  // SPA timing: the URL changes on the client-side nav while the leaf's twin is still loading —
+  // the affordance attaches on the first data paint (~1 s live). Wait for it, never a bare count.
+  await edit.waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
   if ((await edit.count()) === 0) throw new Error("the project page has no Edit source affordance");
   await edit.click();
   await page.waitForURL(/\/v\/working/, { timeout: 15_000 });

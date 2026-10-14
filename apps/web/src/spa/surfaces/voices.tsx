@@ -226,6 +226,10 @@ function useVoiceFormSubmit(opts?: {
             headers: { ...pre.requiredHeaders },
             body: f.value,
           });
+          // fetch resolves on headers — draining the body closes Chromium's request entry so a
+          // later document nav can't abort a response the app already accepted (live: the
+          // requestfailed sweep flagged ERR_ABORTED on a PUT whose bytes had landed).
+          await put.arrayBuffer().catch(() => new ArrayBuffer(0));
           if (!put.ok) throw new BffError(put.status, "upload_failed", { detail: `upload PUT ${put.status}` });
           json["quarantineKey"] = pre.key;
           continue;

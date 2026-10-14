@@ -768,41 +768,54 @@ const T7: StepFn = async (ctx) => {
   // app-login role exactly this read — the queue name is pinned and no payload column returns.
   // Pre-0058 deploys fall back to the raw table read (a system-scoped JOURNEY_DATABASE_URL);
   // a 42501 there still reports owed, never a fail.
-  let rows: unknown[];
-  try {
-    ({ rows } = await db().query(
-      `select state, start_after, singleton_key, tombstoned_at::text as tombstoned_at
-         from public.rhema_project_purge_schedule($1)`,
-      [projectId],
-    ));
-  } catch (e) {
-    const code = (e as { code?: string }).code;
-    if (code === "42883") {
-      // probe not deployed yet — the raw read under a system DSN still works.
-      try {
-        ({ rows } = await db().query(
-          `select state, start_after, singleton_key, data->>'tombstonedAt' as tombstoned_at
-             from pgboss.job where name = 'project.purge' and data->>'projectId' = $1
-            order by created_on desc limit 1`,
+  const probeOnce = async (): Promise<unknown[]> => {
+    try {
+      return (
+        await db().query(
+          `select state, start_after, singleton_key, tombstoned_at::text as tombstoned_at
+             from public.rhema_project_purge_schedule($1)`,
           [projectId],
-        ));
-      } catch (e2) {
-        if ((e2 as { code?: string }).code === "42501") {
-          throw new Error(
-            "owed — JOURNEY_DATABASE_URL's role has no grant on the pgboss schema (42501): " +
-              "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
-          );
+        )
+      ).rows;
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code === "42883") {
+        // probe not deployed yet — the raw read under a system DSN still works.
+        try {
+          return (
+            await db().query(
+              `select state, start_after, singleton_key, data->>'tombstonedAt' as tombstoned_at
+                 from pgboss.job where name = 'project.purge' and data->>'projectId' = $1
+                order by created_on desc limit 1`,
+              [projectId],
+            )
+          ).rows;
+        } catch (e2) {
+          if ((e2 as { code?: string }).code === "42501") {
+            throw new Error(
+              "owed — JOURNEY_DATABASE_URL's role has no grant on the pgboss schema (42501): " +
+                "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
+            );
+          }
+          throw e2;
         }
-        throw e2;
       }
-    } else if (code === "42501") {
-      throw new Error(
-        "owed — JOURNEY_DATABASE_URL's role cannot execute rhema_project_purge_schedule (42501): " +
-          "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
-      );
-    } else {
+      if (code === "42501") {
+        throw new Error(
+          "owed — JOURNEY_DATABASE_URL's role cannot execute rhema_project_purge_schedule (42501): " +
+            "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
+        );
+      }
       throw e;
     }
+  };
+  // pg-boss send-it commits the queued row just AFTER the delete response lands (live: the row
+  // appeared ~12 ms after tombstoned_at — a single read races the enqueue). Poll briefly.
+  let rows: unknown[] = [];
+  for (const deadline = Date.now() + 15_000; ; ) {
+    rows = await probeOnce();
+    if (rows.length > 0 || Date.now() >= deadline) break;
+    await new Promise((r) => setTimeout(r, 1_000));
   }
   const job = rows[0] as
     | { state: string; start_after: Date; singleton_key: string | null; tombstoned_at: string | null }
