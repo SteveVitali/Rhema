@@ -66,7 +66,7 @@ updatedAt:       2026-10-14T19:05:00Z
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
 | B1 | Spend audit: per-leg USD from `usage_records`/ledger rows for the funded-window set + the $58.08 baseline week — top burners by model-tier × phases × fixture size | R | done | `docs/research/r5_b1_spend-audit.md` — ~$153.60/30d on is_test; cache-read tokens dominate (fixture caps don't bound); `verifier`@balanced ~$6.60/call; editor-family ~85% |
-| B2 | Entitlement/model-tier routing surface: how run tiers resolve (`is_test` tenant path), whether a cheaper test tier preserves REQ-SPEC-32 money-truthfulness (debit = metered burn at the tier actually run) | R | in-progress | |
+| B2 | Entitlement/model-tier routing surface: how run tiers resolve (is_test tenant path), whether a cheaper test tier preserves REQ-SPEC-32 money-truthfulness | R | done | r5_b2_tier-routing.md — tier label already at floor (all legs pin base); real lever is intra-tier Haiku arm via the is_test cogsLevers seam; debits price served model so REQ-SPEC-32 holds by construction |
 | B3 | Lever + guard design: ranked levers (tier routing, fixture sizing, per-leg USD caps, deterministic providers for non-model legs, phase reduction) → the regime the funded window opens under; weekly guard + per-ticket cap + tripwire composition | D | open | |
 
 ## C. Fixture substrate & owed free legs

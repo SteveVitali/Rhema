@@ -32,3 +32,15 @@ The leg builds its own substrate (`createDraftProject` → `FREE_FIXTURE` → `/
 - **REQ-FIX-T12F:** wait-for-attach (or response-status capture) so repaint lag can't masquerade as a missing notice; if POST fails live, file the product defect.
 
 *Parent actions: run the P1.dossier triage leg and one logged T12F re-run before spec-time (both need live browser).*
+---
+
+## Addendum — P1.dossier root cause confirmed live (2026-10-15)
+
+Live probes against `ffbb8ad` (authenticated jrn-a session, `viewport 390×844`):
+
+- **Android UA + `sec-ch-ua-mobile` header** → `/p/showcase/review/01M4XCGEQ250TANHRSYXRNZ90R`, `data-renderer="spa"`, `data-device="phone"`, `data-bulk-controls`=0. Passes.
+- **Default desktop UA + `sec-ch-ua-mobile: ?1` as `extraHTTPHeader`** (leg-verbatim) → same URL, `data-renderer="spa"`, **`data-device="desktop"`**, `data-bulk-controls`=**1**. Fails exactly as the suite did.
+
+Root cause: Chromium emits its own `sec-ch-ua-mobile` UA-CH from the UA string; with the default desktop UA it sends `?0`, which **overrides** the `extraHTTPHeaders` value on the wire. `isPhoneRequest` (`server.ts:1289`, `spa-shell.ts`) reads `?0` → `deviceClass=desktop` → `compact=false` → `dossierBulkActions` mounts (`dossier-view.tsx:640`). The leg's `MOBILE_HEADERS` mechanism was silently inert the whole time.
+
+**Fix classification: harness.** The leg must set a mobile `userAgent` (the existing `JOURNEY_ANDROID_UA` env knob, `steps.ts:28`) so Chromium emits `?1` natively — the header alone is unreliable. This is a round-5 ticket alongside the P1.dossier pin: set `userAgent` in the phone context, assert `data-device="phone"` before the bulk count (self-classifying next time), and extend the assert to `[data-apply]` per §10.1 pending the operator's Q-1 call.
