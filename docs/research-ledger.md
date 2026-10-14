@@ -56,7 +56,7 @@ updatedAt:       2026-10-14T19:05:00Z
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
 | A1 | Anchor census: every `<a href>` / injected-HTML link in `spa/` + shared SSR components, classified by destination class (in-tree / SPA_PUBLIC / forced-SSR-family / `reloadDocument` stub / external / `download` / `target` / modifier attrs) → the interception decision table | R | in-progress | |
-| A2 | TanStack Router API surface for href→route resolution at runtime (`matchRoute`/`buildLocation`/`flatRoutes`, `reloadDocument` stub behavior under `router.navigate`, `<Link>`'s own skip semantics) — what a delegated handler can reuse | R | in-progress | |
+| A2 | TanStack Router API surface for href→route resolution at runtime (`matchRoute`/`buildLocation`/`flatRoutes`, `reloadDocument` stub behavior under `router.navigate`, `<Link>`'s own skip semantics) — what a delegated handler can reuse | R | done | `docs/research/r5_a2_tanstack-api.md` — `getMatchedRoutes`+`**` predicate; Link guard semantics; hand-rolled origin test; stubs self-doc-nav |
 | A3 | Mechanism design: delegated document-level interceptor vs dual-renderer `<NavLink>` vs hybrid — skip-list semantics, `twinForcesSsr`/`SsrHandoff` interplay, scroll/focus/title duties on client navs, history parity (push vs replace) | D | open | |
 | A4 | Verification design: the settle-contract extension that lets journeys + dom-contract *see* nav mechanism (counter hook / performance entries); a client-nav chain leg (`/app`→`/p/:p`→`/v/working`) asserting zero document loads; REQ-NAV-6 keep-alive proof once navs stay in-router | D | open | |
 | A5 | Dormant-machinery audit: what becomes live once navs are client-side (intent prefetch, scrollRestoration, keymap `router.navigate` chords, focus/aria-live, Query-cache reuse, PageSessionRegistry) — what needs verification or fixing | R | in-progress | |
@@ -73,17 +73,17 @@ updatedAt:       2026-10-14T19:05:00Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| C1 | T17 source-view canonical-markdown seeding — what fixture, where it lives, who mints it | R | in-progress | |
-| C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | in-progress | |
-| C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | in-progress | |
-| C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | in-progress | |
+| C1 | T17 source-view canonical-markdown seeding — what fixture, where it lives, who mints it | R | done | `docs/research/r5_c_fixture-substrate.md` — harness/product timing (Y.Doc hydration), not a fixture |
+| C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | done | same — §10.1 already rules bulk+Apply ✗ on phone; live divergence needs a triage leg |
+| C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | done | same — operator-approved backdated `account_exports` mint (reseat-script shape) |
+| C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | done | same — T13F confirmed fixture gap (anchor+suggestion shape); T12F race-vs-POST |
 | C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | done | `docs/research/r5_c5_bl22-78-residuals.md` — 3 of 5 BL-22 residuals already discharged; true set = T8+T7-dest (clock), T16+T15 (substrate), 3 BL-78 live legs |
 
 ## D. Ops & stage residuals
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | in-progress | |
+| D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | done | `docs/research/r5_d1_cost-levers.md` — biggest lever is a live-vs-IaC cpu-throttling drift on convert-svc (−$44); $50 unreachable under current architecture → Q-7 is target-vs-posture |
 | D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | in-progress | |
 | D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | in-progress | |
 | D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | in-progress | |
@@ -100,7 +100,7 @@ updatedAt:       2026-10-14T19:05:00Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| F1 | Enumerate every ledgered paid leg (BL-16…21, 56, 66–72, 78/79 residuals + D-CAP.2-1's 21 steps): registry id, what it verifies, spend class, blocker → the ticket-able list under the B3 regime | R | in-progress | |
+| F1 | Enumerate every ledgered paid leg (BL-16…21, 56, 66–72, 78/79 residuals + D-CAP.2-1's 21 steps): registry id, what it verifies, spend class, blocker → the ticket-able list under the B3 regime | R | done | `docs/research/r5_f1_funded-census.md` — 21 paid steps; caps in STB5B_CAPS; cumulative $145.95/$150 exhausted → Q-6; B19C discharges 3 legs |
 
 ## G. Disposition map
 
