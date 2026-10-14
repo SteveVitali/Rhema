@@ -781,6 +781,15 @@ describe("GET /v/:persona mounted (overview)", () => {
     await axeCheck(el()!.querySelector("[data-spa-surface]")!);
   });
 
+  it("an unrevealed hold-out renders the generic data-holdout-hidden note (§9.5 — never names the piece)", async () => {
+    await mountAt(`/v/${PID}`, BOOT, makeFetch({
+      detail: {
+        ...DETAIL,
+        holdout: { held: true, revealed: false, itemId: "s2", title: "Paywalled post", revealedAt: null } },
+    }));
+    expect(el()!.querySelector("[data-holdout-hidden]")).not.toBeNull();
+  });
+
   it("a twin 404 renders not-found; a non-401 twin failure renders the designed error", async () => {
     await mountAt(`/v/${PID}`, BOOT, makeFetch({ detailStatus: 404 }));
     expect(el()!.textContent).toContain(COPY.notFound.heading);
@@ -851,6 +860,14 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(main.querySelector("[data-link-substack]")).not.toBeNull();
     expect(main.querySelector("[data-link-url]")).not.toBeNull();
     expect(main.querySelector("[data-link-export]")).not.toBeNull();
+    // the link flows' field grammar — `provider` rides every connections POST hidden; `handle`
+    // is the substack link's input (the dom-contract's field entries).
+    const substackForm = main.querySelector("[data-link-substack]")!.closest("form")!;
+    expect(substackForm.querySelector('[name="provider"]')).not.toBeNull();
+    expect(substackForm.querySelector('[name="handle"]')).not.toBeNull();
+    expect(main.querySelector("[data-link-url]")!.closest("form")!.querySelector('[name="provider"]')).not.toBeNull();
+    // the URL-sample add form's submit hook.
+    expect(main.querySelector('form[action$="/samples/url"] [data-add-url]')).not.toBeNull();
     // The open drawer — preview + versions + the priced reconstruction (partial ⇒ text; the
     // "scanned" note offers the visual tier too).
     const drawer = main.querySelector("[data-sample-drawer]")!;
@@ -869,6 +886,10 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // The review step — 'new' items ride the confirm form.
     const confirm = src.querySelector("form[data-confirm]")!;
     expect(confirm.getAttribute("action")).toBe(`/v/${PID}/connections/cn1/confirm`);
+    // the multi-value grammar's field hooks — `known` (hidden, every discovered id) + `include`
+    // (the per-item checkbox) are the confirm step's own vocabulary.
+    expect(confirm.querySelectorAll('[name="known"]').length).toBeGreaterThan(0);
+    expect(confirm.querySelectorAll('[name="include"]').length).toBeGreaterThan(0);
     expect(confirm.querySelector('[data-review-item="e3"]')).not.toBeNull();
     expect(confirm.querySelector('[data-review-item="e4"]')).not.toBeNull();
     expect(confirm.querySelector("[data-confirm-cta]")).not.toBeNull();

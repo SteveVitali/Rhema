@@ -263,7 +263,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
     const form = main.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
     expect(form.getAttribute("data-held")).toBe("1");
     expect(form.getAttribute("data-new-project-form")).toBe("true");
-    for (const field of ['name="entry"', 'name="heldToken"', 'name="title"', 'name="protocolId"', 'name="venue"', 'name="personaId"', 'name="file"', 'name="paste"']) {
+    for (const field of ['name="entry"', 'name="heldToken"', 'name="title"', 'name="protocolId"', 'name="venue"', 'name="personaId"', 'name="file"', 'name="paste"', 'name="startVersion"']) {
       expect(form.innerHTML, field).toContain(field);
     }
     expect(form.querySelector("[data-held-token]")).not.toBeNull();

@@ -520,6 +520,14 @@ describe("the page arms (SPA.20)", () => {
     }
   });
 
+  it("renders the beta-plan offer line + link when the twin carries planOfferUrl (PRB.08)", async () => {
+    const f = makeFetch({ twin: twinFor(sheetView({ planOfferUrl: "https://rhema.example/beta-plan" })) });
+    await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
+    const offer = el()!.querySelector("[data-plan-offer]");
+    expect(offer).not.toBeNull();
+    expect(offer!.querySelector('a[href="https://rhema.example/beta-plan"]')).not.toBeNull();
+  });
+
   it("renders the revise pretriage line when the twin carries it", async () => {
     const twin = { ...twinFor(sheetView({ workflow: "revise" })), pretriage: { triaged: 3, total: 12 } };
     const f = makeFetch({ twin });

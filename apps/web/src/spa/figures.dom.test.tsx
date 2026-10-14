@@ -336,6 +336,25 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     expect(el()!.querySelector("[data-figure-preview]")).toBeNull();
   });
 
+  it("a declined version row lands the operator-facing declined note (data-declined-note)", async () => {
+    await mountAt(
+      CARD_URL,
+      BOOT,
+      makeFetch({
+        card: {
+          figure: {
+            slug: SLUG,
+            headDraftId: "d_head",
+            card: {
+              ...FIGURE_CARD,
+              versions: [
+                ...FIGURE_CARD.versions,
+                { n: 3, request: "restyle", renderStatus: "declined", renderError: "data is empty", createdAt: "2026-01-03T00:00:00Z" },
+              ] } } } }).impl,
+    );
+    expect(el()!.querySelector("[data-declined-note]")).not.toBeNull();
+  });
+
   it("the field edit posts the JSON map and rides {ok,redirect:?saved=1} in-router", async () => {
     const f = makeFetch({
       mutations: {
