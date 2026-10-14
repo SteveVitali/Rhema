@@ -53,6 +53,28 @@ export const SPA_IDE_FRAMED_SURFACES: readonly SpaSurface[] = [
 ];
 
 /**
+ * The routeIds that mount INSIDE the §5.1 IDE chrome (design/29 §route-map "IDE-framed" column +
+ * the SSR `ideContext` call sites): every `/p/:p…` document the server wraps in `IdeFrame` today.
+ * The `p.$project` layout consults this set — a flipped IDE-framed leaf mounts `<IdeChrome>`; an
+ * unframed leaf (`/p/:p/settings`, `/outline`, `/figures`, `/usage`, `/obligations/new`) renders
+ * outside the shell even when it flips. Kept at key granularity in `SPA_IDE_FRAMED_SURFACES` for
+ * the flag consult, at route granularity here for the layout gate.
+ */
+export const SPA_IDE_FRAMED_ROUTES: readonly string[] = [
+  "/p/$project",
+  "/p/$project/import",
+  "/p/$project/import/preview",
+  "/p/$project/run",
+  "/p/$project/review/$runId",
+  "/p/$project/r/$runId",
+  "/p/$project/revisions/$cid",
+  "/p/$project/v/$v",
+  "/p/$project/v/$n/diff/$m",
+  "/p/$project/a/$artifactId",
+  "/p/$project/export",
+];
+
+/**
  * REQ-SEQ-4 (spec Appendix D) — the request-level renderer override channel:
  * `x-rhema-renderer: ssr|spa`. The `ssr` half (with `?ssr=1`) is honored on EVERY stage during
  * the migration window — it is the journey leg-A pin + the incident/debug escape hatch; the

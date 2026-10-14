@@ -1758,11 +1758,14 @@ export const COPY = {
         threads: "Threads",
         settings: "Settings",
       },
+      nextStep: "next step",
     },
     cheatsheet: {
       heading: "Keyboard",
       closeLabel: "Close",
     },
+    // REQ-UX-16 (design/24 §chrome polish) — the skip link the SPA chrome mounts before the rail.
+    skipToPage: "Skip to Page",
     emptyProject: {
       titlePlaceholder: "Untitled project",
       cards: [
@@ -2274,6 +2277,22 @@ export const COPY = {
 
   footer: "Rhēma",
 } as const;
+
+/**
+ * SPA.9 — the IdeShell label bag the React chrome passes verbatim: the SSR IdeFrame's inline
+ * `{...COPY.ide, viewMenu: {advanced}}` form (pages.tsx), hoisted so the copy-contained SPA graph
+ * keeps a leaf-only `COPY.*` import surface.
+ */
+export const IDE_CHROME_LABELS = {
+  ...COPY.ide,
+  viewMenu: { ...COPY.ide.viewMenu, advanced: COPY.runSheet.advanced },
+};
+
+/** SPA.9 — the live feed's `LiveFeedLabels` twin (pages.tsx's `feedLabels` const, hoisted). */
+export const IDE_FEED_LABELS = {
+  densityLabel: (d: string) => COPY.review.densityLabel[d] ?? d,
+  heading: COPY.review.feedHeading,
+};
 
 /** A `[path, value]` pair for every string leaf in the copy tree (functions/objects skipped). */
 export function collectCopyStrings(

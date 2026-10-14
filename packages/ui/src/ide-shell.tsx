@@ -235,7 +235,9 @@ export function IdeShell(props: IdeShellProps): ReactNode {
 
         {/* Page + Margin */}
         <div className="ide-center">
-          <main className="ide-page" data-pane="page" aria-label={project.title}>
+          {/* id+tabIndex: the REQ-UX-16 skip link's focus target — programmatic focus only,
+              never route-driven (the Page is never auto-focused). */}
+          <main id="ide-page" className="ide-page" data-pane="page" aria-label={project.title} tabIndex={-1}>
             <div className="paper" data-paper-surface>
               {props.children}
             </div>

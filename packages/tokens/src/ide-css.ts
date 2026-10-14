@@ -226,6 +226,23 @@ export function ideCss(): string {
     // persisted ⌘⇧M toggle sets data-advanced="1" on the shell.
     ".ide:not([data-advanced='1']) [data-tier='advanced'] { display: none !important; }",
 
+    // ---- SPA.9 / REQ-UX-16 chrome polish (design/24's sanctioned list) — ONE stylesheet serves both
+    // renderers, so the SSR twin picks these up too: the skip link (WCAG 2.4.1) and hover/focus-visible
+    // affordances on the chrome controls that were action-only before. ----
+    ".ide-skip { position: fixed; top: 8px; left: 8px; z-index: 80; transform: translateY(-250%); padding: 8px 14px; border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); border: 1px solid var(--shell-border); font-size: 13px; text-decoration: none; }",
+    ".ide-skip:focus, .ide-skip:focus-visible { transform: none; outline: 2px solid var(--accent); outline-offset: 2px; }",
+    ".ide-menu [role='menuitemradio']:hover, .ide-menu [role='menuitemcheckbox']:hover, .ide-menu .ide-menu-row:hover { background: var(--shell-bg); }",
+    ".ide-menu [role='menuitemradio']:focus-visible, .ide-menu [role='menuitemcheckbox']:focus-visible, .ide-menu .ide-menu-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ide-desk .ide-desk-tabs button:hover { color: var(--shell-fg); }",
+    ".ide-desk .ide-desk-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ide-statusbar button { background: none; border: none; color: var(--shell-fg-muted); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: var(--radius-1); }",
+    ".ide-statusbar button:hover { color: var(--shell-fg); background: var(--shell-raised); }",
+    ".ide-statusbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }",
+    ".ide-palette .ide-pal-row:hover { background: var(--shell-bg); }",
+    ".ide-palette .ide-pal-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ide-pane-head button:hover { color: var(--shell-fg); }",
+    ".ide button:focus-visible, .ide a:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }",
+
     // util
     ".sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }",
     ".ide-count { font-variant-numeric: tabular-nums; }",

@@ -675,6 +675,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     u("gate", "conditional", "server.ts gate-focus deep link"),
     u("sev", "conditional", "findings filter param"),
     u("bulk", "conditional", "bulk-select param"),
+    u("triage", "conditional", "ide island ⌘⇧T triage-mode param"),
+    a("data-armed", "conditional", "ide island + spa chrome", "rebut/escalate verb armed state"),
   ],
   // ---- /p/:p/r/:runId ----
   "run-report": [
@@ -805,6 +807,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-returned", "conditional", "pages.tsx"),
     u("restored", "conditional", "server.ts restore redirect"),
     u("focus", "conditional", "ide island ?focus=1 deep link"),
+    a("data-suggestion-replacement", "conditional", "editor decorations + ide chrome preview"),
   ],
   // ---- the IDE chrome: panes, palette, keymap, menus — flips with the ide-chrome AND-gate ----
   "ide-chrome": [
@@ -868,6 +871,18 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-version-chip", "conditional", "ui/version-rail + timeline"),
     a("data-project-id", "conditional", "ui/ide-shell.tsx"),
     a("data-run", "conditional", "pages.tsx"),
+    // SPA.9 — hooks the island always owned but the manifest never named (the SSR twin isn't
+    // census'd); declaring them now the React chrome's selectors must resolve (REQ-TST-2).
+    a("data-advanced", "conditional", "tokens/ide-css + ide island + spa chrome", "⌘⇧M advanced-tier visibility"),
+    a("data-authorship", "conditional", "ide island + spa chrome", "authorship overlay on-state"),
+    a("data-ide-open-feed", "conditional", "ui/run-card + ide island", "run-card Live-feed affordance"),
+    a("data-round", "conditional", "ui/timeline.tsx", "timeline context-menu scope (@vN)"),
+    a("data-active", "conditional", "ide island + spa chrome", "palette row keyboard focus"),
+    a("data-disabled", "conditional", "ide island + spa chrome", "palette/cmdmenu inert row"),
+    a("data-skip-link", "required", "spa ide chrome", "REQ-UX-16 skip-to-Page affordance"),
+    r("menuitemradio", "ui/ide-shell + spa chrome", "view/theme menu radio rows"),
+    u("q", "conditional", "palette-search GET query"),
+    u("after", "conditional", "SSE ?after= resume cursor"),
   ],
 };
 
