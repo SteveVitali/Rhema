@@ -13,7 +13,8 @@
 - **Skills:** implement-spec + build-memory @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-NAVC-17 REQ-NAVC-18 REQ-NAVC-20 REQ-NAVC-22
   REQ-NAVT-5(emission half) REQ-NAVT-7(page-session row half)
-- **Started:** 2026-10-15T12:43Z · **Closed:** —
+- **Started:** 2026-10-15T12:43Z · **Closed:** 2026-10-15T13:20Z — impl `47d807d` + closeout;
+  PR #178 (mergePolicy OPERATOR — unmerged); ci pending at closeout (first-read class)
 - **Config:** full rigor (ledger + self-review + gap analysis + tests + evidence report);
   **Live stage: none**; **Production mutations: none**; metered spend **$0**;
   zero prod writes, zero deploys, zero merges
@@ -155,7 +156,7 @@ Note: `refetchOnWindowFocus` (Query default `true`) re-fires stale twins on focu
   survive a leaf leave BY DESIGN — the test names them explicitly rather than asserting zero;
   (d) `dossierQuery`/`runReportQuery` `staleTime:0` under StrictMode double-mount can amplify a
   landing count — the parity assert is monotone (each landing ADDS GETs), never exact.
-- 2026-10-15T14:15Z — verification: `turbo build lint typecheck` **135/135**; web focused suites
+- 2026-10-15T13:15Z — verification: `turbo build lint typecheck` **135/135**; web focused suites
   all green; `check:dom-contract` OK (editor surface 50 emitted/asserted incl.
   `data-page-session`); `check:spa-env` OK (115 client files — the `queries.ts`→`page-sessions.ts`
   import leaks nothing); `check:spa-budget` OK (entry 202.7/250 kB — registry singleton rides
@@ -165,7 +166,7 @@ Note: `refetchOnWindowFocus` (Query default `true`) re-fires stale twins on focu
   (`write .../meta.db: input/output error`) — the daemon cannot build ANY image; the diff
   touches no Dockerfile/run-task code; reproduced standalone (environmental, not a code
   regression; `docker info` healthy, every build attempt fails identically).
-- 2026-10-15T14:15Z — self-review (2 passes): (1) `rekey` held-target refusal runs before
+- 2026-10-15T13:15Z — self-review (2 passes): (1) `rekey` held-target refusal runs before
   `rebind` (wire never repoints on refusal; `page-mount`'s `rebase` treats null as "leave it" —
   keeps polling the base draft, correct); (2) idle-entry `rekey` keeps its armed timer — the
   callback resolves `entry.key` lazily so it dies under the NEW key (pinned by the stale-timer
