@@ -21,10 +21,10 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      CIREP.1            # manifest row 153a (153a_CIREP.1__ancestor-ci-repairs.md) — run-time insert answering the blockedOn below; NAVC.1 resumes after it
-lastCompleted:   VERIF.1            # 2026-10-15 (row 153); PR #174 on stevevitali/fix-1-journey-fixture-repairs (mergePolicy OPERATOR)
+nextTicket:      NAVC.1             # manifest row 154 (154_NAVC.1__delegated-interceptor.md) — resumes on the re-forked branch (base now verif-1 @ db40fa2)
+lastCompleted:   CIREP.1            # 2026-10-15 (row 153a); repairs on #173 + #174 heads, no new PR (mergePolicy OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
-blockedOn:       CI fail on #174 (typecheck / lint / unit): fail (run 38662758852)  # + #173 contracts red (run 38656915693); CIREP.1 repairs both — clears only on the pass read
+blockedOn:       CI fail on #174 (integration): fail (run 38677037978)  # repairs green (#173 pass @87fc7da; #174 unit+contracts+public-safe @db40fa2); residual = privsep flake + wget people.redhat.com outage — clears only on the pass read
 pauseRequested:  false
 returnPass:      (none)             # P0.15j/P0.15k done; PRB.18's residual → JOURNEY.1 steps + H7 (BL-32)
 manifest:        docs/tickets/00_MANIFEST.md
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/verif-1-composed-ffbb8ad # round 5 stacks here (VERIF.1 head)
+chainTip:        stevevitali/verif-1-composed-ffbb8ad # round 5 stacks here (VERIF.1 head — post-CIREP.1 @ db40fa2)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           5                  # post-spa disposition — spec docs/post-spa-disposition-spec.md (ratified 2026-10-15)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-15T02:49:41Z         # CIREP.1 inserted to answer the ancestor-CI block (operator election); blockedOn stays until the pass read
+updatedAt:       2026-10-15T04:42:02Z         # CIREP.1 done — ancestor reds repaired; #174 residual is environmental (privsep flake + people.redhat.com outage; PHASE LOG)
 ```
 
 ## OPEN FINDINGS
@@ -155,6 +155,14 @@ pointers; substance unchanged.)_
   guard gains a refuse-when-empty tripwire). Construction findings: `ITERATION_CAPS.{audit,
   gapCheck}` have no consumer → D-STB.5b-2; `fetchViaFetcher` reaches only the holdout-calibrator
   → D-STB.5b-3.
+- **CIREP.1 dep-vs-reference drift audit (2026-10-15 — `runs/CIREP.1.md` §Step-4, record-only).**
+  Five `@rhema/*` deps lack their composite `tsconfig.json` project reference (invariant #2 —
+  the same class CIREP.1 repaired on `packages/db`): `integration` → `@rhema/ledger` (dep,
+  imported in COMPILED src: `citation-scan-live.ts`/`metered-notice.ts`/`unverified-scan-live.ts`)
+  + `@rhema/live-clients` (dep, zero imports — possibly dead); `packages/benchmark` →
+  `@rhema/findings-core` + `@rhema/mirror` (devDeps); `apps/egress-proxy` → `@rhema/db` (devDep,
+  test-only import). Latent landmines for any future scoped-build CI leg; the owning
+  packages' tickets fix — do NOT land here.
 
 ## GATE DECISIONS
 
@@ -486,3 +494,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-15T02:29:45Z — **NAVC.1 dispatch BLOCKED — inherited CI red on the chain tip** — `ci-boundary.sh --pr 174 --stack --no-wait` (record `docs/build/logs/ci-boundary-174.json`) → exit 3: `blockedOn: CI fail on #174 (typecheck / lint / unit): fail (run 38662758852)`. Root cause, reproduced locally in 1.5s on fd5ade2: VERIF.1's seven registry green-flips (R6F, T12F, T13F, T17, P1.outline, P1.figures, P1.dossier — each flipped with dated live evidence) landed without updating the pinned green-baseline list at `packages/journeys/src/registry.test.ts:53` — a VERIF.1 close gap, unrelated to NAVC.1's scope. No GATE DECISIONS waiver names #174's `typecheck / lint / unit` (GD-MAINT.4-1 covers only #117's `integration`/privsep leg). `blockedOn` set; `nextTicket` stays NAVC.1. The crashed worker's uncommitted WIP on `stevevitali/navc-1-delegated-interceptor` (nav-intercept.ts + run ledger + 6 modified files) is preserved untouched for the resume. Repair = add the 7 ids to the test's expected list (a test-side catch-up, not a relaxed assertion); dispatch resumes when `ci-boundary` reads pass.
 - 2026-10-15T02:29:45Z — **stack read amendment — a second inherited red found by the digest's stack sweep** — `#173` (FIX.1, head `0623042`) `contracts` job fails (run `38656915693`): FIX.1 added the `@rhema/findings-core` `workspace:*` dep + the `showcase.test.ts` import but not the composite project reference in `packages/db/tsconfig.json` (refs still `../contracts`, `../protocols` only). Tests are excluded from `tsc -b`, so db builds clean, but the contracts job's `pnpm --filter @rhema/contracts --filter @rhema/db build` leaves `findings-core/dist` unbuilt → vitest `packageEntryFailure` on the export map (`main: ./dist/index.js`). Repair = add `{"path":"../findings-core"}` to `packages/db/tsconfig.json` references on `stevevitali/fix-1-journey-fixture-repairs` (restores the project-reference invariant, builds the dep in every scoped build). Both reds are on ancestor PR heads — descendant fixes do not green them; the operator picks the landing path (direct pushes, or an inserted repair ticket). NAVC.1's WIP remains uncommitted and untouched.
 - 2026-10-15T02:49:41Z — **inserted — `153a_CIREP.1` ancestor-CI repairs (operator-elected run-time insert, BM-MANIFEST-03)** — contract authored per decompose-spec `mode=extend` (Phase-3 contract + Phase-4 fresh-context review — 1 MAJOR + 8 MINOR findings, all folded in: temp-worktree ancestor work so navc-1's WIP never rides a checkout, merge `origin/fix-1` not the local branch, literal-CI-leg clean proofs, preflight ancestor/commit-count asserts, dep-vs-reference drift audit scoped record-only, navc-1 push for durability). Manifest chain row `153a` between 153/154 + Plan-extensions line; `nextTicket` → CIREP.1; `blockedOn` stays set until `ci-boundary` reads pass on #173+#174 (BM-CI-01).
+- 2026-10-15T04:42:02Z — **CIREP.1 done — ancestor-PR CI repairs (run-time insert 153a; additive commits on the two open PR heads + navc-1 re-fork; no new PR; mergePolicy OPERATOR)** — #173 `contracts` (run 38656915693): `@rhema/findings-core` devDep lacked its composite reference → `packages/db/tsconfig.json` += `../findings-core` @ `87fc7da` (invariant #2). #174 `typecheck / lint / unit` (run 38662758852): the pinned green baseline caught up to VERIF.1's 7 evidenced flips (P1.outline/.figures/.dossier, R6F, T12F, T13F, T17 — all paid:false) @ `db40fa2` (merge `3ff64d0` + sync commit). navc-1 re-forked onto `db40fa2` → `e0d37b6`, pushed; WIP preserved byte-identical (8 paths, stash/pop). **Verify:** CI-leg proofs green both heads (findings-core/dist emitted; vitest 329+129+14) · drift audit 5 rows → OPEN FINDINGS, record-only · validators clean at close. **ci:** `pass #173@87fc7da` (run 38673321889) · `fail #174@db40fa2` — integration privsep kernel-cap flake (GD-MAINT.4-1 class; waiver needs a GD row naming #174) + images/integration `wget people.redhat.com` outage (external — TLS dead locally 04:30Z); environmental, not repair-caused; not patched — `blockedOn` stays SET. `runs/CIREP.1.md` · BUILD_INDEX 153a. lastCompleted → CIREP.1 · nextTicket → NAVC.1 · chainTip → verif-1 @ db40fa2 · IN_PROGRESS · layer: engineered · harness: devin-desktop/swe-2-high/subagent.
