@@ -21,8 +21,10 @@
   pause-signal injection (REQ-OPS-1): a durable synthetic `pause_signals` row driving a run to
   `waiting_gate`/refusal, WITH pre-state capture AND rollback = row delete, both evidenced.
   NOTHING else — no paid legs, no deploys, no other prod writes, no other tenants' data.
-- **Started:** 2026-10-15T22:06Z · **Closed:** —
-- **PR:** — · **ci:** —
+- **Started:** 2026-10-15T22:06Z · **Closed:** 2026-10-15T22:55Z
+- **PR:** #183 (base `stevevitali/r5econ-3-funded-window-regime`, mergePolicy OPERATOR —
+  never merged) · **ci:** `gh pr checks 183` first-read → "no checks reported on the
+  branch" (the chain's recurring first-read class; recorded honestly, no status claimed)
 
 ## Deferrals read
 
