@@ -10,7 +10,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** implement-spec + build-memory @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-NAVT-1 REQ-NAVT-2 REQ-NAVT-3 REQ-NAVT-6 REQ-NAVT-7
-- **Started:** 2026-10-15T11:13Z · **Closed:** —
+- **Started:** 2026-10-15T11:13Z · **Closed:** 2026-10-15T11:45Z
 - **Config:** full rigor (ledger + self-review + gap analysis + tests + evidence report);
   **Live stage: none**; **Production mutations: none**; metered spend **$0**;
   zero prod writes, zero deploys, zero merges
@@ -119,13 +119,13 @@ the constraint is recorded and nothing is restructured to route around it.
   pop restores the target entry's key (always ≠ current) — Q-A4-1 answered in the
   affirmative, so "increment per new committed navKey, first run is the hydration
   seed" implements the contract exactly. (Probe file deleted.)
-- 2026-10-15T12:0xZ — Phase 2 complete: all six deliverables landed + tests.
+- 2026-10-15T11:30Z — Phase 2 complete: all six deliverables landed + tests.
   Focused green: `settle.test.ts`+`runner.test.ts` 45/45; `spa.dom.test.tsx`+
   `render.test.tsx`+`spa-shell.test.ts` 64/64; full apps/web+packages/journeys
   sweep 1390/1390. `check:dom-contract` green (shell 18/18 emitted+asserted).
   `tsc`+`eslint` clean on both touched packages (fixed `state.key`'s
   `string|undefined` via `?? null` in the selector).
-- 2026-10-15T12:0xZ — Phase 3 self-review: preload confirmed NOT to flip
+- 2026-10-15T11:30Z — Phase 3 self-review: preload confirmed NOT to flip
   `status`/`isLoading` (router-core `stores.status.set("pending")` rides the
   commit path only — `preloadClientRoute` never commits), so hover-preloads
   can't strip `data-mounted`. Reordered the mechanism helpers' foreign-origin
@@ -152,8 +152,36 @@ Deviations: none. Partial/missed items: none found in the Phase-4 re-read.
 
 ## Evidence log
 
-_(filled at Phase 5)_
+| command | result |
+|---|---|
+| `pnpm install` | OK at baseline — 48 workspace projects, lockfile unchanged |
+| `pnpm turbo build lint typecheck` | **135/135 tasks** green |
+| `pnpm test` | **491 files / 5,648 pass / 4 skip / 0 fail** — the recorded `live-clients` `waitMs:1` flake did NOT recur this run |
+| `pnpm check:licenses` | OK |
+| `pnpm check:protocol-markers` | OK |
+| `pnpm check:no-cookies` | OK — 255 ingestion-surface files |
+| `pnpm check:spa-budget` | OK — all ceilings held |
+| `pnpm check:spa-env` | OK — 113 client sources, 146 artifacts |
+| `pnpm check:dom-contract` | OK — shell surface 18/18 emitted+asserted (was 17; `data-nav-count` row landed) |
+| focused vitest — `settle.test.ts`+`runner.test.ts` | 45/45 |
+| focused vitest — `spa.dom.test.tsx`+`render.test.tsx`+`spa-shell.test.ts` | 64/64 |
+| `apps/web`+`packages/journeys` vitest sweep | 1390/1390 |
+| `check-build-memory.sh` | 0 violations (run at closeout, unstaged + staged) |
+| `check-append-only.mjs --base 4857287` | OK — history only grew |
 
 ## Evidence report
 
-_(filled at Phase 6)_
+- **Commits:** impl `c20d5dbc4e3915be982d573ef16ccbd2c310d36e` (+ closeout commit on top;
+  true pushed head recorded in LEDGER `chainTip`/PHASE LOG).
+- **PR:** #177 — base `stevevitali/navc-5-ssrhandoff-replace-seam`, head
+  `stevevitali/navc-2-settle-contract`; mergeable; **unmerged** (mergePolicy OPERATOR).
+- **CI at closeout:** `typecheck / lint / unit` IN_PROGRESS on `c20d5db` — recorded
+  honestly as pending (first-read class; the boundary check belongs to the orchestrator's
+  close-read).
+- **Gap analysis:** every contract AC lands with test evidence — see the gap table above;
+  no deviations, no partial items.
+- **DEFERRALS:** read at start; none opened, none closed. The known unrelated
+  `live-clients` `waitMs:1` flake is already recorded by NAVC.5 — not re-recorded.
+- **Out of scope kept:** no `data-page-session` (NAVC.3), no R10/R10.keepalive legs
+  (NAVC.4), no deploys/prod writes/merges, no secrets in artifacts.
+- **Spend:** $0 metered.
