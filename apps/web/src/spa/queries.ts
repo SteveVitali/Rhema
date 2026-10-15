@@ -808,3 +808,78 @@ export const projectVisualizeQuery = (
     },
     retry: retryPolicy,
   });
+
+// ---- SPA.20 — the `run-sheet` surface's twin + estimate revalidation (design/22 §2 `p.run` row +
+// §7.3; REQ-BFF-1/8/9/11/12/23, REQ-DAT-4/6/12). The aggregate carries the server-built
+// RunSheetView VERBATIM (`sheet` = the `runSheet.view` bag: `recompute.cells`/`idempotencyKey`/
+// `entitlementId`/display strings ride inside — F13), the project's facts + the `ide` bag the
+// IDE-framed leaf republishes onto the React chrome (the `run-sheet` × `ide-chrome` AND-gate),
+// and `pretriage` for the Revise arm. The leaf's lever params (`workflow`/`rigor`/`tier`/`scope`/
+// `toggle.*`/…) forward verbatim — the document reads the same grammar off `c.req.query()` —
+// while `?notice` stays leaf-rendered URL flash state and never rides the query. The
+// `POST /bff/p/:slug/estimate` revalidation takes the api's `EstimateRequestDto` verbatim —
+// the typed answer (`EstimateDto`) is for out-of-matrix inputs; the in-matrix lever repaint is a
+// `cells` lookup, never a fetch. ----
+
+import type { EstimateRequestDto, EstimateDto } from "@rhema/api-client";
+import type { RunSheetView } from "@rhema/run-sheet";
+
+/** `GET /bff/p/:slug/run` — the run-sheet aggregate twin (view-as-DTO + chrome shell bag). */
+export interface BffRunSheetTwin {
+  readonly runSheet: {
+    readonly slug: string;
+    readonly projectTitle: string;
+    /** the server-built view verbatim — the leaf repaints levers off `view.recompute.cells`. */
+    readonly view: RunSheetView;
+    /** a non-terminal run blocks this workflow+scope ⇒ the in-progress arm replaces the sheet. */
+    readonly activeRun?: { readonly runId: string; readonly state: string };
+  };
+  /** Revise only — "you pre-triaged N of M" (the document's own PageData key). */
+  readonly pretriage?: { readonly triaged: number; readonly total: number };
+  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** The lever params the twin's composition reads — the document's `c.req.query()` grammar
+ *  verbatim. `notice` (a rendered flash, not a read input) is stripped; the query key carries the
+ *  full fingerprint so a lever-deep-link and its repaint cache separately. */
+export const projectRunSheetQuery = (slug: string, search?: Record<string, string | undefined>) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "run",
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(search ?? {})
+            .filter(([k, v]) => k !== "notice" && v != null && v !== "")
+            .sort(([a], [b]) => (a < b ? -1 : 1)),
+        ),
+      ),
+    ],
+    queryFn: () => {
+      const q = new URLSearchParams();
+      for (const [k, v] of Object.entries(search ?? {})) {
+        if (k === "notice" || v == null || v === "") continue;
+        q.set(k, v);
+      }
+      const qs = q.toString();
+      return bffFetch<BffRunSheetTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/run${qs ? `?${qs}` : ""}`,
+      );
+    },
+    retry: retryPolicy,
+  });
+
+/** `POST /bff/p/:slug/estimate` — REQ-BFF-23's typed revalidation: the api's
+ *  `EstimateRequestDto` verbatim body forwards; the `EstimateDto` lands untouched. Lever repaints
+ *  never reach here (the matrix's `cells` cover them) — this is for out-of-matrix inputs. */
+export function postRunSheetEstimate(slug: string, req: EstimateRequestDto): Promise<EstimateDto> {
+  return bffFetch<EstimateDto>(`/bff/p/${encodeURIComponent(slug)}/estimate`, {
+    method: "POST",
+    json: req,
+  });
+}

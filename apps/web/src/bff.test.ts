@@ -3242,3 +3242,343 @@ describe("the seven figure POSTs — the JSON branches (SPA.19; REQ-BFF-1/2/3)",
     expect(missing.status).toBe(404);
   });
 });
+
+// ---- SPA.20 — the `run-sheet` surface (REQ-BFF-1/2/3/4/8/9/11/12/23, REQ-DAT-4/6/12; design/22
+// §2 `p.run` + §7.3). The twin shares the document's `runSheetComposition` verbatim — the same
+// seams, the same side effects (the rhema_fp mint, the exhausted-prompt impression) — and the two
+// POSTs answer the same envelope as their form 302s. ----
+
+const RUN_CTX_SPA20 = {
+  project: {
+    protocol: "essay",
+    venue: null,
+    approvalPolicy: "named" as const,
+    rigor: "standard",
+    modelTier: null,
+    protocolChanged: false,
+    protocolVersion: 1,
+    memoConfidentiality: false,
+    protocolDefaults: {},
+  },
+  protocols: [],
+  headDraft: { id: "d_1", n: 1, state: "ready", words: 600, sha256: null },
+  sections: [],
+  openObligations: 0,
+  reviewScopeLine: null,
+  reviseScopeLine: null,
+  standingNotes: 0,
+  entitlement: null,
+  dontAskUnder: 0,
+  activeRuns: [],
+  blockedBy: null,
+};
+
+const BILLING_OPEN = {
+  spendableCredits: 100000,
+  suspended: false,
+  clawbackDebt: 0,
+  purchase: "open" as const,
+  paymentLinkUrl: "https://buy.stripe.com/test_pl",
+  billingAccountId: "ba_1",
+};
+
+const ESTIMATE_DTO_SPA20 = {
+  estimateCredits: 288,
+  capCredits: 432,
+  rateTableVersion: 3,
+  provisional: true,
+  claimCount: 21,
+  levers: {},
+};
+
+const runDeps = (
+  over: Partial<DataSource> = {},
+  session: WebDeps["session"] = () => SESSION,
+): WebDeps =>
+  ({
+    session,
+    dataSource: {
+      checkSession: async () => true,
+      listProjects: async () => ROWS,
+      getRunSheetContext: async () => RUN_CTX_SPA20,
+      getBillingBalance: async () => BILLING_OPEN,
+      getProjectVoice: async () => null,
+      getPretriage: async () => ({ triaged: 3, total: 12 }),
+      estimate: async () => ESTIMATE_DTO_SPA20,
+      createRun: async () => ({ runId: "run_1", state: "queued", deduped: false }),
+      recordExhaustedPrompt: async () => undefined,
+      ...over,
+    } as DataSource,
+  }) as WebDeps;
+
+describe("GET /bff/p/:slug/run — the run-sheet aggregate twin (SPA.20; REQ-BFF-1/8/9/11)", () => {
+  it("returns the document's composition verbatim — view-as-DTO incl. recompute/idempotencyKey + the shell bag", async () => {
+    const res = await createWebApp(runDeps()).request("/bff/p/the-politics-of-visibility/run", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.runSheet.slug).toBe("the-politics-of-visibility");
+    expect(body.runSheet.projectTitle).toBe("The Politics of Visibility");
+    const view = body.runSheet.view;
+    expect(view.workflow).toBe("review");
+    expect(typeof view.estimate.estimateCredits).toBe("number");
+    expect(typeof view.idempotencyKey).toBe("string");
+    // the lever matrix rides inside — the leaf repaints off `cells`, never the estimator.
+    expect(Object.keys(view.recompute.cells).length).toBeGreaterThan(0);
+    expect(view.recompute.spendableCredits).toBe(100000);
+    // the IDE shell bag — project/theme/ide the framed leaf republishes.
+    expect(body.project.slug).toBe("the-politics-of-visibility");
+    expect(body.paperTheme).toBeDefined();
+    expect(body.ide).toBeDefined();
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("forwards the lever deep-link params onto the composition — workflow/scope verbatim", async () => {
+    const ctx = vi.fn(async () => ({ ...RUN_CTX_SPA20 }));
+    const res = await createWebApp(runDeps({ getRunSheetContext: ctx as never })).request(
+      "/bff/p/the-politics-of-visibility/run?workflow=revise&scope=section%3AIII",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    expect(ctx).toHaveBeenCalledWith(expect.anything(), "proj_pv", {
+      workflow: "revise",
+      scope: "section:III",
+    });
+    const body = await res.json();
+    expect(body.runSheet.view.workflow).toBe("revise");
+    // revise ⇒ the pretriage read lands on the twin (the document's own PageData key).
+    expect(body.pretriage).toEqual({ triaged: 3, total: 12 });
+  });
+
+  it("a non-terminal run collapses the twin into the document's in-progress arm", async () => {
+    const res = await createWebApp(
+      runDeps({
+        getRunSheetContext: async () => ({
+          ...RUN_CTX_SPA20,
+          blockedBy: { runId: "run_live", state: "running" },
+        }),
+      }),
+    ).request("/bff/p/the-politics-of-visibility/run", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.runSheet.activeRun).toEqual({ runId: "run_live", state: "running" });
+  });
+
+  it("mints rhema_fp when the sheet carries an entitlement — the same billing trail the GET leaves", async () => {
+    const res = await createWebApp(
+      runDeps({
+        getRunSheetContext: async () => ({
+          ...RUN_CTX_SPA20,
+          entitlement: { id: "ent_1", kind: "review", wordCap: 2800, rigor: "standard", modelTier: "base" },
+        }),
+      }),
+    ).request("/bff/p/the-politics-of-visibility/run?rigor=standard&modelTier=base", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.runSheet.view.entitlementId).toBe("ent_1");
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("rhema_fp=");
+    expect(cookie).toContain("HttpOnly");
+  });
+
+  it("no session → {error:unauthenticated} 401; unknown slug → {error:not_found} 404", async () => {
+    const noSess = await createWebApp(runDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/run",
+      { headers: { accept: "application/json" } },
+    );
+    expect(noSess.status).toBe(401);
+    expect(await noSess.json()).toEqual({ error: "unauthenticated" });
+    const missing = await createWebApp(runDeps()).request("/bff/p/nope/run", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+  });
+});
+
+describe("POST /bff/p/:slug/estimate — REQ-BFF-23's typed revalidation (SPA.20)", () => {
+  const REQ = {
+    workflow: "review",
+    rigor: "standard",
+    modelTier: "balanced",
+    inputs: { words: 5180 },
+  };
+
+  it("forwards the EstimateRequestDto verbatim and lands the api's EstimateDto", async () => {
+    const estimate = vi.fn(async () => ESTIMATE_DTO_SPA20);
+    const res = await createWebApp(runDeps({ estimate: estimate as never })).request(
+      "/bff/p/the-politics-of-visibility/estimate",
+      { ...jsonPost, body: JSON.stringify(REQ) },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(ESTIMATE_DTO_SPA20);
+    expect(estimate).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", REQ);
+  });
+
+  it("a non-object body is {error:invalid_request} 400; an api refusal rides at its status", async () => {
+    const bad = await createWebApp(runDeps()).request("/bff/p/the-politics-of-visibility/estimate", {
+      ...jsonPost,
+      body: "[1,2]",
+    });
+    expect(bad.status).toBe(400);
+    expect(await bad.json()).toEqual({ error: "invalid_request" });
+    const refused = await createWebApp(
+      runDeps({ estimate: async () => { throw new ApiError(422, "x", "msg", "estimate_out_of_range"); } }),
+    ).request("/bff/p/the-politics-of-visibility/estimate", { ...jsonPost, body: JSON.stringify(REQ) });
+    expect(refused.status).toBe(422);
+    expect(await refused.json()).toEqual({ error: "estimate_out_of_range" });
+  });
+
+  it("no session → 401 JSON; unknown slug → 404", async () => {
+    const noSess = await createWebApp(runDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/estimate",
+      { ...jsonPost, body: JSON.stringify(REQ) },
+    );
+    expect(noSess.status).toBe(401);
+    const missing = await createWebApp(runDeps()).request("/bff/p/nope/estimate", {
+      ...jsonPost,
+      body: JSON.stringify(REQ),
+    });
+    expect(missing.status).toBe(404);
+  });
+});
+
+describe("POST /p/:slug/run — the JSON branch (SPA.20; REQ-BFF-2/3/4/5)", () => {
+  const RUN_BODY = {
+    workflow: "review",
+    rigor: "standard",
+    modelTier: "balanced",
+    idempotencyKey: "idem_json",
+    estimateCredits: "288",
+    capCredits: "432",
+    rateTableVersion: "3",
+    words: "600",
+    claims: "4",
+    toggleKeys: "fact_check,discourse",
+    toggleRigor: "standard",
+    "toggle.fact_check": "on",
+    approval: "named",
+    guidance: "Watch the signposting.",
+  };
+
+  it("JSON → {ok:true,data:{runId,state}} — the verbatim field map reaches createRun (toggles, snapshot, levers)", async () => {
+    const createRun = vi.fn(async () => ({ runId: "run_1", state: "queued", deduped: false }));
+    const res = await createWebApp(runDeps({ createRun: createRun as never })).request(
+      "/p/the-politics-of-visibility/run",
+      { ...jsonPost, body: JSON.stringify(RUN_BODY) },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, data: { runId: "run_1", state: "queued" } });
+    const req = createRun.mock.calls[0]![2] as {
+      workflow: string; rigor: string; modelTier: string; idempotencyKey: string;
+      estimateCredits: number; capCredits: number; rateTableVersion: number;
+      toggles: Record<string, boolean>; inputSnapshot: { wordCount: number; claimCount?: number };
+      guidance?: string; approvalPolicy?: string;
+    };
+    expect(req.workflow).toBe("review");
+    expect(req.idempotencyKey).toBe("idem_json");
+    expect(req.toggles).toEqual({ fact_check: true, discourse: false });
+    expect(req.inputSnapshot).toEqual({ wordCount: 600, claimCount: 4 });
+    expect(req.guidance).toBe("Watch the signposting.");
+    expect(req.approvalPolicy).toBe("named");
+  });
+
+  it("the rhema_fp cookie forwards as the api's fingerprint field (minted on the GET)", async () => {
+    const createRun = vi.fn(async () => ({ runId: "run_1", state: "queued", deduped: false }));
+    const res = await createWebApp(runDeps({ createRun: createRun as never })).request(
+      "/p/the-politics-of-visibility/run",
+      {
+        ...jsonPost,
+        headers: { ...jsonPost.headers, cookie: "rhema_fp=fp_test_1" },
+        body: JSON.stringify(RUN_BODY),
+      },
+    );
+    expect(res.status).toBe(200);
+    expect((createRun.mock.calls[0]![2] as { fingerprint?: string }).fingerprint).toBe("fp_test_1");
+  });
+
+  it("a refusal rides its preserved status + stable code — run_in_progress 409, insufficient 402, trial_* verbatim", async () => {
+    const app = (code: string, status: number) =>
+      createWebApp(
+        runDeps({ createRun: async () => { throw new ApiError(status, "x", "msg", code); } }),
+      );
+    const busy = await app("run_in_progress", 409).request("/p/the-politics-of-visibility/run", {
+      ...jsonPost, body: JSON.stringify(RUN_BODY),
+    });
+    expect(busy.status).toBe(409);
+    expect(await busy.json()).toEqual({ error: "run_in_progress" });
+    expect(busy.headers.get("location")).toBeNull();
+    const short = await app("insufficient_balance", 402).request("/p/the-politics-of-visibility/run", {
+      ...jsonPost, body: JSON.stringify(RUN_BODY),
+    });
+    expect(short.status).toBe(402);
+    expect(await short.json()).toEqual({ error: "insufficient_balance" });
+    const trial = await app("trial_shape", 422).request("/p/the-politics-of-visibility/run", {
+      ...jsonPost, body: JSON.stringify(RUN_BODY),
+    });
+    expect(trial.status).toBe(422);
+    expect(await trial.json()).toEqual({ error: "trial_shape" });
+  });
+
+  it("a form post keeps the document's re-render (the sheet HTML, not the envelope)", async () => {
+    const res = await createWebApp(runDeps()).request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "workflow=review&rigor=standard&idempotencyKey=idem_f&estimateCredits=288&capCredits=432",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("data-run-sheet");
+    expect(html).toContain("Your run has started");
+  });
+});
+
+describe("POST /p/:slug/exhausted — the Payment-Link JSON branch (SPA.20; REQ-BFF-2/27)", () => {
+  it("JSON → {ok,url} with the allowlist-validated Stripe target carrying client_reference_id", async () => {
+    const record = vi.fn(async () => undefined);
+    const res = await createWebApp(runDeps({ recordExhaustedPrompt: record as never })).request(
+      "/p/the-politics-of-visibility/exhausted",
+      { ...jsonPost, body: JSON.stringify({ action_taken: "open_payment_link" }) },
+    );
+    expect(res.status).toBe(200);
+    const env = await res.json();
+    expect(env.ok).toBe(true);
+    expect(env.url).toBe("https://buy.stripe.com/test_pl?client_reference_id=ba_1");
+    expect(record).toHaveBeenCalledWith(expect.anything(), "open_payment_link");
+  });
+
+  it("a closed purchase switch answers {ok,redirect:…?notice=purchase_paused} — the 302's twin", async () => {
+    const res = await createWebApp(
+      runDeps({ getBillingBalance: async () => ({ ...BILLING_OPEN, purchase: "closed" as const }) }),
+    ).request("/p/the-politics-of-visibility/exhausted", {
+      ...jsonPost, body: JSON.stringify({ action_taken: "open_payment_link" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ok: true,
+      redirect: "/p/the-politics-of-visibility/run?notice=purchase_paused",
+    });
+  });
+
+  it("a form post keeps its 302 hand-off; no session → 401 JSON vs the /login redirect", async () => {
+    const form = await createWebApp(runDeps()).request("/p/the-politics-of-visibility/exhausted", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "action_taken=open_payment_link",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toContain("https://buy.stripe.com/test_pl");
+    const noSess = await createWebApp(runDeps({}, () => null)).request(
+      "/p/the-politics-of-visibility/exhausted",
+      { ...jsonPost, body: JSON.stringify({ action_taken: "open_payment_link" }) },
+    );
+    expect(noSess.status).toBe(401);
+    const missing = await createWebApp(runDeps()).request("/p/nope/exhausted", {
+      ...jsonPost, body: JSON.stringify({ action_taken: "open_payment_link" }),
+    });
+    expect(missing.status).toBe(404);
+  });
+});

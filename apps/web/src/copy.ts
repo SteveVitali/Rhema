@@ -282,6 +282,10 @@ export const COPY = {
       lower_rigor: "Lower the rigor",
       add_credits: "Add credits",
     },
+    // SPA.20 — the two literals the SSR island carried inline (the paywall group's accessible name +
+    // the provisional-estimate suffix); the SPA leaf binds them as leaves (REQ-SAFE-10).
+    paywallAriaLabel: "Run cost and consent",
+    refiningSuffix: " · refining…",
   },
 
   dossier: {

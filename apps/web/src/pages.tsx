@@ -43,7 +43,6 @@ import {
   type SourceEditorLabels,
   type PageEditorLabels,
   type DossierLabels,
-  type RunSheetLabels,
   type RunCardLabels,
   type LetterViewLabels,
   type ClaimsTableLabels,
@@ -115,6 +114,7 @@ import {
   type FindingView,
 } from "@rhema/contracts";
 import { COPY } from "./copy.js";
+import { runLabelFor, runSheetLabels, runSheetVoiceLabels } from "./run-sheet-labels.js";
 import {
   approvalRowLabels,
   decisionLine,
@@ -1284,52 +1284,8 @@ export function NewProjectPage(): ReactNode {
   );
 }
 
-const runLabelFor: Record<string, string> = {
-  review: COPY.runSheet.runReview,
-  revise: COPY.runSheet.runRevise,
-  fact_check: COPY.runSheet.runFactCheck,
-};
-
-const runSheetLabels: RunSheetLabels = {
-  rigorLegend: COPY.runSheet.rigorLegend,
-  runLabel: COPY.runSheet.runReview,
-  confirmLabel: COPY.runSheet.confirm,
-  askLabel: COPY.runSheet.ask,
-  changeLabel: COPY.runSheet.change,
-  whyPrefix: COPY.runSheet.why,
-  advancedLegend: COPY.runSheet.advanced,
-  toggleLabels: {
-    fact_check: COPY.runSheet.factCheckToggle,
-    discourse: COPY.runSheet.discourseToggle,
-    second_read: COPY.runSheet.secondReadToggle,
-    repair_research: COPY.runSheet.repairResearchToggle,
-    gap_check: COPY.runSheet.gapCheckToggle,
-  },
-  buyCreditsLabel: COPY.runSheet.buyCredits,
-  suspendedNotice: COPY.runSheet.suspended,
-  purchasePausedLabel: COPY.runSheet.purchasePaused,
-  planOffer: { text: COPY.runSheet.planOffer, linkLabel: COPY.runSheet.planOfferLink },
-  // P1.06 — the §5.6 collapsed-row fields + the §14.3 trial badge + the §7.2 scope comparison line.
-  approvalsLabel: COPY.runSheet.approvals,
-  approvalsDisplay: COPY.runSheet.approvalDisplay,
-  autoRunLabel: COPY.runSheet.autoRunLabel,
-  capLabel: COPY.runSheet.capLabel,
-  dontAskLabel: COPY.runSheet.dontAskLabel,
-  guidanceLabel: COPY.runSheet.guidanceLabel,
-  guidancePlaceholder: COPY.runSheet.guidancePlaceholder,
-  standingNotesFmt: COPY.runSheet.standingNotesFmt,
-  protocolLabel: COPY.runSheet.protocolLabel,
-  venueLabel: COPY.runSheet.venueLabel,
-  stageLabel: COPY.runSheet.stageLabel,
-  wholeDraftPrefix: COPY.runSheet.wholeDraftPrefix,
-  includedLabel: COPY.runSheet.includedLabel,
-  // EST.1 — the model-tier select, clamp notice, unmeasured-inputs state, resolution links.
-  modelTierLabel: COPY.runSheet.modelTierLabel,
-  tierLockedSuffix: COPY.runSheet.tierLockedSuffix,
-  tierClampedFmt: COPY.runSheet.tierClampedFmt,
-  estimatingLabel: COPY.runSheet.estimatingLabel,
-  resolutionLabels: COPY.runSheet.resolutionLabels,
-};
+// SPA.20 — `runLabelFor` + `runSheetLabels` hoisted to `run-sheet-labels.ts` so the SSR page and
+// the SPA leaf bind the same COPY leaves (REQ-SAFE-10 scans that file's literal `COPY.…` refs).
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
 export function RunSheetPage(): ReactNode {
@@ -1378,11 +1334,7 @@ export function RunSheetPage(): ReactNode {
           labels={{
             ...runSheetLabels,
             runLabel: runLabelFor[runSheet.view.workflow] ?? COPY.runSheet.runReview,
-            voiceLabels: {
-              lineLabel: COPY.voice.sheet.lineLabel,
-              adHocLabel: COPY.voice.sheet.adHoc,
-              updateFirstFmt: COPY.voice.sheet.updateFirstFmt,
-            },
+            voiceLabels: runSheetVoiceLabels,
           }}
           runAction={`/p/${slug}/run`}
           exhaustedAction={`/p/${slug}/exhausted`}

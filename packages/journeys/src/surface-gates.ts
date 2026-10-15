@@ -114,8 +114,17 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
       "figure-bearing legs (type chips, field edits, the pending-proposal Accept/Reject arms) — no free step can mint a figure today (the Visualize click is a paid run); the dom.test parity legs stand in until a seeded fixture or paid leg carries them",
     ],
   }),
+  // SPA.20 — the F9 subset (design/27): N4's estimate-agreement leg, R7's scope-line leg, N9's
+  // run-sheet Add-credits Payment-Link leg, P1.runsheet's phone-width capability note. Every leg
+  // selects on manifest hooks (`form[data-run-sheet]`, `[data-phone-blocked]`, `data-*` copy
+  // hooks) — renderer-agnostic by construction. The steps stay `expected:"green"` (they are
+  // carried legs the nightly already walks); what is owed is the ticket's own preview two-leg +
+  // rollback drill — the Resend secret blocker (D-SPA.20-*) holds it.
   "run-sheet": gate("run-sheet", ["N4", "R7", "N9", "P1.runsheet"], {
     legNotes: { R7: "the scope-line leg", N9: "the Add-credits Payment-Link leg" },
+    owed: [
+      "the SPA.20 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.20-1) holds the pr-<n> run; the dom.test + bff.test parity legs stand in",
+    ],
   }),
   dossier: gate("dossier", ["N7", "T1"], {
     owed: [

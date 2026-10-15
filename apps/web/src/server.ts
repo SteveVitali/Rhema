@@ -45,7 +45,8 @@ import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto, EstimateRequestDto, CreatedRunDto } from "@rhema/api-client";
+import type { ProjectRow } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
@@ -1363,6 +1364,153 @@ export function createWebApp(deps: WebDeps): Hono {
       },
     };
   };
+
+  // ---- SPA.20 — the `run-sheet` surface (REQ-BFF-1/8/9/11/12/23, REQ-DAT-4/6/12; design/22 §2
+  //      `p.run` row + §7.3 the typed estimate twin). `runSheetComposition` is the ONE composition
+  //      the document GET and `GET /bff/p/:slug/run` share — the same seams, the same degrade
+  //      posture, the same side effects (the `voice.staleness_shown` emit, the exhausted-prompt
+  //      impression, the `rhema_fp` mint) so the two renderers price + log identically. `sheet`
+  //      ships the server-built RunSheetView VERBATIM (design/22's F13 ruling): `recompute.cells`,
+  //      `idempotencyKey`, `entitlementId`, and the display strings ride inside — the SPA leaf
+  //      repaints levers off `cells` and NEVER calls the estimator (`surfaceEstimate`/
+  //      `buildLeverMatrix` stay server IP, out of the bundle). The estimate POST is the
+  //      revalidation twin for out-of-matrix inputs — the api's `POST /projects/:id/estimates`
+  //      verbatim. ----
+
+  /** The sheet's ONE composition (document GET + BFF twin): context read → active-run precedence →
+   *  billing/voice/pretriage reads → the RunSheetView. Returns `activeRun` when a non-terminal run
+   *  blocks this workflow+scope — the document's own first-arm semantic. */
+  const runSheetComposition = async (
+    c: Context,
+    session: SessionHeaders,
+    row: ProjectRow,
+    query: Record<string, string>,
+  ): Promise<{
+    view: ReturnType<typeof buildSheet>;
+    activeRun?: { runId: string; state: string };
+    pretriage?: { triaged: number; total: number };
+  }> => {
+    const slug = row.slug;
+    // P1.06 — the sheet's ONE context read (§5.6; REQ-IDE-13): head draft, sections, obligations, the
+    // trial entitlement, the consent pref, and `blockedBy` — the run THIS sheet's workflow+scope would
+    // collide with under the P1.06 per-write-lock ruling. `row.activeRun` is only the fallback when the
+    // context read fails (fail-conservative — never a surprise duplicate).
+    const sheetCtx = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.getRunSheetContext?.(session, row.id, {
+          workflow: normalizeWorkflow(query.workflow ?? "review"),
+          ...(query.scope ? { scope: query.scope } : {}),
+        }),
+      )
+      .catch(() => null);
+    const blocking = sheetCtx?.blockedBy ?? (sheetCtx == null ? row.activeRun : null);
+    if (blocking) {
+      return {
+        view: buildSheet(query, undefined, deps.betaPlanOfferUrl, sheetCtx),
+        activeRun: { runId: blocking.runId, state: blocking.state },
+      };
+    }
+    // PRB.08 — the REAL balance: spendable credits, suspension, and the beta Payment Link for the panel.
+    const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+    // PRB.10 — the voice line (§9.6): the project's linked persona + the shared pill, or the ad-hoc
+    // default. When the pill's action is `update_voice` the priced chained action renders ("Update voice
+    // first ≈N cr") — a fact + an action, never a gate (a stale/untested/never-built voice never blocks).
+    const pv = await Promise.resolve()
+      .then(() => deps.dataSource.getProjectVoice(session, row.id))
+      .catch(() => null);
+    let updateEstimateCredits: number | undefined;
+    if (pv?.status?.action === "update_voice" && pv.personaId) {
+      updateEstimateCredits = (
+        await Promise.resolve()
+          .then(() => deps.dataSource.estimateVoice(session, pv.personaId!, "quick"))
+          .catch(() => null)
+      )?.estimateCredits;
+    }
+    // PRB.12 — the staleness banner showing IS the `voice.staleness_shown` event (state = the pill's state).
+    if (pv?.status?.action === "update_voice") {
+      emit(session, "voice.staleness_shown", { state: pv.status.state }, { projectId: row.id });
+    }
+    const view = {
+      ...buildSheet(query, billing, deps.betaPlanOfferUrl, sheetCtx),
+      ...(pv
+        ? {
+            voice:
+              pv.voiceMode === "ad_hoc"
+                ? ({ mode: "ad_hoc" } as const)
+                : ({
+                    mode: "linked",
+                    ...(pv.personaId ? { personaId: pv.personaId } : {}),
+                    name: pv.name ?? pv.personaId,
+                    ...(pv.status ? { pill: pv.status.pill } : {}),
+                    ...(pv.snapshot?.builtAt ? { snapshotAt: pv.snapshot.builtAt } : {}),
+                    ...(updateEstimateCredits != null
+                      ? { updateEstimateCredits, updateAction: `/p/${slug}/update-voice` }
+                      : {}),
+                  } as const),
+          }
+        : {}),
+    };
+    // REQ-BETA-12 — the exhaustion prompt showing IS the telemetry event (action_taken:"shown"); the panel's
+    // Payment-Link click records "open_payment_link" via /p/:slug/exhausted.
+    if (view.insufficient) {
+      await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
+    }
+    // ACT.1 — the trial unlock's device fingerprint plants on the sheet read so the Run POST can
+    // forward it (minted HttpOnly; the api stores only its salted hash). The twin mints identically
+    // — a SPA document load + its twin fetch leave the same billing trail the SSR GET leaves.
+    if (view.entitlementId) ensureFingerprint(c);
+    // PRB.05 / REQ-IDE-28: the Revise sheet shows "you pre-triaged N of M" (the user's rows are
+    // highest-precedence guidance for the run). A failed read never blocks the sheet.
+    let pretriage: { triaged: number; total: number } | undefined;
+    if (view.workflow === "revise") {
+      pretriage = await deps.dataSource
+        .getPretriage(session, row.id)
+        .then((p) => ({ triaged: p.triaged, total: p.total }))
+        .catch(() => undefined);
+    }
+    return { view, pretriage };
+  };
+
+  // `GET /p/:slug/run`'s twin (design/22 §2 `p.run` — the aggregate). `view` is the server-built
+  // RunSheetView verbatim; `activeRun` collapses the twin into the document's in-progress arm; the
+  // `ide` bag republishes onto the React chrome (IDE-framed: `run-sheet` × `ide-chrome` AND-gate —
+  // REQ-SEQ-12). `?notice` stays URL state — flashes are never payload. `phone` is boot-owned
+  // (`deviceClass`), never the twin's to decide.
+  app.get("/bff/p/:slug/run", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const { view, pretriage, activeRun } = await runSheetComposition(c, session, row, c.req.query());
+    const ctx = await ideContext(c, session, row);
+    return c.json({
+      runSheet: {
+        slug,
+        projectTitle: row.title,
+        view,
+        ...(activeRun ? { activeRun } : {}),
+      },
+      ...(pretriage ? { pretriage } : {}),
+      project: { title: row.title, pill: row.state.pill, slug },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+  // REQ-BFF-23 — the typed estimate twin for revalidation + out-of-matrix inputs (design/22 §7.3):
+  // the api's `POST /projects/:id/estimates` verbatim — the typed EstimateRequestDto body forwards,
+  // the typed EstimateDto lands (the lever-matrix repaint is a client `cells` lookup and never
+  // reaches this). A JSON caller is never handed a redirect — failures ride `bffFail` verbatim.
+  app.post("/bff/p/:slug/estimate", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    if (deps.dataSource.estimate == null) return c.json({ error: "estimate_unavailable" }, 503);
+    const body = (await c.req.json().catch(() => null)) as EstimateRequestDto | null;
+    if (body == null || typeof body !== "object" || Array.isArray(body)) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    return c.json(await deps.dataSource.estimate(session, row.id, body));
+  }));
 
   // P1.06 — the ⌘K palette's free-text search proxy (§5.12): same-origin, session-forwarded to the
   // api's project search narrowed to THIS project; hits map to deep links (drafts → the editor,
@@ -4722,91 +4870,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // P1.06 — the sheet's ONE context read (§5.6; REQ-IDE-13): head draft, sections, obligations, the
-    // trial entitlement, the consent pref, and `blockedBy` — the run THIS sheet's workflow+scope would
-    // collide with under the P1.06 per-write-lock ruling. `row.activeRun` is only the fallback when the
-    // context read fails (fail-conservative — never a surprise duplicate).
-    const sheetCtx = await Promise.resolve()
-      .then(() =>
-        deps.dataSource.getRunSheetContext?.(session, row.id, {
-          workflow: normalizeWorkflow(c.req.query("workflow") ?? "review"),
-          ...(c.req.query("scope") ? { scope: c.req.query("scope")! } : {}),
-        }),
-      )
-      .catch(() => null);
-    const blocking = sheetCtx?.blockedBy ?? (sheetCtx == null ? row.activeRun : null);
-    if (blocking) {
-      return c.html(
-        renderDocument(c.req.path, runSheetElement, {
-          ...(await ideContext(c, session, row)),
-          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          runSheet: {
-            slug,
-            projectTitle: row.title,
-            view: buildSheet(c.req.query(), undefined, deps.betaPlanOfferUrl, sheetCtx),
-            activeRun: { runId: blocking.runId, state: blocking.state },
-          },
-          compact: isPhoneRequest(c),
-        }),
-      );
-    }
-    // PRB.08 — the REAL balance: spendable credits, suspension, and the beta Payment Link for the panel.
-    const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
-    // PRB.10 — the voice line (§9.6): the project's linked persona + the shared pill, or the ad-hoc
-    // default. When the pill's action is `update_voice` the priced chained action renders ("Update voice
-    // first ≈N cr") — a fact + an action, never a gate (a stale/untested/never-built voice never blocks).
-    const pv = await Promise.resolve()
-      .then(() => deps.dataSource.getProjectVoice(session, row.id))
-      .catch(() => null);
-    let updateEstimateCredits: number | undefined;
-    if (pv?.status?.action === "update_voice" && pv.personaId) {
-      updateEstimateCredits = (
-        await Promise.resolve()
-          .then(() => deps.dataSource.estimateVoice(session, pv.personaId!, "quick"))
-          .catch(() => null)
-      )?.estimateCredits;
-    }
-    // PRB.12 — the staleness banner showing IS the `voice.staleness_shown` event (state = the pill's state).
-    if (pv?.status?.action === "update_voice") {
-      emit(session, "voice.staleness_shown", { state: pv.status.state }, { projectId: row.id });
-    }
-    const view = {
-      ...buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl, sheetCtx),
-      ...(pv
-        ? {
-            voice:
-              pv.voiceMode === "ad_hoc"
-                ? ({ mode: "ad_hoc" } as const)
-                : ({
-                    mode: "linked",
-                    ...(pv.personaId ? { personaId: pv.personaId } : {}),
-                    name: pv.name ?? pv.personaId,
-                    ...(pv.status ? { pill: pv.status.pill } : {}),
-                    ...(pv.snapshot?.builtAt ? { snapshotAt: pv.snapshot.builtAt } : {}),
-                    ...(updateEstimateCredits != null
-                      ? { updateEstimateCredits, updateAction: `/p/${slug}/update-voice` }
-                      : {}),
-                  } as const),
-          }
-        : {}),
-    };
-    // REQ-BETA-12 — the exhaustion prompt showing IS the telemetry event (action_taken:"shown"); the panel's
-    // Payment-Link click records "open_payment_link" via /p/:slug/exhausted.
-    if (view.insufficient) {
-      await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
-    }
-    // ACT.1 — the trial unlock's device fingerprint plants on the sheet GET so the Run POST can
-    // forward it (minted HttpOnly; the api stores only its salted hash).
-    if (view.entitlementId) ensureFingerprint(c);
-    // PRB.05 / REQ-IDE-28: the Revise sheet shows "you pre-triaged N of M" (the user's rows are
-    // highest-precedence guidance for the run). A failed read never blocks the sheet.
-    let pretriage: { triaged: number; total: number } | undefined;
-    if (view.workflow === "revise") {
-      pretriage = await deps.dataSource
-        .getPretriage(session, row.id)
-        .then((p) => ({ triaged: p.triaged, total: p.total }))
-        .catch(() => undefined);
-    }
+    // SPA.20 — the sheet's ONE composition (context read → active-run precedence → billing/voice/
+    // pretriage → the RunSheetView) is shared with the `/bff/p/:slug/run` twin verbatim — side
+    // effects (`voice.staleness_shown`, the exhausted-prompt impression, the `rhema_fp` mint)
+    // included, so the two renderers never diverge on a fact or an event.
+    const { view, pretriage, activeRun } = await runSheetComposition(c, session, row, c.req.query());
     return c.html(renderDocument(c.req.path, runSheetElement, {
       ...(await ideContext(c, session, row)),
       project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
@@ -4814,6 +4882,7 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         projectTitle: row.title,
         view,
+        ...(activeRun ? { activeRun } : {}),
         // BILL.3 — the exhausted POST bounced back because purchase is closed: the paused line.
         ...(c.req.query("notice") === "purchase_paused" ? { notice: COPY.runSheet.purchasePaused } : {}),
       },
@@ -4826,11 +4895,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // comes in the form. On success the sheet reports the run started (§5.6 item 10).
   app.post("/p/:project/run", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.20 (REQ-BFF-1/2) — a JSON caller posts the SAME flat field map as the form
+    // (`bodyFields` decodes both content types; an unchecked checkbox contributes nothing
+    // either way — the `toggleKeys` sentinel grammar is unchanged).
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const workflow = normalizeWorkflow(str("workflow"));
     const rigor = normalizeRigor(str("rigor"));
@@ -4900,8 +4972,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (Number.isInteger(dontAskUnder) && dontAskUnder >= 0 && str("dontAskUnder") !== "") {
       await deps.dataSource.setConsentPref?.(session, Math.min(dontAskUnder, 1000)).catch(() => undefined);
     }
+    let created: CreatedRunDto | undefined;
     try {
-      await deps.dataSource.createRun(session, row.id, {
+      created = await deps.dataSource.createRun(session, row.id, {
         idempotencyKey: str("idempotencyKey") || randomUUID(),
         workflow,
         modelProfile: { tier: modelTier },
@@ -4944,6 +5017,12 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(cookieValue(c, FP_COOKIE) ? { fingerprint: cookieValue(c, FP_COOKIE) } : {}),
       });
     } catch (e) {
+      // SPA.20 (REQ-BFF-4/5) — a JSON caller never gets a re-rendered sheet: the api's stable
+      // `{error, detail?}` rides at the preserved status (`run_in_progress` 409,
+      // `insufficient_balance` 402, the `trial_*`/`entitlement_*`/`model_tier_*` refusals, ≥500 →
+      // 502). The leaf repaints server truth off the invalidated twin — the same answers the SSR
+      // re-render arms below carry.
+      if (wantsJson(c)) return bffFail(c, e, { msg: "run_create_failed" });
       // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
       // no run created. Any other api error is a real failure and propagates.
       // PRB.21 / D-PRB.20-1 — a run went live between the sheet render and the click (or a second tab):
@@ -5063,6 +5142,12 @@ export function createWebApp(deps: WebDeps): Hono {
       }
       throw e;
     }
+    // SPA.20 — the JSON success answer: `{ok:true, data:{runId,state}}` — the leaf shows the
+    // started confirmation off `data` and the invalidated twin collapses to the in-progress arm
+    // (the api's own server truth — the document's `started:true` render has no URL of its own).
+    if (wantsJson(c)) {
+      return mutationOutcome(c, { data: { runId: created?.runId, state: created?.state } });
+    }
     // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
     return c.html(renderDocument(c.req.path, runSheetElement, {
       ...(await ideContext(c, session, row)),
@@ -5077,11 +5162,16 @@ export function createWebApp(deps: WebDeps): Hono {
   // never a form field, so this route is no open redirect.
   app.post("/p/:project/exhausted", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.20 (REQ-BFF-1/2/27) — `bodyFields` decodes both content types; the JSON arms answer the
+    // SAME envelope the 302s carried: `{ok,redirect:"…?notice=purchase_paused"}` for a closed
+    // purchase switch, `{ok,url}` for the Payment Link hand-off (validated against the Stripe-hosted
+    // allowlist AGAIN inside mutationOutcome — a refused link can never reach the wire, and a JSON
+    // caller is never handed a 302), `{ok,redirect}` for the plain return.
+    const form = await bodyFields(c);
     const action = typeof form.action_taken === "string" && form.action_taken !== "" ? form.action_taken : "unknown";
     await deps.dataSource.recordExhaustedPrompt(session, action).catch(() => undefined);
     if (action === "open_payment_link") {
@@ -5091,7 +5181,7 @@ export function createWebApp(deps: WebDeps): Hono {
       // the redirect target is validated against the Stripe-hosted allowlist before the 302 (the CSP
       // form-action list admits nothing else anyway).
       if (billing?.purchase !== "open") {
-        return c.redirect(`/p/${slug}/run?notice=purchase_paused`);
+        return mutationOutcome(c, { redirect: `/p/${slug}/run?notice=purchase_paused` });
       }
       // F32 (PRB.19): the Payment Link must carry `client_reference_id=<billingAccountId>` — without it the
       // Stripe-originated checkout lands `unresolved` (money taken, no grant(topup)). Composed, never
@@ -5101,10 +5191,10 @@ export function createWebApp(deps: WebDeps): Hono {
           paymentLinkWithReference(billing.paymentLinkUrl, billing.billingAccountId),
           (m) => console.error(m),
         );
-        if (target) return c.redirect(target);
+        if (target) return mutationOutcome(c, { url: target });
       }
     }
-    return c.redirect(`/p/${slug}/run`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/run` });
   });
 
   // Auth-gated: the delivered-review dossier reading surface (PRB.04, §5.5/§5.7/§6.6). The findings-core read
