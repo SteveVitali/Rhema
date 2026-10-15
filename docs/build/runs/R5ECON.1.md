@@ -15,7 +15,11 @@
   (enforcement/headroom half) · REQ-ECON-13
 - **Live stage:** none (deterministic only — no `--paid` leg, no prod write, no deploy; this
   ticket repairs the guard, it does not authorize spend)
-- **Started:** 2026-10-15T16:22Z · **Closed:** (pending)
+- **Started:** 2026-10-15T16:22Z · **Closed:** 2026-10-15T17:41Z
+- **PR:** #180 on `stevevitali/navc-4-nav-acceptance-legs` · impl `56a1b6d` (+ closeout, below)
+- **ci:** `pending #180@56a1b6d` — typecheck/lint/unit pass (42m25s) + contracts pass +
+  public-safe pass; `integration` + `images` still in-flight after the 2700s bounded wait
+  (first-read class; the orchestrator's next boundary read decides)
 - **Anchor drift noted:** the seeder lives at `packages/db/src/seed/showcase.ts:695-746`
   (`seedDeliveredRunReport`), not `apps/api/src/showcase.ts:709-723` (that file is 640 lines —
   the contract's cite predates the code move); `funded-window.mjs` lives at `scripts/live/`.
@@ -98,7 +102,9 @@
   focused suites green (94 tests); live refusal smokes verified (no paid leg dispatched).
 - 2026-10-15T17:4xZ — self-review pass clean; full gate green: `turbo build lint typecheck`
   135/135, `pnpm test` 5,711 pass / 4 skip / 0 fail, all six `check:*` gates OK.
-- (closeout pending)
+- 2026-10-15T17:41Z — impl commit `56a1b6d` pushed; PR #180 opened on
+  `stevevitali/navc-4-nav-acceptance-legs`; ci-boundary read → pending (unit+contracts+
+  public-safe pass; integration/images in-flight); closeout staged + validated.
 
 ## Gap table
 
@@ -118,7 +124,7 @@
 | AC — seeded `req_jrn_*`/`seed` rows excluded from weekly + cumulative sums; unflagged-tenant spend excluded from cumulative (deterministic) | met | `spend-guard.test.ts` (+2 cases), `funded-window.test.mjs` (+6 source-pin cases incl. the unscoped-sum anti-pattern), `showcase.test.ts` (marker assertion on real seeded rows). |
 | AC — a leg exceeding `capUsd` yields `cap_overrun` + window pause (deterministic) | met | `stb5b.test.ts` `assertLegCapUsd` suite; `runner.test.ts` — overrun on red AND green steps → `cap_overrun`, `passed:false`, all later steps `skipped` with the pause reason. |
 | AC — `--paid` without the system DSN refuses; the cron path keeps the no-db attestation (deterministic) | met | `cli-flags.test.ts` `paidDispatchPreflight` table (5 cases) + the live exit-3 smoke. |
-| AC — verification green; BUILD_INDEX row + LEDGER advanced; operating clauses met | pending closeout | turbo 135/135 · vitest 5,711/5,715 (4 skipped) · 6/6 check gates · build-memory 0 violations. Closeout rows land in the close commit. |
+| AC — verification green; BUILD_INDEX row + LEDGER advanced; operating clauses met | met | turbo 135/135 · vitest 5,711 pass / 4 skip / 0 fail · 6/6 check gates · build-memory 0 violations · append-only vs `127b64e` OK · BUILD_INDEX row 186 + PHASE LOG `done` land in the closeout commit · ci: pending #180@56a1b6d (first-read class — unit+contracts+public-safe pass; integration/images in-flight) |
 | Cross-cutting — no paid legs, no prod writes, no deploys | met | Only refusal paths were smoke-run (exit 3 before any network work); no DB writes; `git status` carries only the ticket's files. |
 | Cross-cutting — append-only / no generated-file edits / no secrets | met | No ADR needed (no MET-DIFFERENTLY verdicts); no secrets anywhere in the diff; protected files untouched. |
 | Out of scope — `testCheapRoute` arm (R5ECON.2), window-open checklist/drivers (R5ECON.3) | confirmed absent | No `testCheapRoute` symbol added; the pause sentinel is a stop-sign, not the R5ECON.3 window-open machinery. |
@@ -145,4 +151,25 @@
 
 ## Evidence report
 
-(pending — completed at Phase 6 with the PR number + head SHA)
+**PR:** https://github.com/SteveVitali/Rhema/pull/180 · head `56a1b6d` (+ closeout commit).
+
+**Gap walk:** every contract clause + AC resolves `met` with file:line/test evidence (gap
+table above); zero `partial`/`missed`, zero MET-DIFFERENTLY (no ADR owed); out-of-scope items
+(`testCheapRoute` → R5ECON.2; window-open checklist/drivers → R5ECON.3) confirmed absent.
+The one judgment call — `workflow_dispatch paid:true` now refuses without a bound DSN — is
+the contract's own fail-closed reading (a manual paid run is an operator run), documented in
+the README + PR body.
+
+**Verification:** `pnpm install` clean · `turbo build lint typecheck` 135/135 · `pnpm test`
+494 files / 5,711 pass / 4 skip / 0 fail (privsep.docker green this run) · all six
+`check:*` gates OK · build-memory 0 violations · append-only vs `127b64e` OK · deterministic
+focus 94/94 · live refusal smokes: four exit-3/2 refusals observed end-to-end (no leg
+dispatched, no network touched, no prod write). **Not run:** a real `--paid` leg (this
+ticket repairs the guard, it does not authorize spend) and a live system-DSN probe (no
+prod DSN reachable from the worker — D-STB.5b-1's live half stays PARTIAL, unchanged).
+
+**Deferrals:** none opened, none closed (D-STB.5b-1 stays PARTIAL — its owed leg is the
+operator's two-role live re-read, not this ticket's repair).
+
+**ci:** pending #180@56a1b6d — unit/lint/typecheck + contracts + public-safe pass;
+integration/images in-flight at the bounded wait's end (first-read class).
