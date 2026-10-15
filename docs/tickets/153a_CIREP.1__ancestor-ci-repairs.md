@@ -49,7 +49,9 @@ branch onto the repaired chain tip with the crashed worker's WIP preserved.
 `git status --porcelain` as the WIP baseline (exactly the 8 paths in Load +
 `docs/build/reports/digests/` if still untracked). Assert
 `git merge-base --is-ancestor fd5ade2 HEAD` and `git log --oneline fd5ade2..HEAD`
-= exactly the 3 orchestrator boundary commits — anything else is a finding, stop.
+= only orchestrator memory commits (3 boundary records + the CIREP.1 insert
+commit — every touched path under `docs/build/` or `docs/tickets/`; any
+product-code commit is a finding, stop).
 Then `git worktree add ../rhema-wt-fix1 stevevitali/fix-1-journey-fixture-repairs`
 and `../rhema-wt-verif1 stevevitali/verif-1-composed-ffbb8ad` — **all ancestor work
 happens in the temp worktrees; the navc-1 checkout's WIP never rides a checkout.**
@@ -139,9 +141,9 @@ BUILD_INDEX row: no new PR — the PR cell records
 - [ ] `ci-boundary` reads pass on #173 and #174 at their new heads — or an honest
   `ci: pending` hand-back *(deterministic — the blocking read, never local-green
   claimed as CI)*
-- [ ] navc-1 rebased onto the new #174 head; the 3 orchestrator commits replayed;
-  pre/post-stash porcelain identical; both repaired suites green on the rebased
-  tree; branch pushed *(deterministic)*
+- [ ] navc-1 rebased onto the new #174 head; the orchestrator memory commits
+  replayed; pre/post-stash porcelain identical; both repaired suites green on the
+  rebased tree; branch pushed *(deterministic)*
 - [ ] Step-4 audit table + dated OPEN FINDINGS line recorded *(deterministic ·
   engineered)*
 - [ ] `runs/CIREP.1.md` + PHASE LOG `done` + BUILD_INDEX row + `nextTicket` →
