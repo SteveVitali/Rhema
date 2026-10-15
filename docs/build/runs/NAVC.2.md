@@ -171,13 +171,13 @@ Deviations: none. Partial/missed items: none found in the Phase-4 re-read.
 
 ## Evidence report
 
-- **Commits:** impl `c20d5dbc4e3915be982d573ef16ccbd2c310d36e` (+ closeout commit on top;
-  true pushed head recorded in LEDGER `chainTip`/PHASE LOG).
+- **Commits:** impl `c20d5dbc4e3915be982d573ef16ccbd2c310d36e`; closeout
+  `a6a7f29ccd2fc155a783d2f3b74f892d2f0fb1fa` — true pushed head (remote == local).
 - **PR:** #177 — base `stevevitali/navc-5-ssrhandoff-replace-seam`, head
   `stevevitali/navc-2-settle-contract`; mergeable; **unmerged** (mergePolicy OPERATOR).
-- **CI at closeout:** `typecheck / lint / unit` IN_PROGRESS on `c20d5db` — recorded
-  honestly as pending (first-read class; the boundary check belongs to the orchestrator's
-  close-read).
+- **CI at closeout:** run `38728360649` in_progress on `c20d5db`; run `38728603532`
+  queued on `a6a7f29` — recorded honestly as pending (first-read class; the boundary
+  check belongs to the orchestrator's close-read).
 - **Gap analysis:** every contract AC lands with test evidence — see the gap table above;
   no deviations, no partial items.
 - **DEFERRALS:** read at start; none opened, none closed. The known unrelated
