@@ -137,9 +137,14 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // `run-sheet ∧ ide-chrome` and `/p/:p/run` mounts the chrome; SPAF.11 is its prod flip
     // — `run-sheet` appended in flip order after `figures`, the second IDE-framed prod
     // activation (ide-chrome has been live on prod since SPAF.8).
+    // SPA.21 added `dossier` on dev — the third IDE-framed key: BOTH dossier consults
+    // resolve `dossier ∧ ide-chrome` (key-level AND), `/p/:p/review/:runId` mounts the
+    // chrome (∈ SPA_IDE_FRAMED_ROUTES) while `/p/:p/obligations/new` renders unframed;
+    // SPAF.12 is its prod flip — `dossier` appended in flip order after `run-sheet`, the
+    // third IDE-framed prod activation.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier"]); // SPA.11…21 — the dev flips
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet"]); // SPAF.1…SPAF.11 — the prod flips
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier"]); // SPAF.1…SPAF.12 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
