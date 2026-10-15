@@ -1,0 +1,5 @@
+=== CSP header on a flagged doc (/app, session) ===
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-LSN/P7EEOBl90rSw4kQwMQ=='; style-src 'self' 'unsafe-inline'; img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self' wss://rhema.tools https://storage.googleapis.com; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://billing.stripe.com https://buy.stripe.com https://accounts.google.com
+
+=== jrn-a projects via /bff/app ===

@@ -1,0 +1,41 @@
+{
+  "web": "https://rhema.tools",
+  "nonce": "523e86229f04",
+  "markerA": "JRN-523E86229F04-TENANTA",
+  "voiceA": "JRN-523E86229F04-VOICEA",
+  "checks": {
+    "A:markers": {
+      "pass": true,
+      "detail": "marker + voice present; aSlug=jrn-523e86229f04-tenanta"
+    },
+    "B:/bff/app": {
+      "pass": true,
+      "detail": "zero of A's marker strings"
+    },
+    "B:/bff/app/inbox": {
+      "pass": true,
+      "detail": "zero of A's marker strings"
+    },
+    "B:/bff/voices": {
+      "pass": true,
+      "detail": "zero of A's marker strings"
+    },
+    "B:/bff/usage": {
+      "pass": true,
+      "detail": "zero of A's marker strings"
+    },
+    "B:/bff/settings/billing": {
+      "pass": true,
+      "detail": "zero of A's marker strings"
+    },
+    "B:foreign-slug": {
+      "pass": true,
+      "detail": "GET /bff/p/jrn-523e86229f04-tenanta → 404"
+    },
+    "anon:/bff/app": {
+      "pass": true,
+      "detail": "401 {error:\"unauthenticated\"}"
+    }
+  },
+  "aSlug": "jrn-523e86229f04-tenanta"
+}

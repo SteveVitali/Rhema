@@ -1,0 +1,1 @@
+import{o as e,s as t,u as n}from"./useSelector-CP4_woLD.js";var r=`__root__`,i=n(t(),1),a=e(),o=()=>!0,s=()=>!1;function c({children:e,fallback:t=null}){return(0,a.jsx)(i.Fragment,{children:l()?e:t})}function l(e=!0){return i.useSyncExternalStore(u,o,e?s:o)}function u(){return()=>{}}export{l as n,r,c as t};

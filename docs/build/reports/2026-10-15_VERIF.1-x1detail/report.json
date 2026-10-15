@@ -1,0 +1,41 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "957a3b987903",
+  "startedAt": "2026-10-15T00:30:36.900Z",
+  "finishedAt": "2026-10-15T00:30:43.383Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "ffbb8ad",
+    "observed": {
+      "web": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+      "api": "ffbb8ad01b4383ab7f11088c8427b668bc442b01"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "X1.detail",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 6419,
+      "screenshot": "X1.detail.png"
+    }
+  ],
+  "passed": true
+}

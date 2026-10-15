@@ -1,0 +1,39 @@
+=== (c) non-showcase control: /p/jrn-81466769aeb9-n9credits (session A) ===
+GET → 200
+data-renderer="spa"
+id="spa-root"
+
+=== two-tenant BFF probe ===
+A /bff/app →    12260 bytes
+A marker strings (slugs+titles):
+   jrn-81466769aeb9-n9credits
+   JRN-81466769AEB9-N9CREDITS
+   jrn-36c84434353f-tenanta
+   JRN-36C84434353F-TENANTA
+   showcase-copy-7
+   Showcase — a worked example copy
+   jrn-36c84434353f-r1proj
+   JRN-36C84434353F-R1PROJ
+   showcase-copy-6
+   showcase-copy-5
+   showcase-copy-4
+   showcase-copy-3
+   jrn-21e6be472d54-tenanta
+   JRN-21E6BE472D54-TENANTA
+   showcase-copy-2
+   jrn-21e6be472d54-r1proj
+   JRN-21E6BE472D54-R1PROJ
+   jrn-2e362972f79d-tenanta
+   JRN-2E362972F79D-TENANTA
+   showcase-copy
+   jrn-2e362972f79d-r1proj
+   JRN-2E362972F79D-R1PROJ
+   showcase
+   Showcase — a worked example
+B GET /bff/app → 3249B, A-marker hits: 2
+B GET /bff/app/inbox → 37B, A-marker hits: 0
+B GET /bff/voices → 91B, A-marker hits: 0
+B GET /bff/usage → 411B, A-marker hits: 0
+B GET /bff/settings/billing → 4138B, A-marker hits: 0
+B GET /bff/p/jrn-36c84434353f-tenanta (foreign slug) → 404 {"error":"not_found"}
+anon GET /bff/app → 401 {"error":"unauthenticated"}

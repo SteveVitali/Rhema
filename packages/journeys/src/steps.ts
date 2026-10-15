@@ -640,12 +640,21 @@ const N8: StepFn = async (ctx) => {
   // `?rename=1`/hash variants are the same project — a bare `[^/]+` filter lets them consume the
   // scan window and push a real candidate (e.g. /p/showcase) past the slice's end.
   const hrefs = allHrefs.filter((h) => /^\/p\/[^/?#]+$/.test(h));
+  // VERIF.1 — the window itself is the next drift class: a long-lived tenant's accumulated rows
+  // (duplicated showcase copies, per-run scratch projects) push `/p/showcase` past the slice —
+  // jrn-a carried 19 rows on 2026-10-15 and the leg never reached its designed fallback
+  // substrate, dying on a false "no substrate" FAIL. Pin the Showcase to the END of the scan
+  // window: a real reviewed-frozen head still wins the literal leg first (read-only rows only
+  // set the dossier fallback and `continue`), and the guaranteed-fallback probe can never fall
+  // off the tail again.
+  const rest = hrefs.filter((h) => h !== "/p/showcase");
+  const scanOrder = hrefs.includes("/p/showcase") ? [...rest.slice(0, 11), "/p/showcase"] : rest;
   // dossier links can also ride the /app rows directly (latestReviewRunId cards)
   const dossierHrefs = allHrefs.filter((h) => /^\/p\/[^/]+\/review\/[^/]+/.test(h));
   let reviewed: { slug: string; frozenN: number } | null = null;
   let fallbackReviewed: { slug: string; frozenN: number } | null = null;
   let showcaseDossier: string | null = null;
-  for (const href of hrefs.slice(0, 12)) {
+  for (const href of scanOrder.slice(0, 12)) {
     await gotoOk(ret, `${ctx.webBaseUrl}${href}`);
     const slug = href.split("/")[2] ?? "";
     // SPA timing: data-mounted settles on the route match while a useQuery leaf still paints its
@@ -1990,11 +1999,14 @@ const P1_DOSSIER: StepFn = async (ctx) => {
         if (!href) throw new Error(`phone /showcase rendered no dossier link (${page.url()})`);
         await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
       }
-      // The leg's own classification seam BEFORE the capability asserts. A phone-classified
-      // Page-family GET serves forced-SSR — `data-renderer="ssr"` + `data-ssr-cause="phone"`
-      // (the SSR document carries NO `data-device`; that attr is the SPA shell's vocabulary). A
-      // `data-device="desktop"` SPA document here is the 2026-10-15 harness failure verbatim;
-      // `data-device="phone"` on a SPA shell would be the product's forced-SSR verdict not firing.
+      // The leg's own classification seam BEFORE the capability asserts. VERIF.1 correction —
+      // `GET /p/:p/review/:runId` is a sole-renderer SPA document (SPA.27; the route serves
+      // `spaShellDocument` unconditionally and the REQ-ED-12 forced-SSR set is the five
+      // Page-family GETs ONLY — spec §14.8), so the phone verdict on THIS route is exactly
+      // `data-renderer="spa"` + `data-device="phone"`. An SSR dossier would only surface if the
+      // walk ended on a Page-family GET (`data-ssr-cause="phone"` — the SSR document carries
+      // NO `data-device`; that attr is the SPA shell's vocabulary). Either arm proves the
+      // classification; `data-device="desktop"` is the harness failure FIX.1 retired.
       const html = page.locator("html");
       const [renderer, ssrCause, device] = await Promise.all([
         html.getAttribute("data-renderer"),
@@ -2010,12 +2022,20 @@ const P1_DOSSIER: StepFn = async (ctx) => {
             `a "desktop" read is the harness defect FIX.1 retires; the §10.1 sweep would read the desktop arm`,
         );
       }
-      if (renderer === "spa") {
+      if (renderer === "ssr" && ssrCause !== "phone") {
         throw new Error(
-          `the phone-classified dossier served data-renderer="spa" — the REQ-ED-12 forced-SSR ` +
-            `verdict did not fire (a product defect, not a harness miss)`,
+          `the dossier served SSR under a non-phone cause (${JSON.stringify(ssrCause)}) — ` +
+            `the forced-SSR set leaked onto a non-Page-family route`,
         );
       }
+      // The dossier leaf mounts after the twin fetch — `data-mounted` settles on the route
+      // match while the leaf still paints its skeleton, so the letter/findings/§10.1 counts
+      // below must wait for the leaf's own hooks before reading zero.
+      await page
+        .locator("[data-letter-view], [data-finding]")
+        .first()
+        .waitFor({ state: "attached", timeout: 20_000 })
+        .catch(() => undefined);
       await assertNoOverflow(page, `dossier @390×844 (${new URL(page.url()).pathname})`);
       if (
         (await page.locator("[data-letter-view]").count()) === 0 ||

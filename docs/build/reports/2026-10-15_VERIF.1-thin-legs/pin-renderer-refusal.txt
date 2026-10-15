@@ -1,0 +1,7 @@
+=== leg: --pin-renderer flag refusal (expect exit 2) ===
+--pin-renderer is retired (SPA.28 removed the x-rhema-renderer override channel) — run un-pinned; --expect-renderer still asserts the document markers
+exit=2
+
+=== leg: JOURNEY_PIN_RENDERER env refusal (expect exit 2) ===
+--pin-renderer is retired (SPA.28 removed the x-rhema-renderer override channel) — run un-pinned; --expect-renderer still asserts the document markers
+exit=2

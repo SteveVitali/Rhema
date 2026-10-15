@@ -1,0 +1,282 @@
+{
+  "capturedAt": "2026-10-15T00:39:47.049Z",
+  "sha": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+  "catalogueSize": 67,
+  "auditRows": 67,
+  "distinctProdEvents": 36,
+  "uncatalogued": [],
+  "unclassified": [],
+  "stuckBetaAbsent": [],
+  "windowEvents": [
+    {
+      "event": "finding.viewed",
+      "n": 960
+    },
+    {
+      "event": "run.report_viewed",
+      "n": 160
+    },
+    {
+      "event": "secondread.opened",
+      "n": 160
+    },
+    {
+      "event": "signup.completed",
+      "n": 49
+    },
+    {
+      "event": "showcase.opened",
+      "n": 43
+    },
+    {
+      "event": "entry.chosen",
+      "n": 26
+    },
+    {
+      "event": "credits.exhausted_prompt",
+      "n": 15
+    },
+    {
+      "event": "draft.imported",
+      "n": 13
+    },
+    {
+      "event": "chat.empty_state_shown",
+      "n": 10
+    },
+    {
+      "event": "voice.created",
+      "n": 7
+    },
+    {
+      "event": "project.exported",
+      "n": 4
+    },
+    {
+      "event": "surface.dwell",
+      "n": 3
+    },
+    {
+      "event": "finding.disposed",
+      "n": 2
+    }
+  ],
+  "allTime": [
+    {
+      "event": "chat.empty_state_shown",
+      "n": 26,
+      "first": "2026-10-14 14:24:00.471+00",
+      "last": "2026-10-15 00:38:53.216+00"
+    },
+    {
+      "event": "chat.plan_card_decided",
+      "n": 3,
+      "first": "2026-09-25 23:36:10.502+00",
+      "last": "2026-10-03 16:44:27.767+00"
+    },
+    {
+      "event": "chat.plan_card_shown",
+      "n": 3,
+      "first": "2026-09-25 23:32:31.257+00",
+      "last": "2026-09-26 12:45:57.922+00"
+    },
+    {
+      "event": "credits.exhausted_prompt",
+      "n": 30,
+      "first": "2026-09-18 18:41:39.456+00",
+      "last": "2026-10-15 00:33:19.593+00"
+    },
+    {
+      "event": "credits.granted",
+      "n": 5,
+      "first": "2026-09-17 16:21:43.784+00",
+      "last": "2026-09-18 18:42:36.936+00"
+    },
+    {
+      "event": "draft.edited",
+      "n": 1,
+      "first": "2026-09-18 02:38:59.817+00",
+      "last": "2026-09-18 02:38:59.817+00"
+    },
+    {
+      "event": "draft.imported",
+      "n": 48,
+      "first": "2026-09-22 17:41:14.031+00",
+      "last": "2026-10-15 00:39:45.876+00"
+    },
+    {
+      "event": "entry.chosen",
+      "n": 82,
+      "first": "2026-09-26 01:01:22.232+00",
+      "last": "2026-10-15 00:39:45.914+00"
+    },
+    {
+      "event": "estimate.consent_accepted",
+      "n": 1,
+      "first": "2026-09-18 05:52:01.453+00",
+      "last": "2026-09-18 05:52:01.453+00"
+    },
+    {
+      "event": "estimate.consent_shown",
+      "n": 2,
+      "first": "2026-09-18 05:51:12.723+00",
+      "last": "2026-09-18 16:29:27.46+00"
+    },
+    {
+      "event": "finding.disposed",
+      "n": 5,
+      "first": "2026-09-18 03:17:48.02+00",
+      "last": "2026-10-15 00:32:31.84+00"
+    },
+    {
+      "event": "finding.viewed",
+      "n": 2388,
+      "first": "2026-09-18 18:53:32.066+00",
+      "last": "2026-10-15 00:39:43.444+00"
+    },
+    {
+      "event": "outline.approved",
+      "n": 1,
+      "first": "2026-09-26 05:45:59.152+00",
+      "last": "2026-09-26 05:45:59.152+00"
+    },
+    {
+      "event": "paywall.shown",
+      "n": 6,
+      "first": "2026-09-25 23:24:39.142+00",
+      "last": "2026-10-03 16:43:07.692+00"
+    },
+    {
+      "event": "project.exported",
+      "n": 22,
+      "first": "2026-09-18 03:42:00.217+00",
+      "last": "2026-10-15 00:34:52.946+00"
+    },
+    {
+      "event": "refund.issued",
+      "n": 1,
+      "first": "2026-09-18 16:55:52.835+00",
+      "last": "2026-09-18 16:55:52.835+00"
+    },
+    {
+      "event": "revision.move_traced",
+      "n": 1,
+      "first": "2026-09-18 02:38:59.817+00",
+      "last": "2026-09-18 02:38:59.817+00"
+    },
+    {
+      "event": "round.completed",
+      "n": 1,
+      "first": "2026-09-17 21:00:46.771+00",
+      "last": "2026-09-17 21:00:46.771+00"
+    },
+    {
+      "event": "run.approval_decided",
+      "n": 28,
+      "first": "2026-09-17 17:15:14.641+00",
+      "last": "2026-09-18 18:02:29.646+00"
+    },
+    {
+      "event": "run.approval_opened",
+      "n": 29,
+      "first": "2026-09-17 17:14:13.332+00",
+      "last": "2026-09-18 17:30:12.781+00"
+    },
+    {
+      "event": "run.completed",
+      "n": 4,
+      "first": "2026-09-17 20:19:04.251+00",
+      "last": "2026-09-18 14:35:00.973+00"
+    },
+    {
+      "event": "run.estimated",
+      "n": 26,
+      "first": "2026-09-18 03:46:17.682+00",
+      "last": "2026-09-26 13:12:45.492+00"
+    },
+    {
+      "event": "run.failed",
+      "n": 15,
+      "first": "2026-09-17 16:48:31.456+00",
+      "last": "2026-09-18 18:09:48.692+00"
+    },
+    {
+      "event": "run.launched",
+      "n": 28,
+      "first": "2026-09-17 16:23:29.939+00",
+      "last": "2026-09-18 18:50:06.33+00"
+    },
+    {
+      "event": "run.phase_finished",
+      "n": 67,
+      "first": "2026-09-17 17:14:13.296+00",
+      "last": "2026-09-18 18:09:48.684+00"
+    },
+    {
+      "event": "run.phase_started",
+      "n": 67,
+      "first": "2026-09-17 17:14:13.296+00",
+      "last": "2026-09-18 18:09:48.684+00"
+    },
+    {
+      "event": "run.report_viewed",
+      "n": 387,
+      "first": "2026-09-30 16:52:46.499+00",
+      "last": "2026-10-15 00:39:43.424+00"
+    },
+    {
+      "event": "run.stopped",
+      "n": 8,
+      "first": "2026-09-17 18:02:15.602+00",
+      "last": "2026-09-18 16:51:22.439+00"
+    },
+    {
+      "event": "secondread.opened",
+      "n": 382,
+      "first": "2026-10-01 00:27:49.402+00",
+      "last": "2026-10-15 00:39:43.432+00"
+    },
+    {
+      "event": "showcase.opened",
+      "n": 131,
+      "first": "2026-10-01 00:27:49.078+00",
+      "last": "2026-10-15 00:39:42.544+00"
+    },
+    {
+      "event": "signup.completed",
+      "n": 145,
+      "first": "2026-09-17 16:15:43.003+00",
+      "last": "2026-10-15 00:39:35.271+00"
+    },
+    {
+      "event": "surface.dwell",
+      "n": 132,
+      "first": "2026-09-22 16:00:23.809+00",
+      "last": "2026-10-15 00:31:29.28+00"
+    },
+    {
+      "event": "topup.purchased",
+      "n": 4,
+      "first": "2026-09-18 16:10:03.978+00",
+      "last": "2026-09-22 20:20:36.937+00"
+    },
+    {
+      "event": "voice.built",
+      "n": 1,
+      "first": "2026-09-18 13:57:27.686+00",
+      "last": "2026-09-18 13:57:27.686+00"
+    },
+    {
+      "event": "voice.created",
+      "n": 24,
+      "first": "2026-09-18 03:03:25.004+00",
+      "last": "2026-10-15 00:34:59.594+00"
+    },
+    {
+      "event": "wtp.recorded",
+      "n": 7,
+      "first": "2026-09-18 16:10:03.981+00",
+      "last": "2026-09-22 20:20:36.942+00"
+    }
+  ]
+}

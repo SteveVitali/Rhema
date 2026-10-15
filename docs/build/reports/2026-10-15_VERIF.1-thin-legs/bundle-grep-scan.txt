@@ -1,0 +1,15 @@
+=== retired-machinery grep over 67 served assets ===
+x-rhema-renderer : 0 hit(s)
+SPA_OVERRIDES : 0 hit(s)
+JOURNEY_PIN_RENDERER : 0 hit(s)
+pin-renderer : 0 hit(s)
+spaSurfaces : 0 hit(s)
+SPA_SURFACES : 0 hit(s)
+SPA_RENDERER_HEADER : 0 hit(s)
+parseSpaSurfaces : 0 hit(s)
+
+=== marker vocabulary sanity (should be present) ===
+data-renderer : 6 file(s)
+data-mounted : 6 file(s)
+data-ssr-cause : 0 file(s)
+spa-root : 2 file(s)

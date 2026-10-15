@@ -7,11 +7,19 @@
 // DB-lifted token; ADR-016). No leg launches a run — the own-tenant delivered Review is the one the
 // weekly paid leg's earlier steps (N6/N11/R9) already produced on test+jrn-a.
 
-import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "playwright";
 import pg from "pg";
 import { sha256Hex } from "@rhema/contracts";
 import { seedDeliveredRunReport, seedOpenApprovalGate, seedWritableDossier, type MigrationDb } from "@rhema/db";
+import { journeyUlid } from "./ulid.js";
+
+/** VERIF.1 — seeded-substrate row ids MUST be ULIDs, not UUIDs: any id that reaches a run-event
+ *  payload (draft.forked, revision.move_traced — the Apply action's manual-revision trace) is
+ *  validated against the 26-char Crockford schema at the api write boundary, and a UUID there is
+ *  an unhandled ZodError → api 500 → web `dossier_finding_action_failed` 502 (the live signature
+ *  T13F reported twice on 2026-10-15). Only the seeder's own row ids ride this factory; direct
+ *  inserts below keep their own shapes where no event payload can reach them. */
+const seedIds = () => journeyUlid();
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
@@ -1107,13 +1115,37 @@ const T13: StepFn = async (ctx) => {
   }
   const confirm = preview.locator("button[data-bulk-confirm]");
   await assertClick(confirm, "the bulk confirm control");
+  // VERIF.1 — same repaint-race class as the Apply arm: the ?bulkdone= URL flips on the client
+  // route change while the twin refetch (which carries dossierView.bulkDone) still paints. Capture
+  // the POST + wait for the done notice to attach before verdicting.
+  const bulkPostP = page
+    .waitForResponse(
+      (r) => r.request().method() === "POST" && /\/findings\/bulk$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    )
+    .catch(() => null);
   await confirm.click();
+  const bulkPost = await bulkPostP;
   await page.waitForURL(/bulkdone=/, { timeout: 30_000 }).catch(() => settleNav(page, ctx));
   if (!/bulkdone=/.test(page.url())) {
-    throw new Error(`the bulk dispatch did not land on ?bulkdone= (${page.url()})`);
+    const status = bulkPost?.status();
+    const detail = await bulkPost?.text().catch(() => "");
+    throw new Error(
+      `the bulk dispatch did not land on ?bulkdone= (${page.url()})` +
+        (status == null
+          ? " — no bulk POST was captured (a click/navigation race)"
+          : ` — the bulk POST answered ${status}${detail ? ` (${detail.slice(0, 160)})` : ""}`),
+    );
   }
-  if ((await page.locator("[data-bulk-done]").count()) === 0) {
-    throw new Error("the bulk landing shows no done notice");
+  try {
+    await page.locator("[data-bulk-done]").waitFor({ state: "attached", timeout: 15_000 });
+  } catch {
+    const status = bulkPost?.status();
+    throw new Error(
+      status != null && status >= 400
+        ? `the bulk POST failed → ${status} — a product failure, not a repaint race`
+        : "the ?bulkdone= landing shows no done notice after a 2xx POST — the leaf repaint lagged the route change",
+    );
   }
   assertBundleParity(ctx);
 };
@@ -1159,7 +1191,7 @@ async function seededWritableDossier(email: string, tag: string): Promise<{ slug
     const res = await seedWritableDossier(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
-      ids: () => randomUUID(),
+      ids: seedIds,
       slugBase: `jrn-${tag}-dossier`,
       title: `JRN ${tag} dossier (seeded writable)`,
       seedLabel: "journey-dossier-seed",
@@ -1279,7 +1311,7 @@ async function seededDeliveredRunReport(email: string, tag: string): Promise<{ s
     const res = await seedDeliveredRunReport(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
-      ids: () => randomUUID(),
+      ids: seedIds,
       slugBase: `jrn-${tag}-report`,
       title: `JRN ${tag} run report (seeded delivered)`,
       seedLabel: "journey-report-seed",
@@ -1376,13 +1408,41 @@ const T13F: StepFn = async (ctx) => {
   }
   await assertClick(apply, "the Apply control");
   const appliedFid = await page.locator("[data-apply-form]").first().getAttribute("data-apply-form");
+  // VERIF.1 — the REQ-FIX-T12F pattern replicated on the Apply arm: capture the POST's status AND
+  // wait for the notice to attach. A bare post-navigation count() can't tell a leaf repaint lag
+  // (the ?applied= URL flips on the client route change while the twin refetch still paints) from
+  // a failed POST — the 2026-10-15 live reads needed both halves (a 502 from a UUID-shaped seed
+  // draftId, then a settle race on the notice).
+  const applyPostP = page
+    .waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        /\/findings\/[^/]+\/apply$/.test(new URL(r.url()).pathname),
+      { timeout: 20_000 },
+    )
+    .catch(() => null);
   await apply.click();
+  const applyPost = await applyPostP;
   await page.waitForURL(/applied=/, { timeout: 20_000 }).catch(() => settleNav(page, ctx));
   if (!/applied=/.test(page.url())) {
-    throw new Error(`the Apply click did not land on ?applied= (${page.url()})`);
+    const status = applyPost?.status();
+    const detail = await applyPost?.text().catch(() => "");
+    throw new Error(
+      `the Apply click did not land on ?applied= (${page.url()})` +
+        (status == null
+          ? " — no apply POST was captured (a click/navigation race)"
+          : ` — the apply POST answered ${status}${detail ? ` (${detail.slice(0, 160)})` : ""}`),
+    );
   }
-  if ((await page.locator('[data-finding-notice="applied"]').count()) === 0) {
-    throw new Error("the ?applied= landing shows no applied notice");
+  try {
+    await page.locator('[data-finding-notice="applied"]').waitFor({ state: "attached", timeout: 15_000 });
+  } catch {
+    const status = applyPost?.status();
+    throw new Error(
+      status != null && status >= 400
+        ? `the apply POST failed → ${status} — a product failure, not a repaint race`
+        : "the ?applied= landing shows no applied notice after a 2xx POST — the leaf repaint lagged the route change",
+    );
   }
   if (appliedFid) {
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
@@ -1405,13 +1465,37 @@ const T13F: StepFn = async (ctx) => {
   }
   const confirm = preview.locator("button[data-bulk-confirm]");
   await assertClick(confirm, "the bulk confirm control");
+  // VERIF.1 — same repaint-race class as the Apply arm: the ?bulkdone= URL flips on the client
+  // route change while the twin refetch (which carries dossierView.bulkDone) still paints. Capture
+  // the POST + wait for the done notice to attach before verdicting.
+  const bulkPostP = page
+    .waitForResponse(
+      (r) => r.request().method() === "POST" && /\/findings\/bulk$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    )
+    .catch(() => null);
   await confirm.click();
+  const bulkPost = await bulkPostP;
   await page.waitForURL(/bulkdone=/, { timeout: 30_000 }).catch(() => settleNav(page, ctx));
   if (!/bulkdone=/.test(page.url())) {
-    throw new Error(`the bulk dispatch did not land on ?bulkdone= (${page.url()})`);
+    const status = bulkPost?.status();
+    const detail = await bulkPost?.text().catch(() => "");
+    throw new Error(
+      `the bulk dispatch did not land on ?bulkdone= (${page.url()})` +
+        (status == null
+          ? " — no bulk POST was captured (a click/navigation race)"
+          : ` — the bulk POST answered ${status}${detail ? ` (${detail.slice(0, 160)})` : ""}`),
+    );
   }
-  if ((await page.locator("[data-bulk-done]").count()) === 0) {
-    throw new Error("the bulk landing shows no done notice");
+  try {
+    await page.locator("[data-bulk-done]").waitFor({ state: "attached", timeout: 15_000 });
+  } catch {
+    const status = bulkPost?.status();
+    throw new Error(
+      status != null && status >= 400
+        ? `the bulk POST failed → ${status} — a product failure, not a repaint race`
+        : "the ?bulkdone= landing shows no done notice after a 2xx POST — the leaf repaint lagged the route change",
+    );
   }
   assertBundleParity(ctx);
 };
@@ -1642,14 +1726,14 @@ async function seededGateDossier(email: string, tag: string): Promise<{ slug: st
     const res = await seedWritableDossier(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
-      ids: () => randomUUID(),
+      ids: seedIds,
       slugBase: `jrn-${tag}-gate`,
       title: `JRN ${tag} gated dossier (seeded writable)`,
       seedLabel: "journey-gate-seed",
     });
     const gate = await seedOpenApprovalGate(
       migrationDbOf(client),
-      { ids: () => randomUUID() },
+      { ids: seedIds },
       { runId: res.reviewRunId },
     );
     await client.query("commit");
@@ -1736,7 +1820,9 @@ async function seedVoiceProfile(email: string, personaRef: string): Promise<void
             sample_set, corpus_size_at_build, calibration_status, artifact_ids, build_note)
          values ($1,$2,null,$3,'quick',$4,$5,'{}'::jsonb,0,'untested','{}',$6)`,
         [
-          randomUUID(),
+          // ULID-shaped like every other seeded id — persona_profiles.id is read through
+          // the same Crockford-base32 contract as the dossier/event ids.
+          journeyUlid(),
           persona.id,
           new Date().toISOString(),
           persona.seed_sha256,

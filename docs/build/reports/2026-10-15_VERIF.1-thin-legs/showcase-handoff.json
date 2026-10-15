@@ -1,0 +1,25 @@
+{
+  "showcase": {
+    "documentNavigated": true,
+    "url": "https://rhema.tools/p/showcase",
+    "renderer": "ssr",
+    "ssrCause": "showcase",
+    "pageJs": true,
+    "ideJs": true,
+    "spaRootMounted": true
+  },
+  "control": {
+    "documentNavigated": true,
+    "navs": [
+      "https://rhema.tools/p/jrn-81466769aeb9-n9credits",
+      "https://rhema.tools/p/jrn-81466769aeb9-n9credits"
+    ],
+    "url": "https://rhema.tools/p/jrn-81466769aeb9-n9credits",
+    "renderer": "spa",
+    "mountedLeaf": true
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}
+SHOWCASE-HANDOFF: PASS
