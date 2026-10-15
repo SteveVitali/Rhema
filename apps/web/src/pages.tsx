@@ -5503,7 +5503,7 @@ export function BillingPage(): ReactNode {
               ) : !purchaseOpen ? null : ( // BILL.3 — no subscribe form while purchase is closed
                 <form method="post" action="/app/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                   <input type="hidden" name="tier" value={tier} />
-                  <select name="cycle" style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
+                  <select name="cycle" aria-label={B.cycleLabel} style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
                     <option value="monthly">{B.monthlyLabel}</option>
                     <option value="annual">{B.annualLabel}</option>
                   </select>

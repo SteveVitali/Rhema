@@ -1506,6 +1506,8 @@ export const COPY = {
     subscribeCta: "Choose {tier}",
     monthlyLabel: "Monthly",
     annualLabel: "Annual −15%",
+    // SPA.16 — axe `select-name`: the subscribe select's accessible name (both renderers carry it).
+    cycleLabel: "Billing cycle",
     // PR-U6 — the ladder's annual price reads "$X/mo billed annually" (never the "$/mo Annual" concat).
     annualBillingLabel: "billed annually",
     manageCta: "Manage billing",

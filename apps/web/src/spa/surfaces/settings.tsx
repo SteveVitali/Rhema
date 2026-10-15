@@ -232,8 +232,9 @@ function useSettingsFormSubmit(): (e: FormEvent<HTMLElement>) => void {
 // ---- The §14.7 section strip + page chrome ------------------------------------------------------
 
 /** The §14.7 section strip — verbatim from pages.tsx `SettingsNav` (plain `<a>` document navs —
- *  the strangler re-decides each leaf; `data-status` would diverge the emitted DOM). */
-function SettingsNav({ active }: { readonly active: string }): ReactNode {
+ *  the strangler re-decides each leaf; `data-status` would diverge the emitted DOM). Exported for
+ *  the billing surface (SPA.16) — the strip's `billing` entry links INTO the other flag's leaf. */
+export function SettingsNav({ active }: { readonly active: string }): ReactNode {
   return (
     <nav
       aria-label={S.sectionsAria}

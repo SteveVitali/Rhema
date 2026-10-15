@@ -138,11 +138,11 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
 
   it("a boot-seeded principal satisfies the gate without a fetch — a seed, consumed once", async () => {
     const f = sessionFetch(200);
-    // Mount a leaf with no read of its own (/app/settings/billing stays stubbed until its owner
-    // ticket) — the assertion isolates the session seed: not even one fetch fires.
+    // SPA.16 — /app/settings/billing is no longer a stub leaf (it legitimately warms its own
+    // twin), so the assertion isolates the session seed directly: /session is never fetched.
     await mountAt("/app/settings/billing", bootFor({ "/app/settings/billing": "spa" }), f);
     expect(assignSpy).not.toHaveBeenCalled();
-    expect(f).not.toHaveBeenCalled();
+    expect(f.mock.calls.map((c) => c[0])).not.toContain("/session");
   });
 });
 

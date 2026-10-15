@@ -123,7 +123,7 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // each a one-line operator-merged stage-fact commit, in flip order. Prod stays BEHIND dev on
     // `ide-chrome` until SPAF.8 — the /p/:p/import* AND-gated legs keep serving SSR meanwhile.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
-    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home"]); // SPA.11…15 — the dev flips
+    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing"]); // SPA.11…16 — the dev flips
     expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home"]); // SPAF.1…SPAF.6 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;

@@ -744,16 +744,19 @@ const N9: StepFn = async (ctx) => {
 
   // Entry 1 — Billing → Choose Writer on a FREE flagged test tenant (subscribe is the Free user's
   // Checkout entry; the paid tenant below has no "Choose Writer" button once it is already Writer).
+  // SPA.16 re-spec: the probes settle on the manifest hooks, not form-element mechanics — under the
+  // flipped surface the delegated submit rides the JSON branch and `navigateDocument` performs the
+  // hand-off; `waitForURL` catches it either way (a real document navigation in both renderers).
   const { page: subscribePage } = await ctx.freshUser("n9");
   await gotoOk(subscribePage, `${webBase}/app/settings/billing`);
   await subscribePage.selectOption(
-    "form[data-subscribe-form='writer'] select[name='cycle']",
+    "[data-subscribe-form='writer'] select[name='cycle']",
     "monthly",
   );
   await n9ClickToStripe(
     ctx,
     subscribePage,
-    subscribePage.locator("form[data-subscribe-form='writer'] button[type='submit']"),
+    subscribePage.locator("[data-subscribe-form='writer'] button[type='submit']"),
     "N9 billing Choose Writer",
     [/Writer/i, /\$20(?:\.00)?/],
   );
@@ -766,7 +769,7 @@ const N9: StepFn = async (ctx) => {
   await n9ClickToStripe(
     ctx,
     page,
-    page.locator("form[data-topup-form='topup_10'] button[type='submit']"),
+    page.locator("[data-topup-form='topup_10'] button[type='submit']"),
     "N9 billing Buy 1,000 credits",
     [/1,?000/i, /\$10(?:\.00)?/],
   );
@@ -777,12 +780,12 @@ const N9: StepFn = async (ctx) => {
   // NOT mount and the honest "no card on file" note renders instead. The hosted-portal leg itself is
   // carried in D-BILL.3-1 (it is only reachable after a real purchase).
   await gotoOk(page, `${webBase}/app/settings/billing`);
-  if ((await page.locator("form[data-portal-form]").count()) !== 0) {
+  if ((await page.locator("[data-portal-form]").count()) !== 0) {
     // A customer-bearing tenant reaches the hosted portal — keep the assertion honest both ways.
     await n9ClickToStripe(
       ctx,
       page,
-      page.locator("form[data-portal-form] button[type='submit']"),
+      page.locator("[data-portal-form] button[type='submit']"),
       "N9 billing Portal",
       [/Writer|invoice|payment method|billing/i],
     );
