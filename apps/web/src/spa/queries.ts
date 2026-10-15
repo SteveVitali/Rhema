@@ -30,6 +30,7 @@ import type {
   ProjectSearchHitDto,
   ProjectSettingsDto,
   ProtocolCardDto,
+  RunReportDto,
   TimelineDto,
   VoiceListRowDto,
   ReseedPreviewDto,
@@ -994,5 +995,77 @@ export const obligationNewQuery = (slug: string, back?: string) =>
       bffFetch<BffObligationNewTwin>(
         `/bff/p/${encodeURIComponent(slug)}/obligations/new${back ? `?back=${encodeURIComponent(back)}` : ""}`,
       ),
+    retry: retryPolicy,
+  });
+
+// ---- SPA.22 — the `run-report` surface's twin (REQ-BFF-1/8/9/11, REQ-DAT-4/6, REQ-UX-15;
+// design/22 §2 `p.runReport` row + §3's stale-state note). `GET /bff/p/:slug/r/:runId` composes
+// the document's `runReportComposition` verbatim — the `?advanced=1` Level-4 read + the Timeline
+// pane read + the Inbox read-receipt — plus the `ide` chrome bag with the LIVE feed slice the
+// `/p/:slug` reader carries when a live run exists (design/22 §2 note (f)): replayed rows +
+// `lastSeq` + the same-origin `/p/:slug/r/:runId/events` URL — so the leaf's `useIdeFeed` binds
+// the one EventSource with `?after=`/`Last-Event-ID` resume and the report's run progress +
+// spend ticker is a live binding, never a JSON poll. The surface's own write (the §14.4 refund
+// POST) and the §6.5 steering verbs keep their document paths — JSON callers get the
+// `{ok,redirect}`/`{error}` envelope at the preserved status. ----
+
+/**
+ * `GET /bff/p/:slug/r/:runId`'s payload — `runReport` is the SSR `PageData["runReport"]` bag
+ * verbatim (`{slug, runId, report}` — `report` is the `RunReportDto` including the optional
+ * `advancedView` when `?advanced=1` rode the read); `project`/`paperTheme`/`appTheme`/`ide` are
+ * the chrome facts the leaf republishes (`ide.feed` carries the live binding when `activeRun`
+ * is non-terminal).
+ */
+export interface BffRunReportTwin {
+  readonly runReport: {
+    readonly slug: string;
+    readonly runId: string;
+    readonly report: RunReportDto;
+  };
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+  };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** The twin's server-owned search keys — verbatim the document's `c.req.query()` grammar:
+ *  `advanced` selects the Level-4 report read; `focus` seeds the chrome's Focus view (read by
+ *  `ideContext`, not the composition). */
+export interface RunReportTwinSearch {
+  readonly advanced?: string;
+  readonly focus?: string;
+}
+
+const RUN_REPORT_TWIN_KEYS = ["advanced", "focus"] as const;
+
+export const runReportQuery = (slug: string, runId: string, search: RunReportTwinSearch = {}) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "r",
+      runId,
+      JSON.stringify(
+        RUN_REPORT_TWIN_KEYS.map((k) => [k, search[k] ?? null] as const).filter(
+          ([, v]) => v != null && v !== "",
+        ),
+      ),
+    ],
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      for (const k of RUN_REPORT_TWIN_KEYS) {
+        const v = search[k];
+        if (v != null && v !== "") qs.set(k, v);
+      }
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      return bffFetch<BffRunReportTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/r/${encodeURIComponent(runId)}${suffix}`,
+      );
+    },
     retry: retryPolicy,
   });

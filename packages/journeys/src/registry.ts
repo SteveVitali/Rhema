@@ -178,6 +178,20 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: true,
   },
   {
+    // SPA.22 (REQ-VFY-10) — R6's render half as a FREE step on the seeded delivered run report
+    // (`seedDeliveredRunReport` — the dossier fixture plus the ledger/metered facts the report
+    // reads). The `run-report` surface gate could not exist until this landed (its weekly paid
+    // holds R6/R9 stay). `expected:"red"` until its first live leg (the Resend secret blocker —
+    // D-SPA.22-1); a red miss reports `owed`, never gates.
+    id: "R6F",
+    journey: "both",
+    asserts:
+      "the seeded delivered run report renders its full Level-3 vocabulary — estimate/metered lines, reasoned differences, phase bars with real durations, seat split, flags, drivers, the claims line, the rate-table link — plus ?advanced=1's Level-4 usage rows",
+    owner: "SPA.22",
+    expected: "red",
+    paid: false,
+  },
+  {
     id: "R7",
     journey: "returning",
     asserts: "an informational gate does not block; labels match behaviour",

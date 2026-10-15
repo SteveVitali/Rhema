@@ -628,3 +628,99 @@ export function seedWritableDossier(
     title: deps.title,
   });
 }
+
+// ---- SPA.22 — the delivered RUN-REPORT fixture (R6F's free render leg, REQ-VFY-10) --------------
+
+/** A deterministic proxy-metered row for the seeded run — `step:<phase>` is the pod-stamped join
+ *  key `buildRunReportAdvanced` resolves (x-rhema-step), so no step ids leak into the fixture. */
+const RUN_REPORT_SEED_USAGE: readonly {
+  readonly phase: string;
+  readonly seat: string;
+  readonly model: string;
+  readonly modelTier: string;
+  readonly credits: number;
+  readonly searches: number;
+  readonly fetches: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+}[] = [
+  // verification carries the metered majority → `fact_check_dominated` fires; two seats split
+  // the spend; the second read rides `balanced` against the run's `frontier` default →
+  // `second_read_model` fires (the flags + suggested-guidance arms exercise for real).
+  { phase: "verification", seat: "verifier", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 2200, searches: 40, fetches: 60, inputTokens: 38_000, outputTokens: 7_200 },
+  { phase: "craft", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 800, searches: 2, fetches: 4, inputTokens: 14_000, outputTokens: 2_600 },
+  { phase: "discourse", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 500, searches: 0, fetches: 0, inputTokens: 9_500, outputTokens: 1_800 },
+  { phase: "second_read", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 410, searches: 0, fetches: 0, inputTokens: 8_100, outputTokens: 1_500 },
+  { phase: "letter", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 200, searches: 0, fetches: 0, inputTokens: 4_200, outputTokens: 900 },
+];
+
+/** The seeded run's charge (the ledger debit — the report's "charged" figure is Σ debits, never
+ *  `runs.spent_credits`) and the fixture's metered total (Σ proxy = 4,110 > 3,860, so the
+ *  reconciliation's `committed` difference + the metered line render honestly — a seeded run IS
+ *  a modelled charge, and "committed" is the truthful label for it). */
+const RUN_REPORT_SEED_CHARGED = 3860;
+
+/**
+ * SPA.22 (REQ-VFY-10) — the delivered-run-report fixture: the same `seedDossierProject` payload
+ * (a delivered completed review run on a NORMAL writable project — phases, claims, letter) PLUS
+ * the two ledger facts `buildRunReport` reads that the dossier never needed at $0:
+ *   • `credit_ledger` — a debit row for the run's charge AND a net-zero grant pair so the
+ *     nightly `balances = Σ ledger` invariant survives a fixture charge on a test tenant;
+ *   • `usage_records` — proxy rows keyed `step:<phase>` (the meter of record) so the seat
+ *     split, the spend drivers, the flags, the metered-vs-charged reconciliation, and the
+ *     `?advanced=1` Level-4 `data-usage-row`s all render real content.
+ * Idempotent: the dossier seed keys on the slug base; the report facts key on the run's
+ * `usage_records` count (a re-run lands rows only once).
+ */
+export async function seedDeliveredRunReport(
+  db: MigrationDb,
+  deps: WritableDossierSeedDeps,
+): Promise<ShowcaseSeedResult> {
+  const res = await seedDossierProject(db, deps, {
+    showcase: false,
+    slugBase: deps.slugBase,
+    title: deps.title,
+  });
+  const existing = (
+    await db.query(`select count(*)::int as n from usage_records where run_id = $1`, [res.reviewRunId])
+  ).rows[0] as { n: number } | undefined;
+  if (existing != null && existing.n > 0) return res;
+  const billingAccountId = (
+    (await db.query(`select billing_account_id from workspaces where id = $1`, [deps.workspaceId]))
+      .rows[0] as { billing_account_id: string } | undefined
+  )?.billing_account_id;
+  if (billingAccountId == null) {
+    throw new Error("seedDeliveredRunReport: the workspace row carries no billing_account_id");
+  }
+  const now = deps.clock?.now() ?? new Date();
+  const label = deps.seedLabel ?? "journey-report-seed";
+  // The grant+debit pair — Σ ledger nets 0 for the bucket so `credit_balances` stays consistent
+  // without a balance touch (the debit alone would break the nightly Σ invariant).
+  await db.query(
+    `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, source, reason, idempotency_key, at)
+     values ($1,$2,$3,'grant',$4,'included','seed',$5,$6,$7)`,
+    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, label, `jrn-report-grant:${res.reviewRunId}`, now.toISOString()],
+  );
+  await db.query(
+    `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
+     values ($1,$2,$3,'debit',$4,'included',$5,'run',$6,$7,$8)`,
+    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, res.reviewRunId, label, `jrn-report-debit:${res.reviewRunId}`, now.toISOString()],
+  );
+  for (const [i, u] of RUN_REPORT_SEED_USAGE.entries()) {
+    await db.query(
+      `insert into usage_records
+         (id, ts, workspace_id, billing_account_id, user_id, project_id, run_id, attempt, step_id,
+          role, provider, model, model_tier, rate_table_version, input_tokens, output_tokens,
+          searches, fetches, list_cost_usd, credits, source, provider_request_id)
+       values ($1,$2,$3,$4,$5,$6,$7,1,$8,$9,'anthropic',$10,$11,1,$12,$13,$14,$15,$16,$17,'proxy',$18)`,
+      [
+        deps.ids(), now.toISOString(), deps.workspaceId, billingAccountId, deps.ownerId,
+        res.projectId, res.reviewRunId, `step:${u.phase}`, u.seat, u.model, u.modelTier,
+        u.inputTokens, u.outputTokens, u.searches, u.fetches,
+        // list_cost_usd is a display-free figure — a plausible rate-table scalar, never summed.
+        (u.credits / 1000) * 3.0, u.credits, `req_jrn_report_${i + 1}`,
+      ],
+    );
+  }
+  return res;
+}

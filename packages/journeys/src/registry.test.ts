@@ -25,7 +25,9 @@ describe("the journey step registry", () => {
         // leg — red pending its first preview run, D-SPA.19-*). SPA.21 added P1.dossier (the
         // phone-width dossier leg — red pending its first preview run, D-SPA.21-*).
         "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline", "P1.figures", "P1.dossier",
-        "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
+        // SPA.22 added R6F — the seeded delivered-run-report free render leg (REQ-VFY-10's owed
+        // delivered-render coverage — red pending its first live leg, D-SPA.22-*).
+        "R1", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
         // SPA.21 added T12F/T13F — the seeded-dossier free twins of T12/T13 (REQ-VFY-10's owed

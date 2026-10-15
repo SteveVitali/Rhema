@@ -143,7 +143,7 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // SPAF.12 is its prod flip — `dossier` appended in flip order after `run-sheet`, the
     // third IDE-framed prod activation.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
-    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier"]); // SPA.11…21 — the dev flips
+    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier", "run-report"]); // SPA.11…22 — the dev flips
     expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier"]); // SPAF.1…SPAF.12 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;

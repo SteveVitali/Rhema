@@ -24,6 +24,7 @@ export { seedRealProjects } from "./seed/real-projects.js";
 export {
   seedShowcaseProject,
   seedWritableDossier,
+  seedDeliveredRunReport,
   SHOWCASE_FIXTURE_CLAIMS,
   SHOWCASE_FIXTURE_FINDINGS,
   type ShowcaseSeedDeps,

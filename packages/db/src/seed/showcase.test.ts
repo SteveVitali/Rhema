@@ -3,6 +3,7 @@ import { createTestDb } from "../testing/pglite.js";
 import {
   seedShowcaseProject,
   seedWritableDossier,
+  seedDeliveredRunReport,
   SHOWCASE_FIXTURE_CLAIMS,
   type ShowcaseSeedDeps,
 } from "./showcase.js";
@@ -210,6 +211,101 @@ describe("the Showcase dossier seed (§15.4)", () => {
     ).rows[0] as { n: number };
     expect(n.n).toBe(1);
     // …and the Showcase stays exactly one row — the writable seed never touches it.
+    const sxN = (
+      await db.query(`select count(*)::int n from projects where workspace_id = $1 and showcase`, [
+        workspaceId,
+      ])
+    ).rows[0] as { n: number };
+    expect(sxN.n).toBe(1);
+    await db.close();
+  });
+
+  // SPA.22 (REQ-VFY-10) — the seeded DELIVERED run report the journeys' R6F free render leg
+  // walks: the dossier fixture plus the ledger/metered facts the report reads — a grant+debit
+  // credit_ledger pair (net 0), `step:<phase>`-keyed proxy usage_records (the metered total —
+  // 4110 cr > the 3860 cr charged so the differences block reasons), and `usage.tick` run
+  // events. Slug-idempotent; the workspace's Showcase stays untouched.
+  it("the delivered run report seeds metered+ledger facts at $0 and is slug-idempotent", async () => {
+    const db = await createTestDb();
+    const { workspaceId, ownerId } = await ownerAndWorkspace(db);
+
+    const sx = await seedShowcaseProject(db, depsFor(workspaceId, ownerId));
+    const r = await seedDeliveredRunReport(db, {
+      ...depsFor(workspaceId, ownerId),
+      slugBase: "jrn-report",
+      title: "JRN-seed run report",
+      seedLabel: "journey-report-seed",
+    });
+    expect(r.slug).toBe("jrn-report");
+    expect(r.projectId).not.toBe(sx.projectId);
+    expect(r.reviewRunId).toBeTruthy();
+
+    // the run reads delivered.
+    const run = (
+      await db.query(`select state, spent_credits, cap_credits from runs where id = $1`, [r.reviewRunId])
+    ).rows[0] as { state: string; spent_credits: number; cap_credits: number };
+    expect(run.state).toBe("completed");
+    expect(run.spent_credits).toBe(3860);
+    expect(run.cap_credits).toBeGreaterThanOrEqual(3860); // the cap trigger admits the seeded debit
+
+    // the ledger pair: one grant (the seeded top-up the journey user never actually paid) + one
+    // run-scoped debit for 3860 cr — `kind` carries the sign, `credits` stays positive, Σ nets 0.
+    const ledger = (
+      await db.query(
+        `select kind, credits, run_id, source from credit_ledger order by kind`,
+      )
+    ).rows as { kind: string; credits: number; run_id: string | null; source: string }[];
+    expect(ledger).toEqual([
+      { kind: "debit", credits: 3860, run_id: r.reviewRunId, source: "run" },
+      { kind: "grant", credits: 3860, run_id: null, source: "seed" },
+    ]);
+
+    // the metered facts: 5 `step:<phase>`-keyed proxy rows (verification dominates →
+    // fact_check_dominated fires; second_read rides `balanced` vs the run's `frontier` tier →
+    // second_read_model fires) summing to the run's metered 4110 cr > the 3860 cr charged.
+    const usage = (
+      await db.query(
+        `select step_id, role, credits, model_tier, source, provider from usage_records where run_id = $1 order by credits desc`,
+        [r.reviewRunId],
+      )
+    ).rows as {
+      step_id: string;
+      role: string;
+      credits: number;
+      model_tier: string;
+      source: string;
+      provider: string;
+    }[];
+    expect(usage.length).toBe(5);
+    expect(usage.reduce((a, u) => a + u.credits, 0)).toBe(4110);
+    expect(usage.every((u) => u.source === "proxy" && u.provider === "anthropic")).toBe(true);
+    expect(usage.map((u) => u.step_id).sort()).toEqual(
+      ["step:craft", "step:discourse", "step:letter", "step:second_read", "step:verification"].sort(),
+    );
+    expect(usage[0]).toMatchObject({ step_id: "step:verification", role: "verifier", credits: 2200 });
+    expect(
+      usage.find((u) => u.step_id === "step:second_read"),
+    ).toMatchObject({ role: "editor", model_tier: "balanced" });
+
+    // slug-idempotent: a second call returns the same ids and writes no second project / rows.
+    const r2 = await seedDeliveredRunReport(db, {
+      ...depsFor(workspaceId, ownerId),
+      slugBase: "jrn-report",
+      title: "JRN-seed run report",
+      seedLabel: "journey-report-seed",
+    });
+    expect(r2).toEqual(r);
+    const rows = (
+      await db.query(
+        `select
+           (select count(*)::int from projects where workspace_id = $1 and slug like 'jrn-report%') p,
+           (select count(*)::int from usage_records) u,
+           (select count(*)::int from credit_ledger) l`,
+        [workspaceId],
+      )
+    ).rows[0] as { p: number; u: number; l: number };
+    expect(rows).toEqual({ p: 1, u: 5, l: 2 });
+    // …and the Showcase stays exactly one row — the report seed never touches it.
     const sxN = (
       await db.query(`select count(*)::int n from projects where workspace_id = $1 and showcase`, [
         workspaceId,

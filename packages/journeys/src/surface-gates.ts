@@ -138,9 +138,18 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
     ],
     weeklyHolds: ["T10", "T11", "T12", "T13"],
   }),
-  "run-report": gate("run-report", [], {
+  // SPA.22 — the delivered-render leg this surface owed: R6F walks the SEEDED delivered run
+  // report (`seedDeliveredRunReport` — the dossier fixture plus the credit_ledger grant+debit
+  // pair and the `step:<phase>`-keyed proxy usage_records, all at $0 on the leg's own tenant)
+  // and asserts the full Level-3/4 vocabulary under both renderers. The step is
+  // `expected:"red"` pending its first live leg (the Resend secret blocker — D-SPA.22-*) — a
+  // red miss reports `owed`, it does not gate. The paid live-meter legs (R6's within-phase
+  // meter movement + R9's refund round-trip) stay `weeklyHolds` — REQ-VFY-10 keeps them out of
+  // the $0 gate.
+  "run-report": gate("run-report", ["R6F"], {
     owed: [
-      "the free delivered-run-report render step (REQ-VFY-10) — SPA.22 owns it; until it lands this surface cannot flip",
+      "the SPA.22 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.22-1) holds the pr-<n> run; the dom.test parity legs stand in",
+      "R6F is expected:red until its first live leg — a red miss reports owed; the seeded delivered-run-report provisioning (seedDeliveredRunReport + the JOURNEY_DATABASE_URL arm) is committed and unit-tested",
     ],
     weeklyHolds: ["R6", "R9"],
   }),

@@ -83,10 +83,14 @@ describe("stepsForSurfaces — the --surface selector", () => {
     expect(stepsForSurfaces(["usage"])).toEqual(["X1.usage"]);
   });
 
-  it("refuses a surface whose gate is still empty — a vacuous run is never a gate", () => {
-    expect(() => stepsForSurfaces(["run-report"])).toThrow(/--surface: no gated steps/);
-    // …and the refusal names the owed coverage so the operator sees what unblocks it.
-    expect(() => stepsForSurfaces(["run-report"])).toThrow(/owed:/);
+  it("every flip surface now names ≥1 free gated step — SPA.22 landed the last empty gate", () => {
+    // `run-report` was the manifest's one `owed`-only surface until SPA.22's R6F (the seeded
+    // delivered-run-report render leg). The empty-gate refusal in stepsForSurfaces stays as the
+    // structural guard for any future owed-only surface — today nothing is vacuous.
+    for (const key of SPA_SURFACES) {
+      expect(SURFACE_GATES[key].steps.length, key).toBeGreaterThan(0);
+    }
+    expect(stepsForSurfaces(["run-report"])).toEqual(["R6F"]);
   });
 
   it("the union of every non-empty gate is a paid:false subset of the registry", () => {
