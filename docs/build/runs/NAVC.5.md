@@ -11,7 +11,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** implement-spec + build-memory @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-NAVM-5
-- **Started:** 2026-10-15T08:50Z · **Closed:** —
+- **Started:** 2026-10-15T08:50Z · **Closed:** 2026-10-15T10:07Z
 - **Config:** full rigor (ledger + self-review + gap analysis + tests + evidence report);
   **Live stage: none**; **Production mutations: none**; metered spend **$0**;
   zero prod writes, zero deploys, zero merges
@@ -173,4 +173,30 @@ manifest row needed, no new DOM vocabulary); `navigateDocument` semantics unchan
 
 ## Evidence report
 
-_(populated at close)_
+All contract requirements met at the engineered layer (see Gap table — every row `met`).
+Zero MET-DIFFERENTLY, zero SHOULD deviations — no ADR owed. Out-of-scope confirmed
+untouched: `spa/nav-intercept.ts` (NAVC.1's interceptor), `data-nav-count`/settle (NAVC.2),
+registry/freshness (NAVC.3), live R10 legs (NAVC.4); `navigateDocument` push semantics and
+the `assign` arm unchanged for 401→`/login`, `RELOAD_STUB_IDS` short-circuits, and external
+`url` hand-offs; zero component ports; zero new DOM hooks (dom-contract manifest unchanged
+and green). One in-radius doc fix: `AGENTS.md` §Frontend `SsrHandoff → navigateDocument`
+trued to `→ replaceDocument`.
+
+**Finding (not fixed — out of scope, pre-existing):** `packages/live-clients/src/
+ingest.test.ts` "retried preview JOINS the marker's execution" is load-sensitive — a
+`waitMs: 1` preview budget can complete under full-suite contention. Flaked once in
+`pnpm test` run #1; passed standalone (26/26) and in run #2. Zero interaction with this
+ticket's seam.
+
+**Deferred:** none — no DEFERRALS row opened or closed (no NAVC-scoped OPEN row existed).
+
+## Closeout
+
+- Gates: `pnpm turbo build lint typecheck` 135/135 · `pnpm test` 491 files / 5,629 pass /
+  4 skip / 0 fail · all six `check:*` green · `check-build-memory.sh` 0 violations ·
+  `check-append-only` vs `7e4493c` OK.
+- PR: **#176** — `stevevitali/navc-5-ssrhandoff-replace-seam` @ `a47063c` → base
+  `stevevitali/navc-1-delegated-interceptor`, mergePolicy=OPERATOR (opened, not merged).
+- `ci:` **pass #176@`a47063c`** — run `38711240247`, all five checks green:
+  `typecheck/lint/unit` 40m38s · `contracts` 1m33s · `integration` 4m20s ·
+  `images (build + scan, pin digests)` 11m19s · `public-safe` 43s. Zero reds.
