@@ -14,7 +14,7 @@
   REQ-NAVC-21 · REQ-NAVC-23 · REQ-NAVM-9 · REQ-NAVM-10
 - **PR:** #179 · **impl head:** `36bcb6e`
 - **Started:** 2026-10-15T14:20Z · **Closed:** 2026-10-15T15:15Z — impl `36bcb6e` +
-  closeout `<this-commit>`; PR #179 (mergePolicy OPERATOR — unmerged); ci pending at
+  closeout `8ef3a5a`; PR #179 (mergePolicy OPERATOR — unmerged); ci pending at
   closeout (first-read class)
 - **Live stage:** prod (the two authorized `$0` legs only — R10, R10.keepalive,
   `paid:false`, no `--paid`, no other prod writes, no deploys)
