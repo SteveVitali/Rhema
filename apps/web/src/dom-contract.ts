@@ -121,7 +121,13 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "data-mounted",
       "conditional",
       "render.tsx stamps on SSR; the SPA client flips it after first data paint",
-      "REQ-VFY-3 settle marker — never waited on as domcontentloaded",
+      "REQ-VFY-3 settle marker — never waited on as domcontentloaded; NAVC.2 (REQ-NAVT-2): REMOVED while a nav is pending, re-stamped on resolution — [data-route][data-mounted] means resolved leaf",
+    ),
+    a(
+      "data-nav-count",
+      "required",
+      "render.tsx/spa-shell.ts htmlAttrs stamp \"0\"; spa/head.tsx HeadManager increments per committed transition",
+      "REQ-NAVT-1 (O2-F18) — committed in-document location transitions since this document loaded; a doc load resets it — the reset is the nav-mechanism detector",
     ),
     a(
       "data-ssr-cause",

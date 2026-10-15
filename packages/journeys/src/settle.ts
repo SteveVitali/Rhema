@@ -55,6 +55,16 @@ export interface SettleScope {
    * every settled document.
    */
   readonly rendererScope?: ReadonlySet<string> | null;
+  /**
+   * NAVC.2 (REQ-NAVT-3, O2-F20) — the runner's count of same-origin HTML document responses
+   * observed on this step's wired pages so far. It counts UNCONDITIONALLY — never gated on
+   * `--expect-renderer` — because it is the harness-side half of the nav-mechanism pin: an
+   * in-page counter can't see a document boundary (a reload to the same URL resets the page's
+   * own `data-nav-count`), so only the response watcher can prove a nav was a document nav.
+   * The mechanism-pinned settles (`settleClientNav`/`settleDocumentNav`) fail closed when a
+   * scope omits it; the mechanism-agnostic helpers never read it.
+   */
+  readonly documentLoads?: number;
 }
 
 export interface SettleWait {
@@ -191,4 +201,143 @@ export async function reloadSettled(
 ): Promise<void> {
   await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
   await awaitMounted(page, scope, wait);
+}
+
+// ---------------------------------------------------------------------------
+// NAVC.2 — the mechanism-pinned settles (REQ-NAVT-1/3/6). `settleNav`/`gotoOk`/`reloadSettled`
+// above stay deliberately mechanism-agnostic (a leg that doesn't care HOW it navigated keeps
+// using them); the two helpers below NAME the mechanism, so a journey can prove a click went
+// client-side vs document-side instead of merely observing that SOME document settled — the
+// blind spot that let zero-client-routing ship (r5_a4 F1/F5).
+
+/**
+ * The document's committed-transition tally — `<html data-nav-count>` (REQ-NAVT-1). `null`
+ * when the attr is absent/unreadable; legs asserting monotone counts read it directly.
+ */
+export async function navCountOf(page: Page): Promise<number | null> {
+  return page
+    .evaluate(() => {
+      const raw = document.documentElement.getAttribute("data-nav-count");
+      const n = raw == null ? NaN : Number.parseInt(raw, 10);
+      return Number.isFinite(n) ? n : null;
+    })
+    .catch(() => null);
+}
+
+function documentLoadsOf(scope: SettleScope, helper: string): number {
+  if (typeof scope.documentLoads !== "number") {
+    throw new Error(
+      `${helper} requires scope.documentLoads — the runner wires the unconditional ` +
+        `document-response counter (REQ-NAVT-3, O2-F20); a scope without it can't pin mechanism`,
+    );
+  }
+  return scope.documentLoads;
+}
+
+/**
+ * `settleClientNav(page, scope, act, wait)` — `act()` (a click, a keypress — any driver) MUST
+ * client-navigate: the CURRENT document's `data-nav-count` increases AND zero document loads
+ * are observed. The action-callback shape makes the baseline structurally pre-commit — a
+ * post-action snapshot can't exist, since the nav may have already committed by the time a
+ * post-action helper ran. The wait requires the pending window to resolve first
+ * (`data-mounted` re-stamped — REQ-NAVT-2 keeps it absent while `isLoading`), so a commit
+ * that then document-navigates (a `reloadDocument` stub arm) tears the document down mid-wait
+ * and fails — the mechanism pin can't false-pass on the transient commit.
+ */
+export async function settleClientNav(
+  page: Page,
+  scope: SettleScope,
+  act: () => Promise<unknown>,
+  wait: SettleWait = {},
+): Promise<void> {
+  // foreign-origin pages carry no markers at all — run the action and no-op the asserts
+  // BEFORE demanding a counter (a hosted-checkout leg shouldn't need the harness wired).
+  if (!onOurOrigin(page.url(), scope.webBaseUrl)) {
+    await act();
+    return;
+  }
+  documentLoadsOf(scope, "settleClientNav");
+  const countBefore = await navCountOf(page);
+  if (countBefore == null) {
+    throw new Error(
+      `settleClientNav: ${page.url()} carries no data-nav-count — REQ-NAVT-1's all-documents stamp is absent`,
+    );
+  }
+  const loadsBefore = scope.documentLoads ?? 0;
+  await act();
+  const timeout = wait.timeoutMs ?? 30_000;
+  try {
+    await page.waitForFunction(
+      (baseline) => {
+        const el = document.documentElement;
+        if (!el.hasAttribute("data-mounted")) return false; // pending is unresolved (REQ-NAVT-2)
+        const raw = el.getAttribute("data-nav-count");
+        const n = raw == null ? NaN : Number.parseInt(raw, 10);
+        return Number.isFinite(n) && n > baseline;
+      },
+      countBefore,
+      { timeout },
+    );
+  } catch {
+    const observed = await navCountOf(page);
+    throw new Error(
+      `settleClientNav lapsed on ${page.url()}: data-nav-count never exceeded ${countBefore} ` +
+        `(observed ${observed ?? "absent"}) — the action did not commit an in-document transition ` +
+        `(a document nav lands a fresh "0", so a mechanism flip fails here, never silently passes)`,
+    );
+  }
+  await awaitMounted(page, scope, wait);
+  const loadsAfter = scope.documentLoads ?? 0;
+  if (loadsAfter !== loadsBefore) {
+    throw new Error(
+      `settleClientNav on ${page.url()}: ${loadsAfter - loadsBefore} document load(s) observed — ` +
+        `the action document-navigated, not client-navigated`,
+    );
+  }
+}
+
+/**
+ * `settleDocumentNav(page, scope, act, wait)` — the inverse pin: `act()` MUST
+ * document-navigate. At least one same-origin HTML document response must land (the runner's
+ * unconditional `documentLoads` counter — the only proof that survives the document
+ * boundary), then the settle contract asserts the FRESH document's markers. The landed
+ * document must carry `data-nav-count` (the all-documents stamp); its value isn't pinned to
+ * "0" because a landed leaf may legitimately commit an in-document redirect (e.g. the
+ * `/settings` → `/app/settings/account` client redirect) before the wait observes it.
+ */
+export async function settleDocumentNav(
+  page: Page,
+  scope: SettleScope,
+  act: () => Promise<unknown>,
+  wait: SettleWait = {},
+): Promise<void> {
+  if (!onOurOrigin(page.url(), scope.webBaseUrl)) {
+    await act();
+    return;
+  }
+  documentLoadsOf(scope, "settleDocumentNav");
+  const loadsBefore = scope.documentLoads ?? 0;
+  const timeout = wait.timeoutMs ?? 30_000;
+  await act();
+  const deadline = Date.now() + timeout;
+  while ((scope.documentLoads ?? 0) === loadsBefore) {
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `settleDocumentNav lapsed on ${page.url()}: no same-origin document response observed ` +
+          `(documentLoads stayed ${loadsBefore}) — the action did not document-navigate`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  await page
+    .waitForLoadState("domcontentloaded", { timeout })
+    .catch(() => undefined);
+  await awaitMounted(page, scope, wait);
+  const observed = await navCountOf(page);
+  if (observed == null) {
+    throw new Error(
+      `settleDocumentNav: the landed document ${page.url()} carries no data-nav-count — ` +
+        `REQ-NAVT-1's all-documents stamp is absent`,
+    );
+  }
 }

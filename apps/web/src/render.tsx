@@ -74,11 +74,16 @@ export function renderDocument(
   // id (the `$param` pattern both renderers emit; the raw path when the shape is unknown), and a
   // served SSR document is complete so `data-mounted` lands statically — the SPA flips the same
   // attr on `<html>` after its first data paint.
+  // NAVC.2 (REQ-NAVT-1, O2-F18) — `data-nav-count="0"` rides EVERY served document, SSR
+  // included: the count is "committed in-document location transitions since this document
+  // loaded", so a document nav landing a fresh "0" is itself the detector (an in-page counter
+  // alone can't see a reload-to-same-count).
   const pathname = url.split("?")[0] || "/";
   const routeId = spaRouteFor(pathname).routeId ?? pathname;
   const htmlAttrs =
     `lang="en" data-theme="${resolved}"` +
     ` data-renderer="ssr" data-route="${escapeHtml(routeId)}" data-mounted` +
+    ` data-nav-count="0"` +
     // REQ-ED-12 (ARMB-1) — the Page family's forced arm self-reports WHY it served SSR so the
     // journeys renderer asserts can honor the mandated verdict instead of flagging it.
     (data.ssrCause ? ` data-ssr-cause="${escapeHtml(data.ssrCause)}"` : "") +

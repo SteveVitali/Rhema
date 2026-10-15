@@ -208,9 +208,13 @@ export function renderSpaShell(
   const doc = docMetaFor(path, {});
   const pref = boot.theme.appTheme;
   const resolved = pref ? resolveAppTheme(pref, false) : "dark";
+  // NAVC.2 (REQ-NAVT-1, O2-F18) — `data-nav-count="0"` rides the shell too: the count is the
+  // committed-transition tally HeadManager increments in-document, and the NEXT document load
+  // resetting it to "0" is itself the nav-mechanism detector.
   const htmlAttrs =
     `lang="en" data-theme="${resolved}"` +
     ` data-renderer="spa" data-device="${boot.deviceClass}"` +
+    ` data-nav-count="0"` +
     (pref ? ` data-app-theme="${escapeHtml(pref)}"` : "") +
     (boot.theme.paperTheme != null ? ` data-paper="${escapeHtml(boot.theme.paperTheme)}"` : "") +
     (boot.project != null ? ` data-project="${escapeHtml(boot.project.slug)}"` : "");

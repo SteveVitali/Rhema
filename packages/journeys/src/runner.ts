@@ -56,6 +56,13 @@ export interface StepCtx {
    * every settled document.
    */
   readonly rendererScope: ReadonlySet<string> | null;
+  /**
+   * NAVC.2 (REQ-NAVT-3, O2-F20) — same-origin HTML document responses observed on this step's
+   * wired pages so far, counted UNCONDITIONALLY (never gated on `expectRenderer`): the
+   * mechanism-pinned settles (`settleClientNav`/`settleDocumentNav`) read it — it is the only
+   * signal that survives a document boundary, where the page's own `data-nav-count` resets.
+   */
+  readonly documentLoads: number;
 }
 
 // SPA.28 — `extraHTTPHeaders`/`pinRenderer` retired (REQ-SEQ-4's removal leg): the
@@ -180,6 +187,12 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     // (allSettled) after the impl so a pending body can't race the classification.
     const rendererViolations: string[] = [];
     const docReads: Promise<unknown>[] = [];
+    // NAVC.2 (REQ-NAVT-3, O2-F20) — the document-load counter runs UNCONDITIONALLY: it used to
+    // ride the `expectRenderer` gate, which meant an unpinned run counted nothing and a
+    // mechanism assert would have been blind. The counter is the harness-side proof a
+    // document nav happened — it survives the boundary that resets the in-page
+    // `data-nav-count`. Only the renderer ASSERT below stays pinned-gated.
+    let documentLoads = 0;
     const wirePage = (page: Page): void => {
       page.on("console", (m) => {
         if (m.type() === "error") consoleErrors.push(m.text());
@@ -195,11 +208,12 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
         if (onOurOrigin(url, deps.webBaseUrl) && new URL(url).pathname.startsWith("/assets/")) {
           assetHits.push({ url, status: r.status(), contentType: r.headers()["content-type"] ?? null });
         }
-        if (deps.expectRenderer == null) return;
         if (r.request().resourceType() !== "document") return;
-        if (r.status() < 200 || r.status() >= 300) return; // redirects/errors carry no marker
+        if (r.status() < 200 || r.status() >= 300) return; // redirects/errors carry no marker — and don't count as a landed document
         if (!onOurOrigin(url, deps.webBaseUrl)) return;
         if (!(r.headers()["content-type"] ?? "").includes("text/html")) return;
+        documentLoads += 1;
+        if (deps.expectRenderer == null) return;
         docReads.push(
           r
             .text()
@@ -254,6 +268,11 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       outDir: deps.outDir,
       expectRenderer: deps.expectRenderer ?? null,
       rendererScope: gatedRoutes,
+      // live getter — the response listener keeps incrementing while the impl runs, and the
+      // mechanism settles read the CURRENT count (a snapshot field would freeze it).
+      get documentLoads() {
+        return documentLoads;
+      },
       marker: (name) => marker(deps.nonce, name),
       async anon() {
         const context = await deps.browser.newContext({

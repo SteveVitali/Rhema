@@ -4,9 +4,12 @@ import {
   awaitMounted,
   gatedRouteIds,
   gotoOk,
+  navCountOf,
   onOurOrigin,
   rendererOfDocument,
   reloadSettled,
+  settleClientNav,
+  settleDocumentNav,
   settleNav,
   ssrCauseOfDocument,
   type RendererName,
@@ -54,6 +57,8 @@ function fakePage(opts: {
     renderer: RendererName | null;
     mounted: boolean;
     ssrCause?: SsrCause | null;
+    /** NAVC.2 — the document's committed-transition tally; `null` ⇒ the stamp is absent. */
+    navCount?: number | null;
   };
   gotoStatus?: number;
 }): Page {
@@ -64,7 +69,11 @@ function fakePage(opts: {
         ? opts.attrs.renderer
         : name === "data-ssr-cause"
           ? (opts.attrs.ssrCause ?? null)
-          : null;
+          : name === "data-nav-count"
+            ? opts.attrs.navCount == null
+              ? null
+              : String(opts.attrs.navCount)
+            : null;
   return {
       url: () => opts.url,
       async waitForFunction(
@@ -297,5 +306,215 @@ describe("the retired renderer-override channel (SPA.28 removal-detecting)", () 
     // RENDERER_HEADER would silently revive the channel; this pin refuses that.
     const mod = await import("./settle.js");
     expect("RENDERER_HEADER" in mod).toBe(false);
+  });
+});
+
+// NAVC.2 (REQ-NAVT-3/6) — the mechanism-pinned settles. The scripted page's `attrs` object is
+// mutated inside `act()` to model what the driver action did to the document: a client nav bumps
+// `navCount`, a document nav bumps the scope's `documentLoads` counter AND lands a fresh "0".
+describe("the nav counter reader (REQ-NAVT-1)", () => {
+  it("navCountOf reads the document's tally — absent or non-numeric reads as null", async () => {
+    const stamped = fakePage({
+      url: "https://app.test/app",
+      attrs: { route: "/app", renderer: "spa", mounted: true, navCount: 3 },
+    });
+    await expect(navCountOf(stamped)).resolves.toBe(3);
+    const bare = fakePage({
+      url: "https://app.test/app",
+      attrs: { route: "/app", renderer: "spa", mounted: true, navCount: null },
+    });
+    await expect(navCountOf(bare)).resolves.toBeNull();
+  });
+});
+
+describe("settleClientNav (REQ-NAVT-3) — the client-nav pin", () => {
+  /** A scope whose counter the test mutates — the runner wires this as a live getter. */
+  function countingScope() {
+    const loads = { n: 0 };
+    const scope: SettleScope = {
+      webBaseUrl: "https://app.test",
+      get documentLoads() {
+        return loads.n;
+      },
+    };
+    return { scope, loads };
+  }
+
+  it("resolves when the action bumps data-nav-count and no document loads land", async () => {
+    const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope } = countingScope();
+    await expect(
+      settleClientNav(page, scope, async () => {
+        attrs.navCount = 1; // the committed client transition ticked the counter
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("fails when the action never commits an in-document transition (the doc-nav masquerade)", async () => {
+    const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope, loads } = countingScope();
+    await expect(
+      settleClientNav(
+        page,
+        scope,
+        async () => {
+          // a document nav: the counter resets — the landed doc reports a fresh "0"
+          loads.n = 1;
+          attrs.navCount = 0;
+        },
+        { timeoutMs: 80 },
+      ),
+    ).rejects.toThrow(/data-nav-count never exceeded 0/);
+  });
+
+  it("fails when a document load lands even though the count ticked (a reloadDocument commit)", async () => {
+    const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope, loads } = countingScope();
+    await expect(
+      settleClientNav(
+        page,
+        scope,
+        async () => {
+          attrs.navCount = 1; // the commit ticked…
+          loads.n = 1; // …but a document response landed too — the mechanism was mixed
+        },
+        { timeoutMs: 80 },
+      ),
+    ).rejects.toThrow(/document load\(s\) observed — the action document-navigated/);
+  });
+
+  it("fails when the document never carried data-nav-count — the REQ-NAVT-1 stamp is required", async () => {
+    const page = fakePage({
+      url: "https://app.test/app",
+      attrs: { route: "/app", renderer: "spa", mounted: true, navCount: null },
+    });
+    const { scope } = countingScope();
+    await expect(
+      settleClientNav(page, scope, async () => undefined),
+    ).rejects.toThrow(/carries no data-nav-count/);
+  });
+
+  it("fails closed on a scope with no documentLoads — a mechanism assert can't run blind", async () => {
+    const page = fakePage({
+      url: "https://app.test/app",
+      attrs: { route: "/app", renderer: "spa", mounted: true, navCount: 0 },
+    });
+    let ran = false;
+    await expect(
+      settleClientNav(page, SCOPE, async () => {
+        ran = true;
+      }),
+    ).rejects.toThrow(/requires scope\.documentLoads/);
+    expect(ran).toBe(false); // the action never ran — the pin refuses rather than guesses
+  });
+
+  it("no-ops the asserts on a foreign-origin page — a Stripe-hosted tab still runs the action", async () => {
+    const page = fakePage({
+      url: "https://checkout.stripe.com/c/pay/cs_1",
+      attrs: { route: null, renderer: null, mounted: false },
+    });
+    const { scope } = countingScope();
+    let ran = false;
+    await expect(
+      settleClientNav(page, scope, async () => {
+        ran = true;
+      }),
+    ).resolves.toBeUndefined();
+    expect(ran).toBe(true);
+  });
+});
+
+describe("settleDocumentNav (REQ-NAVT-3) — the document-nav pin", () => {
+  function countingScope() {
+    const loads = { n: 0 };
+    const scope: SettleScope = {
+      webBaseUrl: "https://app.test",
+      get documentLoads() {
+        return loads.n;
+      },
+    };
+    return { scope, loads };
+  }
+
+  it("resolves when the action lands a same-origin document (fresh data-nav-count=0)", async () => {
+    const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope, loads } = countingScope();
+    await expect(
+      settleDocumentNav(page, scope, async () => {
+        loads.n = 1; // the document response landed
+        attrs.navCount = 0; // the landed document re-stamps the counter
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("fails when the action only client-navigates — no document response ever lands", async () => {
+    const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope } = countingScope();
+    await expect(
+      settleDocumentNav(
+        page,
+        scope,
+        async () => {
+          attrs.navCount = 1; // an in-document commit — but the watcher saw no document
+        },
+        { timeoutMs: 120 },
+      ),
+    ).rejects.toThrow(/did not document-navigate/);
+  });
+
+  it("fails when the landed document is missing data-nav-count — the stamp is all-documents", async () => {
+    const attrs = {
+      route: "/app",
+      renderer: "spa" as const,
+      mounted: true,
+      navCount: null as number | null,
+    };
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    const { scope, loads } = countingScope();
+    await expect(
+      settleDocumentNav(page, scope, async () => {
+        loads.n = 1;
+        attrs.navCount = null; // a document landed but never carried the stamp
+      }),
+    ).rejects.toThrow(/carries no data-nav-count/);
+  });
+
+  it("fails closed on a scope with no documentLoads", async () => {
+    const page = fakePage({
+      url: "https://app.test/app",
+      attrs: { route: "/app", renderer: "spa", mounted: true, navCount: 0 },
+    });
+    let ran = false;
+    await expect(
+      settleDocumentNav(page, SCOPE, async () => {
+        ran = true;
+      }),
+    ).rejects.toThrow(/requires scope\.documentLoads/);
+    expect(ran).toBe(false);
+  });
+});
+
+describe("the mechanism-agnostic helpers stay agnostic (REQ-NAVT-6)", () => {
+  // A scope whose documentReads would EXPLODE on any read — if settleNav/gotoOk/reloadSettled
+  // ever consulted the counter they'd fail here; they must never read it.
+  const trapScope: SettleScope = {
+    webBaseUrl: "https://app.test",
+    get documentLoads(): number {
+      throw new Error("a mechanism-agnostic helper read documentLoads");
+    },
+  };
+  const attrs = { route: "/app", renderer: "spa" as const, mounted: true, navCount: 0 };
+
+  it("settleNav / gotoOk / reloadSettled / awaitMounted resolve without touching the counter", async () => {
+    const page = fakePage({ url: "https://app.test/app", attrs });
+    await expect(settleNav(page, trapScope)).resolves.toBeUndefined();
+    await expect(gotoOk(page, "https://app.test/app", trapScope)).resolves.toBeUndefined();
+    await expect(reloadSettled(page, trapScope)).resolves.toBeUndefined();
+    await expect(awaitMounted(page, trapScope)).resolves.toBeUndefined();
   });
 });
