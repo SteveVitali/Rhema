@@ -1,0 +1,67 @@
+{
+  "verified_at": "2026-10-15T23:45:42.873Z",
+  "checks": {
+    "stale_draft_absent": true,
+    "v7_artifact_tree_gone": true,
+    "stray_deployments_row_absent": true,
+    "full_sha_twin_preserved": true,
+    "review_account_absent": true,
+    "my_first_project_intact": true
+  },
+  "remaining_drafts_on_project": [
+    {
+      "id": "01M34Z3C51V3W4G69G454PCHG0",
+      "n": 1,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M353A7K5GEQSTQR46DX9N163",
+      "n": 2,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M354HF9HAYF09SVZ9SYDPQZR",
+      "n": 3,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M359SMBXQERPSQH2ZG5G433N",
+      "n": 4,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M35FPR721WH35ZGSQXSQ9CTX",
+      "n": 5,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M35KC9K6N6R2P6EJD19T30E9",
+      "n": 6,
+      "origin": "human_upload",
+      "state": "frozen"
+    },
+    {
+      "id": "01M3E8F8YNNT68ST3QV4FQ5WY6",
+      "n": 8,
+      "origin": "drafted_from_outline",
+      "state": "frozen"
+    }
+  ],
+  "deployments_total": 55,
+  "remaining_short_sha_deployments": [
+    "prod:d5a74cc"
+  ],
+  "lad_titled_globally": [
+    {
+      "id": "01M3SK380GQX41RKMD4KVFB34Q",
+      "title": "The Library After Dark (review test)",
+      "workspace_id": "01M2V3PM11XSF05VJ9G01PM5ZB",
+      "deleted_at": "2026-09-30T21:41:10.945Z"
+    }
+  ]
+}

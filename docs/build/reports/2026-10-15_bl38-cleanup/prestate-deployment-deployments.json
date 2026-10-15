@@ -1,0 +1,11 @@
+[
+  {
+    "id": "prod:82179e1",
+    "stage": "prod",
+    "git_sha": "82179e1",
+    "image_digests": "<redacted>",
+    "protocols_version": "0.4.0+test",
+    "rate_table_version": "2026-09-26",
+    "deployed_at": "2026-09-26T09:04:59.392Z"
+  }
+]
