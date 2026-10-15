@@ -4,6 +4,8 @@
 // DB/API evidence is folded through. Kept out of stb5b.ts so each piece is unit-testable without
 // a browser or a live stage (the "test fails if the behaviour is removed" rule).
 
+import { CapOverrunError } from "./spend-guard.js";
+
 export interface Stb5bAssert {
   readonly id: string;
   readonly pass: boolean;
@@ -25,6 +27,33 @@ export const STB5B_CAPS: Readonly<Record<string, number>> = {
 
 /** The ticket's combined Stage B cap — the runner's spend accounting, never raised. */
 export const STB5B_TOTAL_CAP_USD = 25;
+
+/**
+ * R5ECON.1 (REQ-ECON-7) — the leg-close cap assert, enforced (B3-F1: the caps were recorded,
+ * never asserted — measured overruns passed silently). `meteredUsd ≤ capUsd` or the leg closes
+ * `cap_overrun` (`CapOverrunError` — the runner's distinct verdict; it pauses the funded
+ * window). Fail-closed on both blind spots: an unmeasurable meter and a missing declared cap
+ * are leg failures (the owed arm), never a silent pass.
+ */
+export function assertLegCapUsd(
+  stepId: string,
+  meteredUsd: number,
+  capUsd: number | undefined,
+): void {
+  if (!Number.isFinite(meteredUsd)) {
+    throw new Error(
+      `${stepId} owed — meteredUsd unmeasurable (${meteredUsd}); the leg cap is unenforceable without a metered figure`,
+    );
+  }
+  if (capUsd == null) {
+    throw new Error(
+      `${stepId} owed — no declared leg cap (REQ-ECON-7: every paid leg's capUsd is stated in advance)`,
+    );
+  }
+  if (meteredUsd > capUsd) {
+    throw new CapOverrunError(stepId, meteredUsd, capUsd);
+  }
+}
 
 // ---------------------------------------------------------------- run-body builders
 

@@ -5,8 +5,10 @@ import { SURFACE_GATES } from "./surface-gates.js";
 import {
   gateEcho,
   gatedStepIds,
+  paidDispatchPreflight,
   parseRendererFlag,
   parseSurfaces,
+  parseUsdFlag,
 } from "./cli-flags.js";
 
 // SPA.6 — the leg-contract flag validation (REQ-VFY-7/8/10, REQ-SEQ-4). Removal-catching: every
@@ -86,5 +88,54 @@ describe("gatedStepIds — the surface gate resolution", () => {
     expect(gateEcho("usage")).toContain("gate X1.usage");
     expect(gateEcho("outline")).toContain("owed:");
     expect(gateEcho("dossier")).toContain("weekly-holds: T10,T11,T12,T13");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R5ECON.1 (REQ-ECON-8/9) — the paid-dispatch posture: fail closed for operator runs; the
+// scheduled self-bounding cron alone keeps the no-db attestation.
+
+describe("parseUsdFlag (--headroom)", () => {
+  it("accepts a positive USD figure; unset stays unset; non-positive is a misuse", () => {
+    expect(parseUsdFlag(undefined, "--headroom")).toEqual({});
+    expect(parseUsdFlag("3", "--headroom")).toEqual({ value: 3 });
+    expect(parseUsdFlag("0.5", "--headroom")).toEqual({ value: 0.5 });
+    for (const bad of ["0", "-1", "abc", ""]) {
+      expect(parseUsdFlag(bad, "--headroom").error, bad).toContain("--headroom must be a positive USD figure");
+    }
+  });
+});
+
+describe("paidDispatchPreflight (REQ-ECON-8/9)", () => {
+  const bound = { paid: true, systemDsnBound: true, scheduledCron: false, headroomUsd: 4 };
+
+  it("operator --paid without the system DSN refuses, naming REQ-ECON-8 + the cron exception", () => {
+    const r = paidDispatchPreflight({ ...bound, systemDsnBound: false });
+    expect(r.exitCode).toBe(3);
+    expect(r.error).toContain("JOURNEY_DATABASE_URL");
+    expect(r.error).toContain("REQ-ECON-8");
+    expect(r.error).toContain("schedule");
+  });
+  it("--paid without --headroom refuses, naming REQ-ECON-9 — on the cron too (it passes --headroom explicitly)", () => {
+    const operator = paidDispatchPreflight({ ...bound, headroomUsd: undefined });
+    expect(operator.exitCode).toBe(3);
+    expect(operator.error).toContain("--headroom");
+    expect(operator.error).toContain("REQ-ECON-9");
+    const cron = paidDispatchPreflight({ paid: true, systemDsnBound: false, scheduledCron: true, headroomUsd: undefined });
+    expect(cron.exitCode).toBe(3);
+    expect(cron.error).toContain("REQ-ECON-9");
+  });
+  it("the scheduled cron keeps the no-db attestation (DSN absent is fine when the headroom is declared)", () => {
+    expect(
+      paidDispatchPreflight({ paid: true, systemDsnBound: false, scheduledCron: true, headroomUsd: 3 }),
+    ).toEqual({});
+  });
+  it("a fully-bound operator dispatch passes", () => {
+    expect(paidDispatchPreflight(bound)).toEqual({});
+  });
+  it("a $0 run carries no posture requirement", () => {
+    expect(
+      paidDispatchPreflight({ paid: false, systemDsnBound: false, scheduledCron: false, headroomUsd: undefined }),
+    ).toEqual({});
   });
 });

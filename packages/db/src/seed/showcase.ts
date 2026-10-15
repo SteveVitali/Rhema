@@ -681,6 +681,17 @@ const RUN_REPORT_SEED_USAGE: readonly {
 const RUN_REPORT_SEED_CHARGED = 3860;
 
 /**
+ * R5ECON.1 (REQ-ECON-6, B3-F3) — the spend-guard exclusion marker. Every `usage_records` row a
+ * journey fixture seeds carries a `provider_request_id` under this prefix, and every spend-guard
+ * query (the weekly ISO-week cap AND the funded-window cumulative) filters it out — seeded
+ * fiction must never count as metered spend (a seed writes ≈$12.33 of plausible-looking
+ * `list_cost_usd`). The rows keep `source='proxy'` on purpose: the delivered-report fixture needs
+ * them to read as real metered rows so the metered-vs-charged reconciliation renders — the
+ * marker, not the source, is the exclusion key.
+ */
+export const JOURNEY_SEED_USAGE_REQUEST_PREFIX = "req_jrn_";
+
+/**
  * SPA.22 (REQ-VFY-10) — the delivered-run-report fixture: the same `seedDossierProject` payload
  * (a delivered completed review run on a NORMAL writable project — phases, claims, letter) PLUS
  * the two ledger facts `buildRunReport` reads that the dossier never needed at $0:
@@ -737,8 +748,9 @@ export async function seedDeliveredRunReport(
         deps.ids(), now.toISOString(), deps.workspaceId, billingAccountId, deps.ownerId,
         res.projectId, res.reviewRunId, `step:${u.phase}`, u.seat, u.model, u.modelTier,
         u.inputTokens, u.outputTokens, u.searches, u.fetches,
-        // list_cost_usd is a display-free figure — a plausible rate-table scalar, never summed.
-        (u.credits / 1000) * 3.0, u.credits, `req_jrn_report_${i + 1}`,
+        // list_cost_usd is a display-free figure — a plausible rate-table scalar the spend
+        // guards never sum: REQ-ECON-6's `req_jrn_` marker excludes the row from every guard SQL.
+        (u.credits / 1000) * 3.0, u.credits, `${JOURNEY_SEED_USAGE_REQUEST_PREFIX}report_${i + 1}`,
       ],
     );
   }

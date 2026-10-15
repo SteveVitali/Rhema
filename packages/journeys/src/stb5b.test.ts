@@ -5,10 +5,12 @@
 
 import { describe, expect, it } from "vitest";
 import { STEP_REGISTRY } from "./registry.js";
+import { CapOverrunError } from "./spend-guard.js";
 import { STB5B_IMPLS } from "./stb5b.js";
 import {
   STB5B_CAPS,
   STB5B_TOTAL_CAP_USD,
+  assertLegCapUsd,
   baitUserSource,
   buildFullBoardFetchBody,
   buildHighWaterReviewBody,
@@ -41,6 +43,33 @@ describe("per-leg caps", () => {
       .reduce((a, [, v]) => a + v, 0);
     expect(runnable).toBeLessThanOrEqual(STB5B_TOTAL_CAP_USD);
     expect(STB5B_TOTAL_CAP_USD).toBe(25);
+  });
+});
+
+// R5ECON.1 (REQ-ECON-7, B3-F1) — the caps are ENFORCED at leg close, not just recorded:
+// `finishLeg` calls this before the owed arm — an overrun is the distinct `cap_overrun`
+// verdict (the runner pauses the funded window), never a silent pass.
+describe("assertLegCapUsd (REQ-ECON-7)", () => {
+  it("under or at the declared cap ⇒ the leg closes normally", () => {
+    expect(() => assertLegCapUsd("B16", 0.5, STB5B_CAPS["B16"])).not.toThrow();
+    expect(() => assertLegCapUsd("B16", STB5B_CAPS["B16"]!, STB5B_CAPS["B16"])).not.toThrow();
+  });
+  it("over the cap ⇒ CapOverrunError carrying the verdict + both figures", () => {
+    try {
+      assertLegCapUsd("B16", 1.5, 1.0);
+      expect.unreachable("an over-cap leg must never close silently");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CapOverrunError);
+      expect((e as CapOverrunError).message).toContain("cap_overrun");
+      expect((e as CapOverrunError).message).toContain("$1.50");
+      expect((e as CapOverrunError).message).toContain("$1.00");
+    }
+  });
+  it("fails closed: an unmeasurable meter or an undeclared cap is a leg failure, not a pass", () => {
+    expect(() => assertLegCapUsd("B16", Number.NaN, 1)).toThrow(/unmeasurable/);
+    expect(() => assertLegCapUsd("B16", Number.POSITIVE_INFINITY, 15)).toThrow(/unmeasurable/);
+    expect(() => assertLegCapUsd("B16", 0.5, undefined)).toThrow(/no declared leg cap/);
+    expect(() => assertLegCapUsd("ZZZ", 0.5, STB5B_CAPS["ZZZ"])).toThrow(/no declared leg cap/);
   });
 });
 

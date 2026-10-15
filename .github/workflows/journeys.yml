@@ -71,7 +71,9 @@ jobs:
                 --out "journey-report")
           args+=(--stage "${{ inputs.stage || 'prod' }}")
           [ -n "${JOURNEY_EXPECT_SHA:-}" ] && args+=(--expect-sha "$JOURNEY_EXPECT_SHA")
-          [ "${JOURNEY_PAID:-false}" = "true" ] && args+=(--paid)
+          # R5ECON.1 (REQ-ECON-9) — --headroom is required on every paid dispatch; the cron's
+          # standing per-leg bound is $3 (the ≤300-word fixture's worst observed leg ×2).
+          [ "${JOURNEY_PAID:-false}" = "true" ] && args+=(--paid --headroom 3)
           [ -n "${{ inputs.steps }}" ] && args+=(--steps "${{ inputs.steps }}")
           pnpm --filter @rhema/journeys exec rhema-journeys "${args[@]}"
       - uses: actions/upload-artifact@v4

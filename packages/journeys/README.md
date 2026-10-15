@@ -53,6 +53,38 @@ pnpm --filter @rhema/journeys exec rhema-journeys \
 the single ≤300-word fixture. `workflow_dispatch` on `.github/workflows/journeys.yml` takes
 `stage`/`steps`/`paid` inputs.
 
+## Spend guards — the system-DSN convention (BL-72 / REQ-ECON-6/7/8/9/13)
+
+Paid dispatch is **fail-closed** (R5ECON.1). The rules, all enforced at dispatch time:
+
+- **`JOURNEY_DATABASE_URL` is the system-role DSN, always.** `usage_records` is FORCE-RLS: an
+  app-login pool reads it as **$0** and the guard would greenlight an unmeasured week
+  (D-STB.5b-1). Both guards probe `pg_roles` for `rolsuper OR rolbypassrls` before the meter
+  query ever runs; a blind pool is a refusal, never a measurement. The DSN is Pulumi-composed —
+  reach it over the IAP tunnel, e.g.
+  `JOURNEY_DATABASE_URL=postgres://<system-role>@localhost:<tunnel-port>/rhema`.
+- **Operator `--paid` requires the DSN + `--headroom <legCapUsd>`.** `rhema-journeys --paid`
+  and `scripts/live/funded-window.mjs` both refuse (exit 3) without them — the headroom ask
+  pre-flights the measured spend against the bound before a leg dispatches. The **one**
+  exception is the scheduled self-bounding cron (`GITHUB_EVENT_NAME=schedule`): it cannot reach
+  the private DB, bounds itself to one paid leg/week, and keeps the no-db attestation.
+- **Seeded fixture rows never count (REQ-ECON-6).** Journey seeders write
+  `usage_records.provider_request_id` under the `req_jrn_` prefix
+  (`JOURNEY_SEED_USAGE_REQUEST_PREFIX`, `@rhema/db`); every guard query — weekly cap AND the
+  funded-window cumulative — filters it via the shared `FLAGGED_PROXY_SPEND_SCOPE`. The scope
+  is bucket-blind: entitlement/Included proxy spend is real provider spend and counts
+  (Q-ECON.d).
+- **A leg that meters over its declared `capUsd` closes `cap_overrun` and pauses the funded
+  window** (REQ-ECON-7): the runner skips every later leg in the dispatch, the run fails, and
+  `funded-window.mjs` drops `<stateDir>/funded-pause.json`, which refuses further dispatches
+  until the operator re-authorizes and removes it.
+- **The $0 read path** — spend figures without a dispatch: run the guard's queries read-only
+  over the tunnel with
+  `DATABASE_URL=<system-dsn> node scripts/live/funded-query.mjs "<sql>"` (wraps the statement in
+  `BEGIN READ ONLY … ROLLBACK`). The exact scope both guards use is the exported
+  `FLAGGED_PROXY_SPEND_SCOPE` fragment (`src/spend-guard.ts`), so a read and a refusal can never
+  disagree about what counts.
+
 Round-4 additions: `--surface <key[,key…]>` scopes the run to a `SURFACE_GATES` subset and
 `--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` marker
 differs (the activation cadence's per-surface legs use both). `--pin-renderer`/`JOURNEY_PIN_RENDERER`
