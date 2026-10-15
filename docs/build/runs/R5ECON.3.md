@@ -14,8 +14,9 @@
 - **Live stage:** none — zero prod writes/deploys/$0: NO paid legs run, NO tenant seeding
   executes, NO real DSNs/keys anywhere. The funded tenant + purge exemption script lands but
   executes under the gate; every new driver is committed, not invoked.
-- **Started:** 2026-10-15T20:29Z · **Closed:** TBD
-- **PR:** TBD
+- **Started:** 2026-10-15T20:29Z · **Closed:** 2026-10-15T21:01Z
+- **PR:** #182 (base `stevevitali/r5econ-2-testcheaproute-arm`, unmerged — mergePolicy OPERATOR;
+  impl `087fd0f` + this closeout; ci pending first-read class)
 - **Anchor drift noted (same as R5ECON.1/.2):** the contract cites
   `docs/research/r5_b3_cost-regime.md` — the actual file is
   `docs/research/r5_b3_lever-guard-design.md` (B3's lever/guard design lives there; the window
@@ -158,7 +159,7 @@ pins + the captured dry-run).
 - `pnpm check:licenses` · `check:protocol-markers` · `check:no-cookies` · `check:spa-budget` ·
   `check:spa-env` · `check:dom-contract` — **all six green**.
 - `check-build-memory.sh` — **0 violations** (8 warnings, all pre-existing legacy rows).
-- `node docs/build/tools/check-append-only.mjs --base 791c35f` — (recorded at closeout).
+- `node docs/build/tools/check-append-only.mjs --base 791c35f` — **OK**.
 - `node scripts/live/funded-window.mjs --dry-run --headroom 55` (no DSN) — prints the nine §5.5
   rows; 6/9 pass offline (`headroom`/`caps`/`ordering`/`exclusions`/`optouts`/`unpaused`), the
   DSN-scoped rows (`dsn`/`cumulative`/`tenant`) fail closed exactly as the gate requires; the
