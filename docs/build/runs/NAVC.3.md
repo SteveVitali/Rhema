@@ -13,8 +13,9 @@
 - **Skills:** implement-spec + build-memory @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-NAVC-17 REQ-NAVC-18 REQ-NAVC-20 REQ-NAVC-22
   REQ-NAVT-5(emission half) REQ-NAVT-7(page-session row half)
-- **Started:** 2026-10-15T12:43Z · **Closed:** 2026-10-15T13:20Z — impl `47d807d` + closeout;
-  PR #178 (mergePolicy OPERATOR — unmerged); ci pending at closeout (first-read class)
+- **Started:** 2026-10-15T12:43Z · **Closed:** 2026-10-15T13:20Z — impl `47d807d` + closeout
+  `7ca5a6e`; PR #178 (mergePolicy OPERATOR — unmerged); ci pending at closeout
+  (first-read class)
 - **Config:** full rigor (ledger + self-review + gap analysis + tests + evidence report);
   **Live stage: none**; **Production mutations: none**; metered spend **$0**;
   zero prod writes, zero deploys, zero merges
