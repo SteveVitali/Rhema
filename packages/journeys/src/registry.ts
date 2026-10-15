@@ -241,6 +241,26 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: true,
   },
+  {
+    id: "R10",
+    journey: "returning",
+    asserts:
+      "/app → click the project link → click a[data-edit-source] → /p/:slug/v/working → Back is one document: every hop commits client-side (monotone data-nav-count, zero added document loads) and the warm return re-issues no /bff/p/:slug twin GET inside NAVC.3's freshness window",
+    owner: "NAVC.4",
+    // NAVC.4 — flips green on the first live leg over a deployed build carrying the NAVC.1–3 machinery.
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "R10.keepalive",
+    journey: "returning",
+    asserts:
+      "leaving /p/:slug/v/working for /app and returning inside the 120 s idle TTL re-acquires the SAME data-page-session, and ⌘Z removes the synced marker typed before leaving — the preserved EditorState's undo stack, not a re-seeded view",
+    owner: "NAVC.4",
+    // NAVC.4 — flips green on the first live leg over a deployed build carrying NAVC.3's registry.
+    expected: "red",
+    paid: false,
+  },
   // ---- STB.5a weekly paid riders (jrn-a; ride the weekly leg's own-tenant delivered Review) ----
   // These run AFTER R9 — the weekly sequence's own runs are what deliver the Review T10–T13 read
   // and the deferred run_finished rows T14 counts (T9 armed the window before N5).

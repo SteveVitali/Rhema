@@ -27,7 +27,9 @@ describe("the journey step registry", () => {
         "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline", "P1.figures", "P1.dossier",
         // SPA.22 added R6F — the seeded delivered-run-report free render leg (REQ-VFY-10's owed
         // delivered-render coverage — red pending its first live leg, D-SPA.22-*).
-        "R1", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
+        // NAVC.4 added R10 + R10.keepalive — the client-nav acceptance chain and the
+        // keep-alive/semantic-undo leg (both red pending their first live leg).
+        "R1", "R10", "R10.keepalive", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
         // SPA.21 added T12F/T13F — the seeded-dossier free twins of T12/T13 (REQ-VFY-10's owed

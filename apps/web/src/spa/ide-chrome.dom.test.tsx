@@ -183,11 +183,18 @@ function buildRouter(path: string, leaf: () => ReactNode = publishLeaf(PUBLISH))
   });
   const index = createRoute({ getParentRoute: () => layout, path: "/", component: leaf });
   const settings = createRoute({ getParentRoute: () => layout, path: "settings", component: plainLeaf() });
-  const routeTree = rootRoute.addChildren([layout.addChildren([index, settings])]);
+  // NAVC.4 — the two path shapes the scroll-preserving nav arms live on: `[`/`]` version
+  // stepping needs a `/v/$v` segment; the `?triage` toggle only arms under `/review/$runId`.
+  const versioned = createRoute({ getParentRoute: () => layout, path: "v/$v", component: leaf });
+  const review = createRoute({ getParentRoute: () => layout, path: "review/$runId", component: leaf });
+  const routeTree = rootRoute.addChildren([layout.addChildren([index, settings, versioned, review])]);
   return createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
 }
 
-async function mount(path = "/p/alpha", opts: { leaf?: () => ReactNode; boot?: SpaBoot } = {}) {
+async function mount(
+  path = "/p/alpha",
+  opts: { leaf?: () => ReactNode; boot?: SpaBoot; router?: Router } = {},
+) {
   setSpaBoot(opts.boot ?? BOOT);
   const fetchSpy = makeFetch();
   vi.stubGlobal("fetch", fetchSpy);
@@ -195,7 +202,8 @@ async function mount(path = "/p/alpha", opts: { leaf?: () => ReactNode; boot?: S
   const el = document.createElement("div");
   el.setAttribute("data-spa-root", "");
   document.body.appendChild(el);
-  const router = buildRouter(path, opts.leaf);
+  // `opts.router` lets a test spy before load (e.g. the ?focus=1 strip fires inside mount).
+  const router = opts.router ?? buildRouter(path, opts.leaf);
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const root = createRoot(el);
   mounted.push(root);
@@ -687,6 +695,99 @@ describe("the verbatim localStorage family (REQ-SEQ-11)", () => {
       expect(localStorage.getItem("rhema:paper:v1:alpha")).toBe("warm");
       expect(document.documentElement.getAttribute("data-paper")).toBe("warm");
     }
+  });
+});
+
+describe("NAVC.4 — native hash hops + the scroll-preserving navs (REQ-NAVM-10, REQ-NAVC-16/19)", () => {
+  beforeEach(async () => {
+    // happy-dom queues a REAL hashchange on a macrotask whenever `location.hash` is assigned —
+    // a prior leg's queued event would dispatch under this leg's fresh listener and select
+    // whatever stale `#finding-*` is still in the URL. Normalize, then drain the queue.
+    window.location.hash = "";
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  });
+
+  it("a hashchange the router never saw still selects the finding — the REQ-NAVM-10 gap closed", async () => {
+    await mount();
+    const f2 = document.querySelector<HTMLElement>("[data-finding-id='f2']");
+    expect(f2?.getAttribute("data-selected")).toBeNull();
+    // The native path: the delegated interceptor SKIPS hash-only clicks (native fragment nav),
+    // so no router commit ever happens — `opts.nav.hash` stays "". The browser still fires
+    // `hashchange`; the controller's listener runs the SAME consumer on window.location.hash.
+    act(() => {
+      window.location.hash = "#finding-f2";
+      window.dispatchEvent(new Event("hashchange"));
+    });
+    expect(f2?.getAttribute("data-selected")).toBe("true");
+    expect(document.querySelector<HTMLElement>("[data-finding-id='f1']")?.getAttribute("data-selected")).toBeNull();
+  });
+
+  it("a non-finding native hash is inert — no selection churn", async () => {
+    await mount();
+    act(() => {
+      window.location.hash = "#section";
+      window.dispatchEvent(new Event("hashchange"));
+    });
+    expect(document.querySelector("[data-selected='true']")).toBeNull();
+  });
+
+  it("`[`/`]` version stepping commits through navigate({resetScroll:false}) — never a scroll reset (REQ-NAVC-16)", async () => {
+    // the `/v/$v` leaf must carry a "spa" verdict or the layout mounts it unframed (no chrome).
+    const { router } = await mount("/p/alpha/v/3", {
+      boot: bootFor({ "/p/$project/v/$v": "spa" }),
+    });
+    const navSpy = vi.spyOn(router, "navigate");
+    key({ key: "[" });
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/2"));
+    expect(navSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/p/alpha/v/2", resetScroll: false }),
+    );
+    navSpy.mockClear();
+    key({ key: "]" });
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/3"));
+    expect(navSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/p/alpha/v/3", resetScroll: false }),
+    );
+  });
+
+  it("`[`/`]` are inert off a /v/:n path — no malformed nav", async () => {
+    const { router } = await mount("/p/alpha");
+    const navSpy = vi.spyOn(router, "navigate");
+    key({ key: "[" });
+    key({ key: "]" });
+    expect(navSpy).not.toHaveBeenCalled();
+    expect(router.state.location.pathname).toBe("/p/alpha");
+  });
+
+  it("the ?focus=1 strip rides navigate({replace:true, resetScroll:false}) — the third preserved-scroll nav", async () => {
+    // The strip fires inside mount (a leaf-bound effect) — the spy installs on the router FIRST.
+    const router = buildRouter("/p/alpha?focus=1");
+    const navSpy = vi.spyOn(router, "navigate");
+    await mount("/p/alpha?focus=1", { router });
+    expect(navSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/p/alpha", replace: true, resetScroll: false }),
+    );
+    expect(router.state.location.searchStr).not.toContain("focus");
+    expect(ide()?.dataset["view"]).toBe("focus");
+  });
+
+  it("⌘⇧T toggles ?triage through navigate({resetScroll:false}) on a dossier path", async () => {
+    const { router } = await mount("/p/alpha/review/r9", {
+      boot: bootFor({ "/p/$project/review/$runId": "spa" }),
+    });
+    const navSpy = vi.spyOn(router, "navigate");
+    key({ key: "t", metaKey: true, shiftKey: true });
+    await vi.waitFor(() => expect(router.state.location.searchStr).toBe("?triage=1"));
+    expect(navSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/p/alpha/review/r9?triage=1", resetScroll: false }),
+    );
+    key({ key: "t", metaKey: true, shiftKey: true });
+    await vi.waitFor(() => expect(router.state.location.searchStr).toBe(""));
+    expect(navSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ href: "/p/alpha/review/r9", resetScroll: false }),
+    );
   });
 });
 

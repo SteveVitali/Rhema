@@ -324,6 +324,61 @@ describe("head manager (REQ-BND-8, REQ-UX-7/9)", () => {
     await mountAt("/usage#report", bootFor({ "/usage": "spa" }));
     expect(document.activeElement).toBe(anchor);
   });
+
+  it("REQ-NAVC-16/21 — a MID-navigation hash target wins focus over the h1, same precedence", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    const h1 = document.querySelector("[data-spa-root] h1");
+    expect(document.activeElement).toBe(h1); // the generic arm held the first commit
+    const target = document.createElement("div");
+    target.id = "deep";
+    document.body.appendChild(target);
+    await act(async () => {
+      await router.navigate({ href: "/usage#deep" });
+    });
+    // the hash commit is a committed transition — focus goes to the fragment target, not the h1.
+    expect(document.activeElement).toBe(target);
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
+  });
+
+  it("REQ-NAVC-21 — a same-title commit re-announces: clear-then-set, never a silent no-op", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    const announcer = document.querySelector<HTMLElement>("[data-route-announcer]")!;
+    // MutationObserver records carry node lists, not values — read added/removed nodes:
+    // a `textContent = ""` write removes the old node; the `= title` write adds the new one.
+    const events: string[] = [];
+    const mo = new MutationObserver((muts) => {
+      for (const mut of muts) {
+        if (mut.removedNodes.length > 0) events.push(`removed:${mut.removedNodes[0]?.textContent}`);
+        if (mut.addedNodes.length > 0) events.push(`added:${mut.addedNodes[0]?.textContent}`);
+      }
+    });
+    mo.observe(announcer, { childList: true, characterData: true, subtree: true });
+    await act(async () => {
+      router.history.push("/usage?archived=1");
+      await router.load();
+    });
+    mo.disconnect();
+    // the title didn't move ("Usage · Rhēma" both sides) — assistive tech must still hear a
+    // navigation, so the region is cleared AND re-set on every committed transition.
+    expect(document.title).toBe("Usage · Rhēma");
+    expect(events.slice(-2)).toEqual(["removed:Usage · Rhēma", "added:Usage · Rhēma"]);
+    expect(announcer.getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("REQ-NAVC-21 — a replace commit announces the same way (the announce policy is commit-scoped)", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    const announcer = document.querySelector<HTMLElement>("[data-route-announcer]")!;
+    const mutations: string[] = [];
+    const mo = new MutationObserver(() => mutations.push(announcer.textContent ?? ""));
+    mo.observe(announcer, { childList: true, characterData: true, subtree: true });
+    await act(async () => {
+      await router.navigate({ to: "/app/new", replace: true });
+    });
+    mo.disconnect();
+    expect(document.title).toBe("New project · Rhēma");
+    expect(mutations.at(-1)).toBe("New project · Rhēma");
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
+  });
 });
 
 describe("not-found + redirect surfaces (REQ-NAV-2/9/10)", () => {
@@ -347,6 +402,33 @@ describe("not-found + redirect surfaces (REQ-NAV-2/9/10)", () => {
     const { router } = await mountAt("/settings", bootFor({ "/app/settings/account": "spa" }));
     expect(router.state.location.pathname).toBe("/app/settings/account");
     expect(docNavSpy).not.toHaveBeenCalled();
+  });
+
+  it("REQ-NAVC-23 — a mid-document hop to a surfaces:null path hands off through SsrHandoff", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    // `/login` is a contract surfaces:null row AND outside the client tree: a committed
+    // in-document hop resolves the fuzzy not-found leaf, which hands the URL back to the
+    // server through the same SsrHandoff→replaceDocument seam the initial-mount arm takes —
+    // the document boundary is server-owned even when the hop started client-side.
+    await act(async () => {
+      await router.navigate({ href: "/login" });
+    });
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("/login"));
+  });
+
+  it("REQ-NAVC-23 — a mid-document hop onto a reloadDocument stub doc-navs through its beforeLoad", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    // `/p/a/f/f` is a RELOAD_STUB_IDS member — the route itself throws
+    // `redirect({reloadDocument:true})` in beforeLoad. Reached by a CLIENT commit (this leg) or
+    // the interceptor's push (OQ1 in intercept.dom.test.tsx), the router resolves it as a
+    // replace-mode document navigation — the host slot is eaten, so Back never lands on the
+    // transient stub commit.
+    const locReplace = vi.spyOn(window.location, "replace").mockImplementation(() => {});
+    await act(async () => {
+      router.navigate({ href: "/p/a/f/f" }).catch(() => undefined);
+      await router.load().catch(() => undefined);
+    });
+    await vi.waitFor(() => expect(locReplace).toHaveBeenCalledWith("/p/a/f/f"));
   });
 });
 
@@ -432,6 +514,84 @@ describe("the tree contract (REQ-NAV-1) + router config (REQ-FW-7)", () => {
     expect(router.options.defaultPreload).toBeUndefined();
     expect(router.options.defaultPreloadStaleTime).toBe(0);
     expect(router.options.scrollRestoration).toBe(true);
+    // REQ-NAVC-16 (NAVC.4) — `.ide-page` is the ONE inner scroller the router tops on push
+    // (packages/ui's IdeShell emits it; the keyed restoration still re-applies it on pops).
+    expect(router.options.scrollToTopSelectors).toEqual([".ide-page"]);
     expect(router.options.notFoundMode).toBe("fuzzy");
+  });
+});
+
+describe("the scroll contract (REQ-NAVC-16)", () => {
+  // happy-dom maps window.scrollTo/scrollY onto documentElement.scrollTop and elements carry
+  // real scrollTop/scrollTo — the router's scrollRestoration machinery runs unstubbed. Scroll
+  // events are dispatched to register each target with the router's tracker (capture listener
+  // on document) — that's how a position enters the keyed restoration cache.
+
+  it("history.scrollRestoration flips to manual — the router owns scroll, not the browser", async () => {
+    await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    expect(window.history.scrollRestoration).toBe("manual");
+  });
+
+  it("a push tops the window; a Back pop restores the prior position", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    window.scrollTo(0, 400);
+    document.dispatchEvent(new Event("scroll")); // register the window scroll target
+    expect(window.scrollY).toBe(400);
+    await act(async () => {
+      await router.navigate({ to: "/app/new" });
+    });
+    expect(router.state.location.pathname).toBe("/app/new");
+    expect(window.scrollY).toBe(0); // top-on-push
+    await act(async () => {
+      router.history.back();
+      await router.load();
+    });
+    expect(router.state.location.pathname).toBe("/usage");
+    expect(window.scrollY).toBe(400); // the keyed cache re-applies — document-nav parity
+  });
+
+  it("the .ide-page inner scroller tops on push and restores on pop (scrollToTopSelectors)", async () => {
+    const inner = document.createElement("main");
+    inner.className = "ide-page";
+    document.body.appendChild(inner);
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    inner.scrollTop = 300;
+    inner.dispatchEvent(new Event("scroll")); // element scroll targets register by event
+    await act(async () => {
+      await router.navigate({ to: "/app/new" });
+    });
+    // a scrollToTopSelectors element is NOT restored-then-topped — push tops it outright.
+    expect(inner.scrollTop).toBe(0);
+    await act(async () => {
+      router.history.back();
+      await router.load();
+    });
+    // on the pop the selector's keyed entry wins — the inner scroller restores like the window.
+    expect(inner.scrollTop).toBe(300);
+  });
+
+  it("a hash push favors the fragment target — the cached window position is skipped", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    window.scrollTo(0, 300);
+    document.dispatchEvent(new Event("scroll"));
+    const target = document.createElement("div");
+    target.id = "report";
+    document.body.appendChild(target);
+    const siv = vi.spyOn(target, "scrollIntoView").mockImplementation(() => {});
+    await act(async () => {
+      await router.navigate({ to: "/app/new" });
+    });
+    expect(window.scrollY).toBe(0);
+    window.scrollTo(0, 200); // a mid-life position — must survive the hash nav untouched
+    document.dispatchEvent(new Event("scroll"));
+    await act(async () => {
+      await router.navigate({ href: "/usage#report" });
+    });
+    expect(router.state.location.pathname).toBe("/usage");
+    expect(router.state.location.hash).toBe("report");
+    // the push-arm precedence: scrollIntoView on the hash target, window restore SKIPPED —
+    // /usage's cached 300 must NOT be re-applied, and no top-reset fires either.
+    expect(siv).toHaveBeenCalled();
+    expect(window.scrollY).toBe(200);
   });
 });

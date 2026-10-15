@@ -52,10 +52,12 @@ export interface IdeChromeNav {
   /** the raw `?…` search string (TanStack `location.searchStr`, leading `?` included or absent). */
   readonly searchStr: string;
   readonly hash: string;
-  /** An in-router navigation (the island's `location.assign` — GET-only targets by contract). */
-  push(href: string): void;
-  /** In-place history replace (the `?focus=1` strip). */
-  replace(href: string): void;
+  /** An in-router navigation (the island's `location.assign` — GET-only targets by contract).
+   *  `resetScroll:false` preserves the committed scroll position — the island's in-place swaps
+   *  (version stepping, `?triage`) never scrolled the page (REQ-NAVC-16). */
+  push(href: string, opts?: { resetScroll?: boolean }): void;
+  /** In-place history replace (the `?focus=1` strip — `replaceState` never scrolled either). */
+  replace(href: string, opts?: { resetScroll?: boolean }): void;
 }
 
 export interface IdeChromeControllerOpts {
@@ -490,6 +492,17 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     [findingEls],
   );
 
+  // The ONE `#finding-<id>` consumer — fed by the router's committed hash (`nav.hash`, no "#")
+  // AND by the native `hashchange` path below (`window.location.hash`, "#" included), so a
+  // fragment hop selects the same card whichever stack observed it (REQ-NAVC-16).
+  const consumeFindingHash = useCallback(
+    (hash: string): void => {
+      const id = /^finding-(.+)$/.exec(hash.replace(/^#/, ""))?.[1];
+      if (id) selectFinding(id);
+    },
+    [selectFinding],
+  );
+
   const focusZone = useCallback((): FocusZone => {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return "none";
@@ -586,7 +599,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         params.delete("focus");
         commit({ view: "focus" });
         const s = params.toString();
-        nav.replace(nav.pathname + (s ? `?${s}` : "") + (nav.hash ? `#${nav.hash}` : ""));
+        // replaceState never scrolled — keep the committed position (REQ-NAVC-16).
+        nav.replace(nav.pathname + (s ? `?${s}` : "") + (nav.hash ? `#${nav.hash}` : ""), {
+          resetScroll: false,
+        });
       }
     }
     apply();
@@ -1001,7 +1017,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           const m = /\/v\/(\d+)/.exec(nav.pathname);
           if (m) {
             const n = Number.parseInt(m[1] ?? "1", 10) + (action.kind === "version-next" ? 1 : -1);
-            if (n >= 1) nav.push(nav.pathname.replace(/\/v\/\d+/, `/v/${n}`));
+            // in-place version step — the island swapped the pane, never scrolled (REQ-NAVC-16).
+            if (n >= 1) nav.push(nav.pathname.replace(/\/v\/\d+/, `/v/${n}`), { resetScroll: false });
           }
           break;
         }
@@ -1022,7 +1039,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
             if (params.get("triage") === "1") params.delete("triage");
             else params.set("triage", "1");
             const s = params.toString();
-            nav.push(nav.pathname + (s ? `?${s}` : ""));
+            // same-leaf search swap — the island never scrolled on a triage toggle (REQ-NAVC-16).
+            nav.push(nav.pathname + (s ? `?${s}` : ""), { resetScroll: false });
           } else {
             if (!stateRef.current.deskOpen) commit({ deskOpen: true, deskTab: "findings" });
             focusFinding(0);
@@ -1096,6 +1114,18 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     };
     mq?.addEventListener?.("change", onThemeChange);
 
+    // ---- native hash hops (NAVC.4/REQ-NAVC-16) ----
+    // A fragment click the delegated interceptor deliberately skips (`href` equal to `#…`,
+    // or path+search identical to the committed location) is a NATIVE navigation: the browser
+    // commits the hash and fires `hashchange`, but TanStack's location state never moves, so
+    // `opts.nav.hash` stays put and the consume effect never sees it. Run the same consumer
+    // here — router-committed hash hops fire `hashchange` too, and `consumeFindingHash` is
+    // idempotent (re-selecting the same card re-stamps it), so the two feeds don't double-act.
+    const onHashChange = (): void => {
+      consumeFindingHash(window.location.hash);
+    };
+    window.addEventListener("hashchange", onHashChange);
+
     ide.addEventListener("click", onIdeClick);
     ide.addEventListener("pointerdown", onPointerDown);
     ide.addEventListener("contextmenu", onContextMenu);
@@ -1124,6 +1154,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       document.removeEventListener("keyup", onDocKeyUp);
       document.removeEventListener("selectionchange", onDocSelectionChange);
       window.removeEventListener("keydown", onKeydown);
+      window.removeEventListener("hashchange", onHashChange);
       mq?.removeEventListener?.("change", onThemeChange);
       if (selTimer) clearTimeout(selTimer);
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -1142,16 +1173,19 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     params.delete("focus");
     commit({ view: "focus" });
     const s = params.toString();
-    // `nav.hash` excludes the "#" (TanStack ParsedLocation).
-    nav.replace(nav.pathname + (s ? `?${s}` : "") + (nav.hash ? `#${nav.hash}` : ""));
+    // `nav.hash` excludes the "#" (TanStack ParsedLocation); the strip is a `replaceState`
+    // — it never scrolled on the island (REQ-NAVC-16).
+    nav.replace(nav.pathname + (s ? `?${s}` : "") + (nav.hash ? `#${nav.hash}` : ""), {
+      resetScroll: false,
+    });
   }, [commit, opts.nav.pathname, opts.nav.searchStr, opts.nav.hash]);
 
   // ---------- a `#finding-<id>` deep link lights the linked selection on every surface ----------
-  // (`nav.hash` excludes the "#" — the island's `window.location.hash` carried it.)
+  // (`nav.hash` excludes the "#" — the island's `window.location.hash` carried it.) The native
+  // `hashchange` listener in the bind effect covers the hops that never reach this state.
   useEffect(() => {
-    const id = /^finding-(.+)$/.exec(opts.nav.hash)?.[1];
-    if (id) selectFinding(id);
-  }, [selectFinding, opts.nav.hash]);
+    consumeFindingHash(opts.nav.hash);
+  }, [consumeFindingHash, opts.nav.hash]);
 
   // ---------- re-apply when surface-published props change the SSR-side stamps ----------
   const hasFindings = opts.hasFindings;

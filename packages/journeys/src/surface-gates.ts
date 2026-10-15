@@ -80,8 +80,12 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
   onboarding: gate("onboarding", ["N1", "N3", "N4", "P1.app-new"], {
     legNotes: { N4: "the protocol-card estimate half" },
   }),
-  "project-home": gate("project-home", ["R1", "R7", "T2.badge", "T6", "T7", "P1.project", "X1.home"], {
-    legNotes: { R7: "the gate/labels legs" },
+  "project-home": gate("project-home", ["R1", "R7", "T2.badge", "T6", "T7", "P1.project", "X1.home", "R10"], {
+    legNotes: {
+      R7: "the gate/labels legs",
+      // R10 is expected:red until its first live leg — it reports owed, it does not gate.
+      R10: "the /app → /p/:slug client-nav hop (the ticket's owed-reporting leg)",
+    },
   }),
   billing: gate("billing", ["N9"], {
     legNotes: { N9: "the free Choose-Writer / Buy-credits / portal legs" },
@@ -158,10 +162,13 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
   // `/a/:artifactId`, `/revisions/:cid`); the steps stay the carried legs the nightly already
   // walks — renderer-agnostic by construction. What is owed is the ticket's own preview legs —
   // the Resend secret blocker (D-SPA.23-*) holds the pr-<n> runs.
-  editor: gate("editor", ["N8", "P1.pill", "P1.project", "R7", "T2.badge", "T6", "T7", "T17"], {
+  editor: gate("editor", ["N8", "P1.pill", "P1.project", "R7", "R10", "R10.keepalive", "T2.badge", "T6", "T7", "T17"], {
     legNotes: {
       N8: "type → fork → save, no confirm",
       "P1.pill": "the pill legs + the phone reader-Page markers",
+      // R10/R10.keepalive are expected:red until their first live legs — owed, not gating.
+      R10: "the /p/:slug → /v/working → Back client-nav hops + the warm-return freshness assert",
+      "R10.keepalive": "the /app away-hop → same data-page-session + ⌘Z semantic-undo return leg",
       T17: "the source-mode toggle — SPA-rendered only (REQ-ED-17)",
     },
     owed: [

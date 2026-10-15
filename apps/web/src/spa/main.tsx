@@ -61,6 +61,12 @@ export function createSpaRouter(opts?: {
     // nothing preloads.
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
+    // NAVC.4/REQ-NAVC-16 — `.ide-page` is the IDE's INNER page scroller (`packages/ui`'s
+    // IdeShell emits it; the only inner scroll port on the SPA surfaces). The router tops it
+    // on push/replace commits (resetScroll !== false) while the generic keyed restoration
+    // still re-applies its last observed position on pop — document-nav parity for the real
+    // scroller, not just window.
+    scrollToTopSelectors: [".ide-page"],
     // design/25 F9: nearest-scope not-found — `p.$project` and per-surface notFoundComponents can
     // override later; `SpaNotFound` is the root default and also hands server-owned redirect paths
     // back to the server.

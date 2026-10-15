@@ -15,6 +15,9 @@
 // leaves it stable.
 
 import { createMemoryHistory } from "@tanstack/react-router";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpaBoot } from "./boot.js";
 import { createSpaRouter } from "./main.js";
@@ -461,5 +464,88 @@ describe("install contract", () => {
     expect(sawPost).toBe(false); // unclaimed — the interceptor is gone (post suppresses native nav)
     expect(navSpy).not.toHaveBeenCalled();
     expect(docNavSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("REQ-NAVC-23 — the /app precedence skip is tested acceptance, not an accident", () => {
+  it.each(["/app", "/app?verified=1", "/app?entry=draft&held=1"])(
+    "an in-app click on %s lands the leaf client-side — the server's precedence block never runs",
+    async (href) => {
+      const fetchMock = stubFetch();
+      const router = await mountInterceptor(
+        "/usage",
+        bootFor({ "/usage": "spa", "/app": "spa" }),
+        fetchMock,
+      );
+      const navSpy = vi.spyOn(router, "navigate");
+      click(anchor(href));
+      await expectIntercepted(router, navSpy, href, "/app");
+      // The `/app` document handler owns the precedence legs — `?verified=1` mints
+      // `email.verified`, carried draft/outline intent 302s to `/app/new`, an unopened Showcase
+      // row 302s to its review. Those run BEFORE the shell is served, on document entry only:
+      // a client hop lands the leaf with the params carried verbatim (never rewritten, never
+      // doc-navved) — the recorded acceptance (r5_a5 F14).
+      const committed = router.state.location;
+      expect(committed.pathname).toBe("/app");
+      // `validateSearch` normalized the flags — the PARSED search is the verbatim-carry proof.
+      const s = committed.search as Record<string, unknown>;
+      expect(s.entry).toBe(href.includes("entry=") ? "draft" : undefined);
+      expect(s.held).toBe(href.includes("held=1") ? "1" : undefined);
+      expect(s.verified).toBe(href.includes("verified=1") ? "1" : undefined);
+      // the ONLY reads the leaf may have made are the BFF twins / the session seed — never a
+      // document GET that could have let the server re-decide precedence.
+      for (const call of fetchMock.mock.calls) {
+        const url = String(call[0]);
+        expect(url.startsWith("/bff/") || url === "/session", `non-BFF fetch ${url}`).toBe(true);
+      }
+    },
+  );
+
+  it("the same href under a DOCUMENT entry still reaches the server — the precedence lives there", async () => {
+    // The flip-side pin: the client-side skip is only safe because a real document GET to
+    // `/app?entry=…` never reaches this code — it 302s server-side first. The interceptor's
+    // contract is therefore exactly "in-document hops land the leaf; document entry is
+    // server-owned" — both halves pinned (this arm is the native-skip row's `/app` case).
+    const router = await mountInterceptor("/usage", bootFor({ "/usage": "spa" }));
+    const navSpy = vi.spyOn(router, "navigate");
+    click(anchor("/app?entry=draft", { "data-spa-native": "" })); // the opt-out keeps it native
+    expectSkipped(router, navSpy);
+  });
+});
+
+describe("REQ-NAVM-9 — head duties never migrate into the interceptor", () => {
+  it("nav-intercept.ts carries no scroll/focus/title/marker logic (source scan)", () => {
+    // The review checklist lives in runs/NAVC.4.md; THIS test is the mechanical half — a
+    // regression that adds `scrollIntoView`, a `.focus()`, a `document.title` write, a
+    // `data-route`/`data-mounted`/`data-nav-count` stamp, or a `resetScroll` option to the
+    // interceptor fails here. Comments are stripped before scanning (the file legitimately
+    // names `resetScroll`/`scrollRestoration` in its contract notes).
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "nav-intercept.ts"),
+      "utf8",
+    );
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^[ \t]*\/\/[^\n]*$/gm, "")
+      .replace(/([^:"'`])\/\/[^\n]*$/gm, "$1");
+    for (const [pattern, label] of [
+      [/\b(?:window\.|document\.|\.{3}\w+\.)?scrollTo\s*\(/, "scrollTo("],
+      [/scrollIntoView/, "scrollIntoView"],
+      [/\bscrollBy\s*\(/, "scrollBy("],
+      [/\.focus\s*\(/, ".focus("],
+      [/\.scrollIntoViewIfNeeded/, "scrollIntoViewIfNeeded"],
+      [/document\.title/, "document.title"],
+      [/history\.scrollRestoration\s*=/, "history.scrollRestoration write"],
+      [/data-route|data-mounted|data-nav-count|data-renderer/, "head/marker attributes"],
+      [/aria-live|data-route-announcer/, "the announcer"],
+      [/tabIndex|\.tabindex/, "focus plumbing"],
+      [/resetScroll\s*:|hashScrollIntoView\s*:|viewTransition\s*:/, "nav-option scroll overrides"],
+      [/createRoot|render\s*\(/, "a render seam"],
+    ] as const) {
+      expect(code, `nav-intercept.ts must not contain ${label}`).not.toMatch(pattern);
+    }
+    // ...and the file still IS the interceptor (guard against an empty/renamed scan target).
+    expect(code).toContain("installSpaClickInterceptor");
+    expect(code).toContain("router.navigate({ href })");
   });
 });

@@ -15,7 +15,9 @@ import { assertActionable, clickActionable } from "./occlusion.js";
 import {
   gotoOk as gotoSettled,
   reloadSettled,
+  settleClientNav,
   settleNav,
+  navCountOf,
   type SettleScope,
 } from "./settle.js";
 // ONB.1 — N1/N3 must sign in through the real magic link INSIDE the anonymous context that holds
@@ -2661,6 +2663,239 @@ const T17: StepFn = async (ctx) => {
   }
 };
 
+/**
+ * NAVC.4 — the shared head of the R10 legs: `/app → click a[href="/p/<slug>"] → click
+ * a[data-edit-source] → /p/<slug>/v/working`, every hop a mechanism-pinned CLIENT navigation
+ * (`settleClientNav` — `data-nav-count` must tick +1 and zero document loads may land). Returns
+ * the committed nav-count after the editor hop so callers can keep pinning from it.
+ *
+ * The project link is clicked for real — a Quiet-folded row is opened through its `<summary>`
+ * first; a missing/unreachable link is a leg failure, never a typed-URL substitute.
+ */
+async function r10ClientChain(
+  ctx: StepCtx,
+  page: Page,
+  slug: string,
+): Promise<number> {
+  await gotoSettled(page, `${ctx.webBaseUrl}/app`, ctx, { route: "/app" });
+  const loads0 = ctx.documentLoads;
+  const nav0 = await navCountOf(page);
+  if (nav0 == null) {
+    throw new Error(
+      `R10 owed — ${page.url()} carries no data-nav-count stamp (REQ-NAVT-1's all-documents ` +
+        `marker is absent — the deployment is serving a pre-NAVC.2 document)`,
+    );
+  }
+
+  // hop 1 — the real project-link click: /app → /p/:slug
+  const link = page.locator(`a[href="/p/${slug}"]`).first();
+  await link.waitFor({ state: "attached", timeout: 15_000 });
+  if (!(await link.isVisible().catch(() => false))) {
+    const summary = link.locator("xpath=ancestor::details[1]/summary");
+    if ((await summary.count()) > 0) await summary.first().click();
+  }
+  await link.waitFor({ state: "visible", timeout: 10_000 });
+  await settleClientNav(page, ctx, () => link.click(), { route: "/p/$project" });
+  if (ctx.documentLoads !== loads0) {
+    throw new Error(
+      `R10 — /app → /p/${slug} loaded ${ctx.documentLoads - loads0} document(s): not a client nav`,
+    );
+  }
+  const nav1 = await navCountOf(page);
+  if (nav1 !== nav0 + 1) {
+    throw new Error(`R10 — data-nav-count ${nav0} → ${nav1} across the project-link hop (want +1)`);
+  }
+
+  // hop 2 — the Edit-source affordance: /p/:slug → /p/:slug/v/working (the ticket's arm —
+  // typed-URL navigation is explicitly not this leg).
+  const edit = page.locator("a[data-edit-source]").first();
+  if ((await edit.count()) === 0) {
+    throw new Error(`R10 — /p/${slug} carries no a[data-edit-source] affordance`);
+  }
+  await edit.waitFor({ state: "visible", timeout: 15_000 });
+  await settleClientNav(page, ctx, () => edit.click(), { route: "/p/$project/v/$v" });
+  if (ctx.documentLoads !== loads0) {
+    throw new Error(
+      `R10 — /p/${slug} → /v/working loaded ${ctx.documentLoads - loads0} document(s): not a client nav`,
+    );
+  }
+  if (!page.url().endsWith(`/p/${slug}/v/working`)) {
+    throw new Error(`R10 — edit-source landed on ${page.url()}, not /p/${slug}/v/working`);
+  }
+  await page.waitForSelector("[data-page-root]", { timeout: 15_000 });
+  await page.waitForSelector("[data-page-view]", { timeout: 30_000 });
+  const nav2 = await navCountOf(page);
+  if (nav2 !== nav0 + 2) {
+    throw new Error(`R10 — data-nav-count ${nav1} → ${nav2} across the edit-source hop (want +1)`);
+  }
+  return nav2;
+}
+
+/**
+ * R10 (NAVC.4, REQ-NAVT-4) — the SPA-navigation acceptance leg, $0. `/app → click the project
+ * link → click a[data-edit-source] → /p/:slug/v/working → Back`: every hop pinned client-side
+ * (monotone `data-nav-count`, zero document loads past the /app baseline), then the Back pop
+ * proves the warm return — the project-page twin GET (`/bff/p/:slug`, NAVC.3's
+ * `staleTime`-windowed query) must NOT re-fire, while the handoff POST still may.
+ * `expected:"red"` until the first live leg lands it.
+ */
+const R10: StepFn = async (ctx) => {
+  const { page } = await ctx.freshUser("r10");
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("r10"), FREE_FIXTURE);
+  await r10ClientChain(ctx, page, slug);
+  const loadsBeforeBack = ctx.documentLoads;
+
+  // hop 3 — Back: a pop commits in-document too (router history listener). While it settles,
+  // watch the wire: a warm remount inside NAVC.3's keep-alive/freshness window must not re-ask
+  // the page twin — a `staleTime: 0` regression would GET `/bff/p/<slug>` again here.
+  const webOrigin = new URL(ctx.webBaseUrl).origin;
+  const pageTwinGets: string[] = [];
+  const onReq = (r: { url(): string; method(): string }): void => {
+    try {
+      const u = new URL(r.url());
+      if (r.method() === "GET" && u.origin === webOrigin && u.pathname === `/bff/p/${slug}`) {
+        pageTwinGets.push(r.url());
+      }
+    } catch {
+      /* unparseable request URL — not ours */
+    }
+  };
+  page.on("request", onReq);
+  try {
+    await settleClientNav(page, ctx, () => page.goBack(), { route: "/p/$project" });
+    // let any post-mount twin work flush inside the census window before judging it
+    await page.waitForTimeout(750);
+  } finally {
+    page.off("request", onReq);
+  }
+  if (ctx.documentLoads !== loadsBeforeBack) {
+    throw new Error(
+      `R10 — Back loaded ${ctx.documentLoads - loadsBeforeBack} document(s): the pop was not in-document`,
+    );
+  }
+  if (pageTwinGets.length > 0) {
+    throw new Error(
+      `R10 — the warm return re-issued ${pageTwinGets.length} project-page twin GET(s) ` +
+        `(${pageTwinGets.join(", ")}) — NAVC.3's freshness window is not holding`,
+    );
+  }
+};
+
+/**
+ * R10.keepalive (NAVC.4, REQ-NAVC-22/23's live arm) — the page-session keep-alive leg, $0.
+ * Mints the registry entry by client-navigating into `/v/working`, makes a REAL synced edit,
+ * hops to `/app` (a deliberately non-Page route — the entry drops to IDLE and its 120 s TTL
+ * starts), then Backs back inside the TTL and asserts:
+ *
+ *   1. `[data-page-root][data-page-session]` carries the SAME session id — identity survived
+ *      idle+rebind (and the earlier fork rekey), exactly NAVC.3's registry contract;
+ *   2. the typed marker is still in the rendered doc — trivially true even under a re-seed
+ *      (the sync persisted it), so this alone proves nothing;
+ *   3. ⌘Z/Ctrl+Z removes the marker — the SEMANTIC arm: a remount that re-seeded the
+ *      EditorState from the stored doc would still show the marker but could never undo it
+ *      (fresh `history()`/`yUndoPlugin` stacks are empty). Only a preserved EditorState —
+ *      the keep-alive contract — removes it.
+ */
+const R10_KEEPALIVE: StepFn = async (ctx) => {
+  const { page } = await ctx.freshUser("r10k");
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("r10k"), FREE_FIXTURE);
+  await r10ClientChain(ctx, page, slug);
+  const loads0 = ctx.documentLoads;
+
+  const session0 = await page
+    .locator("[data-page-root]")
+    .getAttribute("data-page-session");
+  if (session0 == null || !/^\S+\.\d+$/.test(session0)) {
+    throw new Error(
+      `R10.keepalive owed — [data-page-root] carries no data-page-session stamp ` +
+        `(${JSON.stringify(session0)}) — REQ-NAVT-5's marker is absent on this deployment`,
+    );
+  }
+
+  // the synced edit — a keystroke at the end of the last block, then the ONE pill to synced.
+  const markerText = ctx.marker("r10k").toLowerCase().replace(/[^a-z0-9]/g, "-");
+  await page.locator("[data-page-view] p").last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(` ${markerText}`);
+  try {
+    await page.waitForSelector('[data-sync-pill][data-sync-state="synced"]', { timeout: 90_000 });
+  } catch {
+    const pillState = await page
+      .locator("[data-sync-pill]")
+      .first()
+      .evaluate((el) => `${el.getAttribute("data-sync-state")} · "${el.textContent}"`)
+      .catch(() => "(pill missing)");
+    throw new Error(`R10.keepalive — the edit never synced (pill: ${pillState})`);
+  }
+  // the fork's registry rekey must preserve the session identity (NAVC.3)
+  const sessionAfterSync = await page
+    .locator("[data-page-root]")
+    .getAttribute("data-page-session");
+  if (sessionAfterSync !== session0) {
+    throw new Error(
+      `R10.keepalive — data-page-session moved across the fork rekey ` +
+        `(${session0} → ${sessionAfterSync}); rekey must preserve identity`,
+    );
+  }
+
+  // the away hop — the rail's Home link to /app, a non-Page route: the Page unmounts, the
+  // registry entry goes idle, the 120 s TTL starts.
+  const home = page.locator('a[href="/app"]').first();
+  if ((await home.count()) === 0) {
+    throw new Error("R10.keepalive — the IDE rail carries no a[href=\"/app\"] home link");
+  }
+  await settleClientNav(page, ctx, () => home.click(), { route: "/app" });
+  if (ctx.documentLoads !== loads0) {
+    throw new Error("R10.keepalive — the /app away hop document-navigated");
+  }
+
+  // back inside the TTL — the pop remounts the Page and must re-acquire the SAME entry.
+  await settleClientNav(page, ctx, () => page.goBack(), { route: "/p/$project/v/$v" });
+  await page.waitForSelector("[data-page-view]", { timeout: 30_000 });
+  if (ctx.documentLoads !== loads0) {
+    throw new Error("R10.keepalive — the return hop document-navigated (the entry can't survive that)");
+  }
+  const sessionBack = await page
+    .locator("[data-page-root]")
+    .getAttribute("data-page-session");
+  if (sessionBack !== session0) {
+    throw new Error(
+      `R10.keepalive — data-page-session ${session0} → ${sessionBack} across leave/return ` +
+        `inside the TTL — the keep-alive entry was not re-acquired`,
+    );
+  }
+
+  // marker still rendered (necessary but not sufficient — a re-seed would also show it)
+  const view = page.locator("[data-page-view]");
+  await page.waitForFunction(
+    (m) => document.querySelector("[data-page-view]")?.textContent?.includes(m) === true,
+    markerText,
+    { timeout: 15_000 },
+  );
+
+  // the semantic arm — undo must remove the typed marker. Only a preserved EditorState carries
+  // the undo stack across the remount; a re-seeded one would silently keep the marker.
+  await view.locator("p").last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
+  try {
+    await page.waitForFunction(
+      (m) => document.querySelector("[data-page-view]")?.textContent?.includes(m) !== true,
+      markerText,
+      { timeout: 10_000 },
+    );
+  } catch {
+    const stillThere = (await view.textContent())?.includes(markerText) ?? false;
+    throw new Error(
+      stillThere
+        ? `R10.keepalive — ⌘Z did not remove the typed marker: the remounted editor's undo ` +
+          `stack is empty, so the EditorState was re-seeded, not kept alive ` +
+          `(session ${sessionBack})`
+        : `R10.keepalive — the marker text probe raced (undo may have landed; re-check needed)`,
+    );
+  }
+};
+
 export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   N1,
   N2,
@@ -2684,6 +2919,9 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   "R8.prefs": R8_PREFS,
   "R8.inbox": R8_INBOX,
   R9,
+  // NAVC.4 — the nav-acceptance legs (REQ-NAVT-4's chain + the keep-alive/semantic-undo arm).
+  R10,
+  "R10.keepalive": R10_KEEPALIVE,
   // SPA.6 — the P1/X1 splits (REQ-VFY-8): per-surface legs replacing the composite ids.
   "P1.public": P1_PUBLIC,
   "P1.project": P1_PROJECT,
