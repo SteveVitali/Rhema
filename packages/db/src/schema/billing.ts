@@ -28,6 +28,12 @@ export const usageRecords = pgTable("usage_records", {
   agentInstanceId: text("agent_instance_id"),
   subagentLabel: text("subagent_label"),
   provider: text("provider").notNull(),
+  // R5ECON.2 (REQ-ECON-4/5) — TWO truths, never one derived from the other: `model` is the SERVED
+  // model the provider billed (the response's own id — under the testCheapRoute arm a `base`-tier
+  // run lawfully meters `claude-haiku-4-5` rows); `model_tier` is the run's FROZEN user-facing tier
+  // (the notch the user chose and was estimated/charged against). Any rollup that groups by tier
+  // MUST group on the row's own `model` for served truth (or join the frozen input snapshot) —
+  // a tier label never implies a served model.
   model: text("model").notNull(),
   modelTier: text("model_tier").notNull(),
   rateTableVersion: integer("rate_table_version").notNull(),

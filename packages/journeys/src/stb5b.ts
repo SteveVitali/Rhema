@@ -707,6 +707,10 @@ const B19C: StepFn = async (ctx) => {
   // Pre-registered DROP (cap discipline): a full-tier profile_voice build alone meters ≈ $15 —
   // 60% of the ticket's $25 combined cap and double the ≈$12 aim. It runs only when every earlier
   // leg landed under cap with headroom; the D-P1.14-1 rows carry forward either way.
+  // R5ECON.2 (REQ-ECON-11) — the registry pins this leg `cogsLevers:{testCheapRoute:false}` (the
+  // assert object IS the full tier's model judgment — the mandatory opt-out). Whichever driver the
+  // funded window runs MUST post the pin verbatim — `cogsLeversFor("B19C")` is the read seam (the
+  // registry test asserts it stays declared).
   await writeEvidence(ctx, "B19C", {
     capUsd: STB5B_CAPS["B19C"],
     skipped: "pre-registered drop — exceeds the leg's budget slot within the ≤$25 / ≈$12 envelope; the approve_sample + hold-out/leak legs defer to the next funded window (D-P1.14-1 stays OPEN)",

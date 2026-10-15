@@ -202,6 +202,56 @@ describe("POST …/turns — a chat turn is a `chat_turn` run (REQ-CHAT-6/9/10)"
     expect(msg.some((m) => m.mirror_path.includes("user.md"))).toBe(true);
   });
 
+  it("R5ECON.2 — the turn freezes the resolved lever set (COGS_LEVERS_TEST default + the posted opt-out)", async () => {
+    // The UI-launched-leg path (R4): a chat turn creates a run too, so the same COGS_LEVERS_TEST
+    // default applies — and the posted `cogsLevers` is the per-leg opt-out the registry pin rides.
+    const testApp = createApp({
+      ...deps,
+      principal: () => principal(),
+      db: sql,
+      contentStore: store,
+      importConverter: converter,
+      cogsLeversTest: { testCheapRoute: true },
+    });
+    const postOn = (path: string, body: unknown) =>
+      testApp.request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const tid = await defaultThreadId();
+
+    // non-test workspace ⇒ the overlay is never consulted — a crafted arm still freezes OFF.
+    let res = await postOn(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {
+      message: "one",
+      cogsLevers: { testCheapRoute: true },
+    });
+    expect(res.status).toBe(201);
+    let { runId } = (await res.json()) as { runId: string };
+    let row = (
+      await db.pg.query(`select inputs->'cogsLevers' as lv from runs where id = $1`, [runId])
+    ).rows[0] as { lv: { testCheapRoute?: boolean } | null };
+    expect(row.lv?.testCheapRoute).toBe(false);
+
+    // is_test ⇒ the overlay defaults the arm ON with no client value; the posted opt-out wins.
+    await db.pg.query("update workspaces set is_test = true where id = $1", [seed.workspaceId]);
+    res = await postOn(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, { message: "two" });
+    expect(res.status).toBe(201);
+    ({ runId } = (await res.json()) as { runId: string });
+    row = (
+      await db.pg.query(`select inputs->'cogsLevers' as lv, input_snapshot->'cogsLevers' as slv from runs where id = $1`, [runId])
+    ).rows[0] as { lv: { testCheapRoute?: boolean } | null; slv: { testCheapRoute?: boolean } | null };
+    expect(row.lv?.testCheapRoute).toBe(true);
+    expect(row.slv?.testCheapRoute).toBe(true); // the measurement record carries the same frozen set
+
+    res = await postOn(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {
+      message: "three",
+      cogsLevers: { testCheapRoute: false },
+    });
+    expect(res.status).toBe(201);
+    ({ runId } = (await res.json()) as { runId: string });
+    row = (
+      await db.pg.query(`select inputs->'cogsLevers' as lv from runs where id = $1`, [runId])
+    ).rows[0] as { lv: { testCheapRoute?: boolean } | null };
+    expect(row.lv?.testCheapRoute).toBe(false); // REQ-ECON-11 — the per-leg opt-out beat the default
+  });
+
   it("clamps an over-budget request down to the §7.1 ceiling; honors a shrink", async () => {
     const tid = await defaultThreadId();
     const over = await postJson(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {

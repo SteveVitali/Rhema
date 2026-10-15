@@ -661,6 +661,10 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       // rows over the SAME tokens (estimate at commit / provisional render), so an unfiltered sum
       // triple-counts the burn (incident 01M3SK62…: proxy 632 + estimate 553 + stream 440 displayed
       // "Editor — 1,625 cr" against a 632-credit metered charge).
+      // R5ECON.2 (REQ-ECON-4/5): the group-by keys on BOTH `u.model` and `u.model_tier` — `model` is
+      // the SERVED truth (under testCheapRoute a `base` run's rows read `claude-haiku-4-5`), `model_tier`
+      // the frozen user-facing tier. Grouping by model alone would fold distinct tiers; grouping by
+      // tier alone would LIE about the served model (a Sonnet row and a Haiku row would collapse).
       const usage = (
         await tx.query(
           `select s.phase, u.role as seat, u.subagent_label, u.model, u.model_tier,
@@ -893,6 +897,9 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           reestimate: async (r) => {
             const oldT = rateTableFor(r.rateTableVersion);
             const newT = rateTableFor(CURRENT_RATE_TABLE_VERSION);
+            // the tier's REPRESENTATIVE model — this scales the committed ESTIMATE (a tier-priced
+            // figure), never the served-model meter. REQ-ECON-5: the reprice basis is the frozen
+            // tier by design; served-model truth lives only in usage_records.model.
             const model = TIER_MODEL[r.modelTier] ?? r.modelTier;
             const o = rateForModel(oldT, model);
             const n = rateForModel(newT, model);

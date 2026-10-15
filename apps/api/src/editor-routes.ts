@@ -29,6 +29,7 @@ import { buildEstimate } from "@rhema/run-sheet";
 import type { RunApiDeps } from "./run-routes.js";
 import { upsertProjectSearchDoc } from "./search.js";
 import { showcaseReadOnlyGuard } from "./showcase.js";
+import { resolveRunCogsLevers } from "./cogs-levers.js";
 
 export type EditorApiDeps = RunApiDeps & {
   /** the raw SQL client for project-scoped reads (the shell's `db`; same seam the triage routes take). */
@@ -586,6 +587,9 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       inputs: { words: prep.wordCount },
     });
     const nextDraftId = deps.ids("dft");
+    // R5ECON.2 — a server-launched revise run freezes the same lever set as every other run-create
+    // site (no client input here; `COGS_LEVERS_TEST` still arms is_test workspaces).
+    const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, undefined);
     const res = await createRun(deps, {
       idempotencyKey: `revise-edits:${prep.headId}`,
       workflow: "revise",
@@ -604,13 +608,14 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       inputs: {
         priorReviewId: prep.reviewId,
         nextDraftId,
+        cogsLevers,
         manualRevision: {
           baseDraftId: prep.headId,
           mootedFindingIds: prep.mootedFindingIds,
           note: "The human's edits are the made moves; auto-mooted findings await triage confirmation (REQ-DATA-26).",
         },
       },
-      inputSnapshot: { wordCount: prep.wordCount },
+      inputSnapshot: { wordCount: prep.wordCount, cogsLevers },
       sheetLaunched: true,
       lockSetSpec: { projectId, draftId: prep.headId, nextDraftId },
     });

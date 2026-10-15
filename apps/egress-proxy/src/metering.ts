@@ -57,8 +57,14 @@ export interface MeteredResult {
 
 /**
  * Meter one served response: rate its `usage` under the run's rate table and build the `usage_records` row.
- * `model` is the model the provider actually billed (from the response); `agentId` is the per-request
- * attribution (subagent) resolved by the caller. Throws (never meters silently) if the model/table is unknown.
+ * `model` is the model the provider actually billed (from the response) — the SERVED truth that
+ * `listCostUsd` prices and `usage_records.model` records; `agentId` is the per-request attribution
+ * (subagent) resolved by the caller. Throws (never meters silently) if the model/table is unknown.
+ *
+ * R5ECON.2 (REQ-ECON-4/5) — `ctx.modelTier` is the run's FROZEN user-facing tier, recorded
+ * verbatim on `model_tier`; it never rewrites `model`. Under the `testCheapRoute` arm a `base`
+ * run lawfully serves + prices `claude-haiku-4-5` — the row keeps both truths so a tier-grouped
+ * rollup can distinguish them (the group-by must read `model`, never infer it from the tier).
  */
 export function meterResponse(input: {
   ctx: RunContext;

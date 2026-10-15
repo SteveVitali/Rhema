@@ -388,6 +388,7 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
       l3PhaseRouting: true,
       l4CacheTtl5m: true,
       l5ResearchEnvelope: false,
+      testCheapRoute: false,
     });
     // harness control-plane never reaches the model: not a `key=value` prompt line.
     expect(spec.request.inputs.cogsLevers).toBeUndefined();
@@ -402,6 +403,7 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
       l3PhaseRouting: false,
       l4CacheTtl5m: false,
       l5ResearchEnvelope: false,
+      testCheapRoute: false,
     });
     await db.txRunner.run(seed.workspaceId, (tx) =>
       tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ cogsLevers: "not-an-object" })]),
@@ -723,6 +725,35 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
       ok: false,
     });
     void versionId;
+  });
+
+  it("R5ECON.2 — a frozen testCheapRoute ON routes the scoped second-reader launch to Haiku (REQ-ECON-1/4)", async () => {
+    const runId = await seedWorkflowRun("run_sr_cheap", "review");
+    await seedReviewedDraft();
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ draftId: seed.draftId, cogsLevers: { testCheapRoute: true } }),
+      ]),
+    );
+    await commitThrough(runId, "review", 4);
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("second_read");
+    // the launch order AND the attested subagent_launches.model both name the SERVED model —
+    // the proxy's metering read is the same id, never the tier label (REQ-ECON-4).
+    expect(spec.scopedLaunch?.model).toBe("claude-haiku-4-5");
+    const rows = (
+      await db.pg.query(`select model from subagent_launches where run_id = $1 and attempt = 1`, [runId])
+    ).rows as { model: string }[];
+    expect(rows[0]?.model).toBe("claude-haiku-4-5");
+    // off ⇒ the tier main model (the seed runs balanced ⇒ Opus) — the pre-arm launch shape is preserved.
+    const runId2 = await seedWorkflowRun("run_sr_cheap_off", "review");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId2, JSON.stringify({ draftId: seed.draftId })]),
+    );
+    await commitThrough(runId2, "review", 4);
+    const spec2 = await buildHarnessRunSpec(deps, { runId: runId2, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec2.scopedLaunch?.model).toBe("claude-opus-5");
   });
 
   it("F2 — a non-second_read phase carries no scopedLaunch and records no launch", async () => {

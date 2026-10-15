@@ -1658,6 +1658,12 @@ export interface BuildVoiceDto {
   readonly projectId?: string;
   readonly modelTier?: "base" | "balanced" | "frontier";
   readonly idempotencyKey?: string;
+  /**
+   * R5ECON.2 (REQ-ECON-11) — the per-leg COGS-lever pin: the B19C full-tier profile_voice leg
+   * carries `{testCheapRoute:false}` — its assert object IS the tier, so cheap routing must
+   * never reach it. Honored only on `is_test` workspaces.
+   */
+  readonly cogsLevers?: Readonly<Record<string, unknown>>;
 }
 
 export interface BuiltVoiceDto {
@@ -2306,6 +2312,12 @@ export interface ChatTurnRequestDto {
   readonly modelTier?: string;
   readonly urlPolicy?: Record<string, unknown>;
   readonly idempotencyKey?: string;
+  /**
+   * R5ECON.2 (REQ-ECON-10/11) — the per-leg COGS-lever pin (`{testCheapRoute:false}` is the
+   * model-judgment opt-out the R4 leg carries). The api honors it only on `is_test` workspaces;
+   * anywhere else it is discarded at resolution.
+   */
+  readonly cogsLevers?: Readonly<Record<string, unknown>>;
 }
 
 export interface ChatTurnCreatedDto {

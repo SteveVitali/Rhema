@@ -39,6 +39,7 @@ import { listThreads, threadPaths, parseIndex, RESEARCH_ROOT, type ResearchIndex
 import { applyGateEdits, type GateStructuredEdits } from "@rhema/findings-core";
 import type { Principal } from "./run-routes.js";
 import { showcaseReadOnlyGuard } from "./showcase.js";
+import { resolveRunCogsLevers } from "./cogs-levers.js";
 
 /** The outline surface's deps — the orchestrator bundle + session principal + tenant db + store. */
 export interface OutlineApiDeps extends OrchestratorDeps {
@@ -381,6 +382,8 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
       allowSearch?: unknown;
       urlPolicy?: unknown;
       idempotencyKey?: unknown;
+      /** R5ECON.2 — the per-leg COGS-lever arm; honored only on `is_test` workspaces. */
+      cogsLevers?: unknown;
     } | null;
     const scope = (typeof body?.scope === "string" ? body.scope : "thread") as PromotionScope;
     if (!SCOPES.has(scope)) return c.json({ error: "scope must be thread|turn|research" }, 422);
@@ -429,6 +432,10 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     if (body?.urlPolicy && typeof body.urlPolicy === "object" && !Array.isArray(body.urlPolicy)) {
       inputs.urlPolicy = body.urlPolicy;
     }
+    // R5ECON.2 — the UI-launched-leg path (B19B): the same lever resolution + freeze as the run
+    // route — `COGS_LEVERS_TEST` defaults the arm on is_test, a posted `cogsLevers` opts out.
+    const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, body?.cogsLevers);
+    inputs.cogsLevers = cogsLevers;
 
     const res = await createRun(deps, {
       idempotencyKey:
@@ -456,6 +463,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
         sourceCount: facts.sourceCopies.length,
         threadTokens: facts.threadTokens,
         urlsRefetched: facts.urlsRefetched,
+        cogsLevers,
       },
       sheetLaunched: true, // the promotion sheet's Promote click is the consent
       lockSetSpec: { projectId },

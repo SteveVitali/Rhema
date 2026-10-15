@@ -64,9 +64,8 @@ import {
   gateTrialUnlock,
   trialEntitlementFor,
   recordAnalyticsEvent,
-  isTestWorkspace,
 } from "@rhema/ledger";
-import { resolveCogsLevers, sanitizeCogsLevers, type CogsLevers } from "@rhema/contracts";
+import { resolveRunCogsLevers } from "./cogs-levers.js";
 import { planOf, modelTierAllowed, effectiveConcurrency, normalizeUrl } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
@@ -157,12 +156,9 @@ export interface RunApiDeps extends OrchestratorDeps {
    * tests bind a failing implementation to prove the sheet workflow refuses before a run row can start.
    */
   readonly estimateBuilder?: typeof buildEstimate;
-  /**
-   * ECON.2 (REQ-SPEC-32(c); ADR-087) — the server's DEFAULT COGS lever set, env-bound at deploy
-   * (`COGS_LEVERS` JSON; a lever's adopted arm once the Stage-B measurement lands). Unset ⇒ all-off,
-   * the pre-ECON.2 shape. A client's `inputs.cogsLevers` may override only on `is_test` workspaces.
-   */
-  readonly cogsLevers?: Partial<CogsLevers>;
+  // ECON.2 + R5ECON.2 — `cogsLevers`/`cogsLeversTest` are inherited from `OrchestratorDeps`
+  // (internal-api.ts): the `COGS_LEVERS` / `COGS_LEVERS_TEST` env-bound sets every run-create
+  // route resolves through `resolveRunCogsLevers` (cogs-levers.ts).
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -941,21 +937,21 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       };
     }
 
-    // ECON.2 (REQ-SPEC-32(c); ADR-087) — freeze the COGS lever set into `inputs.cogsLevers` so every
-    // phase spec + the provision path read the run's recorded arms. Resolution is SERVER-authored:
-    //   · the server default (env-bound `deps.cogsLevers`, all-off when unset) always applies;
+    // ECON.2 (REQ-SPEC-32(c); ADR-087) + R5ECON.2 (REQ-ECON-1/10) — freeze the COGS lever set into
+    // `inputs.cogsLevers` so every phase spec + the provision path read the run's recorded arms.
+    // Resolution is SERVER-authored through the ONE shared site (cogs-levers.ts):
+    //   · `COGS_LEVERS` is the fleet default; `COGS_LEVERS_TEST` overlays it on is_test only
+    //     (the cheap-route arm's default-on posture — Q-ECON.e);
     //   · a client-supplied `inputs.cogsLevers` only counts on an `is_test` workspace — the
-    //     measurement ON/OFF arms — like `force_unverified`; anywhere else it is stripped to the
-    //     server default (a non-test tenant can never reach for an unmeasured arm).
+    //     measurement ON/OFF arms + REQ-ECON-11's `testCheapRoute:false` opt-outs; anywhere else
+    //     it is stripped to the server default;
+    //   · `testCheapRoute` can never freeze ON off-test (the arm is is_test-scoped twice over).
     // The key rides `runs.inputs` only — runspec strips it before the prompt's `key=value` lines.
-    const cogsIsTest = await deps.txRunner
-      .run(principal.workspaceId, (tx) => isTestWorkspace(tx, principal.workspaceId))
-      .catch(() => false); // a flag-read error fails closed: server default wins
-    const cogsLevers = resolveCogsLevers({
-      client: (inputs as Record<string, unknown>).cogsLevers,
-      isTest: cogsIsTest,
-      ...(deps.cogsLevers ? { defaults: sanitizeCogsLevers(deps.cogsLevers) } : {}),
-    });
+    const cogsLevers = await resolveRunCogsLevers(
+      deps,
+      principal.workspaceId,
+      (inputs as Record<string, unknown>).cogsLevers,
+    );
     inputs = { ...inputs, cogsLevers };
 
     const res = await createRun(deps, {

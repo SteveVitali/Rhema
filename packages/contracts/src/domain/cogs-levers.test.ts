@@ -6,6 +6,7 @@ import {
   COGS_PHASE_COMPACT_WINDOWS,
   DEFAULT_COGS_LEVERS,
   parseCogsLeversEnv,
+  parseCogsLeversTestEnv,
   resolveCogsLevers,
   sanitizeCogsLevers,
 } from "./cogs-levers.js";
@@ -50,6 +51,78 @@ describe("resolveCogsLevers (the frozen-at-creation rule)", () => {
   });
 });
 
+// R5ECON.2 (REQ-ECON-1/2/10; Q-ECON.e) — the is_test-scoped arm. `testCheapRoute` is the one lever
+// the resolution rule constrains twice: it can never freeze ON outside a flagged workspace, and on
+// one it defaults from the deploy's COGS_LEVERS_TEST overlay with the client's per-leg opt-out on top.
+describe("resolveCogsLevers — testCheapRoute (R5ECON.2)", () => {
+  const mainEnv = { ...DEFAULT_COGS_LEVERS, l1PerPhaseWindow: true };
+  const testEnv = { testCheapRoute: true } as const;
+
+  it("COGS_LEVERS_TEST defaults the arm ON on an is_test workspace — the UI-launch posture", () => {
+    expect(
+      resolveCogsLevers({ client: undefined, isTest: true, defaults: mainEnv, testDefaults: testEnv }),
+    ).toEqual({ ...mainEnv, testCheapRoute: true });
+  });
+
+  it("an explicit per-leg testCheapRoute:false overrides the is_test default (REQ-ECON-11's opt-out)", () => {
+    expect(
+      resolveCogsLevers({
+        client: { testCheapRoute: false },
+        isTest: true,
+        defaults: mainEnv,
+        testDefaults: testEnv,
+      }).testCheapRoute,
+    ).toBe(false);
+    // …and an explicit ON still wins for a leg that opts IN under a cheap-default-off env.
+    expect(
+      resolveCogsLevers({ client: { testCheapRoute: true }, isTest: true, defaults: mainEnv }).testCheapRoute,
+    ).toBe(true);
+  });
+
+  it("the overlay preserves the main env's adopted arms — it layers, never replaces", () => {
+    const resolved = resolveCogsLevers({
+      client: undefined,
+      isTest: true,
+      defaults: { ...mainEnv, l3PhaseRouting: true },
+      testDefaults: testEnv,
+    });
+    expect(resolved.l3PhaseRouting).toBe(true); // COGS_LEVERS_TEST={testCheapRoute:true} did NOT strip l1/l3
+    expect(resolved.l1PerPhaseWindow).toBe(true);
+    expect(resolved.testCheapRoute).toBe(true);
+  });
+
+  it("refuses on every non-test workspace — env default, test overlay, AND client arm all strip", () => {
+    for (const args of [
+      { client: undefined, defaults: { ...mainEnv, testCheapRoute: true } },
+      { client: undefined, defaults: mainEnv, testDefaults: testEnv },
+      { client: { testCheapRoute: true }, defaults: mainEnv, testDefaults: testEnv },
+    ]) {
+      expect(
+        resolveCogsLevers({ isTest: false, ...args }).testCheapRoute,
+      ).toBe(false);
+    }
+  });
+
+  it("COGS_LEVERS_TEST is never consulted off-test — a production run freezes the main default verbatim", () => {
+    expect(
+      resolveCogsLevers({ client: undefined, isTest: false, defaults: mainEnv, testDefaults: testEnv }),
+    ).toEqual({ ...mainEnv, testCheapRoute: false });
+  });
+});
+
+describe("parseCogsLeversTestEnv (R5ECON.2 — the is_test overlay)", () => {
+  it("keeps only the keys the env named — an overlay, not a full set", () => {
+    expect(parseCogsLeversTestEnv('{"testCheapRoute":true,"junk":1,"l1PerPhaseWindow":"yes"}')).toEqual({
+      testCheapRoute: true,
+    });
+  });
+  it("malformed/empty ⇒ undefined (no overlay)", () => {
+    for (const raw of [undefined, "", "  ", "not json", "[true]", "42", '"x"', "null", "{}", '{"bogus":true}']) {
+      expect(parseCogsLeversTestEnv(raw)).toBeUndefined();
+    }
+  });
+});
+
 describe("parseCogsLeversEnv", () => {
   it("parses a JSON lever object; malformed/empty ⇒ undefined (caller falls back to the default)", () => {
     expect(parseCogsLeversEnv('{"l3PhaseRouting":true,"junk":1}')).toEqual({
@@ -81,11 +154,12 @@ describe("the pre-registered arm constants (ADR-087)", () => {
   it("lever keys can never collide with the §6.5 toggle/phase-flag namespace", () => {
     // The §6.5 toggles freeze as bare input keys (fact_check, discourse, second_read, …) the
     // runspec `isOptedOut` reads; a cogsLevers key that looked like one would corrupt phase
-    // selection. The l<n>Camel form is disjoint by construction — pin it.
+    // selection. The l<n>Camel form is disjoint by construction — pin it. R5ECON.2's
+    // `testCheapRoute` is the one non-`l<N>` name (the test-scoped arm, not an ADR-087 lever).
     const TOGGLE_FLAG_KEYS = ["fact_check", "discourse", "second_read", "repair_research", "gap_check", "grounding", "audit"];
     for (const k of COGS_LEVER_KEYS) {
       expect(TOGGLE_FLAG_KEYS).not.toContain(k);
-      expect(k).toMatch(/^l[1-5][A-Z]/);
+      expect(k === "testCheapRoute" || /^l[1-5][A-Z]/.test(k)).toBe(true);
     }
   });
 });

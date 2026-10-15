@@ -16,7 +16,7 @@ import {
 import type { PhaseRequest } from "./engine.js";
 import { buildAgentEnv } from "./scrubbed-env.js";
 import { buildOtelConfig } from "./otel.js";
-import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass } from "./roster.js";
+import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass, TEST_CHEAP_ROUTE_MODEL } from "./roster.js";
 import type { AgentDef } from "./roster.js";
 
 /** A `PreToolUse` hook callback shape (the SDK's; kept structural — the callback is injected by run-task). */
@@ -178,9 +178,15 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
   // allowlist. L4: the cache-TTL choice realized by omitting ENABLE_PROMPT_CACHING_1H.
   const levers = req.levers;
   const fanout = levers?.l2FanoutShape ? COGS_FANOUT_TUNED : COGS_FANOUT_BASELINE;
-  const model = levers?.l3PhaseRouting
-    ? (routeModelForPhaseClass(tier, req.phase.phaseClass) ?? mainModelForTier(tier))
-    : mainModelForTier(tier);
+  // R5ECON.2 (REQ-ECON-1) — `testCheapRoute` is the STRONGER arm: when the frozen lever is ON
+  // every phase class's main context resolves TEST_CHEAP_ROUTE_MODEL (all four classes, every
+  // tier — the lever only ever freezes ON for an is_test run; resolveCogsLevers enforces that).
+  // It takes precedence over L3's per-class table — an L3 cell IS the routing the arm reroutes.
+  const model = levers?.testCheapRoute
+    ? TEST_CHEAP_ROUTE_MODEL
+    : levers?.l3PhaseRouting
+      ? (routeModelForPhaseClass(tier, req.phase.phaseClass) ?? mainModelForTier(tier))
+      : mainModelForTier(tier);
   const autoCompactWindow = levers?.l1PerPhaseWindow
     ? (COGS_PHASE_COMPACT_WINDOWS[req.phase.phaseClass] ?? TRANSCRIPT_COMPACTION_WINDOW_TOKENS)
     : TRANSCRIPT_COMPACTION_WINDOW_TOKENS;
@@ -200,7 +206,7 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     skillsDir: deps.skillsDir,
     skills: "all", // enable the harness-staged skills so `/editorial-review` resolves (F2)
     ...(deps.claudeCodeExecutablePath ? { pathToClaudeCodeExecutable: deps.claudeCodeExecutablePath } : {}),
-    agents: buildAgentRoster({ tier }),
+    agents: buildAgentRoster({ tier, cheapRoute: levers?.testCheapRoute === true }),
     hooks: { PreToolUse: [deps.hook] },
     permissionMode: "dontAsk",
     allowedTools: [...ALLOWED_TOOLS],

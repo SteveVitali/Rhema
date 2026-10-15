@@ -18,6 +18,15 @@ export interface JourneyStep {
   readonly expected: "red" | "green";
   /** a paid step needs the funded weekly leg (run creation / a chat turn) — nightly runs exclude it. */
   readonly paid: boolean;
+  /**
+   * R5ECON.2 (REQ-ECON-11) — the per-leg COGS-lever pin every run this step launches MUST carry,
+   * posted as `cogsLevers` in the launch body (JSON) or the same-named field (form posts). Set for
+   * the model-judgment legs — the step's assert object IS the model's judgment, so the
+   * `testCheapRoute` arm must never reach them even when `COGS_LEVERS_TEST` defaults it ON for the
+   * test tenant. The step installs it via `cogsLeversFor` + the pin helper (steps.ts); an absent
+   * field means the leg rides the tenant default verbatim.
+   */
+  readonly cogsLevers?: Readonly<Record<string, boolean>>;
 }
 
 /** Every planning-ledger step + the initial green baseline this ticket owns (ADR-020 §registry). */
@@ -93,6 +102,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "RES.1",
     expected: "red",
     paid: true,
+    // R5ECON.2 (REQ-ECON-11) — a model-judgment leg: the planted-error verdict IS the assert, so the
+    // cheap-route arm is pinned OFF for its launch regardless of the COGS_LEVERS_TEST default.
+    cogsLevers: { testCheapRoute: false },
   },
   {
     id: "N7",
@@ -160,6 +172,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "RUN.1",
     expected: "green",
     paid: true,
+    // R5ECON.2 (REQ-ECON-11) — a model-judgment leg: the answer's quality IS the assert; the
+    // cheap-route arm is pinned OFF for the turn's launch regardless of the COGS_LEVERS_TEST default.
+    cogsLevers: { testCheapRoute: false },
   },
   {
     id: "R5",
@@ -656,9 +671,24 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    // R5ECON.2 (REQ-ECON-11) — the MANDATORY opt-out: the leg's assert object is the FULL tier's
+    // model judgment, so `testCheapRoute` is pinned OFF. The pin is declared now so the driver the
+    // funded window eventually runs MUST post it (`cogsLeversFor` is the read seam).
+    cogsLevers: { testCheapRoute: false },
   },
 ];
 
 export function stepById(id: string): JourneyStep | undefined {
   return STEP_REGISTRY.find((s) => s.id === id);
+}
+
+/**
+ * R5ECON.2 (REQ-ECON-11) — the registry's declared lever pin for a step (e.g.
+ * `{testCheapRoute:false}` on the N6/R4/B19C model-judgment legs). Every launch the step performs
+ * MUST carry this pin — posted as `cogsLevers` (JSON launch bodies) or the same-named form field —
+ * and the api honors it only on `is_test` workspaces, exactly the opt-out channel REQ-ECON-10's
+ * test-scoped default defines over. `undefined` ⇒ the leg has no pin; the tenant default applies.
+ */
+export function cogsLeversFor(stepId: string): Readonly<Record<string, boolean>> | undefined {
+  return stepById(stepId)?.cogsLevers;
 }

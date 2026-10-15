@@ -412,6 +412,42 @@ describe("GET /runs/:id/report (§14.5)", () => {
     const anon = createApp({ ...deps, principal: () => null, db: sql });
     expect((await anon.request("/runs/run_rep/report")).status).toBe(401);
   });
+
+  // R5ECON.2 (REQ-ECON-4/5) — the mixed-model regression: under the cheap-route arm a `base`-tier
+  // run lawfully meters `claude-haiku-4-5` rows beside `claude-sonnet-5` ones. The drill-down's
+  // rollup must keep them DISTINCT on the served `model` while `model_tier` stays the frozen 'base'
+  // on both — a tier-keyed group would collapse (and mislabel) the pair.
+  it("mixed Sonnet/Haiku rows under one frozen tier stay distinct on the served model", async () => {
+    await seedReportedRun();
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      for (const [id, model, credits] of [
+        ["ur_mix_haiku", "claude-haiku-4-5", 40],
+        ["ur_mix_sonnet", "claude-sonnet-5", 80],
+      ] as const) {
+        await tx.query(
+          `insert into usage_records
+             (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+              model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, 'run_rep', 1, 'st_rep_1', 'verifier', 'anthropic',
+                   $4, 'base', 1, 4000, 500, 0.5, $5, 'proxy')`,
+          [id, seed.workspaceId, seed.billingAccountId, model, credits],
+        );
+      }
+    });
+    const res = await app.request("/runs/run_rep/report?advanced=1");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      advancedView: { rows: { model: string; modelTier: string; credits: number }[] };
+    };
+    // three proxy rows (the seed's balanced-tier row + the two mixed base rows) → three buckets —
+    // the Haiku and Sonnet rows are NEVER folded into one 'base' bucket.
+    const mixed = body.advancedView.rows.filter((r) => r.modelTier === "base");
+    expect(mixed).toHaveLength(2);
+    expect(mixed.map((r) => r.model).sort()).toEqual(["claude-haiku-4-5", "claude-sonnet-5"]);
+    // …and each bucket's credits are ITS OWN meter — the cheap-route row reports its own figure.
+    expect(mixed.find((r) => r.model === "claude-haiku-4-5")!.credits).toBe(40);
+    expect(mixed.find((r) => r.model === "claude-sonnet-5")!.credits).toBe(80);
+  });
 });
 
 describe("steering endpoints (§6.5)", () => {

@@ -142,7 +142,7 @@ describe("POST /projects/:id/runs", () => {
     const snap = typeof row.input_snapshot === "string" ? JSON.parse(row.input_snapshot) : row.input_snapshot;
     const ALL_OFF = {
       l1PerPhaseWindow: false, l2FanoutShape: false, l3PhaseRouting: false,
-      l4CacheTtl5m: false, l5ResearchEnvelope: false,
+      l4CacheTtl5m: false, l5ResearchEnvelope: false, testCheapRoute: false,
     };
     expect(inputs.cogsLevers).toEqual(ALL_OFF); // the client's {l4,l5} did NOT freeze
     expect(snap.cogsLevers).toEqual(ALL_OFF);   // the measurement record carries the resolved arms
@@ -189,6 +189,101 @@ describe("POST /projects/:id/runs", () => {
     const inputs3 = (await db.client.query("select inputs from runs where id = $1", [runId3])).rows[0] as { inputs: { cogsLevers: Record<string, boolean> } | string };
     expect((typeof inputs3.inputs === "string" ? JSON.parse(inputs3.inputs) : inputs3.inputs).cogsLevers)
       .toEqual({ ...ALL_OFF, l1PerPhaseWindow: true, l4CacheTtl5m: true }); // client l3:false + bogus dropped
+  });
+
+  it("R5ECON.2 — COGS_LEVERS_TEST defaults testCheapRoute ON on is_test; the explicit opt-out wins (REQ-ECON-10/11)", async () => {
+    const ALL_OFF = {
+      l1PerPhaseWindow: false, l2FanoutShape: false, l3PhaseRouting: false,
+      l4CacheTtl5m: false, l5ResearchEnvelope: false, testCheapRoute: false,
+    };
+    // deploy posture: `COGS_LEVERS_TEST={"testCheapRoute":true}` — the test-scoped overlay bound on deps.
+    const testApp = createApp({
+      ...deps,
+      principal: () => principal(),
+      cogsLevers: { l1PerPhaseWindow: true },
+      cogsLeversTest: { testCheapRoute: true },
+    });
+    const frozen = async (runId: string) => {
+      const row = (await db.client.query("select inputs, input_snapshot from runs where id = $1", [runId])).rows[0] as {
+        inputs: { cogsLevers: Record<string, boolean> } | string;
+        input_snapshot: { cogsLevers: Record<string, boolean> } | string;
+      };
+      const inputs = typeof row.inputs === "string" ? JSON.parse(row.inputs) : row.inputs;
+      const snap = typeof row.input_snapshot === "string" ? JSON.parse(row.input_snapshot) : row.input_snapshot;
+      return { inputs: inputs.cogsLevers, snap: snap.cogsLevers };
+    };
+
+    // (a) a NON-test workspace: the overlay is never consulted — testCheapRoute stays OFF even
+    //     though the env names it (the arm is is_test-scoped by construction, REQ-ECON-3).
+    const s0 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_r5e0", draftN: 1,
+    });
+    const r0 = await testApp.request(`/projects/${s0.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-r5e0", draftId: s0.draftId, inputs: { draftId: s0.draftId } })),
+    });
+    expect(r0.status).toBe(201);
+    const { runId: runId0 } = (await r0.json()) as { runId: string };
+    expect((await frozen(runId0)).inputs).toEqual({ ...ALL_OFF, l1PerPhaseWindow: true });
+
+    // (b) a flagged is_test workspace + NO client arm ⇒ the overlay defaults the arm ON — the
+    //     UI-launched posture (the leg never carried a lever).
+    await db.client.query("update workspaces set is_test = true where id = $1", [seed.workspaceId]);
+    const s1 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_r5e1", draftN: 1,
+    });
+    const r1 = await testApp.request(`/projects/${s1.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-r5e1", draftId: s1.draftId, inputs: { draftId: s1.draftId } })),
+    });
+    expect(r1.status).toBe(201);
+    const { runId: runId1 } = (await r1.json()) as { runId: string };
+    const f1 = await frozen(runId1);
+    expect(f1.inputs).toEqual({ ...ALL_OFF, l1PerPhaseWindow: true, testCheapRoute: true });
+    expect(f1.snap).toEqual(f1.inputs); // inputs.cogsLevers AND input_snapshot.cogsLevers freeze identically
+
+    // (c) an explicit per-leg `testCheapRoute:false` opt-out OVERRIDES the is_test default —
+    //     REQ-ECON-11's channel (the B19C/N6/R4 pins post exactly this).
+    const s2 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_r5e2", draftN: 1,
+    });
+    const r2 = await testApp.request(`/projects/${s2.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({
+        idempotencyKey: "idem-r5e2",
+        draftId: s2.draftId,
+        inputs: { draftId: s2.draftId, cogsLevers: { testCheapRoute: false } },
+      })),
+    });
+    expect(r2.status).toBe(201);
+    const { runId: runId2 } = (await r2.json()) as { runId: string };
+    expect((await frozen(runId2)).inputs.testCheapRoute).toBe(false);
+
+    // (d) a crafted `testCheapRoute:true` on a NON-test workspace never freezes ON — the env
+    //     overlay AND the client arm both strip off-test.
+    await db.client.query("update workspaces set is_test = false where id = $1", [seed.workspaceId]);
+    const s3 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_r5e3", draftN: 1,
+    });
+    const r3 = await testApp.request(`/projects/${s3.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({
+        idempotencyKey: "idem-r5e3",
+        draftId: s3.draftId,
+        inputs: { draftId: s3.draftId, cogsLevers: { testCheapRoute: true } },
+      })),
+    });
+    expect(r3.status).toBe(201);
+    const { runId: runId3 } = (await r3.json()) as { runId: string };
+    expect((await frozen(runId3)).inputs.testCheapRoute).toBe(false);
   });
 
   it("rejects a model-profile override lacking capabilities (422)", async () => {

@@ -1,4 +1,5 @@
-// @rhema/contracts — ECON.2's named COGS levers (REQ-SPEC-32(c); ticket 83; ADR-087).
+// @rhema/contracts — ECON.2's named COGS levers (REQ-SPEC-32(c); ticket 83; ADR-087),
+// plus R5ECON.2's is_test-scoped routing arm (REQ-ECON-1/2/3).
 //
 // Each lever is a server-side on/off flag resolved ONCE at run creation and frozen onto the run —
 // `runs.inputs.cogsLevers` feeds the consumers (runspec → PhaseRequest → engine options; the
@@ -6,13 +7,19 @@
 // measurement record the on/off comparison reads. Resolution rule:
 //   · the deploy's `COGS_LEVERS` env JSON supplies the server default (unset ⇒ all off — the
 //     pre-ECON.2 pipeline, byte-for-byte);
+//   · the deploy's `COGS_LEVERS_TEST` env JSON (R5ECON.2) overlays that default on
+//     `workspaces.is_test` tenants only — the is_test-scoped arm defaults (Q-ECON.e's ratified
+//     "server default + explicit opt-outs" posture; a UI-launched test leg gets the arm without
+//     carrying it);
 //   · on `workspaces.is_test` tenants a client-supplied `inputs.cogsLevers` may override per key
 //     (the measurement ON/OFF arms — same gating precedent as `inputs.force_unverified`);
-//   · on every non-test tenant a client value is discarded and the server default freezes.
+//   · on every non-test tenant a client value is discarded and the server default freezes —
+//     and `testCheapRoute` resolves FALSE regardless of either env (it is an is_test-scoped
+//     arm, never a production route).
 // Every consumer treats an absent or malformed value as all-off — a pre-ECON.2 run is
 // indistinguishable from today's pipeline.
 
-/** The five named levers (ADR-087 § the five levers). */
+/** The named levers (ADR-087 § the five levers, + R5ECON.2's sixth). */
 export interface CogsLevers {
   /** L1 — per-phase `autoCompactWindow` table in place of one run-wide 80 K. */
   readonly l1PerPhaseWindow: boolean;
@@ -24,6 +31,15 @@ export interface CogsLevers {
   readonly l4CacheTtl5m: boolean;
   /** L5 — tuned research envelope strictly above RES.1's floor (headroom + per-page cap). */
   readonly l5ResearchEnvelope: boolean;
+  /**
+   * R5ECON.2 (REQ-ECON-1/2/3) — the intra-tier cheap-route arm. ON ⇒ every phase class's
+   * main context resolves `claude-haiku-4-5` inside the tier's own allowlist (the ~3× cut on
+   * the dominant cache-read class). is_test-SCOPED: the resolved value is forced off on any
+   * non-test workspace even when an env default sets it — production routing is untouched and
+   * `runs.model_tier` stays the frozen user-facing tier (`usage_records.model` records the
+   * SERVED model; REQ-ECON-4/5).
+   */
+  readonly testCheapRoute: boolean;
 }
 
 /** Every lever key — the allowlist `sanitizeCogsLevers` keeps (unknown keys drop silently). */
@@ -33,16 +49,20 @@ export const COGS_LEVER_KEYS = [
   "l3PhaseRouting",
   "l4CacheTtl5m",
   "l5ResearchEnvelope",
+  "testCheapRoute",
 ] as const;
 export type CogsLeverKey = (typeof COGS_LEVER_KEYS)[number];
 
-/** The shipped default — all off. "Levers that pass ship ON by default" flips a key here (ADR-087). */
+/** The shipped default — all off. "Levers that pass ship ON by default" flips a key here (ADR-087).
+ *  `testCheapRoute` ships OFF too: the ratified posture arms it via `COGS_LEVERS_TEST` on is_test
+ *  tenants only (Q-ECON.e) — never a fleet-wide default. */
 export const DEFAULT_COGS_LEVERS: CogsLevers = {
   l1PerPhaseWindow: false,
   l2FanoutShape: false,
   l3PhaseRouting: false,
   l4CacheTtl5m: false,
   l5ResearchEnvelope: false,
+  testCheapRoute: false,
 };
 
 /**
@@ -65,14 +85,25 @@ export function sanitizeCogsLevers(raw: unknown, base: CogsLevers = DEFAULT_COGS
  * Resolve the lever set frozen at run creation. On a test workspace the client's
  * `inputs.cogsLevers` keys override the server default (the measurement arms); anywhere else the
  * client value is ignored entirely — a production run's levers are server-authored only.
+ *
+ * R5ECON.2 (REQ-ECON-1/10; ratified Q-ECON.e): `testDefaults` is the deploy's `COGS_LEVERS_TEST`
+ * overlay — consulted ONLY on `is_test` workspaces, layered over `defaults` (unset keys inherit
+ * the main env's arms). Precedence: client arm (is_test) → COGS_LEVERS_TEST (is_test) →
+ * COGS_LEVERS → DEFAULT. On a non-test workspace `testCheapRoute` resolves FALSE no matter what
+ * either env carries — the arm is is_test-scoped by construction, so a mis-set deploy env or a
+ * crafted client value can never cheap-route a production run.
  */
 export function resolveCogsLevers(args: {
   readonly client: unknown;
   readonly isTest: boolean;
   readonly defaults?: CogsLevers;
+  /** `COGS_LEVERS_TEST` (R5ECON.2) — the is_test-scoped default overlay; never read off-test. */
+  readonly testDefaults?: Partial<CogsLevers>;
 }): CogsLevers {
   const defaults = args.defaults ?? DEFAULT_COGS_LEVERS;
-  return args.isTest ? sanitizeCogsLevers(args.client, defaults) : { ...defaults };
+  if (!args.isTest) return { ...defaults, testCheapRoute: false };
+  const base = args.testDefaults ? sanitizeCogsLevers(args.testDefaults, defaults) : defaults;
+  return sanitizeCogsLevers(args.client, base);
 }
 
 /**
@@ -86,6 +117,34 @@ export function parseCogsLeversEnv(raw: string | undefined): CogsLevers | undefi
     const parsed = JSON.parse(raw) as unknown;
     if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
     return sanitizeCogsLevers(parsed);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * R5ECON.2 — parse the deploy's `COGS_LEVERS_TEST` env into the is_test-scoped OVERLAY (the same
+ * JSON object grammar as `COGS_LEVERS`). Unlike `parseCogsLeversEnv` this keeps ONLY the keys the
+ * env named: the overlay must not silently re-assert OFF over the main `COGS_LEVERS` arms — a
+ * `{"testCheapRoute":true}` deploy layers cheap routing ON without disturbing the adopted set.
+ * Malformed/empty ⇒ `undefined` (no overlay). Unknown keys and non-boolean values drop silently,
+ * same rule as `sanitizeCogsLevers`.
+ */
+export function parseCogsLeversTestEnv(raw: string | undefined): Partial<CogsLevers> | undefined {
+  if (raw == null || raw.trim() === "") return undefined;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+    const rec = parsed as Record<string, unknown>;
+    const out: Record<CogsLeverKey, boolean> = {} as Record<CogsLeverKey, boolean>;
+    let kept = 0;
+    for (const key of COGS_LEVER_KEYS) {
+      if (typeof rec[key] === "boolean") {
+        out[key] = rec[key] as boolean;
+        kept += 1;
+      }
+    }
+    return kept > 0 ? (out as Partial<CogsLevers>) : undefined;
   } catch {
     return undefined;
   }

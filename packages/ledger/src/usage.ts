@@ -192,7 +192,11 @@ export async function usageLevel2(
   };
 }
 
-/** Level 4 — the phase × seat × model-tier drill-down (Advanced disclosure only; REQ-DATA-42). */
+/** Level 4 — the phase × seat × model-tier drill-down (Advanced disclosure only; REQ-DATA-42).
+ *  R5ECON.2 (REQ-ECON-4/5): the select carries BOTH `u.model` (the SERVED model the proxy priced —
+ *  under the testCheapRoute arm a `base` run's rows can read `claude-haiku-4-5`) and `u.model_tier`
+ *  (the run's frozen user-facing tier). Consumers group on the served `model` for routing truth and
+ *  keep `modelTier` as the display/charge tier — never derive one from the other. */
 export async function usageLevel4(exec: SqlClient, workspaceId: string, runId: string): Promise<UsageLevel4Row[]> {
   const rows = (
     await exec.query(
