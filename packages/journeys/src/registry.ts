@@ -334,6 +334,17 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: false,
   },
   {
+    // SPA.18 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
+    // D-SPA.18-*); a red-step failure reports `owed`, it never gates.
+    id: "P1.outline",
+    journey: "phone",
+    asserts:
+      "/p/:p/outline + /outline/promote at phone width under either renderer: an existing outline renders read-only (no ed.* fields, no delete, no Save submit, no add-claim row — §10.1 verbatim) else the not-found arm; the promote sheet renders its fact rails + consent form or its own not-found arm — never a blank; overflow + axe clean",
+    owner: "UX.2",
+    expected: "red",
+    paid: false,
+  },
+  {
     id: "P1.app-new",
     journey: "phone",
     asserts:

@@ -20,7 +20,9 @@ describe("the journey step registry", () => {
         // SPA.6 split P1→P1.{public,project,pill,runsheet,app-new} and X1→X1.{voices,usage,home,
         // inbox,detail} — the per-surface legs SURFACE_GATES selects (REQ-VFY-8).
         // SPA.11 split T2→T2.{badge,matrix} and R8→R8.{showcase,prefs,inbox} the same way.
-        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
+        // SPA.18 added P1.outline (the phone-width /outline + /outline/promote leg — red pending
+        // its first preview run, D-SPA.18-*).
+        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline",
         "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).

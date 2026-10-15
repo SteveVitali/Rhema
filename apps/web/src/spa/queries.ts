@@ -19,6 +19,7 @@ import type {
   GateCardDto,
   InboxItemDto,
   IntegrationsSettingsDto,
+  OutlinePromotionDto,
   NotificationPrefsDto,
   PreferencesSettingsDto,
   PrincipalDto,
@@ -40,6 +41,7 @@ import type {
   VoiceSampleDetailDto,
   VoiceUpdatePlanDto,
 } from "@rhema/api-client";
+import type { GateOutlineView } from "@rhema/findings-core";
 import type { FeedLabelMaps } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import { BffError, bffFetch } from "./bff.js";
@@ -636,5 +638,79 @@ export const projectExportQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "export"],
     queryFn: () => bffFetch<BffExportTwin>(`/bff/p/${encodeURIComponent(slug)}/export`),
+    retry: retryPolicy,
+  });
+
+// ---- SPA.18 — the `outline` surface (design/22 §2 `p.outline`/`p.outlinePromote`) ----------------
+// The editor twin is the document's `outline` page-data bag verbatim (view rows, save/delete
+// actions, the server-computed Draft estimate, `cited`) minus the URL-owned flashes (`?saved`/
+// `?notice` — the leaf renders them) and `editable` carries the api's fact raw — the leaf ANDs
+// `deviceClass === "phone"` exactly like the document's `!isPhoneRequest`. `outline: null` is the
+// designed no-outline arm (the document's `O.notFound` render), distinct from a missed slug's 404.
+// The sheet twin carries the api's promotion facts + the scope/thread/turn the document echoed
+// off the URL (the form's hidden fields replay them); `outlinePromotion: null` is its 404 arm.
+
+/** `GET /bff/p/:slug/outline` — the durable editor's page-data twin. */
+export interface BffOutlineTwin {
+  readonly outline: {
+    readonly slug: string;
+    readonly editable: boolean;
+    readonly saveAction: string;
+    readonly deleteAction: string;
+    readonly draftEstimateCredits?: number;
+    readonly outline: GateOutlineView;
+    readonly cited: boolean;
+  } | null;
+}
+export const projectOutlineQuery = (slug: string, opts?: { slug?: string }) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "outline", opts?.slug ?? ""],
+    queryFn: () =>
+      bffFetch<BffOutlineTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/outline${opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : ""}`,
+      ),
+    retry: retryPolicy,
+  });
+
+/** `GET /bff/p/:slug/outline/promote` — the consent sheet's facts + the URL-echoed picks. */
+export interface BffOutlinePromoteTwin {
+  readonly outlinePromotion: {
+    readonly slug: string;
+    readonly projectTitle: string;
+    readonly promotion: OutlinePromotionDto;
+    readonly scope: "thread" | "turn" | "research";
+    readonly threadId?: string;
+    readonly turnId?: string;
+    /** set after a successful Promote click — the run started (the document's `data-started` arm). */
+    readonly started?: { readonly runId: string; readonly slug: string };
+  } | null;
+}
+export const projectOutlinePromoteQuery = (
+  slug: string,
+  opts?: { scope?: string; threadId?: string; turnId?: string; slug?: string },
+) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "outline",
+      "promote",
+      opts?.scope ?? "",
+      opts?.threadId ?? "",
+      opts?.turnId ?? "",
+      opts?.slug ?? "",
+    ],
+    queryFn: () => {
+      const q = new URLSearchParams();
+      if (opts?.scope) q.set("scope", opts.scope);
+      if (opts?.threadId) q.set("threadId", opts.threadId);
+      if (opts?.turnId) q.set("turnId", opts.turnId);
+      if (opts?.slug) q.set("slug", opts.slug);
+      const qs = q.toString();
+      return bffFetch<BffOutlinePromoteTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/outline/promote${qs ? `?${qs}` : ""}`,
+      );
+    },
     retry: retryPolicy,
   });

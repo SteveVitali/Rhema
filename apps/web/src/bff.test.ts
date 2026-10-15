@@ -2406,3 +2406,461 @@ describe("POST /p/:slug/export + /export/addition — the export mutation arms (
     expect(await missing.json()).toEqual({ error: "not_found" });
   });
 });
+
+// ---- SPA.18 — the `outline` surface's twins + JSON mutation branches (REQ-BFF-1/2/3/4/8/9/11,
+//      REQ-DAT-4/6): GET /bff/p/:slug/outline + /outline/promote mirror the document's own
+//      composition verbatim; the four POSTs keep their form 302s and answer JSON callers the
+//      `{ok,redirect}` envelope (the outline save keeps its unchanged-shape patch-result body —
+//      an `{ok:true,…}` envelope already) or the `{error}` refusal at the preserved status. ----
+
+const OUTLINE_DTO_SPA18 = {
+  artifactId: "art_ol",
+  slug: "the-politics-of-visibility",
+  mirrorPath: "agents/author/outline/the-politics-of-visibility.md",
+  versionId: "av_ol1",
+  ordinal: 1,
+  words: 320,
+  markdown: "<!-- rhema:outline v1 -->\n# Outline\n",
+  outline: {
+    sidecar: "outline" as const,
+    version: 1 as const,
+    thesis: "Visibility is a governance technology.",
+    venue: "op-ed",
+    targetLength: 1200,
+    spine: ["c1", "c2"],
+    sections: [
+      {
+        ref: "I",
+        title: "Set-up",
+        targetWords: 500,
+        function: "Stage the commonplace",
+        claims: [
+          { id: "c1", text: "Platforms frame visibility as empowerment.", provenance: { kind: "thread" as const, turnId: "turn_1" } },
+          { id: "c2", text: "The burden falls unevenly.", provenance: { kind: "source" as const, url: "https://example.org/two" }, unverified: true },
+        ],
+      },
+    ],
+    alternativesConsidered: ["the inverse frame"],
+    gaps: [{ id: "g1", needed: "A first-person refusal example", sectionRef: "I" }],
+    provenance: { threadId: "thr_1", urls: [{ url: "https://example.org/two", unverified: true }] },
+  },
+  citedBy: { runs: [] as string[], draftIds: [] as string[] },
+  editable: true,
+};
+
+const PROMOTION_DTO_SPA18 = {
+  slug: "the-politics-of-visibility",
+  scope: "thread" as const,
+  threadId: "thr_1",
+  sources: 3,
+  sourceCopies: [{ src: "agents/assistant/research/sources/a.md", dst: "agents/author/research/sources/a.md" }],
+  urls: ["https://example.org/one", "https://example.org/two"],
+  threadTokens: 1200,
+  urlsRefetched: 2,
+  estimateCredits: 42,
+  capCredits: 84,
+  modelTier: "base",
+  rigor: "standard",
+  existing: false,
+};
+
+const outlineDeps = (
+  over: Partial<DataSource> = {},
+  session: WebDeps["session"] = () => SESSION,
+): WebDeps =>
+  ({
+    session,
+    dataSource: {
+      listProjects: async () => ROWS,
+      getOutline: async () => OUTLINE_DTO_SPA18,
+      getOutlinePromotion: async () => PROMOTION_DTO_SPA18,
+      promoteOutline: async () => ({ runId: "run_ol", state: "queued", deduped: false, slug: PROMOTION_DTO_SPA18.slug }),
+      patchOutline: async () => ({ ok: true as const, versionIds: ["av_new1", "av_new2"], versionId: "av_new2", ordinal: 2 }),
+      deleteOutline: async () => ({ ok: true as const }),
+      answerOutlineGap: async () => ({ ok: true as const, versionIds: ["av_new1"] }),
+      ...over,
+    } as DataSource,
+  }) as WebDeps;
+
+describe("GET /bff/p/:slug/outline — the durable-editor twin (SPA.18; REQ-BFF-1/8/9/11, REQ-DAT-4/6)", () => {
+  it("returns {outline:{…}} — the document's composition verbatim (rows, actions, estimate, cited)", async () => {
+    const res = await createWebApp(outlineDeps()).request("/bff/p/the-politics-of-visibility/outline", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { outline: Record<string, unknown> };
+    const o = body.outline as NonNullable<typeof body.outline>;
+    expect(o.slug).toBe("the-politics-of-visibility");
+    expect(o.editable).toBe(true); // the api's fact raw — the leaf ANDs deviceClass
+    expect(o.saveAction).toBe("/p/the-politics-of-visibility/outline");
+    expect(o.deleteAction).toBe("/p/the-politics-of-visibility/outline/delete");
+    expect(o.cited).toBe(false);
+    expect(typeof o.draftEstimateCredits).toBe("number");
+    const view = o.outline as {
+      thesis: string; venue: string; spine: string[];
+      sections: { ref: string; claims: { id: string; provenanceKind: string; unverified: boolean }[] }[];
+      gaps: { id: string }[]; urls: { url: string; unverified: boolean }[];
+      alternativesConsidered: string[];
+    };
+    expect(view.thesis).toBe("Visibility is a governance technology.");
+    expect(view.venue).toBe("op-ed");
+    expect(view.spine).toEqual(["c1", "c2"]);
+    expect(view.sections[0]!.claims[1]).toMatchObject({
+      id: "c2",
+      provenanceKind: "source",
+      provenance: { url: "https://example.org/two" },
+      unverified: true,
+    });
+    expect(view.gaps[0]).toMatchObject({ id: "g1", needed: "A first-person refusal example", sectionRef: "I" });
+    expect(view.alternativesConsidered).toEqual(["the inverse frame"]);
+    expect(view.urls).toEqual([{ url: "https://example.org/two", unverified: true }]);
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("?slug passes through to the read (the artifact-pick param)", async () => {
+    const getOutline = vi.fn(async () => OUTLINE_DTO_SPA18);
+    const res = await createWebApp(
+      outlineDeps({ getOutline: getOutline as never }),
+    ).request("/bff/p/the-politics-of-visibility/outline?slug=alt-outline", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(getOutline).toHaveBeenCalledWith(expect.anything(), "proj_pv", { slug: "alt-outline" });
+  });
+
+  it("no outline answers {outline:null} — the designed arm, never fabricated rows", async () => {
+    const res = await createWebApp(
+      outlineDeps({ getOutline: async () => { throw new ApiError(404, "x", "not_found", "not_found"); } }),
+    ).request("/bff/p/the-politics-of-visibility/outline", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ outline: null });
+  });
+
+  it("a cited outline carries cited:true (the delete affordance stays withheld)", async () => {
+    const res = await createWebApp(
+      outlineDeps({ getOutline: async () => ({ ...OUTLINE_DTO_SPA18, citedBy: { runs: ["run_d"], draftIds: [] } }) }),
+    ).request("/bff/p/the-politics-of-visibility/outline", { headers: { accept: "application/json" } });
+    const body = (await res.json()) as { outline: { cited: boolean } };
+    expect(body.outline.cited).toBe(true);
+  });
+
+  it("unknown slug → {error:not_found} 404; no session → 401 JSON, never a redirect", async () => {
+    const missing = await createWebApp(outlineDeps()).request("/bff/p/nope/outline", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+    const res = await createWebApp(outlineDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/outline",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("a cross-tenant slug never reaches the read — listProjects scopes resolution (REQ-DAT-6)", async () => {
+    const getOutline = vi.fn(async () => OUTLINE_DTO_SPA18);
+    const res = await createWebApp(
+      outlineDeps({
+        listProjects: async () => ROWS,
+        getOutline: getOutline as never,
+      }),
+    ).request("/bff/p/nope/outline", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(404);
+    expect(getOutline).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /bff/p/:slug/outline/promote — the consent-sheet twin (SPA.18; REQ-BFF-1/8/9/11)", () => {
+  it("returns {outlinePromotion:{…}} — the api's facts + the URL-echoed scope/thread/turn", async () => {
+    const res = await createWebApp(outlineDeps()).request(
+      "/bff/p/the-politics-of-visibility/outline/promote?scope=turn&threadId=thr_1&turnId=t_9",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      outlinePromotion: {
+        slug: string; projectTitle: string; scope: string; threadId: string; turnId: string;
+        promotion: typeof PROMOTION_DTO_SPA18;
+      };
+    };
+    const p = body.outlinePromotion;
+    expect(p.slug).toBe("the-politics-of-visibility");
+    expect(p.projectTitle).toBe("The Politics of Visibility");
+    expect(p.scope).toBe("turn");
+    expect(p.threadId).toBe("thr_1");
+    expect(p.turnId).toBe("t_9");
+    expect(p.promotion).toEqual(PROMOTION_DTO_SPA18);
+  });
+
+  it("the legacy ?thread/?turn aliases resolve like the document's reads", async () => {
+    const getOutlinePromotion = vi.fn(async () => PROMOTION_DTO_SPA18);
+    const res = await createWebApp(
+      outlineDeps({ getOutlinePromotion: getOutlinePromotion as never }),
+    ).request("/bff/p/the-politics-of-visibility/outline/promote?thread=thr_9&turn=t_2", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(getOutlinePromotion).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_pv",
+      { scope: "thread", threadId: "thr_9", turnId: "t_2" },
+    );
+  });
+
+  it("a refused promotion read answers {outlinePromotion:null} — the document's 404 arm", async () => {
+    const res = await createWebApp(
+      outlineDeps({ getOutlinePromotion: async () => { throw new ApiError(404, "x", "thread_not_found", "thread_not_found"); } }),
+    ).request("/bff/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_gone", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ outlinePromotion: null });
+  });
+
+  it("unknown slug → {error:not_found} 404; no session → 401", async () => {
+    const missing = await createWebApp(outlineDeps()).request("/bff/p/nope/outline/promote", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+    const res = await createWebApp(outlineDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/outline/promote",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+});
+
+describe("POST /p/:slug/outline — the autosave's JSON dual-mode (SPA.18; REQ-BFF-1/2/3)", () => {
+  it("a JSON caller posts the flat ed.* map → the same decoded PATCH edit; the answer stays the patch result verbatim", async () => {
+    const patchOutline = vi.fn(async () => ({ ok: true as const, versionIds: ["av1", "av2"], versionId: "av2", ordinal: 2 }));
+    const res = await createWebApp(
+      outlineDeps({ patchOutline: patchOutline as never }),
+    ).request("/p/the-politics-of-visibility/outline", {
+      ...jsonPost,
+      body: JSON.stringify({ "ed.values.thesis": "A tighter thesis.", "ed.sec.0.ord": "2" }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; versionIds: string[]; ordinal: number };
+    // REQ-BFF-3's unchanged-shape arm — the patch result IS the envelope (ok:true carries it).
+    expect(body.ok).toBe(true);
+    expect(body.versionIds).toEqual(["av1", "av2"]);
+    expect(body.ordinal).toBe(2);
+    expect(patchOutline).toHaveBeenCalledOnce();
+    const edit = (patchOutline.mock.calls[0]![2] as { edit: Record<string, unknown> }).edit;
+    expect((edit["values"] as Record<string, string>)["thesis"]).toBe("A tighter thesis.");
+    expect(Array.isArray(edit["sections"])).toBe(true);
+  });
+
+  it("a structured {edit} JSON body reaches patchOutline verbatim (the PatchDto grammar)", async () => {
+    const patchOutline = vi.fn(async () => ({ ok: true as const, versionIds: ["av1"], versionId: "av1", ordinal: 2 }));
+    const edits = { values: { thesis: "Structured." }, gapAnswers: [{ gapId: "g1", text: "typed" }] };
+    const res = await createWebApp(
+      outlineDeps({ patchOutline: patchOutline as never }),
+    ).request("/p/the-politics-of-visibility/outline", {
+      ...jsonPost,
+      body: JSON.stringify({ edit: edits }),
+    });
+    expect(res.status).toBe(200);
+    expect(patchOutline).toHaveBeenCalledOnce();
+    expect((patchOutline.mock.calls[0]![2] as { edit: unknown }).edit).toEqual(edits);
+  });
+
+  it("an empty JSON save is a no-op {ok,redirect} — never a 302 to a fetch caller", async () => {
+    const patchOutline = vi.fn();
+    const res = await createWebApp(
+      outlineDeps({ patchOutline: patchOutline as never }),
+    ).request("/p/the-politics-of-visibility/outline", {
+      ...jsonPost,
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/outline" });
+    expect(patchOutline).not.toHaveBeenCalled();
+  });
+
+  it("a failed patch answers {error:save_failed} 422 for JSON; the form keeps its 302s verbatim", async () => {
+    const failing = outlineDeps({ patchOutline: async () => { throw new ApiError(409, "x", "version_conflict", "version_conflict"); } });
+    const res = await createWebApp(failing).request("/p/the-politics-of-visibility/outline", {
+      ...jsonPost,
+      body: JSON.stringify({ "ed.values.thesis": "x" }),
+    });
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "save_failed" });
+    // the form arm — unchanged (outline-surfaces.test.ts pins it too).
+    const formRes = await createWebApp(outlineDeps()).request("/p/the-politics-of-visibility/outline", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ "ed.values.thesis": "x" }).toString(),
+    });
+    expect(formRes.status).toBe(302);
+    expect(formRes.headers.get("location")).toBe("/p/the-politics-of-visibility/outline?saved=1");
+  });
+});
+
+describe("POST /p/:slug/outline/promote — the consent click's JSON arm (SPA.18; REQ-BFF-1/2/3)", () => {
+  it("a JSON caller posts {scope,threadId,slug} → {ok,redirect:/p/:slug,data} — never a 302", async () => {
+    const promoteOutline = vi.fn(async () => ({ runId: "run_ol", state: "queued", deduped: false, slug: "the-politics-of-visibility" }));
+    const res = await createWebApp(
+      outlineDeps({ promoteOutline: promoteOutline as never }),
+    ).request("/p/the-politics-of-visibility/outline/promote", {
+      ...jsonPost,
+      body: JSON.stringify({ scope: "thread", threadId: "thr_1", slug: "the-politics-of-visibility" }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; redirect: string; data: { runId: string } };
+    expect(body.ok).toBe(true);
+    expect(body.redirect).toBe("/p/the-politics-of-visibility");
+    expect(body.data.runId).toBe("run_ol");
+    expect(res.headers.get("location")).toBeNull();
+    expect(promoteOutline).toHaveBeenCalledOnce();
+    const req = promoteOutline.mock.calls[0]![2] as { scope: string; threadId: string; slug: string; idempotencyKey: string };
+    expect(req.scope).toBe("thread");
+    expect(req.threadId).toBe("thr_1");
+    expect(req.slug).toBe("the-politics-of-visibility");
+    expect(req.idempotencyKey).toBeTruthy();
+  });
+
+  it("ApiError refusals ride bffFail at the preserved status — code verbatim, never a sheet", async () => {
+    const missing = await createWebApp(
+      outlineDeps({ promoteOutline: async () => { throw new ApiError(404, "x", "thread_not_found", "thread_not_found"); } }),
+    ).request("/p/the-politics-of-visibility/outline/promote", {
+      ...jsonPost,
+      body: JSON.stringify({ scope: "thread", threadId: "thr_gone" }),
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "thread_not_found" });
+    const busy = await createWebApp(
+      outlineDeps({ promoteOutline: async () => { throw new ApiError(409, "x", "run_in_progress", "run_in_progress"); } }),
+    ).request("/p/the-politics-of-visibility/outline/promote", {
+      ...jsonPost,
+      body: JSON.stringify({ scope: "thread", threadId: "thr_1" }),
+    });
+    expect(busy.status).toBe(409);
+    expect(await busy.json()).toEqual({ error: "run_in_progress" });
+  });
+
+  it("an unbound seam answers {error:upstream_unavailable} 502 for JSON (the form keeps its 502 page)", async () => {
+    const unbound = outlineDeps({ promoteOutline: undefined });
+    const res = await createWebApp(unbound).request("/p/the-politics-of-visibility/outline/promote", {
+      ...jsonPost,
+      body: JSON.stringify({ scope: "thread" }),
+    });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "upstream_unavailable" });
+    const form = await createWebApp(unbound).request("/p/the-politics-of-visibility/outline/promote", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "scope=thread",
+    });
+    expect(form.status).toBe(502);
+  });
+
+  it("the form post still 302s to /p/:slug; no-session → 401 JSON vs /login redirect", async () => {
+    const form = await createWebApp(outlineDeps()).request("/p/the-politics-of-visibility/outline/promote", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "scope=thread&threadId=thr_1",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/p/the-politics-of-visibility");
+    const app = createWebApp(outlineDeps({}, () => null));
+    const json = await app.request("/p/the-politics-of-visibility/outline/promote", {
+      ...jsonPost,
+      body: JSON.stringify({ scope: "thread", threadId: "thr_1" }),
+    });
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const formNoSess = await app.request("/p/the-politics-of-visibility/outline/promote", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "scope=thread",
+    });
+    expect(formNoSess.status).toBe(302);
+    expect(formNoSess.headers.get("location")).toBe("/login");
+  });
+});
+
+describe("POST /p/:slug/outline/delete + gaps/:gapId/answer — the remaining JSON arms (SPA.18; REQ-BFF-1/2/3)", () => {
+  it("delete: JSON {ok,redirect:/p/:slug}; the cited 409 answers {error:outline_cited} — never a redirect", async () => {
+    const res = await createWebApp(outlineDeps()).request("/p/the-politics-of-visibility/outline/delete", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+    expect(res.headers.get("location")).toBeNull();
+
+    const cited = await createWebApp(
+      outlineDeps({ deleteOutline: async () => { throw new ApiError(409, "x", "outline_cited", "outline_cited"); } }),
+    ).request("/p/the-politics-of-visibility/outline/delete", { ...jsonPost, body: "{}" });
+    expect(cited.status).toBe(409);
+    expect(await cited.json()).toEqual({ error: "outline_cited" });
+    expect(cited.headers.get("location")).toBeNull();
+    // the form arm keeps its ?notice=cited 302 verbatim.
+    const citedForm = await createWebApp(
+      outlineDeps({ deleteOutline: async () => { throw new ApiError(409, "x", "outline_cited", "outline_cited"); } }),
+    ).request("/p/the-politics-of-visibility/outline/delete", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "",
+    });
+    expect(citedForm.status).toBe(302);
+    expect(citedForm.headers.get("location")).toBe("/p/the-politics-of-visibility/outline?notice=cited");
+  });
+
+  it("delete: no-session → 401 JSON vs the form's /login redirect; unknown slug → {error:not_found} 404", async () => {
+    const app = createWebApp(outlineDeps({}, () => null));
+    const json = await app.request("/p/the-politics-of-visibility/outline/delete", { ...jsonPost, body: "{}" });
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const form = await app.request("/p/the-politics-of-visibility/outline/delete", { method: "POST" });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+    const missing = await createWebApp(outlineDeps()).request("/p/nope/outline/delete", { ...jsonPost, body: "{}" });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+  });
+
+  it("a gap Answer posts {text} JSON → {ok,redirect:…?saved=1}; blank input is the same no-op", async () => {
+    const answerOutlineGap = vi.fn(async () => ({ ok: true as const, versionIds: ["av1"] }));
+    const app = createWebApp(outlineDeps({ answerOutlineGap: answerOutlineGap as never }));
+    const res = await app.request("/p/the-politics-of-visibility/outline/gaps/g1/answer", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "  I declined the panel invite. " }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/outline?saved=1" });
+    expect(answerOutlineGap).toHaveBeenCalledWith(expect.anything(), "proj_pv", "g1", { text: "I declined the panel invite." });
+    const blank = await app.request("/p/the-politics-of-visibility/outline/gaps/g1/answer", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "   " }),
+    });
+    expect(blank.status).toBe(200);
+    expect(await blank.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/outline" });
+    expect(answerOutlineGap).toHaveBeenCalledTimes(1); // the blank no-op never reaches the api
+  });
+
+  it("a gap Answer's upstream miss still answers the saved-1 arm — the swallow is verbatim; 401/404 parity", async () => {
+    const res = await createWebApp(
+      outlineDeps({ answerOutlineGap: async () => { throw new ApiError(500, "x"); } }),
+    ).request("/p/the-politics-of-visibility/outline/gaps/g1/answer", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "x" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/outline?saved=1" });
+    const noSess = await createWebApp(outlineDeps({}, () => null)).request(
+      "/p/the-politics-of-visibility/outline/gaps/g1/answer",
+      { ...jsonPost, body: JSON.stringify({ text: "x" }) },
+    );
+    expect(noSess.status).toBe(401);
+    const missing = await createWebApp(outlineDeps()).request("/p/nope/outline/gaps/g1/answer", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "x" }),
+    });
+    expect(missing.status).toBe(404);
+  });
+});

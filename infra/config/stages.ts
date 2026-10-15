@@ -345,7 +345,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA.17 — `export` joins on dev only, paired with the already-listed `ide-chrome` (the
     // first IDE-framed flip: /p/:slug/export mounts <IdeChrome> — both flags gate together).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
