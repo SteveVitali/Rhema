@@ -14,8 +14,8 @@
   REQ-ECON-10 · REQ-ECON-11 · REQ-ECON-12
 - **Live stage:** none (deterministic only — no `--paid` leg, no prod write, no deploy; the
   funded-window measurement of the arm is R5ECON.3's window work)
-- **Started:** 2026-10-15T18:5xZ · **Closed:** 2026-10-15T19:2xZ
-- **PR:** stacked on `stevevitali/r5econ-1-spend-guard-repairs` (opened at close — number below)
+- **Started:** 2026-10-15T18:5xZ · **Closed:** 2026-10-15T19:3xZ
+- **PR:** #181 on `stevevitali/r5econ-1-spend-guard-repairs` · impl `5510209` (+ closeout)
 - **ci:** pending at closeout (first-read class)
 - **Anchor drift noted:** the contract's cited research file `docs/research/r5_b3_cost-regime.md`
   does not exist — the B3 lever/guard design landed as
@@ -126,6 +126,9 @@
   135/135, `pnpm test` 5,732 pass / 4 skip / 0 fail, all six `check:*` gates OK (one
   dom-contract iteration — the journey's wire-level `&cogsLevers=` needed a manifest
   `urlparam` declaration + `str("…")` reads to register the emitted leg).
+- 2026-10-15T19:3xZ — impl commit `5510209` pushed; PR #181 opened on
+  `stevevitali/r5econ-1-spend-guard-repairs`; ci-boundary read → pending (first-read class);
+  closeout staged + validated.
 
 ## Gap table
 
@@ -165,12 +168,13 @@
 - `pnpm check:licenses` (822 pkgs) · `check:protocol-markers` (248 files) · `check:no-cookies`
   (257) · `check:spa-budget` · `check:spa-env` · `check:dom-contract` → **all OK**
   (dom-contract needed one iteration: `u("cogsLevers", …)` manifest entry + `str("…")` reads).
-- `check-build-memory.sh .` → 0 violations (pre-existing warnings only).
-- `check-append-only.mjs --base 5f3a9e2` → OK (run at closeout).
+- `check-build-memory.sh .` → 0 violations (8 pre-existing warnings, none new).
+- `check-append-only.mjs --base 5f3a9e2` → OK (run at closeout, below).
+- `gh pr create` → PR #181 opened on `stevevitali/r5econ-1-spend-guard-repairs` @ `5510209`.
 
 ## Evidence report
 
-**PR:** stacked on `stevevitali/r5econ-1-spend-guard-repairs` (url recorded at close).
+**PR:** https://github.com/SteveVitali/Rhema/pull/181 · head `5510209` (+ closeout commit).
 
 **Gap walk:** every contract clause + AC resolves `met` with file:line/test evidence (gap
 table above); zero `partial`/`missed`, zero MET-DIFFERENTLY (no ADR owed); out-of-scope items
