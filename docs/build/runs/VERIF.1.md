@@ -141,6 +141,7 @@ operator-gated), **D-FIX.1-2** (4/6 legs carry live evidence; T15/T16 paid arms 
 
 - Gates: `pnpm turbo build lint typecheck` — see PHASE LOG `ci:` field; build-memory structure +
   append-only checks green.
-- PR: `stevevitali/verif-1-composed-ffbb8ad` → base `stevevitali/fix-1-journey-fixture-repairs`,
-  mergePolicy=OPERATOR (opened, not merged).
+- PR: **#174** — `stevevitali/verif-1-composed-ffbb8ad` → base
+  `stevevitali/fix-1-journey-fixture-repairs`, mergePolicy=OPERATOR (opened, not merged);
+  `ci:` checks pending at closeout (the recurring first-read class).
 
