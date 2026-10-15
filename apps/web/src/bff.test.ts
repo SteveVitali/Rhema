@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { ApiError } from "@rhema/api-client";
-import type { ProjectRow } from "@rhema/api-client";
+import type { FigureCardDto, FigureListItemDto, ProjectRow } from "@rhema/api-client";
 import { createWebApp } from "./server.js";
 import type { WebDeps } from "./server.js";
 import { requestContext } from "./observability.js";
@@ -2861,6 +2861,384 @@ describe("POST /p/:slug/outline/delete + gaps/:gapId/answer — the remaining JS
       ...jsonPost,
       body: JSON.stringify({ text: "x" }),
     });
+    expect(missing.status).toBe(404);
+  });
+});
+
+// ---- SPA.19 — the `figures` surface's BFF halves (REQ-BFF-1/2/3/8/9/11; REQ-DAT-4/6/13). The
+// three twins + the seven POST JSON branches, driven through real Hono requests against the same
+// fixtures the retained SSR suite (figure-surfaces.test.ts) pins. -------------------------------
+
+const FIGURE_ROWS: ProjectRow[] = [
+  {
+    id: "proj_pv",
+    slug: "the-politics-of-visibility",
+    title: "The Politics of Visibility",
+    headDraftId: "d_head",
+    state: { key: "drafting", pill: "Drafting", overlay: null, suggested: { action: "review", label: "Review" } },
+  } as ProjectRow,
+];
+
+const FIGURE_ITEM_SPA19: FigureListItemDto = {
+  id: "fig01",
+  assetUri: "asset://fig_fig01",
+  title: "Visibility scores",
+  caption: "Scores by group.",
+  specKind: "vega_lite",
+  kind: "chart",
+  badge: "unverified_data",
+  badgeText: "[unverified data]",
+  n: 2,
+  renderStatus: "rendered",
+  hasRender: true,
+  insertedInDraftId: null,
+  pendingProposal: false,
+  latestRunId: "run_fig",
+};
+
+const FIGURE_CARD_SPA19: FigureCardDto = {
+  id: "fig01",
+  assetUri: "asset://fig_fig01",
+  title: "Visibility scores",
+  caption: "Scores by group.",
+  alt: "Bar chart of visibility scores for three groups.",
+  sourceLine: "The review's claim ledger.",
+  specKind: "vega_lite",
+  kind: "chart",
+  provenance: { kind: "none", refs: [], computedBy: "drafter", verification: "unverified" },
+  badge: "unverified_data",
+  badgeText: "[unverified data]",
+  latestRunId: "run_fig",
+  insertedInDraftId: null,
+  insertedAtVersionId: null,
+  pendingProposal: null,
+  versions: [
+    { n: 1, request: "initial", renderStatus: "rendered", renderError: null, createdAt: "2026-01-01T00:00:00Z" },
+    { n: 2, request: "make it a bar chart", renderStatus: "rendered", renderError: null, createdAt: "2026-01-02T00:00:00Z" },
+  ],
+  files: {
+    spec: '{"mark":"bar"}',
+    dataCsv: "group,score\na,0.7",
+    svgLight: "<svg data-fig=\"light\"></svg>",
+    svgDark: null,
+    tableSource: null,
+  },
+  render: { lightAvailable: true, darkAvailable: false, pngAvailable: false },
+  readiness: { ok: true, missing: [] },
+};
+
+const figureDeps = (
+  over: Partial<DataSource> = {},
+  session: WebDeps["session"] = () => SESSION,
+): WebDeps =>
+  ({
+    session,
+    dataSource: {
+      listProjects: async () => FIGURE_ROWS,
+      listFigures: async () => [FIGURE_ITEM_SPA19],
+      getFigure: async () => FIGURE_CARD_SPA19,
+      patchFigure: async () => FIGURE_CARD_SPA19,
+      editFigureSpec: async () => ({ ok: true as const, n: 3, specVersionId: "sv_3" }),
+      restoreFigureVersion: async () => ({ ok: true as const }),
+      proposeFigure: async () => ({
+        ok: true as const,
+        pendingProposal: { draftId: "d_head", afterBlockId: "b7", version: 2, markdown: "![a](asset://fig_fig01)", at: "2026-01-01T00:00:00Z" },
+        block: "![a](asset://fig_fig01)",
+      }),
+      acceptFigureProposal: async () => ({
+        ok: true as const,
+        inserted: { figureId: "fig01", draftId: "d_head", draftN: 4, draftVersionId: "av_v4", forked: true },
+      }),
+      rejectFigureProposal: async () => ({ ok: true as const }),
+      createRun: async () => ({ runId: "run_fig", state: "queued", deduped: false }),
+      ...over,
+    } as DataSource,
+  }) as WebDeps;
+
+describe("GET /bff/p/:slug/figures — the pane twin (SPA.19; REQ-BFF-1/8/9/11, REQ-DAT-4/6)", () => {
+  it("returns {figures:{slug,items}} — the api's rows verbatim (badge text never retyped)", async () => {
+    const res = await createWebApp(figureDeps()).request("/bff/p/the-politics-of-visibility/figures", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.figures.slug).toBe("the-politics-of-visibility");
+    expect(body.figures.items).toHaveLength(1);
+    expect(body.figures.items[0]).toMatchObject({
+      id: "fig01",
+      badge: "unverified_data",
+      badgeText: "[unverified data]",
+      n: 2,
+      hasRender: true,
+    });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("a degraded listFigures lands items:[] — the SSR's own .catch(() => null) ?? [] arm", async () => {
+    const res = await createWebApp(
+      figureDeps({ listFigures: async () => { throw new ApiError(500, "x"); } }),
+    ).request("/bff/p/the-politics-of-visibility/figures", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).figures.items).toEqual([]);
+  });
+
+  it("no session → {error:unauthenticated} 401; unknown slug → {error:not_found} 404", async () => {
+    const noSess = await createWebApp(figureDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/figures",
+      { headers: { accept: "application/json" } },
+    );
+    expect(noSess.status).toBe(401);
+    expect(await noSess.json()).toEqual({ error: "unauthenticated" });
+    const missing = await createWebApp(figureDeps()).request("/bff/p/nope/figures", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+  });
+});
+
+describe("GET /bff/p/:slug/figures/:figureId — the card twin (SPA.19)", () => {
+  it("returns {figure:{slug,card,headDraftId}} — the full card + the insert target", async () => {
+    const res = await createWebApp(figureDeps()).request(
+      "/bff/p/the-politics-of-visibility/figures/fig01",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.figure.slug).toBe("the-politics-of-visibility");
+    expect(body.figure.headDraftId).toBe("d_head");
+    expect(body.figure.card.id).toBe("fig01");
+    expect(body.figure.card.badgeText).toBe("[unverified data]");
+    expect(body.figure.card.readiness).toEqual({ ok: true, missing: [] });
+    expect(body.figure.card.versions).toHaveLength(2);
+  });
+
+  it("a missed figure read answers {figure:null} — the document's own 404 arm", async () => {
+    const res = await createWebApp(
+      figureDeps({ getFigure: async () => { throw new ApiError(404, "x", "figure_not_found"); } }),
+    ).request("/bff/p/the-politics-of-visibility/figures/fig_gone", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ figure: null });
+  });
+
+  it("no session → 401 JSON; unknown slug → 404", async () => {
+    const noSess = await createWebApp(figureDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/figures/fig01",
+      { headers: { accept: "application/json" } },
+    );
+    expect(noSess.status).toBe(401);
+    const missing = await createWebApp(figureDeps()).request("/bff/p/nope/figures/fig01", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+  });
+});
+
+describe("GET /bff/p/:slug/visualize — the consent-sheet twin (SPA.19)", () => {
+  it("echoes the entry-point picks + the server-computed estimate (never leaf-derived)", async () => {
+    const res = await createWebApp(figureDeps()).request(
+      "/bff/p/the-politics-of-visibility/visualize?request=chart%20of%20scores&kind=vega_lite&entry=selection",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(200);
+    const v = (await res.json()).visualize;
+    expect(v.slug).toBe("the-politics-of-visibility");
+    expect(v.request).toBe("chart of scores");
+    expect(v.specKind).toBe("vega_lite");
+    expect(v.entryPoint).toBe("selection");
+    expect(typeof v.estimateCredits).toBe("number");
+    expect(typeof v.capCredits).toBe("number");
+    expect(v.figureId).toBeUndefined();
+    expect(v.priorVersion).toBeUndefined();
+  });
+
+  it("?figure=fig_fig01&prior=1 strips the fig_ prefix — iterate mode verbatim", async () => {
+    const res = await createWebApp(figureDeps()).request(
+      "/bff/p/the-politics-of-visibility/visualize?figure=fig_fig01&prior=1",
+      { headers: { accept: "application/json" } },
+    );
+    const v = (await res.json()).visualize;
+    expect(v.figureId).toBe("fig01");
+    expect(v.priorVersion).toBe(1);
+    expect(v.request).toBe("");
+    expect(v.entryPoint).toBe("chat"); // the SSR's default arm
+  });
+
+  it("no session → 401 JSON; unknown slug → 404", async () => {
+    const noSess = await createWebApp(figureDeps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/visualize",
+      { headers: { accept: "application/json" } },
+    );
+    expect(noSess.status).toBe(401);
+    const missing = await createWebApp(figureDeps()).request("/bff/p/nope/visualize", {
+      headers: { accept: "application/json" },
+    });
+    expect(missing.status).toBe(404);
+  });
+});
+
+describe("the seven figure POSTs — the JSON branches (SPA.19; REQ-BFF-1/2/3)", () => {
+  it("the Visualize click: JSON → {ok,redirect:/p/:slug/figures}; the form keeps its 302 — and the run carries the verbatim field map", async () => {
+    const createRun = vi.fn(async () => ({ runId: "run_fig", state: "queued", deduped: false }));
+    const app = createWebApp(figureDeps({ createRun: createRun as never }));
+    const json = await app.request("/p/the-politics-of-visibility/visualize", {
+      ...jsonPost,
+      body: JSON.stringify({
+        request: "a chart of @claim:v2/41",
+        specKind: "vega_lite",
+        entryPoint: "chat",
+        idempotencyKey: "idem_1",
+      }),
+    });
+    expect(json.status).toBe(200);
+    expect(await json.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/figures" });
+    const req = createRun.mock.calls[0]![2] as {
+      workflow: string;
+      figure: { request: string; specKind?: string; sourceRefs?: { claimIds?: string[] } };
+    };
+    expect(req.workflow).toBe("figure");
+    expect(req.figure.request).toBe("a chart of @claim:v2/41");
+    expect(req.figure.specKind).toBe("vega_lite");
+    expect(req.figure.sourceRefs?.claimIds).toEqual(["v2/41"]);
+    const form = await app.request("/p/the-politics-of-visibility/visualize", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "request=another",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/p/the-politics-of-visibility/figures");
+  });
+
+  it("a blank request answers {error:request_required, detail} 422 — the document's re-render arm, never a redirect", async () => {
+    const createRun = vi.fn(async () => ({} as never));
+    const res = await createWebApp(figureDeps({ createRun: createRun as never })).request(
+      "/p/the-politics-of-visibility/visualize",
+      { ...jsonPost, body: JSON.stringify({ request: "   " }) },
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toBe("request_required");
+    expect(typeof body.detail).toBe("string");
+    expect(createRun).not.toHaveBeenCalled();
+  });
+
+  it("an upstream refusal passes through at the preserved status — a JSON caller never gets a sheet or a redirect", async () => {
+    const res = await createWebApp(
+      figureDeps({ createRun: async () => { throw new ApiError(402, "x", "msg", "insufficient_balance"); } }),
+    ).request("/p/the-politics-of-visibility/visualize", {
+      ...jsonPost,
+      body: JSON.stringify({ request: "chart me" }),
+    });
+    expect(res.status).toBe(402);
+    expect(await res.json()).toEqual({ error: "insufficient_balance" });
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("field edits: JSON → {ok,redirect:…?saved=1}; an alt>250 refusal rides the ?notice= redirect verbatim", async () => {
+    const patchFigure = vi.fn(async () => FIGURE_CARD_SPA19);
+    const app = createWebApp(figureDeps({ patchFigure: patchFigure as never }));
+    const res = await app.request("/p/the-politics-of-visibility/figures/fig01", {
+      ...jsonPost,
+      body: JSON.stringify({ caption: "New caption.", alt: "Alt text.", sourceLine: "The ledger." }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/figures/fig01?saved=1" });
+    expect(patchFigure).toHaveBeenCalledWith(expect.anything(), "proj_pv", "fig01", {
+      caption: "New caption.", alt: "Alt text.", sourceLine: "The ledger.",
+    });
+    const refused = await createWebApp(
+      figureDeps({ patchFigure: async () => { throw new ApiError(422, "x", "alt_too_long"); } }),
+    ).request("/p/the-politics-of-visibility/figures/fig01", {
+      ...jsonPost,
+      body: JSON.stringify({ caption: "", alt: "x".repeat(300), sourceLine: "" }),
+    });
+    expect(refused.status).toBe(200);
+    const env = await refused.json();
+    expect(env.ok).toBe(true);
+    expect(env.redirect).toContain("/p/the-politics-of-visibility/figures/fig01?notice=");
+  });
+
+  it("spec-edit: JSON → {ok,redirect:card}; an unsupported chip rides the ?notice=<code> redirect", async () => {
+    const editFigureSpec = vi.fn(async () => ({ ok: true as const }));
+    const app = createWebApp(figureDeps({ editFigureSpec: editFigureSpec as never }));
+    const res = await app.request("/p/the-politics-of-visibility/figures/fig01/spec-edit", {
+      ...jsonPost,
+      body: JSON.stringify({ mark: "line" }),
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/figures/fig01" });
+    expect(editFigureSpec).toHaveBeenCalledWith(expect.anything(), "proj_pv", "fig01", { mark: "line" });
+    const refused = await createWebApp(
+      figureDeps({ editFigureSpec: async () => { throw new ApiError(422, "x", "chip_not_supported"); } }),
+    ).request("/p/the-politics-of-visibility/figures/fig01/spec-edit", {
+      ...jsonPost,
+      body: JSON.stringify({ mark: "arc" }),
+    });
+    const env = await refused.json();
+    expect(env.redirect).toBe("/p/the-politics-of-visibility/figures/fig01?notice=chip_not_supported");
+  });
+
+  it("restore: JSON → {ok,redirect:card} with n off the path; propose: {ok,redirect,data} + the 409 readiness notice", async () => {
+    const restoreFigureVersion = vi.fn(async () => ({ ok: true as const }));
+    const app = createWebApp(figureDeps({ restoreFigureVersion: restoreFigureVersion as never }));
+    const res = await app.request("/p/the-politics-of-visibility/figures/fig01/versions/1/restore", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/figures/fig01" });
+    expect(restoreFigureVersion).toHaveBeenCalledWith(expect.anything(), "proj_pv", "fig01", 1);
+
+    const propose = await app.request("/p/the-politics-of-visibility/figures/fig01/propose", {
+      ...jsonPost,
+      body: JSON.stringify({ afterBlockId: "b7" }),
+    });
+    const penv = await propose.json();
+    expect(penv.ok).toBe(true);
+    expect(penv.redirect).toBe("/p/the-politics-of-visibility/figures/fig01");
+    expect(penv.data.pendingProposal.version).toBe(2);
+    const notReady = await createWebApp(
+      figureDeps({ proposeFigure: async () => { throw new ApiError(409, "x", "figure_not_ready"); } }),
+    ).request("/p/the-politics-of-visibility/figures/fig01/propose", { ...jsonPost, body: "{}" });
+    expect((await notReady.json()).redirect).toBe(
+      "/p/the-politics-of-visibility/figures/fig01?notice=figure_not_ready",
+    );
+  });
+
+  it("Accept: the fork's draftN lands redirect:/p/:slug/v/<n> (the 302's identical target); Reject lands back on the card", async () => {
+    const app = createWebApp(figureDeps());
+    const accept = await app.request("/p/the-politics-of-visibility/figures/fig01/proposals/accept", {
+      ...jsonPost,
+      body: "{}",
+    });
+    const aenv = await accept.json();
+    expect(aenv.ok).toBe(true);
+    expect(aenv.redirect).toBe("/p/the-politics-of-visibility/v/4");
+    expect(aenv.data.inserted.forked).toBe(true);
+    const reject = await app.request("/p/the-politics-of-visibility/figures/fig01/proposals/reject", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(await reject.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/figures/fig01" });
+  });
+
+  it("no session → 401 JSON vs the form's /login redirect; unknown slug → {error:not_found} 404", async () => {
+    const json = await createWebApp(figureDeps({}, () => null)).request(
+      "/p/the-politics-of-visibility/figures/fig01/proposals/reject",
+      { ...jsonPost, body: "{}" },
+    );
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const form = await createWebApp(figureDeps({}, () => null)).request(
+      "/p/the-politics-of-visibility/figures/fig01/proposals/reject",
+      { method: "POST" },
+    );
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+    const missing = await createWebApp(figureDeps()).request(
+      "/p/nope/figures/fig01/proposals/reject",
+      { ...jsonPost, body: "{}" },
+    );
     expect(missing.status).toBe(404);
   });
 });

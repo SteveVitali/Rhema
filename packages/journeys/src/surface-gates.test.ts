@@ -84,10 +84,9 @@ describe("stepsForSurfaces — the --surface selector", () => {
   });
 
   it("refuses a surface whose gate is still empty — a vacuous run is never a gate", () => {
-    expect(() => stepsForSurfaces(["figures"])).toThrow(/--surface: no gated steps/);
     expect(() => stepsForSurfaces(["run-report"])).toThrow(/--surface: no gated steps/);
     // …and the refusal names the owed coverage so the operator sees what unblocks it.
-    expect(() => stepsForSurfaces(["figures"])).toThrow(/owed:/);
+    expect(() => stepsForSurfaces(["run-report"])).toThrow(/owed:/);
   });
 
   it("the union of every non-empty gate is a paid:false subset of the registry", () => {

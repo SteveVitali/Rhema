@@ -1837,6 +1837,68 @@ const P1_OUTLINE: StepFn = async (ctx) => {
     await page.screenshot({ path: join(ctx.outDir, "p1-outline-promote-390.png"), fullPage: true });
 };
 
+/** P1.figures (SPA.19) — `/p/:slug/figures`, `/p/:slug/figures/:id`, and `/p/:slug/visualize` at
+ *  phone width, renderer-agnostic (the runner's document listener pins `data-renderer` per leg):
+ *  the pane renders its rows or the designed empty arm; the card renders its preview/fields or —
+ *  on the free fixture where no figure exists — the `figure:null` not-found arm; the visualize
+ *  sheet renders its consent form (request/spec-kind/insist/estimate) or its own not-found arm —
+ *  never a blank. Overflow + axe hold under BOTH renderers. */
+const P1_FIGURES: StepFn = async (ctx) => {
+    const { page, slug } = await p1PhoneProject(ctx);
+
+    // The pane — figure rows or the empty arm (a free tenant carries no figures).
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/figures`);
+    await assertNoOverflow(page, `/p/${slug}/figures @390×844`);
+    if ((await page.locator("h1").count()) === 0) {
+      throw new Error(`phone /p/${slug}/figures rendered without its heading`);
+    }
+    if (
+      (await page.locator("[data-figure-row]").count()) === 0 &&
+      (await page.locator("[data-figures-empty]").count()) === 0
+    ) {
+      throw new Error(`phone /p/${slug}/figures rendered neither the rows nor the empty arm`);
+    }
+    await assertAxeClean(page, `phone /p/${slug}/figures`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-figures-390.png"), fullPage: true });
+
+    // The card — a missing figure id lands the designed not-found arm (a free fixture has no
+    // figure to seed; the card's read-only posture is asserted wherever a card renders).
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/figures/fig_missing`);
+    await assertNoOverflow(page, `/p/${slug}/figures/fig_missing @390×844`);
+    if ((await page.locator("h1").count()) === 0) {
+      throw new Error(`phone /p/${slug}/figures/fig_missing rendered without its heading`);
+    }
+    if ((await page.locator("[data-figure-preview]").count()) === 0) {
+      const text = (await page.textContent("body")) ?? "";
+      if (!/wasn.?t found/i.test(text)) {
+        throw new Error(`phone /p/${slug}/figures/fig_missing rendered neither the card nor the not-found arm`);
+      }
+    }
+    await assertAxeClean(page, `phone /p/${slug}/figures/fig_missing`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-figure-card-390.png"), fullPage: true });
+
+    // The consent sheet — the form's field map or its own not-found arm.
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/visualize?request=chart%20of%20scores`);
+    await assertNoOverflow(page, `/p/${slug}/visualize @390×844`);
+    if ((await page.locator("[data-visualize-form]").count()) > 0) {
+      for (const sel of ["[data-estimate]", "[data-insist]", 'textarea[name="request"]', '[name="specKind"]']) {
+        if ((await page.locator(sel).count()) === 0) {
+          throw new Error(`phone /p/${slug}/visualize renders the form without ${sel}`);
+        }
+      }
+      if ((await page.locator('textarea[name="request"]').inputValue()) !== "chart of scores") {
+        throw new Error(`phone /p/${slug}/visualize lost the ?request= prefill`);
+      }
+    } else {
+      const text = (await page.textContent("body")) ?? "";
+      if (!/wasn.?t found/i.test(text)) {
+        throw new Error(`phone /p/${slug}/visualize rendered neither the consent sheet nor the not-found arm`);
+      }
+    }
+    await assertAxeClean(page, `phone /p/${slug}/visualize`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-visualize-390.png"), fullPage: true });
+};
+
 /** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
  *  cards, axe clean. */
 const P1_APP_NEW: StepFn = async (ctx) => {
@@ -2402,6 +2464,7 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   "P1.pill": P1_PILL,
   "P1.runsheet": P1_RUNSHEET,
   "P1.outline": P1_OUTLINE,
+  "P1.figures": P1_FIGURES,
   "P1.app-new": P1_APP_NEW,
   C1,
   "X1.voices": X1_VOICES,
