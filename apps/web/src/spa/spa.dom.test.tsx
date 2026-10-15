@@ -23,6 +23,7 @@ import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import { sessionQuery } from "./queries.js";
 import { PendingShell } from "./states.js";
+import { restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -54,7 +55,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, seeded = true): SpaBoo
   };
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot | null, fetchImpl = sessionFetch()) {
@@ -80,8 +81,7 @@ async function mountAt(path: string, boot: SpaBoot | null, fetchImpl = sessionFe
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -89,8 +89,9 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
 
@@ -111,12 +112,33 @@ describe("router mount + settle markers (REQ-VFY-3)", () => {
 describe("SsrHandoff (REQ-FW-3/4)", () => {
   it("an unflipped route document-navigates to its own href — the server re-decides", async () => {
     await mountAt("/usage?archived=1", bootFor({ "/usage": "ssr" }));
-    expect(assignSpy).toHaveBeenCalledWith("/usage?archived=1");
+    expect(docNavSpy).toHaveBeenCalledWith("/usage?archived=1");
   });
 
   it("a null boot hands every route back — fail-closed", async () => {
     await mountAt("/usage", null);
-    expect(assignSpy).toHaveBeenCalledWith("/usage");
+    expect(docNavSpy).toHaveBeenCalledWith("/usage");
+  });
+
+  it("commits replace-mode — the handoff eats the client-committed entry, never a forward-bounce (REQ-NAVM-5)", async () => {
+    // Distinct-arm spies at the seam: this is the arm pin, so it observes WHICH member fired
+    // (every other assertion goes through the shared docNavSpy — "nav happened, not which").
+    const assignArm = vi.fn();
+    const replaceArm = vi.fn();
+    spaRuntime.assign = assignArm;
+    spaRuntime.replace = replaceArm;
+    await mountAt("/usage", bootFor({ "/usage": "ssr" }));
+    expect(replaceArm).toHaveBeenCalledWith("/usage");
+    expect(assignArm).not.toHaveBeenCalled();
+  });
+
+  it("the real seam dispatches to window.location.replace — the committed slot is eaten", async () => {
+    restoreDocumentNav(); // real arms, so the leaf-level dispatch is observable
+    const locReplace = vi.spyOn(window.location, "replace").mockImplementation(() => {});
+    const locAssign = vi.spyOn(window.location, "assign").mockImplementation(() => {});
+    await mountAt("/usage?archived=1", bootFor({ "/usage": "ssr" }));
+    expect(locReplace).toHaveBeenCalledWith("/usage?archived=1");
+    expect(locAssign).not.toHaveBeenCalled();
   });
 });
 
@@ -125,14 +147,14 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
     const f = sessionFetch(401);
     const { queryClient } = await mountAt("/usage", bootFor({ "/usage": "spa" }, false), f);
     expect(f).toHaveBeenCalledWith("/session", expect.objectContaining({ credentials: "same-origin" }));
-    expect(assignSpy).toHaveBeenCalledWith("/login");
+    expect(docNavSpy).toHaveBeenCalledWith("/login");
     expect(queryClient.getQueryData(sessionQuery.queryKey)).toBeUndefined();
   });
 
   it("a live /session answer satisfies the gate — no navigation", async () => {
     const f = sessionFetch(200);
     const { queryClient } = await mountAt("/usage", bootFor({ "/usage": "spa" }, false), f);
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(sessionQuery.queryKey)).toEqual(PRINCIPAL);
   });
 
@@ -141,7 +163,7 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
     // SPA.16 — /app/settings/billing is no longer a stub leaf (it legitimately warms its own
     // twin), so the assertion isolates the session seed directly: /session is never fetched.
     await mountAt("/app/settings/billing", bootFor({ "/app/settings/billing": "spa" }), f);
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
     expect(f.mock.calls.map((c) => c[0])).not.toContain("/session");
   });
 });
@@ -182,7 +204,7 @@ describe("not-found + redirect surfaces (REQ-NAV-2/9/10)", () => {
   it("a bad param value resolves the scoped not-found — no error page", async () => {
     await mountAt("/p/acme/v/abc", bootFor({ "/p/$project/v/$v": "spa" }));
     expect(document.querySelector("[data-spa-root] h1")?.textContent).toBe("Not found");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("an unknown SPA-space path renders the in-router 404, not a handoff loop", async () => {
@@ -192,13 +214,13 @@ describe("not-found + redirect surfaces (REQ-NAV-2/9/10)", () => {
 
   it("a path outside SPA space document-navigates — the server owns it", async () => {
     await mountAt("/login", bootFor({ "/usage": "spa" }));
-    expect(assignSpy).toHaveBeenCalledWith("/login");
+    expect(docNavSpy).toHaveBeenCalledWith("/login");
   });
 
   it("/settings internal-redirects to /app/settings/account without a document nav", async () => {
     const { router } = await mountAt("/settings", bootFor({ "/app/settings/account": "spa" }));
     expect(router.state.location.pathname).toBe("/app/settings/account");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -246,7 +268,7 @@ describe("pending + error states (REQ-UX-6)", () => {
         }),
     );
     await mountAt("/usage", bootFor({ "/usage": "spa" }, false), f);
-    expect(assignSpy).not.toHaveBeenCalledWith("/login");
+    expect(docNavSpy).not.toHaveBeenCalledWith("/login");
     expect(document.querySelector("[data-spa-root] h1")?.textContent).toBe("Something didn't load");
   });
 });

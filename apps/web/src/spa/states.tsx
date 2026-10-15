@@ -15,7 +15,7 @@ import { ShellSkeleton } from "@rhema/ui";
 import { COPY } from "../copy.js";
 import { docMetaFor } from "../doc-meta.js";
 import { getSpaBoot, isSpaEnabled } from "./boot.js";
-import { navigateDocument } from "./dom.js";
+import { replaceDocument } from "./dom.js";
 
 /** The h1 word for the current path — the doc title minus the " · Rhēma" suffix (COPY-sourced). */
 function routeHeading(pathname: string): string {
@@ -27,12 +27,14 @@ function routeHeading(pathname: string): string {
  * handler order (session gate → server redirects → the Page family's forced-SSR check) — landing
  * on the forced-SSR Page, a server-owned 302, or (on a stale/malformed boot map) the shell again,
  * which hands straight back. Rendered while the navigation resolves so the paint is a skeleton,
- * never blank.
+ * never blank. The handoff is REPLACE-mode (REQ-NAVM-5): the client commit for this URL already
+ * occupies the history slot, so a push would duplicate it and Back would bounce forward into the
+ * handoff again — `replaceDocument` eats the transient entry.
  */
 export function SsrHandoff(): ReactNode {
   const href = useLocation({ select: (l) => l.href });
   useEffect(() => {
-    navigateDocument(href);
+    replaceDocument(href);
   }, [href]);
   return <SurfaceShell />;
 }

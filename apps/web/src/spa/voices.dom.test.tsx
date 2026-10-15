@@ -31,8 +31,7 @@ import type {
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -423,7 +422,7 @@ const SPA_ALL = {
   "/v/$persona": "spa",
   "/p/$project/voice/reseed": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -476,8 +475,7 @@ function setFile(input: HTMLInputElement, file: File) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -485,7 +483,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -530,7 +528,7 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
     expect(init.method).toBe("POST");
     expect(init.headers).toMatchObject({ "content-type": "application/json", accept: "application/json" });
     await vi.waitFor(() => expect(router.state.location.pathname).toBe("/v/p9"));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("a degraded twin (voices: null) renders the SSR's empty-state leg verbatim", async () => {
@@ -548,7 +546,7 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/voices", bootFor({ ...SPA_ALL, "/voices": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/voices");
+    expect(docNavSpy).toHaveBeenCalledWith("/voices");
     expect(el()?.querySelector("[data-voice-card]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/voices")).toBe(false);
   });
@@ -631,7 +629,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     // presign precedes the PUT precedes the mutation.
     const order = f.mock.calls.map(([u]) => String(u));
     expect(order.indexOf("/bff/import/presign")).toBeLessThan(order.lastIndexOf("/voices/new"));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("a refused create (name_required) renders the SSR's inline role=alert refusal", async () => {
@@ -726,7 +724,7 @@ describe("GET /v/:persona mounted (overview)", () => {
     await submit(form, approve);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/gates/g1` && i != null);
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ runId: "r9", action: "approve" });
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("the upgrade verb posts scope=full_from_quick", async () => {
@@ -796,7 +794,7 @@ describe("GET /v/:persona mounted (overview)", () => {
     document.body.innerHTML = "";
     await mountAt(`/v/${PID}`, BOOT, makeFetch({ detailStatus: 502 }));
     expect(el()?.querySelector("[data-spa-error]")).not.toBeNull();
-    expect(assignSpy).not.toHaveBeenCalledWith("/login");
+    expect(docNavSpy).not.toHaveBeenCalledWith("/login");
   });
 });
 

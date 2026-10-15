@@ -34,10 +34,9 @@ import { hooksForSurface } from "../dom-contract.js";
 import { createSpaRouter } from "./main.js";
 import { PageMount } from "./page-mount.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffCompareTwin, BffProjectTwin, BffRevisionTwin, BffVersionPageTwin } from "./queries.js";
 import axe from "axe-core";
-import { expectManifestEmission } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -266,7 +265,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop"
   return { principal: PRINCIPAL, theme: {}, deviceClass, surfaces };
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -327,8 +326,7 @@ async function axeRun(scope: Element): Promise<void> {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -336,7 +334,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -575,7 +573,7 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch({ project: { ...PROJECT_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}`);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}`));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}`));
     const main = el()!;
     // the handoff skeleton painted — the Page mount never did.
     expect(main.querySelector("[data-page-mount]")).toBeNull();
@@ -586,7 +584,7 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch({ version: { ...VERSION_TWIN, project: SHOWCASE_PROJECT } as BffVersionPageTwin });
     await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}/v/working`);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/working`));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/working`));
     expect(el()!.querySelector("[data-page-view]")).toBeNull();
     expect(el()!.querySelector("[data-version-rail]")).toBeNull();
   });
@@ -595,7 +593,7 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch({ compare: { ...COMPARE_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/v/6/diff/7`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}/v/6/diff/7`);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/6/diff/7`));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/6/diff/7`));
     expect(el()!.querySelector("[data-compare]")).toBeNull();
   });
 
@@ -603,7 +601,7 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch({ artifact: { ...ARTIFACT_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/a/a_1`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}/a/a_1`);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/a/a_1`));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/a/a_1`));
     expect(el()!.querySelector("[data-page-view]")).toBeNull();
   });
 
@@ -611,7 +609,7 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch({ revision: { ...REVISION_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/revisions/c_1`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}/revisions/c_1`);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/revisions/c_1`));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/revisions/c_1`));
     expect(el()!.querySelector("[data-hunk]")).toBeNull();
   });
 
@@ -619,6 +617,6 @@ describe("showcase rows hand the Page family back to a document load (SPACAP.3 G
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
     await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 });

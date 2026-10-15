@@ -8,17 +8,18 @@
 // preventDefaults so happy-dom's native anchor navigation (a real fetch + frame teardown)
 // never runs inside the suite. A skipped row therefore reads pre=false/post=false with no
 // navigate and no navigateDocument; an intercepted row reads post=true with a verbatim
-// push-only `navigate({href})` commit; the reloadDocument stubs read post=true +
-// `spaRuntime.assign` verbatim; the handoff arm pins A3-OQ1 (the committed slot is eaten by
-// `window.location.replace`); `navKey` (`location.state.key`) is asserted throughout — a
-// commit rotates it, a skip leaves it stable.
+// push-only `navigate({href})` commit; the reloadDocument stubs read post=true + the shared
+// document-nav seam verbatim (`stubDocumentNav` — one spy over both `spaRuntime` arms);
+// the handoff arm pins A3-OQ1 (the committed slot is eaten by `window.location.replace`);
+// `navKey` (`location.state.key`) is asserted throughout — a commit rotates it, a skip
+// leaves it stable.
 
 import { createMemoryHistory } from "@tanstack/react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import { createSpaRouter } from "./main.js";
 import { installSpaClickInterceptor } from "./nav-intercept.js";
+import { restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 const PRINCIPAL = { userId: "u1", workspaceId: "w1", billingAccountId: "b1" };
 
@@ -37,7 +38,7 @@ let interceptorDisposer: () => void = () => {};
 let currentRouter: SpaRouter | undefined;
 /** `location.state.key` captured at click dispatch — the navKey-stable pin compares against it. */
 let keyAtClick: unknown;
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 /** `defaultPrevented` seen by the document listener installed BEFORE the interceptor. */
 let sawPre: boolean | undefined;
 /** `defaultPrevented` seen by the document listener installed AFTER the interceptor. */
@@ -122,7 +123,7 @@ function expectSkipped(router: SpaRouter, navSpy: NavSpy) {
   expect(sawPre).toBe(false);
   expect(sawPost).toBe(false);
   expect(navSpy).not.toHaveBeenCalled();
-  expect(assignSpy).not.toHaveBeenCalled();
+  expect(docNavSpy).not.toHaveBeenCalled();
   expect(navKey(router)).toBe(keyAtClick);
 }
 
@@ -140,17 +141,16 @@ async function expectIntercepted(
   expect(navSpy).toHaveBeenCalledWith({ href });
   await navSpy.mock.results[0]?.value;
   expect(router.state.location.pathname).toBe(pathname);
-  expect(assignSpy).not.toHaveBeenCalled();
+  expect(docNavSpy).not.toHaveBeenCalled();
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
 });
 
 afterEach(() => {
   for (const d of disposers.splice(0)) d();
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -176,7 +176,7 @@ describe("REQ-NAVM-1/2 — the §2.1 ordered guard pipeline (pass-through rows)"
     click(a);
     expect(sawPre).toBe(true); // claimed by the anchor's own handler BEFORE us
     expect(navSpy).not.toHaveBeenCalled();
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
     expect(navKey(router)).toBe(key);
   });
 
@@ -302,7 +302,7 @@ describe("REQ-NAVM-4 — the server-owned reloadDocument stubs short-circuit to 
       click(anchor(href));
       expect(sawPre).toBe(false);
       expect(sawPost).toBe(true); // claimed — the seam is the sole initiator
-      expect(assignSpy).toHaveBeenCalledWith(href);
+      expect(docNavSpy).toHaveBeenCalledWith(href);
       expect(navSpy).not.toHaveBeenCalled();
       expect(navKey(router)).toBe(key);
     },
@@ -339,7 +339,7 @@ describe("route identity — in-tree vs native document nav", () => {
       await navSpy.mock.results[0]?.value;
       expect(router.state.location.pathname).toBe("/app/settings/account");
       expect(navKey(router)).not.toBe(key);
-      expect(assignSpy).not.toHaveBeenCalled();
+      expect(docNavSpy).not.toHaveBeenCalled();
     },
   );
 });
@@ -398,7 +398,7 @@ describe("the intercepted commit (REQ-NAVM-3 push-only, REQ-NAVC-12 verbatim hre
     expect(navSpy).toHaveBeenCalledWith({ href: "/app/inbox" });
     await navSpy.mock.results[0]?.value;
     expect(router.state.location.pathname).toBe("/app/inbox");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("§2.8 dead-link fix: /v/:persona is in-tree, the old /voices/<id> shape is not", async () => {
@@ -448,7 +448,7 @@ describe("REQ-NAVM-6 — interception never pre-judges the renderer", () => {
       expect.objectContaining({ method: "POST" }),
     );
     // 4. only the replace arm fired — never assign.
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -460,6 +460,6 @@ describe("install contract", () => {
     click(anchor("/app/inbox"));
     expect(sawPost).toBe(false); // unclaimed — the interceptor is gone (post suppresses native nav)
     expect(navSpy).not.toHaveBeenCalled();
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 });

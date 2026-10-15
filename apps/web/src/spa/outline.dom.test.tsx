@@ -23,9 +23,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffOutlinePromoteTwin, BffOutlineTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -157,7 +156,7 @@ const SPA_OUTLINE = {
   "/p/$project/outline": "spa",
   "/p/$project/outline/promote": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -192,8 +191,7 @@ async function submit(form: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -201,7 +199,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -316,7 +314,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     expect(f.posts[0]!.url).toBe("/p/the-politics-of-visibility/outline/delete");
     // the redirect target is the (unflipped) project leaf → SsrHandoff → the document nav.
     await vi.waitFor(() => {
-      expect(assignSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility");
+      expect(docNavSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility");
     });
   });
 
@@ -396,7 +394,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
       bootFor({ ...SPA_OUTLINE, "/p/$project/outline": "ssr" }),
       f.impl,
     );
-    expect(assignSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility/outline");
+    expect(docNavSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility/outline");
     expect(f.impl.mock.calls.some(([u]) => String(u).startsWith("/bff/p/the-politics-of-visibility/outline"))).toBe(false);
   });
 });
@@ -449,7 +447,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
       slug: "the-politics-of-visibility" });
     // the redirect target is the (unflipped) project leaf → SsrHandoff → document nav.
     await vi.waitFor(() => {
-      expect(assignSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility");
+      expect(docNavSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility");
     });
   });
 
@@ -508,7 +506,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
       bootFor({ ...SPA_OUTLINE, "/p/$project/outline/promote": "ssr" }),
       f.impl,
     );
-    expect(assignSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1");
+    expect(docNavSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1");
     expect(f.impl.mock.calls.some(([u]) => String(u).startsWith("/bff/p/the-politics-of-visibility/outline"))).toBe(false);
   });
 });

@@ -17,9 +17,8 @@ import type { UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-clie
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffProjectUsageTwin, BffUsageTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -109,7 +108,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass: "desktop", surfaces };
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -136,8 +135,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -145,7 +143,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
@@ -244,7 +242,7 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
   it("an unflipped verdict hands the document back to the server — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/usage", bootFor({ "/usage": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/usage");
+    expect(docNavSpy).toHaveBeenCalledWith("/usage");
     expect(el()?.querySelector("[data-usage-balance]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/usage")).toBe(false);
   });
@@ -292,7 +290,7 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
   it("an unflipped verdict hands off — and the leaf never spends its BFF read", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/usage`, bootFor({ "/usage": "spa", "/p/$project/usage": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/usage`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/usage`);
     expect(f.mock.calls.some(([u]) => String(u) === `/bff/p/${SLUG}/usage`)).toBe(false);
   });
 });

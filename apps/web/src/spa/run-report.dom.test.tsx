@@ -31,9 +31,8 @@ import type { RunReportView } from "@rhema/findings-core";
 import { hooksForSurface } from "../dom-contract.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffRunReportTwin } from "./queries.js";
-import { expectManifestEmission } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -288,7 +287,7 @@ class FakeEventSource {
   }
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -333,8 +332,7 @@ async function submit(form: Element, submitter?: Element) {
 
 beforeEach(() => {
   FakeEventSource.instances = [];
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   vi.spyOn(navigator, "sendBeacon").mockReturnValue(true);
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
@@ -343,7 +341,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -494,7 +492,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
     // the envelope's redirect is the 302's identical twin — an in-router nav, never document.
     await waitFor(() => expect(router.state.location.pathname).toBe(`/p/${SLUG}/r/${RUN}`));
     await waitFor(() => expect(router.state.location.hash).toBe("report"));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
     // server truth re-read off the invalidate.
     await waitFor(() => expect(f.reads()).toBeGreaterThanOrEqual(2));
   });
@@ -611,7 +609,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
   it("an unflipped verdict hands the document back to the server", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/r/${RUN}`, bootFor({ "/p/$project/r/$runId": "ssr" }), f.impl);
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/r/${RUN}`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/r/${RUN}`);
   });
 
   it("the twin's live-feed slice binds exactly one EventSource at ?after=<lastSeq> — usage.tick patches the meter, non-ticks converge one re-read (REQ-UX-15)", async () => {

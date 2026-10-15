@@ -21,8 +21,8 @@ import { buildRunSheetView, type RunSheetView } from "@rhema/run-sheet";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffRunSheetTwin } from "./queries.js";
+import { restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 
 declare global {
@@ -119,7 +119,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop"
 
 const SPA_RUN = { "/p/$project/run": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -153,8 +153,7 @@ async function submit(form: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -162,7 +161,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -375,7 +374,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     const post = f.posts.find((p) => p.url === `/p/${SLUG}/exhausted`);
     expect(post, "the exhausted POST fired").toBeTruthy();
     expect(post!.json?.action_taken).toBe("open_payment_link");
-    expect(assignSpy).toHaveBeenCalledWith("https://buy.stripe.com/test_1?client_reference_id=b1");
+    expect(docNavSpy).toHaveBeenCalledWith("https://buy.stripe.com/test_1?client_reference_id=b1");
   });
 
   it("renders the paused line when purchase is closed (BILL.3)", async () => {
