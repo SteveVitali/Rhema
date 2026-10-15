@@ -127,7 +127,7 @@ export function toProjectRowView(row: ProjectRow, ctx: ToRowViewCtx = {}): Proje
     voiceChip: row.voice
       ? {
           label: row.voice.name ?? COPY.projectHome.unfiledVoice,
-          href: `/voices/${row.voice.personaId}`,
+          href: `/v/${row.voice.personaId}`,
           statusLabel: row.voice.status.pill.label,
           statusTone: row.voice.status.pill.tone as Tone,
         }
@@ -243,7 +243,7 @@ export function groupByVoice(rows: readonly ProjectRow[]): VoiceGroup[] {
     groups.push({
       key: personaId,
       label: g.label,
-      href: `/voices/${personaId}`,
+      href: `/v/${personaId}`,
       ...(g.statusLabel ? { statusLabel: g.statusLabel } : {}),
       ...(g.statusTone ? { statusTone: g.statusTone } : {}),
       olderProfileCount: g.older,

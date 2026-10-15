@@ -869,7 +869,7 @@ export function DataSection({
         {acct?.status === "ready" && !acct.expired ? (
           <p data-export-status="ready" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
             {AX.readyFmt.replace("{date}", (acct.expiresAt ?? "").slice(0, 10))}{" "}
-            <a href={`/app/settings/data/export/download?id=${acct.id}`} data-export-download="true">{AX.downloadCta}</a>
+            <a href={`/app/settings/data/export/download?id=${acct.id}`} data-export-download="true" data-spa-native>{AX.downloadCta}</a>
           </p>
         ) : null}
         {acct?.status === "ready" && acct.expired ? (

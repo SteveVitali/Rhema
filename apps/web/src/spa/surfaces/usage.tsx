@@ -102,7 +102,7 @@ export function UsageSurface({
             <p style={{ fontSize: "13px", margin: "12px 0" }}>
               {/* REQ-BILL-11/REQ-BFF-17 — the level-1 CSV export is a document navigation (the web
                   proxies the api's binary download; no bytes ever enter a JSON envelope). */}
-              <a href="/usage.csv" data-usage-csv="true">{U.csvCta}</a>
+              <a href="/usage.csv" data-usage-csv="true" data-spa-native>{U.csvCta}</a>
             </p>
           </section>
         ) : null}

@@ -401,9 +401,9 @@ export function ExportSurface({
               </form>
               <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "10px" }}>
                 {COPY.export.standaloneHeading}:{" "}
-                <a href={`/p/${slug}/export/ai-use/md`}>{COPY.export.standaloneMdLabel}</a>
+                <a href={`/p/${slug}/export/ai-use/md`} data-spa-native>{COPY.export.standaloneMdLabel}</a>
                 {" · "}
-                <a href={`/p/${slug}/export/ai-use/docx`}>{COPY.export.standaloneDocxLabel}</a>
+                <a href={`/p/${slug}/export/ai-use/docx`} data-spa-native>{COPY.export.standaloneDocxLabel}</a>
               </p>
             </section>
           ) : null}
