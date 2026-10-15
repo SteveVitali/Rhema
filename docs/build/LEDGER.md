@@ -163,6 +163,24 @@ pointers; substance unchanged.)_
   `@rhema/findings-core` + `@rhema/mirror` (devDeps); `apps/egress-proxy` → `@rhema/db` (devDep,
   test-only import). Latent landmines for any future scoped-build CI leg; the owning
   packages' tickets fix — do NOT land here.
+- **R5OPS.1 live-leg findings (2026-10-15, prod `rhema` over the IAP tunnel — `runs/R5OPS.1.md` +
+  `reports/2026-10-15_R5OPS.1/`).** Three dated records: **(a) BL-07 classified — self-resolved
+  test-traffic artifact, not real-tenant degradation.** `unverified_review_rate_7d_pct`=100 was
+  driven by a single row: run `01M41AE99M49Q5HNG4M9S6106Q` on the operator's own non-test
+  workspace (`inputs` carry the `[autosave SLO probe — edit 1]` marker — instrumented leg traffic,
+  not a user); it aged out of the 7-day window at 2026-10-10T17:27Z and the catcher pages stopped
+  on their own (last `slo_violation` receipt 17:26:17Z). Current probe read: `rate=null`, n=0
+  (empty, not breach). No remediation owed; the lesson — instrumented legs on non-test-flagged
+  workspaces become SLO-visible. **(b) CDN-signed usercontent delivery is configured but
+  nonfunctional (REQ-OPS-3 residual → D-R5OPS.1-2).** `gcloud` verifies `enableCdn` +
+  `USE_ORIGIN_HEADERS` + `signedUrlKeyNames=[rhema-tools-key]` on the backend bucket and the
+  urlmap host rule, but a real `rhema-tools-key`-signed fetch returns the GCS origin's
+  `AccessDenied` 403 — identical for unsigned and corrupted-signature probes; the edge does not
+  gate signatures and the LB→private-bucket origin read is denied (bucket IAM grants
+  `objectViewer` only to `rhema-prod-convert@`). **(c) a NEW alert kind pages the catcher:**
+  `balance_divergence` (`nightly-assertion`, 2026-10-15T03:15:33Z) — six included-bucket billing
+  accounts read `expectedHeld=-3860`/`actual=0` (test-tenant soak accounts are the likely class;
+  classification owed, scope-bound to a BL-07-family follow-up).
 
 ## GATE DECISIONS
 
@@ -216,6 +234,7 @@ _(append-only: `| date | ticket | gate | item | answer | consequence |`)_
 | 2026-10-07 | 95_MAINT.4 | GD-MAINT.4-1 | Waive the inherited `integration`/`privsep.docker.test.ts` CI red on PR #117 (standing runner-kernel limitation — `setpriv setresgid`/`mount bind` denied in the GH container; identical failure on base #116 head run 37647411487; pre-existing since SEC.3, classified in `INTEGRATION_PLAN.md`) | **"Waive the privsep leg" (operator UI selection, 2026-10-07, Devin session).** kind: waiver. | `blockedOn` cleared; MAINT.4 closes done-under-waiver (code-verified locally: 21/21 focused, 4,572/4,572 suite, 135/135 turbo). Scope: the `integration` check's privsep leg on the round-3 chain (this + descendant PRs) — voided when a runner-level fix lands or the leg turns green. All other checks still gate. |
 | 2026-10-10 | 143_GATE-ACCEPT.SPA | GATE-ACCEPT.SPA | Operator signature on SPACAP.3's 8-row ACCEPTED-deviations list (`docs/build/CAPSTONE_CLOSURE.md` §R4.4) | **PASSED — all 8 rows signed ACCEPTED (operator, 2026-10-10).** No row sent back. The round-4-scoped OPEN rows (D-SPACAP.2-1..4, D-SPACAP.3-1 + every `D-SPA.*`/`D-SPAF.*`/`D-MAINT.6-1`/`D-OPS.1-1` live/preview/bake tail) are dispositioned by the signatures — they stay OPEN as tracking items carrying unblock conditions (ordered merge/deploy per `SPACAP.2_COMPOSED_VERIFICATION.md` §3 + the non-prod Resend secret), not gate-blocking. | `nextTicket → SPAREC.1` (row 144). `projectStatus` stays IN_PROGRESS. Readout: `docs/build/readouts/GATE-ACCEPT.SPA.md`. Still open elsewhere: the merge/deploy runbook + `rhema-nonprod-resend-api-key` seed + nightly bakes — operator-owned prerequisites, not chain blocks. |
 | 2026-10-14 | post-chain | ARMB-1 | SPA activation path — the 15-segment cadence vs a single tip deploy | **ARM B ELECTED (explicit operator election, 2026-10-14 — §R4.11 / PROD-BRINGUP §13.3.6).** Deploy the round-4 chain tip `b35473d` (SPADOC.2 head, open PR #169, `stevevitali/spadoc-2-agent-docs-refresh`) to prod in ONE deploy — all-SSR → all-SPA incl. the segment-15 cleanup wave — without first merging #129–#169 and without the per-segment bake pacing. The user/operator's words: "I explicitly elect for deploying the latest chain tip instead of merging everything to main first." | Prod jumps straight to the post-cleanup posture: every authenticated SPA-space document serves the shell unconditionally; public funnel + phone-UA/showcase Page family stay SSR **in code** (no flag exists). `?ssr=1`/`x-rhema-renderer`/`rhema:spaSurfaces` are inert-signal checks only (D-SPA.28-2 semantics). Rollback = `git revert` + redeploy — no config arm. The per-surface `--expect-renderer spa` legs, two-tenant BFF probe, public-SSR regression diff, and zero-CSP walk are COMPRESSED not skipped — all run post-deploy and still gate (§R4.10). Nightly bakes lose their pacing function — the REQ-SEQ-10 consequence is the accepted deviation (BL-83 / GATE-ACCEPT.SPA row context). The `D-SPAF.*-1/-2/-3/-4` and `D-SPA.26-1/-27-1/-28-1` live tails discharge against this deploy where verifiable. Merges #129→#169 remain operator-owned, bottom-up, merge-commit only — the deployed tip SHA becomes an ancestor of `main` on landing (§9 provenance holds). Run ledger: `docs/build/runs/ARMB-2026-10-14.md`. |
+| 2026-10-15 | 161_R5OPS.1 | GD-R5OPS.1-1 | REQ-OPS-7 / BL-36 — the nightly-golden live run needs the ~$150–300/night budget ruling before the driver dispatches (⚑ Q-GOLDEN in `docs/post-spa-disposition-spec.md` §10) | **AWAITING OPERATOR RULING.** The driver skeleton landed fail-closed (`scripts/live/nightly-golden-driver.mjs` — `--execute` refuses without `GOLDEN_BUDGET_RULING=approved` + a measured `--scores` file); the absent-manifest exit-0 is marked NON-EVIDENCE. | Ruling = approve/decline the nightly golden spend; until then the live golden dispatch + manifest stay deferred (D-P0.15-4 OPEN). |
 
 ## RETURN PASS
 

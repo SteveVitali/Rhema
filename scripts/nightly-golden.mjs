@@ -52,7 +52,12 @@ async function main() {
   if (!existsSync(manifestPath)) {
     // The live nightly manifest is produced by the golden RUN (evals/, private + H0-deferred). Absent it, there is
     // nothing to gate — report that honestly and succeed (an empty gate is not a promotion block).
-    console.log(`nightly-golden: no manifest at ${manifestPath} (the live golden run is H0-deferred); nothing to gate.`);
+    // R5OPS.1 (REQ-OPS-7): this exit 0 is explicitly NON-EVIDENCE — no live golden run occurred, no fixture
+    // was measured, nothing was gated. A green gate requires a manifest written by the driver.
+    console.log(
+      `nightly-golden: no manifest at ${manifestPath} (the live golden run is H0-deferred); nothing to gate. ` +
+        `NON-EVIDENCE: exit 0 here means no golden run occurred — not a green nightly.`,
+    );
     return 0;
   }
 

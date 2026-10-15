@@ -1,0 +1,65 @@
+{
+ "ticket": "161_R5OPS.1",
+ "req": "REQ-OPS-1",
+ "at": "2026-10-15T22:24:55.538Z",
+ "reason": "egress_denied_spike",
+ "pre_state": {
+  "pending_signals": 0,
+  "running_runs": 0,
+  "canary_run_exists": false
+ },
+ "canary": {
+  "run_id": "r5ops1-canary-1792103095847",
+  "signal_id": "1"
+ },
+ "observation": {
+  "final": {
+   "run_state": "waiting_gate",
+   "signal": {
+    "claimed_at": "2026-10-15T22:24:59.652Z",
+    "attempts": 1,
+    "processed_at": "2026-10-15T22:24:59.718Z"
+   },
+   "gates": [
+    {
+     "kind": "refusal",
+     "blocking": true,
+     "on_expiry": "cancel",
+     "resolved_at": null
+    }
+   ]
+  },
+  "events": [
+   {
+    "type": "run.state_changed",
+    "payload": {
+     "to": "waiting_gate",
+     "from": "running",
+     "reason": "egress_denied_spike"
+    }
+   },
+   {
+    "type": "gate.opened",
+    "payload": {
+     "kind": "refusal",
+     "deadlineAt": null
+    }
+   }
+  ],
+  "elapsed_ms_note": "polled at 1 s cadence; the worker sweep interval is ~5 s"
+ },
+ "rollback": {
+  "deleted": [
+   "pause_signals",
+   "runs (cascade)"
+  ],
+  "residue": {
+   "runs": 0,
+   "signals": 0,
+   "gates": 0,
+   "events": 0
+  }
+ },
+ "verdict": "PASS — canary pause propagated end-to-end",
+ "workspace_id": "01M501P5H4A1TETKTJ15BY09XM"
+}

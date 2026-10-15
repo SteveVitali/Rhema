@@ -377,6 +377,7 @@ The backlog's verification legs get a named stream (resolving the "stream A" col
 | Q-ALERT | BL-24 alert arm: catcher receipts (proven) vs literal NotificationChannel | accept Path A evidence |
 | Q-CDN | usercontent signed-URL: out-of-band `gcloud` vs api-side minting | verify leg only |
 | Q-B17 | B17 `expected:"red"` flag: intended (unreachable arm) or stale | intended — wording flip under BL-02 |
+| Q-GOLDEN | BL-36 nightly-golden budget: authorize the ~$150–300/night live golden run (all workflows × the three fixture projects) that produces `evals/fixtures/nightly-manifest.json`? *(added 2026-10-15, R5OPS.1 — the driver landed behind `GOLDEN_BUDGET_RULING=approved`; the absent-manifest exit-0 is NON-EVIDENCE)* | rule before the driver's `--execute` runs; declined ⇒ the golden cadence stays deferred |
 
 **Operator bundle (REQ-G1-5 — one-session prerequisite set, dispositions only; none gates
 decomposition except the Resend seed which gates stream-V-2):** BL-01 merge sweep · BL-80
