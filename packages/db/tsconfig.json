@@ -13,6 +13,9 @@
     },
     {
       "path": "../protocols"
+    },
+    {
+      "path": "../findings-core"
     }
   ],
   "exclude": [
