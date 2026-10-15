@@ -12,7 +12,7 @@
 - **Skills:** implement-spec + build-memory @ `~/agent-skills`
 - **Requirement ids stamped:** REQ-NAVM-1 REQ-NAVM-2 REQ-NAVM-3 REQ-NAVM-4 REQ-NAVM-6
   REQ-NAVM-7 REQ-NAVM-8 REQ-NAVC-13 REQ-NAVT-8
-- **Started:** 2026-10-15 · **Closed:** (pending)
+- **Started:** 2026-10-15 · **Closed:** 2026-10-15T07:52Z
 - **Config:** full rigor (ledger + self-review + gap analysis + tests + evidence report);
   **Live stage: none**; **Production mutations: none**; metered spend **$0**;
   zero prod writes, zero deploys, zero merges
@@ -263,13 +263,17 @@ changes (NAVC.3); zero component ports; no `<Link>` introduced.
   SsrHandoff row is reconciled (REQ-NAVM-5 → NAVC.5) via the dated append-only
   contract note; all Out-of-scope items confirmed untouched (`spa/dom.ts`, no
   `data-nav-count` work, no registry changes, zero `<Link>` ports).
-- **Deferred:** CI for this PR — pending at closeout (the recurring first-read
-  class; honestly recorded, never claimed green).
+- **Deferred:** nothing — CI was read green at closeout (see Closeout).
 
 ## Closeout
 
 - Gates: `pnpm turbo build lint typecheck` 135/135 · all `check:*` gates green ·
   `check-build-memory.sh` 0 violations · `check-append-only` vs `adfa980` OK.
-- PR: `stevevitali/navc-1-delegated-interceptor` → base
-  `stevevitali/verif-1-composed-ffbb8ad`, mergePolicy=OPERATOR (opened, not merged);
-  `ci:` pending at closeout (the recurring first-read class).
+- PR: **#175** — `stevevitali/navc-1-delegated-interceptor` @ `3a29d31` → base
+  `stevevitali/verif-1-composed-ffbb8ad`, mergePolicy=OPERATOR (opened, not merged).
+- `ci:` **pass #175@3a29d31** — run `38694964872`: `typecheck/lint/unit` (40m),
+  `contracts`, `integration`, `public-safe` green inside the bounded read;
+  `images (build + scan, pin digests)` landed green at ~07:52Z on the extended
+  poll (record `docs/build/logs/ci-NAVC.1.json` — the 2700 s window expired on
+  `images`; the follow-up read caught the pass). Zero reds — nothing to fix,
+  nothing inherited.
