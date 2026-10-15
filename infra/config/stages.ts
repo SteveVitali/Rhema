@@ -394,8 +394,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPAF.6 — `project-home` joins them; SPAF.7 — `billing` joins them; SPAF.8 — `export`
     // AND `ide-chrome` join them together; SPAF.9 — `outline` joins them; SPAF.10 —
     // `figures` joins them; SPAF.11 — `run-sheet` joins them; SPAF.12 — `dossier` joins
-    // them (REQ-SEQ-10): each prod flip is a one-line stage-fact commit, operator-merged +
-    // `pulumi up`-deployed; rollback =
+    // them; SPAF.13 — `run-report` joins them (REQ-SEQ-10): each prod flip is a one-line
+    // stage-fact commit, operator-merged + `pulumi up`-deployed; rollback =
     // revert this line + redeploy — reverting removes BOTH SPAF.8 keys, so the
     // /p/:p/import* legs re-dormant together. ≥ one nightly green on prod precedes the
     // NEXT surface's prod flip. Order is flip order — never re-sort.
@@ -417,7 +417,18 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // `/bff/p/:slug/review/:runId` twin performs the ONE shared `dossierComposition` —
     // the `run.report_viewed` emit + the findings/second-read/rubric/disposition state +
     // the Margin/Desk filtered list verbatim — so the two renderers read identically.
-    // `ide-chrome` alone still gates nothing else — run-report/editor stay
+    // SPAF.13 is the FOURTH IDE-framed prod activation: `run-report` ∈
+    // SPA_IDE_FRAMED_SURFACES too, so the `/p/:p/r/:runId` consult ANDs `ide-chrome`
+    // — already flipped since SPAF.8 — and `/p/$project/r/$runId` (∈
+    // SPA_IDE_FRAMED_ROUTES) mounts the chrome. A flagged GET serves the shell and the
+    // `/bff/p/:slug/r/:runId` twin performs the ONE shared `runReportComposition` — the
+    // `?advanced=1` report read + the Timeline read + the Inbox read-receipt — so the
+    // two renderers read + log identically; the twin additionally carries `ide.feed`
+    // (replayed rows + lastSeq + the same-origin events URL), so the leaf's live meter
+    // stays a LIVE EventSource binding on `/p/:p/r/:runId/events` — that SSE endpoint is
+    // itself a non-document proxy (session-gated, never flag-consulted) serving
+    // identically on either renderer.
+    // `ide-chrome` alone still gates nothing else — editor stays
     // unflipped. SPAF.9's `outline` and SPAF.10's `figures` are UNFRAMED —
     // `/p/:p/outline` + `/p/:p/outline/promote` consult on `outline` alone, and
     // `/p/:p/figures` + `/p/:p/figures/:figureId` + `/p/:p/visualize` consult on
@@ -425,15 +436,17 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // `/app`'s session gate + first-five-minutes precedence still
     // run ahead of the `project-home` consult; the billing session gates likewise precede
     // `billing` (unauthed → 302 /login on all three GETs); the outline GETs' + the figures
-    // GETs' + the run-sheet GET's + the two dossier GETs' session gates precede their
-    // consults the same way
+    // GETs' + the run-sheet GET's + the two dossier GETs' + the run-report GET's session
+    // gates precede their consults the same way
     // (unauthed → 302 /login); the seven billing POSTs + the four outline POSTs + the
     // seven figures POSTs + the run-sheet run/exhausted POSTs + the dossier finding POSTs
     // (disposition/apply/promote/obligations + the obligations create + the bulk
-    // preview/confirm pair) stay
+    // preview/confirm pair) + the run-report steering POSTs (pause/resume/stop/cancel/
+    // note/walkthrough + refund) stay
     // server-validated envelopes/form redirects on either
-    // renderer — they were never documents.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier"],
+    // renderer — they were never documents; the `/p/:p/r/:runId/events` SSE proxy isn't
+    // a document either — the live meter's feed stays live on either renderer.
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
