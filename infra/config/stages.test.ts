@@ -120,13 +120,17 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // /p/:p/import* legs' REQ-SEQ-2 AND-gate — `ide-chrome` alone unlocks nothing since no
     // SPA_IDE_FRAMED_SURFACES key is flipped); SPAF.1 was `usage`'s prod flip, SPAF.2 `inbox`'s,
     // SPAF.3 `settings`'s, SPAF.4 `voices`'s, SPAF.5 `onboarding`'s, SPAF.6 `project-home`'s,
-    // SPAF.7 `billing`'s — each a one-line operator-merged stage-fact commit, in flip order.
+    // SPAF.7 `billing`'s, SPAF.8 `export`+`ide-chrome`'s — each a one-line operator-merged
+    // stage-fact commit, in flip order.
     // SPA.17 added `export` on dev — the first IDE-framed flip: `ide-chrome` is already listed,
-    // so /p/:slug/export's consult resolves `export ∧ ide-chrome` together (prod keeps serving
-    // SSR on both until SPAF.8).
+    // so /p/:slug/export's consult resolves `export ∧ ide-chrome` together. SPAF.8 was the prod
+    // pair: `export` AND `ide-chrome` appended in one commit — the AND-gate lights
+    // `/p/:p/export` (the only flipped framed key — dossier/run-sheet/run-report/editor stay
+    // dark) and the `["onboarding","ide-chrome"]` route-level AND gives the /p/:p/import* legs
+    // their first spa verdicts.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export"]); // SPA.11…17 — the dev flips
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing"]); // SPAF.1…SPAF.7 — the prod flips
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome"]); // SPAF.1…SPAF.8 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
