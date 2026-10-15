@@ -127,10 +127,12 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // pair: `export` AND `ide-chrome` appended in one commit — the AND-gate lights
     // `/p/:p/export` (the only flipped framed key — dossier/run-sheet/run-report/editor stay
     // dark) and the `["onboarding","ide-chrome"]` route-level AND gives the /p/:p/import* legs
-    // their first spa verdicts.
+    // their first spa verdicts. SPA.18 added `outline` on dev; SPAF.9 is its prod flip —
+    // `outline` is unframed (not in SPA_IDE_FRAMED_SURFACES), so `/p/:p/outline` +
+    // `/p/:p/outline/promote` consult on `outline` alone and render outside the IDE shell.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline"]); // SPA.11…18 — the dev flips
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome"]); // SPAF.1…SPAF.8 — the prod flips
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline"]); // SPAF.1…SPAF.9 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
