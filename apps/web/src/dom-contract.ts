@@ -1336,6 +1336,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   editor: [
     a("data-page-root", "required", "ui/page-editor.tsx", "page island mount sentinel"),
     a(
+      "data-page-session",
+      "conditional",
+      "spa/page-mount.tsx — stamped on [data-page-root] while a SPA mount's view is bound",
+      "REQ-NAVT-5 (NAVC.3) — the registry entry's `<bootNonce>.<seq>` identity; stable across StrictMode + keep-alive remounts, fresh per entry mint and per document boot",
+    ),
+    a(
       "data-page-view",
       "conditional",
       "ui/page-editor + client/page",

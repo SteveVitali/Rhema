@@ -346,6 +346,23 @@ export function createWebApp(deps: WebDeps): Hono {
     c.res = new Response(stamped, { status: res.status, statusText: res.statusText, headers });
   });
 
+  // NAVC.3 (REQ-NAVC-20's bfcache posture; Q-A4-2) — a response computed for an authenticated
+  // request is never stored: `no-store` keeps auth'd documents, `/bff/*` twins, `/session`, and
+  // redirect answers out of both the HTTP disk cache and the bfcache (a session-carrying page
+  // restored from bfcache would resurrect pre-logout DOM and stale twin state — the SPA's
+  // client-nav freshness invariants assume a document can never come back warmer than the
+  // server allowed). The stamp is a FLOOR: a handler that declared its own `cache-control`
+  // wins verbatim (immutable `/assets/*`, SSE's `no-cache, no-transform`, the favicon's public
+  // day). Anonymous requests (the public funnel) stay unstamped — their cache posture is the
+  // handlers' own.
+  app.use("*", async (c, next) => {
+    const authed = deps.session(c) != null;
+    await next();
+    if (authed && c.res.headers.get("cache-control") == null) {
+      c.res.headers.set("cache-control", "no-store");
+    }
+  });
+
   const signupOpen = deps.signupMode === "open";
 
   /** PRB.12 — mint a client-whitelisted analytics event through the api intake (POST /analytics/events).

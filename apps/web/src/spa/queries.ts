@@ -56,6 +56,7 @@ import type { GateOutlineView } from "@rhema/findings-core";
 import type { FeedLabelMaps } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import { BffError, bffFetch } from "./bff.js";
+import { PAGE_SESSION_IDLE_TTL_MS } from "./page-sessions.js";
 
 /**
  * Retry only TRANSPORT failures (fetch rejected — network drop): an HTTP status is a definitive
@@ -856,6 +857,10 @@ export interface BffRunSheetTwin {
 /** The lever params the twin's composition reads — the document's `c.req.query()` grammar
  *  verbatim. `notice` (a rendered flash, not a read input) is stripped; the query key carries the
  *  full fingerprint so a lever-deep-link and its repaint cache separately. */
+// NAVC.3 / REQ-NAVC-18 — `staleTime` 0 verbatim: `runSheetComposition` mints
+// `voice.staleness_shown` when the pill action is `update_voice` — a per-open mint, kept on the
+// same compensate-by-refetch parity as the mark-read twins (the sheet's live state wants fresh
+// reads regardless).
 export const projectRunSheetQuery = (slug: string, search?: Record<string, string | undefined>) =>
   queryOptions({
     queryKey: [
@@ -957,6 +962,10 @@ const DOSSIER_TWIN_KEYS = [
   "focus",
 ] as const;
 
+// NAVC.3 / REQ-NAVC-18 — `staleTime` stays 0 deliberately: this twin's server composition
+// (`dossierComposition`) marks the inbox row read + emits `run.report_viewed`/`finding.viewed`
+// per read — the GET IS the read-receipt leg, so refetch-per-mount preserves document-nav parity
+// (compensate-by-refetch; see `projectPageQuery`'s accept-stale note for the policy split).
 export const dossierQuery = (slug: string, runId: string, search: DossierTwinSearch = {}) =>
   queryOptions({
     queryKey: [
@@ -1050,6 +1059,8 @@ export interface RunReportTwinSearch {
 
 const RUN_REPORT_TWIN_KEYS = ["advanced", "focus"] as const;
 
+// NAVC.3 / REQ-NAVC-18 — `staleTime` 0 verbatim: `runReportComposition`'s `markInboxRunRead`
+// must fire per mount, exactly as each document open did (compensate-by-refetch).
 export const runReportQuery = (slug: string, runId: string, search: RunReportTwinSearch = {}) =>
   queryOptions({
     queryKey: [
@@ -1247,6 +1258,16 @@ export const projectPageQuery = (slug: string, search: { readonly focus?: string
     queryKey: ["bff", "p", slug, { focus: search.focus === "1" ? "1" : null }],
     queryFn: () =>
       bffFetch<BffProjectTwin>(`/bff/p/${encodeURIComponent(slug)}${projectPageSearch(search)}`),
+    // NAVC.3 / REQ-NAVC-18 — the warm-return TTL R10 names: the draft's keep-alive window
+    // (`PAGE_SESSION_IDLE_TTL_MS`) doubles as the freshness horizon, so a leave→return inside it
+    // paints from cache with ZERO twin GETs. Parity decision = ACCEPT-STALE: the twin's one
+    // composition side effect is the `gate.presence_timer_shown` mint (server.ts's overview
+    // composition), which tracks "a composition was served" — a cached paint is not a served
+    // composition, so skipping it is honest rather than a lost view. The mark-read twins
+    // (`dossierQuery`, `runReportQuery`) deliberately keep the default `staleTime: 0` — the twin
+    // GET IS the read-receipt leg (markInboxRunRead + view telemetry), so refetch-per-mount
+    // preserves the every-open parity document navs had (compensate-by-refetch).
+    staleTime: PAGE_SESSION_IDLE_TTL_MS,
     retry: retryPolicy,
   });
 
