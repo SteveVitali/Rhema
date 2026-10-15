@@ -1746,17 +1746,63 @@ async function seededGateDossier(email: string, tag: string): Promise<{ slug: st
   }
 }
 
+/**
+ * R5ECON.3 (REQ-FND-6) — the funded-window ride arm: a REAL open gate already parked on the
+ * leg's tenant (the B19A/B `JOURNEY_FUNDED_HOLD_GATE` substrate, or any earlier window leg's
+ * `waiting_gate` run) is the rider's first choice — T15 rides the window's own deliveries
+ * instead of seeding parallel substrate. The probe is the inbox's own group-1a predicate
+ * (unresolved, unheld, run `waiting_gate`, the owner visible) minus the slug — the rider only
+ * needs the gate's id to prefer its Inbox row; the seed below stays the fallback. */
+async function ridingOpenGate(email: string): Promise<{ gateId: string } | null> {
+  let tenantId: string;
+  let ownerId: string;
+  try {
+    ({ tenantId, ownerId } = await tenantIdentity(email));
+  } catch {
+    return null; // the tenant isn't provisioned — the seed arm provisions it
+  }
+  let client: pg.PoolClient;
+  try {
+    client = await db().connect(); // JOURNEY_DATABASE_URL unset ⇒ throw ⇒ the seed arm below
+  } catch {
+    return null;
+  }
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const row = (
+      await client.query(
+        `select g.id as gate_id
+           from gates g join runs r on r.id = g.run_id join projects p on p.id = r.project_id
+          where g.resolved_at is null and g.held = false and r.state = 'waiting_gate'
+            and p.owner_id = $1
+          order by g.opened_at desc limit 1`,
+        [ownerId],
+      )
+    ).rows[0] as { gate_id: string } | undefined;
+    await client.query("commit");
+    return row ? { gateId: row.gate_id } : null;
+  } catch {
+    await client.query("rollback").catch(() => undefined);
+    return null;
+  } finally {
+    client.release();
+  }
+}
+
 /** T15 (RED; paid) — the `?gate=` click-through: an open approval's Inbox row lands the focused
- *  gate card at the head of the artifact (§5.11/§4.2). FIX.1 seeds the substrate — the leg may
- *  not launch a run to park one (invariant #11): a `waiting_gate` run + unresolved
- *  `approve_triage` gate on the returning tenant's seeded dossier. `JOURNEY_DATABASE_URL` unset ⇒
- *  the step reports owed, never fabricates. */
+ *  gate card at the head of the artifact (§5.11/§4.2). R5ECON.3 (REQ-FND-6): on the funded
+ *  window the leg RIDES a real open gate the window's own launchers parked (B19A/B's hold arm)
+ *  — the seed is only the no-window fallback (FIX.1 — the leg may not launch a run to park
+ *  one, invariant #11). `JOURNEY_DATABASE_URL` unset ⇒ the step reports owed, never
+ *  fabricates. */
 const T15: StepFn = async (ctx) => {
   const { page, email } = await ctx.returningUser("a");
-  const { gateId } = await seededGateDossier(email, "t15");
+  const riding = await ridingOpenGate(email);
+  const { gateId } = riding ?? (await seededGateDossier(email, "t15"));
   await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
-  // prefer the seeded gate's own row (its ?gate= href names it); any other open gate still proves
-  // the mechanism when the seed's row can't be singled out.
+  // prefer the ridden/seeded gate's own row (its ?gate= href names it); any other open gate
+  // still proves the mechanism when that row can't be singled out.
   let gateRow = page.locator(
     `[data-inbox-row][data-inbox-kind="gate"]:has(a[href*="gate=${gateId}"])`,
   ).first();
@@ -1843,7 +1889,10 @@ async function seedVoiceProfile(email: string, personaRef: string): Promise<void
 
 /** T16 (RED; paid) — the stale-voice leg (D-P1.19-1e): a fact change (a new sample) on a persona
  *  with a built profile lands a group-3 Inbox row, and the weekly digest claims it once. FIX.1
- *  seeds the profile row directly (REQ-FIX-T16) — the paid build stays unlaunched. The leg keeps
+ *  seeds the profile row directly (REQ-FIX-T16) — the paid build stays unlaunched. R5ECON.3
+ *  (REQ-FND-6) keeps exactly that arm — the ratified Q-ECON.g ruling chose the seeded
+ *  `persona_profiles` substrate over riding B19C, so this leg launches nothing of its own.
+ *  The leg keeps
  *  the profileless negative (no profile ⇒ no stale row), then the seeded profile + the real
  *  sample add must land the group-3 row. The Monday-digest claim half stays clock-owed (the sweep
  *  is a weekly cron, not a substrate) — recorded on BL-22 / the FIX.1 row, not asserted here. */

@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { STEP_REGISTRY, stepById, cogsLeversFor } from "./registry.js";
+import { STEP_REGISTRY, stepById, cogsLeversFor, legCapUsdFor } from "./registry.js";
+import { LEG_CAP_FLOOR_USD } from "./window-plan.js";
 import { ALL_IMPLS } from "./impls.js";
 
 // JOURNEY.1 — the registry is THE deliverable-2 artifact: every planning-ledger step, an owner,
@@ -103,6 +104,32 @@ describe("the journey step registry", () => {
   it("stepById resolves", () => {
     expect(stepById("N7")?.owner).toBe("HOT.1");
     expect(stepById("nope")).toBeUndefined();
+  });
+
+  // R5ECON.3 (REQ-ECON-9) — the §5.3 cap table lives VERBATIM on the registry's paid rows: the
+  // dispatch refuses an uncapped paid leg (cli.ts + funded-window.mjs) and `finishLeg` enforces
+  // the declared figure at close (CapOverrunError, REQ-ECON-7). Basis O2-F19: levered-expected;
+  // unlevered-measured is the opt-out fallback bound. The no-own-spend riders (T9, T10–T16)
+  // declare the $0.50 floor.
+  it("every paid step declares the §5.3 capUsd verbatim (REQ-ECON-9)", () => {
+    const FIVE_THREE: Record<string, number> = {
+      B16: 0.5, B17: 1.0, B18A: 1.0, B18B: 1.0, B19A: 3.5, B19B: 1.5, B19C: 15.0,
+      N5: 9.0, N6: 6.0, N11: 6.5, R4: 0.5, R6: 4.5, R9: 0.5,
+    };
+    for (const [id, cap] of Object.entries(FIVE_THREE)) {
+      expect(legCapUsdFor(id), id).toBe(cap);
+    }
+    // the no-own-spend riders declare the floor (they ride the window's own deliveries).
+    for (const id of ["T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16"]) {
+      expect(legCapUsdFor(id), id).toBe(LEG_CAP_FLOOR_USD);
+    }
+    // every paid row carries a finite cap ≥ the floor; a free row may carry none.
+    for (const s of STEP_REGISTRY) {
+      if (s.paid) {
+        expect(Number.isFinite(s.capUsd), s.id).toBe(true);
+        expect(s.capUsd!, s.id).toBeGreaterThanOrEqual(LEG_CAP_FLOOR_USD);
+      }
+    }
   });
 
   // R5ECON.2 (REQ-ECON-11) — the model-judgment opt-out pins: B19C (mandatory — the assert object

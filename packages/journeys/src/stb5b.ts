@@ -2,16 +2,17 @@
 // the session's own magic-link cookie (apiFetch) and reads truth from the stage Postgres (db(),
 // JOURNEY_DATABASE_URL — tenant-scoped for the FORCE-RLS tables). Steps are registered `red`:
 // an unexercised/unreachable leg reports `owed`, a passing leg flips green with evidence.
-// Per-leg caps live in STB5B_CAPS (stb5b-helpers.ts) — declared in advance, never raised.
+// Per-leg caps live on the registry rows (R5ECON.3 / REQ-ECON-9 — `capUsd`, the §5.3 table
+// verbatim): `ctx.step.capUsd` is the one authority `finishLeg` enforces, declared in advance,
+// never raised at close.
 
-import { writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { BrowserContext } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { apiFetch, db } from "./stb5a.js";
 import { SEED_SPEND_EXCLUSION_SQL } from "./spend-guard.js";
 import {
-  STB5B_CAPS,
   assertLegCapUsd,
   baitUserSource,
   buildFullBoardFetchBody,
@@ -234,11 +235,74 @@ async function writeEvidence(ctx: StepCtx, stepId: string, evidence: Record<stri
   ).catch(() => undefined);
 }
 
+// ---------------------------------------------------------------- funded-window gate hold (R5ECON.3 / REQ-FND-6)
+
+/** `JOURNEY_FUNDED_HOLD_GATE=<dir>` arms the hold: a gate-leg (B19A/B19B) STOPS at its open
+ *  gate — the hold file records runId/projectId/gateId so the window's riders (T15) can walk
+ *  the real `waiting_gate` row — reports `owed`-held, and a re-run of the same step with the
+ *  same dir RESUMES at the gate decision instead of re-launching (the held substrate is read
+ *  back, never re-paid). Unset ⇒ the original straight-through shape (nightly/weekly CI). */
+const HOLD_DIR = process.env.JOURNEY_FUNDED_HOLD_GATE || null;
+const HOLD_FILE = HOLD_DIR ? path.join(HOLD_DIR, "funded-hold-gates.json") : null;
+
+interface HoldEntry {
+  readonly runId: string;
+  readonly projectId: string;
+  readonly gateId: string;
+  readonly kind: string;
+  readonly heldAt: string;
+}
+
+async function readHolds(): Promise<Record<string, HoldEntry>> {
+  if (!HOLD_FILE) return {};
+  try {
+    return JSON.parse(await readFile(HOLD_FILE, "utf8")) as Record<string, HoldEntry>;
+  } catch {
+    return {};
+  }
+}
+
+async function writeHolds(holds: Record<string, HoldEntry>): Promise<void> {
+  if (!HOLD_FILE || !HOLD_DIR) return;
+  await mkdir(HOLD_DIR, { recursive: true });
+  await writeFile(HOLD_FILE, JSON.stringify(holds, null, 2));
+}
+
+/** The held substrate for a re-run of `stepId`, if the hold arm recorded one. */
+async function resumeHold(stepId: string): Promise<HoldEntry | null> {
+  return (await readHolds())[stepId] ?? null;
+}
+
+/** Record the open gate and leave it for the window's riders. Returns false when the hold arm
+ *  is not armed (the leg proceeds straight through). */
+async function holdGate(
+  stepId: string,
+  entry: Omit<HoldEntry, "heldAt">,
+): Promise<boolean> {
+  if (!HOLD_FILE) return false;
+  const holds = await readHolds();
+  holds[stepId] = { ...entry, heldAt: new Date().toISOString() };
+  await writeHolds(holds);
+  return true;
+}
+
+/** The held substrate delivered — drop the entry so a later run launches fresh. */
+async function clearHold(stepId: string): Promise<void> {
+  if (!HOLD_FILE) return;
+  const holds = await readHolds();
+  if (!(stepId in holds)) return;
+  delete holds[stepId];
+  await writeHolds(holds);
+}
+
 /** Fold asserts → throw `owed` when any assert failed (red steps report owed, never fail).
- *  R5ECON.1 (REQ-ECON-7): the declared per-leg cap is ENFORCED at close — the evidence blob is
- *  written first (capUsd + meteredUsd always land), then a `meteredUsd > capUsd` leg throws
- *  `CapOverrunError` (the runner's `cap_overrun` verdict; it pauses the funded window) BEFORE
- *  the owed arm — an overrun is a budget emergency, never a silent pass nor a plain owed. */
+ *  R5ECON.1 (REQ-ECON-7) + R5ECON.3 (REQ-ECON-9): the declared per-leg cap is ENFORCED at
+ *  close — the evidence blob is written first (capUsd + meteredUsd always land), then a
+ *  `meteredUsd > capUsd` leg throws `CapOverrunError` (the runner's `cap_overrun` verdict; it
+ *  pauses the funded window) BEFORE the owed arm — an overrun is a budget emergency, never a
+ *  silent pass nor a plain owed. The cap comes off the registry row (`ctx.step.capUsd` — the
+ *  §5.3 table verbatim); a paid leg with no declared cap is a registry error the dispatch
+ *  refuses before this point. */
 async function finishLeg(
   ctx: StepCtx,
   stepId: string,
@@ -246,7 +310,7 @@ async function finishLeg(
   meteredUsd: number,
   extra: Record<string, unknown>,
 ): Promise<void> {
-  const capUsd = STB5B_CAPS[stepId];
+  const capUsd = ctx.step.capUsd;
   const failed = asserts.filter((a) => !a.pass);
   await writeEvidence(ctx, stepId, { capUsd, meteredUsd, asserts, ...extra });
   assertLegCapUsd(stepId, meteredUsd, capUsd);
@@ -527,16 +591,34 @@ async function decideGateEdit(
 
 const B19A: StepFn = async (ctx) => {
   const leg = await signInLeg(ctx, "b19a");
-  const project = await createProjectWithDraft(ctx, leg, {
-    title: "b19a plan-edit leg",
-    text: stb5bOutlineDraft(),
-  });
-  const draftId = project.draftId ?? (await headDraftId(project.projectId));
-  const runId = await createRun(ctx, leg, project.projectId, buildQuickDraftBody({ idempotencyKey: `b19a-${ctx.nonce}`, draftId }));
+  const resume = await resumeHold("B19A");
+  let runId: string;
+  let projectId: string;
+  if (resume) {
+    ({ runId, projectId } = resume);
+  } else {
+    const project = await createProjectWithDraft(ctx, leg, {
+      title: "b19a plan-edit leg",
+      text: stb5bOutlineDraft(),
+    });
+    projectId = project.projectId;
+    const draftId = project.draftId ?? (await headDraftId(project.projectId));
+    runId = await createRun(ctx, leg, projectId, buildQuickDraftBody({ idempotencyKey: `b19a-${ctx.nonce}`, draftId }));
+  }
 
-  // to the gate (intake→voice→plan→approve_plan), then drive the structured edit.
+  // to the gate (intake→voice→plan→approve_plan), then drive the structured edit. On the hold
+  // arm (JOURNEY_FUNDED_HOLD_GATE) a FRESH launch stops here — the open gate is recorded and
+  // left for the window's riders (T15); the leg reports owed-held and a re-run resumes below.
   await waitRun(ctx, leg, runId, "waiting_gate", 25 * 60_000);
-  const gate = await openGateFor(ctx, leg, project.projectId, runId);
+  const gate = await openGateFor(ctx, leg, projectId, runId);
+  if (!resume && gate && (await holdGate("B19A", { runId, projectId, gateId: gate.id, kind: gate.kind }))) {
+    await writeEvidence(ctx, "B19A", {
+      held: true, runId, projectId, gateId: gate.id, kind: gate.kind,
+      note: "JOURNEY_FUNDED_HOLD_GATE arm — the open gate is left for the window's riders (T15); re-run this step with the same hold dir to resume at the decision",
+    });
+    throw new Error(`B19A held — gate ${gate.id} left open for the funded window's riders (T15); re-run to resume`);
+  }
+  const project = { projectId }; // downstream reads only projectId (decide + evidence)
   let decisionAction: string | null = null;
   let overlayVersionIds: string[] = [];
   const marker = `${ctx.marker("STB5B")}-MARKER`;
@@ -547,6 +629,7 @@ const B19A: StepFn = async (ctx) => {
     decisionAction = "edit";
   }
   const finalReport = await waitRun(ctx, leg, runId, "terminal", 25 * 60_000);
+  await clearHold("B19A"); // a delivered run releases the held substrate (no-op unarmed)
 
   const decision = (await plainQuery(
     `select d.action, d.overlay_version_ids as ids, d.presence, d.changes
@@ -596,47 +679,64 @@ const B19A: StepFn = async (ctx) => {
 
 const B19B: StepFn = async (ctx) => {
   const leg = await signInLeg(ctx, "b19b");
-  const project = await createProjectWithDraft(ctx, leg, {
-    title: "b19b outline leg",
-    text: stb5bOutlineDraft(),
-  });
-  // seed the research index with a real chat turn (the promotion scope 'research' reads it).
-  const thread = await apiFetch(ctx, leg.context, `/projects/${project.projectId}/chat/threads`, {
-    method: "POST",
-    json: { name: ctx.marker("b19b research") },
-  });
-  if (thread.status !== 201 && thread.status !== 200) {
-    throw new Error(`chat thread create → ${thread.status}: ${thread.text.slice(0, 200)}`);
-  }
-  // POST /chat/threads returns {thread:{id,name,isDefault}} — the id is nested.
-  const threadId = (thread.body as { thread?: { id?: string } }).thread?.id;
-  if (!threadId) throw new Error(`thread create → ${JSON.stringify(thread.body).slice(0, 200)}`);
-  const turn = await apiFetch(ctx, leg.context, `/projects/${project.projectId}/chat/threads/${threadId}/turns`, {
-    method: "POST",
-    json: {
-      message: "Collect the load-bearing facts about queue depth as a budget line — arrival vs completion rates, utilisation knee, ownership patterns — with sources.",
-      modelTier: "base",
-    },
-  });
-  if (turn.status !== 201 && turn.status !== 200) {
-    throw new Error(`chat turn → ${turn.status}: ${turn.text.slice(0, 240)}`);
-  }
-  const turnRunId = (turn.body as { runId?: string }).runId;
-  if (turnRunId) await waitRun(ctx, leg, turnRunId, "terminal", 15 * 60_000);
+  const resume = await resumeHold("B19B");
+  let runId: string;
+  let projectId: string;
+  let turnRunId: string | null = null;
+  if (resume) {
+    ({ runId, projectId } = resume);
+  } else {
+    const project = await createProjectWithDraft(ctx, leg, {
+      title: "b19b outline leg",
+      text: stb5bOutlineDraft(),
+    });
+    projectId = project.projectId;
+    // seed the research index with a real chat turn (the promotion scope 'research' reads it).
+    const thread = await apiFetch(ctx, leg.context, `/projects/${projectId}/chat/threads`, {
+      method: "POST",
+      json: { name: ctx.marker("b19b research") },
+    });
+    if (thread.status !== 201 && thread.status !== 200) {
+      throw new Error(`chat thread create → ${thread.status}: ${thread.text.slice(0, 200)}`);
+    }
+    // POST /chat/threads returns {thread:{id,name,isDefault}} — the id is nested.
+    const threadId = (thread.body as { thread?: { id?: string } }).thread?.id;
+    if (!threadId) throw new Error(`thread create → ${JSON.stringify(thread.body).slice(0, 200)}`);
+    const turn = await apiFetch(ctx, leg.context, `/projects/${projectId}/chat/threads/${threadId}/turns`, {
+      method: "POST",
+      json: {
+        message: "Collect the load-bearing facts about queue depth as a budget line — arrival vs completion rates, utilisation knee, ownership patterns — with sources.",
+        modelTier: "base",
+      },
+    });
+    if (turn.status !== 201 && turn.status !== 200) {
+      throw new Error(`chat turn → ${turn.status}: ${turn.text.slice(0, 240)}`);
+    }
+    turnRunId = (turn.body as { runId?: string }).runId ?? null;
+    if (turnRunId) await waitRun(ctx, leg, turnRunId, "terminal", 15 * 60_000);
 
-  const slug = `b19b-${ctx.nonce}`;
-  const promo = await apiFetch(ctx, leg.context, `/projects/${project.projectId}/outline/promotions`, {
-    method: "POST",
-    json: buildOutlinePromotionBody({ slug }),
-  });
-  if (promo.status !== 201) {
-    throw new Error(`outline promotion → ${promo.status}: ${promo.text.slice(0, 240)}`);
+    const slug = `b19b-${ctx.nonce}`;
+    const promo = await apiFetch(ctx, leg.context, `/projects/${projectId}/outline/promotions`, {
+      method: "POST",
+      json: buildOutlinePromotionBody({ slug }),
+    });
+    if (promo.status !== 201) {
+      throw new Error(`outline promotion → ${promo.status}: ${promo.text.slice(0, 240)}`);
+    }
+    runId = (promo.body as { runId?: string }).runId ?? "";
+    if (!runId) throw new Error(`promotion → ${JSON.stringify(promo.body).slice(0, 200)}`);
   }
-  const runId = (promo.body as { runId?: string }).runId;
-  if (!runId) throw new Error(`promotion → ${JSON.stringify(promo.body).slice(0, 200)}`);
 
   await waitRun(ctx, leg, runId, "waiting_gate", 25 * 60_000);
-  const gate = await openGateFor(ctx, leg, project.projectId, runId);
+  const gate = await openGateFor(ctx, leg, projectId, runId);
+  if (!resume && gate && (await holdGate("B19B", { runId, projectId, gateId: gate.id, kind: gate.kind }))) {
+    await writeEvidence(ctx, "B19B", {
+      held: true, runId, projectId, gateId: gate.id, kind: gate.kind,
+      note: "JOURNEY_FUNDED_HOLD_GATE arm — the open gate is left for the window's riders (T15); re-run this step with the same hold dir to resume at the decision",
+    });
+    throw new Error(`B19B held — gate ${gate.id} left open for the funded window's riders (T15); re-run to resume`);
+  }
+  const project = { projectId };
   let decisionAction: string | null = null;
   let overlayVersionIds: string[] = [];
   const marker = `${ctx.marker("STB5B")}-MARKER`;
@@ -647,6 +747,7 @@ const B19B: StepFn = async (ctx) => {
     decisionAction = "edit";
   }
   await waitRun(ctx, leg, runId, "terminal", 25 * 60_000);
+  await clearHold("B19B"); // a delivered run releases the held substrate (no-op unarmed)
 
   const decision = (await plainQuery(
     `select d.action, d.overlay_version_ids as ids from decisions d join gates g on g.id = d.gate_id
@@ -712,7 +813,7 @@ const B19C: StepFn = async (ctx) => {
   // funded window runs MUST post the pin verbatim — `cogsLeversFor("B19C")` is the read seam (the
   // registry test asserts it stays declared).
   await writeEvidence(ctx, "B19C", {
-    capUsd: STB5B_CAPS["B19C"],
+    capUsd: ctx.step.capUsd,
     skipped: "pre-registered drop — exceeds the leg's budget slot within the ≤$25 / ≈$12 envelope; the approve_sample + hold-out/leak legs defer to the next funded window (D-P1.14-1 stays OPEN)",
   });
   throw new Error(
