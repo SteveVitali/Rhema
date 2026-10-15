@@ -299,6 +299,9 @@ export interface ShowcaseSeedDeps {
   readonly clock?: { now(): Date };
   /** bound in the live deploy so the dossier's markdown renders; absent in pure-fixture tests. */
   readonly store?: ShowcaseStore;
+  /** the audit label stamped into `created_by`/`frozen_by`/`discharged_by` blobs
+   *  (default `"showcase-seed"`; the writable journey seed names its own). */
+  readonly seedLabel?: string;
 }
 
 export interface ShowcaseSeedResult {
@@ -344,20 +347,31 @@ async function writeArtifact(
      values ($1,$2,$3,$4,$5,$6,$7,'text/markdown',$8,true,'ok')`,
     [
       versionId, artifactId, spec.ordinal ?? 1, sha, s3Key, bytes.byteLength, words,
-      JSON.stringify({ kind: "system", label: "showcase-seed" }),
+      JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" }),
     ],
   );
   return { artifactId, versionId };
 }
 
-/**
- * Seed the workspace's one Showcase project (idempotent — an existing showcase row returns its ids
- * untouched). Everything here is fixture content copied in at provisioning: no inference, no spend.
- */
-export async function seedShowcaseProject(
+/** Which dossier shape a seed writes — the workspace's one read-only Showcase (provisioning's
+ *  caller), or a normal WRITABLE project carrying the same fixture dossier (SPA.21's
+ *  T12F/T13F seeded-mutation legs — the Showcase itself is `showcaseReadOnlyGuard`-frozen). */
+export interface DossierSeedTarget {
+  /** true ⇒ the read-only Showcase (`showcase=true`); false ⇒ a writable project the finding
+   *  mutation routes accept. */
+  readonly showcase: boolean;
+  /** the workspace-unique slug base — deconflicted with `-2`, `-3`… like the Showcase's. */
+  readonly slugBase: string;
+  readonly title: string;
+}
+
+async function seedDossierProject(
   db: MigrationDb,
   deps: ShowcaseSeedDeps,
+  target: DossierSeedTarget,
 ): Promise<ShowcaseSeedResult> {
+  // Idempotent per target: the Showcase keys on `p.showcase`; a writable dossier keys on its slug
+  // base (a workspace may carry BOTH — the read-only fixture and the seeded writable one).
   const existing = (
     await db.query(
       `select p.id, p.slug,
@@ -368,8 +382,10 @@ export async function seedShowcaseProject(
                 where ci.project_id = p.id and ci.kind = 'review' order by f.ordinal limit 1) as first_finding_id,
               (select ci.id from correspondence_items ci
                 where ci.project_id = p.id and ci.kind = 'review' order by ci.ordinal limit 1) as review_corr_id
-         from projects p where p.workspace_id = $1 and p.showcase and p.deleted_at is null limit 1`,
-      [deps.workspaceId],
+         from projects p where p.workspace_id = $1 and p.showcase = $2
+           and (p.slug = $3 or p.slug like $3 || '-%') and p.deleted_at is null
+         order by p.slug limit 1`,
+      [deps.workspaceId, target.showcase, target.slugBase],
     )
   ).rows[0] as
     | { id: string; slug: string; review_run_id: string | null; first_finding_id: string | null; review_corr_id: string | null }
@@ -398,16 +414,16 @@ export async function seedShowcaseProject(
   // workspace-unique slug (the fixed base wins unless a user project already took it).
   const slugRes = await db.query(
     `select slug from projects where workspace_id = $1 and slug like $2`,
-    [deps.workspaceId, `${SHOWCASE_SLUG}%`],
+    [deps.workspaceId, `${target.slugBase}%`],
   );
   const taken = new Set((slugRes.rows as { slug: string }[]).map((r) => r.slug));
-  let slug = SHOWCASE_SLUG;
-  for (let i = 2; taken.has(slug); i++) slug = `${SHOWCASE_SLUG}-${i}`;
+  let slug = target.slugBase;
+  for (let i = 2; taken.has(slug); i++) slug = `${target.slugBase}-${i}`;
 
   await db.query(
     `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, showcase)
-     values ($1,$2,$3,$4,$5,'essay',true)`,
-    [projectId, deps.workspaceId, deps.ownerId, SHOWCASE_TITLE, slug],
+     values ($1,$2,$3,$4,$5,'essay',$6)`,
+    [projectId, deps.workspaceId, deps.ownerId, target.title, slug, target.showcase],
   );
   await db.query(
     `insert into project_members (project_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
@@ -438,7 +454,7 @@ export async function seedShowcaseProject(
   await db.query(
     `insert into drafts (id, project_id, n, origin, state, promoted_version_id, frozen_at, frozen_by)
      values ($1,$2,1,'imported','frozen',$3,$4,$5)`,
-    [v1Id, projectId, v1.versionId, now.toISOString(), JSON.stringify({ kind: "system", label: "showcase-seed" })],
+    [v1Id, projectId, v1.versionId, now.toISOString(), JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" })],
   );
   await db.query(
     `insert into drafts (id, project_id, n, origin, state, promoted_version_id, base_draft_id)
@@ -559,7 +575,7 @@ export async function seedShowcaseProject(
         [
           deps.ids(), projectId, findingId, f.severity, f.kind, f.title,
           discharged ? "discharged" : "open", now.toISOString(), v1Id,
-          JSON.stringify({ kind: "system", label: "showcase-seed" }),
+          JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" }),
           discharged ? now.toISOString() : null,
           discharged ? JSON.stringify({ kind: "disposition", at: now.toISOString(), via: "response" }) : null,
         ],
@@ -570,4 +586,45 @@ export async function seedShowcaseProject(
   void outline; // the outline artifact exists for the Files pane + story completeness.
 
   return { projectId, slug, reviewRunId: runId, reviewCorrId: corrId, firstFindingId };
+}
+
+/**
+ * Seed the workspace's one Showcase project (idempotent — an existing showcase row returns its ids
+ * untouched). Everything here is fixture content copied in at provisioning: no inference, no spend.
+ */
+export function seedShowcaseProject(
+  db: MigrationDb,
+  deps: ShowcaseSeedDeps,
+): Promise<ShowcaseSeedResult> {
+  return seedDossierProject(db, deps, {
+    showcase: true,
+    slugBase: SHOWCASE_SLUG,
+    title: SHOWCASE_TITLE,
+  });
+}
+
+export interface WritableDossierSeedDeps extends ShowcaseSeedDeps {
+  /** the workspace-unique slug base (the caller names it — journeys pass a `jrn-*` base). */
+  readonly slugBase: string;
+  readonly title: string;
+}
+
+/**
+ * SPA.21 (REQ-VFY-10) — the SEEDED WRITABLE dossier the journeys' T12F/T13F free mutation legs need:
+ * the same deterministic fixture the Showcase carries (letter, claim ledger, findings incl. the
+ * suggestion-bearing anchor, rubric, triage ledger) on a NORMAL project (`showcase=false`), so the
+ * finding mutation routes' `showcaseReadOnlyGuard` does not freeze it. Idempotent on the slug base.
+ * Journeys bind `db` to the `JOURNEY_DATABASE_URL` pool inside the tenant-scoped transaction;
+ * `store` stays unbound there (the letter's bytes never mint — the mutation legs assert findings,
+ * not letter text).
+ */
+export function seedWritableDossier(
+  db: MigrationDb,
+  deps: WritableDossierSeedDeps,
+): Promise<ShowcaseSeedResult> {
+  return seedDossierProject(db, deps, {
+    showcase: false,
+    slugBase: deps.slugBase,
+    title: deps.title,
+  });
 }

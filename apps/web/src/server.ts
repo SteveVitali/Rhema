@@ -43,7 +43,7 @@ import {
 } from "./routes.js";
 import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
-import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
+import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome, DossierData } from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
 import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto, EstimateRequestDto, CreatedRunDto } from "@rhema/api-client";
 import type { ProjectRow } from "@rhema/api-client";
@@ -99,7 +99,7 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, type GateKind, type PublicClaimsConfig, type FindingView } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -4636,11 +4636,13 @@ export function createWebApp(deps: WebDeps): Hono {
   // per-run deadline pick ("this run only", REQ-SPEC-1-validated at the api).
   app.post("/p/:project/gates/:gid", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    // SPA.21 — `wantsJson` dual-mode: the dossier's focused-gate card + the Inbox row post through
+    // the envelope (`{error}` at the preserved status; `{ok,redirect}` on success).
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const action = typeof form.action === "string" ? form.action : "";
     const guidance = typeof form.guidance === "string" && form.guidance.trim() !== "" ? form.guidance : undefined;
     const standing = form.standing === "true" || form.standing === "on";
@@ -4658,14 +4660,19 @@ export function createWebApp(deps: WebDeps): Hono {
         overrides = { [gate.kind as GateKind]: runOverride === "wait" ? null : Number(runOverride) };
       }
     }
-    await deps.dataSource.decideGate(session, row.id, c.req.param("gid"), {
-      action: action === "wait" ? "wait" : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
-      ...(guidance != null ? { guidance } : {}),
-      ...(standing ? { standingRule: true } : {}),
-      ...(hasEdits ? { edits } : {}),
-      ...(overrides ? { overrides } : {}),
-    });
-    return c.redirect(`/p/${slug}`);
+    try {
+      await deps.dataSource.decideGate(session, row.id, c.req.param("gid"), {
+        action: action === "wait" ? "wait" : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
+        ...(guidance != null ? { guidance } : {}),
+        ...(standing ? { standingRule: true } : {}),
+        ...(hasEdits ? { edits } : {}),
+        ...(overrides ? { overrides } : {}),
+      });
+    } catch (e) {
+      if (wantsJson(c)) return bffFail(c, e, { msg: "gate_decide_failed" });
+      throw e;
+    }
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // PRB.05 — a presence/reading ping from a gate card's inline script (§6.4 item 2; REQ-SPEC-18).
@@ -5199,23 +5206,32 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // Auth-gated: the delivered-review dossier reading surface (PRB.04, §5.5/§5.7/§6.6). The findings-core read
   // models + @rhema/ui surfaces render server-side; the live data binding (reading a delivered run) is D-PRB.04-1.
-  app.get("/p/:project/review/:runId", async (c) => {
-    const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const runId = c.req.param("runId");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+  //
+  // SPA.21 — `dossierComposition` is the ONE composition the document GET and `GET
+  // /bff/p/:slug/review/:runId` share (the runSheetComposition precedent): the same seams, the same
+  // degrade posture, the same view emissions (`run.report_viewed`, per-finding `finding.viewed`,
+  // `secondread.opened`, the inbox-read mark), the same URL-owned view state — so the two renderers
+  // read + log identically and the twin can never price/diff differently.
+  const dossierComposition = async (
+    c: Context,
+    session: SessionHeaders,
+    row: ProjectRow,
+    runId: string,
+  ): Promise<{
+    dossier: DossierData;
+    filteredRows: FindingView[];
+    timeline: TimelineDto | null;
+    savedFindingId?: string;
+    dossierView: NonNullable<PageData["dossierView"]>;
+  } | null> => {
+    const slug = row.slug;
     // STB.2 — the api's dossier 404 (a run that completed without a delivered review correspondence)
     // must render the not-found page, not escape as a 500.
     const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId }).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     });
-    if (!dossier) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!dossier) return null;
     // P1.19 — landing on a run deep link collapses the run's Inbox rows read (REQ-MOBILE-16; the
     // api's mark is idempotent — opening the dossier from anywhere counts as "seen").
     await Promise.resolve()
@@ -5283,19 +5299,11 @@ export function createWebApp(deps: WebDeps): Hono {
             (g) => g.id === focusGateId,
           ) ?? null)
         : null;
-    return c.html(renderDocument(c.req.path, dossierElement, {
-      // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
-      // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
-      // P1.07 — the ticks echo the SHARED filtered list (the same set the Margin/Desk render).
-      ...(await ideContext(c, session, row, {
-        findings: filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
-        ...(timeline
-          ? { timelineView: timeline, runNextHref: `/p/${slug}/run` }
-          : { timeline: [{ id: runId, label: dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
-        status: { version: dossier.versionLabel },
-      })),
-      project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
+    return {
       dossier,
+      filteredRows,
+      timeline,
+      ...(savedFindingId ? { savedFindingId } : {}),
       dossierView: {
         filters,
         triage: c.req.query("triage") === "1",
@@ -5312,11 +5320,69 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(notice != null ? { notice } : {}),
         ...(focusedGate != null ? { focusedGate } : {}),
       },
+    };
+  };
+
+  app.get("/p/:project/review/:runId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
+    if (spaDoc) return spaDoc;
+    const slug = c.req.param("project");
+    const runId = c.req.param("runId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const comp = await dossierComposition(c, session, row, runId);
+    if (!comp) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(renderDocument(c.req.path, dossierElement, {
+      // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
+      // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
+      // P1.07 — the ticks echo the SHARED filtered list (the same set the Margin/Desk render).
+      ...(await ideContext(c, session, row, {
+        findings: comp.filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+        ...(comp.timeline
+          ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` }
+          : { timeline: [{ id: runId, label: comp.dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
+        status: { version: comp.dossier.versionLabel },
+      })),
+      project: { title: comp.dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
+      dossier: comp.dossier,
+      dossierView: comp.dossierView,
       compact: isPhoneRequest(c),
       dwellSurface: "dossier",
-      ...(savedFindingId ? { triage: { savedFindingId } } : {}),
+      ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
     }));
   });
+
+  // SPA.21 — `GET /p/:slug/review/:runId`'s twin (design/22 §2 `p.review` row; REQ-BFF-1/8/9/11):
+  // the dossier + dossierView + the `ide` chrome bag off the SHARED composition. `?disposed` rides
+  // the twin as `triage.savedFindingId` verbatim; `compact` is boot-owned (`deviceClass`), never
+  // the twin's to decide.
+  app.get("/bff/p/:slug/review/:runId", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const runId = c.req.param("runId") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const comp = await dossierComposition(c, session, row, runId);
+    if (!comp) return c.json({ error: "not_found" }, 404);
+    const ctx = await ideContext(c, session, row, {
+      findings: comp.filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+      ...(comp.timeline
+        ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` }
+        : { timeline: [{ id: runId, label: comp.dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
+      status: { version: comp.dossier.versionLabel },
+    });
+    return c.json({
+      dossier: comp.dossier,
+      dossierView: comp.dossierView,
+      ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
+      project: { title: comp.dossier.projectTitle, pill: "", slug },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
 
   // ---- P1.05 — the run report + §6.5 steering + the live-feed SSE proxy (§5.5/§14.5) ----
 
@@ -5482,13 +5548,17 @@ export function createWebApp(deps: WebDeps): Hono {
   // runId locates the dossier to re-render) and the project-scoped route a gate card's per-row override uses.
   const dispositionHandler = async (c: Context) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    // SPA.21 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): a JSON caller is never handed the
+    // document's 302/404 HTML arms — `{error}` at the preserved status, `{ok,redirect}` on success.
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const findingId = c.req.param("fid") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row || findingId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row || findingId === "") {
+      return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const verb = str("verb");
     const note = str("note");
@@ -5503,6 +5573,8 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(reasonCode.trim() !== "" ? { reasonCode } : {}),
       });
     } catch (e) {
+      // JSON callers get the upstream code/status verbatim — the leaf repaints the refusal itself.
+      if (wantsJson(c)) return bffFail(c, e, { msg: "dossier_disposition_failed" });
       if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
         // Re-render the dossier with the error under the card when we have one; otherwise bounce back
         // to the project page (the error is on the gate row's form — the POST stays idempotent).
@@ -5527,7 +5599,8 @@ export function createWebApp(deps: WebDeps): Hono {
       }
       throw e;
     }
-    return c.redirect(`${back}${back.includes("?") ? "&" : "?"}disposed=${encodeURIComponent(findingId)}`);
+    // `{ok,redirect}` carries the IDENTICAL `?disposed=` flash URL the 302 would have.
+    return mutationOutcome(c, { redirect: `${back}${back.includes("?") ? "&" : "?"}disposed=${encodeURIComponent(findingId)}` });
   };
   app.post("/p/:project/review/:runId/findings/:fid/disposition", dispositionHandler);
   app.post("/p/:project/findings/:fid/disposition", dispositionHandler);
@@ -5543,18 +5616,23 @@ export function createWebApp(deps: WebDeps): Hono {
     ) =>
     async (c: Context) => {
       const session = deps.session(c);
-      if (!session) return c.redirect("/login");
+      // SPA.21 — `wantsJson` dual-mode (REQ-BFF-1/3/4): JSON callers get `{error}`/`{ok,redirect}`,
+      // never the document's 302/HTML arms.
+      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project") ?? "";
       const runId = c.req.param("runId") ?? "";
       const findingId = c.req.param("fid") ?? "";
       const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-      if (!row || findingId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
-      const form = (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+      if (!row || findingId === "") {
+        return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+      }
+      const form = await bodyFields(c);
       const nextRaw = typeof form["next"] === "string" ? form["next"] : "";
       const back = safeBack(nextRaw, runId !== "" ? `/p/${slug}/review/${runId}` : `/p/${slug}`);
       try {
         await act(session, row.id, findingId);
       } catch (e) {
+        if (wantsJson(c)) return bffFail(c, e, { msg: "dossier_finding_action_failed" });
         if (e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 422)) {
           const sep = back.includes("?") ? "&" : "?";
           const msg =
@@ -5568,7 +5646,7 @@ export function createWebApp(deps: WebDeps): Hono {
         throw e;
       }
       const sep = back.includes("?") ? "&" : "?";
-      return c.redirect(`${back}${sep}${notice}=${encodeURIComponent(findingId)}#finding-${encodeURIComponent(findingId)}`);
+      return mutationOutcome(c, { redirect: `${back}${sep}${notice}=${encodeURIComponent(findingId)}#finding-${encodeURIComponent(findingId)}` });
     };
 
   const callApply = (s: SessionHeaders, p: string, f: string) => {
@@ -5608,22 +5686,41 @@ export function createWebApp(deps: WebDeps): Hono {
       obligationNew: { slug, projectTitle: row.title, back },
     }));
   });
+  // SPA.21 — `GET /p/:slug/obligations/new`'s twin (design/22 §2 `p.obligationNew` row): the document's
+  // own composition verbatim — slug, project title, the `safeBack`-resolved `back`. The create POST
+  // is the SAME `/p/:slug/obligations` path with a `wantsJson` branch (the DOM contract's form action
+  // is the wire contract).
+  app.get("/bff/p/:slug/obligations/new", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    // design/22 `p.obligationNew`: `?back` keeps the `safeBack` `/p/…` confinement.
+    const back = safeBack(c.req.query("back") ?? "", `/p/${slug}`);
+    return c.json({ obligationNew: { slug, projectTitle: row.title, back } });
+  }));
   app.post("/p/:project/obligations", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    // SPA.21 — `wantsJson` dual-mode: JSON callers get `{error}`/`{ok,redirect}`, never HTML/302.
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+    if (!row) {
+      return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
+    const form = await bodyFields(c);
     const title = typeof form["title"] === "string" ? form["title"].trim() : "";
     const severity = typeof form["severity"] === "string" ? form["severity"] : "";
     const back = safeBack(typeof form["next"] === "string" ? form["next"] : "", `/p/${slug}`);
     if (title === "") {
+      // the document's empty-title arm is a 422 re-render; the JSON arm is the same status + a
+      // stable code (the leaf re-renders the form's own error line).
+      if (wantsJson(c)) return c.json({ error: "title_required", detail: COPY.obligation.required }, 422);
       return c.html(renderDocument(c.req.path, obligationNewElement, {
         obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.required },
       }), 422);
     }
     if (deps.dataSource.createObligation == null) {
+      if (wantsJson(c)) return c.json({ error: "obligation_unavailable" }, 503);
       return c.html(renderDocument(c.req.path, obligationNewElement, {
         obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
       }), 503);
@@ -5636,6 +5733,7 @@ export function createWebApp(deps: WebDeps): Hono {
           : "minor",
       });
     } catch (e) {
+      if (wantsJson(c)) return bffFail(c, e, { msg: "obligation_create_failed" });
       if (e instanceof ApiError && e.status < 500) {
         return c.html(renderDocument(c.req.path, obligationNewElement, {
           obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
@@ -5644,7 +5742,7 @@ export function createWebApp(deps: WebDeps): Hono {
       throw e;
     }
     const sep = back.includes("?") ? "&" : "?";
-    return c.redirect(`${back}${sep}obligation=new`);
+    return mutationOutcome(c, { redirect: `${back}${sep}obligation=new` });
   });
 
   // ---- P1.07 — the one-preview bulk actions (§5.7; REQ-IDE-29 amended). bulk-preview bounces to the
@@ -5652,29 +5750,31 @@ export function createWebApp(deps: WebDeps): Hono {
   // dispatches the CHECKED subset (`only[]` — unchecked rows are never written). ----
   app.post("/p/:project/review/:runId/findings/bulk-preview", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    // SPA.21 — `wantsJson` dual-mode: the preview bounce is a navigation request — a JSON caller
+    // gets `{ok,redirect}` carrying the IDENTICAL `?bulk=&bsec=#findings` URL.
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
     const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
     if (!["apply_notes", "defer_minor", "accept_section"].includes(action)) {
-      return c.redirect(`/p/${slug}/review/${runId}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/review/${runId}` });
     }
     const q = `bulk=${encodeURIComponent(action)}${section !== "" ? `&bsec=${encodeURIComponent(section)}` : ""}`;
-    return c.redirect(`/p/${slug}/review/${runId}?${q}#findings`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/review/${runId}?${q}#findings` });
   });
 
   app.post("/p/:project/review/:runId/findings/bulk", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
     const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
     const only = form["only"] == null ? undefined
@@ -5682,7 +5782,7 @@ export function createWebApp(deps: WebDeps): Hono {
       : typeof form["only"] === "string" ? [form["only"] as string] : undefined;
     const back = `/p/${slug}/review/${runId}`;
     if (!["apply_notes", "defer_minor", "accept_section"].includes(action) || deps.dataSource.applyBulkFindings == null) {
-      return c.redirect(back);
+      return mutationOutcome(c, { redirect: back });
     }
     try {
       const result = await deps.dataSource.applyBulkFindings(session, row.id, runId, {
@@ -5690,8 +5790,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(section !== "" ? { section } : {}),
         ...(only != null ? { only } : {}),
       });
-      return c.redirect(`${back}?bulkdone=${result.count}&bulkskip=${result.skipped.length}#findings`);
+      return mutationOutcome(c, { redirect: `${back}?bulkdone=${result.count}&bulkskip=${result.skipped.length}#findings` });
     } catch (e) {
+      if (wantsJson(c)) return bffFail(c, e, { msg: "dossier_bulk_failed" });
       if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
         return c.redirect(`${back}?ferr=bulk&fmsg=${encodeURIComponent("The bulk action did not complete — the ledger may be frozen.")}#findings`);
       }

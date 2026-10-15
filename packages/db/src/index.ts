@@ -23,9 +23,11 @@ export { agentTypesSeed, protocolsSeed } from "./seed/code-seed.js";
 export { seedRealProjects } from "./seed/real-projects.js";
 export {
   seedShowcaseProject,
+  seedWritableDossier,
   SHOWCASE_FIXTURE_CLAIMS,
   SHOWCASE_FIXTURE_FINDINGS,
   type ShowcaseSeedDeps,
   type ShowcaseSeedResult,
   type ShowcaseStore,
+  type WritableDossierSeedDeps,
 } from "./seed/showcase.js";

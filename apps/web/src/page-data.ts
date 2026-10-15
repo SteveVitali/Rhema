@@ -4,7 +4,6 @@ import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
   ApprovalSettingsDto,
-  BulkPreviewDto,
   DecisionItemDto,
   InboxItemDto,
   EditorDocDto,
@@ -53,6 +52,9 @@ import type {
   NotificationPrefsDto,
 } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
+// SPA.21 — the dossier view-state bags are declared in the shared SSR↔SPA module (one source of
+// truth both renderers type against); this file keeps the field docs + aliases them back.
+import type { DossierViewState, TriageSurfaceState } from "./dossier-view.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
 // hands to the page tree through React context. Pages read it with `usePageData()`.
@@ -293,26 +295,9 @@ export interface PageData {
    * params, triage mode (`?triage=1`), the one consolidated bulk preview (`?bulk=<action>`), a dispatch
    * result line, and the notice a bounced Apply/promote/obligations POST re-renders with.
    */
-  readonly dossierView?: {
-    readonly filters: Record<string, string | undefined>;
-    readonly triage: boolean;
-    readonly bulk?: { readonly action: string; readonly section?: string; readonly preview: BulkPreviewDto };
-    readonly bulkDone?: { readonly count: number; readonly skipped: number };
-    readonly notice?: { readonly kind: "applied" | "promoted" | "obligated" | "error"; readonly findingId: string; readonly message?: string };
-    /**
-     * P1.19 — the Inbox gate row's deep link lands `?gate=<id>` here (REQ-IDE-2 amended): the dossier
-     * mounts that gate's real card at the head of the artifact — "approve reads the artifact first",
-     * and on phone width (where the Timeline is display:none) it's the row's approve surface.
-     */
-    readonly focusedGate?: GateCardDto;
-  };
+  readonly dossierView?: DossierViewState;
   /** PRB.05 — per-request shell state for the triage surfaces. */
-  readonly triage?: {
-    /** a disposition-validation error from the last POST (re-rendered under the finding card). */
-    readonly dispositionError?: { readonly findingId: string; readonly message: string };
-    /** a saved marker ("Saved") under the card the last POST wrote. */
-    readonly savedFindingId?: string;
-  };
+  readonly triage?: TriageSurfaceState;
   /** P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): the api-ordered rows + the rail badge
    *  (approvals + decisions only). The rows carry ids + templated strings — never finding/draft text. */
   readonly inbox?: {

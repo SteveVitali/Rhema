@@ -9,79 +9,29 @@ import {
   DossierView,
   ConversionPreview,
   RunSheet,
-  RunCard,
-  LetterView,
-  ClaimsTable,
-  RubricView,
-  SecondReadView,
-  FindingsList,
-  VersionObligationChip,
   BalanceChip,
-  DispositionControls,
   ApprovalRow,
   DecisionsList,
   WhatChangedView,
-  RubricDelta,
   SourceEditor,
   PageEditor,
   IdeShell,
   EmptyProject,
   RunReport,
-  MarginSurface,
-  FindingsDesk,
   VersionRail,
   CompareView,
   FilesPane,
   OutlineSections,
-  ChatDesk,
-  type ChatDeskLabels,
   type VersionRailLabels,
   type CompareLabels,
-  type MarginLabels,
-  type FindingsDeskLabels,
   type WhatChangedLabels,
   type SourceEditorLabels,
   type PageEditorLabels,
   type DossierLabels,
-  type RunCardLabels,
-  type LetterViewLabels,
-  type ClaimsTableLabels,
-  type RubricLabels,
-  type SecondReadLabels,
-  type FindingsListLabels,
-  type ClaimTableRow,
-  type LiveFeedLabels,
-  type TimelineLabels,
-  type TimelineHrefs,
-  type RunReportLabels,
 } from "@rhema/ui";
 import {
-  buildRunCardView,
-  buildRubricView,
-  buildTrustChip,
-  buildTriageQueue,
-  pretriageSummary,
-  groupFindingsForList,
-  detectReconciliationConflicts,
-  collapsedRejected,
-  summarizeReconciliation,
-  claimUrlViews,
-  evidenceUrlViews,
-  fetchLogFromRows,
-  normalizeEvidence,
-  buildRubricDelta,
-  // P1.07 — the findings-surface derivations (§5.7): margin clustering, the shared filters, the
-  // sectioned triage queue, the Quick severity budget, and the Apply gate.
-  marginItems,
-  filterFindings,
-  parseFindingFilters,
-  sectionedTriageQueue,
-  severityBudget,
-  applySeverityBudget,
-  applyGate,
-  LIVE_OBLIGATION_STATES,
-  type TrustChipLabels,
-  // P1.09 — the §6.4 surface helpers: the Needs-you ordering + the decision-record view.
+  // P1.09 — the §6.4 surface helpers: the Needs-you ordering + the decision-record view. (The
+  // dossier's findings-surface derivations moved to ./dossier-view.js with the view — SPA.21.)
   needsYouOrder,
   type GateDecisionView,
 } from "@rhema/findings-core";
@@ -91,14 +41,12 @@ import type {
   VoiceStatusDto,
   VoiceListRowDto,
   VoiceDetailDto,
-  ChatPanelDto,
   VoiceConnectionDto,
   VoiceConnectionsDto,
   VoiceSampleDto,
   VoiceSampleDetailDto,
 } from "@rhema/api-client";
 import {
-  CHECKABLE_CLAIM_KINDS,
   MODEL_TIERS,
   MODEL_TIER_DISPLAY,
   RIGORS,
@@ -110,16 +58,12 @@ import {
   ACCOUNT_DELETION_CONFIRMATION,
   emailEnabled,
   isNonConfigurableEvent,
-  type ClaimKind,
-  type FindingView,
 } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { runLabelFor, runSheetLabels, runSheetVoiceLabels } from "./run-sheet-labels.js";
 import {
   approvalRowLabels,
-  decisionLine,
   decisionsLabels,
-  dispositionLabels,
   gateCardFor,
   gateCardModel,
   outlineLabels,
@@ -133,6 +77,19 @@ import { filesLabels } from "./files-labels.js";
 // pages AND the settings SPA surface render the same composition.
 import { ApprovalSettingsSection } from "./approval-settings.js";
 import { usePageData } from "./page-data.js";
+// SPA.21 — the dossier's shared view module: the Timeline/Feed/run-report/dossier label bags, the
+// §5.7 surfaces helper, and `DossierArticle` (the verbatim Page body) moved to ./dossier-view.js so
+// the SSR page and the SPA leaf emit the same DOM; the chat pane moved to ./chat-pane.js.
+import {
+  runCardLabels,
+  timelineLabels,
+  timelineHrefs,
+  feedLabels,
+  reportLabels,
+  dossierSurfaces,
+  DossierArticle,
+} from "./dossier-view.js";
+import { chatPanel } from "./chat-pane.js";
 
 /** Replace `{key}` placeholders in a copy template with string/number values. */
 function fmt(template: string, vars: Record<string, string | number>): string {
@@ -1349,535 +1306,15 @@ export function RunSheetPage(): ReactNode {
 
 const R = COPY.review;
 
-const runCardLabels: RunCardLabels = {
-  phaseLabel: (k) => R.phaseLabel[k] ?? k,
-  stateLabel: (s) => R.runStateLabel[s] ?? s,
-  // RPT.1 (REQ-SPEC-32(a)) — a provisional mid-phase metered reading renders the ≈ marker; the SSE
-  // patch in ide.ts re-renders the SAME `card.meter`/`card.meterProvisional` templates (copy.ts) so
-  // SSR and live rows never diverge.
-  creditsLabel: (spent, cap, provisional) =>
-    fmt(COPY.feed.templates[provisional === true ? "card.meterProvisional" : "card.meter"]!, {
-      spentCredits: spent.toLocaleString("en-US"),
-      capCredits: cap.toLocaleString("en-US"),
-    }),
-  etaLabel: (lo, hi) => `~${lo}–${hi} min`,
-  offLabel: R.offLabel,
-  counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
-  refundLabel: (credits) => fmt(R.refundFmt, { n: credits }),
-  // RES.2 — the run-level delivery-label line above the card's state/verdict (machine value → copy).
-  deliveryLabel: () => fmt(R.deliveryBannerFmt, { label: R.deliveryLabel }),
-  // ---- P1.05 — the §5.5 state chrome + §6.5 steering ----
-  queueLabel: (pos) => fmt(COPY.steer.queueFmt, { n: pos }),
-  estimateLabel: (actual, est) =>
-    fmt(COPY.steer.estimateLineFmt, { actual: actual.toLocaleString("en-US"), est: est.toLocaleString("en-US") }),
-  pausedLabel: (done, total) => fmt(COPY.steer.pausedFmt, { done, total }),
-  partialLabel: (done, total) => fmt(COPY.steer.partialFmt, { done, total }),
-  waitingGateLabel: (kind, deadlineAt) =>
-    fmt(COPY.steer.waitingGateFmt, { kind: G.kindLabel[kind] ?? kind }) + (deadlineAt != null ? ` · ${deadlineAt.slice(0, 10)}` : ""),
-  queuedNotesLabel: (n) => fmt(COPY.steer.queuedNotesFmt, { n }),
-  deliverableLabel: (key, count) =>
-    count != null ? fmt(COPY.steer.deliverableLabel[key] ?? key, { n: count }) : (COPY.steer.deliverableLabel[key] ?? key),
-  actionLabel: (action) =>
-    action === "pause" ? COPY.steer.pause
-    : action === "stop" ? COPY.steer.stop
-    : action === "cancel" ? COPY.steer.cancel
-    : action === "resume" ? COPY.steer.resume
-    : action === "note" ? COPY.steer.note
-    : action === "report" ? COPY.steer.report
-    : action === "open_deliverable" ? COPY.steer.openDeliverable
-    : action === "live_feed" ? COPY.steer.liveFeed
-    : COPY.steer.retryWalkthrough,
-  notePlaceholder: COPY.steer.notePlaceholder,
-  walkthroughHeading: COPY.steer.walkthroughHeading,
-  walkthroughPendingLabel: COPY.steer.walkthroughPending,
-  walkthroughFailedLabel: COPY.steer.walkthroughFailed,
-  reportLabel: COPY.steer.report,
-  // P1.09 (§6.4 item 8; REQ-RUN-5/6) — the permanent approval-decision lines under the run card.
-  decisionLabel: (d) => decisionLine(d),
-};
-
 // ---- P1.05 — the Timeline pane + the run report (§5.5/§14.5) ----
 
-const TL = COPY.timeline;
 const RP = COPY.report;
 
-const timelineLabels: TimelineLabels = {
-  nextStepLabel: (verb, headDraftN) =>
-    fmt(TL.nextStep[verb] ?? verb, { n: headDraftN ?? "" }).replace(/\s+/g, " ").trim(),
-  estimateLabel: (credits) => fmt(TL.estimateFmt, { n: credits.toLocaleString("en-US") }),
-  versionLabel: (n) => fmt(TL.versionFmt, { n }),
-  workflowLabel: (workflow, count) =>
-    (TL.workflowLabel[workflow] ?? workflow) + (count != null ? ` ${fmt(TL.countFmt, { n: count })}` : ""),
-  arrow: TL.arrow,
-  originChipLabel: (kind) => TL.originChip[kind],
-  runLineLabel: (workflow, createdAt) =>
-    `${TL.workflowLabel[workflow] ?? workflow} · ${createdAt.slice(0, 10)}`,
-  emptyText: COPY.ide.timeline.empty,
-  verbLabel: (verb) => TL.verbs[verb] ?? verb,
-};
-
-/** The card action targets inside a project's pages — steering POSTs + the dossier/report links. */
-function timelineHrefs(slug: string): TimelineHrefs {
-  return {
-    nextStep: `/p/${slug}/run`,
-    reportHref: (runId) => `/p/${slug}/r/${runId}#report`,
-    deliverableHref: (runId) => `/p/${slug}/review/${runId}`,
-    steeringHref: (runId, action) => `/p/${slug}/r/${runId}/${action}`,
-    gateHref: () => `/p/${slug}`,
-    versionHref: (n) => `/p/${slug}/v/${n}`,
-    verbHref: (verb) => `/p/${slug}/run?workflow=${verb}`,
-  };
-}
-
-const feedLabels: LiveFeedLabels = {
-  densityLabel: (d) => COPY.review.densityLabel[d] ?? d,
-  heading: COPY.review.feedHeading,
-};
-
-const reportLabels: RunReportLabels = {
-  heading: RP.heading,
-  estimateLine: (actual, estimate, ratio) =>
-    estimate != null
-      ? fmt(RP.estimateFmt, { spent: actual.toLocaleString("en-US"), est: estimate.toLocaleString("en-US") }) +
-        (ratio != null ? ` (${ratio}×)` : "")
-      : fmt(RP.noEstimate, { spent: actual.toLocaleString("en-US") }),
-  refundLine: (credits) => fmt(RP.refundFmt, { n: credits.toLocaleString("en-US") }),
-  phaseHeading: RP.phaseHeading,
-  phaseLabel: (k) => R.phaseLabel[k] ?? k,
-  seatLabel: (seat) => (seat != null ? (RP.seatLabel[seat] ?? seat) : "—"),
-  offLabel: R.offLabel,
-  phaseDetail: (credits, durationMs, searches, fetches) => {
-    // RPT.1 — truthful durations: a real sub-minute phase renders seconds (never "0 min"); a legacy
-    // row whose commit wrote started_at = ended_at (duration 0) renders the "—" the AC words — it has
-    // no duration to claim, and it must not borrow one.
-    const base =
-      durationMs != null
-        ? durationMs === 0
-          ? fmt(RP.phaseDetailDurationUnknownFmt, { credits: credits.toLocaleString("en-US") })
-          : durationMs < 60_000
-            ? fmt(RP.phaseDetailDurationSecFmt, {
-                credits: credits.toLocaleString("en-US"),
-                n: Math.max(1, Math.round(durationMs / 1000)),
-              })
-            : fmt(RP.phaseDetailDurationFmt, { credits: credits.toLocaleString("en-US"), n: Math.round(durationMs / 60000) })
-        : fmt(RP.phaseDetailFmt, { credits: credits.toLocaleString("en-US") });
-    const tail = searches > 0 || fetches > 0 ? ` · ${searches + fetches}` : "";
-    return base + tail;
-  },
-  seatsHeading: RP.seatsHeading,
-  seatSplitLine: (seat, credits, share) =>
-    fmt(RP.seatSplitFmt, { seat: RP.seatLabel[seat] ?? seat, credits: credits.toLocaleString("en-US"), pct: Math.round(share * 100) }),
-  flagsHeading: RP.flagsHeading,
-  // RPT.1 — flags render the server-computed figures through their templated sentences (§14.5).
-  flagLabel: (flag) => {
-    const key =
-      flag.key === "fact_check_dominated" && flag.count == null ? "fact_check_dominated_noClaims" : flag.key;
-    return fmt(RP.flagLabel[key] ?? flag.key, {
-      pct: flag.sharePct ?? "",
-      // retries may carry a comma-joined phase list — translate each controlled key.
-      phase: flag.phase != null ? flag.phase.split(",").map((k) => R.phaseLabel[k] ?? k).join(", ") : "",
-      n: flag.count ?? "",
-      ratio: flag.ratio ?? "",
-    }).replace(/\s+\)/g, ")").trim();
-  },
-  meteredLine: (metered, charged) =>
-    fmt(RP.meteredFmt, { metered: metered.toLocaleString("en-US"), charged: charged.toLocaleString("en-US") }),
-  differenceLabel: (d) => {
-    if (d.key === "refund") {
-      const reason = d.reason != null ? (RP.refundReasonLabel[d.reason] ?? null) : null;
-      return reason != null
-        ? fmt(RP.differenceFmt["refund"] ?? "{n} cr", { n: d.credits.toLocaleString("en-US"), reason })
-        : fmt(RP.differenceFmt["refundNoReason"] ?? "{n} cr", { n: d.credits.toLocaleString("en-US") });
-    }
-    return fmt(RP.differenceFmt[d.key] ?? "{n} cr", { n: d.credits.toLocaleString("en-US") });
-  },
-  workedExampleLabel: RP.workedExample,
-  claimsLine: (checked, verified, perVerified) =>
-    perVerified != null
-      ? fmt(RP.claimsFmt, { checked, verified, per: perVerified.toLocaleString("en-US") })
-      : fmt(RP.claimsNoVerifyFmt, { checked, verified }),
-  driversHeading: RP.driversHeading,
-  driverLabel: (key, phase, share) =>
-    key === "phase_share" && phase != null && share != null
-      ? fmt(RP.driverPhaseShareFmt, { phase: R.phaseLabel[phase] ?? phase, pct: Math.round(share * 100) })
-      : key === "within_estimate"
-        ? RP.driverWithinEstimate
-        : (RP.flagLabel[key] ?? key),
-  guidanceHeading: RP.guidanceHeading,
-  guidanceLabel: (key) => RP.guidanceLabel[key] ?? key,
-  advancedHeading: RP.advancedHeading,
-  advancedColumns: RP.advancedColumns,
-  notAvailable: RP.notAvailable,
-  loadAdvanced: RP.loadAdvanced,
-};
-
-const letterLabels: LetterViewLabels = {
-  tocHeading: R.letterTocHeading,
-  attestationHeading: R.attestationHeading,
-};
-
-const trustLabels: TrustChipLabels = {
-  boundary: R.trust.boundary,
-  fetched: R.trust.fetchedFmt,
-  secondRead: R.trust.secondRead,
-  blockedOne: R.trust.blockedOne,
-  blockedMany: R.trust.blockedMany,
-};
-
-const claimsLabels: ClaimsTableLabels = {
-  heading: R.claimsHeading,
-  tierLabel: (t) => `Tier ${t}`,
-  fetchedLabel: R.fetchedLabel,
-  searchResultLabel: R.searchResultLabel,
-  stanceLabel: (s) => R.stanceLabel[s] ?? s,
-  notCheckableLabel: (k) => (k ? fmt(R.notCheckableFmt, { kind: R.kindNounLabel[k] ?? k }) : ""),
-  accessedLabel: (a) => a.slice(0, 10),
-  contradictedTierOneLabel: R.contradictedTierOneLabel,
-};
-
-const rubricLabels: RubricLabels = {
-  heading: R.rubricHeading,
-  dimensionLabel: (d) => R.dimensionLabel[d] ?? d,
-  capLabel: (c) => fmt(R.capFmt, { at: c.at, reason: c.reason }),
-};
-
-const secondReadLabels: SecondReadLabels = {
-  heading: R.secondReadHeading,
-  corroboratedLabel: (n) => fmt(R.corroboratedFmt, { n }),
-  secondReadOnlyLabel: (n) => fmt(R.secondReadOnlyFmt, { n }),
-  rejectedHeading: R.rejectedHeading,
-  promoteLabel: R.promoteLabel,
-  emptyRejectedLabel: R.emptyRejected,
-};
-
-const findingsLabels: FindingsListLabels = {
-  kindLabel: (k) => R.findingKindLabel[k] ?? k,
-  severityLabel: (s) => R.severityLabel[s] ?? s,
-  provisionalLabel: R.provisionalLabel,
-  dispositionLabel: (kind, applied) =>
-    applied ? R.appliedLabel : fmt(R.disposedFmt, { verb: R.dispositionPast[kind] ?? kind }),
-  conflictLine: (kind) => fmt(R.conflictLineFmt, { verb: R.dispositionPast[kind] ?? kind }),
-  conflictsHeading: R.conflictsHeading,
-  rejectedHeading: R.rejectedHeading,
-  promoteLabel: R.promoteLabel,
-  // P1.07 — the evidence block's labels (claim findings show the verdict chip + fetched ✓, REQ-IDE-25).
-  // CITE.1 — a search-hit-only url renders the "Search result" chip instead (ADR-084).
-  fetchedLabel: `${R.fetchedLabel} ✓`,
-  searchResultLabel: R.searchResultLabel,
-  accessedLabel: (a) => a.slice(0, 10),
-};
-
-// ---- P1.07 — the §5.7 findings surfaces: Margin cards/chips + the Desk's findings table, powered by
-// the SAME FindingView[] as the dossier list (one model, three surfaces). ----
-
-const marginLabels: MarginLabels = {
-  kindLabel: findingsLabels.kindLabel,
-  severityLabel: findingsLabels.severityLabel,
-  provisionalLabel: findingsLabels.provisionalLabel,
-  dispositionLabel: findingsLabels.dispositionLabel,
-  fetchedLabel: findingsLabels.fetchedLabel,
-  searchResultLabel: findingsLabels.searchResultLabel,
-  accessedLabel: findingsLabels.accessedLabel,
-  chipLabel: (count, topSeverityLabel, topCount) =>
-    fmt(R.marginChipFmt, { count, top: topCount, severity: topSeverityLabel }),
-  chipAria: (count) => fmt(R.marginChipAriaFmt, { count }),
-};
-
-const deskFindingsLabels: FindingsDeskLabels = {
-  table: {
-    finding: R.deskTable.finding,
-    severity: R.deskTable.severity,
-    kind: R.deskTable.kind,
-    status: R.deskTable.status,
-    actions: "",
-  },
-  empty: R.findingsEmpty,
-  filters: {
-    severity: R.filters.severity,
-    kind: R.filters.kind,
-    status: R.filters.status,
-    apply: R.filters.apply,
-    clear: R.filters.clear,
-    allLabel: R.filters.all,
-  },
-  severityLabel: (s) => R.severityLabel[s] ?? s,
-  kindLabel: (k) => R.findingKindLabel[k] ?? k,
-  statusLabel: (v) =>
-    v.disposition ? (R.dispositionPast[v.disposition.kind] ?? v.disposition.kind) : R.filters.undecided,
-  progressFmt: (decided, total) => fmt(R.triageProgressFmt, { decided, total }),
-  triageExit: R.triageExit,
-};
-
-function checkable(kind: string | undefined): boolean {
-  return kind == null || CHECKABLE_CLAIM_KINDS.includes(kind as ClaimKind);
-}
-
 // ---- PRB.05 — the triage write surfaces (§5.7/§6.4/§10.1) ----
-
-// The gate-card composition + labels live in ./gate-card.js (SPA.11) — the shared SSR/SPA module —
-// imported back below. `const G` stays for the settings surfaces that still render inline.
-
-const G = COPY.gates;
-
-/** The per-finding disposition control (§5.7) — the same component desktop + phone (REQ-SPEC-20). */
-function dispositionControlsFor(
-  view: { id: string; provisional: boolean; suggestion?: { replacement: string } | null; disposition?: { kind: string; rationale?: string; adaptedText?: string; reasonCode?: string } | null },
-  slug: string,
-  runId: string,
-  compact: boolean,
-  error: { findingId: string; message: string } | undefined,
-): ReactNode {
-  return (
-    <DispositionControls
-      formAction={`/p/${slug}/review/${runId}/findings/${view.id}/disposition`}
-      compact={compact}
-      labels={dispositionLabels}
-      suggestion={view.suggestion?.replacement ?? null}
-      {...(view.disposition
-        ? {
-            current: {
-              kind: view.disposition.kind as "accept" | "adapt" | "rebut" | "defer" | "escalate",
-              ...(view.disposition.rationale != null ? { rationale: view.disposition.rationale } : {}),
-              ...(view.disposition.adaptedText != null ? { adaptedText: view.disposition.adaptedText } : {}),
-              ...(view.disposition.reasonCode != null
-                ? { reasonCode: view.disposition.reasonCode as "wrong" }
-                : {}),
-            },
-          }
-        : {})}
-      {...(error && error.findingId === view.id ? { error: error.message } : {})}
-    />
-  );
-}
-
-// ---- P1.07 — the findings surface's per-card actions (§5.7): Apply (the free verb — the primary
-// button whenever the card carries an applyable suggestion), the five disposition verbs, and
-// "Add to obligations". Every control is a plain form POST — no client JS required. ----
-
-/** The shared filters applied server-side: budget first (Quick's 40-cap), then the GET-param filters. */
-function visibleDossierFindings(
-  dossier: { findings: readonly FindingView[]; rigor?: string; findingObligations?: Readonly<Record<string, string>> },
-  filters: Record<string, string | undefined> | undefined,
-): FindingView[] {
-  const parsed = parseFindingFilters(filters ?? {});
-  const openObligationIds = new Set(
-    Object.entries(dossier.findingObligations ?? {})
-      .filter(([, s]) => LIVE_OBLIGATION_STATES.includes(s))
-      .map(([id]) => id),
-  );
-  return filterFindings(applySeverityBudget([...dossier.findings], dossier.rigor), parsed, { openObligationIds });
-}
-
-/** A finding card's full control set — Apply (when applyGate allows) + the verbs + Add-to-obligations. */
-function findingControlsFor(
-  view: FindingView,
-  slug: string,
-  runId: string,
-  compact: boolean,
-  error: { findingId: string; message: string } | undefined,
-  opts: { readonly hasObligation: boolean },
-): ReactNode {
-  const gate = applyGate(view);
-  return (
-    <>
-      {view.suggestion != null && gate.ok ? (
-        <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} data-apply-form={view.id} style={{ display: "inline" }}>
-          <button
-            type="submit"
-            data-apply="true"
-            title={R.applyTitle}
-            style={{ fontSize: "12px", fontWeight: 600, padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}
-          >
-            {R.applyLabel}
-          </button>
-        </form>
-      ) : null}
-      {dispositionControlsFor(view, slug, runId, compact, error)}
-      {/* P1.13 — the craft finding's Visualize action (§7.5's fifth entry point): opens the SAME
-          visualize sheet (entry=craft_finding) with the finding's text as the request seed. */}
-      {view.kind === "craft" ? (
-        <a
-          href={`/p/${slug}/visualize?entry=craft_finding&request=${encodeURIComponent(`${view.title} — ${view.body}`.slice(0, 300))}`}
-          data-visualize-finding={view.id}
-          style={{ fontSize: "12px", color: "var(--accent)" }}
-        >
-          {R.visualizeLabel}
-        </a>
-      ) : null}
-      {!opts.hasObligation && !view.provisional ? (
-        <form method="post" action={`/p/${slug}/findings/${view.id}/obligations`} style={{ display: "inline" }}>
-          <input type="hidden" name="next" value={`/p/${slug}/review/${runId}`} />
-          <button
-            type="submit"
-            data-add-obligation="true"
-            style={{ fontSize: "12px", background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-          >
-            {R.addObligationLabel}
-          </button>
-        </form>
-      ) : null}
-    </>
-  );
-}
-
-/** The Desk's bulk affordances (§5.7): each posts to the ONE consolidated preview — nothing blind. */
-function dossierBulkActions(slug: string, runId: string, visible: readonly FindingView[]): ReactNode {
-  const btn = { fontSize: "12px", padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" } as const;
-  const sections = [...new Set(visible.map((v) => v.letterSection).filter((s): s is NonNullable<typeof s> => s != null))];
-  const action = `/p/${slug}/review/${runId}/findings/bulk-preview`;
-  return (
-    <div data-bulk-controls="true" style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-      <form method="post" action={action} style={{ display: "inline" }}>
-        <input type="hidden" name="action" value="apply_notes" />
-        <button type="submit" style={btn}>{R.bulk.applyNotes}</button>
-      </form>
-      <form method="post" action={action} style={{ display: "inline" }}>
-        <input type="hidden" name="action" value="defer_minor" />
-        <button type="submit" style={btn}>{R.bulk.deferMinor}</button>
-      </form>
-      {sections.length > 0 ? (
-        <form method="post" action={action} style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
-          <input type="hidden" name="action" value="accept_section" />
-          <select name="section" defaultValue={sections[0] ?? ""} style={{ fontSize: "12px" }}>
-            {sections.map((s) => (
-              <option key={s} value={s}>{fmt(R.sectionLabelFmt, { key: s })}</option>
-            ))}
-          </select>
-          <button type="submit" style={btn}>{R.bulk.acceptSection}</button>
-        </form>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * P1.07 — the dossier's Margin + Desk bodies (§5.7 "three surfaces, one list"): MarginSurface renders
- * `marginItems` (cards beside passages, stacked chips for crowds), FindingsDesk renders the grouped
- * screen-reader table + the shared filter bar + the sectioned queue when `?triage=1` + the bulk
- * affordances. Everything derives from `visibleDossierFindings` — the same list the body list shows.
- */
-function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: ReactNode; deskFindingsBody: ReactNode } | Record<string, never> {
-  const dossier = data.dossier;
-  if (!dossier) return {};
-  const dv = data.dossierView;
-  const visible = visibleDossierFindings(dossier, dv?.filters);
-  const err = data.triage?.dispositionError;
-  const compact = data.compact ?? false;
-  const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
-  const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
-  const obligationFor = (view: FindingView) => {
-    const state = dossier.findingObligations?.[view.id];
-    return state ? { state, label: R.obligationStateLabel[state] ?? state } : undefined;
-  };
-  const evidenceFor = (view: FindingView) => {
-    // HOT.1 — normalize at the render seam: a view assembled without the api's row normalization (a
-    // bypass regression) still renders instead of 500ing on `.urls` (ADR-019).
-    const evidence = normalizeEvidence(view.evidence);
-    return evidence != null
-      ? {
-          ...(evidence.verdict != null ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict } : {}),
-          urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
-        }
-      : undefined;
-  };
-  const controlsFor = (view: FindingView) =>
-    findingControlsFor(view, dossier.slug, dossier.runId, compact, err, {
-      hasObligation: dossier.findingObligations?.[view.id] != null,
-    });
-  const filterAction = `/p/${dossier.slug}/review/${dossier.runId}`;
-  return {
-    marginBody: (
-      <MarginSurface
-        items={marginItems(visible)}
-        labels={marginLabels}
-        obligationFor={obligationFor}
-        controlsFor={controlsFor}
-        evidenceFor={evidenceFor}
-      />
-    ),
-    // §10.1 — the phone-width input set is "the same five verbs + a note; never a bulk action":
-    // compact renders omit the bulk affordances entirely.
-    deskFindingsBody: (
-      <FindingsDesk
-        groups={groupFindingsForList(visible)}
-        labels={deskFindingsLabels}
-        filterAction={filterAction}
-        filters={{
-          ...(dv?.filters?.sev != null ? { severity: dv.filters.sev } : {}),
-          ...(dv?.filters?.kind != null ? { kind: dv.filters.kind } : {}),
-          ...(dv?.filters?.disp != null ? { status: dv.filters.disp } : {}),
-        }}
-        severityOptions={Object.entries(R.severityLabel).map(([value, label]) => ({ value, label }))}
-        kindOptions={Object.entries(R.findingKindLabel).map(([value, label]) => ({ value, label }))}
-        statusOptions={[
-          { value: "undecided", label: R.filters.undecided },
-          ...Object.entries(R.dispositionPast).map(([value, label]) => ({ value, label })),
-        ]}
-        obligationFor={obligationFor}
-        actionsFor={controlsFor}
-        {...(dv?.triage === true ? { triage: sectionedTriageQueue(visible, { wholePiece: R.wholePieceLabel }) } : {})}
-        {...(compact ? {} : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
-      />
-    ),
-  };
-}
-
-// ---- P1.11 — the Desk Chat panel (§7.1/§7.4/§7.6) ------------------------------------------------
-
-const chatDeskLabels: ChatDeskLabels = COPY.ide.chatDesk;
-
-/**
- * The ChatDesk body from the api's `GET /projects/:id/chat` DTO. Every write endpoint is same-origin
- * (the web routes forward to the api); the §7.4 anchored composer prefills when the Page offered
- * "Ask about this draft" (`ide.chatAskAbout`).
- */
-function chatPanel(
-  chat: ChatPanelDto,
-  slug: string,
-  ide: NonNullable<ReturnType<typeof usePageData>["ide"]>,
-  compact: boolean,
-): ReactNode {
-  return (
-    <ChatDesk compact={compact}
-      model={{
-        threads: chat.threads.map((t) => ({
-          id: t.id,
-          name: t.name,
-          isDefault: t.isDefault,
-          archived: t.archived ?? false,
-        })),
-        activeThreadId: chat.activeThreadId,
-        turns: chat.turns.map((t) => ({
-          id: t.id,
-          state: t.state,
-          createdAt: t.created_at,
-          spentCredits: t.spent_credits,
-          capCredits: t.cap_credits,
-          modelTier: t.model_tier,
-        })),
-        messages: chat.messages.map((msg) => ({ path: msg.mirror_path, wordCount: msg.word_count })),
-        pins: chat.pins,
-        sources: chat.sources,
-        liveRun: chat.liveRun,
-        emptyState: chat.emptyState,
-        budgets: chat.budgets,
-        tier: chat.defaultTier,
-        ...(ide.chatAskAbout ? { askAbout: ide.chatAskAbout } : {}),
-      }}
-      endpoints={{
-        turn: `/p/${slug}/chat/turns`,
-        planDecision: `/p/${slug}/chat/plan-decision`,
-        pin: `/p/${slug}/chat/pins`,
-        pinRemove: (pinId) => `/p/${slug}/chat/pins/${encodeURIComponent(pinId)}/remove`,
-        correction: `/p/${slug}/chat/corrections`,
-        suggestion: `/p/${slug}/chat/suggestions`,
-        notes: `/p/${slug}/chat/notes`,
-        threadHref: (threadId) => `/p/${slug}?thread=${encodeURIComponent(threadId)}#chat`,
-      }}
-      labels={chatDeskLabels}
-    />
-  );
-}
+//
+// The dossier's per-finding disposition/apply/obligation controls, the severity-budgeted filter,
+// the bulk affordances, and the Margin/Desk bodies live in ./dossier-view.js (SPA.21) — the shared
+// SSR/SPA module — imported back above; the gate-card composition lives in ./gate-card.js (SPA.11).
 
 /** Auth-gated: the delivered-review dossier (run card, letter, claims, second read, rubric, findings)
  *  with the §5.7 disposition controls on every finalized finding (PRB.05). */
@@ -1892,321 +1329,19 @@ export function DossierPage(): ReactNode {
     );
   }
 
-  const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
-  const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
-  const claimRows: ClaimTableRow[] = dossier.claims.map((c) => ({
-    ordinal: c.ordinal,
-    text: c.text,
-    tier: c.tier,
-    verdict: c.verdict,
-    verdictLabel: R.verdictLabel[c.verdict] ?? c.verdict,
-    ...(c.kind ? { kind: c.kind } : {}),
-    checkable: checkable(c.kind),
-    ...(c.note ? { note: c.note } : {}),
-    urls: claimUrlViews(c, fetchLog, searchOnly),
-    // P1.13 — a figure-linked Tier-1 claim (§7.5; REQ-VIZ-13) carries the card link, so the
-    // claims table shows WHICH figure each row verifies (a `none`-provenance figure's claims land
-    // here too — their Unsupported verdict is the ledger row's own field).
-    ...(c.figureId
-      ? { figureHref: `/p/${dossier.slug}/figures/${c.figureId}`, figureLabel: R.figureClaimLabel }
-      : {}),
-  }));
-
-  const trustChip = buildTrustChip(dossier.accessReport, trustLabels);
-  // P1.07 — ONE list powers the body, the Margin, and the Desk: the Quick severity budget caps the
-  // rendered set first, then the shared GET-param filters narrow every surface together (§5.7).
-  const visible = visibleDossierFindings(dossier, dossierView?.filters);
-  const budget = severityBudget([...dossier.findings], dossier.rigor);
-  const groups = groupFindingsForList(visible);
-  const conflicts = detectReconciliationConflicts([...dossier.findings]);
-  const rejected = collapsedRejected([...dossier.findings]);
-  const reconciliation = summarizeReconciliation([...dossier.findings]);
-
+  // SPA.21 — the page body is the shared composition (./dossier-view.js): the SSR path emits the
+  // inline showcase-anchor script (innerHTML executes under SSR); the SPA leaf passes
+  // beacon="effect" + gatePresenceScript={false} instead.
   return (
     <IdeFrame>
-      {/* P1.17 (§15.4) — the Showcase banner: the workspace's read-only worked example names itself
-          and offers the ONE write affordance it has (Duplicate → a normal project). */}
-      {dossier.showcase ? (
-        <div
-          role="note"
-          data-showcase-banner
-          style={{
-            border: "1px solid var(--shell-border)",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            margin: "0 0 16px",
-            background: "var(--shell-raised)",
-            fontSize: "13px",
-          }}
-        >
-          <strong>{COPY.showcase.bannerTitle}</strong>
-          <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
-          <form method="post" action={`/p/${dossier.slug}/duplicate`} data-duplicate-form="true" style={{ display: "inline" }}>
-            <button type="submit" style={{ fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-              {COPY.showcase.duplicateCta}
-            </button>
-          </form>
-        </div>
-      ) : null}
-      {/* P1.17 (§3.5) — `showcase.finding_anchor_viewed`: only the client observes the scroll onto the
-          first finding's card — an IntersectionObserver posts the beacon once (the <60 s funnel leg). */}
-      {dossier.showcase && dossier.firstFindingId ? (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var el=document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
-          }}
-        />
-      ) : null}
-      {/* RES.2 — the persisted run-level label leads the dossier, above the verdict row
-          (the same slot the card + email carry); the claim verdict stays `unverifiable`. */}
-      {dossier.deliveryLabel ? (
-        <div
-          data-delivery-label={dossier.deliveryLabel}
-          style={{
-            margin: "0 0 12px",
-            padding: "10px 14px",
-            borderRadius: "8px",
-            border: "1px solid var(--shell-border)",
-            background: "var(--shell-raised)",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--shell-fg)",
-          }}
-        >
-          {fmt(R.deliveryBannerFmt, { label: R.deliveryLabel })}
-        </div>
-      ) : null}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <PageTitle>{dossier.projectTitle}</PageTitle>
-        <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
-        {/* P1.06 — a scoped run's dossier carries its scope pills (the same chips the sheet showed). */}
-        {(dossier.scopeLabels ?? []).map((s) => (
-          <span key={s} className="ide-pill" data-scope-pill>
-            {s}
-          </span>
-        ))}
-        <VersionObligationChip
-          open={dossier.openObligations}
-          addressed={dossier.addressedObligations}
-          label={fmt(R.obligationSummaryFmt, { open: dossier.openObligations, addressed: dossier.addressedObligations })}
-        />
-      </div>
-
-      {/* P1.19 — `?gate=<id>` (the Inbox row's deep link) mounts the gate's real card at the head of
-          the artifact: the approve flow reads the artifact first — and on phone width (Timeline
-          hidden) this is the row's approve surface. */}
-      {dossierView?.focusedGate ? (
-        <section data-focused-gate={dossierView.focusedGate.id} style={{ margin: "16px 0" }}>
-          {gateCardFor(dossierView.focusedGate, dossier.slug, compact ?? false, triage?.dispositionError)}
-        </section>
-      ) : null}
-
-      <div style={{ margin: "16px 0" }}>
-        {/* P1.05 — the dossier card carries the same actions the Timeline's card does (report link,
-            walkthrough block, retry) — same view model, same labels (re-skin, never a fork). */}
-        <RunCard
-          view={buildRunCardView(dossier.runCard)}
-          labels={runCardLabels}
-          hrefs={{
-            report: `/p/${dossier.slug}/r/${dossier.runId}#report`,
-            deliverable: `/p/${dossier.slug}/review/${dossier.runId}`,
-            retryWalkthrough: `/p/${dossier.slug}/r/${dossier.runId}/walkthrough`,
-          }}
-        />
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
-        {/* P1.07 — the letter's passage links resolve to the finding cards/rows (§5.7): each
-            section lists the findings filed under its `letterSection` key. */}
-        <LetterView
-          title={dossier.letterTitle}
-          sections={dossier.letterSections.map((s) => {
-            const refs = dossier.findings
-              .filter((f) => f.letterSection === s.id)
-              .map((f) => ({ findingId: f.id, label: f.title }));
-            return refs.length > 0 ? { ...s, findingRefs: refs } : s;
-          })}
-          trustChip={trustChip}
-          labels={letterLabels}
-        />
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
-        <ClaimsTable rows={claimRows} labels={claimsLabels} />
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
-        <SecondReadView summary={reconciliation} rejected={rejected} labels={secondReadLabels} />
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
-        <RubricView view={buildRubricView([...dossier.rubric])} labels={rubricLabels} />
-        {/* PRB.06 — a re-review dossier carries the prior round's rubric: the round-summary delta renders
-            per-dimension before/after, never an aggregate (REQ-IDE-30). */}
-        {dossier.priorRubric ? (
-          <div style={{ marginTop: "12px" }}>
-            <RubricDelta
-              view={buildRubricDelta([...dossier.priorRubric], [...dossier.rubric])}
-              labels={{
-                heading: COPY.revision.rubricDeltaHeading,
-                dimensionLabel: (d) => COPY.review.dimensionLabel[d] ?? d,
-                beforeLabel: COPY.revision.rubricBeforeLabel,
-                afterLabel: COPY.revision.rubricAfterLabel,
-              }}
-            />
-          </div>
-        ) : null}
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: 600 }}>{R.findingsHeading}</h2>
-        {/* pre-triage line (REQ-IDE-28) + the >30-findings triage promo (§5.7). */}
-        {(() => {
-          const summary = pretriageSummary([...dossier.findings]);
-          const queue = buildTriageQueue([...dossier.findings]);
-          return (
-            <>
-              {summary.triaged > 0 ? (
-                <p data-pretriage-line="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
-                  {fmt(COPY.triage.pretriageFmt, { n: summary.triaged, m: summary.total })}
-                </p>
-              ) : null}
-              {queue.promoteAgentTriage ? (
-                <p data-triage-promo="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
-                  {fmt(COPY.triage.promoFmt, { n: 30 })}
-                </p>
-              ) : null}
-            </>
-          );
-        })()}
-        {/* P1.07 — the one-preview bulk render (§5.7; REQ-IDE-29 amended): `?bulk=<action>` lands the
-            consolidated checklist here — checked rows ride `only[]` to the dispatch POST; the skipped
-            rows list their reasons. No blind accept-all exists. */}
-        {/* P1.19 — §10.1 ✗ ("bulk accept/apply"): a crafted ?bulk= URL renders no confirm form at
-            phone width — the preview affordance is desktop-only, like the controls that open it. */}
-        {dossierView?.bulk && compact !== true ? (
-          <section
-            data-bulk-preview="true"
-            style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 14px", background: "var(--shell-surface)" }}
-          >
-            <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{R.bulk.previewHeading}</h3>
-            {dossierView.bulk.preview.rows.length === 0 ? (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{R.bulk.emptyPreview}</p>
-            ) : (
-              <form method="post" action={`/p/${dossier.slug}/review/${dossier.runId}/findings/bulk`}>
-                <input type="hidden" name="action" value={dossierView.bulk.action} />
-                {dossierView.bulk.section != null ? (
-                  <input type="hidden" name="section" value={dossierView.bulk.section} />
-                ) : null}
-                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px" }}>
-                  {dossierView.bulk.preview.rows.map((row) => (
-                    <li key={row.findingId} style={{ fontSize: "13px", padding: "4px 0" }}>
-                      <label style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
-                        <input type="checkbox" name="only" value={row.findingId} defaultChecked />
-                        <span>
-                          {row.title}{" "}
-                          <span style={{ color: "var(--shell-fg-muted)" }}>
-                            — {R.severityLabel[row.severity] ?? row.severity} · {R.dispositionPast[row.disposition] ?? row.disposition}
-                          </span>
-                          {row.appliedMarkdown != null ? (
-                            <code style={{ display: "block", fontSize: "11px", color: "var(--shell-fg-muted)", marginTop: "2px", whiteSpace: "pre-wrap" }}>
-                              {row.appliedMarkdown.slice(0, 200)}
-                            </code>
-                          ) : null}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                {dossierView.bulk.preview.skipped.length > 0 ? (
-                  <div data-bulk-skipped="true" style={{ margin: "4px 0 8px" }}>
-                    <h4 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>
-                      {R.bulk.skippedHeading}
-                    </h4>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-                      {dossierView.bulk.preview.skipped.map((s) => (
-                        <li key={s.findingId}>{s.title} — {s.reason}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                <button type="submit" data-bulk-confirm="true" style={{ fontSize: "13px", fontWeight: 600, padding: "6px 14px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}>
-                  {R.bulk.confirm}
-                </button>{" "}
-                <a href={`/p/${dossier.slug}/review/${dossier.runId}`} style={{ fontSize: "13px" }}>{R.bulk.cancel}</a>
-              </form>
-            )}
-          </section>
-        ) : null}
-        {dossierView?.bulkDone ? (
-          <p data-bulk-done="true" role="status" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "0 0 10px" }}>
-            {fmt(R.bulk.doneFmt, { n: dossierView.bulkDone.count })}
-          </p>
-        ) : null}
-        {dossierView?.notice ? (
-          <p
-            data-finding-notice={dossierView.notice.kind}
-            role={dossierView.notice.kind === "error" ? "alert" : "status"}
-            style={{ fontSize: "12px", color: dossierView.notice.kind === "error" ? "var(--sev-major)" : "var(--state-ready)", margin: "0 0 10px" }}
-          >
-            {dossierView.notice.message ??
-              (dossierView.notice.kind === "applied"
-                ? R.appliedToast
-                : dossierView.notice.kind === "promoted"
-                  ? R.promotedToast
-                  : R.obligatedToast)}
-          </p>
-        ) : null}
-        {/* the severity-budget line (§5.7): Quick's rendered cap is honest — the folded count names
-            what the roadmap absorbed. */}
-        {budget.folded > 0 ? (
-          <p data-severity-budget="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
-            {fmt(R.severityBudgetFmt, { n: budget.folded })}
-          </p>
-        ) : null}
-        {/* the once-per-surface evidence explainer (§5.7) — shown when any finding carries URLs. */}
-        {visible.some((f) => (normalizeEvidence(f.evidence)?.urls.length ?? 0) > 0) ? (
-          <p data-evidence-explainer="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
-            {R.evidenceExplainer}
-          </p>
-        ) : null}
-        {/* PRB.16 — the per-finding obligation-state chip (REQ-OBJ-6): the dossier payload carries
-            finding id → obligation state, joined from the delivered revision_obligations rows. */}
-        <FindingsList
-          groups={groups}
-          conflicts={conflicts}
-          collapsedRejected={rejected}
-          labels={findingsLabels}
-          obligationFor={(view) => {
-            const state = dossier.findingObligations?.[view.id];
-            return state
-              ? { state, label: COPY.review.obligationStateLabel[state] ?? state }
-              : undefined;
-          }}
-          controlsFor={(view) =>
-            findingControlsFor(view, dossier.slug, dossier.runId, compact ?? false, triage?.dispositionError, {
-              hasObligation: dossier.findingObligations?.[view.id] != null,
-            })
-          }
-          promoteActionFor={(view) => `/p/${dossier.slug}/findings/${view.id}/promote`}
-          evidenceFor={(view) => {
-            const evidence = normalizeEvidence(view.evidence);
-            return evidence != null
-              ? {
-                  ...(evidence.verdict != null
-                    ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict }
-                    : {}),
-                  urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
-                }
-              : undefined;
-          }}
-        />
-        {triage?.savedFindingId ? (
-          <p data-disposition-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "6px" }}>
-            {COPY.triage.savedLabel}
-          </p>
-        ) : null}
-      </div>
+      <DossierArticle
+        dossier={dossier}
+        compact={compact ?? false}
+        {...(dossierView != null ? { dossierView } : {})}
+        {...(triage?.dispositionError != null ? { dispositionError: triage.dispositionError } : {})}
+        {...(triage?.savedFindingId != null ? { savedFindingId: triage.savedFindingId } : {})}
+        beacon="script"
+      />
     </IdeFrame>
   );
 }

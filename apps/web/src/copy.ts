@@ -474,7 +474,7 @@ export const COPY = {
       emptyPreview: "Nothing this action covers.",
     },
     findingsEmpty: "No findings on this round.",
-    deskTable: { finding: "Finding", severity: "Severity", kind: "Kind", status: "Status" },
+    deskTable: { finding: "Finding", severity: "Severity", kind: "Kind", status: "Status", actions: "Actions" },
   },
 
   // PRB.05 — the five-verb triage controls (§5.7; REQ-BETA-6, REQ-MOBILE-11 amended).

@@ -139,9 +139,9 @@ import type {
   UserPrefs,
   NotificationPrefsDto,
 } from "@rhema/api-client";
-import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
-import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
-import type { LetterSection } from "@rhema/ui";
+import type { ConversionResult } from "@rhema/contracts";
+// SPA.21 — the dossier's view contract lives in the shared SSR↔SPA module (see DossierData below).
+import type { DossierViewData } from "./dossier-view.js";
 import { noteDegradedUpstream } from "./observability.js";
 
 // The web shell's data seam. SSR loaders never touch the DB directly — they call the api through this
@@ -203,47 +203,11 @@ export const IMPORT_PREVIEW_WAIT_MS = 20_000;
  * `runCard` state is already the orchestrator-only projection (REQ-IDE-11); the `accessReport` is the §12.6
  * facts the trust chip derives from (REQ-PROD-2). The live binding (reading it from a delivered run) landed
  * in PRB.16 — `apiDataSource.getDossier` below hits `GET /projects/:id/review/:runId/dossier` (D-PRB.04-1).
+ *
+ * SPA.21 — the field declaration lives in ./dossier-view.js (`DossierViewData`) so the shared
+ * SSR↔SPA view module never imports this file's server seams; this interface is a pure alias.
  */
-export interface DossierData {
-  readonly slug: string;
-  readonly runId: string;
-  readonly projectTitle: string;
-  readonly versionLabel: string;
-  /** P1.07 — the run's rigor drives the §5.7 severity budget (Quick's 40-finding rendered cap). */
-  readonly rigor?: string;
-  /** P1.07 — the reviewed draft the Apply path splices (its working head when forked). */
-  readonly reviewedDraftId?: string;
-  /** P1.06 — a scoped run's dossier label (§7.2 scope chips, e.g. "§III"); absent on whole-draft runs. */
-  readonly scopeLabels?: readonly string[];
-  readonly openObligations: number;
-  readonly addressedObligations: number;
-  readonly runCard: RunCardInput;
-  readonly letterTitle: string;
-  readonly letterSections: readonly LetterSection[];
-  readonly claims: readonly Claim[];
-  /** normalized URLs the proxy request log confirms retrieved (fetch + url-bearing search rows — the
-   *  guard's cited⇒retrieved join set; CITE.1/ADR-084). */
-  readonly fetchLog: readonly string[];
-  /** CITE.1 — normalized urls covered ONLY by `search` rows (a hit the run's searches surfaced, never a
-   *  page fetch): the "Search result" chip set (ADR-084). */
-  readonly searchResultLog?: readonly string[];
-  readonly findings: readonly FindingView[];
-  readonly rubric: readonly RubricRowInput[];
-  /** PRB.06 — the prior round's rubric when this dossier is a re-review (the round-summary delta renders
-   *  per-dimension before/after, never an aggregate — REQ-IDE-30). */
-  readonly priorRubric?: readonly RubricRowInput[];
-  readonly accessReport: AccessReportFacts;
-  /** PRB.16 — finding id → its revision obligation's state, for the per-finding state chip (REQ-OBJ-6). */
-  readonly findingObligations?: Readonly<Record<string, ObligationState>>;
-  /** P1.17 (§15.4) — this dossier is the workspace's read-only Showcase (the banner + the
-   *  anchor-viewed beacon arm). */
-  readonly showcase?: boolean;
-  /** P1.17 — the welcome dossier's deep-link anchor (finding 1) for the <60 s funnel event. */
-  readonly firstFindingId?: string;
-  /** RES.2 — the persisted run-level delivery label (`runs.delivery.label`); the page renders the
-   *  banner above the verdict row when set. */
-  readonly deliveryLabel?: string | null;
-}
+export type DossierData = DossierViewData;
 
 export interface DataSource {
   /**

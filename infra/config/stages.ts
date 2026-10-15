@@ -349,8 +349,11 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA.20 — `run-sheet` joins on dev only, paired with the already-listed `ide-chrome` (the
     // /p/:p/run leaf is IDE-framed — the key-level AND lights it under the chrome); prod waits
     // for SPAF.11.
+    // SPA.21 — `dossier` joins on dev only, paired with `ide-chrome` (the /p/:p/review/:runId
+    // leaf is IDE-framed; /p/:p/obligations/new is unframed and consults `dossier` alone); prod
+    // waits for SPAF.12 (REQ-SEQ-10).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

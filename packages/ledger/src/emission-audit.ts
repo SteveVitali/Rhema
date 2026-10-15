@@ -46,9 +46,10 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   // (the letter_opened_at stamp transition is the signal; dossier-routes.ts, server-owned).
   "showcase.opened": { status: "emitted", source: "apps/api/src/dossier-routes.ts" },
   // P1.17 — the <60 s funnel signal only the client observes: the dossier page's IntersectionObserver
-  // posts the beacon once when the first finding's card scrolls into view (pages.tsx → /a/acq → the
-  // api's acquisition mint; the event is ALSO on the client whitelist as a client-only signal).
-  "showcase.finding_anchor_viewed": { status: "emitted", source: "apps/web/src/pages.tsx" },
+  // posts the beacon once when the first finding's card scrolls into view (dossier-view.tsx's inline
+  // SSR script → /a/acq → the api's acquisition mint; SPA.21's spa/showcase-beacon.ts is the SPA
+  // twin; the event is ALSO on the client whitelist as a client-only signal).
+  "showcase.finding_anchor_viewed": { status: "emitted", source: "apps/web/src/dossier-view.tsx" },
   // P1.17 — the §5.3 three-entry project create emits `entry.chosen{entry}` server-side at
   // `POST /projects` (project-routes.ts); the funnel's cohort key.
   "entry.chosen": { status: "emitted", source: "apps/api/src/project-routes.ts" },

@@ -1899,6 +1899,42 @@ const P1_FIGURES: StepFn = async (ctx) => {
     await page.screenshot({ path: join(ctx.outDir, "p1-visualize-390.png"), fullPage: true });
 };
 
+/** P1.dossier (SPA.21) — `/p/:slug/review/:runId` at phone width under EITHER renderer (the
+ *  runner's document listener pins `data-renderer` per leg): the dossier renders its Page (the
+ *  letter arm + finding cards), the §10.1 capability boundary holds (the bulk affordances are
+ *  withheld at phone width — the Desk is display:none), overflow + axe clean, never a blank. The
+ *  substrate is the workspace's seeded Showcase dossier via `/showcase` — renderer-agnostic by
+ *  construction (manifest hooks, never renderer internals). `expected:"red"` until its first
+ *  preview leg (the Resend secret blocker — D-SPA.21-1). */
+const P1_DOSSIER: StepFn = async (ctx) => {
+    const { context, page } = await ctx.returningUser("a");
+    await context.setExtraHTTPHeaders({ ...ctx.extraHTTPHeaders, ...MOBILE_HEADERS });
+    await page.setViewportSize(PHONE_VIEWPORT);
+
+    // The workspace Showcase resolves to its dossier (or the /showcase dossier surface — both
+    // carry the dossier's Page contract).
+    await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+    if (!/review\/|\/showcase$/.test(new URL(page.url()).pathname)) {
+      const link = page.locator('a[href*="/review/"]').first();
+      const href = await link.getAttribute("href").catch(() => null);
+      if (!href) throw new Error(`phone /showcase rendered no dossier link (${page.url()})`);
+      await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
+    }
+    await assertNoOverflow(page, `dossier @390×844 (${new URL(page.url()).pathname})`);
+    if (
+      (await page.locator("[data-letter-view]").count()) === 0 ||
+      (await page.locator("[data-finding]").count()) === 0
+    ) {
+      throw new Error(`phone dossier rendered neither the letter nor the findings (${page.url()})`);
+    }
+    // §10.1 — the phone dossier never mounts the bulk affordances (they are desk-pane-only).
+    if ((await page.locator("[data-bulk-controls]").count()) > 0) {
+      throw new Error("the phone dossier mounts the bulk affordances §10.1 withholds");
+    }
+    await assertAxeClean(page, "phone dossier");
+    await page.screenshot({ path: join(ctx.outDir, "p1-dossier-390.png"), fullPage: true });
+};
+
 /** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
  *  cards, axe clean. */
 const P1_APP_NEW: StepFn = async (ctx) => {
@@ -2465,6 +2501,7 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   "P1.runsheet": P1_RUNSHEET,
   "P1.outline": P1_OUTLINE,
   "P1.figures": P1_FIGURES,
+  "P1.dossier": P1_DOSSIER,
   "P1.app-new": P1_APP_NEW,
   C1,
   "X1.voices": X1_VOICES,
