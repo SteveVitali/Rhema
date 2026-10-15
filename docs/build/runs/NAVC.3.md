@@ -189,6 +189,7 @@ Note: `refetchOnWindowFocus` (Query default `true`) re-fires stale twins on focu
 | `data-page-session` on forced-SSR document mounts | n/a — `page.js`/`client/page.ts` don't stamp; the contract row is `conditional` (stamped while a SPA mount's view is bound); correct per REQ-NAVT-5's SPA-mount scope |
 | `refetchOnWindowFocus` re-mints mark-read on focus for staleTime-0 twins | unchanged-by-design (document-nav never had a focus arm either; re-mark is idempotent) — noted under the census |
 | error responses (`app.onError`) skip the `no-store` stamp | accepted — a thrown handler never reaches the post-`next()` stamp; error bodies aren't the cached-content surface; success + redirect paths covered |
+| REQ-NAVC-22's "EventSource/observers" leg — observers | covered by construction: the exercised leaves (`/p/:slug`, `/p/:slug/r/:run`, `/app/new`) instantiate no window/document-scoped Observer — ProseMirror's DOM observer is element-scoped and dies with the removed subtree (the `[data-page-root]`-absence assert is its coverage); the only `IntersectionObserver` users (`showcase-beacon.ts`, the SSR dossier anchor script) live on showcase/SSR documents outside the suite's routes — no leaf observer can leak |
 
 ## Evidence log
 
