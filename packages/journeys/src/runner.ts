@@ -12,8 +12,10 @@ import type { JourneyStep } from "./registry.js";
 import type { MailboxClient } from "./mailbox.js";
 import { JourneySessions, stableIdentity, freshIdentity, assertTestIdentity } from "./session.js";
 import { marker } from "./nonce.js";
+import { spaRouteFor, type SpaSurface } from "@rhema/contracts";
 import {
   RENDERER_HEADER,
+  gatedRouteIds,
   onOurOrigin,
   rendererOfDocument,
   type RendererName,
@@ -48,6 +50,12 @@ export interface StepCtx {
    * helpers). `null` ⇒ the run doesn't pin a renderer.
    */
   readonly expectRenderer: RendererName | null;
+  /**
+   * SPA.17 (design/29 §coexistence) — a `--surface` leg's gated route ids (`gatedRouteIds`),
+   * carried so the settle helpers scope the renderer assert identically. `null` ⇒ assert on
+   * every settled document.
+   */
+  readonly rendererScope: ReadonlySet<string> | null;
   /**
    * SPA.6 (REQ-SEQ-4) — the extra HTTP headers every runner-created context carries (the
    * `x-rhema-renderer` pin on leg A, empty on leg B). Steps that roll their own context
@@ -108,6 +116,11 @@ export interface RunnerDeps {
   readonly spend: JourneyReport["spend"];
   /** REQ-VFY-7 — `data-renderer` every same-origin document must carry (unset ⇒ no assert). */
   readonly expectRenderer?: RendererName;
+  /**
+   * SPA.17 (design/29 §coexistence) — `--surface <k>` scopes `--expect-renderer` to documents
+   * under those surfaces' `SPA_DOCUMENT_ROUTES` route ids; unset ⇒ the every-document assert.
+   */
+  readonly rendererScope?: readonly SpaSurface[];
   /** REQ-SEQ-4 — the `x-rhema-renderer` pin on every context (the leg-A `ssr` pin). */
   readonly pinRenderer?: RendererName;
   /**
@@ -125,6 +138,8 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
   const contextHeaders: Readonly<Record<string, string>> = deps.pinRenderer
     ? { [RENDERER_HEADER]: deps.pinRenderer }
     : {};
+  // SPA.17 — a --surface leg's gated route ids; null ⇒ the every-document renderer assert.
+  const gatedRoutes = gatedRouteIds(deps.rendererScope);
   // Session pages are wired from INSIDE JourneySessions (onPage fires before the mint's first
   // navigation) — `wireCurrent` swaps in the running step's listener set so a minted page's docs
   // are checked against the step that requested it, never a stale/empty set.
@@ -196,6 +211,18 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
           r
             .text()
             .then((body) => {
+              // a --surface-scoped leg (design/29 §coexistence) asserts only documents under
+              // the gated surfaces' path set — the response carries no data-route yet (the SPA
+              // shell stamps it client-side), so membership is read off the request path.
+              if (gatedRoutes != null) {
+                let routeId: string | null = null;
+                try {
+                  routeId = spaRouteFor(new URL(url).pathname).routeId;
+                } catch {
+                  /* an unparseable URL is out of the gated set */
+                }
+                if (routeId == null || !gatedRoutes.has(routeId)) return;
+              }
               const observed = rendererOfDocument(body);
               if (observed !== deps.expectRenderer) {
                 let path = url;
@@ -229,6 +256,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       assetHits,
       outDir: deps.outDir,
       expectRenderer: deps.expectRenderer ?? null,
+      rendererScope: gatedRoutes,
       extraHTTPHeaders: contextHeaders,
       marker: (name) => marker(deps.nonce, name),
       async anon() {

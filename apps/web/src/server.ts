@@ -989,6 +989,36 @@ export function createWebApp(deps: WebDeps): Hono {
     });
   }));
 
+  app.get(
+    "/bff/p/:slug/export",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/export` — the §13.4 export-dialog twin (SPA.17; design/22 §2 `p.export`;
+      // REQ-BFF-1/11, REQ-DAT-4/6). The document's own composition verbatim: slug→id off the
+      // request-scoped memo, `getExportDialog` under the SSR's catch→not-found seam, project facts,
+      // and the `ide` bag the leaf republishes onto the React chrome (the first IDE-framed flip —
+      // REQ-SEQ-12). `?error`/`?added`/`?focus` stay URL state — flash params are never payload;
+      // `compact` is boot-owned (`deviceClass`). The POST stays a document nav — bytes never ride
+      // a JSON envelope (REQ-BFF-17).
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const dialog = await deps.dataSource.getExportDialog(session, row.id).catch(() => null);
+      if (!dialog) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        export: {
+          slug,
+          projectId: row.id,
+          dialog,
+          project: { title: row.title, pill: row.state.pill, slug },
+          paperTheme: ctx.paperTheme ?? "light",
+          ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+          ide: ctx.ide,
+        },
+      });
+    }),
+  );
+
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
   // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
@@ -5876,9 +5906,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // The export POST — a plain form POST that streams the download back (progressive enhancement: no JS).
   app.post("/p/:project/export", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await projectRow(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.17 (REQ-BFF-17) — the export's product is a binary `content-disposition` Response:
+    // bytes never traverse a JSON envelope, so a `wantsJson` caller gets the honest refusal
+    // instead of a 302 it could never follow to a file. The SPA keeps the NATIVE form POST —
+    // the download IS the document navigation (design/22 §5).
+    if (wantsJson(c)) return c.json({ error: "binary_download" }, 400);
     const form = await c.req.parseBody();
     const format = typeof form.format === "string" && isExportFormat(form.format) ? form.format : null;
     if (!format) {
@@ -5915,15 +5950,18 @@ export function createWebApp(deps: WebDeps): Hono {
   // The append-only statement write — one sentence at a time (REQ-VIS-10; no edit/delete exists).
   app.post("/p/:project/export/addition", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await projectRow(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!t) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.17 — the `wantsJson` split (REQ-BFF-1/2/3): a JSON caller posts `{sentence}` and gets
+    // the `{ok,redirect}` envelope whose redirect is the SAME `?added=1` flash target; the form
+    // post's 302 is verbatim.
+    const form = await bodyFields(c);
     const sentence = typeof form.sentence === "string" ? form.sentence.trim() : "";
     if (sentence !== "") {
       await deps.dataSource.appendAiUseAddition(session, t.row.id, sentence).catch(() => undefined);
     }
-    return c.redirect(`/p/${t.slug}/export?added=1`);
+    return mutationOutcome(c, { redirect: `/p/${t.slug}/export?added=1` });
   });
 
   // The standalone statement download (any registered format — the §8.4 REQ-VIS-10 artifact).

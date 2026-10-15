@@ -222,3 +222,74 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
     expect(newContextCalls[0]).not.toHaveProperty("extraHTTPHeaders");
   });
 });
+
+// ---------------------------------------------------------------------------
+// SPA.17 — the --surface-scoped renderer assert (design/29 §coexistence): a gated leg's
+// --expect-renderer applies only to documents under the gated surfaces' SPA_DOCUMENT_ROUTES
+// route ids — the step's traversal docs keep their own flag's verdict.
+
+describe("runJourneys — the surface-scoped renderer assert (SPA.17; design/29 §coexistence)", () => {
+  const EXPORT_SSR = '<html data-renderer="ssr" data-route="/p/$project/export" data-mounted>';
+  const EDITOR_SSR = '<html data-renderer="ssr" data-route="/p/$project" data-mounted>';
+
+  it("a document OUTSIDE the gated set keeps its own renderer — leg B never demands spa on it", async () => {
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/p/acme", docHtml: EDITOR_SSR }),
+    ]);
+    const r = await run(
+      [step("G14", "green")],
+      {
+        G14: async (ctx) => {
+          expect(ctx.rendererScope).toEqual(new Set(["/p/$project/export"]));
+          const { page } = await ctx.anon();
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+        },
+      },
+      false,
+      { browser, expectRenderer: "spa", rendererScope: ["export"] },
+    );
+    expect(r.results[0]!.outcome).toBe("pass");
+  });
+
+  it("a document INSIDE the gated set reporting the wrong renderer still fails the leg", async () => {
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/p/acme/export", docHtml: EXPORT_SSR }),
+    ]);
+    const r = await run(
+      [step("G15", "green")],
+      {
+        G15: async (ctx) => {
+          const { page } = await ctx.anon();
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+        },
+      },
+      false,
+      { browser, expectRenderer: "spa", rendererScope: ["export"] },
+    );
+    const res = r.results[0]!;
+    expect(res.outcome).toBe("fail");
+    expect(res.error).toMatch(/\/p\/acme\/export served data-renderer=ssr.*expected spa/);
+    expect(r.passed).toBe(false);
+  });
+
+  it("the same gated doc reporting spa passes — the leg-B green", async () => {
+    const { browser } = browserWithPages([
+      fakeCtxPage({
+        docUrl: "https://app.test/p/acme/export",
+        docHtml: '<html data-renderer="spa" data-mounted>',
+      }),
+    ]);
+    const r = await run(
+      [step("G16", "green")],
+      {
+        G16: async (ctx) => {
+          const { page } = await ctx.anon();
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+        },
+      },
+      false,
+      { browser, expectRenderer: "spa", rendererScope: ["export"] },
+    );
+    expect(r.results[0]!.outcome).toBe("pass");
+  });
+});

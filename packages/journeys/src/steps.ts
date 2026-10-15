@@ -1208,8 +1208,9 @@ const R5: StepFn = async (ctx) => {
     throw new Error(`duplicate did not land on a copy (url ${page.url()})`);
   // open the export dialog and submit — the response is a file download.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`, ctx);
-  // REQ-VFY-4 — the export surface is located by its hook on both renderers.
-  const exportForm = page.locator('form[data-export-form="true"]');
+  // REQ-VFY-4 — the export surface is located by its attr hook on both renderers (SPA.17:
+  // presence-style — F7's `[attr]` grammar, never a tag+value pin the React port can't hold).
+  const exportForm = page.locator("[data-export-form]");
   if ((await exportForm.count()) === 0) {
     // the dialog may be a /p/:slug/export page — try the direct route.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`, ctx);
@@ -1222,7 +1223,7 @@ const R5: StepFn = async (ctx) => {
     )
     .catch(() => null);
   const submit = page
-    .locator('form[data-export-form] button[type="submit"], form[data-export-form] button:not([type])')
+    .locator('[data-export-form] button[type="submit"], [data-export-form] button:not([type])')
     .first();
   if ((await submit.count()) === 0) throw new Error("no export submit control");
   await assertActionable(submit, "export submit");

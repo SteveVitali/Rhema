@@ -191,6 +191,10 @@ try {
     },
     ...(expectRenderer ? { expectRenderer } : {}),
     ...(pinRenderer ? { pinRenderer } : {}),
+    // SPA.17 — a --surface leg scopes --expect-renderer to the gated surfaces' path set
+    // (design/29 §coexistence): leg B pins `spa` on the flipped surface's docs without
+    // demanding SPA on its still-SSR traversal docs.
+    ...(surfaces !== undefined ? { rendererScope: surfaces } : {}),
     ...(inviteCode ? { inviteCode } : {}),
   });
 } finally {
