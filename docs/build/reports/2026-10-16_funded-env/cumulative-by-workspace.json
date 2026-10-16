@@ -1,0 +1,44 @@
+[
+ {
+  "ws": "01M3V0VJ74HQXDPWPW2V8125S4",
+  "ws_created": "2026-10-01 06:01:33.681659+00",
+  "rows": 699,
+  "usd": "27.87"
+ },
+ {
+  "ws": "01M48PTEXDMTTGCF1JMW4KDYX3",
+  "ws_created": "2026-10-06 14:36:13.091947+00",
+  "rows": 570,
+  "usd": "17.48"
+ },
+ {
+  "ws": "01M3YJGDX7Q1GZNY88DKPH854E",
+  "ws_created": "2026-10-02 15:07:46.484872+00",
+  "rows": 574,
+  "usd": "15.70"
+ },
+ {
+  "ws": "01M40A8M1Y9PNWCW3E9BCK0KV4",
+  "ws_created": "2026-10-03 07:22:10.898622+00",
+  "rows": 182,
+  "usd": "7.19"
+ },
+ {
+  "ws": "01M49CFJXDJX1FTZK044CEC1DB",
+  "ws_created": "2026-10-06 19:54:06.140451+00",
+  "rows": 185,
+  "usd": "5.30"
+ },
+ {
+  "ws": "01M3Z532GCEA983PKSYPMDWS3H",
+  "ws_created": "2026-10-02 20:32:31.771674+00",
+  "rows": 154,
+  "usd": "4.81"
+ },
+ {
+  "ws": "01M3Y30T1P8GBDHYXVEE6DW5P0",
+  "ws_created": "2026-10-02 10:37:05.985444+00",
+  "rows": 66,
+  "usd": "2.51"
+ }
+]
