@@ -97,8 +97,9 @@ export interface PageEditorProps {
    * static view (artifact reads) instead of a live session.
    */
   readonly collabWsUrl?: string;
-  /** transport URLs the island wires (the same-origin web routes forward the session). */
-  readonly saveUrl: string;
+  /** transport URL the island wires (the same-origin `/doc` poll; the web route forwards the
+   *  session). SPA.24/REQ-ED-16 — `saveUrl`/`data-save-url` dropped: the Page's transport is
+   *  collab-only and no consumer ever read the attribute. */
   readonly docUrl: string;
   readonly noteUrl: string;
   readonly cancelUrl: string;
@@ -336,7 +337,6 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       data-page-root="1"
       data-draft-id={props.draftId}
       data-draft-n={props.draftN}
-      data-save-url={props.saveUrl}
       data-doc-url={props.docUrl}
       data-collab-url={props.collabWsUrl ?? ""}
       data-fork-fmt={L.forkFmt}
@@ -376,11 +376,15 @@ export function PageEditor(props: PageEditorProps): ReactNode {
           ) : null}
         </div>
       ) : null}
+      {/* SPA.24 — the lock banner (and its writer/reader templates) emits unconditionally: the §6.3
+          poll can grab a lock mid-session on a page that MOUNTED unlocked, and the mount's
+          `setLockBanner` reads the `data-{writer,reader}-text` templates + toggles display verbatim.
+          (Previously `props.lock`-gated — a mid-session lock had no banner node to write into.) */}
       <div
         data-page-banner="lock"
         style={{ ...bannerStyle, display: locked ? "flex" : "none", borderColor: "var(--sev-major)" }}
-        data-writer-text={props.lock ? L.writerLockText("{workflow}") : ""}
-        data-reader-text={props.lock ? L.readerLockText("{workflow}") : ""}
+        data-writer-text={L.writerLockText("{workflow}")}
+        data-reader-text={L.readerLockText("{workflow}")}
       >
         <span data-page-banner-text>
           {props.lock ? (props.lock.kind === "writer" ? L.writerLockText(props.lock.workflow) : L.readerLockText(props.lock.workflow)) : ""}

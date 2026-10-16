@@ -101,16 +101,10 @@ export type {
   PageProposalView,
 } from "./page-editor.js";
 
-// The source editor (PRB.07; REQ-BETA-21 stopgap #1 → 1.x Source mode): the SSR region the CodeMirror
-// client bundle upgrades — lock banner, sync pill, projected-findings rail, note field, Revise action.
-export { SourceEditor, SyncPill, EditorLockBanner, EditorFindingsRail } from "./source-editor.js";
-export type {
-  SourceEditorProps,
-  SourceEditorLabels,
-  SyncPillLabels,
-  EditorLockView,
-  EditorFindingView,
-} from "./source-editor.js";
+// SPA.24 (REQ-ED-16) — the source editor's SSR region (`SourceEditor`/`SyncPill`/
+// `EditorLockBanner`/`EditorFindingsRail` + the `source-editor.tsx` module) is RETIRED: the
+// `/edit/:draftId` GET has 302'd to `/v/:n` since P1.02 so nothing rendered it, and the editor.js
+// island stack went with it. Source mode's return is a designed SPA feature (SPA.25), not a port.
 
 // P1.12 — the shared spine-and-sections structured editor (§7.3): the Approve-outline gate card and
 // the unlocked outline editor render the SAME rows; `editable:false` is the phone/read-only surface.

@@ -82,8 +82,9 @@ export function renderDocument(
     (pref ? ` data-app-theme="${escapeHtml(pref)}"` : "") +
     (data.paperTheme ? ` data-paper="${escapeHtml(data.paperTheme)}"` : "") +
     (data.project?.slug ? ` data-project="${escapeHtml(data.project.slug)}"` : "");
-  // IDE documents (the /p/:project… routes) carry the pane stylesheet + the ide.js island; the editor
-  // page's own bundle (editor.js) is emitted by the editor element itself.
+  // IDE documents (the /p/:project… routes) carry the pane stylesheet + the ide.js island; the Page's
+  // own bundle (page.js) is emitted by the PageEditor element itself (the retired editor.js island
+  // dropped at SPA.24).
   // UX.2 (ADR-065) — belt-and-braces: rendered markup carrying `data-ide="1"` is an IDE document
   // whether or not the handler remembered `data.ide` (the /app/new defect was IdeFrame markup with
   // the flag unset — an unstyled shell). The markup is ground truth: a frame without its stylesheet

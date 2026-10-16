@@ -36,8 +36,6 @@ export interface CollabSessionOptions {
   readonly wsUrl: string;
   /** the working head's draft id — the document name is `draft:<id>`. */
   readonly draftId: string;
-  /** 'ro' attaches read-only (the /v/:n frozen read view — never mints a working head). */
-  readonly intent?: "ro";
   readonly onSync?: (ev: CollabSyncEvent) => void;
   /** the auth refusal carried a frozen_fork — the caller rebinds the session to the new head. */
   readonly onFork?: (fork: FrozenFork) => void;
@@ -91,11 +89,11 @@ export function createCollabSession(opts: CollabSessionOptions): CollabSession {
     opts.onSync?.({ state, queued });
   };
 
-  const wsUrl = (() => {
-    const u = new URL(opts.wsUrl, location.href);
-    if (opts.intent) u.searchParams.set("intent", opts.intent);
-    return u.toString();
-  })();
+  // SPA.24 (REQ-ED-16) — the `intent:"ro"` option had no caller: every collab attach is
+  // write-intent (the frozen-head fork-on-type IS the feature — the server's auth refusal is the
+  // read-only/refuse path). The `?intent` param is gone with it; restore is a 4-line revert if a
+  // real read-only attach surface is ever spec'd (design/23 OQ2).
+  const wsUrl = new URL(opts.wsUrl, location.href).toString();
 
   // A provider is bound to ONE document name — the Auth handshake rides the socket-open keyed by
   // effectiveName and the websocketProvider's routing map keeps the original key. Rebinding to a

@@ -32,7 +32,7 @@ describe("client-bundle ↔ route parity (HOT.1, REQ-SPEC-29)", () => {
         .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
         .map((f) => f.slice(0, -".ts".length)),
     );
-    // shared non-entry modules (collab.ts, sync-machine.ts) are allowed — they're imports, not bundles.
+    // shared non-entry modules (collab.ts) are allowed — they're imports, not bundles.
     for (const entry of CLIENT_ENTRIES) expect(sources).toContain(entry);
   });
 

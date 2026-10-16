@@ -205,7 +205,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     f(
       "data-label-",
       "conditional",
-      "ui/page-editor + source-editor + outline",
+      "ui/page-editor + outline",
       "sync-pill state labels — data-label-{saving,saved,failed,queued,locked,readonly,synced,syncing,offline}",
     ),
     a(
@@ -224,8 +224,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a(
       "data-sync-state",
       "conditional",
-      "ui/source-editor sync machine",
-      "synced|syncing|queued|locked",
+      "spa/page-mount + ui/page-editor pill",
+      "synced|syncing|offline|readonly (SPA.24 collab pill)",
     ),
     a(
       "data-phone-blocked",
@@ -1356,30 +1356,36 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "ui/page-editor + dossier + files-pane",
       "reader-mode marker (REQ-VFY-5)",
     ),
-    a("data-draft-id", "required", "ui/page-editor + source-editor"),
+    a("data-draft-id", "required", "ui/page-editor"),
     a("data-draft-n", "conditional", "ui/page-editor.tsx"),
-    a("data-locked", "conditional", "ui/page-editor + source-editor"),
-    a("data-save-url", "conditional", "ui/page-editor + source-editor"),
+    a("data-locked", "conditional", "ui/page-editor"),
+    a(
+      "data-page-banner-text",
+      "conditional",
+      "ui/page-editor + spa/page-mount",
+      "lock banner's writable text slot (mid-session poll fills it)",
+    ),
+    a(
+      "data-lost-note",
+      "conditional",
+      "ui/page-editor rail + spa/page-mount syncRail",
+      "the lost-anchor note node the §6.3 poll adds/removes live",
+    ),
+    // SPA.24 (REQ-ED-16) — `data-save-url` dropped: collab is the editor's only transport and the
+    // source editor (its last emitter) is retired. `/save` stays server-side for `?collab=local`.
     a("data-edit-source", "conditional", "pages.tsx", "Edit-source affordance (P1 action row)"),
-    a("data-writer-text", "conditional", "ui/page-editor + source-editor banner"),
-    a("data-reader-text", "conditional", "ui/page-editor + source-editor banner"),
-    a("data-lost", "conditional", "ui/page-editor + client/page rail"),
-    a("data-lost-note-text", "conditional", "ui/page-editor + source-editor rail"),
+    a("data-writer-text", "conditional", "ui/page-editor banner"),
+    a("data-reader-text", "conditional", "ui/page-editor banner"),
+    a("data-lost", "conditional", "ui/page-editor + spa/page-mount rail"),
+    a("data-lost-note-text", "conditional", "ui/page-editor rail"),
     a("data-proposal-accept", "conditional", "ui/page-editor + client/page"),
     a("data-proposal-reject", "conditional", "ui/page-editor + client/page"),
     a("data-proposal-origin", "conditional", "pages.tsx"),
     a("data-pending-proposal", "conditional", "pages.tsx"),
     a("data-proposal-block", "conditional", "pages.tsx"),
-    a(
-      "data-editor-root",
-      "conditional",
-      "ui/source-editor.tsx",
-      "source-mode island mount (unrouted standby)",
-    ),
-    a("data-editor-source", "conditional", "ui/source-editor.tsx"),
-    a("data-editor-host", "conditional", "ui/source-editor.tsx"),
-    a("data-editor-banner", "conditional", "client/editor.ts"),
-    a("data-editor-banner-text", "conditional", "client/editor.ts"),
+    // SPA.24 (REQ-ED-16) — the source-editor island's hooks retired with it: data-editor-root /
+    // -source / -host (ui/source-editor.tsx) and data-editor-banner / -banner-text (client/editor.ts).
+    // Source mode returns as a designed SPA feature (SPA.25) with its own contract rows.
     a(
       "data-version-rail",
       "conditional",

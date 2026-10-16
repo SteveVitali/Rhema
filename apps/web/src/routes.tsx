@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, ProjectSettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, ProjectSettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
@@ -34,7 +34,6 @@ export const importPreviewElement = <ImportPreviewPage />;
 export const runSheetElement = <RunSheetPage />;
 export const dossierElement = <DossierPage />;
 export const revisionElement = <RevisionPage />;
-export const editorElement = <EditorPage />;
 // P1.02 — the Page (the schema-first editor surface; /p/:project/v/:v, /v/working).
 export const pageElement = <PagePage />;
 // P1.08 — the §5.8 generalized compare (/p/:project/v/:n/diff/:m; three read-only layouts).
@@ -90,7 +89,9 @@ export const routes: readonly AppRoute[] = [
   // P1.05 — the canonical run surface (§4.2): the §14.5 report at #report.
   { path: "/p/:project/r/:runId", public: false, element: runReportElement },
   { path: "/p/:project/revisions/:cid", public: false, element: revisionElement },
-  { path: "/p/:project/edit/:draftId", public: false, element: editorElement },
+  // SPA.24 (REQ-ED-16) — `/p/:project/edit/:draftId` keeps NO manifest row: its GET has 302'd to
+  // `/v/:n` since P1.02 (the source-editor surface it rendered is retired) and the
+  // `/edit/:draftId/{doc,note,cancel-run,revise}` transport endpoints stay live server-side.
   // P1.02 — the Page routes: /v/working (the editable head), /v/:n (a versioned draft), and
   // /a/:artifactId (a non-draft artifact rendered read-only).
   { path: "/p/:project/v/:v", public: false, element: pageElement },

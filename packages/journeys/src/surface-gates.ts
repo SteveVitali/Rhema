@@ -163,7 +163,7 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
       "P1.pill": "the pill legs + the phone reader-Page markers",
     },
     owed: [
-      "the SPA.23 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.23-1) holds the pr-<n> run; the dom.test + bff parity legs stand in",
+      "the preview two-legs + rollback drills (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.23-1 for the mount half, D-SPA.24-1 for the collab half) holds the pr-<n> runs; the dom.test + bff parity legs stand in",
     ],
   }),
   "ide-chrome": gate("ide-chrome", ["P1.project"], {

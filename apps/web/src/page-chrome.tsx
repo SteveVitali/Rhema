@@ -297,7 +297,6 @@ export function PageChrome(props: PageChromeProps): ReactNode {
         // island mounts read-only too (readOnly flows to the editor island verbatim).
         readOnly={page.readOnly === true || compact === true}
         {...(page.collabWsUrl ? { collabWsUrl: page.collabWsUrl } : {})}
-        saveUrl={`${base}/save`}
         docUrl={`${base}/doc`}
         noteUrl={`${base}/note`}
         cancelUrl={`${base}/cancel-run`}

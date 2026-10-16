@@ -19,9 +19,11 @@
 //   • URL state is never payload: `?noted`/`?restored`/`?hc`/`?rename`/`?created`/`?derror`/
 //     `?voice_locked`/`?layout`/`?commented` merge leaf-side from the leaf's own search — the
 //     twin keys carry only the server-owned `?restore`/`?focus`.
-//   • Out of scope (SPA.24): the collab wire (`session` stays null — the sync pill's live
-//     states, the 10 s lock poll, ⌘S restore points, pagehide/visibility flushes, the fork
-//     rebase → `registry.rekey`).
+//   • THE SESSION — SPA.24 bound the collab wire: when the twin carries a server-authorized
+//     `collabWsUrl`, `PageMount`'s registry init builds the `CollabPageWire` (Y.Doc →
+//     y-indexeddb → cookie-auth Hocuspocus → server materialization) and owns the island's
+//     chrome legs — the live sync pill, the 10 s visible-only lock poll, ⌘S restore points,
+//     pagehide/visibility flushes, the frozen-fork `rhema.fork` → `registry.rekey` rebase.
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
