@@ -11,7 +11,14 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const SPEC = readFileSync(`${ROOT}/docs/rhema-design-spec.md`, "utf8");
+// SPACAP.1 — the authoritative inventory is the union of the product design spec and the
+// frontend SPA spec (its Appendix A emits the REQ-INV/ISL/DAT/TST/FW/TL/BFF/ED/UX/NAV/BND/VFY/
+// SAFE/SEQ families — namespaces the design spec never uses, so the sets are disjoint except for
+// the product ids the SPA spec legitimately cites inline, which the Set dedupes).
+const SPEC =
+  readFileSync(`${ROOT}/docs/rhema-design-spec.md`, "utf8") +
+  "\n" +
+  readFileSync(`${ROOT}/docs/frontend-spa-spec.md`, "utf8");
 const MATRIX_PATH = `${ROOT}/docs/build/COVERAGE_MATRIX.csv`;
 const MATRIX = readFileSync(MATRIX_PATH, "utf8");
 const DEFERRALS = readFileSync(`${ROOT}/docs/tickets/DEFERRALS.md`, "utf8");
@@ -65,9 +72,14 @@ function parseCsv(text) {
   return rows.filter((r) => !(r.length === 1 && r[0] === ""));
 }
 
-const specIds = [
-  ...new Set(SPEC.match(/REQ-[A-Z]+-\d+/g) ?? []),
-].sort();
+const specIds = new Set(SPEC.match(/REQ-[A-Z]+-\d+/g) ?? []);
+// The SPA spec cites whole families by range (`REQ-BFF-1..30`); expand every range so the
+// index-only ids count as authoritative too.
+for (const m of SPEC.matchAll(/REQ-([A-Z]+)-(\d+)\.\.(\d+)/g)) {
+  for (let n = Number(m[2]); n <= Number(m[3]); n++)
+    specIds.add(`REQ-${m[1]}-${n}`);
+}
+const sortedSpecIds = [...specIds].sort();
 
 const rows = parseCsv(MATRIX);
 const header = rows[0];
@@ -79,8 +91,8 @@ test("matrix header is exactly the required eleven columns", () => {
 
 test("spec yields the authoritative requirement inventory", () => {
   assert.ok(
-    specIds.length >= 400,
-    `expected a large requirement inventory, got ${specIds.length}`,
+    specIds.size >= 600,
+    `expected a large requirement inventory (design + SPA union), got ${specIds.size}`,
   );
 });
 
@@ -89,12 +101,12 @@ test("exactly one matrix row per spec requirement id — no missing, extras, or 
   const seen = new Set();
   const dupes = matrixIds.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
   assert.deepEqual(dupes, [], `duplicate rows: ${dupes.join(", ")}`);
-  const specSet = new Set(specIds);
-  const missing = specIds.filter((id) => !seen.has(id));
+  const specSet = specIds;
+  const missing = sortedSpecIds.filter((id) => !seen.has(id));
   const extras = matrixIds.filter((id) => !specSet.has(id));
   assert.deepEqual(missing, [], `spec ids missing from matrix: ${missing.join(", ")}`);
   assert.deepEqual(extras, [], `matrix rows not in spec: ${extras.join(", ")}`);
-  assert.equal(data.length, specIds.length);
+  assert.equal(data.length, specIds.size);
 });
 
 test("every row has a valid verdict and eleven populated columns", () => {
