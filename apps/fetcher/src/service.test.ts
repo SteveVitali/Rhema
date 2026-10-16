@@ -38,6 +38,15 @@ describe("HostRateLimiter (≤1 req/s/host)", () => {
     t += 1000;
     expect(rl.take("a.example")).toBe(true); // allowed after the interval
   });
+
+  it("minInterval 0 always allows — take() reads the clock once (F-VERIF.2-7)", async () => {
+    // A monotonic-ticking clock: the old double-read could refuse a first hit when the second
+    // now() ticked past the first (CI flake — "403s an SSRF target" saw 429).
+    let t = 1000;
+    const rl = new HostRateLimiter(0, () => t++);
+    expect(rl.take("a.example")).toBe(true);
+    expect(rl.take("a.example")).toBe(true);
+  });
 });
 
 describe("createFetcherApp", () => {

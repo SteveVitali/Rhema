@@ -3,7 +3,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** agent-skills @ (see `git -C ~/agent-skills rev-parse --short HEAD` in Evidence log)
 - **Started:** 2026-10-16T03:26:00Z
-- **Closed:** —
+- **Closed:** 2026-10-16T16:35:44Z
 - **Spec:** `docs/tickets/165_VERIF.2__preview-legs.md` (manifest row 165)
 - **Base:** `stevevitali/cost-1-prod-cost-posture` @ `f20ee28` (+ orchestrator commits `e6c774b`, `1b1fee9`)
 - **Branch:** `stevevitali/verif-2-preview-legs` @ `1b1fee9` (impl head at branch open)
