@@ -3,7 +3,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** agent-skills @ (see `git -C ~/agent-skills rev-parse --short HEAD` in Evidence log)
 - **Started:** 2026-10-16T03:26:00Z
-- **Closed:** 2026-10-16T16:35:44Z
+- **Closed:** 2026-10-16T17:47:00Z
 - **Spec:** `docs/tickets/165_VERIF.2__preview-legs.md` (manifest row 165)
 - **Base:** `stevevitali/cost-1-prod-cost-posture` @ `f20ee28` (+ orchestrator commits `e6c774b`, `1b1fee9`)
 - **Branch:** `stevevitali/verif-2-preview-legs` @ `1b1fee9` (impl head at branch open)
@@ -213,6 +213,19 @@ No code change — verification legs are the deliverable. Gates re-run at close:
   (runbook-completeness invariant — §2 bullet added). Re-run: **502 files (501 pass, 1 skip)
   / 5,813 pass / 4 skip / 0 fail** — the F-VERIF.2-3 dossier regression test green;
   `privsep.docker` green this pass. All six `check:*` gates green.
+- 2026-10-16T16:5xZ — first `ci-boundary` read on head `54766b8` → **fail** on
+  `typecheck / lint / unit` (run 38932813736): `fetcher service.test.ts` "403s an SSRF
+  target" saw 429 not 403 — `HostRateLimiter.take()` read `now()` twice, so a first-ever
+  hit could be refused when the second read ticked past the first (latent flake —
+  `HostRateLimiter(0)` should never refuse; base `f20ee28` run passed the same check).
+  **F-VERIF.2-7** fixed honestly in `3cb92cf` (single clock read + pin test with a
+  monotonic-ticking fake clock); not a relaxed assertion. Re-reading CI on the new head.
+- 2026-10-16T17:4xZ — second `ci-boundary --pr 186 --stack` read on head `3cb92cf` →
+  **pass** (run 38936484599): all five checks green (typecheck/lint/unit · contracts ·
+  integration · images · public-safe); stack ancestors #185–#172 all pass. Record:
+  `docs/build/logs/ci-VERIF.2.json`. Header `Closed:` corrected from the premature
+  16:35:44Z stamp (the ticket was not closed until this pass read). VERIF.2 closed;
+  `nextTicket` GATE-R5F — funded-window operator gate, not opened autonomously.
 
 ## Gap table
 
@@ -272,6 +285,7 @@ LB plumbing 06:36–06:47Z). The crash held only ~52 near-free non-compute resou
 | 16:09–16:11Z | `destroy` re-runs: `rhema-pr-186-iap-ssh` firewall deleted by hand (blocked net delete), 47+2 resources gone; `rm` → stack unregistered | stack empty; `pulumi stack ls` = dev+prod only |
 | 16:1xZ | orphan enumeration — 20 resource classes, `rhema-pr-186*` filter, `rhema-507501` | **zero residuals** |
 | 16:2xZ | `turbo build lint typecheck` 135/135 · `pnpm test` 501 files / 5,813 pass / 4 skip / 0 fail (2 closeout gaps fixed: registry.test green-pin + PROD-BRINGUP key docs) · all six `check:*` green | verification green |
+| 17:4xZ | `ci-boundary --pr 186 --stack` → `pass #186@3cb92cf` (run 38936484599 — all five checks; stack #185–#172 pass) after F-VERIF.2-7 fix | head-bound CI green |
 
 ## Evidence report
 

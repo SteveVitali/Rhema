@@ -54,7 +54,12 @@ stripe-bearing stage), D-SPA.24-1 (collab wire → domains-bearing stage).
 ## Verification
 
 - `pnpm turbo build lint typecheck` — 135/135 tasks green.
-- `pnpm test` — (filled at close; dossier regression test included).
+- `pnpm test` — 501 files / 5,813 pass / 4 skip / 0 fail (F-VERIF.2-3 dossier regression
+  test included; `privsep.docker` green).
+- `ci-boundary --pr 186 --stack` — **pass `3cb92cf`** (run 38936484599 — all five checks;
+  stack #185–#172 pass). The first read on `54766b8` surfaced a latent fetcher flake
+  (F-VERIF.2-7 — `HostRateLimiter.take()` double clock read; fixed with a regression
+  test, not waived).
 - Live: 10 journey runs on `pr-186`, provenance MATCH on `e7b21aecb` where expected;
   D-OPS.1-2 pause leg executed + drift-free; `spend.weeklyMeteredUsd: 0` / `withinCap: true`
   on every report — no paid legs, zero prod writes.
