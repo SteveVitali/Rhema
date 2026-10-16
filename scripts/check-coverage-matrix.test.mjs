@@ -1,10 +1,12 @@
 // CAP.1 — docs/build/COVERAGE_MATRIX.csv completeness + integrity gate (REQ-SPEC-29).
 // Deterministically proves: (1) the CSV header is exactly the required eleven columns; (2) exactly
 // one matrix row exists per requirement id matching REQ-[A-Z]+-[0-9]+ in the authoritative spec —
-// no missing, no extras, no duplicates; (3) every row's verdict is one of the five allowed values;
-// (4) MET and MET-DIFFERENTLY rows carry nonblank evidence; (5) file-path-shaped refs cited in the
-// evidence/tests columns resolve on disk, `deferral:` refs exist in docs/tickets/DEFERRALS.md, and
-// `journey:` refs are registered steps in packages/journeys/src/registry.ts.
+// no missing, no extras, no duplicates; (3) every row's verdict is a valid BM-VERDICT-01 verdict
+// (the bare name, plus the parameterized forms MET-DIFFERENTLY(ADR-nnn), MET-ENGINEERED(D-id),
+// WAIVED(ADR-nnn) — ADR-109); (4) MET, MET-DIFFERENTLY and MET-ENGINEERED rows carry nonblank evidence;
+// (5) file-path-shaped refs cited in the evidence/tests columns resolve on disk, `deferral:` refs
+// exist in docs/tickets/DEFERRALS.md, and `journey:` refs are registered steps in
+// packages/journeys/src/registry.ts.
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
@@ -26,16 +28,36 @@ const REGISTRY = readFileSync(`${ROOT}/packages/journeys/src/registry.ts`, "utf8
 
 const HEADER =
   "id,level,spec_section,class,verdict,evidence,owning_tickets,tests,adrs,routing,note";
+// ADR-109 — the verdict cell validates against the BM-VERDICT-01 grammar: a bare base name, or a
+// parameterized form `NAME(params)` for the three names that carry them. The previous
+// five-bare-value set predated the parameterized verdicts and forced dishonest MET rows when a
+// requirement's engineering was done but a live leg was still owed (MAINT.3's REQ-SPEC-31 revert).
 const VERDICTS = new Set([
   "MET",
   "MET-DIFFERENTLY",
-  // REQ-SPEC-31 (RES.1): met via an engineered path, carrying its owed-deferral annotation in the
-  // verdict cell (e.g. MET-ENGINEERED(D-RES.1-2)); the base token is the controlled vocabulary entry.
   "MET-ENGINEERED",
   "PARTIAL",
   "MISSING",
   "AT-RISK-INTEGRATION",
+  "WAIVED",
+  "N/A-RATIONALE",
 ]);
+const PARAMETERIZED_VERDICTS = new Set([
+  "MET-DIFFERENTLY",
+  "MET-ENGINEERED",
+  "WAIVED",
+]);
+
+/** Split a verdict cell into its BM-VERDICT-01 base name and optional `(...)` parameters. */
+function verdictParts(cell) {
+  const i = cell.indexOf("(");
+  if (i === -1) return { base: cell.trim(), params: null };
+  return {
+    base: cell.slice(0, i).trim(),
+    params: cell.slice(i + 1).replace(/\)\s*$/, ""),
+    closed: /\)\s*$/.test(cell),
+  };
+}
 // References in evidence/tests that are not filesystem paths.
 const NON_PATH = /^(journey|deferral|live|spec|ci|docs|ADR)-?/;
 
@@ -112,18 +134,25 @@ test("exactly one matrix row per spec requirement id — no missing, extras, or 
 test("every row has a valid verdict and eleven populated columns", () => {
   for (const r of data) {
     assert.equal(r.length, 11, `${r[0]} has ${r.length} columns`);
-    // A verdict is a controlled token, optionally carrying a parenthesised deferral-ref annotation
-    // (e.g. MET-ENGINEERED(D-RES.1-2)); strip a well-formed `(D-…)` suffix and validate the base.
-    const verdictBase = r[4].replace(/\(D-[A-Z0-9.-]+\)$/, "");
-    assert.ok(VERDICTS.has(verdictBase), `${r[0]} verdict '${r[4]}' is not allowed`);
+    const v = verdictParts(r[4]);
+    assert.ok(VERDICTS.has(v.base), `${r[0]} verdict '${r[4]}' is not allowed`);
+    if (v.params !== null) {
+      assert.ok(v.closed !== false, `${r[0]} verdict '${r[4]}' has an unclosed parameter`);
+      assert.ok(
+        PARAMETERIZED_VERDICTS.has(v.base),
+        `${r[0]} verdict '${r[4]}' — only MET-DIFFERENTLY/MET-ENGINEERED/WAIVED carry parameters`,
+      );
+      assert.ok(v.params.trim() !== "", `${r[0]} verdict '${r[4]}' has an empty parameter`);
+    }
     for (const [i, name] of ["id", "level", "spec_section", "class"].entries())
       assert.notEqual(r[i].trim(), "", `${r[0]} blank ${name}`);
   }
 });
 
-test("MET and MET-DIFFERENTLY rows carry nonblank evidence", () => {
+test("MET, MET-DIFFERENTLY and MET-ENGINEERED rows carry nonblank evidence", () => {
   for (const r of data) {
-    if (r[4] === "MET" || r[4] === "MET-DIFFERENTLY") {
+    const v = verdictParts(r[4]).base;
+    if (v === "MET" || v === "MET-DIFFERENTLY" || v === "MET-ENGINEERED") {
       assert.ok(
         r[5].trim() !== "" && r[5].trim() !== "—",
         `${r[0]} is ${r[4]} with blank evidence`,

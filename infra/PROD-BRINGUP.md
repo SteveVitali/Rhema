@@ -106,11 +106,14 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   leg skips). Prod records via `scripts/live/record-deployment.mjs` (§8).
 - `rhema:runTaskAppArmorType` / `rhema:runTaskAppArmorLocalhostProfile` — SEC.3's pod AppArmor
   deploy config (`Localhost` / `rhema-run-task` on prod; a rollback flips these keys, never code).
-- `rhema:spaSurfaces` — SPA.2's per-flip PREVIEW override (REQ-SEQ-3): a `SPA_SURFACES` CSV that
-  beats the `StageConfig.spaSurfaces` fact for this stack only, set via
-  `preview-stack.mjs config pr-<n> rhema:spaSurfaces "<prior set>,<key>"` in a surface ticket's
-  preview legs (design/29 §per-flip runbook). Never committed; prod/dev flips are committed
-  stage-fact edits instead (REQ-SEQ-10 — a prod flip is its own operator-merged PR).
+- `rhema:spaSurfaces` — **DELETED post-SPA.28 (2026-10-10; see §13):** the migration-window key no
+  longer exists — `StageConfig.spaSurfaces`, `SPA_SURFACES`/`SPA_OVERRIDES` env emissions,
+  `parseSpaSurfaces`, and every request-path renderer consult are removed from the program and the
+  apps; setting this key on a post-cleanup stack is a no-op at best (the program no longer reads
+  it). Historical, for pre-cleanup checkouts only: it was SPA.2's per-flip PREVIEW override
+  (REQ-SEQ-3), a `SPA_SURFACES` CSV set via `preview-stack.mjs config pr-<n> rhema:spaSurfaces
+  "<prior set>,<key>"`; prod/dev flips were committed stage-fact edits (REQ-SEQ-10 — a prod flip
+  was its own operator-merged PR).
 - `rhema:uploadCorsOrigins` — SPA.13's REQ-BFF-16 companion: a CSV of extra `https://` origins the
   `user-content` bucket's CORS block admits for the browser's presign→direct-PUT upload leg
   (PUT-only, the signed-URL headers only, never a wildcard). The stage's own app origin is admitted
@@ -414,3 +417,90 @@ floor; the HA levers below are priced but NOT executed:
 - **Proxy MIG ×2** (≈ +$12.2/mo): `targetSize` 1→2 (regional MIG already spans zones).
 - **Warm-floor levers** (the bigger dollars, still plan-only): `convert-svc` cpuIdle→request-based
   (−$44), `export`/`fetcher` minScale 1→0 (−$19.4), worker right-size (−$26).
+
+## 13. Post-migration SPA operations (SPA.28 / SPACAP.2, 2026-10-10)
+
+The round-4 frontend-SPA migration rewrote the renderer contract. This section is the current
+operational truth for anything touching renderer, rollback, or activation order; the pre-cleanup
+flag recipes elsewhere in this runbook are retained for pre-cleanup checkouts only.
+
+### 13.0 Provenance first — prod is pre-chain
+
+Current prod serves **pre-chain ancestors**: web `6ebb1cb76e14be8bfa6c6dc0731932c9011e6224`,
+api `0acd16d0f6d5af473f28815b7358140d70e39146` (`/healthz` `build.gitSha`,
+`merge-base --is-ancestor`-verified — 150/153 commits behind the round-4 tip). Prod has **zero**
+round-4 SPA code: `GET https://rhema.tools/bff/app` → 404, and `data-renderer`/`data-mounted`/
+`data-route`/`spa-root` are absent on `/`, `/login`, `/showcase`, `/pricing`. **Only
+SHA-matched evidence counts as live verification**: before any post-deploy leg, run
+`check-deploy-provenance --expect <tip> --healthz https://rhema.tools --healthz https://api.rhema.tools`
+and require all-PASS; the harness itself refuses on a provenance NO-MATCH (exercised, exit 1).
+
+### 13.1 Forced SSR is code, not configuration
+
+There is no renderer flag left anywhere — no stack key, no env var, no header, no query param.
+`?ssr=1`, `?renderer=spa`, `x-rhema-renderer`, `SPA_OVERRIDES`, `SPA_RENDERER_HEADER`, and
+`rhema:spaSurfaces` are deleted machinery; a request carrying any of them gets the same answer as
+one that doesn't (inert, not an error). The remaining renderer verdicts are the request path's
+own, and they are permanent:
+
+- **Public funnel** (`/`, `/login`, `/showcase`, `/pricing`, legal) — always SSR (REQ-BND-1's
+  `SPA_PUBLIC_ROUTES`).
+- **The Page family forced-SSR truth** — two server-owned conditions: a **phone user agent**, and
+  `project.showcase: true` read from the BFF twin (ADR-108). Both serve the SSR document with
+  `page.js`/`ide.js` islands (ADR-107's forever-SSR set), the showcase leg in read-only posture.
+  In-SPA navigation to a showcase Page document-navigates to SSR via the client's `twinForcesSsr`
+  mirror — the verdict cannot be flipped by any operator control; changing it is a code change.
+- **Everything else authenticated** — the SPA shell (`data-renderer="spa"`), unconditionally.
+
+### 13.2 Rollback — `git revert` + redeploy (the flag rollback is gone)
+
+Config-flag rollback **does not exist** post-SPA.28. To roll back a migrated surface, a SPAF flip,
+or any part of the cleanup wave:
+
+1. `git revert` the offending commits (a surface's SPAF migration commit, or the specific
+   cleanup-wave commits — revert the wave bottom-up if the target is inside it).
+2. Rebuild + redeploy the affected services at the reverted SHA (§2b image-set flow, then the
+   deploy leg of §13.3's cadence).
+3. Re-run the surface's verification legs against the redeployed SHA — the `D-SPAF.*-1` marker
+   curls and the `--expect-renderer` leg for that surface (§13.3); a renderer revert restores the
+   prior renderer in one deploy.
+4. Record the revert + re-verification in the run ledger; the DEFERRALS row the leg discharges
+   gets a dated note.
+
+The pre-cleanup escape hatches (`?ssr=1`, `x-rhema-renderer: ssr`, dropping a surface off
+`rhema:spaSurfaces`) **no longer function** — they are inert signals, not fallback paths. Do not
+plan any rollback that ends in a config edit; there is no renderer config to edit.
+
+### 13.3 Activation — the 15-segment bottom-up cadence
+
+The chain activates by the SPACAP.2 runbook
+(`docs/build/reports/SPACAP.2_COMPOSED_VERIFICATION.md` §3), not by a single deploy:
+
+1. Merge the PR chain **bottom-up** (`mergePolicy: OPERATOR` — the operator merges; a run never
+   merges its own PR).
+2. At each SPAF boundary (segments 1–14, one per migrated surface), deploy that boundary, then run
+   the segment's legs: the `D-SPAF.*-1` marker curls + inert-escape checks, the `D-SPAF.*-2`
+   `--expect-renderer spa` journey leg for that surface, and the `D-SPAF.*-3` rollback-arm verify.
+3. **Require ≥1 nightly journey run green on prod after each deploy** (`D-SPAF.*-4`, REQ-SEQ-10)
+   before the next segment merges+deploys — the nightly bake is the pacing control.
+4. The cleanup wave (PRs #158–#163) activates only after the `editor` flip's bake —
+   `D-SPA.26-1/-27-1/-28-1` entry gates: all 14 prod flips merged AND ≥1 nightly green since the
+   last flip. Segment 15 is the wave + the tip.
+5. After the tip deploys, the composed verification runs (BL-82): the full suite with
+   `--expect-renderer spa`, the two-tenant BFF probe, the public-SSR regression diff vs the
+   committed pre-chain baseline, the zero-CSP walk, the G2-fix live leg.
+6. **Arm B (recorded fallback):** a tip-only deploy exists in the runbook as the emergency path —
+   it jumps all-SSR→all-SPA in one deploy with flag rollback already gone. It is a fallback, not
+   the plan; every deviation from the cadence is an operator call, recorded.
+
+### 13.4 The owed operator secret — `rhema-nonprod-resend-api-key`
+
+Every `pr-<n>` preview leg is blocked on one human act: seeding a real send-only Resend key as the
+shared Secret Manager secret `rhema-nonprod-resend-api-key` in project `rhema-507501` (probed
+`NOT_FOUND` on every pass through SPA.25 — the value has never existed and must never appear in
+the repo, a ledger, a log line, or a PR). Once seeded, `preview-stack.mjs resend-pull pr-<n>`
+pipes it into that stack's `rhema:resendApiKey` (§2, the NON-PROD-only key; prod refuses it
+fail-closed). It gates: MAINT.6's live session-mint proof (D-MAINT.6-1), every surface ticket's
+`D-SPA.*-1/-2` preview legs/drills, and D-OPS.1-1's signed-in preview suite. **Prod legs do not
+need it** — prod sessions mint through the live `rhema.tools` mailbox. Never fabricate a preview
+result: if the secret is absent, the leg reports owed, not green.
