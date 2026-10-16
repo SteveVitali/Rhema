@@ -19,6 +19,7 @@ import {
   RESEND_FROM,
   previewInviteCode,
   latestExecutionFacts,
+  migrateJobName,
 } from "./preview-stack.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -269,35 +270,55 @@ describe("seed-invite — the in-VPC migrate-Job execution", () => {
     return { calls, exec };
   };
 
+  const jobsListPayload = () =>
+    JSON.stringify([{ metadata: { name: "rhema-pr-131-migrate-abcde" } }]);
+
   it("generates the deterministic code and executes the migrate Job with the --args override", () => {
     expect(previewInviteCode("pr-131")).toBe("prv-131-test");
     const { exec } = ownedExec();
     const gcloudCalls = [];
     const gcloud = (args) => {
       gcloudCalls.push(args);
+      if (args[1] === "jobs" && args[2] === "list") return { status: 0, stdout: jobsListPayload() };
       if (args[1] === "jobs" && args[2] === "execute") return { status: 0, stdout: "" };
       return {
         status: 0,
         stdout: JSON.stringify([
           {
-            metadata: { name: "rhema-pr-131-migrate-abcde" },
+            metadata: { name: "rhema-pr-131-migrate-abcde-x" },
             status: { succeededCount: 1, failedCount: 0, completionTime: "2026-10-09T00:00:00Z" },
           },
         ]),
       };
     };
     expect(run("pr-131", "seed-invite", [], { exec, gcloud })).toBe(0);
-    const execArgs = gcloudCalls[0].join(" ");
-    expect(execArgs).toContain("run jobs execute rhema-pr-131-migrate");
+    // the resolved (auto-named) Job is what executes — the literal prefix would 404 (F-VERIF.2-1)
+    expect(gcloudCalls[0].join(" ")).toContain("run jobs list");
+    const execArgs = gcloudCalls[1].join(" ");
+    expect(execArgs).toContain("run jobs execute rhema-pr-131-migrate-abcde");
     expect(execArgs).toContain("--wait");
     expect(execArgs).toContain("--args node,/app/dist/migrate.js,--seed-invite,prv-131-test");
     // success was verified on the newest execution, not just the execute call's exit code
-    expect(gcloudCalls[1].join(" ")).toContain("jobs executions list --job rhema-pr-131-migrate");
+    expect(gcloudCalls[2].join(" ")).toContain("jobs executions list --job rhema-pr-131-migrate-abcde");
+  });
+
+  it("an unresolvable/ambiguous job name fails before execute", () => {
+    const { exec } = ownedExec();
+    const gcloudCalls = [];
+    const gcloud = (args) => {
+      gcloudCalls.push(args);
+      if (args[1] === "jobs" && args[2] === "list")
+        return { status: 0, stdout: JSON.stringify([{ metadata: { name: "unrelated-job" } }]) };
+      return { status: 0, stdout: "[]" };
+    };
+    expect(run("pr-131", "seed-invite", [], { exec, gcloud })).toBe(1);
+    expect(gcloudCalls).toHaveLength(1); // never reached execute
   });
 
   it("a failed execution (failedCount>0 / no completion) fails the verb", () => {
     const { exec } = ownedExec();
     const gcloud = (args) => {
+      if (args[1] === "jobs" && args[2] === "list") return { status: 0, stdout: jobsListPayload() };
       if (args[2] === "execute") return { status: 0, stdout: "" };
       return {
         status: 0,
@@ -312,13 +333,14 @@ describe("seed-invite — the in-VPC migrate-Job execution", () => {
   it("an unparseable/absent executions list fails closed", () => {
     const { exec } = ownedExec();
     const gcloud = (args) => {
+      if (args[1] === "jobs" && args[2] === "list") return { status: 0, stdout: jobsListPayload() };
       if (args[2] === "execute") return { status: 0, stdout: "" };
       return { status: 0, stdout: "not json" };
     };
     expect(run("pr-131", "seed-invite", [], { exec, gcloud })).toBe(1);
   });
 
-  it("a failed execute call short-circuits (no executions list)", () => {
+  it("a failed jobs-list call short-circuits (no execute)", () => {
     const { exec } = ownedExec();
     const gcloudCalls = [];
     const gcloud = (args) => {
@@ -327,6 +349,25 @@ describe("seed-invite — the in-VPC migrate-Job execution", () => {
     };
     expect(run("pr-131", "seed-invite", [], { exec, gcloud })).toBe(4);
     expect(gcloudCalls).toHaveLength(1);
+  });
+});
+
+describe("migrateJobName — the autonamed-Job resolver (F-VERIF.2-1)", () => {
+  it("resolves the single suffixed match, tolerates the bare name, refuses none/ambiguous", () => {
+    const one = JSON.stringify([{ metadata: { name: "rhema-pr-131-migrate-abc1234" } }]);
+    expect(migrateJobName(one, "pr-131")).toBe("rhema-pr-131-migrate-abc1234");
+    const bare = JSON.stringify([{ metadata: { name: "rhema-pr-131-migrate" } }]);
+    expect(migrateJobName(bare, "pr-131")).toBe("rhema-pr-131-migrate");
+    expect(migrateJobName("[]", "pr-131")).toBeNull();
+    expect(migrateJobName("not json", "pr-131")).toBeNull();
+    const two = JSON.stringify([
+      { metadata: { name: "rhema-pr-131-migrate-aaaaaaa" } },
+      { metadata: { name: "rhema-pr-131-migrate-bbbbbbb" } },
+    ]);
+    expect(migrateJobName(two, "pr-131")).toBeNull();
+    // a multi-dash sibling (e.g. `name("migrate-x-y")`) is not the autoname shape — refuse it
+    const other = JSON.stringify([{ metadata: { name: "rhema-pr-131-migrate-x-y" } }]);
+    expect(migrateJobName(other, "pr-131")).toBeNull();
   });
 });
 

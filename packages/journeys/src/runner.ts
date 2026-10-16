@@ -64,6 +64,13 @@ export interface StepCtx {
    * signal that survives a document boundary, where the page's own `data-nav-count` resets.
    */
   readonly documentLoads: number;
+  /**
+   * VERIF.2 (F-VERIF.2-5) — the run's `--invite-code`, exposed so legs that drive the /signup
+   * form THEMSELVES (the N1/N3 held-draft walk-ins mint inside `ctx.anon()` — the drop-zone
+   * hold is IndexedDB-bound, so the session API's mint can't carry it) can fill the real
+   * `code` field on invite-mode stages. Unset ⇒ the un-seeded path, verbatim as before.
+   */
+  readonly inviteCode?: string;
 }
 
 // SPA.28 — `extraHTTPHeaders`/`pinRenderer` retired (REQ-SEQ-4's removal leg): the
@@ -285,6 +292,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       get documentLoads() {
         return documentLoads;
       },
+      ...(deps.inviteCode ? { inviteCode: deps.inviteCode } : {}),
       marker: (name) => marker(deps.nonce, name),
       async anon() {
         const context = await deps.browser.newContext({

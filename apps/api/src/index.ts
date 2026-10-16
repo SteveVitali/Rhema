@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import {
   buildRatesPublication,
   createIpEmailThrottle,
@@ -359,9 +359,12 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   // JOURNEY.1 (REQ-ARCH-39) — `build.gitSha` is the image-baked deploy SHA (`RHEMA_BUILD_GIT_SHA` env,
   // set from the Dockerfile `ARG GIT_SHA`): the network-reachable half of the deploy-provenance check
   // (scripts/check-deploy-provenance.mjs). Absent ⇒ `build.gitSha` is null — the check fails closed.
-  app.get("/healthz", (c) =>
-    c.json({ ok: true, service: "api", build: { gitSha: deps?.buildGitSha ?? null } }),
-  );
+  // VERIF.2 (F-OPS.1-10) — Cloud Run's GFE intercepts bare `/healthz` on `*.run.app`; the
+  // trailing-slash alias reaches the app, so preview provenance probes it as the fallback path.
+  const healthz = (c: Context) =>
+    c.json({ ok: true, service: "api", build: { gitSha: deps?.buildGitSha ?? null } });
+  app.get("/healthz", healthz);
+  app.get("/healthz/", healthz);
   // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
   // 1.4 platform rate. No auth — every run report links to its version. The full pricing page is PRB.8/P1.16.
   app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));

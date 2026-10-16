@@ -75,6 +75,11 @@ const proxyBaseUrl = rhemaConfig.get("proxyBaseUrl");
 // PRB.16 — the Google OAuth client ID (plain deploy config — the SECRET is the `google-oauth-client-secret`
 // SM container). Until the real client id lands the api's auth surface stays gated on authSecretsReady.
 const googleOauthClientId = rhemaConfig.get("googleOauthClientId");
+// VERIF.2 — preview public origins (plain deploy config, the stage's own *.run.app URLs): prod
+// derives app/api origins from `domains`; previews set these after the first `up` so the api's
+// auth mount (APP_BASE_URL is an authSecretsReady gate) + trusted origins can resolve.
+const appBaseUrl = rhemaConfig.get("appBaseUrl");
+const apiPublicUrl = rhemaConfig.get("apiPublicUrl");
 // PRB.17 — the Stripe Payment Link URL (plain deploy config — the exhaustion panel + billing surface
 // 302 to it; the whsec_… + sk_… stay Secret-Manager values, never config).
 const stripePaymentLinkUrl = rhemaConfig.get("stripePaymentLinkUrl");
@@ -356,6 +361,8 @@ const compute = createCompute({
   // as an unkeyed preview does today).
   ...(resendPlan === "real" ? { resendSecretWired: true } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
+  ...(appBaseUrl ? { appBaseUrl } : {}),
+  ...(apiPublicUrl ? { apiPublicUrl } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
   secretVersions,

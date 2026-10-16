@@ -95,6 +95,12 @@ export function createData(args: DataArgs): Data {
       instanceId: name("primary"),
       instanceType: "PRIMARY",
       machineConfig: { cpuCount: cfg.database.primaryCpuCount ?? 2 },
+      // VERIF.2 — previews pin ZONAL availability: a paused preview has no HA need, and the
+      // API's REGIONAL default double-books node capacity. us-central1 refused REGIONAL
+      // allocation for ~6 h during VERIF.2 (Error 9 "does not have enough resources" on every
+      // create attempt, pr-186); ZONAL allocates in a single zone and is the right posture for
+      // a stack whose database is paused most of its life. Dev/prod keep the API default.
+      ...(cfg.kind === "preview" ? { availabilityType: "ZONAL" as const } : {}),
       // AlloyDB rejects activationPolicy=NEVER at instance CREATE ("invalid activation policy
       // NEVER when creating a new instance" — OPS.1 live finding, pr-102 update 3): pause is an
       // update-only transition. Paused stages therefore create ALWAYS and the runbook flips

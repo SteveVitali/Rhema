@@ -417,9 +417,13 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // JOURNEY.1 (REQ-ARCH-39) — the provenance check's network-reachable SHA (see apps/api /healthz).
-  app.get("/healthz", (c) =>
-    c.json({ ok: true, service: "web", build: { gitSha: deps.buildGitSha ?? null } }),
-  );
+  // VERIF.2 (F-OPS.1-10) — Cloud Run's GFE intercepts the bare `/healthz` on `*.run.app` origins
+  // (a Google 404 the app never sees); the trailing-slash alias reaches the app, so preview
+  // provenance probes it as the fallback path.
+  const healthz = (c: Context) =>
+    c.json({ ok: true, service: "web", build: { gitSha: deps.buildGitSha ?? null } });
+  app.get("/healthz", healthz);
+  app.get("/healthz/", healthz);
 
   // UX.1 — the favicon endpoints every document head links to (inline SVG brand mark; the .ico path
   // serves the same SVG — browsers honor the content type, not the extension).

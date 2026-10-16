@@ -171,6 +171,27 @@ export function previewInviteCode(stack) {
 }
 
 /**
+ * Resolve the concrete migrate-Job name for `stack` from `gcloud run jobs list --format=json`.
+ * The Job is Pulumi-autonamed (`rhema-<stack>-migrate-<7hex>`), so the literal prefix 404s live
+ * (F-VERIF.2-1 — found on pr-186). Pure — unit-tested; returns null on unparseable/empty output
+ * or an ambiguous match (the suffix is optional so an explicitly-named Job still resolves).
+ */
+export function migrateJobName(jsonText, stack) {
+  let list;
+  try {
+    list = JSON.parse(jsonText);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(list)) return null;
+  const re = new RegExp(`^rhema-${stack}-migrate(-[a-z0-9]+)?$`);
+  const names = list
+    .map((j) => j?.metadata?.name)
+    .filter((n) => typeof n === "string" && re.test(n));
+  return names.length === 1 ? names[0] : null;
+}
+
+/**
  * Parse `gcloud run jobs executions list --format=json` output into the newest execution's
  * success facts. Pure — unit-tested; returns null on unparseable/empty output.
  */
@@ -267,7 +288,27 @@ export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloud
       const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
       const region = stackConfigValue(exec, stack, "gcp:region") ?? DEFAULT_REGION;
       const code = previewInviteCode(stack);
-      const job = `rhema-${stack}-migrate`;
+      // F-VERIF.2-1 — the Job is Pulumi-autonamed (`rhema-<stack>-migrate-<7hex>`); resolve the
+      // concrete name before executing (the literal prefix NOT_FOUNDs live on pr-186).
+      const jobList = gcloud(
+        [
+          "run", "jobs", "list",
+          "--project", project,
+          "--region", region,
+          "--filter", `metadata.name~^rhema-${stack}-migrate`,
+          "--format", "json",
+        ],
+        { capture: true },
+      );
+      if (jobList.status !== 0) return jobList.status;
+      const job = migrateJobName(jobList.stdout, stack);
+      if (!job) {
+        console.error(
+          `preview-stack: seed-invite could not resolve exactly one migrate Job matching ` +
+            `'rhema-${stack}-migrate*' — is the stack up?`,
+        );
+        return 1;
+      }
       const run = gcloud(
         [
           "run", "jobs", "execute", job,
