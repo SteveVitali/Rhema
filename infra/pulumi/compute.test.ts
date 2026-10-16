@@ -41,6 +41,23 @@ describe("HOT.1 — LB request logging on every external backend service (BL-65)
   }
 });
 
+describe("COST.1 — the Cloud Run posture is consumed from stage facts (REQ-COST-3)", () => {
+  it("the services loop reads min/max instances from cfg.cloudRun.services — no ternary left", () => {
+    expect(SRC).toContain("const posture = cfg.cloudRun.services[svc];");
+    expect(SRC).toContain("minInstanceCount: posture.minInstances");
+    expect(SRC).toContain("maxInstanceCount: posture.maxInstances");
+    // the old kind-ternaries are gone — a lever is a data flip, never a program edit.
+    expect(SRC).not.toContain('minInstanceCount: isWorker ? 1 : cfg.kind === "prod" ? 1 : 0');
+    expect(SRC).not.toContain('maxInstanceCount: isCollab ? 1 : isWorker');
+  });
+
+  it("cpuIdle is declared on EVERY services-loop service from its stage fact (REQ-COST-2)", () => {
+    // An implicit cpuIdle can't converge a live `cpu-throttling` drift — the +$42/mo
+    // convert-svc finding. Every container now emits the field from `cpuBilling`.
+    expect(SRC).toContain('cpuIdle: posture.cpuBilling === "request"');
+  });
+});
+
 describe("BILL.3 — the purchase switch is deploy config on the api", () => {
   it("injects PURCHASE_MODE from the stage fact (a mode string, never a secret)", () => {
     expect(SRC).toContain('{ name: "PURCHASE_MODE", value: cfg.purchaseMode }');
@@ -83,7 +100,13 @@ describe("ONB.1 — the warm convert-svc keeps every §12.1/§13.3 isolation pro
     const block = SRC.slice(svcStart, svcEnd);
     expect(block).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
     expect(block).not.toContain("vpcAccess:"); // the property — a comment may name the posture
-    expect(block).toContain('minInstanceCount: cfg.kind === "prod" ? 1 : 0');
+    // COST.1 (REQ-COST-3) — scaling is a stage fact now, not a program ternary.
+    expect(block).toContain("minInstanceCount: cfg.cloudRun.convertSvc.minInstances");
+    expect(block).toContain("maxInstanceCount: cfg.cloudRun.convertSvc.maxInstances");
+    // COST.1 (REQ-COST-2) — cpuIdle is declared EXPLICITLY from the stage fact, never
+    // implicit: an undeclared field can never converge a live `cpu-throttling` drift (the
+    // codify-or-revert rule — the +$42/mo convert-svc drift was the live finding).
+    expect(block).toContain('cpuIdle: cfg.cloudRun.convertSvc.cpuBilling === "request"');
     // no DB credential, no secrets — the env is exactly CONVERT_ROOT (PORT is platform-reserved:
     // setting it 400s the revision — live finding on the first convert-svc create; serveConvert
     // defaults `PORT ?? 8080`)

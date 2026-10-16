@@ -1,0 +1,35 @@
+== rhema-prod-api-e745ce0
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-web-72f1683
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-collab-0796455
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '1'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-export-81798eb
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-fetcher-31c9c51
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-convert-svc-a3874fc
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '4'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/cpu-throttling: 'true'
+== rhema-prod-worker-cbdaf0f
+    run.googleapis.com/maxScale: '20'
+        autoscaling.knative.dev/maxScale: '3'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/cpu-throttling: 'false'

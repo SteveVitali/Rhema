@@ -12,7 +12,7 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as tls from "@pulumi/tls";
-import { type StageConfig } from "../config/stages";
+import { type StageConfig, type CloudRunServiceName } from "../config/stages";
 import type { Network } from "./network";
 import { EGRESS_PROXY_TAG, SANDBOX_TAG, GKE_MASTER_CIDR } from "./network";
 import { SERVICES, type Iam, type ServiceName } from "./iam";
@@ -147,7 +147,7 @@ export interface Compute {
 // Creation order matters: a service another references by `services[x].uri` must come FIRST
 // (export/fetcher → api + worker; OPS.1 adds api → web so non-prod `API_BASE_URL` + the worker's
 // `API_INTERNAL_URL` can carry the api's real `*.run.app` origin — prod keeps its config/LB paths).
-const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "fetcher", "api", "web", "worker", "collab"];
+const CLOUD_RUN_SERVICES: CloudRunServiceName[] = ["export", "fetcher", "api", "web", "worker", "collab"];
 
 export function createCompute(args: ComputeArgs): Compute {
   const { stack, cfg, project, region, network, iam, secrets, placeholderImage } = args;
@@ -479,11 +479,11 @@ export function createCompute(args: ComputeArgs): Compute {
     template: {
       serviceAccount: iam.serviceAccounts["convert"].email,
       scaling: {
-        // The warm pool is the entire point of the service — prod keeps one resident instance;
-        // dev/preview scale to zero (the latency SLO is a prod contract; a cold non-prod preview
-        // just reads slower).
-        minInstanceCount: cfg.kind === "prod" ? 1 : 0,
-        maxInstanceCount: cfg.kind === "prod" ? 4 : 2,
+        // The warm pool is the entire point of the service — prod keeps one resident instance
+        // (the stage fact `cloudRun.convertSvc.minInstances`); dev/preview scale to zero (the
+        // latency SLO is a prod contract; a cold non-prod preview just reads slower).
+        minInstanceCount: cfg.cloudRun.convertSvc.minInstances,
+        maxInstanceCount: cfg.cloudRun.convertSvc.maxInstances,
       },
       volumes: [
         {
@@ -496,9 +496,18 @@ export function createCompute(args: ComputeArgs): Compute {
           image: imageFor("convert"),
           args: ["--serve"],
           resources: {
-            startupCpuBoost: true,
+            // COST.1 (REQ-COST-2) — `cpuIdle` is declared EXPLICITLY from the stage fact: the
+            // live service carried an out-of-band `cpu-throttling:"false"` (instance-billed,
+            // +$42/mo) that an undeclared program could never converge. `request`-billed
+            // restores the committed intent; `pulumi up` reverts the drift. NEVER leave this
+            // field implicit again — a billed-posture divergence must be codified or reverted.
+            cpuIdle: cfg.cloudRun.convertSvc.cpuBilling === "request",
+            startupCpuBoost: cfg.cloudRun.convertSvc.resources?.startupCpuBoost ?? false,
             // Mammoth/pdf.js spikes sit under the Job's default — 1Gi headroom for the warm path.
-            limits: { cpu: "1", memory: "1Gi" },
+            limits: {
+              cpu: cfg.cloudRun.convertSvc.resources?.cpu ?? "1",
+              memory: cfg.cloudRun.convertSvc.resources?.memory ?? "1Gi",
+            },
           },
           envs: [
             { name: "CONVERT_ROOT", value: "/usercontent" },
@@ -631,17 +640,20 @@ export function createCompute(args: ComputeArgs): Compute {
   const services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>> = {};
   for (const svc of CLOUD_RUN_SERVICES) {
     // The worker consumes pg-boss + runs crons: it CANNOT scale to zero and needs CPU allocated OUTSIDE a
-    // request (background work), so it runs min-instances=1 + cpuIdle=false with its env baked on. A tiny
+    // request (background work), so its stage posture is min-instances=1 + `instance` billing with its env
+    // baked on. A tiny
     // health server (main.ts) answers the Cloud Run startup probe. It also does the ~event-loop-blocking cold
     // import of @kubernetes/client-node on the first GKE launch (D-P0.15e-3), which STARVED under the default
     // 512Mi / throttled CPU (diagnosed live 2026-09-09 — the first launch hung ~9 min): pin 1 vCPU + 1Gi and
-    // startup CPU boost so the cold import finishes in seconds. (A gcloud image-swap that omits these silently
+    // startup CPU boost so the cold import finishes in seconds — all carried by `cfg.cloudRun.services`.
+    // (A gcloud image-swap that omits these silently
     // reverts to the throttled default — the live-deploy step must preserve them, hence they live in IaC.)
     const isWorker = svc === "worker";
-    // P1.03 — collab is the single-writer MVP shape (§5.10): without a Redis sync tier two instances
-    // would split a document's live state, so maxScale=1 is the honest bound at EVERY stage (prod
-    // included) until the multi-instance design lands.
-    const isCollab = svc === "collab";
+    // COST.1 (REQ-COST-3) — min/max instances + CPU-billing are stage FACTS now (stages.ts),
+    // not program ternaries: a lever is a fact flip the tests pin, and `cpuIdle` is declared
+    // on EVERY service so a live `cpu-throttling` drift can never sit split from IaC again
+    // (the convert-svc finding, REQ-COST-2 — codify-or-revert, never left split).
+    const posture = cfg.cloudRun.services[svc];
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
       // Cloud Run v2 defaults deletionProtection=true, which BLOCKS a `pulumi destroy` of a dev/preview stack
@@ -665,21 +677,26 @@ export function createCompute(args: ComputeArgs): Compute {
       template: {
         serviceAccount: iam.serviceAccounts[svc].email,
         scaling: {
-          minInstanceCount: isWorker ? 1 : cfg.kind === "prod" ? 1 : 0,
-          maxInstanceCount: isCollab ? 1 : isWorker ? (cfg.kind === "prod" ? 3 : 1) : cfg.kind === "prod" ? 10 : 2,
+          minInstanceCount: posture.minInstances,
+          maxInstanceCount: posture.maxInstances,
         },
         containers: [
           {
             // PRB.15 — the real digest-pinned image when `rhema:serviceImages` names one; otherwise the
             // placeholder keeps `pulumi preview` plannable before the images CI publishes.
             image: imageFor(svc),
+            // COST.1 — `cpuIdle` declared on every service from its stage fact: `request` billing
+            // is the cold-floor default; only the worker's `instance` posture keeps CPU between
+            // requests. `limits`/boost emit only where the posture declares a resource shape.
+            resources: {
+              cpuIdle: posture.cpuBilling === "request",
+              ...(posture.resources?.startupCpuBoost ? { startupCpuBoost: true } : {}),
+              ...(posture.resources
+                ? { limits: { cpu: posture.resources.cpu, memory: posture.resources.memory } }
+                : {}),
+            },
             ...(isWorker
               ? {
-                  resources: {
-                    cpuIdle: false,
-                    startupCpuBoost: true,
-                    limits: { cpu: "1", memory: "1Gi" },
-                  },
                   envs: [
                     ...workerEnvs,
                     // OPS.1 — the api's internal URL + the proxy base URL: on prod these come from
