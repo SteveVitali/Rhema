@@ -3485,9 +3485,13 @@ export function UsagePage(): ReactNode {
 
 /**
  * P1.12 — the unlocked outline editor (`/p/:slug/outline`; §7.3): the SAME spine-and-sections rows the
- * Approve-outline card renders, wrapped in the autosave form (the island debounces `ed.*` submits to
- * the save action; the Save button is the no-JS path). Phone-width (`editable:false`) is read-only.
- * Provenance + `[unverified]` badges are DATA — the page never offers a control that strips them.
+ * Approve-outline card renders, wrapped in the edit form (the Save button posts the `ed.*` fields to
+ * the save action). Phone-width (`editable:false`) is read-only.
+ * SPA.26 — the outline.js autosave island retired with the surface's SPA replacement (the leaf owns
+ * the debounced `ed.*` save over the same grammar); this SSR fallback is the explicit-Save form,
+ * still the no-JS floor — `data-autosave`/`data-label-*` are the island's mount contract and no
+ * longer emit here. Provenance + `[unverified]` badges are DATA — the page never offers a control
+ * that strips them.
  */
 export function OutlinePage(): ReactNode {
   const { outline, compact } = usePageData();
@@ -3522,10 +3526,6 @@ export function OutlinePage(): ReactNode {
         method="post"
         action={outline.saveAction}
         data-outline-editor="true"
-        data-autosave="true"
-        data-label-saving={O.savingNote}
-        data-label-saved={O.savedNote}
-        data-label-failed={O.saveFailedNote}
       >
         <OutlineSections outline={outline.outline} editable={editable} labels={outlineLabels} />
         {editable ? (
@@ -3546,7 +3546,6 @@ export function OutlinePage(): ReactNode {
       {outline.cited ? (
         <p data-cited-note="true" style={{ marginTop: "16px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{O.citedNote}</p>
       ) : null}
-      {editable ? <script defer src="/assets/outline.js"></script> : null}
     </Shell>
   );
 }

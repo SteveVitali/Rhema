@@ -1200,7 +1200,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     // the refund POST's `#report` landing is a FRAGMENT, not a param — its hook is the article's
     // `id="report"` (the `data-run-report` root already covers it); tests assert location.hash.
   ],
-  // ---- /p/:p/outline* — the structured outline editor + the outline.ts autosave island ----
+  // ---- /p/:p/outline* — the structured outline editor; SPA.26 retired the outline.ts autosave
+  // island (the SPA leaf owns the debounced save; the SSR fallback is the explicit-Save form) ----
   outline: [
     a("data-outline-section", "conditional", "pages.tsx + ui/outline-sections"),
     a("data-outline-sections", "conditional", "ui/outline-sections.tsx"),
@@ -1231,12 +1232,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "ui/outline-sections.tsx + ui/gate-card.tsx",
       "the [unverified] provenance badge (data, never styled-away)",
     ),
-    a("data-outline-editor", "conditional", "pages.tsx + spa/surfaces/outline.tsx", "the autosave form"),
-    a("data-autosave", "conditional", "pages.tsx + spa/surfaces/outline.tsx"),
+    a("data-outline-editor", "conditional", "pages.tsx + spa/surfaces/outline.tsx", "the outline edit form"),
+    a("data-autosave", "conditional", "spa/surfaces/outline.tsx", "the leaf-owned autosave contract (SPA.26: island mount gone)"),
     a(
       "data-autosave-status",
       "conditional",
-      "client/outline.ts + spa/surfaces/outline.tsx",
+      "spa/surfaces/outline.tsx",
       "the debounced-save status line",
     ),
     a("data-draft-estimate", "conditional", "pages.tsx + spa/surfaces/outline.tsx"),
