@@ -15,7 +15,7 @@
 - **Size budget:** ~450 changed lines (stages.ts posture facts + compute.ts consumption +
   tests + Redis analysis + docs/ledgers)
 
-> **Expanded 2026-10-16** — was `Kind: skeleton` gated on HUMAN-H9. The ruling landed
+> **Expanded 2026-10-16** — was a skeleton-kind row gated on HUMAN-H9. The ruling landed
 > (`docs/build/readouts/HUMAN-H9.md`): **(a) the ~$50/mo target stands → architecture
 > change required (cold floors, consolidation); lever pre-authorization is CLASS-LEVEL.**
 > Body below is the run-time expansion scoped to the ratified ruling-(a) levers.

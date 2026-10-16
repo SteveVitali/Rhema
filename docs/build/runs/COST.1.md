@@ -17,8 +17,11 @@
 - **Authorization:** H9 class-level — **Class A scale-to-zero/cold floors** and
   **Class B consolidation** execute without further pause; everything else PAUSES
   (`D-COST.1-3`). Prod mutations ONLY via `pulumi up` with provenance.
-- **Started:** 2026-10-16T01:18Z · **Closed:** —
-- **PR:** — · **ci:** —
+- **Started:** 2026-10-16T01:18Z · **Closed:** 2026-10-16T01:39Z
+- **PR:** #185 (base `stevevitali/bl38-1-prod-residue-cleanup`; mergePolicy OPERATOR —
+  never merged by this run) · **ci:** pending at closeout — `gh pr checks 185`
+  first-read "no checks reported" (the chain's recurring first-read class;
+  orchestrator boundary-read owed)
 
 ## Deferrals read
 
