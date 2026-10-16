@@ -7,7 +7,7 @@ import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { BffError } from "../../bff.js";
 import { revisionQuery } from "../../queries.js";
 import { flagParam, strParam, validateSearchParams } from "../../search.js";
-import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
+import { PendingShell, SsrHandoff, SurfaceShell, twinForcesSsr } from "../../states.js";
 import { RevisionSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/revisions/$cid")({
@@ -38,6 +38,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/revisions/$cid"
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;
+    // SPACAP.3 (G2) — the showcase leg of the forced-SSR truth: document-nav back so the server
+    // lands the read-only SSR revision document (the boot map owns the phone leg; the twin owns this).
+    if (twinForcesSsr(q.data)) return <SsrHandoff />;
     return <RevisionSurface data={q.data} compact={boot?.deviceClass === "phone"} search={search} />;
   },
 });

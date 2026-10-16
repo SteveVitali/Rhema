@@ -96,3 +96,107 @@ operator-signed `GATE-ACCEPT`.
   consolidated); D-CAP.2-2 annotated unchanged-open; new rows D-CAP.3-1/-2 appended.
 - **Build state: IN_PROGRESS.** `nextTicket` → `88a_GATE-ACCEPT__accepted-deviations.md`.
   Nothing is merged; nothing is claimed DONE.
+
+---
+
+# SPACAP.3 — Capstone closure, round 4 (frontend SPA migration) — 2026-10-10
+
+> **SPACAP.3 deliverable** (`docs/tickets/142_SPACAP.3__capstone-closure.md`). The round-4
+> closure for the composed SPA chain: every gap SPACAP.1 routed
+> (`docs/build/reports/CAPSTONE_GAP_ANALYSIS_SPA.md` §5, G1–G5) is either fixed in code or
+> dispositioned here as a signed-deviation candidate for `GATE-ACCEPT.SPA`. Companion records:
+> `docs/build/COVERAGE_MATRIX.csv` (192 SPA rows — 174 MET / 12 MET-DIFFERENTLY / 6 PARTIAL,
+> unchanged this run); `docs/build/runs/SPACAP.3.md`; the SPACAP.2 runbook
+> `docs/build/reports/SPACAP.2_COMPOSED_VERIFICATION.md`; DEFERRALS rows `D-SPACAP.2-1..4`,
+> `D-SPACAP.3-1`.
+>
+> **Run mode: offline-only, $0.** No deploy, no prod mutations, `mergePolicy: OPERATOR`. Every
+> live leg below verifies deployed code only and is owed to the deployed tip via the runbook's
+> §3.1 cadence — nothing here claims live verification that wasn't observed. The build is
+> **NOT DONE** — the next chain row is the operator-signed `GATE-ACCEPT.SPA`.
+
+## R4.1 What landed this run (the one code fix — G2)
+
+SPACAP.1 §4.5 found the round-4 chain's one real composed-path divergence (LOW): the server's
+Page-family document arms force SSR on `isPhoneRequest(c) || row.showcase === true`
+(`server.ts` — five GETs), while the boot map replicated only the phone leg
+(`deviceClass === "phone" && doc.pageMount === true`, `spa-shell.ts`). `row.showcase` is row
+data the request-scoped boot payload cannot see, so on desktop the map marked all five
+Page-family routes `"spa"` even for showcase projects — an in-SPA navigation to
+`/p/<showcase-slug>` mounted the SPA Page where a document load would have served the
+forced-SSR read-only document.
+
+**Resolution (spec's option (a), ADR-108):** each of the five Page-family BFF twins ships
+`project.showcase: true` when the row carries it; each of the five leaf routes consults the
+shared `twinForcesSsr(twin)` predicate (`spa/states.tsx`) and hands off through `SsrHandoff` —
+the same document-load seam the phone leg takes. The client's effective predicate now mirrors
+the server's verbatim: **the boot map owns the phone leg; the twin owns the showcase leg.**
+Forced-SSR remains a server verdict in both directions; the BFF aggregates' existing
+`readOnly: true` / `collabWsUrl`-withheld posture is kept verbatim as belt-and-braces.
+
+**Regression pins (removal-detecting, all green this run):**
+
+- `renderer-overrides.test.ts` SPACAP.3 block — counts the verbatim two-leg document arms (5),
+  the surviving boot-map phone leg (1), the twin `showcase` emissions (5), and asserts the
+  five leaf `twinForcesSsr` consults by filename. Drop any leg and a count fails.
+- `editor.dom.test.tsx` — a showcase twin drives `navigateDocument` on all five leaf routes;
+  a non-showcase twin never does (the fix cannot over-trigger).
+- `server.test.ts` — every Page-family twin emits `project.showcase: true` for a showcase row
+  and omits the field otherwise.
+
+Files: `apps/web/src/spa/queries.ts`, `apps/web/src/server.ts`, `apps/web/src/spa/states.tsx`,
+the five `apps/web/src/spa/routes/_authenticated/p.$project.*.tsx` leaves.
+
+## R4.2 Routed-gap dispositions (G1–G5)
+
+| # | Severity | Disposition | Record |
+|---|---|---|---|
+| G1 | HIGH (process) | **closed-by-runbook** | SPACAP.2's `docs/build/reports/SPACAP.2_COMPOSED_VERIFICATION.md` §3 is the operator-facing merge/deploy sequence the finding asked for: the 15-segment bottom-up cadence (each flip deploy → marker curls + `--expect-renderer spa` surface leg → ≥1 nightly green before the next segment), the cleanup wave held behind the `editor` bake (segment 15), Arm B (the recorded tip-deploy fallback: inert-signal reads + compressed-but-not-skipped legs + rollback = `git revert` of cleanup commits). Live execution is ledgered — `D-SPACAP.2-1..4`. Nothing further to fix in code; the ordering hazard is now an operator runbook with per-segment verify gates. |
+| G2 | LOW (code) | **fixed** | §R4.1 + ADR-108. Twin-flagged `project.showcase` + `twinForcesSsr` → `SsrHandoff` on all five Page-family leaves; parity/removal pins above. The live re-verify leg is `D-SPACAP.3-1`. |
+| G3 | MED | **deviation-candidate** | REQ-VFY-8's written flip procedure (leg A's `x-rhema-renderer`/`?ssr=1` pin + flag-off arm) was deleted by SPA.28 under the spec's own sunset clause and never ran live. The amended procedure is recorded: `D-SPA.28-2` (DONE — every affected row carries its dated amendment) + the runbook's surviving `--expect-renderer spa` leg and revert-of-cleanup rollback. The live legs themselves stay ledgered: every `D-SPA.*-1` preview two-leg (OPEN behind `D-MAINT.6-1`) and the `D-SPAF.*-2` prod legs (folded into `D-SPACAP.2-1`). |
+| G4 | MED | **deviation-candidate** | Owed free journey steps still `expected:"red"`: R6F, T12F, T13F, T17. Their first prod legs are folded into `D-SPACAP.2-1` (a pass reports `ready-to-flip`; the owner flips `registry.ts` green with the report); preview legs `D-SPA.*-1`/`D-SPA.25-1` stay separately owed behind `D-MAINT.6-1`. Compensating control: a red step can never silently pass — the registry treats `expected:"red"` as owed-reporting, and every owed step names its deferral. |
+| G5 | MED | **deviation-candidate** | Journey-level axe (the P1 family) — the spec's authoritative a11y gate — has no green live leg. Same unblock as G4: the signed-in legs sit behind `D-MAINT.6-1` → the `D-SPA.*-1` preview runs and `D-SPACAP.2-1`'s composed suite. Compensating control: component-level axe already runs on the interactive-manifest subset in dom tests (layout-dependent rules off), so no component ships axe-unchecked; the gap is the journey-level leg only. |
+
+## R4.3 The six PARTIAL coverage rows — dispositioned
+
+All six are verification-procedure requirements; every mechanism requirement is MET. Each
+keeps `PARTIAL` (honest: the live leg is owed), now carrying its named covering rows.
+
+| Req | What remains unproven | Compensating control in place now | Covering DEFERRALS rows |
+|---|---|---|---|
+| REQ-VFY-6 | The authoritative journey-level axe (P1 family) has no green live leg | Component-axe dom tests cover the interactive-manifest subset (layout rules off); a component cannot ship axe-unchecked | D-MAINT.6-1 → the `D-SPA.*-1` preview legs → D-SPACAP.2-1 (P1 steps inside the composed suite) |
+| REQ-VFY-8 | The per-surface flip procedure's live legs never ran; leg A's pin machinery is deleted post-SPA.28 | `--expect-renderer spa` assert unit-pinned (`surface-gates.test.ts` totality, `runner.test.ts`); amended recipe recorded verbatim (D-SPA.28-2 DONE; runbook §3.1/§3.2) | D-SPA.6-1; every `D-SPA.*-1` preview two-leg; `D-SPAF.*-2` prod legs folded into D-SPACAP.2-1 |
+| REQ-VFY-10 | Owed free steps R6F / T12F / T13F / T17 still `expected:"red"` | `expected:"red"` is owed-reporting, never passable; each step names its deferral row; the ready-to-flip path is defined | D-SPA.21-1, D-SPA.22-1, D-SPA.25-1 (preview legs); D-SPACAP.2-1 (first prod legs → ready-to-flip) |
+| REQ-SEQ-7 | No surface's two-leg preview gate ran; no rollback drill was exercised live | Rollback arms recorded verbatim per flip (`D-SPAF.*-3`); stage-fact reverts are revert-by-construction; post-cleanup rollback = `git revert` (D-SPA.28-2 amendments) | All 15 `D-SPA.*-1` + `D-SPA.*-2`; D-SPA.6-1 (the preview rollback drill) |
+| REQ-SEQ-9 | The "flag off → SSR serves the same DOM contract" live evidence | The DOM contract itself is pinned in-repo: `check:dom-contract` + `spa.dom.test.tsx` hold both renderers to one contract; post-SPA.28 the flag-off state no longer exists by design (sunset) | `D-SPA.*-2` rollback drills (amended); D-SPA.28-2 |
+| REQ-SEQ-10 | No nightly-green bake has run — prod still serves the pre-chain ancestor | Activation-order gate is encoded, not hoped: §3.1's per-segment cadence + 14 `D-SPAF.*-4` rows + the cleanup wave's entry gates (`D-SPA.26-1/-27-1/-28-1`); nightly is committed CI | `D-SPAF.1-4` … `D-SPAF.14-4`; `D-SPA.26-1/-27-1/-28-1` |
+
+## R4.4 ACCEPTED-deviations list — proposed for operator signature at GATE-ACCEPT.SPA
+
+> SPACAP.3 does not sign these. Each row is a deviation the closure **proposes** the operator
+> accept; signature happens at `GATE-ACCEPT.SPA`.
+
+| # | Deviation | What deviates | Why it is sound | Compensating control | Covering row | Sign-off |
+|---|---|---|---|---|---|---|
+| 1 | REQ-VFY-8's flip procedure amended post-deletion | Leg A's `x-rhema-renderer`/`?ssr=1` pin + flag-off arm were deleted by SPA.28 before any live leg ran | The deletion is the spec's own sunset (REQ-SEQ-4); the amended single-leg recipe (`--expect-renderer spa` + rollback-by-revert) verifies the same property | Renderer assert unit-pinned; `D-SPA.28-2` amended every affected recipe verbatim | `D-SPA.*-1`; `D-SPAF.*-2` → `D-SPACAP.2-1` | ☐ operator |
+| 2 | REQ-SEQ-9's flag-off DOM-parity legs unexecutable | "Flag off" no longer exists post-cleanup — by design | The DOM contract both renderers serve is pinned by `check:dom-contract` + dom tests; the sunset removed the state, not the contract | The checker fails the build on contract drift; the amend notes are on every affected row | `D-SPA.*-2` (amended); `D-SPA.28-2` | ☐ operator |
+| 3 | REQ-VFY-10's owed free steps still `expected:"red"` | R6F, T12F, T13F, T17 have no green run | Owed-reporting cannot silently pass; the first prod legs are folded into the composed suite with a defined ready-to-flip path | Registry semantics + `SURFACE_GATES` totality test; each step names its row | `D-SPA.21-1/-22-1/-25-1`; `D-SPACAP.2-1` | ☐ operator |
+| 4 | REQ-VFY-6's journey-level axe leg still owed | The spec's authoritative a11y gate (P1 family) has component-axe coverage only | Component-axe already covers the interactive-manifest subset; the journey leg adds layout/real-browser reach, not a new contract | Dom-axe runs per component in the suite; the live leg's recipe is recorded | `D-MAINT.6-1` → `D-SPA.*-1` → `D-SPACAP.2-1` | ☐ operator |
+| 5 | REQ-SEQ-7's rollback drills never exercised live | Every `D-SPAF.*-3` arm is recorded-not-exercised (deliberately non-destructive) | A destructive drill on live prod flaps real users; the arms are revert-by-construction while flags exist and `git revert` + redeploy after | Per-flip recorded recipes; the preview drill (`D-SPA.6-1`) exercises the same path harmlessly | All `D-SPAF.*-3`; `D-SPA.*-2`; `D-SPA.6-1` | ☐ operator |
+| 6 | REQ-SEQ-10's nightly pacing unproven until deploys run | No flip is deployed; no bake has run; prod serves the pre-chain ancestor | The gate binds activation order through the §3.1 runbook — pacing is a cadence the operator follows, not code that could have been written | 14 `D-SPAF.*-4` rows + cleanup entry gates; nightly CI committed | `D-SPAF.*-4`; `D-SPA.26-1/-27-1/-28-1` | ☐ operator |
+| 7 | G2's fix verified at build-time only | The showcase handoff's live legs (document GET `data-renderer="ssr"`, in-SPA handoff, non-showcase control) owe their runs to the deployed tip | No deploy was possible this run ($0, mergePolicy OPERATOR); every leg is deterministic-tested and the recipe is recorded verbatim | `D-SPACAP.3-1` names all three legs; the parity pins fail if the fix is removed | `D-SPACAP.3-1` | ☐ operator |
+| 8 | The whole live tail | `D-SPACAP.2-1..4` + every `D-SPA.*-1/-2` preview leg gate on the ordered merge/deploy + `D-MAINT.6-1` | Each is operator-, deploy-, or secret-gated — none closable offline, none forgotten | Every row is ledgered with its verbatim recipe + unblock condition; prod provenance is honestly recorded (pre-chain ancestors) | `D-SPACAP.2-1..4`; `D-SPA.*-1/-2`; `D-MAINT.6-1` | ☐ operator |
+
+## R4.5 Verdict & verification record
+
+- Deterministic: `renderer-overrides.test.ts` (7 — incl. the 4 parity legs), `server.test.ts`
+  (113 — incl. the showcase-twin legs on all five twins), `editor.dom.test.tsx` (22 — incl. the
+  five handoff legs + non-showcase control). Full gate results in `runs/SPACAP.3.md`.
+- Coverage matrix: unchanged by construction — the six PARTIAL rows stay PARTIAL (their live
+  legs are owed, now fully dispositioned); G2's fix changes code, not a verdict (the divergent
+  posture was already BFF-enforced; the row is REQ-ED-12, MET).
+- Deferral ledger: `D-SPACAP.3-1` appended (the G2 live re-verify); all `D-SPACAP.2-*`/`D-SPA.*`
+  rows carried verbatim; `D-SPA.28-2` remains DONE.
+- ADRs: ADR-108 (the twin-flagged handoff — the only owned decision this run).
+- **Build state: IN_PROGRESS.** `nextTicket` → `GATE-ACCEPT.SPA`. Nothing is merged; nothing
+  is claimed DONE.

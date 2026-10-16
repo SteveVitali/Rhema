@@ -557,3 +557,68 @@ describe("unflipped routes (SPA.23)", () => {
     expect(f.posts).toEqual([]);
   });
 });
+
+// ---- SPACAP.3 (G2) — the showcase leg of the forced-SSR truth ----------------------------------------
+//
+// The document forces SSR on `isPhoneRequest(c) || row.showcase === true` (server.ts's five
+// Page-family arms); the boot map owns the phone leg (`deviceClass === "phone" && pageMount`),
+// and the twin's `project.showcase` carries the row leg the request-scoped boot payload cannot
+// see. A leaf whose twin says showcase hands the navigation back through SsrHandoff — the same
+// document-load seam the phone leg takes — so the server's forced-SSR document lands. These legs
+// FAIL if the leaf stops consulting the twin's flag (the SPA would mount the showcase Page — the
+// divergence G2 named, posture-preserving but renderer-divergent).
+
+describe("showcase rows hand the Page family back to a document load (SPACAP.3 G2)", () => {
+  const SHOWCASE_PROJECT = { ...PROJECT, showcase: true };
+
+  it("/p/:slug — the twin's showcase flag drives the document handoff; the SPA never mounts the Page", async () => {
+    const f = makeFetch({ project: { ...PROJECT_TWIN, project: SHOWCASE_PROJECT } });
+    await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
+    expect(f.gets).toContain(`/bff/p/${SLUG}`);
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}`));
+    const main = el()!;
+    // the handoff skeleton painted — the Page mount never did.
+    expect(main.querySelector("[data-page-mount]")).toBeNull();
+    expect(main.querySelector("[data-page-view]")).toBeNull();
+  });
+
+  it("/p/:slug/v/:v — showcase twin hands off the same way", async () => {
+    const f = makeFetch({ version: { ...VERSION_TWIN, project: SHOWCASE_PROJECT } as BffVersionPageTwin });
+    await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
+    expect(f.gets).toContain(`/bff/p/${SLUG}/v/working`);
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/working`));
+    expect(el()!.querySelector("[data-page-view]")).toBeNull();
+    expect(el()!.querySelector("[data-version-rail]")).toBeNull();
+  });
+
+  it("/p/:slug/v/:n/diff/:m — the compare twin's showcase flag hands off", async () => {
+    const f = makeFetch({ compare: { ...COMPARE_TWIN, project: SHOWCASE_PROJECT } });
+    await mountAt(`/p/${SLUG}/v/6/diff/7`, bootFor(SPA_EDITOR), f.impl);
+    expect(f.gets).toContain(`/bff/p/${SLUG}/v/6/diff/7`);
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/6/diff/7`));
+    expect(el()!.querySelector("[data-compare]")).toBeNull();
+  });
+
+  it("/p/:slug/a/:artifactId — the artifact twin's showcase flag hands off", async () => {
+    const f = makeFetch({ artifact: { ...ARTIFACT_TWIN, project: SHOWCASE_PROJECT } });
+    await mountAt(`/p/${SLUG}/a/a_1`, bootFor(SPA_EDITOR), f.impl);
+    expect(f.gets).toContain(`/bff/p/${SLUG}/a/a_1`);
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/a/a_1`));
+    expect(el()!.querySelector("[data-page-view]")).toBeNull();
+  });
+
+  it("/p/:slug/revisions/:cid — the revision twin's showcase flag hands off", async () => {
+    const f = makeFetch({ revision: { ...REVISION_TWIN, project: SHOWCASE_PROJECT } });
+    await mountAt(`/p/${SLUG}/revisions/c_1`, bootFor(SPA_EDITOR), f.impl);
+    expect(f.gets).toContain(`/bff/p/${SLUG}/revisions/c_1`);
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/revisions/c_1`));
+    expect(el()!.querySelector("[data-hunk]")).toBeNull();
+  });
+
+  it("a non-showcase twin never hands off — the flag is consultive, not a blanket verdict", async () => {
+    const f = makeFetch();
+    await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    expect(assignSpy).not.toHaveBeenCalled();
+  });
+});

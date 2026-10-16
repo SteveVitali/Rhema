@@ -12,7 +12,7 @@ import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { BffError } from "../../bff.js";
 import { postProjectHandoff, projectPageQuery } from "../../queries.js";
 import { flagParam, strParam, validateSearchParams } from "../../search.js";
-import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
+import { PendingShell, SsrHandoff, SurfaceShell, twinForcesSsr } from "../../states.js";
 import { ProjectPageSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/")({
@@ -65,6 +65,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;
+    // SPACAP.3 (G2) — a showcase row's Page is forced-SSR server-side; hand the navigation back
+    // to a document load so the server's `phone || showcase` arm lands the read-only document.
+    if (twinForcesSsr(q.data)) return <SsrHandoff />;
     return <ProjectPageSurface data={q.data} compact={boot?.deviceClass === "phone"} search={search} />;
   },
 });

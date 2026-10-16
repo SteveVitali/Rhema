@@ -1127,6 +1127,12 @@ export interface BffProjectTwin {
     readonly headDraftId?: string | null;
     /** the resolved head's draft number — the `?created=draft` card's `v{n}` template arg. */
     readonly headDraftN?: number | null;
+    /**
+     * SPACAP.3 (G2) — the row fact the boot map cannot carry: the document forces SSR on
+     * `isPhoneRequest(c) || row.showcase === true`; the twins ship the row leg so the leaf
+     * can hand a showcase navigation back to a document load (REQ-ED-12/REQ-VFY-5).
+     */
+    readonly showcase?: boolean;
   };
   readonly gates: readonly GateCardDto[];
   readonly decisions: readonly DecisionItemDto[];
@@ -1156,6 +1162,8 @@ export type BffVersionPageTwin =
         readonly pill: string;
         readonly slug: string;
         readonly headDraftId?: string | null;
+        /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+        readonly showcase?: boolean;
       };
       readonly paperTheme: string;
       readonly appTheme?: string;
@@ -1173,7 +1181,13 @@ export interface BffCompareTwin {
     readonly m: string;
     readonly data: VersionDiffDto;
   };
-  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    readonly showcase?: boolean;
+  };
   readonly paperTheme: string;
   readonly appTheme?: string;
   readonly ide: BffIdeBag;
@@ -1182,7 +1196,13 @@ export interface BffCompareTwin {
 /** `GET /bff/p/:slug/a/:artifactId` — the read-only artifact Page. */
 export interface BffArtifactTwin {
   readonly page: BffPageBag;
-  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    readonly showcase?: boolean;
+  };
   readonly paperTheme: string;
   readonly appTheme?: string;
   readonly ide: BffIdeBag;
@@ -1194,7 +1214,13 @@ export interface BffRevisionTwin {
     readonly slug: string;
     readonly data: WhatChangedDto;
   };
-  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    readonly showcase?: boolean;
+  };
   readonly paperTheme: string;
   readonly appTheme?: string;
   readonly ide: BffIdeBag;

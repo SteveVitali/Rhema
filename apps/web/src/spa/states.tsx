@@ -55,6 +55,21 @@ export function PendingShell(): ReactNode {
 }
 
 /**
+ * SPACAP.3 (G2) — the showcase leg of the Page family's forced-SSR truth. The document forces
+ * the SSR Page on `isPhoneRequest(c) || row.showcase === true`; the boot map owns the phone leg
+ * (a request fact) and the Page-family twins own the showcase leg (a ROW fact the request-scoped
+ * boot payload cannot see — the map is route-keyed, not slug-keyed). A leaf whose twin says the
+ * row is showcase hands the navigation back to a document load through the same `SsrHandoff`
+ * path the phone leg takes — the server's fixed order then lands the forced-SSR arm, so the
+ * client's effective verdict mirrors the server's `phone || showcase` predicate exactly.
+ */
+export function twinForcesSsr(
+  twin: { readonly project?: { readonly showcase?: boolean } } | null | undefined,
+): boolean {
+  return twin?.project?.showcase === true;
+}
+
+/**
  * The leaf's boot-map branch: an SPA-verdict route renders its surface and a "ssr"-verdict route
  * (phone `pageMount`, server-owned) hands off to the server. The verdict comes from the boot map
  * the server stamped, so the client can never disagree about which document owns the route.
