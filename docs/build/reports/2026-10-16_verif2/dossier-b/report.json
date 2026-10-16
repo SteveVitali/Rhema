@@ -1,0 +1,87 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "c4ac0c46ee1c",
+  "startedAt": "2026-10-16T06:07:51.198Z",
+  "finishedAt": "2026-10-16T06:08:41.846Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "e7b21aecb",
+    "observed": {
+      "web": "e7b21aecb",
+      "api": "e7b21aecb"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N7",
+      "journey": "both",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 13065,
+      "screenshot": "N7.png"
+    },
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11982,
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12070,
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "P1.dossier",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2554,
+      "screenshot": "P1.dossier.png"
+    },
+    {
+      "id": "T1",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10699,
+      "screenshot": "T1.png"
+    }
+  ],
+  "passed": true
+}

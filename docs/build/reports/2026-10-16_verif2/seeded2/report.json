@@ -1,0 +1,196 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "9391b8daedf6",
+  "startedAt": "2026-10-16T05:25:36.795Z",
+  "finishedAt": "2026-10-16T05:27:32.076Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "observed": {
+      "web": null,
+      "api": null
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N7",
+      "journey": "both",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10472,
+      "screenshot": "N7.png"
+    },
+    {
+      "id": "R1",
+      "journey": "returning",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2248,
+      "screenshot": "R1.png"
+    },
+    {
+      "id": "R6F",
+      "journey": "both",
+      "owner": "SPA.22",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11485,
+      "screenshot": "R6F.png"
+    },
+    {
+      "id": "R7",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3329,
+      "screenshot": "R7.png"
+    },
+    {
+      "id": "R10",
+      "journey": "returning",
+      "owner": "NAVC.4",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14532,
+      "screenshot": "R10.png"
+    },
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15157,
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16156,
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "P1.project",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2163,
+      "error": "phone /p/jrn-9391b8daedf6-r1proj renders §10.1-prohibited controls: a[href$=\"/import\"], a[href$=\"/export\"]",
+      "screenshot": "P1.project.png"
+    },
+    {
+      "id": "P1.dossier",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2578,
+      "error": "the phone dossier mounts the affordance §10.1 withholds ([data-apply])",
+      "screenshot": "P1.dossier.png"
+    },
+    {
+      "id": "X1.home",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3794,
+      "screenshot": "X1.home.png"
+    },
+    {
+      "id": "T1",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10626,
+      "screenshot": "T1.png"
+    },
+    {
+      "id": "T2.badge",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6540,
+      "screenshot": "T2.badge.png"
+    },
+    {
+      "id": "T6",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7904,
+      "screenshot": "T6.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7596,
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}

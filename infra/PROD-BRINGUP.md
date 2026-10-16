@@ -127,6 +127,13 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   carries the real key instead of the placeholder and signed-in preview journeys can send mail.
   Setting it on prod is refused fail-closed by the program: prod's `resend-api-key` version stays
   operator-seeded out-of-band.
+- `rhema:appBaseUrl` / `rhema:apiPublicUrl` — VERIF.2's NON-PROD public-origin config (plain,
+  not secret): on stages without `domains` the api/web derive their public origins from these
+  keys instead of `https://<stack>.rhema.dev` placeholders, which is what mounts the auth
+  surface (`APP_BASE_URL` gates `authSecretsReady`) and stamps `API_PUBLIC_URL` /
+  `INTERNAL_AUTH_AUDIENCE` correctly on `*.run.app` previews. Set via
+  `preview-stack.mjs config pr-<n> rhema:appBaseUrl "https://<web>.run.app"` (+ `apiPublicUrl`
+  likewise); prod ignores them — `domains` always wins there.
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
