@@ -918,6 +918,11 @@ export const COPY = {
     reject: "Reject",
     danglingCiteNote: "Citations without a bibliography entry",
     authorshipHint: "View → Authorship shows who wrote each block.",
+    // SPA.25 — the revived source view (REQ-ED-17; design/30): the toggle is a labelled affordance
+    // ("Source" pressed = markdown view), the note explains the foreign-write merge posture.
+    sourceToggle: "Source",
+    sourceAriaLabel: "Markdown source",
+    sourceStaleNote: "This draft changed elsewhere while you edited — your pending text applies where you changed it.",
   },
 
   // PRB.10 — Quick Voice (§9.2–§9.6): the creation sheet, the library list, the detail page (seed editor +

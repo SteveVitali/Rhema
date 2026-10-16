@@ -330,6 +330,15 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "red",
     paid: true,
   },
+  {
+    id: "T17",
+    journey: "both",
+    asserts:
+      "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — owed on SSR-pinned stages: the toggle only exists on data-renderer=spa; D-SPA.25-1)",
+    owner: "SPA.25",
+    expected: "red",
+    paid: false,
+  },
   // ---- phone-width reader ---------------------------------------------------
   // SPA.6 (REQ-VFY-8; design/27 F9) — P1 is SPLIT into per-surface legs so `--surface` can gate
   // exactly the legs a flip touches; `--steps P1` still selects the whole family by prefix.

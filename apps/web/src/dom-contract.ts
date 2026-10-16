@@ -1385,6 +1385,39 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-proposal-block", "conditional", "pages.tsx"),
     // SPA.24 (REQ-ED-16) — the source-editor island's hooks retired with it: data-editor-root /
     // -source / -host (ui/source-editor.tsx) and data-editor-banner / -banner-text (client/editor.ts).
+    // SPA.25 (REQ-ED-17) — the DESIGNED source view's hooks (design/30; the R20 ruling): new names,
+    // never a reuse of the retired island's contract. Emitted only by the SPA mount — the SSR host
+    // block and forced-SSR postures (phone/showcase, REQ-ED-12) never carry them.
+    a(
+      "data-source-bar",
+      "conditional",
+      "spa/page-mount",
+      "the source-mode toolbar row (toggle + stale note)",
+    ),
+    a(
+      "data-source-toggle",
+      "conditional",
+      "spa/page-mount",
+      "source↔rendered mode toggle (aria-pressed = mode)",
+    ),
+    a(
+      "data-source-host",
+      "conditional",
+      "spa/page-mount",
+      "CodeMirror mount host (lazy chunk lands here)",
+    ),
+    a(
+      "data-source-note",
+      "conditional",
+      "spa/page-mount",
+      "stale note — foreign doc change while the buffer is dirty",
+    ),
+    a(
+      "data-pm-host",
+      "conditional",
+      "spa/page-mount",
+      "the live (sometimes hidden) PM view wrapper",
+    ),
     // Source mode returns as a designed SPA feature (SPA.25) with its own contract rows.
     a(
       "data-version-rail",
