@@ -113,6 +113,26 @@ export interface PageEditorProps {
   readonly figureHrefFor?: (figureId: string) => string;
   readonly editFigureLabel?: string;
   readonly labels: PageEditorLabels;
+  /**
+   * SPA.23 — replaces the `data-page-host` block wholesale (the SPA's `PageMount` owns the host
+   * div + the pending `<PmPreview>` + the live view). Absent ⇒ the SSR static host renders
+   * verbatim — the document path never changes.
+   */
+  readonly host?: ReactNode;
+  /**
+   * SPA.23 — `false` omits the `script[type=application/json]` embeds (`data-page-doc|prov|
+   * findings`) AND the `/assets/page.js` island tag: they are SSR-bootstrap artifacts (REQ-ED-14 —
+   * the SPA derives docJson via `markdownToDoc` and mounts through the session registry).
+   * Default `true`.
+   */
+  readonly embeds?: boolean;
+  /**
+   * SPA.23 — the proposal cards' click seam: present ⇒ the accept/reject buttons call these
+   * handlers (the leaf dispatches `acceptProposalTr` on the live view / drops the card). Absent ⇒
+   * plain buttons (the SSR island binds its own listeners).
+   */
+  readonly onProposalAccept?: (proposal: PageProposalView) => void;
+  readonly onProposalReject?: (proposalId: string) => void;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -388,58 +408,80 @@ export function PageEditor(props: PageEditorProps): ReactNode {
                 <pre style={{ ...SPAN_STYLE, margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{p.markdown}</pre>
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
-                <button type="button" data-proposal-accept={p.id} style={{ fontSize: "12px" }}>{L.accept}</button>
-                <button type="button" data-proposal-reject={p.id} style={{ fontSize: "12px" }}>{L.reject}</button>
+                <button
+                  type="button"
+                  data-proposal-accept={p.id}
+                  {...(props.onProposalAccept ? { onClick: () => props.onProposalAccept?.(p) } : {})}
+                  style={{ fontSize: "12px" }}
+                >
+                  {L.accept}
+                </button>
+                <button
+                  type="button"
+                  data-proposal-reject={p.id}
+                  {...(props.onProposalReject ? { onClick: () => props.onProposalReject?.(p.id) } : {})}
+                  style={{ fontSize: "12px" }}
+                >
+                  {L.reject}
+                </button>
               </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      {/* the doc — SSR static render; the island mounts ProseMirror over the same JSON */}
-      <div data-page-host className="rm-page-host" data-readonly={readOnly ? "1" : "0"}>
-        <div data-page-preview className="rm-page-preview">
-          <PmPreview
-            docJson={props.docJson}
-            {...(props.figureHrefFor
-              ? { ctx: { figureHrefFor: props.figureHrefFor, ...(props.editFigureLabel ? { editFigureLabel: props.editFigureLabel } : {}) } }
-              : {})}
-          />
+      {/* the doc — SSR static render; the island mounts ProseMirror over the same JSON. SPA.23:
+          `props.host` replaces this block wholesale — the SPA's PageMount owns the host div +
+          the pending preview + the live view. */}
+      {props.host ?? (
+        <div data-page-host className="rm-page-host" data-readonly={readOnly ? "1" : "0"}>
+          <div data-page-preview className="rm-page-preview">
+            <PmPreview
+              docJson={props.docJson}
+              {...(props.figureHrefFor
+                ? { ctx: { figureHrefFor: props.figureHrefFor, ...(props.editFigureLabel ? { editFigureLabel: props.editFigureLabel } : {}) } }
+                : {})}
+            />
+          </div>
         </div>
-      </div>
-      {/* EDIT.1 — the embeds MUST be dangerouslySetInnerHTML: a JSX child inside <script> is
-          entity-escaped by the renderer, so JSON.parse("…&quot;…") fails and the island
-          silently never mounts (the N8 prod walk caught this — [data-page-root] rendered,
-          [data-page-view] never appeared). The < → < substitution stays: it is the
-          </script> breakout guard. */}
-      <script
-        type="application/json"
-        data-page-doc="1"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(props.docJson).replace(/</g, "\\u003c") }}
-      />
-      {/* the stored provenance map (blockId → kind) — the island seeds the plugin + overlay from it */}
-      <script
-        type="application/json"
-        data-page-prov="1"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(props.provenance ?? {}).replace(/</g, "\\u003c") }}
-      />
-      {/* the projected findings' anchors — the island re-resolves span decorations on every edit */}
-      <script
-        type="application/json"
-        data-page-findings="1"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            props.findings.map((f) => ({
-              findingId: f.findingId,
-              severity: f.severity,
-              anchor: f.anchor ?? null,
-              lost: f.lost,
-              ...(f.kind ? { kind: f.kind } : {}),
-              ...(f.suggestion ? { suggestion: f.suggestion } : {}),
-            })),
-          ).replace(/</g, "\\u003c"),
-        }}
-      />
+      )}
+      {(props.embeds ?? true) ? (
+        <>
+          {/* EDIT.1 — the embeds MUST be dangerouslySetInnerHTML: a JSX child inside <script> is
+              entity-escaped by the renderer, so JSON.parse("…&quot;…") fails and the island
+              silently never mounts (the N8 prod walk caught this — [data-page-root] rendered,
+              [data-page-view] never appeared). The < → < substitution stays: it is the
+              </script> breakout guard. */}
+          <script
+            type="application/json"
+            data-page-doc="1"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(props.docJson).replace(/</g, "\\u003c") }}
+          />
+          {/* the stored provenance map (blockId → kind) — the island seeds the plugin + overlay from it */}
+          <script
+            type="application/json"
+            data-page-prov="1"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(props.provenance ?? {}).replace(/</g, "\\u003c") }}
+          />
+          {/* the projected findings' anchors — the island re-resolves span decorations on every edit */}
+          <script
+            type="application/json"
+            data-page-findings="1"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                props.findings.map((f) => ({
+                  findingId: f.findingId,
+                  severity: f.severity,
+                  anchor: f.anchor ?? null,
+                  lost: f.lost,
+                  ...(f.kind ? { kind: f.kind } : {}),
+                  ...(f.suggestion ? { suggestion: f.suggestion } : {}),
+                })),
+              ).replace(/</g, "\\u003c"),
+            }}
+          />
+        </>
+      ) : null}
 
       {/* the findings rail — the minimal card affordance the shell shows (the Margin's full surface is P1.07) */}
       {props.findings.length > 0 || props.danglingCites.length > 0 ? (
@@ -475,8 +517,9 @@ export function PageEditor(props: PageEditorProps): ReactNode {
         </form>
       ) : null}
 
-      {/* the island — mounts the ProseMirror view over data-page-doc (deferred; no-JS keeps the preview) */}
-      <script src="/assets/page.js" defer />
+      {/* the island — mounts the ProseMirror view over data-page-doc (deferred; no-JS keeps the
+          preview). `embeds={false}` (SPA mode) omits it: the leaf's PageMount owns the mount. */}
+      {(props.embeds ?? true) ? <script src="/assets/page.js" defer /> : null}
     </div>
   );
 }

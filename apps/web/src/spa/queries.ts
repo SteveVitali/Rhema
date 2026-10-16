@@ -7,12 +7,15 @@ import { QueryClient, queryOptions } from "@tanstack/react-query";
 import type {
   AccountExportDto,
   AccountSettingsDto,
+  ApprovalOverridesDto,
   ApprovalSettingsDto,
   BillingBalanceDto,
   BillingPlansDto,
   BillingSubscriptionDto,
   CheckoutStatusDto,
   DataSettingsDto,
+  DecisionItemDto,
+  EditorDocDto,
   ExportDialogDto,
   ChatPanelDto,
   FigureCardDto,
@@ -29,9 +32,13 @@ import type {
   ProjectRow,
   ProjectSearchHitDto,
   ProjectSettingsDto,
+  ProjectVoiceDto,
   ProtocolCardDto,
+  RestorePointDto,
   RunReportDto,
   TimelineDto,
+  VersionDiffDto,
+  VersionRailDto,
   VoiceListRowDto,
   ReseedPreviewDto,
   UsageAccountDto,
@@ -43,6 +50,7 @@ import type {
   VoiceListDto,
   VoiceSampleDetailDto,
   VoiceUpdatePlanDto,
+  WhatChangedDto,
 } from "@rhema/api-client";
 import type { GateOutlineView } from "@rhema/findings-core";
 import type { FeedLabelMaps } from "@rhema/ide";
@@ -1067,5 +1075,217 @@ export const runReportQuery = (slug: string, runId: string, search: RunReportTwi
         `/bff/p/${encodeURIComponent(slug)}/r/${encodeURIComponent(runId)}${suffix}`,
       );
     },
+    retry: retryPolicy,
+  });
+
+// ---- SPA.23 — the `editor` surface's twins (REQ-BFF-1/2/9/11/22; design/23 §7, design/22 §2
+// editor rows). The five document GETs the `editor` flag owns — `/p/:slug`, `/v/:v`,
+// `/v/:n/diff/:m`, `/a/:artifactId`, `/revisions/:cid` — each get a read twin running the SAME
+// server-side composition the document performs (REQ-BFF-2's single-composition rule), plus the
+// POST-only handoff twin (REQ-BFF-22) the `/p/:slug` leaf calls in `beforeLoad`.
+//
+// The `page` bag is `PageData["page"]` MINUS `docJson`: the PM doc JSON is DERIVED leaf-side via
+// `markdownToDoc(doc.markdown).toJSON()` (design/23 F5 + REQ-ED-14 — the same canonical call the
+// document's `page-data.ts` runs; the `script[data-page-doc]` embeds are an SSR artifact and the
+// leaf skips them verbatim). `collabWsUrl` ships server-decided (the attr parity) — the WIRE is
+// SPA.24's; the mount reads it only for the verbatim `readonly && !collabUrl` editable formula.
+
+/** The `page` bag minus `docJson` — `PageData["page"]`'s verbatim shape otherwise. */
+export interface BffPageBag {
+  readonly slug: string;
+  readonly projectId: string;
+  readonly doc: EditorDocDto;
+  readonly noteSaved?: boolean;
+  readonly focusFindingId?: string;
+  readonly readOnly?: boolean;
+  /** server-authorized only — withheld for phone/showcase/artifact postures verbatim. */
+  readonly collabWsUrl?: string;
+  readonly rail?: {
+    readonly data: VersionRailDto;
+    readonly currentN: number;
+    readonly points: readonly RestorePointDto[];
+    readonly preview?: {
+      readonly point: RestorePointDto;
+      readonly view: WhatChangedDto["view"];
+    };
+    readonly restoredN?: number;
+  };
+}
+
+/**
+ * `GET /bff/p/:slug` — the project-overview aggregate (the document's seam composition verbatim):
+ * gates, decisions, overrides, the optional settings read, dismissed explainers, the voice-picker
+ * facts, the best-effort working-head page load, and the `ideContext` bag (timeline/feed/status
+ * slices included). URL echoes stay leaf-owned: `?rename`, `?created`/`cn`/`cu`, `?hc`, `?derror`,
+ * `?voice_locked` all merge from the leaf's search — they are never payload.
+ */
+export interface BffProjectTwin {
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    readonly headDraftId?: string | null;
+    /** the resolved head's draft number — the `?created=draft` card's `v{n}` template arg. */
+    readonly headDraftN?: number | null;
+  };
+  readonly gates: readonly GateCardDto[];
+  readonly decisions: readonly DecisionItemDto[];
+  readonly approvalOverrides: ApprovalOverridesDto;
+  readonly approvalSettings?: ApprovalSettingsDto;
+  readonly explainersDismissed: readonly string[];
+  readonly projectVoice?: {
+    readonly current: ProjectVoiceDto;
+    readonly options: readonly VoiceListRowDto[];
+  };
+  readonly page?: BffPageBag;
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** `GET /bff/p/:slug/v/:v` — the version/draft Page. The `/v/working` miss is the ONE redirect
+ *  arm (`{ok:true, redirect:"/p/:slug"}` — the document's 302 verbatim); a numeric miss is a 404
+ *  twin error. `restore`/`focus` are the server-owned search keys (the preview read + the
+ *  ideContext focus view); `restored`/`noted`/`hc` are leaf-owned echoes. */
+export type BffVersionPageTwin =
+  | { readonly ok: true; readonly redirect: string; readonly page?: never }
+  | {
+      readonly page: BffPageBag;
+      readonly project: {
+        readonly title: string;
+        readonly pill: string;
+        readonly slug: string;
+        readonly headDraftId?: string | null;
+      };
+      readonly paperTheme: string;
+      readonly appTheme?: string;
+      readonly ide: BffIdeBag;
+      readonly ok?: never;
+      readonly redirect?: never;
+    };
+
+/** `GET /bff/p/:slug/v/:n/diff/:m` — the §5.8 compare pair verbatim (`layout`/`commented` are
+ *  leaf-owned). */
+export interface BffCompareTwin {
+  readonly compare: {
+    readonly slug: string;
+    readonly n: string;
+    readonly m: string;
+    readonly data: VersionDiffDto;
+  };
+  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** `GET /bff/p/:slug/a/:artifactId` — the read-only artifact Page. */
+export interface BffArtifactTwin {
+  readonly page: BffPageBag;
+  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** `GET /bff/p/:slug/revisions/:cid` — the What-changed read verbatim (`commented` is leaf-owned). */
+export interface BffRevisionTwin {
+  readonly revision: {
+    readonly slug: string;
+    readonly data: WhatChangedDto;
+  };
+  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** `POST /bff/p/:slug/handoff` — REQ-BFF-22: the unread `run_finished` hand-off. `{handoff:null}`
+ *  when nothing is owed (or `?focus=1` suppresses); otherwise `{href, inboxItemId}` — the item is
+ *  already marked read server-side (idempotent — the api tolerates re-marks). */
+export interface BffProjectHandoffReply {
+  readonly ok: true;
+  readonly data: {
+    readonly handoff: { readonly href: string; readonly inboxItemId: string } | null;
+  };
+}
+
+const projectPageSearch = (search: { readonly focus?: string }) => {
+  const qs = new URLSearchParams();
+  if (search.focus === "1") qs.set("focus", "1");
+  return qs.size > 0 ? `?${qs.toString()}` : "";
+};
+
+export const projectPageQuery = (slug: string, search: { readonly focus?: string } = {}) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, { focus: search.focus === "1" ? "1" : null }],
+    queryFn: () =>
+      bffFetch<BffProjectTwin>(`/bff/p/${encodeURIComponent(slug)}${projectPageSearch(search)}`),
+    retry: retryPolicy,
+  });
+
+export const postProjectHandoff = (slug: string, opts?: { readonly focus?: string }) =>
+  bffFetch<BffProjectHandoffReply>(
+    `/bff/p/${encodeURIComponent(slug)}/handoff${projectPageSearch(opts ?? {})}`,
+    { method: "POST" },
+  );
+
+export interface VersionPageTwinSearch {
+  readonly restore?: string;
+  readonly focus?: string;
+}
+
+export const versionPageQuery = (slug: string, v: string, search: VersionPageTwinSearch = {}) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "v",
+      v,
+      { restore: search.restore ?? null, focus: search.focus === "1" ? "1" : null },
+    ],
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      if (search.restore != null && search.restore !== "") qs.set("restore", search.restore);
+      if (search.focus === "1") qs.set("focus", "1");
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      return bffFetch<BffVersionPageTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/v/${encodeURIComponent(v)}${suffix}`,
+      );
+    },
+    retry: retryPolicy,
+  });
+
+const compareSearch = (search: { readonly focus?: string }) =>
+  search.focus === "1" ? "?focus=1" : "";
+
+export const compareQuery = (slug: string, n: string, m: string, search: { readonly focus?: string } = {}) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "v", n, "diff", m, { focus: search.focus === "1" ? "1" : null }],
+    queryFn: () =>
+      bffFetch<BffCompareTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/v/${encodeURIComponent(n)}/diff/${encodeURIComponent(m)}${compareSearch(search)}`,
+      ),
+    retry: retryPolicy,
+  });
+
+export const artifactQuery = (slug: string, artifactId: string, search: { readonly focus?: string } = {}) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "a", artifactId, { focus: search.focus === "1" ? "1" : null }],
+    queryFn: () =>
+      bffFetch<BffArtifactTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/a/${encodeURIComponent(artifactId)}${compareSearch(search)}`,
+      ),
+    retry: retryPolicy,
+  });
+
+export const revisionQuery = (slug: string, cid: string, search: { readonly focus?: string } = {}) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "revisions", cid, { focus: search.focus === "1" ? "1" : null }],
+    queryFn: () =>
+      bffFetch<BffRevisionTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/revisions/${encodeURIComponent(cid)}${compareSearch(search)}`,
+      ),
     retry: retryPolicy,
   });

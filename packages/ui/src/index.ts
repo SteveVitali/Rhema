@@ -92,7 +92,7 @@ export type { WhatChangedProps, WhatChangedLabels, RubricDeltaLabels } from "./w
 
 // The Page (P1.02) — the schema-first editor surface. SSR renders the full chrome + a static typeset
 // render of the PM doc (PmPreview); the page.js island mounts ProseMirror over the embedded doc JSON.
-export { PageEditor, PmPreview } from "./page-editor.js";
+export { PageEditor, PmPreview, type PmPreviewContext } from "./page-editor.js";
 export type {
   PageEditorProps,
   PageEditorLabels,

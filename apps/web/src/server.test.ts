@@ -2384,3 +2384,266 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
     expect(refund.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
   });
 });
+
+// ----------------------------------------------------------------------------------------------------------------------
+// SPA.23 — the `editor` surface's BFF seam (REQ-BFF-1/3/4/9/11, REQ-ED-4/12; design/23 §2 `editor` rows).
+// The five read twins share the documents' compositions VERBATIM: `/bff/p/:slug` returns the project page's
+// shared `projectPageComposition` (the overview + editor payload both renderers consume), and the page/compare/
+// artifact/revision twins carry the SAME `doc`/`page`/`diff`/`whatChanged` slices the SSR PageData builds —
+// the API is the document verbatim, never a SPA-only shape. The surface's writes keep their document paths —
+// a JSON caller gets the `{ok,redirect}`/`{error}` envelope at the preserved status, never a 302/HTML arm.
+// ----------------------------------------------------------------------------------------------------------------------
+describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write branches", () => {
+  const SESSION = { cookie: "tok" };
+  const DOC = {
+    draftId: "d_7",
+    draftN: 7,
+    origin: "human_revision",
+    state: "open",
+    baseDraftId: "d_6",
+    baseDraftN: 6,
+    markdown: "## A draft\n\nBody text.",
+    sha256: "sha_1",
+    lock: null,
+    findings: [],
+    meters: { words: 4, readMin: 1 },
+  };
+  const RAIL = {
+    workingN: 7,
+    chip: { open: 1, addressed: 0 },
+    outline: null,
+    drafts: [
+      {
+        draftId: "d_7",
+        n: 7,
+        origin: "human_revision",
+        state: "open",
+        frozen: false,
+        frozenAt: null,
+        createdAt: "2026-10-01T00:00:00Z",
+        words: 4,
+        reviewed: false,
+        answered: false,
+        claimsPendingVerification: false,
+        obligations: { open: 1, addressed: 0 },
+      },
+    ],
+  };
+  const WHAT_CHANGED = {
+    ok: true as const,
+    responseId: "c_1",
+    reviewId: "run_1",
+    beforeN: 6,
+    afterN: 7,
+    view: {
+      strip: { totals: { moves: 0, unlinked: 0, rebutted: 0 }, label: "v6 → v7" },
+      moves: [],
+      unlinked: { hunks: [], entries: [] },
+      rebutted: [],
+    },
+  };
+  const DIFF = {
+    ok: true as const,
+    responseId: null,
+    reviewId: null,
+    before: {
+      draftId: "d_6",
+      n: 6,
+      origin: "import",
+      state: "frozen",
+      frozenAt: "2026-10-01T00:00:00Z",
+      createdAt: "2026-10-01T00:00:00Z",
+      claimsPendingVerification: false,
+    },
+    after: {
+      draftId: "d_7",
+      n: 7,
+      origin: "human_revision",
+      state: "open",
+      frozenAt: null,
+      createdAt: "2026-10-02T00:00:00Z",
+      claimsPendingVerification: false,
+    },
+    diff: { hunks: [], unchanged: 2, beforeBlocks: [], afterBlocks: [] },
+    view: WHAT_CHANGED.view,
+  };
+
+  const spa23Deps = (over: Partial<DataSource> = {}, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    makeDeps({
+      session,
+      dataSource: {
+        ...makeDeps().dataSource,
+        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        listProjects: async () => [{ ...PROJECTS[0]!, headDraftId: "d_7" }],
+        listGates: async () => [],
+        listDecisions: async () => [],
+        resolveEditorDraft: async () => ({ draftId: "d_7", draftN: 7, state: "open", origin: "human_revision" }),
+        getEditorDoc: async () => DOC,
+        getArtifactPage: async () => DOC,
+        getVersions: async () => RAIL,
+        listRestorePoints: async () => ({ points: [] }),
+        getVersionDiff: async () => DIFF,
+        getWhatChanged: async () => WHAT_CHANGED,
+        getApprovalOverrides: async () => ({ overrides: [], defaults: { defaultLevel: "l2" } }),
+        getExplainers: async () => ({ groups: [] }),
+        getProjectVoice: async () => ({ persona: null, project: null }),
+        listVoices: async () => [],
+        getTimeline: async () => ({ rounds: [], nextStep: null }),
+        getInbox: async () => [],
+        getInboxBadge: async () => ({ count: 0 }),
+        ...over,
+      } as DataSource,
+    });
+
+  const JSON_GET = { headers: { accept: "application/json" } };
+  const jsonPost = { method: "POST", headers: { "content-type": "application/json", accept: "application/json" } };
+
+  it("GET /bff/p/:slug returns the project-page composition verbatim — {project, page, ide} + the gates/decisions rows", async () => {
+    const res = await createWebApp(spa23Deps()).request("/bff/p/the-politics-of-visibility", JSON_GET);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.project.slug).toBe("the-politics-of-visibility");
+    expect(body.page).toBeDefined();
+    // REQ-BFF-2's verbatim composition — the doc the leaf feeds `markdownToDoc`, not a SPA-only shape.
+    expect(body.page.doc.draftId).toBe("d_7");
+    expect(body.page.doc.markdown).toContain("A draft");
+    expect(body.ide).toBeDefined();
+    expect(body.ide.palette).toBeDefined();
+  });
+
+  it("GET /bff/p/:slug/v/:v resolves 'working' + numeric versions through the one resolver", async () => {
+    const resolveEditorDraft = vi.fn(async (_s: unknown, _p: unknown, v: string) => ({
+      draftId: v === "working" ? "d_7" : "d_6",
+      draftN: v === "working" ? 7 : 6,
+      state: "open",
+      origin: "human_revision",
+    }));
+    const app = createWebApp(spa23Deps({ resolveEditorDraft }));
+    const working = await app.request("/bff/p/the-politics-of-visibility/v/working", JSON_GET);
+    expect(working.status).toBe(200);
+    expect(resolveEditorDraft).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "working");
+    const body = await working.json();
+    expect(body.page.doc.draftId).toBe("d_7");
+    // the version rail rides the same `rail` bag the SSR PageEditor consumes.
+    expect(body.page.rail).toBeDefined();
+    expect(body.page.rail.data.workingN).toBe(7);
+    expect(body.page.rail.currentN).toBe(7);
+    const v6 = await app.request("/bff/p/the-politics-of-visibility/v/6", JSON_GET);
+    expect(v6.status).toBe(200);
+    expect(resolveEditorDraft).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "6");
+  });
+
+  it("GET /bff/p/:slug/v/:n/diff/:m carries the pair + the joined view — the compare leaf's verbatim slice", async () => {
+    const res = await createWebApp(spa23Deps()).request(
+      "/bff/p/the-politics-of-visibility/v/6/diff/7",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.compare.data.before.n).toBe(6);
+    expect(body.compare.data.after.n).toBe(7);
+    expect(body.compare.n).toBe("6");
+    expect(body.compare.m).toBe("7");
+    expect(body.project.slug).toBe("the-politics-of-visibility");
+  });
+
+  it("GET /bff/p/:slug/a/:artifactId serves the artifact page's doc verbatim", async () => {
+    const getArtifactPage = vi.fn(async () => DOC);
+    const res = await createWebApp(spa23Deps({ getArtifactPage })).request(
+      "/bff/p/the-politics-of-visibility/a/a_1",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    expect(getArtifactPage).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "a_1");
+    const body = await res.json();
+    expect(body.page.doc.draftId).toBe("d_7");
+    // the artifact arm is always read-only (REQ-ED-4 — server-decided, never client-decided).
+    expect(body.page.readOnly).toBe(true);
+  });
+
+  it("GET /bff/p/:slug/revisions/:cid returns the what-changed composition the revision leaf renders", async () => {
+    const getWhatChanged = vi.fn(async () => WHAT_CHANGED);
+    const res = await createWebApp(spa23Deps({ getWhatChanged })).request(
+      "/bff/p/the-politics-of-visibility/revisions/c_1",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    expect(getWhatChanged).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "c_1");
+    const body = await res.json();
+    expect(body.revision.data.responseId).toBe("c_1");
+    expect(body.revision.data.beforeN).toBe(6);
+  });
+
+  it("POST /bff/p/:slug/handoff is wired on the real app — {handoff:null} when nothing is owed", async () => {
+    const res = await createWebApp(spa23Deps()).request("/bff/p/the-politics-of-visibility/handoff", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, data: { handoff: null } });
+  });
+
+  it("the twins 404 on an unknown slug and 401 without a session — the envelope, never HTML", async () => {
+    const app = createWebApp(spa23Deps({ listProjects: async () => [] }));
+    const res = await app.request("/bff/p/nope", JSON_GET);
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toBeDefined();
+    const unauth = await createWebApp(spa23Deps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility",
+      JSON_GET,
+    );
+    expect(unauth.status).toBe(401);
+    expect(await unauth.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("the revision-hunk comment POST answers JSON callers the {ok,redirect} envelope; form posts keep the 302", async () => {
+    const commentOnHunk = vi.fn(async () => ({ guidanceId: "g_1", hunkId: "h_1" }));
+    const app = createWebApp(spa23Deps({ commentOnHunk: commentOnHunk as never }));
+    const json = await app.request("/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "check this" }),
+    });
+    expect(json.status).toBe(200);
+    const env = await json.json();
+    expect(env.ok).toBe(true);
+    expect(env.redirect).toBe("/p/the-politics-of-visibility/revisions/c_1?commented=h_1");
+    const formRes = await app.request("/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments", {
+      method: "POST",
+      ...form({ text: "check this" }),
+    });
+    expect(formRes.status).toBe(302);
+    expect(formRes.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/c_1?commented=h_1");
+  });
+
+  it("the editor autosave/note POSTs answer the JSON envelope — {ok,data} on save, {ok,redirect} on note", async () => {
+    const saveEditorDraft = vi.fn(async () => ({ draftId: "d_7", n: 7, forked: false }));
+    const postEditorNote = vi.fn(async () => ({ guidanceId: "g_1" }));
+    const app = createWebApp(spa23Deps({ saveEditorDraft: saveEditorDraft as never, postEditorNote: postEditorNote as never }));
+    const save = await app.request("/p/the-politics-of-visibility/edit/d_7/save", {
+      ...jsonPost,
+      body: JSON.stringify({ markdown: "## A draft\n\nEdited." }),
+    });
+    expect(save.status).toBe(200);
+    // /save is JSON-native (it IS the autosave transport) — the api's EditorSaveDto verbatim.
+    const saveBody = await save.json();
+    expect(saveBody.draftId).toBe("d_7");
+    const note = await app.request("/p/the-politics-of-visibility/edit/d_7/note", {
+      ...jsonPost,
+      body: JSON.stringify({ text: "tighten the lede" }),
+    });
+    expect(note.status).toBe(200);
+    const noteBody = await note.json();
+    expect(noteBody.ok).toBe(true);
+    expect(noteBody.redirect).toBe("/p/the-politics-of-visibility/edit/d_7?noted=1");
+  });
+
+  it("a JSON caller on the editor write paths is never handed a /login redirect — 401 envelope", async () => {
+    const app = createWebApp(spa23Deps({}, () => null));
+    const res = await app.request("/p/the-politics-of-visibility/edit/d_7/save", {
+      ...jsonPost,
+      body: JSON.stringify({ markdown: "x" }),
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+});

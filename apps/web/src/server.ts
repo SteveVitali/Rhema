@@ -45,13 +45,13 @@ import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome, DossierData } from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto, EstimateRequestDto, CreatedRunDto } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto, EstimateRequestDto, CreatedRunDto, RestorePointsDto, RestorePreviewDto, VersionRailDto } from "@rhema/api-client";
 import type { ProjectRow } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
-import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
+import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectHandoffHandler, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
 import { billingNoticeFor } from "./billing-copy.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
@@ -3290,10 +3290,14 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/rename", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const form = await c.req.parseBody();
     const title = typeof form.title === "string" ? form.title.trim() : "";
     if (title) {
@@ -3301,7 +3305,9 @@ export function createWebApp(deps: WebDeps): Hono {
         .then(() => deps.dataSource.renameProject(session, row.id, title))
         .catch(() => undefined);
     }
-    return c.redirect(`/p/${slug}`);
+    // SPA.23 — the overview's inline rename form is a leaf-intercepted write; a JSON caller gets
+    // the envelope, the form post keeps the redirect.
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   app.post("/p/:project/duplicate", async (c) => {
@@ -4266,6 +4272,178 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // Auth-gated: the flat project view (canonical /p/:project) + the Needs-you surface (PRB.05: the open
   // gate cards) and the Decisions list (the beta Inbox stand-in, §5.7).
+  /** SPA.23 — the `/p/:slug` composition both renderers share (REQ-BFF-2's one-composition rule):
+   *  the six parallel reads, the presence-timer emit, the working-head pageLoad, and the
+   *  badge/timeline/live-feed slices. The document handler renders it through `projectElement`;
+   *  `GET /bff/p/:slug` answers the same facts as JSON. The URL-echo fields (`?rename`,
+   *  `?created`/`cn`/`cu`, `?hc`, `?derror`) stay renderer-side — the document reads its own query;
+   *  the leaf merges its own search (URL state is never payload). */
+  const projectOverviewComposition = async (
+    c: Context,
+    session: SessionHeaders,
+    row: ProjectRow,
+  ) => {
+    const slug = row.slug;
+    const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
+      deps.dataSource.listGates(session, row.id).catch(() => []),
+      deps.dataSource.listDecisions(session, row.id).catch(() => []),
+      deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
+      // P1.09 — the full §6.4 settings read (policy + per-kind grid + standing guidance). Optional
+      // seam: absent ⇒ the page falls back to the PRB.05 opt-in form.
+      Promise.resolve()
+        .then(() => deps.dataSource.getApprovalSettings?.(session, row.id))
+        .catch(() => undefined),
+      // P1.09 — the user's dismissed explainers (the first-approval explainer mounts once, §5.11).
+      Promise.resolve()
+        .then(() => deps.dataSource.getExplainers?.(session))
+        .then((e) => e?.dismissed ?? [])
+        .catch(() => []),
+      // PRB.10 — the voice picker: the project's linked-voice facts + the selectable personas (§9.6).
+      // (Deferred inside .then so a data source missing the voice seam degrades to no-picker, not a 500.)
+      Promise.all([
+        Promise.resolve().then(() => deps.dataSource.getProjectVoice(session, row.id)).catch(() => null),
+        Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
+      ]).then(([current, options]) =>
+        current
+          ? { current, options, ...(c.req.query("voice_locked") === "1" ? { locked: true as const } : {}) }
+          : undefined,
+      ),
+    ]);
+    // PRB.12 — the presence timer actually rendered on this page for a card with a live countdown
+    // (§6.4 item 2; REQ-SPEC-18). One mint per timer shown — the BFF read IS the render for the
+    // SPA path, so the mint fires identically there (the same-side-effect parity the shared
+    // compositions keep).
+    for (const g of gates) {
+      if (g.presenceDeadlineAt && !g.pausedWhileReading) {
+        emit(session, "gate.presence_timer_shown", { kind: g.kind }, { projectId: row.id, runId: g.runId });
+      }
+    }
+    // P1.02 item 12 — `/p/:project` opens the Page on the working head. The doc read is exact and
+    // best-effort: a missing/locked head degrades to the plain overview, never a failed page.
+    const pageLoad = row.headDraftId
+      ? await loadEditorPage(deps.dataSource, session, row.id, row.headDraftId).catch(() => null)
+      : null;
+    // P1.05 — the Timeline pane's round log (§5.5) + the live feed's replayed rows for a non-terminal
+    // run (§5.5's Desk auto-open). Both best-effort: a failed read degrades to the empty timeline/feed,
+    // never a failed page.
+    // P1.19 — the rail badge is GLOBAL (open approvals + decisions across every project — §5.11);
+    // the api's /inbox/badge owns the count. A data source without the seam (fixtures) keeps the
+    // project-local count it always had.
+    const badge = await Promise.resolve()
+      .then(() => deps.dataSource.getInboxBadge?.(session))
+      .then((b) => (b && typeof b.count === "number" ? b.count : null))
+      .catch(() => null);
+    const [timeline, feedData] = await Promise.all([
+      Promise.resolve()
+        .then(() => deps.dataSource.getTimeline?.(session, slug))
+        .catch(() => null),
+      row.activeRun ? liveFeedSlice(session, row.activeRun.runId) : Promise.resolve(null),
+    ]);
+    return { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad, badge, timeline, feedData };
+  };
+
+  /** SPA.23 — the ide-context opts the overview's two renderers share (timeline + feed + the
+   *  working-head status meters). */
+  const overviewIdeOpts = (
+    slug: string,
+    comp: Awaited<ReturnType<typeof projectOverviewComposition>>,
+    row: ProjectRow,
+  ) => ({
+    inboxCount: comp.badge ?? comp.gates.length + comp.decisions.length,
+    ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
+    ...(row.activeRun && comp.feedData
+      ? {
+          feed: {
+            runId: row.activeRun.runId,
+            eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
+            density: "details" as const,
+            rows: comp.feedData.rows,
+            lastSeq: comp.feedData.lastSeq,
+          },
+        }
+      : {}),
+    ...(comp.pageLoad
+      ? {
+          status: {
+            version: `v${comp.pageLoad.doc.draftN}`,
+            ...(comp.pageLoad.doc.meters?.words != null ? { words: comp.pageLoad.doc.meters.words } : {}),
+            ...(comp.pageLoad.doc.meters?.readMin != null ? { readMin: comp.pageLoad.doc.meters.readMin } : {}),
+            ...(comp.pageLoad.doc.venueCap ? { venueCap: comp.pageLoad.doc.venueCap } : {}),
+          },
+        }
+      : {}),
+  });
+
+  /** SPA.23 — the `/v/:v` document's reads shared verbatim with `GET /bff/p/:slug/v/:v`
+   *  (REQ-BFF-2): draft resolution (the `working`-miss redirect arm included), the page load, the
+   *  version rail, the restore-point list, and the `?restore=` preview read. `?restored`/`?noted`
+   *  are display echoes and stay renderer-side (URL state is never payload). */
+  const versionPageComposition = async (
+    c: Context,
+    session: SessionHeaders,
+    row: ProjectRow,
+    v: string,
+  ) => {
+    const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    // EDIT.1 — `working` resolves the EDITABLE head; a 404 here means the project has no drafts at
+    // all — send the reader back to the project page (the empty-state cards live there) instead of
+    // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404. The BFF twin answers the
+    // same arm as `{ok:true, redirect}` — the leaf redirects (server stays authoritative).
+    if (!resolved) {
+      return v === "working" ? ({ kind: "redirect" as const } ) : ({ kind: "notFound" as const });
+    }
+    const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!pageLoad) return { kind: "notFound" as const };
+    // P1.08 — the §5.8 version rail over the Page (REQ-IDE-32): the chips read, the restore-point
+    // dropdown for THIS draft's live doc, and the `?restore=<id>` preview read. Each read is
+    // best-effort — a missing piece hides its affordance.
+    const railData = await Promise.resolve()
+      .then(() => deps.dataSource.getVersions(session, row.id))
+      .catch(() => null);
+    const restorePoints = await Promise.resolve()
+      .then(() => deps.dataSource.listRestorePoints?.(session, row.id, resolved.draftId))
+      .catch(() => undefined);
+    const restorePick = c.req.query("restore") ?? null;
+    const restorePreview = restorePick
+      ? ((await Promise.resolve()
+          .then(() => deps.dataSource.previewRestorePoint?.(session, row.id, resolved.draftId, restorePick))
+          .catch(() => undefined)) ?? null)
+      : null;
+    return { kind: "ok" as const, resolved, pageLoad, railData, restorePoints, restorePreview };
+  };
+
+  /** SPA.23 — the §5.8 rail bag both renderers assemble identically: `?restore`'s preview card
+   *  re-uses the LISTED point row when present (it carries `group`/`advanced` — the bare point
+   *  read doesn't); `?restored=` merges leaf-side. */
+  const pageRailBag = (
+    currentN: number,
+    railData: VersionRailDto,
+    restorePoints: RestorePointsDto | null | undefined,
+    restorePreview: RestorePreviewDto | null | undefined,
+    restoredN?: number | null,
+  ) => ({
+    data: railData,
+    currentN,
+    points: restorePoints?.points ?? [],
+    ...(restorePreview?.ok === true
+      ? {
+          preview: {
+            point:
+              restorePoints?.points.find((p) => p.id === restorePreview.point.id) ??
+              { ...restorePreview.point, group: "named" as const, advanced: false },
+            view: restorePreview.view,
+          },
+        }
+      : {}),
+    ...(restoredN != null && Number.isFinite(restoredN) ? { restoredN } : {}),
+  });
+
   app.get("/p/:project", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -4302,90 +4480,15 @@ export function createWebApp(deps: WebDeps): Hono {
       const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
       if (spaDoc) return spaDoc;
     }
-    const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
-      deps.dataSource.listGates(session, row.id).catch(() => []),
-      deps.dataSource.listDecisions(session, row.id).catch(() => []),
-      deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
-      // P1.09 — the full §6.4 settings read (policy + per-kind grid + standing guidance). Optional
-      // seam: absent ⇒ the page falls back to the PRB.05 opt-in form.
-      Promise.resolve()
-        .then(() => deps.dataSource.getApprovalSettings?.(session, row.id))
-        .catch(() => undefined),
-      // P1.09 — the user's dismissed explainers (the first-approval explainer mounts once, §5.11).
-      Promise.resolve()
-        .then(() => deps.dataSource.getExplainers?.(session))
-        .then((e) => e?.dismissed ?? [])
-        .catch(() => []),
-      // PRB.10 — the voice picker: the project's linked-voice facts + the selectable personas (§9.6).
-      // (Deferred inside .then so a data source missing the voice seam degrades to no-picker, not a 500.)
-      Promise.all([
-        Promise.resolve().then(() => deps.dataSource.getProjectVoice(session, row.id)).catch(() => null),
-        Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
-      ]).then(([current, options]) =>
-        current
-          ? { current, options, ...(c.req.query("voice_locked") === "1" ? { locked: true as const } : {}) }
-          : undefined,
-      ),
-    ]);
+    const comp = await projectOverviewComposition(c, session, row);
+    const { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad } = comp;
     // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
     // that row's controls — never dropped silently.
     const derror = c.req.query("derror");
-    // PRB.12 — the presence timer actually rendered on this page for a card with a live countdown
-    // (§6.4 item 2; REQ-SPEC-18). One mint per timer shown.
-    for (const g of gates) {
-      if (g.presenceDeadlineAt && !g.pausedWhileReading) {
-        emit(session, "gate.presence_timer_shown", { kind: g.kind }, { projectId: row.id, runId: g.runId });
-      }
-    }
-    // P1.02 item 12 — `/p/:project` opens the Page on the working head. The doc read is exact and
-    // best-effort: a missing/locked head degrades to the plain overview, never a failed page.
-    const pageLoad = row.headDraftId
-      ? await loadEditorPage(deps.dataSource, session, row.id, row.headDraftId).catch(() => null)
-      : null;
-    // P1.05 — the Timeline pane's round log (§5.5) + the live feed's replayed rows for a non-terminal
-    // run (§5.5's Desk auto-open). Both best-effort: a failed read degrades to the empty timeline/feed,
-    // never a failed page.
-    // P1.19 — the rail badge is GLOBAL (open approvals + decisions across every project — §5.11);
-    // the api's /inbox/badge owns the count. A data source without the seam (fixtures) keeps the
-    // project-local count it always had.
-    const badge = await Promise.resolve()
-      .then(() => deps.dataSource.getInboxBadge?.(session))
-      .then((b) => (b && typeof b.count === "number" ? b.count : null))
-      .catch(() => null);
-    const [timeline, feedData] = await Promise.all([
-      Promise.resolve()
-        .then(() => deps.dataSource.getTimeline?.(session, slug))
-        .catch(() => null),
-      row.activeRun ? liveFeedSlice(session, row.activeRun.runId) : Promise.resolve(null),
-    ]);
     return c.html(
       renderDocument(c.req.path, projectElement, {
         // P1.01 — the project overview mounts inside the IDE frame; ?focus=1 seeds the Focus view.
-        ...(await ideContext(c, session, { ...row, slug }, {
-          inboxCount: badge ?? gates.length + decisions.length,
-          ...(timeline ? { timelineView: timeline, runNextHref: `/p/${slug}/run` } : {}),
-          ...(row.activeRun && feedData
-            ? {
-                feed: {
-                  runId: row.activeRun.runId,
-                  eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
-                  density: "details" as const,
-                  rows: feedData.rows,
-                  lastSeq: feedData.lastSeq,
-                },
-              }
-            : {}),
-          ...(pageLoad
-            ? {
-                status: {
-                  version: `v${pageLoad.doc.draftN}`,
-                  ...(pageLoad.doc.meters?.words != null ? { words: pageLoad.doc.meters.words } : {}),
-                  ...(pageLoad.doc.meters?.readMin != null ? { readMin: pageLoad.doc.meters.readMin } : {}),
-                  ...(pageLoad.doc.venueCap ? { venueCap: pageLoad.doc.venueCap } : {}),
-                },
-              }
-            : {}),
-        })),
+        ...(await ideContext(c, session, { ...row, slug }, overviewIdeOpts(slug, comp, row))),
         project: {
           title: row.title,
           pill: row.state.pill,
@@ -4527,17 +4630,22 @@ export function createWebApp(deps: WebDeps): Hono {
   // `approval_overrides` row the api validates (≥2 h, wait-default kinds only — REQ-SPEC-1).
   app.post("/p/:project/approval-overrides", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const form = await c.req.parseBody();
     const current = await deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>);
     const overrides: Record<string, number | null> = { ...current };
     if (form.approve_triage_24h === "on") overrides.approve_triage = 24 * 60 * 60 * 1000;
     else delete overrides.approve_triage;
     await deps.dataSource.setApprovalOverrides(session, row.id, overrides);
-    return c.redirect(`/p/${slug}`);
+    // SPA.23 — the opt-in form is a leaf-intercepted write; a JSON caller gets the envelope.
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // ---- P1.09 — the Approvals settings surface (§6.4 item 3; REQ-SPEC-1) + standing guidance (§6.5;
@@ -4703,14 +4811,20 @@ export function createWebApp(deps: WebDeps): Hono {
   // PRB.05 — answer a Decisions row (the row's option, or "dismiss").
   app.post("/p/:project/decisions/:dcr", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const form = await c.req.parseBody();
     const answer = typeof form.answer === "string" ? form.answer : "";
     await deps.dataSource.answerDecision(session, row.id, c.req.param("dcr"), answer);
-    return c.redirect(`/p/${slug}`);
+    // SPA.23 — a decision answer can ride the leaf's delegated submit; a JSON caller gets the
+    // envelope, the form post keeps the redirect.
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // Auth-gated: the §5.3 import flow (upload/paste → conversion preview → create).
@@ -5905,6 +6019,170 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // PRB.06 — the What-changed page (§5.8): what changed and why for a delivered response. GET renders the
   // server-joined view; the hunk comment POST lands a Guidance row for the next Revise (§6.5).
+  // -------------------------------------------------------------------------------------------------------------------
+  // SPA.23 — the `editor` surface's five BFF read twins + the handoff POST (design/23 §7,
+  // design/22 §2 editor rows; REQ-BFF-1/2/9/11/22). Every twin runs the SAME server-side
+  // composition the document performs (REQ-BFF-2) — `docJson` is the only omission (the leaf
+  // derives it via `markdownToDoc`, F5) — and URL-echo fields (`?noted`/`?restored`/`?hc`/
+  // `?rename`/`?created`/`?derror`/`?layout`/`?commented`) stay leaf-owned. The server-owned keys
+  // (`?restore`, `?focus`) ride the twin's query so React Query keys them correctly.
+  // -------------------------------------------------------------------------------------------------------------------
+
+  // `GET /bff/p/:slug` — the project-overview aggregate: the shared composition verbatim + the
+  // `ide` chrome bag (timeline/feed/status slices included via `overviewIdeOpts`).
+  app.get("/bff/p/:slug", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const comp = await projectOverviewComposition(c, session, row);
+    const ctx = await ideContext(c, session, { ...row, slug }, overviewIdeOpts(slug, comp, row));
+    const { projectVoice, pageLoad } = comp;
+    const phone = isPhoneRequest(c);
+    return c.json({
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        headDraftId: row.headDraftId,
+        headDraftN: row.headDraftN ?? null,
+      },
+      gates: comp.gates,
+      decisions: comp.decisions,
+      approvalOverrides: comp.approvalOverrides,
+      ...(comp.approvalSettings ? { approvalSettings: comp.approvalSettings } : {}),
+      explainersDismissed: comp.explainersDismissed,
+      ...(projectVoice ? { projectVoice } : {}),
+      ...(pageLoad
+        ? {
+            page: {
+              slug,
+              projectId: row.id,
+              doc: pageLoad.doc,
+              ...(phone || row.showcase ? { readOnly: true } : {}),
+              ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
+            },
+          }
+        : {}),
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+
+  // REQ-BFF-22 — the handoff POST (the `?focus=1` suppression + the unread-run_finished consume live
+  // inside `projectHandoffHandler`, verbatim with the document's redirect arm).
+  app.post("/bff/p/:slug/handoff", projectHandoffHandler(deps));
+
+  // `GET /bff/p/:slug/v/:v` — the version Page. The `working`-miss arm answers
+  // `{ok:true, redirect:"/p/:slug"}` (the document's 302 verbatim; REQ-BFF-8).
+  app.get("/bff/p/:slug/v/:v", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const v = c.req.param("v") ?? "working";
+    const vcomp = await versionPageComposition(c, session, row, v);
+    if (vcomp.kind === "redirect") return c.json({ ok: true, redirect: `/p/${slug}` });
+    if (vcomp.kind === "notFound") return c.json({ error: "not_found" }, 404);
+    const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
+    const { doc } = pageLoad;
+    const phone = isPhoneRequest(c);
+    const ctx = await ideContext(c, session, row, {
+      status: {
+        version: `v${doc.draftN}`,
+        ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+        ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+        ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
+      },
+    });
+    return c.json({
+      page: {
+        slug,
+        projectId: row.id,
+        doc,
+        ...(phone || row.showcase ? { readOnly: true } : {}),
+        ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
+        ...(railData && !phone
+          ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview) }
+          : {}),
+      },
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+
+  // `GET /bff/p/:slug/v/:n/diff/:m` — the §5.8 generalized compare (`?layout`/`?commented` are
+  // leaf-owned echoes; `m` may be `working`).
+  app.get("/bff/p/:slug/v/:n/diff/:m", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const n = c.req.param("n") ?? "";
+    const m = c.req.param("m") ?? "";
+    const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!data) return c.json({ error: "not_found" }, 404);
+    const ctx = await ideContext(c, session, row);
+    return c.json({
+      compare: { slug, n, m, data },
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+
+  // `GET /bff/p/:slug/a/:artifactId` — the read-only artifact Page (415/404 → the twin's 404).
+  app.get("/bff/p/:slug/a/:artifactId", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const doc = await deps.dataSource
+      .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
+      .catch((e) => {
+        if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
+        throw e;
+      });
+    if (!doc) return c.json({ error: "not_found" }, 404);
+    const ctx = await ideContext(c, session, row, {
+      status: {
+        version: `v${doc.draftN}`,
+        ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+        ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+      },
+    });
+    return c.json({
+      page: { slug, projectId: row.id, doc, readOnly: true },
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+
+  // `GET /bff/p/:slug/revisions/:cid` — the What-changed read (`?commented` is a leaf-owned echo).
+  app.get("/bff/p/:slug/revisions/:cid", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const data = await deps.dataSource.getWhatChanged(session, row.id, c.req.param("cid") ?? "").catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!data) return c.json({ error: "not_found" }, 404);
+    const ctx = await ideContext(c, session, row);
+    return c.json({
+      revision: { slug, data },
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
+
   app.get("/p/:project/revisions/:cid", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -5936,18 +6214,25 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const cid = c.req.param("cid");
     const hunkId = c.req.param("hunkId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const form = await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
     if (text !== "") {
       await deps.dataSource.commentOnHunk(session, row.id, cid, hunkId, text).catch(() => undefined);
     }
-    return c.redirect(`/p/${slug}/revisions/${cid}?commented=${encodeURIComponent(hunkId)}`);
+    const href = `/p/${slug}/revisions/${cid}?commented=${encodeURIComponent(hunkId)}`;
+    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
+    // (mutationOutcome owns the wantsJson fork).
+    return mutationOutcome(c, { redirect: href });
   });
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -5990,40 +6275,17 @@ export function createWebApp(deps: WebDeps): Hono {
       if (spaDoc) return spaDoc;
     }
     const v = c.req.param("v") ?? "working";
-    const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
+    const vcomp = await versionPageComposition(c, session, row, v);
     // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
     // the lazy-fork source); a 404 here now means the project has no drafts at all — send the reader
     // back to the project page (the empty-state cards / import affordance live there) instead of
     // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404.
-    if (!resolved) {
-      if (v === "working") return c.redirect(`/p/${slug}`);
-      return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    }
-    const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!pageLoad) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (vcomp.kind === "redirect") return c.redirect(`/p/${slug}`);
+    if (vcomp.kind === "notFound") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
     const { doc } = pageLoad;
 
-    // P1.08 — the §5.8 version rail over the Page (REQ-IDE-32): the chips read, the restore-point
-    // dropdown for THIS draft's live doc, the `?restore=<id>` preview card, and the `?restored=<n>`
-    // undoable-apply notice. Each read is best-effort — a missing piece hides its affordance.
-    const railData = await Promise.resolve()
-      .then(() => deps.dataSource.getVersions(session, row.id))
-      .catch(() => null);
-    const restorePoints = await Promise.resolve()
-      .then(() => deps.dataSource.listRestorePoints?.(session, row.id, resolved.draftId))
-      .catch(() => undefined);
-    const restorePick = c.req.query("restore") ?? null;
-    const restorePreview = restorePick
-      ? ((await Promise.resolve()
-          .then(() => deps.dataSource.previewRestorePoint?.(session, row.id, resolved.draftId, restorePick))
-          .catch(() => undefined)) ?? null)
-      : null;
+    // P1.08 — the `?restored=<n>` undoable-apply notice is a display echo (never payload).
     const restoredQ = c.req.query("restored");
     const restoredN = restoredQ != null ? Number(restoredQ) : null;
     // P1.19 — §10.1: below ~768px the Page is reader-only (the ✗ column bans editing; the rail's
@@ -6065,26 +6327,7 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
           ...(railData && !phone
-            ? {
-                rail: {
-                  data: railData,
-                  currentN: doc.draftN,
-                  points: restorePoints?.points ?? [],
-                  ...(restorePreview?.ok === true
-                    ? {
-                        preview: {
-                          // the preview's point re-uses the LISTED row when present (it carries
-                          // `group`/`advanced` — the bare point read doesn't).
-                          point:
-                            restorePoints?.points.find((p) => p.id === restorePreview.point.id) ??
-                            { ...restorePreview.point, group: "named" as const, advanced: false },
-                          view: restorePreview.view,
-                        },
-                      }
-                    : {}),
-                  ...(restoredN != null && Number.isFinite(restoredN) ? { restoredN } : {}),
-                },
-              }
+            ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview, restoredN) }
             : {}),
         },
         dwellSurface: "page",
@@ -6097,23 +6340,34 @@ export function createWebApp(deps: WebDeps): Hono {
   // saveManualRevision (frozen ⇒ fork; agent/imported head ⇒ 409 → the page re-renders unchanged).
   app.post("/p/:project/v/:v/restore/:rp", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const v = c.req.param("v") ?? "working";
     const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch(() => null);
-    if (!resolved) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!resolved) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const applied = await Promise.resolve()
       .then(() => deps.dataSource.applyRestorePoint?.(session, row.id, resolved.draftId, c.req.param("rp") ?? ""))
       .catch(() => undefined);
     // A 409/404/503 (locked, unknown, unavailable) re-renders the page without the notice — the
     // preview card simply re-appears; a success redirects with `?restored=<n>` on the new head.
-    return c.redirect(
+    const href =
       applied?.ok === true
         ? `/p/${slug}/v/${applied.draftN}?restored=${applied.draftN}`
-        : `/p/${slug}/v/${v}`,
-    );
+        : `/p/${slug}/v/${v}`;
+    // SPA.23 — a JSON caller gets the mutation envelope (the applied DTO on success, null on the
+    // miss) with the same landing href; the form post keeps the redirect (mutationOutcome owns the
+    // wantsJson fork).
+    return mutationOutcome(c, { data: applied?.ok === true ? applied : null, redirect: href });
   });
 
   // P1.08 — the §5.8 generalized compare (REQ-IDE-33): `/v/:n/diff/:m` over ANY draft pair (`m` may be
@@ -6156,10 +6410,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // anchored server-side on the resolved hunk). Progressive enhancement: plain form POST → redirect.
   app.post("/p/:project/v/:n/diff/:m/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const n = c.req.param("n") ?? "";
     const m = c.req.param("m") ?? "";
     const hunkId = c.req.param("hunkId") ?? "";
@@ -6168,7 +6426,10 @@ export function createWebApp(deps: WebDeps): Hono {
     if (text !== "") {
       await deps.dataSource.commentOnCompareHunk(session, row.id, n, m, hunkId, text).catch(() => undefined);
     }
-    return c.redirect(`/p/${slug}/v/${n}/diff/${m}?commented=${encodeURIComponent(hunkId)}`);
+    const href = `/p/${slug}/v/${n}/diff/${m}?commented=${encodeURIComponent(hunkId)}`;
+    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
+    // (mutationOutcome owns the wantsJson fork).
+    return mutationOutcome(c, { redirect: href });
   });
 
   // P1.02 item 4 — the Page renders ANY markdown artifact, read-only (non-draft kinds have no save
@@ -6292,37 +6553,59 @@ export function createWebApp(deps: WebDeps): Hono {
   // The note field → a Guidance row (REQ-DATA-41's beta form). Progressive enhancement: a plain form POST.
   app.post("/p/:project/edit/:draftId/note", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const form = await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
     if (text !== "") {
       await deps.dataSource.postEditorNote(session, t.row.id, t.draftId, text).catch(() => undefined);
     }
-    return c.redirect(`/p/${t.slug}/edit/${t.draftId}?noted=1`);
+    const href = `/p/${t.slug}/edit/${t.draftId}?noted=1`;
+    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect (the
+    // /edit/:draftId GET still resolves to its /v/:n hop for both — mutationOutcome owns the
+    // wantsJson fork).
+    return mutationOutcome(c, { redirect: href });
   });
 
   // The banner's "Cancel run to edit" release (§6.3). A stale banner (the run already ended) just
   // re-renders — the next doc poll shows the released lock.
   app.post("/p/:project/edit/:draftId/cancel-run", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     await deps.dataSource.cancelEditorRun(session, t.row.id, t.draftId).catch(() => undefined);
-    return c.redirect(`/p/${t.slug}/edit/${t.draftId}`);
+    const href = `/p/${t.slug}/edit/${t.draftId}`;
+    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
+    // (mutationOutcome owns the wantsJson fork).
+    return mutationOutcome(c, { redirect: href });
   });
 
   // "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. Lands on the
   // project page where the new run's card reports progress.
   app.post("/p/:project/edit/:draftId/revise", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     await deps.dataSource.reviseWithEdits(session, t.row.id, t.draftId).catch(() => undefined);
-    return c.redirect(`/p/${t.slug}`);
+    const href = `/p/${t.slug}`;
+    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
+    // (mutationOutcome owns the wantsJson fork).
+    return mutationOutcome(c, { redirect: href });
   });
 
   // -------------------------------------------------------------------------------------------------------------------
