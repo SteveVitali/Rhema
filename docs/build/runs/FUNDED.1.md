@@ -20,15 +20,16 @@
 - **Deployed SHA:** `ffbb8ad01b4383ab7f11088c8427b668bc442b01` on api+web `/healthz`
   (`--expect-sha ffbb8ad` — the documented non-repo-sha divergence stands per VERIF.1).
 - **Started:** 2026-10-16T19:05Z · **Closed:** 2026-10-16T20:11:15Z
-- **PR:** #187 (head `cf49f61` = expansion `69f2ea7` + evidence `ebd415a` + closeout
-  `cf49f61`; base `stevevitali/verif-2-preview-legs` — unmerged, mergePolicy=OPERATOR)
-- **ci:** pending #187@`cf49f61` — `ci-boundary --pr 187 --stack` first read at 20:10:56Z
-  on the pre-closeout head `ebd415a` (run 38954920351): `typecheck / lint / unit` 39m28s
-  + `contracts` + `public-safe` + `integration` **pass**; `images (build + scan, pin
-  digests)` in-flight at the 2700 s budget cut (recurring slow-job class). The docs-only
-  closeout push re-queued CI on `cf49f61` as run 38960605771 at 20:12:56Z — fresh
-  boundary-read owed by the orchestrator (same pattern as COST.1/VERIF.2). Stack
-  #186–#172 all pass. Record `logs/ci-FUNDED.1.json`.
+- **PR:** #187 (head `1802106` = expansion `69f2ea7` + evidence `ebd415a` + closeout;
+  base `stevevitali/verif-2-preview-legs` — unmerged, mergePolicy=OPERATOR; the first
+  closeout `cf49f61` was head-stamp-corrected via amend → `1802106`, disclosed)
+- **ci:** pending #187@`1802106` — head run 38960786355 queued 20:14:24Z; orchestrator
+  boundary-read owed (same pending-at-closeout class as COST.1/VERIF.2). Prior reads:
+  `ci-boundary --pr 187 --stack` at 20:10:56Z on the pre-closeout head `ebd415a`
+  (run 38954920351) — `typecheck / lint / unit` 39m28s + `contracts` + `public-safe`
+  + `integration` **pass**; `images (build + scan, pin digests)` in-flight at the
+  2700 s cut, then the run was superseded by the closeout push. Stack #186–#172 all
+  pass. Record `logs/ci-FUNDED.1.json`.
 - **provided:** system-DSN password **yes** (Secret Manager `rhema-prod-alloydb-password`, never
   logged/committed) · session cookie **n/a** (never minted — no dispatch) · `RHEMA_OPERATOR_ID`
   **n/a** (no house-grant executed — see §Outcome)
@@ -139,7 +140,7 @@ $0 metered this window; no production mutation of any kind.**
 - **Verification counts:** turbo 135/135 · vitest 5,814 pass / 4 skip / **0 fail** · six
   `check:*` gates green. No flakes observed.
 - **DEFERRALS written:** D-CAP.2-1 status cell — dated exhaustion note appended (no flips).
-- **PR:** #187 at head `cf49f61` — `ci: pending #187@cf49f61` (run 38960605771 queued
-  20:12:56Z on the closeout head; pre-closeout run 38954920351 on `ebd415a` read 4/5
-  pass — unit/lint + contracts + public-safe + integration — with `images` in-flight;
-  stack #186–#172 pass; `logs/ci-FUNDED.1.json`).
+- **PR:** #187 at head `1802106` — `ci: pending #187@1802106` (head run 38960786355
+  queued 20:14:24Z; pre-closeout run 38954920351 on `ebd415a` read 4/5 pass — unit/
+  lint + contracts + public-safe + integration — `images` superseded in-flight by the
+  closeout push; stack #186–#172 pass; `logs/ci-FUNDED.1.json`).

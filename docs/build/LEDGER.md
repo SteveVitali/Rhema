@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      R5CAP.1            # manifest row 168 — round-5 capstone gap analysis (the funded wave's exhaustion finding is its standing input)
-lastCompleted:   FUNDED.1           # 2026-10-16 (row 167); PR #187 @ cf49f61 — funded window attempted: envelope exhausted at bind ($80.86 ≥ ~$60), $0 spent, wave owed; ci pending at closeout, unmerged (OPERATOR)
+lastCompleted:   FUNDED.1           # 2026-10-16 (row 167); PR #187 @ 1802106 — funded window attempted: envelope exhausted at bind ($80.86 ≥ ~$60), $0 spent, wave owed; ci pending at closeout, unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,7 +34,7 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/funded-1-funded-window-wave # FUNDED.1 head @ cf49f61 — expansion 69f2ea7 + evidence ebd415a + closeout cf49f61, PR #187
+chainTip:        stevevitali/funded-1-funded-window-wave # FUNDED.1 head @ 1802106 — expansion 69f2ea7 + evidence ebd415a + closeout 1802106, PR #187
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
