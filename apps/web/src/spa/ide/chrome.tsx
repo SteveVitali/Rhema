@@ -4,11 +4,9 @@
 // island's non-document logic) and `useIdeFeed` (the §5.5 SSE tail bound to Query). Surface
 // leaves publish their prop bag through `useIdeChromeData` — the seam the SSR `ideContext`
 // assembled — and `IdeProjectLayout` mounts the chrome iff the current leaf is IDE-framed AND
-// its surface verdict is "spa" (the boot map already AND-gated `ide-chrome`, so a stale or
-// unflagged leaf stays on the SSR twin — the AND-gate holds here too).
-//
-// Dark-by-default: nothing here renders unless the leaf flipped; `SsrHandoff` still owns the
-// unflipped case.
+// its boot-map verdict is "spa" (SPA.28: the map is static truth now — "ssr" survives only for
+// phone `pageMount` and server-owned routes, whose leaves take `SsrHandoff` and never reach
+// this layout unframed).
 
 import { useMemo, useRef, type ReactNode } from "react";
 import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
@@ -26,9 +24,9 @@ const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
 
 /**
  * The `p.$project` layout component. Mounts `<IdeChrome>` when the matched leaf is IDE-framed
- * and flipped; a bare `<Outlet>` otherwise (unflipped ⇒ the leaf's `SsrHandoff`; unframed ⇒
- * the surface never had a shell). The provider wraps both branches — a leaf publishing into an
- * unframed shell is a no-op.
+ * and boot-map "spa"; a bare `<Outlet>` otherwise (a "ssr"-verdict leaf takes `SsrHandoff`;
+ * an unframed leaf renders without the chrome). The provider wraps both branches — a leaf
+ * publishing into an unframed shell is a no-op.
  */
 export function IdeProjectLayout({ project }: { project: string }): ReactNode {
   const pathname = useLocation({ select: (l) => l.pathname });

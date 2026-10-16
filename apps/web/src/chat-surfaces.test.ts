@@ -13,6 +13,9 @@ const ROW: ProjectRow = {
   id: "proj_1",
   slug: "demo",
   title: "Demo",
+  // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
+  // the `` escape is gone). The chat-panel render pins below hit THAT arm.
+  showcase: true,
   state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "revise", label: "Revise" } },
 };
 
@@ -74,12 +77,12 @@ const json = (body: unknown) => ({
 });
 
 describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
-  // SPA.27 — the default desktop document is the shell now (the chat pane mounts in the leaf);
-  // the chat panel's SSR survives ONLY on the Page family's forced-SSR arm (`?ssr=1` / phone /
-  // showcase — REQ-ED-12/REQ-VFY-5), so these pins drive the explicit escape.
+  // SPA.28 — the default desktop document is the shell now (the chat pane mounts in the leaf);
+  // the chat panel's SSR survives ONLY on the Page family's forced-SSR arm — phone/showcase
+  // (REQ-ED-12/REQ-VFY-5), which ROW's `showcase: true` forces here. `?ssr=1` is inert text.
   it("the forced-SSR arm still mounts the chat pane — composer, tier notches, empty-state chips", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/demo?ssr=1");
+    const res = await app.request("/p/demo");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-desk-panel="chat"');
@@ -92,7 +95,7 @@ describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
 
   it("degrades to the tab placeholder when the chat read is absent", async () => {
     const app = createWebApp(makeDeps({ getChat: undefined }));
-    const res = await app.request("/p/demo?ssr=1");
+    const res = await app.request("/p/demo");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).not.toContain("data-chat-composer");

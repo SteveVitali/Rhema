@@ -150,6 +150,9 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_1",
     slug: "the-essay",
     title: "The Essay",
+    // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
+    // the `` escape is gone). The voice-notice render asserts below pin THAT arm.
+    showcase: true,
     state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "review", label: "Review" } },
     voice: { personaId: "per_ada", name: "Ada", status: STATUS("seed_changed", "Description changed", "update_voice", "attention") },
   },
@@ -337,7 +340,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
     const app = createWebApp(makeDeps());
     // SPA.27 — the desktop document is the shell; the picker render survives on the Page family's
     // forced-SSR arm.
-    const res = await app.request("/p/the-essay?ssr=1");
+    const res = await app.request("/p/the-essay");
     const html = await res.text();
     expect(html).toContain('name="personaId"');
     expect(html).toContain("Ada");
@@ -401,7 +404,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
         }),
       } as Partial<DataSource>),
     );
-    const res = await app.request("/p/the-essay?ssr=1");
+    const res = await app.request("/p/the-essay");
     const html = await res.text();
     expect(html).toContain('data-pinned-stale="true"');
     expect(html).toContain("Adopt the refreshed profile");
@@ -411,7 +414,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
 
   it("GET /p/:slug?voice_locked=1 — the soft lock names the two hatches", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-essay?voice_locked=1&ssr=1");
+    const res = await app.request("/p/the-essay?voice_locked=1");
     const html = await res.text();
     expect(html).toContain('data-voice-locked="true"');
     expect(html).toContain("adopt the refreshed profile or fork");

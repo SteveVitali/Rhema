@@ -1,8 +1,12 @@
-// SPA.4 — the shared route states. `SsrHandoff` is the strangler's exit (REQ-FW-3/4, design/25
-// §strangler): an unflipped leaf document-navigates to its own URL so the server re-decides the
-// renderer — the settle probes see at most one boundary cross. `PendingShell`/`SpaRouteError`/
-// `SpaNotFound` are the skeleton/error/404 halves (REQ-NAV-10, REQ-UX-6): a pending route renders
-// skeleton rows, never blank; every user-facing string resolves to a `COPY` leaf (REQ-UX-12).
+// SPA.4 — the shared route states. `SsrHandoff` is the client→server document handoff
+// (REQ-FW-3/4, design/25 §strangler): a leaf whose boot-map verdict is "ssr" document-navigates
+// to its own URL so the server re-decides the document — the settle probes see at most one
+// boundary cross. SPA.28 re-scopes it: the flag-driven "unflipped surface" case is gone (every
+// surface is SPA-only); what remains is the STRUCTURAL cases — a phone client's nav into a
+// `pageMount` route (REQ-ED-12's forced-SSR Page) and the server-owned `surfaces:null` routes.
+// `PendingShell`/`SpaRouteError`/`SpaNotFound` are the skeleton/error/404 halves (REQ-NAV-10,
+// REQ-UX-6): a pending route renders skeleton rows, never blank; every user-facing string
+// resolves to a `COPY` leaf (REQ-UX-12).
 
 import { useEffect, type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
@@ -19,10 +23,11 @@ function routeHeading(pathname: string): string {
 }
 
 /**
- * The strangler boundary: document-navigation to THIS url so the server re-runs the fixed handler
- * order (session gate → server redirects → renderer consult) — landing on the SSR twin, a 302, or
- * (on a stale/malformed boot map) the shell again, which hands straight back. Rendered while the
- * navigation resolves so the paint is a skeleton, never blank.
+ * The server-document handoff: document-navigation to THIS url so the server re-runs its fixed
+ * handler order (session gate → server redirects → the Page family's forced-SSR check) — landing
+ * on the forced-SSR Page, a server-owned 302, or (on a stale/malformed boot map) the shell again,
+ * which hands straight back. Rendered while the navigation resolves so the paint is a skeleton,
+ * never blank.
  */
 export function SsrHandoff(): ReactNode {
   const href = useLocation({ select: (l) => l.href });
@@ -50,9 +55,9 @@ export function PendingShell(): ReactNode {
 }
 
 /**
- * The leaf's strangler branch: a flagged surface renders its (SPA.4) stub — real content lands with
- * the surface's owner ticket — and an unflipped one hands off to the server. The verdict comes from
- * the boot map the server consulted, so the client can never disagree about the effective flag set.
+ * The leaf's boot-map branch: an SPA-verdict route renders its surface and a "ssr"-verdict route
+ * (phone `pageMount`, server-owned) hands off to the server. The verdict comes from the boot map
+ * the server stamped, so the client can never disagree about which document owns the route.
  */
 export function SurfaceBoundary({ routeId }: { routeId: string }): ReactNode {
   if (!isSpaEnabled(getSpaBoot(), routeId)) return <SsrHandoff />;
@@ -62,8 +67,7 @@ export function SurfaceBoundary({ routeId }: { routeId: string }): ReactNode {
 /**
  * The skeleton leaf's `component` — a named factory so every leaf file keeps a literal
  * `component:` property the autoCodeSplitting plugin can hoist into the leaf's own chunk
- * (REQ-TL-9: no eager import of a surface outside its own chunk — SPA.4 leaves carry no surface
- * code at all; the real component lands with the surface's owner ticket).
+ * (REQ-TL-9: no eager import of a surface outside its own chunk).
  */
 export function surfaceComponent(routeId: string): () => ReactNode {
   return function SurfaceLeaf() {

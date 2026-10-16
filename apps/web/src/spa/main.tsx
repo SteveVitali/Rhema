@@ -4,8 +4,9 @@
 // 401 leg (`invalidate session → document-nav /login`), and mounts under StrictMode (the
 // double-mount contract — every effect here is idempotent).
 //
-// Flag-∅ posture: nothing in this module renders a surface; an unflipped route's leaf renders
-// `SsrHandoff` and hands the document straight back to the server.
+// SPA.28 — every SPA-space route is the client's to render; the only leaves that still hand the
+// document back are the structural "ssr" verdicts (phone `pageMount` — REQ-ED-12 — and the
+// server-owned `surfaces:null` routes), which take `SsrHandoff`'s document nav by design.
 
 import { StrictMode } from "react";
 import { createRouter, RouterProvider } from "@tanstack/react-router";

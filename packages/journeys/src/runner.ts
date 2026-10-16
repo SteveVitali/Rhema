@@ -14,7 +14,6 @@ import { JourneySessions, stableIdentity, freshIdentity, assertTestIdentity } fr
 import { marker } from "./nonce.js";
 import { spaRouteFor, type SpaSurface } from "@rhema/contracts";
 import {
-  RENDERER_HEADER,
   gatedRouteIds,
   onOurOrigin,
   rendererOfDocument,
@@ -56,13 +55,11 @@ export interface StepCtx {
    * every settled document.
    */
   readonly rendererScope: ReadonlySet<string> | null;
-  /**
-   * SPA.6 (REQ-SEQ-4) — the extra HTTP headers every runner-created context carries (the
-   * `x-rhema-renderer` pin on leg A, empty on leg B). Steps that roll their own context
-   * (R4's real-phone context) MUST spread this into `newContext({ extraHTTPHeaders })`.
-   */
-  readonly extraHTTPHeaders: Readonly<Record<string, string>>;
 }
+
+// SPA.28 — `extraHTTPHeaders`/`pinRenderer` retired (REQ-SEQ-4's removal leg): the
+// `x-rhema-renderer` channel is deleted, so no runner-created context carries renderer
+// headers any more. Steps that roll their own context no longer spread anything.
 
 export type StepFn = (ctx: StepCtx) => Promise<void>;
 
@@ -93,8 +90,8 @@ export interface JourneyReport {
   provenance: { expected?: string | undefined; observed: Record<string, string | null>; match: boolean };
   /** the spend-guard outcome for paid runs (nightly runs carry zeros) */
   spend: { weeklyMeteredUsd: number | null; capUsd: number; withinCap: boolean };
-  /** SPA.6 — the renderer leg contract the run was invoked with (nulls when un-pinned). */
-  renderer: { expect: RendererName | null; pin: RendererName | null };
+  /** SPA.6 — the renderer assert the run was invoked with (null when un-pinned). */
+  renderer: { expect: RendererName | null };
   results: StepResult[];
   /** every green step passed? (the process exit code) */
   passed: boolean;
@@ -121,8 +118,6 @@ export interface RunnerDeps {
    * under those surfaces' `SPA_DOCUMENT_ROUTES` route ids; unset ⇒ the every-document assert.
    */
   readonly rendererScope?: readonly SpaSurface[];
-  /** REQ-SEQ-4 — the `x-rhema-renderer` pin on every context (the leg-A `ssr` pin). */
-  readonly pinRenderer?: RendererName;
   /**
    * MAINT.6 (D-OPS.1-1) — the seeded invite code every fresh session mint submits on the /signup
    * form (`--invite-code` / `RHEMA_INVITE_CODE`). Unset ⇒ mints run the un-seeded path verbatim.
@@ -132,12 +127,6 @@ export interface RunnerDeps {
 
 export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
   await mkdir(deps.outDir, { recursive: true });
-  // the per-request renderer override (REQ-SEQ-4): leg A pins x-rhema-renderer on EVERY context —
-  // anon pages, cached mints, and fresh mints alike (a pinned session context that skipped it
-  // would silently run the wrong leg).
-  const contextHeaders: Readonly<Record<string, string>> = deps.pinRenderer
-    ? { [RENDERER_HEADER]: deps.pinRenderer }
-    : {};
   // SPA.17 — a --surface leg's gated route ids; null ⇒ the every-document renderer assert.
   const gatedRoutes = gatedRouteIds(deps.rendererScope);
   // Session pages are wired from INSIDE JourneySessions (onPage fires before the mint's first
@@ -149,7 +138,6 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     mailbox: deps.mailbox,
     webBaseUrl: deps.webBaseUrl,
     stateDir: deps.stateDir,
-    extraHTTPHeaders: contextHeaders,
     onPage: (page) => wireCurrent?.(page),
     ...(deps.inviteCode ? { inviteCode: deps.inviteCode } : {}),
   });
@@ -261,12 +249,10 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       outDir: deps.outDir,
       expectRenderer: deps.expectRenderer ?? null,
       rendererScope: gatedRoutes,
-      extraHTTPHeaders: contextHeaders,
       marker: (name) => marker(deps.nonce, name),
       async anon() {
         const context = await deps.browser.newContext({
           baseURL: deps.webBaseUrl,
-          ...(Object.keys(contextHeaders).length > 0 ? { extraHTTPHeaders: contextHeaders } : {}),
         });
         const page = await context.newPage();
         wirePage(page);
@@ -337,7 +323,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     apiBaseUrl: deps.apiBaseUrl,
     provenance: deps.provenance,
     spend: deps.spend,
-    renderer: { expect: deps.expectRenderer ?? null, pin: deps.pinRenderer ?? null },
+    renderer: { expect: deps.expectRenderer ?? null },
     results,
     passed,
   };

@@ -21,7 +21,8 @@ import type { DataSource } from "./data.js";
 //
 // SPA.26 (REQ-TL-13/REQ-TST-8) — the parity contract retargets to the two asset pipelines:
 //   • the esbuild islands — CLIENT_ENTRIES is now the SURVIVING SSR set (`landing` public; `page` +
-//     `ide` mounted forever by the REQ-ED-12 phone/showcase branch + the `?ssr=1` fallback — ADR-107);
+//     `ide` mounted forever by the REQ-ED-12 phone/showcase branch — ADR-107; SPA.28 removed the
+//     `?ssr=1` fallback);
 //     the retired islands (`outline` here, `editor` at SPA.24) must be absent from entries, from every
 //     emitted reference, and from the asset routes.
 //   • the Vite SPA bundle — every manifest artifact (`file`/`imports`/`css`) answers its
@@ -110,7 +111,6 @@ function spaDeps(spaAssetRoot: string): Parameters<typeof createWebApp>[0] {
       getTheme: async () => ({ appTheme: "light" as const }),
     },
     session: () => SPA_SESSION,
-    spa: () => true,
     spaAssetRoot,
   };
 }

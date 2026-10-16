@@ -85,10 +85,9 @@ const opsAlertWebhookUrl = rhemaConfig.getSecret("opsAlertWebhookUrl");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
-// SPA.2 — the per-flip preview flag path (REQ-SEQ-3): a `rhema:spaSurfaces` CSV set via
-// `preview-stack.mjs config` overrides the stage fact for THIS stack only (never committed —
-// the git-visible `StageConfig.spaSurfaces` stays the source of truth for dev/prod flips).
-const spaSurfaces = rhemaConfig.get("spaSurfaces");
+// SPA.28 — the `rhema:spaSurfaces` preview flag path is retired with the machinery it fed
+// (REQ-SEQ-4's removal leg): no stage-fact or stack-config value can change a document's
+// renderer any more — the shell serves every authenticated SPA-space GET unconditionally.
 // SPA.13 (REQ-BFF-16) — extra app origins the user-content bucket's CORS block admits for the
 // browser's presign→direct-PUT upload leg. A CSV of https origins set via the same
 // `preview-stack.mjs config` path — non-prod app origins are deploy-generated hosts, so they ride
@@ -352,7 +351,6 @@ const compute = createCompute({
   ...(runTaskAppArmorLocalhostProfile ? { runTaskAppArmorLocalhostProfile } : {}),
   ...(internalApiUrl ? { internalApiUrl } : {}),
   ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
-  ...(spaSurfaces ? { spaSurfaces } : {}),
   // MAINT.6 — mount the resend secret NAME on the worker ONLY when the real key was seeded
   // (the placeholder version is never mounted: the env stays absent and mail.send no-ops exactly
   // as an unkeyed preview does today).

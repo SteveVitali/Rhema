@@ -1174,10 +1174,6 @@ const R4: StepFn = async (ctx) => {
   const phone = await ctx.browser.newContext({
     baseURL: ctx.webBaseUrl,
     storageState: await context.storageState(),
-    // SPA.6 — a step-rolled context keeps the run's renderer pin (REQ-SEQ-4).
-    ...(Object.keys(ctx.extraHTTPHeaders).length > 0
-      ? { extraHTTPHeaders: ctx.extraHTTPHeaders }
-      : {}),
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     viewport: { width: 390, height: 844 },
@@ -1576,11 +1572,11 @@ const assertTargetSize = async (page: Page, sel: string, minPx: number, label: s
 };
 
 /** The signed-in phone prologue the P1 legs share — the returning-user context carrying the mobile
- *  UA hint. `setExtraHTTPHeaders` REPLACES the context's header map, so the run's renderer pin is
- *  merged back in explicitly (REQ-SEQ-4 — a leg-A pin dropped here would silently flip the leg). */
+ *  UA hint (`setExtraHTTPHeaders` REPLACES the context's header map — the mobile UA merge is the
+ *  only header the leg needs; SPA.28 removed the renderer pin this used to merge back in). */
 async function p1PhoneProject(ctx: StepCtx): Promise<{ page: Page; slug: string }> {
   const { context, page } = await ctx.returningUser("a");
-  await context.setExtraHTTPHeaders({ ...ctx.extraHTTPHeaders, ...MOBILE_HEADERS });
+  await context.setExtraHTTPHeaders({ ...MOBILE_HEADERS });
   await page.setViewportSize(PHONE_VIEWPORT);
   await gotoOk(page, `${ctx.webBaseUrl}/app`, ctx);
   await followProjectLink(page, ctx);
@@ -1929,7 +1925,7 @@ const P1_FIGURES: StepFn = async (ctx) => {
  *  preview leg (the Resend secret blocker — D-SPA.21-1). */
 const P1_DOSSIER: StepFn = async (ctx) => {
     const { context, page } = await ctx.returningUser("a");
-    await context.setExtraHTTPHeaders({ ...ctx.extraHTTPHeaders, ...MOBILE_HEADERS });
+    await context.setExtraHTTPHeaders({ ...MOBILE_HEADERS });
     await page.setViewportSize(PHONE_VIEWPORT);
 
     // The workspace Showcase resolves to its dossier (or the /showcase dossier surface — both
@@ -2496,9 +2492,11 @@ An appendix lists the figures; the body argues the method.
  *  affordance swaps to the CodeMirror projection seeded with the canonical markdown; typed text
  *  commits through the SAME ProseMirror doc (the hidden `[data-page-view]` re-renders it — a
  *  divergence between the views is exactly the defect this leg fences) and survives the toggle
- *  back. `expected: "red"`: the leg only exists on the SPA renderer (flag-on / `--pin-renderer
- *  spa`), so until the editor-flag preview run lands (the Resend secret blocker, D-SPA.25-1) it
- *  reports owed on SSR-pinned stages — the dom tests carry the offline assert meanwhile. */
+ *  back. `expected: "red"`: the leg only exists on the SPA renderer — SPA.28 made that
+ *  unconditional (every authenticated `/p/:p/v/:v` document serves the shell; the
+ *  `--pin-renderer` machinery is gone), so the expected:red is now purely the preview-leg
+ *  blocker (the Resend secret blocker, D-SPA.25-1) — the dom tests carry the offline assert
+ *  meanwhile. */
 const T17: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("t17");
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("t17"), FREE_FIXTURE);

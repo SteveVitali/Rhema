@@ -55,9 +55,10 @@ export function setSpaBoot(next: SpaBoot | null): void {
 }
 
 /**
- * The effective renderer verdict for a routeId — `surfaces[routeId] === "spa"`. A routeId absent
- * from the map (unknown route, missing embed) answers false → SsrHandoff; the flag set can only be
- * shrunk client-side, never grown (REQ-SEQ-2 fail-closed posture).
+ * The effective renderer verdict for a routeId — `surfaces[routeId] === "spa"`. SPA.28: the map
+ * is static truth, so "ssr" now means one of the structural server-document cases (phone
+ * `pageMount`, server-owned redirect, public funnel) — a routeId absent from the map (unknown
+ * route, missing embed) still answers false → SsrHandoff, the fail-closed posture.
  */
 export function isSpaEnabled(bootMap: SpaBoot | null, routeId: string | null): boolean {
   return routeId != null && bootMap?.surfaces[routeId] === "spa";

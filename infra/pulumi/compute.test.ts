@@ -152,7 +152,7 @@ describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052
   });
 });
 
-describe("SPA.2 — the strangler flag is deploy config on the web (REQ-SEQ-3)", () => {
+describe("SPA.28 — the strangler deploy config is RETIRED (REQ-SEQ-4's removal leg)", () => {
   const INDEX_SRC = readFileSync(fileURLToPath(new URL("./index.ts", import.meta.url)), "utf8");
 
   /** The web-only envs block inside the Cloud Run services loop (`...(svc === "web" ? {`). */
@@ -161,23 +161,21 @@ describe("SPA.2 — the strangler flag is deploy config on the web (REQ-SEQ-3)",
     return SRC.slice(start, SRC.indexOf("vpcAccess:", start));
   })();
 
-  it("web env carries SPA_SURFACES — stage fact by default, rhema:spaSurfaces when set", () => {
-    // Inside the web envs block (beside SIGNUP_MODE): the stage fact, overridable per-stack by
-    // the `rhema:spaSurfaces` Pulumi config — the preview per-flip path (`preview-stack.mjs
-    // config`). The web parses it fail-closed; nothing else may emit it.
-    expect(webBlock).not.toBe("");
-    expect(webBlock).toContain("SPA_SURFACES");
-    expect(webBlock).toContain("args.spaSurfaces ?? cfg.spaSurfaces.join");
-    expect(SRC.match(/name: "SPA_SURFACES"/g)).toHaveLength(1); // web only — never api/worker
-    expect(INDEX_SRC).toContain('rhemaConfig.get("spaSurfaces")');
-    expect(INDEX_SRC).toContain("spaSurfaces ? { spaSurfaces }");
+  it("web env emits NEITHER SPA_SURFACES NOR SPA_OVERRIDES — nothing consults them anymore", () => {
+    // Removal-detecting: all 14 flips landed and SPA.27 deleted the SSR documents, so an env
+    // that could no longer change serving behavior is dead machinery — and a re-added emission
+    // would silently be a lie. Pin the absence everywhere (not just the web block) so a stray
+    // re-introduction on api/worker fails too.
+    expect(SRC.match(/name: "SPA_SURFACES"/g) ?? []).toHaveLength(0);
+    expect(SRC.match(/name: "SPA_OVERRIDES"/g) ?? []).toHaveLength(0);
+    // The Pulumi config reader + the preview per-flip path retired with the env they fed —
+    // scan the CODE only (retirement-note comments may name the retired key honestly).
+    const indexCode = INDEX_SRC.split("\n").filter((l) => !l.trimStart().startsWith("//")).join("\n");
+    expect(indexCode).not.toContain("spaSurfaces");
   });
 
-  it("SPA_OVERRIDES=1 rides non-prod kinds only — the IDENTITY_HEADERS precedent (REQ-SEQ-4)", () => {
-    // The force-SPA override forms must be REFUSED on prod: the env is emitted iff
-    // `cfg.kind !== "prod"` and only inside the web block.
-    expect(webBlock).toContain('cfg.kind !== "prod"');
-    expect(webBlock).toContain('name: "SPA_OVERRIDES", value: "1"');
-    expect(SRC.match(/name: "SPA_OVERRIDES"/g)).toHaveLength(1);
+  it("the web block still exists (SIGNUP_MODE & friends ride on) — only the flag envs left", () => {
+    expect(webBlock).not.toBe("");
+    expect(webBlock).toContain("SIGNUP_MODE");
   });
 });

@@ -5,37 +5,31 @@ import { SURFACE_GATES } from "./surface-gates.js";
 import {
   gateEcho,
   gatedStepIds,
-  isProdTarget,
   parseRendererFlag,
   parseSurfaces,
 } from "./cli-flags.js";
 
 // SPA.6 — the leg-contract flag validation (REQ-VFY-7/8/10, REQ-SEQ-4). Removal-catching: every
-// refusal is an asserted error string, not a silent default.
+// refusal is an asserted error string, not a silent default. SPA.28 — `--pin-renderer` +
+// `isProdTarget` retired with `x-rhema-renderer`: the CLI refuses the retired flag in cli.ts
+// outright, so nothing here may parse or prod-gate a pin any more.
 
-describe("parseRendererFlag (--expect-renderer / --pin-renderer)", () => {
+describe("parseRendererFlag (--expect-renderer)", () => {
   it("accepts only ssr|spa; anything else is an error naming the flag", () => {
     expect(parseRendererFlag("ssr", "--expect-renderer")).toEqual({ value: "ssr" });
     expect(parseRendererFlag("spa", "--expect-renderer")).toEqual({ value: "spa" });
     expect(parseRendererFlag(undefined, "--expect-renderer")).toEqual({});
     for (const bad of ["SSR", "both", "", "server", "1"]) {
-      const r = parseRendererFlag(bad, "--pin-renderer");
-      expect(r.error, bad).toContain("--pin-renderer must be ssr|spa");
+      const r = parseRendererFlag(bad, "--expect-renderer");
+      expect(r.error, bad).toContain("--expect-renderer must be ssr|spa");
     }
   });
 });
 
-describe("isProdTarget (the force-SPA refusal)", () => {
-  it("is true for --stage prod and any *.rhema.tools host", () => {
-    expect(isProdTarget("prod", "https://rhema.tools")).toBe(true);
-    expect(isProdTarget(undefined, "https://rhema.tools")).toBe(true);
-    expect(isProdTarget(undefined, "https://www.rhema.tools")).toBe(true);
-  });
-  it("is false for previews, dev, and localhost", () => {
-    expect(isProdTarget("pr-123", "https://pr-123.rhema.example.dev")).toBe(false);
-    expect(isProdTarget("dev", "https://dev.example.dev")).toBe(false);
-    expect(isProdTarget(undefined, "http://localhost:3000")).toBe(false);
-    expect(isProdTarget(undefined, "not a url")).toBe(false);
+describe("the retired flag machinery (SPA.28 removal-detecting)", () => {
+  it("isProdTarget is gone from the flag module — nothing gates a pin on prod anymore", async () => {
+    const mod = await import("./cli-flags.js");
+    expect("isProdTarget" in mod).toBe(false);
   });
 });
 

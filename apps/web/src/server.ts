@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { renderDocument } from "./render.js";
-// SPA.27 — the deletion wave leaves exactly eleven SSR elements: the public funnel (invite /
-// landing / pricing / signup / login / showcase ± signed-in), the Page family's forced-SSR
-// documents (project / page / compare / revision — REQ-ED-12, phone & showcase & the `?ssr=1`
-// escape), and the not-found document every POST refusal + the catch-all still render. The other
-// thirty flipped-surface elements are deleted with their render paths — `routes.tsx` keeps their
-// manifest rows at `element: null` so the SPA router owns them.
+// SPA.28 — the deletion wave + override removal leave exactly eleven SSR elements: the public
+// funnel (invite / landing / pricing / signup / login / showcase ± signed-in), the Page family's
+// forced-SSR documents (project / page / compare / revision — REQ-ED-12, phone & showcase only;
+// the `?ssr=1` escape is gone), and the not-found document every POST refusal + the catch-all
+// still render. The other thirty flipped-surface elements are deleted with their render paths —
+// `routes.tsx` keeps their manifest rows at `element: null` so the SPA router owns them.
 import {
   inviteElement,
   landingElement,
@@ -32,8 +32,7 @@ import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectHandoffHandler, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
-import { createSpaConsult, ssrOverrideRequested } from "./spa-flag.js";
-import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument, spaShellResponse } from "./spa-shell.js";
+import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
@@ -46,7 +45,6 @@ import {
   type ModelTier,
   type Rigor,
   type SignupMode,
-  type SpaSurface,
   type WorkflowKey,
   figureIdFromRef,
   STRIPE_HOSTED_ORIGINS,
@@ -130,28 +128,11 @@ export interface WebDeps {
    * permits a no-code signup. Unset ⇒ `invite` — the flag fails closed.
    */
   readonly signupMode?: SignupMode;
-  /**
-   * SPA.2 — the strangler surface-flag set (REQ-SEQ-1; spec §11): env `SPA_SURFACES` parsed
-   * through `parseSpaSurfaces` (fail-closed — unset/invalid ⇒ ∅, every auth'd document GET
-   * stays SSR). Consumed ONLY by `deps.spa`; no route flips until its surface ticket lands.
-   */
-  readonly spaSurfaces?: ReadonlySet<SpaSurface>;
-  /**
-   * SPA.2 — whether the force-SPA renderer overrides (`?renderer=spa`, `x-rhema-renderer: spa`)
-   * are honored on this stage (env `SPA_OVERRIDES=1`; deployed iff the stage kind is non-prod —
-   * REQ-SEQ-4). The force-SSR forms (`?ssr=1`, `x-rhema-renderer: ssr`) are honored on every
-   * stage regardless of this flag.
-   */
-  readonly spaOverrides?: boolean;
-  /**
-   * SPA.2 — the per-request flag consult, `deps.spa(c, surface)`, applied inside spec §4's
-   * fixed handler order AFTER the handler's session gate, server-owned redirects, and
-   * forced-SSR capability checks (REQ-BND-11/REQ-SEQ-4). The consult re-checks the session
-   * itself (overrides never bypass the gate), then the renderer overrides, then flag
-   * membership with the `ide-chrome` AND-gate. Default: built from `spaSurfaces`/`spaOverrides`
-   * + the wrapped `session`; injectable for tests like the other seams.
-   */
-  spa?(c: Context, surface: SpaSurface): boolean;
+  // SPA.28 (REQ-SEQ-4's removal leg) — the migration-window machinery is GONE: `spaSurfaces`,
+  // `spaOverrides`, and the `deps.spa` consult are retired. Every auth'd document handler serves
+  // the shell unconditionally after its session gate + server-owned redirects + the Page family's
+  // forced-SSR capability checks (phone/showcase — REQ-ED-12, the only request-path renderer
+  // decision left); `?ssr=1`, `?renderer=spa`, and `x-rhema-renderer` are inert request text now.
   /**
    * SPA.3 — the on-disk dir the Vite SPA build emits into (`apps/web/public/spa`, consumed by the
    * manifest read + `/assets/spa/*`). Injectable so tests point at a fixture dir.
@@ -300,19 +281,6 @@ export function createWebApp(deps: WebDeps): Hono {
   deps = {
     ...deps,
     session: (c: Context) => withRequestId(innerSession(c), c),
-  };
-  // SPA.2 — the strangler flag consult (`deps.spa`, spec §4 order): installed from the deploy
-  // facts (`spaSurfaces`/`spaOverrides`) over the WRAPPED session resolver, so a force-spa
-  // override on a signed-out request still reads false (REQ-SEQ-4's never-bypass clause).
-  deps = {
-    ...deps,
-    spa:
-      deps.spa ??
-      createSpaConsult({
-        surfaces: deps.spaSurfaces,
-        overrides: deps.spaOverrides,
-        session: (c) => deps.session(c),
-      }),
   };
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
 
@@ -1883,7 +1851,7 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     // SPA.27 — sole renderer: the shell (the SSR sheet + its api reads are deleted; the leaf
     // composes the same facts off the /bff twin). A `?ssr=1` request converges here too — this
-    // surface has no SSR document left to serve.
+    // surface has no SSR document left to serve (and SPA.28 reads no override params at all).
     return spaShellDocument(c, deps, session);
   });
 
@@ -3919,14 +3887,11 @@ export function createWebApp(deps: WebDeps): Hono {
         return c.redirect(finishedRow.href);
       }
     }
-    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
-    // REQ-VFY-5): a phone request or a read-only `showcase` row keeps the server-rendered Page
-    // even when `editor` flips — the flag never re-enables a mount the capability refused.
-    // SPA.27 — the read-only Page is the ONE SSR render that survives the deletion wave, so the
-    // force-SSR escape (`?ssr=1` / `x-rhema-renderer: ssr`) folds into the same arm: it still lands
-    // a real server document here (read-only posture), while every other flipped surface's escape
-    // converges on the shell.
-    const forcedSsr = isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c);
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): a phone request or a
+    // read-only `showcase` row keeps the server-rendered Page — the only SSR arm the deletion wave
+    // left standing and the ONLY request-path renderer decision remaining (SPA.28: the `?ssr=1` /
+    // `x-rhema-renderer` escape is gone; those params are inert text here like everywhere else).
+    const forcedSsr = isPhoneRequest(c) || row.showcase === true;
     if (!forcedSsr) {
       return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
     }
@@ -3977,7 +3942,7 @@ export function createWebApp(deps: WebDeps): Hono {
                 docJson: pageLoad.docJson,
                 // P1.19 — §10.1: the overview's Page is reader-only on phone width.
                 // EDIT.1 — the Showcase overview Page is read-only too (§15.4; matches /v/:v).
-                // SPA.27 — the `?ssr=1` escape lands this same read-only arm.
+                // SPA.28 — `forcedSsr` is phone/showcase only now (the `?ssr=1` leg is gone).
                 ...(forcedSsr ? { readOnly: true } : {}),
                 ...(deps.collabWsUrl && !forcedSsr
                   ? { collabWsUrl: deps.collabWsUrl }
@@ -5388,11 +5353,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const cid = c.req.param("cid");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
-    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    // SPA.27 — and so does an explicit `?ssr=1`/`x-rhema-renderer: ssr` escape: it lands on this same
-    // SSR arm (the leaf can't serve it client-side); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
+    // showcase keeps the server-rendered revision document — the only renderer decision left
+    // (SPA.28: the `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true) {
       const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
         if (e instanceof ApiError && e.status === 404) return null;
         throw e;
@@ -5467,11 +5431,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
-    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    // SPA.27 — and so does an explicit `?ssr=1`/`x-rhema-renderer: ssr` escape: it lands on this same
-    // SSR arm (the leaf can't serve it client-side); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
+    // showcase keeps the server-rendered Page — the only renderer decision left (SPA.28: the
+    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true) {
       const v = c.req.param("v") ?? "working";
       const vcomp = await versionPageComposition(c, session, row, v);
       // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
@@ -5579,11 +5542,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
-    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    // SPA.27 — phone / read-only showcase / explicit `?ssr=1` keep the SSR compare; everything
-    // else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
+    // showcase keeps the SSR compare — the only renderer decision left (SPA.28: the `?ssr=1` /
+    // `x-rhema-renderer` escape is gone); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true) {
       const n = c.req.param("n") ?? "";
       const m = c.req.param("m") ?? "";
       const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
@@ -5642,11 +5604,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
-    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    // SPA.27 — phone / read-only showcase / explicit `?ssr=1` keep the SSR artifact Page;
-    // everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
+    // showcase keeps the SSR artifact Page — the only renderer decision left (SPA.28: the
+    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true) {
       const doc = await deps.dataSource
         .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
         .catch((e) => {
@@ -6448,18 +6409,17 @@ export function createWebApp(deps: WebDeps): Hono {
   // SPA.3 (REQ-BND-4/11; design/26 §catch-all) — the catch-all splits on session + SPA space:
   // a GET under an authenticated SPA prefix WITHOUT a session gets the same /login redirect every
   // auth'd route enforces (a signed-out deep link never sees the shell NOR the public 404); WITH a
-  // session the flag consult decides — the surface's flip (or an honored `x-rhema-renderer: spa`)
-  // serves the shell so SPA deep links the server has no explicit route for reach the client
-  // router (it renders its own not-found for the truly unknown). Every other shape — non-GET
-  // verbs, non-SPA paths, flag-off requests — keeps today's SSR 404 byte-for-byte.
+  // session the shell serves unconditionally — SPA.28 removed the flag consult (every SPA-space
+  // surface is SPA-only now), so deep links the server has no explicit route for reach the client
+  // router and it renders its own not-found for the truly unknown. Every other shape — non-GET
+  // verbs, non-SPA paths — keeps today's SSR 404 byte-for-byte.
   app.all("*", async (c) => {
     if (c.req.method === "GET") {
       const { surfaces } = spaRouteFor(c.req.path);
       if (surfaces != null) {
         const session = deps.session(c);
         if (!session) return c.redirect("/login");
-        const spaDoc = await spaShellResponse(c, deps, surfaces, session);
-        if (spaDoc) return spaDoc;
+        return spaShellDocument(c, deps, session);
       }
     }
     return c.html(renderDocument(c.req.path, notFoundElement), 404);

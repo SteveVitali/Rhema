@@ -1,8 +1,9 @@
 // SPA.3 — the SPA shell document (spec §3.1/§4; REQ-BND-4/11/12; design/26 §shell-doc §catch-all;
-// design/25 §route-tree). `renderSpaShell` is the pure template; `spaShellResponse` is the
-// handler-level "serve the shell iff this document's surface consult resolves" seam every
-// flag-eligible authenticated GET calls at spec §4's fixed position — AFTER the session gate,
-// server-owned redirects, and forced-SSR capability checks.
+// design/25 §route-tree). `renderSpaShell` is the pure template; `spaShellDocument` is the
+// handler-level serve seam every authenticated GET calls at spec §4's fixed position — AFTER the
+// session gate, server-owned redirects, and (Page family only) forced-SSR capability checks.
+// SPA.28: the `spaShellResponse` consult seam + `deps.spa` are gone — the shell is the sole
+// renderer for every SPA-space document, so nothing on the request path can flip it back.
 //
 // Parity contract with `renderDocument`: same charset/viewport/favicon enumeration, same
 // `docMetaFor` title for the requested path, the same theme boot script + theme/IDE stylesheets,
@@ -24,7 +25,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "hono";
 import { themeBootScript, resolveAppTheme, type PaperTheme } from "@rhema/ide";
-import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES, type SpaSurface } from "@rhema/contracts";
+import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES } from "@rhema/contracts";
 import { themeCss, ideCss } from "@rhema/tokens";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
@@ -38,13 +39,11 @@ const BOOT = themeBootScript();
 
 /**
  * The seam the route handlers + the catch-all call — a `Pick` of `DataSource` (test stubs carry
- * only the two reads the boot needs) plus the flag consult and the asset-root/log overrides.
- * `WebDeps` satisfies this structurally.
+ * only the two reads the boot needs) plus the asset-root/log overrides. `WebDeps` satisfies this
+ * structurally. SPA.28: the `spa` consult field is gone — no request fact can veto the shell.
  */
 export interface SpaShellDeps {
   readonly dataSource: Pick<DataSource, "getSessionPrincipal" | "getTheme">;
-  /** The per-request surface consult (`deps.spa` in server.ts; session-gated, override-aware). */
-  spa?(c: Context, surface: SpaSurface): boolean;
   /** The on-disk dir the Vite SPA build emits into (default: this package's `public/spa/`). */
   readonly spaAssetRoot?: string;
   /** Log seam for the manifest-degrade warn line (default `console.warn`). */
@@ -151,7 +150,7 @@ function projectSlugFor(pathname: string): string | null {
 /**
  * Build the boot payload for the request: the session principal + theme best-effort reads
  * (degraded upstream ⇒ the field is omitted, never thrown), the request's device class, the
- * per-route renderer map resolved through `deps.spa`, and the project slug for `/p/<slug>` paths.
+ * per-route renderer map (static truth — see below), and the project slug for `/p/<slug>` paths.
  */
 export async function spaBootPayload(
   c: Context,
@@ -168,13 +167,13 @@ export async function spaBootPayload(
       .catch(() => null),
   ]);
   const deviceClass = deviceClassFor(c);
-  // SPA.27 — the deletion wave made the renderer map STATIC truth: every surface-keyed document
-  // route serves the shell unconditionally now (the SSR documents are gone), so the map no longer
-  // resolves through `deps.spa` — a `?ssr=1`-served shell must still map its route "spa" or the
-  // leaf's SsrHandoff would hand the document straight back into a reload loop. The surviving
-  // exceptions are structural, not flag-driven: `pageMount` routes on phone keep the forced-SSR
-  // Page (REQ-ED-12/REQ-VFY-5), `surfaces:null` rows are server-owned, and the public funnel is
-  // SSR forever (REQ-BND-5).
+  // SPA.28 — the renderer map is STATIC truth: every surface-keyed document route serves the
+  // shell unconditionally (the SSR documents + the flag consult are gone), so the map is a
+  // capability fact, not a flag set — a leaf's SsrHandoff still needs it so a phone-served
+  // forced-SSR Page or a server-owned redirect document isn't mistaken for a shell mount. The
+  // surviving "ssr" marks are structural: `pageMount` routes on phone keep the forced-SSR Page
+  // (REQ-ED-12/REQ-VFY-5), `surfaces:null` rows are server-owned, and the public funnel is SSR
+  // forever (REQ-BND-5).
   const surfaces: Record<string, "spa" | "ssr"> = {};
   for (const doc of SPA_DOCUMENT_ROUTES) {
     const forcedSsr = deviceClass === "phone" && doc.pageMount === true;
@@ -199,7 +198,7 @@ export async function spaBootPayload(
  * `docMetaFor`, favicon enumeration, viewport, theme boot + both stylesheets); the body is the
  * mount node + the honest noscript floor + the boot embed + the manifest entry tags.
  * `opts.entry` is the caller's manifest resolution — `{ moduleScripts: [] }` degrades to a shell
- * that renders nothing client-side (the noscript + SSR escape still answer the no-JS floor).
+ * that renders nothing client-side (the noscript message still answers the no-JS floor).
  */
 export function renderSpaShell(
   c: Context,
@@ -226,15 +225,10 @@ export function renderSpaShell(
     entry.preloads.map((f) => `<link rel="modulepreload" href="${assetHref(f)}">`).join("") +
     entry.stylesheets.map((f) => `<link rel="stylesheet" href="${assetHref(f)}">`).join("") +
     `</head>`;
-  // REQ-BND-12 — the no-JS floor names the surface honestly and links the SSR escape: `?ssr=1`
-  // merged into the CURRENT query, so a renderer=spa'd request still lands the same route's
-  // server document.
-  const ssrUrl = new URL(c.req.url);
-  ssrUrl.searchParams.set("ssr", "1");
-  const ssrHref = `${ssrUrl.pathname}${ssrUrl.search}`;
-  const noscript =
-    `<noscript><p>${escapeHtml(COPY.spaShell.noJs)}</p>` +
-    `<p><a href="${escapeHtml(ssrHref)}">${escapeHtml(COPY.spaShell.noJsSsr)}</a></p></noscript>`;
+  // REQ-BND-12 — the no-JS floor names the surface honestly. SPA.28: the `?ssr=1` escape link is
+  // gone — no SSR document exists to land on any more, so the floor is the honest message alone
+  // (a dead link to a shell-serving URL would lie about the floor it claims to be).
+  const noscript = `<noscript><p>${escapeHtml(COPY.spaShell.noJs)}</p></noscript>`;
   // `<` → `<` inside the JSON embed so a `<\/script>`-shaped string can't close the element.
   const bootJson = JSON.stringify(boot).replace(/</g, "\\u003c");
   return (
@@ -249,13 +243,11 @@ export function renderSpaShell(
 }
 
 /**
- * SPA.27 — the non-consult tail of `spaShellResponse`, factored so the flipped surfaces' document
- * handlers serve the shell UNCONDITIONALLY (their SSR documents are deleted; spec §12.3's
- * "once-only" posture). A force-SSR signal (`?ssr=1`/`x-rhema-renderer: ssr`) still converges
- * here — the consult stays wired for the catch-all and the Page family's forced-SSR arm honors
- * the same signals against its surviving render, but a flipped surface has no SSR document left
- * to hand to; the boot map's static truth (`spaBootPayload`) keeps the leaf mounting instead of
- * handing back into a reload loop.
+ * SPA.28 — THE shell serve seam: every authenticated document handler calls this at spec §4's
+ * fixed position and the catch-all calls it for session'd SPA-space GETs. There is no consult —
+ * the flipped surfaces' SSR documents are deleted (spec §12.3's "once-only" posture) and no
+ * request signal (`?ssr=1`, `?renderer=spa`, `x-rhema-renderer`) is read anywhere on this path.
+ * The boot map's static truth (`spaBootPayload`) keeps a leaf mounting on its own route.
  */
 export async function spaShellDocument(
   c: Context,
@@ -271,26 +263,5 @@ export async function spaShellDocument(
   return c.html(renderSpaShell(c, { path: c.req.path, boot, entry }));
 }
 
-/**
- * The handler seam — "serve the shell iff every surface key's consult resolves". Returns null
- * (the handler continues its SSR path) when ANY key fails: the session gate, a `?ssr=1` override,
- * flag membership, or the `ide-chrome` AND-gate. The consult re-checks the session itself, so an
- * override can never hand an anonymous request the shell. A non-empty `surfaces` array is an AND
- * composition (the `/p/:p/import*` legs: `["onboarding","ide-chrome"]`).
- *
- * SPA.27: after the deletion wave the ONLY remaining caller is the catch-all (deep links under an
- * SPA prefix and not-found probes), where the consult's `?ssr=1` leg still lands the SSR 404.
- */
-export async function spaShellResponse(
-  c: Context,
-  deps: SpaShellDeps,
-  surfaces: SpaSurface | readonly SpaSurface[],
-  session: SessionHeaders,
-  opts?: { paperTheme?: PaperTheme },
-): Promise<Response | null> {
-  const keys: readonly SpaSurface[] = typeof surfaces === "string" ? [surfaces] : surfaces;
-  for (const key of keys) {
-    if (deps.spa?.(c, key) !== true) return null;
-  }
-  return spaShellDocument(c, deps, session, opts);
-}
+// SPA.28 — `spaShellResponse` (the per-request flag-consult seam) is deleted with the machinery it
+// wrapped: nothing on the request path may veto the shell any more.

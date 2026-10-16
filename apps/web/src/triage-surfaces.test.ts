@@ -13,6 +13,9 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_pv",
     slug: "the-politics-of-visibility",
     title: "The Politics of Visibility",
+    // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
+    // the `` escape is gone). The SSR render asserts below pin THAT arm.
+    showcase: true,
     state: {
       key: "reviewed",
       pill: "Reviewed",
@@ -222,9 +225,9 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
 describe("the Needs-you gate cards + Decisions list on the project page (§6.4)", () => {
   it("renders the approve_triage card with the ledger (escalations flagged, 'Approve proposals')", async () => {
     const app = createWebApp(makeDeps());
-    // SPA.27 — the desktop document is the shell; these render asserts pin the surviving
-    // forced-SSR arm (Page family: ?ssr=1 / phone / showcase).
-    const res = await app.request(`/p/${SLUG}?ssr=1`);
+    // SPA.28 — the desktop document is the shell on a non-showcase row; these render asserts
+    // pin the surviving forced-SSR arm (Page family: phone / showcase — the fixture's row).
+    const res = await app.request(`/p/${SLUG}`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-needs-you="true"');
@@ -257,7 +260,7 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
   it("only an auto-proceed card carries the presence-ping script; its pings hit the activity route (REQ-SPEC-18)", async () => {
     const recordGateActivity = vi.fn(async () => {});
     const app = createWebApp(makeDeps({ listGates: async () => [GATE, GATE_AUTO], recordGateActivity }));
-    const res = await app.request(`/p/${SLUG}?ssr=1`);
+    const res = await app.request(`/p/${SLUG}`);
     expect(res.status).toBe(200);
     const html = await res.text();
     // the wait-default approve_triage card emits NO presence script; the auto-proceed scope card does.
@@ -297,7 +300,7 @@ describe("phone width — the SAME components at the narrow input set (§10.1; R
 describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
   it("the project page renders the opt-in checkbox (unchecked while waiting by default)", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}`)).text();
     expect(html).toContain('data-approval-opt-in="true"');
     expect(html).toContain('name="approve_triage_24h"');
     expect(html).toContain("Auto-approve triage after 24 h");
@@ -312,7 +315,7 @@ describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
         setApprovalOverrides,
       }),
     );
-    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}`)).text();
     expect(html).toContain('name="approve_triage_24h" checked=""');
 
     const res = await app.request(`/p/${SLUG}/approval-overrides`, {
@@ -400,7 +403,7 @@ const SETTINGS = {
 describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => {
   it("each Needs-you row is a <details> ApprovalRow mounting the IDENTICAL card anatomy", async () => {
     const app = createWebApp(makeDeps({ listGates: async () => [GATE] }));
-    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}`)).text();
     expect(html).toContain('data-approval-row="gate_1"');
     expect(html).toContain("<details"); // SSR/no-JS — the row expands natively
     expect(html).toContain('data-approval-sheet="true"');
@@ -414,19 +417,19 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
     const app = createWebApp(
       makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }),
     );
-    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}`)).text();
     const order = [...html.matchAll(/data-approval-row="([^"]+)"/g)].map((m) => m[1]);
     expect(order).toEqual(["gate_dl", "gate_1", "gate_info"]);
   });
 
   it("the one-time explainer mounts on the first Approval card until dismissed (§5.11)", async () => {
     const fresh = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: [] }) }));
-    const html = await (await fresh.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await fresh.request(`/p/${SLUG}`)).text();
     expect(html).toContain('data-gate-explainer="true"');
     expect(html).toContain(`action="/p/${SLUG}/explainers/approvals/dismiss"`);
 
     const seen = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }));
-    expect(await (await seen.request(`/p/${SLUG}?ssr=1`)).text()).not.toContain('data-gate-explainer');
+    expect(await (await seen.request(`/p/${SLUG}`)).text()).not.toContain('data-gate-explainer');
   });
 
   it("the explainer dismiss POST hits the api seam and bounces back", async () => {
@@ -439,7 +442,7 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
 
   it("the Approvals settings section renders the policy radios + per-kind grid + standing guidance", async () => {
     const app = createWebApp(makeDeps({ getApprovalSettings: async () => SETTINGS }));
-    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}`)).text();
     expect(html).toContain('data-approval-settings="true"');
     for (const p of ["named", "wait_each", "run_to_completion"]) {
       expect(html).toContain(`data-policy="${p}"`);

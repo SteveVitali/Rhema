@@ -1,13 +1,14 @@
 // apps/web/src/dom-contract.ts — the emitted-DOM contract manifest (SPA.7; REQ-VFY-2, REQ-TST-2;
 // design/27 F2; research/04 F4 + research/02 island contract table).
 //
-// The ONE committed vocabulary of load-bearing selector hooks both renderers must emit. Keyed by
-// surface (the SPA_SURFACES flip keys + three non-flip buckets):
+// The ONE committed vocabulary of load-bearing selector hooks the served documents must emit. Keyed by
+// surface (the SPA_SURFACES vocabulary keys + three non-surface buckets — SPA.28: the keys survive as
+// the always-on surface vocabulary, no longer as flippable units):
 //   "shell"  — document/settle markers every served document or the SPA shell carries;
 //   "public" — the always-SSR funnel (/, /invite, /pricing, /signup, /login, /showcase);
 //   "shared" — cross-surface widgets whose hooks must hold on EVERY surface that emits them
 //              (sync pill, gate card, §10.1 phone withholding, deep-link selection);
-//   <surface> — a SPA_SURFACES key; the hook's owning flip unit.
+//   <surface> — a SPA_SURFACES key; the surface whose leaf/document owns the hook.
 //
 // Entry kinds: attr literals ("data-x"), attr-prefix families ("data-label-" covers
 // data-label-{saving,saved,…}), ARIA roles, form-field names (incl. the `ed.*` gate-card/outline

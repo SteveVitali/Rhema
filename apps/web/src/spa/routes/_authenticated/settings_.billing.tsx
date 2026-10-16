@@ -1,8 +1,7 @@
 // `/settings/billing` — the `billing` surface's legacy alias render (design/25
 // `legacySettingsBilling` — parity, F7). The `settings_` escape keeps it OUT of the `/settings`
-// redirect's subtree. SPA.16 mounts the real leaf: the flag's verdict covers BOTH mounts (the
-// SSR's shared `billingPageHandler` consults `spaShellResponse(…, "billing")` on either path —
-// the boot map keys the alias verdict by its own route id `/settings/billing`), and the same
+// redirect's subtree. SPA.16 mounts the real leaf: both mounts serve the shell (the boot map
+// keys the alias verdict by its own route id `/settings/billing`), and the same
 // `BillingSurface` renders — its forms post to the canonical `/app/settings/billing/*` actions
 // verbatim (the SSR emitted the same canonical actions on the alias mount).
 

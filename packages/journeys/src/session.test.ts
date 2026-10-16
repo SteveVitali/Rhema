@@ -49,10 +49,11 @@ describe("identity + nonce shapes", () => {
   });
 });
 
-// SPA.6 — the session-context leg-A contract: extraHTTPHeaders ride every session context AND
-// onPage fires BEFORE the page's first navigation (a cached mint's /app probe is renderer-checked).
-describe("JourneySessions — pin + wiring order (REQ-SEQ-4, REQ-VFY-7)", () => {
-  it("a cached sign-in carries the renderer pin and wires the page before its first goto", async () => {
+// SPA.6 — the session-context wiring contract: onPage fires BEFORE the page's first navigation
+// (a cached mint's /app probe is renderer-checked). SPA.28 — the extraHTTPHeaders pin leg retired
+// with `x-rhema-renderer`; no session context may inject renderer headers anymore.
+describe("JourneySessions — wiring order (REQ-VFY-7)", () => {
+  it("a cached sign-in wires the page before its first goto (and carries no renderer pin)", async () => {
     const stateDir = mkdtempSync(path.join(tmpdir(), "jrns-"));
     const email = stableIdentity("a");
     writeFileSync(path.join(stateDir, `${email.replace(/[^a-z0-9]/g, "_")}.json`), "{}");
@@ -86,13 +87,13 @@ describe("JourneySessions — pin + wiring order (REQ-SEQ-4, REQ-VFY-7)", () => 
       mailbox: {} as never,
       webBaseUrl: "https://app.test",
       stateDir,
-      extraHTTPHeaders: { "x-rhema-renderer": "ssr" },
       onPage: () => order.push("onPage"),
     });
     const s = await sessions.signIn(email, { useCache: true });
     expect(s.via).toBe("cache");
-    // the pin is on the context; the wiring precedes the probe's first navigation.
-    expect(ctxOpts[0]).toMatchObject({ extraHTTPHeaders: { "x-rhema-renderer": "ssr" } });
+    // SPA.28 — the context carries NO extraHTTPHeaders (the x-rhema-renderer pin is retired);
+    // the wiring still precedes the probe's first navigation.
+    expect(ctxOpts[0]).not.toHaveProperty("extraHTTPHeaders");
     expect(order).toEqual(["newPage", "onPage", "goto"]);
   });
 });

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Page } from "playwright";
 import {
-  RENDERER_HEADER,
   awaitMounted,
   gatedRouteIds,
   gotoOk,
@@ -241,8 +240,11 @@ describe("awaitMounted — the scoped renderer assert (SPA.17)", () => {
   });
 });
 
-describe("RENDERER_HEADER", () => {
-  it("is the contract header from REQ-SEQ-4", () => {
-    expect(RENDERER_HEADER).toBe("x-rhema-renderer");
+describe("the retired renderer-override channel (SPA.28 removal-detecting)", () => {
+  it("RENDERER_HEADER is gone from the settle module — x-rhema-renderer is dead text", async () => {
+    // REQ-SEQ-4's removal leg: the harness can no longer pin a renderer — a re-exported
+    // RENDERER_HEADER would silently revive the channel; this pin refuses that.
+    const mod = await import("./settle.js");
+    expect("RENDERER_HEADER" in mod).toBe(false);
   });
 });

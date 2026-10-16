@@ -6,11 +6,12 @@
 //
 // Flags: --steps csv | --journey <name|all> (registry order) | --paid (the weekly leg) |
 // --stage <prod|dev|pr-N> | --out <dir> | --state-dir <dir> | --expect-sha <sha> | --nonce <n> |
-// --surface <key[,key…]> (the SURFACE_GATES subset — the per-flip two-leg selector) |
+// --surface <key[,key…]> (the SURFACE_GATES subset + the --expect-renderer scope) |
 // --expect-renderer <ssr|spa> (fails the run when a served document's data-renderer differs) |
-// --pin-renderer <ssr|spa> (x-rhema-renderer on every context; `spa` refused on prod targets) |
 // --invite-code <code> (MAINT.6 — the seeded preview invite; env RHEMA_INVITE_CODE — rides the
 // /signup form's `code` field, which the web stamps `rhema_ic` on the magic link's callbackURL).
+// SPA.28 — `--pin-renderer` is RETIRED (REQ-SEQ-4's removal leg): the `x-rhema-renderer` channel
+// is deleted, so the flag + JOURNEY_PIN_RENDERER are refused below instead of silently dropped.
 // --stage resolves the stage's public origins (prod is the only stage with real DNS today —
 // infra/config/stages.ts); any other stage still needs explicit --web/--api overrides.
 
@@ -21,7 +22,6 @@ import { STEP_REGISTRY } from "./registry.js";
 import {
   gateEcho,
   gatedStepIds,
-  isProdTarget,
   parseRendererFlag,
   parseSurfaces,
 } from "./cli-flags.js";
@@ -61,34 +61,28 @@ const expectSha = arg("--expect-sha") ?? process.env.JOURNEY_EXPECT_SHA;
 // code). Absent ⇒ today's behavior verbatim.
 const inviteCode = arg("--invite-code") ?? process.env.RHEMA_INVITE_CODE;
 
-// SPA.6 — the renderer leg contract (REQ-VFY-7/8, REQ-SEQ-4). `--expect-renderer` asserts
-// data-renderer on every same-origin document; `--pin-renderer` stamps x-rhema-renderer on every
-// context (leg A pins ssr; leg B runs un-pinned). The validation lives in cli-flags.ts so the
-// refusal table is unit-tested; an error here is exit 2 (a misuse, not a failure).
+// SPA.6 — the renderer assert contract (REQ-VFY-7/8). `--expect-renderer` asserts data-renderer
+// on every same-origin document (the markers stay contractually true after SPA.28 — `spa` on
+// every authenticated SPA-space document, `ssr` on the public funnel + the forced-SSR Page
+// arms). The validation lives in cli-flags.ts so the refusal table is unit-tested; an error
+// here is exit 2 (a misuse, not a failure).
+// SPA.28 — `--pin-renderer`/`JOURNEY_PIN_RENDERER` are retired with `x-rhema-renderer` itself:
+// refuse loudly rather than silently ignore a flag that can no longer change anything.
+if (has("--pin-renderer") || process.env.JOURNEY_PIN_RENDERER !== undefined) {
+  console.error(
+    "--pin-renderer is retired (SPA.28 removed the x-rhema-renderer override channel) — run un-pinned; --expect-renderer still asserts the document markers",
+  );
+  process.exit(2);
+}
 const expectParsed = parseRendererFlag(
   arg("--expect-renderer") ?? process.env.JOURNEY_EXPECT_RENDERER,
   "--expect-renderer",
 );
-const pinParsed = parseRendererFlag(
-  arg("--pin-renderer") ?? process.env.JOURNEY_PIN_RENDERER,
-  "--pin-renderer",
-);
-for (const p of [expectParsed, pinParsed]) {
-  if (p.error) {
-    console.error(p.error);
-    process.exit(2);
-  }
-}
-const expectRenderer = expectParsed.value;
-const pinRenderer = pinParsed.value;
-// Force-SPA is refused on a prod target — SPA_OVERRIDES is never set there, so a spa pin could
-// only produce vacuous green anyway.
-if (pinRenderer === "spa" && isProdTarget(stage, web)) {
-  console.error(
-    "--pin-renderer spa is honored only where the stage sets SPA_OVERRIDES=1 (non-prod) — refusing to pin it against a prod target",
-  );
+if (expectParsed.error) {
+  console.error(expectParsed.error);
   process.exit(2);
 }
+const expectRenderer = expectParsed.value;
 
 // `--surface <key[,key…]>` selects the SURFACE_GATES subset (the two-leg selector); unknown keys
 // and empty gates fail closed. Combined with --steps/--journey it intersects.
@@ -190,10 +184,9 @@ try {
       withinCap: spend.withinCap,
     },
     ...(expectRenderer ? { expectRenderer } : {}),
-    ...(pinRenderer ? { pinRenderer } : {}),
     // SPA.17 — a --surface leg scopes --expect-renderer to the gated surfaces' path set
-    // (design/29 §coexistence): leg B pins `spa` on the flipped surface's docs without
-    // demanding SPA on its still-SSR traversal docs.
+    // (design/29 §coexistence): the assert lands on the gated surface's docs without
+    // demanding a renderer verdict on its traversal docs (public funnel + forced-SSR Page).
     ...(surfaces !== undefined ? { rendererScope: surfaces } : {}),
     ...(inviteCode ? { inviteCode } : {}),
   });

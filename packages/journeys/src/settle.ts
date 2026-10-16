@@ -19,8 +19,9 @@ import { SPA_DOCUMENT_ROUTES, type SpaSurface } from "@rhema/contracts";
 /** The `data-renderer` vocabulary — the only two renderers a served document may report. */
 export type RendererName = "ssr" | "spa";
 
-/** The request-level override header (`deps.spa`'s consult input — REQ-SEQ-4). */
-export const RENDERER_HEADER = "x-rhema-renderer";
+// SPA.28 — `RENDERER_HEADER` ("x-rhema-renderer") retired with the override channel (REQ-SEQ-4's
+// removal leg): no context may pin a renderer any more; `--expect-renderer` remains the assert
+// (the markers stay contractually true).
 
 /**
  * SPA.17 (design/29 §coexistence) — the route ids a `--surface` leg asserts `--expect-renderer`

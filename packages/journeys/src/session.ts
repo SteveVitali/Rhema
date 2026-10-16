@@ -52,8 +52,6 @@ export interface SessionDeps {
   readonly linkTimeoutMs?: number;
   /** viewport for signed-in contexts (R4 checks 1440×900 separately) */
   readonly viewport?: { width: number; height: number };
-  /** SPA.6 — headers every session context carries (the `x-rhema-renderer` leg-A pin). */
-  readonly extraHTTPHeaders?: Readonly<Record<string, string>>;
   /**
    * SPA.6 — the runner's per-step page wiring (renderer/console/request listeners). Called on
    * every page a session context creates BEFORE its first navigation, so the mint/probe document
@@ -121,9 +119,6 @@ export class JourneySessions {
       baseURL: this.deps.webBaseUrl,
       storageState,
       ...(this.deps.viewport ? { viewport: this.deps.viewport } : {}),
-      ...(this.deps.extraHTTPHeaders && Object.keys(this.deps.extraHTTPHeaders).length > 0
-        ? { extraHTTPHeaders: this.deps.extraHTTPHeaders }
-        : {}),
     });
     const page = await context.newPage();
     this.deps.onPage?.(page);
@@ -139,9 +134,6 @@ export class JourneySessions {
     const context = await this.deps.browser.newContext({
       baseURL: this.deps.webBaseUrl,
       ...(this.deps.viewport ? { viewport: this.deps.viewport } : {}),
-      ...(this.deps.extraHTTPHeaders && Object.keys(this.deps.extraHTTPHeaders).length > 0
-        ? { extraHTTPHeaders: this.deps.extraHTTPHeaders }
-        : {}),
     });
     const page = await context.newPage();
     this.deps.onPage?.(page);
