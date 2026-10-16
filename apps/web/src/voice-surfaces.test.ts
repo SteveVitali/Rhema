@@ -197,25 +197,8 @@ const form = (fields: Record<string, string>) => ({
 });
 
 describe("the voice library (§9.1)", () => {
-  it("GET /voices renders the three groups — yours editable, house/shared read-only + forkable", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/voices");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Your voices");
-    expect(html).toContain("House styles");
-    expect(html).toContain("Shared with you");
-    expect(html).toContain("Ada");
-    expect(html).toContain("House Standard");
-    expect(html).toContain("column voice");
-    expect(html).toContain("Untested voice"); // the shared pill, verbatim
-    expect(html).toContain("/voices/new");
-    // the read-only cards carry the fork affordance; the editable card does not
-    expect(html).toContain('data-fork-voice="per_house"');
-    expect(html).toContain('data-fork-voice="per_shared"');
-    expect(html).not.toContain('data-fork-voice="per_ada"');
-    expect(html).toContain('data-voice-group="house_styles"');
-  });
+  // SPA.27 (REQ-TST-1) — the SSR library render asserts retired with the document (the voices leaf
+  // paints the three groups + fork affordances off the /bff/voices twin; spa voice tests own it).
 
   it("GET /voices requires a session", async () => {
     const app = createWebApp({ ...makeDeps(), session: () => null });
@@ -235,23 +218,8 @@ describe("the voice library (§9.1)", () => {
 });
 
 describe("the §9.2 creation sheet", () => {
-  it("GET /voices/new renders name, optional description/sample/URL, Mode metadata, the AUP line, both tiers", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/voices/new");
-    const html = await res.text();
-    expect(html).toContain("New voice");
-    expect(html).toContain('name="name"');
-    expect(html).toContain('name="description"');
-    expect(html).toContain('name="sample_text"');
-    expect(html).toContain('name="sample_url"'); // P1.14 — the fetcher-only URL field
-    expect(html).toContain('name="mode"');
-    expect(html).toContain("the right to use"); // the one-line AUP (REQ-PERSONA-27)
-    expect(html).toContain("Quick Voice");
-    expect(html).toContain("Full Profile"); // P1.14 — the tier radio
-    expect(html).toContain("Create and build");
-    // No cookie/session-token input exists anywhere (AC-I-B).
-    expect(html).not.toMatch(/cookie|session.?token/i);
-  });
+  // SPA.27 (REQ-TST-1) — the creation-sheet render asserts retired with the document (the leaf
+  // paints the fields/AUP line/tiers; the AC-I-B no-token input invariant is dom-pinned there).
 
   it("POST /voices/new — create + sample + Create-and-build → profile_voice{quick} run, redirect to detail", async () => {
     const createVoice = vi.fn(async () => ({ personaId: "per_new", mode: "self", seedAuthoredBy: "user", status: null }));
@@ -269,14 +237,23 @@ describe("the §9.2 creation sheet", () => {
     expect(buildVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_new", { tier: "quick" });
   });
 
-  it("POST /voices/new — name required; Create-and-build without a sample re-renders the §9.2 rule", async () => {
+  it("POST /voices/new — name/sample refusals bounce to the sheet with the err code; JSON keeps the 400", async () => {
     const app = createWebApp(makeDeps());
+    // SPA.27 — the SSR re-render is deleted: a form-mode refusal lands back on the sheet URL with
+    // the `?err=` code the leaf paints (the JSON caller still gets the stable code at 400).
     const noName = await app.request("/voices/new", { method: "POST", ...form({ intent: "save" }) });
-    expect(noName.status).toBe(400);
-    expect(await noName.text()).toContain("A name is required");
+    expect(noName.status).toBe(302);
+    expect(noName.headers.get("location")).toBe("/voices/new?err=name_required");
     const noSample = await app.request("/voices/new", { method: "POST", ...form({ name: "X", intent: "build" }) });
-    expect(noSample.status).toBe(400);
-    expect(await noSample.text()).toContain("at least one sample");
+    expect(noSample.status).toBe(302);
+    expect(noSample.headers.get("location")).toBe("/voices/new?err=sample_required");
+    const noNameJson = await app.request("/voices/new", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ intent: "save" }),
+    });
+    expect(noNameJson.status).toBe(400);
+    expect(((await noNameJson.json()) as { error: string }).error).toBe("name_required");
   });
 
   it("POST /voices/new — tier=full builds profile_voice{full}; a URL sample rides the fetcher path", async () => {
@@ -294,111 +271,11 @@ describe("the §9.2 creation sheet", () => {
 });
 
 describe("the voice detail page (§9.5)", () => {
-  it("GET /v/:id — Overview: the pill, the five tabs, the diff-of-inputs panel, the one verb, the hold-out line", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/v/per_ada");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Description changed"); // the shared pill, verbatim
-    // the five tabs render as server-side links (§9.5)
-    for (const t of ["Overview", "Description", "Samples", "Profile", "Runs"]) expect(html).toContain(t);
-    expect(html).toContain('data-voice-tab="samples"');
-    // the diff-of-inputs panel (§9.3): facts in plain words + the routed sentence
-    expect(html).toContain('data-facts-panel="true"');
-    expect(html).toContain("changed since the build");
-    expect(html).toContain("the corpus is not re-read"); // the routed scope's sentence
-    expect(html).toContain("Update voice"); // the ONE verb
-    expect(html).toContain("Upgrade to Full Profile"); // the Quick→Full offer
-    // the hold-out stays generic pre-calibration (§9.4 — identity never named)
-    expect(html).toContain('data-holdout-hidden="true"');
-    expect(html).toContain("held back to test the profile");
-    expect(html).not.toContain('data-holdout-badge');
-    // the hub paragraph renders
-    expect(html).toContain("Ada writes short, declarative sentences.");
-  });
-
-  it("GET /v/:id?tab=description — the seed editor, the corrections ledger, the build notes", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/v/per_ada?tab=description");
-    const html = await res.text();
-    expect(html).toContain("A terse register."); // the seed editor pre-fills
-    expect(html).toContain("Corrections");
-    expect(html).toContain("It overstates the em-dash habit.");
-    expect(html).toContain("waiting for the next build"); // consume-once, unconsumed
-    expect(html).toContain('data-correction="pc_1"');
-    expect(html).toContain("Notes from the last build");
-    expect(html).toContain("read 2 pieces");
-  });
-
-  it("GET /v/:id?tab=samples — the list, include/omit, the URL ingestion form", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/v/per_ada?tab=samples");
-    const html = await res.text();
-    expect(html).toContain("Essay one");
-    expect(html).toContain("Omit");
-    expect(html).toContain("/v/per_ada/samples/url"); // REQ-INGEST-13's fetcher path
-    // the hold-out badge stays hidden pre-reveal even on the Samples tab
-    expect(html).not.toContain('data-holdout-badge');
-  });
-
-  it("GET /v/:id?tab=samples — the ★ badge shows ONLY once the hold-out is revealed", async () => {
-    const revealed = { ...DETAIL, holdout: { held: true, revealed: true, itemId: "di_1", title: "Essay one", revealedAt: "2026-09-02T00:00:00Z" } };
-    const app = createWebApp(makeDeps({ getVoice: async () => revealed } as Partial<DataSource>));
-    const res = await app.request("/v/per_ada?tab=samples");
-    const html = await res.text();
-    expect(html).toContain('data-holdout-badge="true"');
-    expect(html).toContain("held out");
-  });
-
-  it("GET /v/:id?tab=profile — the fixed section order + read-only artifacts", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/v/per_ada?tab=profile");
-    const html = await res.text();
-    expect(html).toContain('data-profile-section="calibration-report"');
-    expect(html).toContain('data-profile-section="exemplars"');
-    expect(html).toContain("(Advanced)");
-    expect(html).toContain("Profile artifacts");
-    expect(html).toContain("voice_print");
-    expect(html).toContain("read-only"); // derived artifacts are not editable (§9.5 row 36)
-  });
-
-  it("GET /v/:id?tab=runs — the build history + snapshots", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/v/per_ada?tab=runs");
-    const html = await res.text();
-    expect(html).toContain("run_b1");
-    expect(html).toContain("profile_voice");
-    expect(html).toContain("Snapshots");
-  });
-
-  it("GET /v/:id — an open approve_sample gate renders the census card", async () => {
-    const gated: VoiceDetailDto = {
-      ...DETAIL,
-      persona: { ...DETAIL.persona, active_run_id: "run_g" },
-      gate: {
-        gateId: "gate_as",
-        runId: "run_g",
-        workflow: "profile_voice",
-        card: {
-          includedLine: "3 of 4 pieces",
-          exclusions: [{ title: "Scan.pdf", reason: "couldn't read this piece" }],
-          holdoutLine: "one of your pieces is held back to test the profile — you won't see which until after calibration",
-          estimate: { credits: 210, capCredits: 315 },
-          knobs: { sampleCap: 40, calibration: true, modelTier: "base" },
-          calibrationWarning: null,
-          waitingUntil: null,
-        },
-      },
-    };
-    const app = createWebApp(makeDeps({ getVoice: async () => gated } as Partial<DataSource>));
-    const res = await app.request("/v/per_ada");
-    const html = await res.text();
-    expect(html).toContain('data-gate-card="true"');
-    expect(html).toContain("3 of 4 pieces");
-    expect(html).toContain("Scan.pdf"); // the exclusion carries its reason in plain words
-    expect(html).toContain("/v/per_ada/gates/gate_as");
-    expect(html).toContain("Approve — build the profile");
-  });
+  // SPA.27 (REQ-TST-1) — the detail-page render asserts retired with the document: the overview
+  // pill/tabs/diff-of-inputs/hold-out line, the seed editor + corrections ledger, the samples
+  // list + URL ingestion form, the ★ hold-out reveal, the profile section order, the runs history,
+  // and the approve_sample census card are the voice leaf's DOM off the `/bff/voices/:persona`
+  // twin (spa voice surface tests). The write legs stay server-owned below.
 
   it("POST /v/:id/gates/:gid resolves the approve_sample card on its run", async () => {
     const decideRunGate = vi.fn(async () => {});
@@ -458,7 +335,9 @@ describe("the voice detail page (§9.5)", () => {
 describe("the project picker + the run sheet's voice line (§9.6)", () => {
   it("GET /p/:slug renders the picker with the linked voice's pill", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-essay");
+    // SPA.27 — the desktop document is the shell; the picker render survives on the Page family's
+    // forced-SSR arm.
+    const res = await app.request("/p/the-essay?ssr=1");
     const html = await res.text();
     expect(html).toContain('name="personaId"');
     expect(html).toContain("Ada");
@@ -474,15 +353,29 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
     expect(setProjectVoice).toHaveBeenCalledWith(expect.objectContaining({}), "proj_1", { personaId: "per_ada" });
   });
 
-  it("GET /p/:slug/run renders the voice line: linked name + pill + the priced chained action", async () => {
+  it("the run-sheet twin carries the voice line: linked name + pill + the priced chained action", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-essay/run");
-    const html = await res.text();
-    expect(html).toContain("Voice");
-    expect(html).toContain("Ada");
-    expect(html).toContain("Description changed");
-    expect(html).toContain("Update voice first"); // ≈N cr — a fact + an action, never a gate
-    expect(html).toContain("/p/the-essay/update-voice");
+    // SPA.27 — the sheet document is deleted; `view.voice` rides the `/bff` twin (the leaf paints
+    // the 'Update voice first ≈N cr' chained action off it — a fact + an action, never a gate).
+    const res = await app.request("/bff/p/the-essay/run");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      runSheet: {
+        view: {
+          voice?: {
+            mode: string; name?: string; pill?: unknown;
+            updateEstimateCredits?: number; updateAction?: string;
+          };
+        };
+      };
+    };
+    expect(body.runSheet.view.voice).toMatchObject({
+      mode: "linked",
+      name: "Ada",
+      updateAction: "/p/the-essay/update-voice",
+    });
+    expect(body.runSheet.view.voice?.pill).toBeTruthy();
+    expect(typeof body.runSheet.view.voice?.updateEstimateCredits).toBe("number");
   });
 
   it("POST /p/:slug/update-voice launches the Quick-Voice build and lands back on the sheet", async () => {
@@ -508,7 +401,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
         }),
       } as Partial<DataSource>),
     );
-    const res = await app.request("/p/the-essay");
+    const res = await app.request("/p/the-essay?ssr=1");
     const html = await res.text();
     expect(html).toContain('data-pinned-stale="true"');
     expect(html).toContain("Adopt the refreshed profile");
@@ -518,7 +411,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
 
   it("GET /p/:slug?voice_locked=1 — the soft lock names the two hatches", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-essay?voice_locked=1");
+    const res = await app.request("/p/the-essay?voice_locked=1&ssr=1");
     const html = await res.text();
     expect(html).toContain('data-voice-locked="true"');
     expect(html).toContain("adopt the refreshed profile or fork");
@@ -576,14 +469,17 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
       guidancePreserved: true,
     }));
     const app = createWebApp(makeDeps({ getVoiceReseedPreview } as Partial<DataSource>));
-    const res = await app.request("/p/the-essay/voice/reseed");
+    // SPA.27 — the diff sheet's document is deleted; the charter diff rides the
+    // `/bff/p/:slug/voice/reseed` twin verbatim (the leaf renders it; guidance lines are data).
+    const res = await app.request("/bff/p/the-essay/voice/reseed");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-reseed-diff="true"');
-    expect(html).toContain('data-diff-kind="added"');
-    expect(html).toContain("seeded new");
-    expect(html).toContain('data-guidance-preserved="true"');
-    expect(html).toContain("/p/the-essay/voice/adopt");
+    const body = (await res.json()) as {
+      voiceReseed: { preview?: { charterFound?: boolean; diff?: { kind: string; line: string }[]; guidancePreserved?: boolean } };
+    };
+    const payload = body.voiceReseed.preview;
+    expect(payload?.charterFound).toBe(true);
+    expect(payload?.diff?.some((d) => d.kind === "added" && d.line === "seeded new")).toBe(true);
+    expect(payload?.guidancePreserved).toBe(true);
   });
 });
 
@@ -619,95 +515,10 @@ describe("the seed editor + sample posts", () => {
 // reconstruction CTAs), and the voice delete.
 // -------------------------------------------------------------------------------------------------------------
 describe("the P1.15 ingestion surfaces (§9.5)", () => {
-  const CONNECTIONS = {
-    connections: [
-      {
-        id: "conn_1",
-        provider: "substack",
-        handle: "ada.substack.com",
-        status: "ok",
-        last_sync_at: "2026-09-01T00:00:00Z",
-        schedule: "daily",
-        auto_include_new: false,
-        error: null,
-        items: 2,
-        included: 1,
-      },
-      {
-        id: "conn_2",
-        provider: "url",
-        handle: "https://example.com/post",
-        status: "error",
-        last_sync_at: null,
-        schedule: null,
-        auto_include_new: true,
-        error: "Fetch failed: HTTP 403 — the host refused the request",
-        items: 1,
-        included: 0,
-      },
-    ],
-  };
-
-  const DETAIL_WITH_NEW = {
-    ...DETAIL,
-    samples: [
-      ...DETAIL.samples,
-      {
-        id: "di_2",
-        title: "Paywalled post",
-        state: "new",
-        access: "paywalled",
-        date: null,
-        connection_id: "conn_1",
-        url: "https://ada.substack.com/p/paywalled",
-        external_id: "ext_p1",
-        version_id: null,
-        content_sha256: null,
-        word_count: null,
-        quality: null,
-        n: null,
-      },
-    ],
-  };
-
-  it("GET /v/:id?tab=samples renders the Sources pane: linked providers, counts, the verbatim error, the three link flows", async () => {
-    const app = createWebApp(
-      makeDeps({
-        getVoice: async () => DETAIL_WITH_NEW,
-        listVoiceConnections: async () => CONNECTIONS,
-      } as Partial<DataSource>),
-    );
-    const res = await app.request("/v/per_ada?tab=samples");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-sources="true"');
-    expect(html).toContain('data-source="conn_1"');
-    expect(html).toContain("ada.substack.com");
-    expect(html).toContain("1 of 2 included");
-    expect(html).toContain("HTTP 403"); // the error line renders verbatim (REQ-INGEST-11)
-    // the three link flows — and NO credential field anywhere (AC-I-B)
-    expect(html).toContain('data-link-substack="true"');
-    expect(html).toContain('data-link-url="true"');
-    expect(html).toContain('data-link-export="true"');
-    expect(html).not.toMatch(/name="(cookie|token|password|credential)/i);
-    expect(html).toContain('data-resync-all="true"');
-  });
-
-  it("the review step: 'new' items render as the confirm checkbox list; paywalled rows carry the badge", async () => {
-    const app = createWebApp(
-      makeDeps({
-        getVoice: async () => DETAIL_WITH_NEW,
-        listVoiceConnections: async () => CONNECTIONS,
-      } as Partial<DataSource>),
-    );
-    const res = await app.request("/v/per_ada?tab=samples");
-    const html = await res.text();
-    expect(html).toContain('data-confirm="true"');
-    expect(html).toContain('data-review-item="ext_p1"');
-    expect(html).toContain('name="include"');
-    expect(html).toContain('name="known"');
-    expect(html).toContain("import your export"); // the paywall badge's remedy line
-  });
+  // SPA.27 (REQ-TST-1) — the Sources pane + review-step render asserts retired with the voice
+  // document (the leaf paints providers/counts/the verbatim error, the confirm checkbox list, and
+  // the paywall badge off the twin; the AC-I-B no-credential-field invariant is dom-pinned there).
+  // The connection write legs below stay server-owned.
 
   it("POST /v/:id/connections/:cid/confirm maps the checkbox post to per-item include flags", async () => {
     const confirmVoiceConnection = vi.fn(async () => ({ queued: true }));
@@ -777,81 +588,9 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
     });
   });
 
-  it("GET /v/:id?tab=samples&sample=:id renders the drawer: preview, versions, quality notes, the priced CTAs", async () => {
-    const getVoiceSample = vi.fn(async () => ({
-      item: {
-        id: "di_1",
-        external_id: "ext_1",
-        title: "Essay one",
-        url: "https://ada.substack.com/p/one",
-        date: null,
-        word_count: 900,
-        access: "free",
-        state: "included",
-        provider: "substack",
-        connection_id: "conn_1",
-      },
-      versions: [
-        {
-          id: "sv_2",
-          n: 2,
-          content_sha256: "sha2",
-          original_sha256: "osha2",
-          quality: "partial",
-          quality_notes: ["pages 3, 5 appear to be scanned images — the visual tier can rebuild them"],
-          word_count: 900,
-        },
-        { id: "sv_1", n: 1, content_sha256: "sha1", original_sha256: "osha1", quality: "clean", quality_notes: null, word_count: 900 },
-      ],
-      document: "# Essay one\n\nThe canonical body.",
-    }));
-    const app = createWebApp(
-      makeDeps({
-        getVoiceSample,
-        listVoiceConnections: async () => CONNECTIONS,
-      } as Partial<DataSource>),
-    );
-    const res = await app.request("/v/per_ada?tab=samples&sample=di_1");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-sample-drawer="true"');
-    expect(html).toContain("Essay one");
-    expect(html).toContain('data-quality-notes="true"');
-    expect(html).toContain("scanned images");
-    expect(html).toContain('data-sample-preview="true"');
-    expect(html).toContain("The canonical body.");
-    expect(html).toContain('data-sample-versions="true"');
-    expect(html).toContain('data-version="2"');
-    // the priced CTAs — text for a non-clean verdict; visual because the notes flag scanned pages
-    expect(html).toContain('data-reconstruct-text="true"');
-    expect(html).toContain('data-reconstruct-visual="true"');
-  });
-
-  it("the drawer's visual CTA stays hidden for a non-scanned partial — opt-in only when flagged", async () => {
-    const getVoiceSample = vi.fn(async () => ({
-      item: {
-        id: "di_1",
-        external_id: null,
-        title: "Essay one",
-        url: null,
-        date: null,
-        word_count: 900,
-        access: "free",
-        state: "included",
-        provider: "paste",
-        connection_id: "conn_p",
-      },
-      versions: [
-        { id: "sv_1", n: 1, content_sha256: "sha1", original_sha256: null, quality: "partial", quality_notes: ["some spans did not convert"], word_count: 900 },
-      ],
-      document: "# Essay one",
-    }));
-    const app = createWebApp(makeDeps({ getVoiceSample } as Partial<DataSource>));
-    const res = await app.request("/v/per_ada?tab=samples&sample=di_1");
-    const html = await res.text();
-    expect(html).toContain('data-reconstruct-text="true"');
-    expect(html).not.toContain('data-reconstruct-visual="true"');
-  });
+  // SPA.27 (REQ-TST-1) — the sample-drawer render asserts (preview/versions/quality notes/the
+  // priced CTAs, and the non-scanned visual-CTA hiding) retired with the voice document — the leaf
+  // paints the drawer off the twin's `sample` slice.
 
   it("POST /v/:id/samples/:itemId/reconstruct posts the opt-in confirm + tier, lands back on the drawer", async () => {
     const reconstructVoiceSample = vi.fn(async () => ({ queued: true }));

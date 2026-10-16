@@ -60,31 +60,41 @@ function makeDeps(opts: {
   };
 }
 
+// The sheet's GET facts now ride the `/bff/p/:slug/run` twin verbatim — the composition's
+// `view` carries `insufficient`/`paymentLinkUrl`/`suspended`/`planOfferUrl` and the 'shown'
+// telemetry still mints off the same read (SPA.27: the panel's paint is leaf-owned).
+const runSheetView = async (app: ReturnType<typeof createWebApp>, query = "words=5180") =>
+  (
+    (await (await app.request(`/bff/p/${SLUG}/run?${query}`)).json()) as {
+      runSheet: {
+        view: {
+          insufficient: { sentences: string[] } | null;
+          paymentLinkUrl?: string;
+          suspended?: boolean;
+          planOfferUrl?: string;
+        };
+      };
+    }
+  ).runSheet.view;
+
 describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => {
-  it("a cap over the spendable balance renders the panel WITH the Payment Link and records 'shown'", async () => {
+  it("a cap over the spendable balance flags the view insufficient, carries the link, records 'shown'", async () => {
     const recorded: string[] = [];
     const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "open" }, recorded }));
-    const res = await app.request(`/p/${SLUG}/run?words=5180`);
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-insufficient="true"');
-    expect(html).toContain("is more than your spendable balance"); // §14.6 sentence 1
-    expect(html).toContain("Or ask for more credits."); // §14.6 sentence 3 (beta mode — no "/ upgrade")
-    // the Payment-Link action — a form POST to the telemetry route, carrying the link for verification.
-    expect(html).toContain(`data-payment-link="${PAY_LINK}"`);
-    // case-insensitive attr name — React 19 serializes `formAction` (its DOM-property case).
-    expect(html).toMatch(new RegExp(`formaction="/p/${SLUG}/exhausted"`, "i"));
-    expect(html).toContain('value="open_payment_link"');
-    expect(recorded).toEqual(["shown"]); // the impression IS the telemetry event
+    const view = await runSheetView(app);
+    expect(view.insufficient).not.toBeNull(); // the leaf paints the §14.6 panel off this
+    expect(view.insufficient?.sentences[0]).toContain("is more than your spendable balance");
+    expect(view.insufficient?.sentences[2]).toContain("Or ask for more credits."); // beta mode — no "/ upgrade"
+    expect(view.paymentLinkUrl).toBe(PAY_LINK);
+    expect(view.suspended).toBeUndefined();
+    expect(recorded).toEqual(["shown"]); // the impression IS the telemetry event — twin read mints it
   });
 
-  it("a comfortable balance renders the estimate box, no panel, no telemetry", async () => {
+  it("a comfortable balance answers no panel, no telemetry", async () => {
     const recorded: string[] = [];
-    const app = createWebApp(makeDeps({ recorded }));
-    const res = await app.request(`/p/${SLUG}/run?words=5180`);
-    const html = await res.text();
-    expect(html).toContain("data-estimate-box");
-    expect(html).not.toContain('data-insufficient="true"');
+    const view = await runSheetView(createWebApp(makeDeps({ recorded })));
+    expect(view.insufficient).toBeNull();
+    expect(view.paymentLinkUrl).toBeUndefined();
     expect(recorded).toEqual([]);
   });
 
@@ -154,16 +164,16 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
     expect(recorded).toEqual(["open_payment_link"]);
   });
 
-  it("purchase=closed keeps the Payment Link off the sheet and refuses the hand-off POST (BILL.3)", async () => {
+  it("purchase=closed drops the link from the view and refuses the hand-off POST (BILL.3)", async () => {
     const recorded: string[] = [];
     const app = createWebApp(makeDeps({
       balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "closed" },
       recorded,
     }));
-    const html = await (await app.request(`/p/${SLUG}/run?words=5180`)).text();
-    expect(html).toContain('data-purchase-paused="true"');
-    expect(html).toContain("Purchases are paused");
-    expect(html).not.toContain("data-payment-link");
+    // the composition strips the link (purchaseClosed ⇒ the leaf can only paint the paused note)
+    const view = await runSheetView(app);
+    expect(view.insufficient).not.toBeNull();
+    expect(view.paymentLinkUrl).toBeUndefined();
 
     const res = await app.request(`/p/${SLUG}/exhausted`, {
       method: "POST",
@@ -213,30 +223,21 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
 });
 
 describe("the suspended account (REQ-SPEC-24.7)", () => {
-  it("the sheet renders the suspended notice with Run disabled — never the Payment Link", async () => {
-    const recorded: string[] = [];
-    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: true, clawbackDebt: 40, paymentLinkUrl: PAY_LINK }, recorded }));
-    const res = await app.request(`/p/${SLUG}/run?words=5180`);
-    const html = await res.text();
-    expect(html).toContain('data-suspended="true"');
-    expect(html).toContain("paused while a payment dispute");
-    expect(html).not.toContain(`data-payment-link`); // a suspended account is never upsold
+  it("the view flags suspended and carries no link — a suspended account is never upsold", async () => {
+    const view = await runSheetView(
+      createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: true, clawbackDebt: 40, paymentLinkUrl: PAY_LINK } })),
+    );
+    expect(view.suspended).toBe(true);
+    expect(view.paymentLinkUrl).toBeUndefined();
   });
 });
 
 describe("the final-month offer line (REQ-BETA-15 — copy + link only)", () => {
-  it("renders only when the deploy configured the link; no subscription machinery", async () => {
-    const app = createWebApp(makeDeps({ planOfferUrl: "https://rhema.example/beta-plan" }));
-    const res = await app.request(`/p/${SLUG}/run?words=5180`);
-    const html = await res.text();
-    expect(html).toContain("data-plan-offer");
-    // UX.1 — the offer text makes no pricing claim; it points at the config-derived pricing page.
-    expect(html).toContain("Plans and credit packs are listed on the pricing page.");
-    expect(html).not.toContain("beta rate");
-    expect(html).toContain('href="https://rhema.example/beta-plan"');
+  it("the offer URL rides the view only when the deploy configured it; no subscription machinery", async () => {
+    const view = await runSheetView(createWebApp(makeDeps({ planOfferUrl: "https://rhema.example/beta-plan" })));
+    expect(view.planOfferUrl).toBe("https://rhema.example/beta-plan");
 
-    const without = createWebApp(makeDeps({}));
-    const res2 = await without.request(`/p/${SLUG}/run?words=5180`);
-    expect(await res2.text()).not.toContain("data-plan-offer");
+    const without = await runSheetView(createWebApp(makeDeps({})));
+    expect(without.planOfferUrl).toBeUndefined();
   });
 });

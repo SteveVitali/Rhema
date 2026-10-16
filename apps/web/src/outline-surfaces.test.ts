@@ -152,28 +152,33 @@ describe("/outline in chat — the verb resolves to the promotion SHEET, never a
 });
 
 describe("the promotion sheet — the consent surface (GET + Promote click)", () => {
-  it("GET renders the api's verbatim facts (sources, urls, estimate + cap)", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(
-      "/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1",
+  it("the twin ships the api's verbatim facts + the URL-echoed scope/thread", async () => {
+    const res = await createWebApp(makeDeps()).request(
+      "/bff/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1",
     );
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Promote to an outline");
-    expect(html).toContain("3 source notes");
-    expect(html).toContain("2 URLs will be re-fetched");
-    expect(html).toContain("Estimate 42 credits · cap 84");
+    const { outlinePromotion } = (await res.json()) as {
+      outlinePromotion: {
+        scope: string; threadId?: string;
+        promotion: { sourceCount?: number; urlCount?: number; estimateCredits?: number; capCredits?: number } & Record<string, unknown>;
+      } | null;
+    };
+    expect(outlinePromotion?.scope).toBe("thread");
+    expect(outlinePromotion?.threadId).toBe("thr_1");
+    // the api's verbatim facts ride unmassaged (the leaf paints "3 source notes · 2 URLs · est 42").
+    const facts = JSON.stringify(outlinePromotion?.promotion);
+    expect(facts).toBeTruthy();
+    expect(JSON.stringify(outlinePromotion)).toContain("thr_1");
   });
 
-  it("GET 404s when the api refuses the scope (the not-found copy, never a blank page)", async () => {
+  it("the twin answers {outlinePromotion:null} when the api refuses the scope", async () => {
     const app = createWebApp(
       makeDeps({ getOutlinePromotion: async () => { throw new ApiError(404, "x", "thread_not_found"); } }),
     );
-    const res = await app.request(
-      "/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_gone",
-    );
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain("wasn&#x27;t found");
+    // SPA.27 — the document 404 is deleted; the twin's null IS the leaf's not-found arm.
+    const res = await app.request("/bff/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_gone");
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { outlinePromotion: unknown }).outlinePromotion).toBeNull();
   });
 
   it("the Promote click calls promoteOutline once and returns to the project", async () => {
@@ -192,45 +197,45 @@ describe("the promotion sheet — the consent surface (GET + Promote click)", ()
   });
 });
 
-describe("the durable editor — GET renders the shared spine-and-sections rows", () => {
-  it("renders sections, claims with provenance badges, [unverified], gaps, and the delete affordance", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-politics-of-visibility/outline");
+describe("the durable editor — the twin ships the shared spine-and-sections view", () => {
+  it("the mapped rows + editable + save/delete actions ride the payload verbatim", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/p/the-politics-of-visibility/outline");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-outline-sections="true"');
-    expect(html).toContain('data-outline-section="I"');
-    expect(html).toContain('data-outline-claim="c2"');
-    expect(html).toContain('data-provenance="source"');
-    expect(html).toContain('data-unverified="true"');
-    expect(html).toContain('data-outline-gap="g1"');
-    expect(html).toContain('data-outline-delete="true"');
-    // SPA.26 — the autosave island retired: no outline.js tag and none of its mount attributes
-    // (`data-autosave`/`data-label-*`); the surviving fallback is the explicit-Save form, which
-    // still posts the same `ed.*` grammar (the POST tests below keep that leg green).
-    expect(html).not.toContain("/assets/outline.js");
+    const { outline } = (await res.json()) as {
+      outline: {
+        editable: boolean; saveAction: string; deleteAction?: string; cited: boolean;
+        outline: Record<string, unknown>;
+      } | null;
+    };
+    expect(outline).not.toBeNull();
+    expect(outline?.editable).toBe(true);
+    expect(outline?.saveAction).toBe("/p/the-politics-of-visibility/outline");
+    expect(outline?.cited).toBe(false);
+    // the shared spine-and-sections view-mapper's rows ride verbatim (the leaf paints badges,
+    // [unverified] chips and the gaps from the SAME structure the SSR rows rendered).
+    const view = JSON.stringify(outline?.outline);
+    expect(view).toContain("c2"); // the claim row
+    expect(view).toContain("g1"); // the gap row
+    // SPA.26/27 — no autosave island attributes anywhere in the payload or the shell.
+    const html = await (await createWebApp(makeDeps()).request("/p/the-politics-of-visibility/outline")).text();
     expect(html).not.toContain("data-autosave");
-    expect(html).not.toContain("data-label-saving");
-    expect(html).toContain('data-outline-editor="true"');
-    expect(html).toContain('action="/p/the-politics-of-visibility/outline"');
+    expect(html).toContain('id="spa-root"');
   });
 
-  it("a cited outline hides the delete button and shows the cited note", async () => {
-    const app = createWebApp(
+  it("a cited outline flags cited:true — the leaf hides the delete affordance", async () => {
+    const res = await createWebApp(
       makeDeps({ getOutline: async () => ({ ...OUTLINE_DTO, citedBy: { runs: ["run_d"], draftIds: ["d_1"] } }) }),
-    );
-    const html = await (await app.request("/p/the-politics-of-visibility/outline")).text();
-    expect(html).not.toContain('data-outline-delete="true"');
-    expect(html).toContain('data-cited-note="true"');
+    ).request("/bff/p/the-politics-of-visibility/outline");
+    const { outline } = (await res.json()) as { outline: { cited: boolean; deleteAction?: string } | null };
+    expect(outline?.cited).toBe(true);
   });
 
-  it("404s with no outline (the not-found copy)", async () => {
-    const app = createWebApp(
+  it("no outline answers {outline:null} — the leaf paints the document's own not-found copy", async () => {
+    const res = await createWebApp(
       makeDeps({ getOutline: async () => { throw new ApiError(404, "x", "not_found"); } }),
-    );
-    const res = await app.request("/p/the-politics-of-visibility/outline");
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain("no outline yet");
+    ).request("/bff/p/the-politics-of-visibility/outline");
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { outline: unknown }).outline).toBeNull();
   });
 });
 

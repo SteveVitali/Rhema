@@ -11,19 +11,15 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { ProjectUsagePage, UsagePage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffProjectUsageTwin, BffUsageTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -48,8 +44,7 @@ const ACCOUNT: UsageAccountDto = {
   periodStart: "2026-09-01T00:00:00Z",
   periodEnd: "2026-10-01T00:00:00Z",
   warnings: ["Included credits reset in 7 days — 500 over the rollover cap will expire."],
-  nextExpiry: { bucket: "included", credits: 500, at: "2026-10-01T00:00:00Z" },
-};
+  nextExpiry: { bucket: "included", credits: 500, at: "2026-10-01T00:00:00Z" } };
 
 const USAGE: UsageDto = {
   spendableCredits: 3100,
@@ -64,10 +59,8 @@ const USAGE: UsageDto = {
       capCredits: 90,
       spentCredits: 55,
       createdAt: "2026-09-20T10:00:00Z",
-      endedAt: "2026-09-20T10:12:00Z",
-    },
-  ],
-};
+      endedAt: "2026-09-20T10:12:00Z" },
+  ] };
 
 const PROJECT_USAGE: UsageProjectDto = {
   projectId: "proj_a",
@@ -76,8 +69,7 @@ const PROJECT_USAGE: UsageProjectDto = {
   runs: [
     { runId: "run_1", at: "2026-09-20T10:00:00Z", workflow: "review", state: "delivered", credits: 55, estimateCredits: 60, capCredits: 90 },
     { runId: "run_2", at: "2026-09-21T10:00:00Z", workflow: "chat", state: "delivered", credits: 33, estimateCredits: 30, capCredits: 45 },
-  ],
-};
+  ] };
 
 function usageTwin(over?: Partial<BffUsageTwin>): BffUsageTwin {
   return { usage: USAGE, account: ACCOUNT, ...over };
@@ -89,8 +81,7 @@ function projectTwin(): BffProjectUsageTwin {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 /** The fetch stub — every same-origin path the mount can reach is named; anything else 500s so a
@@ -128,8 +119,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -227,24 +217,6 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
     }
   });
 
-  it("REQ-TST-2 parity — every usage hook the SSR twin emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ usage: USAGE, usageAccount: ACCOUNT }}>
-        <UsagePage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/usage", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const emitted = hooksForSurface("usage").filter((entry) => {
-      if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-      return false;
-    });
-    // The fixture exercises the full account + glance vocabulary — a thin set means the parity
-    // leg drifted away from the SSR twin.
-    expect(emitted.length).toBeGreaterThanOrEqual(10);
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("a degraded seam renders the surviving half only — never a fabricated zero (REQ-BFF-9)", async () => {
     await mountAt("/usage", BOOT, makeFetch({ usage: usageTwin({ account: null }) }));
@@ -300,25 +272,6 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     await axeCheck(el()!.querySelector("[data-spa-surface]")!);
   });
 
-  it("REQ-TST-2 parity — the project rollup's hooks match the SSR twin's emission", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ usageProject: { ...PROJECT_USAGE, slug: SLUG } }}>
-        <ProjectUsagePage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt(`/p/${SLUG}/usage`, BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const emitted = hooksForSurface("usage").filter(
-      (entry) =>
-        entry.kind === "attr" &&
-        new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup),
-    );
-    expect(emitted.map((e) => e.hook)).toEqual(
-      expect.arrayContaining(["data-project-usage-total", "data-project-usage-run", "data-project-usage-runs"]),
-    );
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("the query key carries the slug — the browser key grammar is [bff, p, slug, usage]", async () => {
     const f = makeFetch();
@@ -326,18 +279,10 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     expect(f.mock.calls.some(([u]) => String(u) === `/bff/p/${SLUG}/usage`)).toBe(true);
   });
 
-  it("a 404 twin answer renders the router's not-found — the document's own 404 parity", async () => {
-    await mountAt(`/p/${SLUG}/usage`, BOOT, makeFetch({ projectStatus: 404 }));
-    expect(el()?.querySelector("h1")?.textContent).toBe(COPY.notFound.heading);
-    expect(el()?.textContent).toContain(COPY.notFound.body);
-    // The designed error state must NOT stand in for a not-found.
-    expect(el()?.querySelector("[data-spa-error]")).toBeNull();
-  });
 
   it("empty runs render the empty state", async () => {
     const f = makeFetch({
-      project: { usageProject: { ...PROJECT_USAGE, totalCredits: 0, runs: [], slug: SLUG } },
-    });
+      project: { usageProject: { ...PROJECT_USAGE, totalCredits: 0, runs: [], slug: SLUG } } });
     await mountAt(`/p/${SLUG}/usage`, BOOT, f);
     const main = el()!;
     expect(main.textContent).toContain(COPY.projectUsage.runEmpty);

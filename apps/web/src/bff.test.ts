@@ -3523,16 +3523,17 @@ describe("POST /p/:slug/run — the JSON branch (SPA.20; REQ-BFF-2/3/4/5)", () =
     expect(await trial.json()).toEqual({ error: "trial_shape" });
   });
 
-  it("a form post keeps the document's re-render (the sheet HTML, not the envelope)", async () => {
+  it("a form post lands its 302 back on the sheet (SPA.27 — the inline re-render is deleted)", async () => {
     const res = await createWebApp(runDeps()).request("/p/the-politics-of-visibility/run", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: "workflow=review&rigor=standard&idempotencyKey=idem_f&estimateCredits=288&capCredits=432",
+      redirect: "manual",
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("data-run-sheet");
-    expect(html).toContain("Your run has started");
+    // SPA.27 — the sheet-HTML re-render ("Your run has started") retired with the document; the
+    // no-JS floor keeps the 302 hand-off and the sheet reloads in its started state.
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
   });
 });
 

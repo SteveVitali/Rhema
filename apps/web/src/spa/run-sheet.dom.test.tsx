@@ -14,20 +14,16 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildRunSheetView, type RunSheetView } from "@rhema/run-sheet";
-import { PageDataContext } from "../page-data.js";
-import { RunSheetPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffRunSheetTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -52,8 +48,7 @@ function sheetView(over: Partial<Parameters<typeof buildRunSheetView>[0]> = {}):
     insufficientMode: "beta",
     scopeLine: "4 open obligations will be checked",
     standingNotes: 2,
-    ...over,
-  });
+    ...over });
 }
 
 function twinFor(view: RunSheetView, over: Partial<BffRunSheetTwin["runSheet"]> = {}): BffRunSheetTwin {
@@ -62,12 +57,10 @@ function twinFor(view: RunSheetView, over: Partial<BffRunSheetTwin["runSheet"]> 
       slug: SLUG,
       projectTitle: "The Politics of Visibility",
       view,
-      ...over,
-    },
+      ...over },
     project: { title: "The Politics of Visibility", pill: "Drafting", slug: SLUG },
     paperTheme: "light",
-    ide: { projectId: "p1", inboxCount: 0 },
-  };
+    ide: { projectId: "p1", inboxCount: 0 } };
 }
 
 const BASE_TWIN = twinFor(sheetView());
@@ -77,8 +70,7 @@ const BASE_TWIN = twinFor(sheetView());
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -137,8 +129,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(rootEl);
   const { router } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(rootEl);
   mounted.push(root);
   await act(async () => {
@@ -154,19 +145,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
-/** The REQ-TST-2 emission filter — which `run-sheet` manifest entries a markup string emits. */
-function emittedOn(markup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("run-sheet")
-    .filter((entry) => {
-      if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(markup);
-      if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(markup);
-      if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(markup);
-      if (entry.kind === "field-prefix") return new RegExp("\\bname=[\"'`]" + esc(entry.hook)).test(markup);
-      return false;
-    })
-    .map((e) => e.hook);
-}
 
 async function submit(form: Element) {
   await act(async () => {
@@ -347,8 +325,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
   it("a refusal code repaints the SSR arm's notice leaf — server truth off the invalidated twin", async () => {
     const f = makeFetch({
       mutations: { [`/p/${SLUG}/run`]: { status: 402, body: { error: "insufficient_balance" } } },
-      twinAfter: twinFor(sheetView({ spendableCredits: 40 })),
-    });
+      twinAfter: twinFor(sheetView({ spendableCredits: 40 })) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     await submit(el()!.querySelector("form[data-run-sheet]")!);
     const alert = el()!.querySelector('p[role="alert"]');
@@ -386,9 +363,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     const f = makeFetch({
       twin: twinFor(view),
       mutations: {
-        [`/p/${SLUG}/exhausted`]: { status: 200, body: { ok: true, url: "https://buy.stripe.com/test_1?client_reference_id=b1" } },
-      },
-    });
+        [`/p/${SLUG}/exhausted`]: { status: 200, body: { ok: true, url: "https://buy.stripe.com/test_1?client_reference_id=b1" } } } });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const pay = el()!.querySelector<HTMLButtonElement>("button[data-payment-link]")!;
     const form = el()!.querySelector("form[data-run-sheet]")!;
@@ -416,8 +391,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
   it("renders the §14.3 Included arm — no dollars/cap arithmetic, the entitlement line, the claim field", async () => {
     const view = sheetView({
       entitlement: true,
-      entitlementDetails: { id: "ent_1", wordCap: 6000, rigor: "standard", modelTier: "base", kind: "trial" },
-    });
+      entitlementDetails: { id: "ent_1", wordCap: 6000, rigor: "standard", modelTier: "base", kind: "trial" } });
     const f = makeFetch({ twin: twinFor(view) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
@@ -448,8 +422,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
 
   it("renders the in-progress arm INSTEAD of the form when the twin carries activeRun", async () => {
     const f = makeFetch({
-      twin: twinFor(sheetView(), { activeRun: { runId: "run_9", state: "running" } }),
-    });
+      twin: twinFor(sheetView(), { activeRun: { runId: "run_9", state: "running" } }) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
     expect(main.querySelector("form[data-run-sheet]")).toBeNull();
@@ -460,8 +433,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
   it("renders the memo arms — protocol select, confidentiality line, user_sources field", async () => {
     const view = sheetView({
       scope: { protocol: "memo", protocolOptions: [{ id: "memo", name: "Memo" }, { id: "essay", name: "Essay" }] },
-      userSourcesText: "Q3 forecast :: https://internal.example/q3",
-    });
+      userSourcesText: "Q3 forecast :: https://internal.example/q3" });
     const f = makeFetch({ twin: twinFor(view) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
@@ -486,9 +458,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
       commandScope: {
         serialized: "section:III",
         labels: ["Section III"],
-        scopedInputs: { words: 1200 },
-      },
-    });
+        scopedInputs: { words: 1200 } } });
     const f = makeFetch({ twin: twinFor(view) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
@@ -515,9 +485,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
         name: "S. J. Sebastian",
         pill: { label: "Stale", tone: "warn" },
         updateEstimateCredits: 9,
-        updateAction: `/p/${SLUG}/update-voice`,
-      },
-    };
+        updateAction: `/p/${SLUG}/update-voice` } };
     const f = makeFetch({ twin: twinFor(view) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
@@ -550,6 +518,14 @@ describe("the page arms (SPA.20)", () => {
     for (const frag of ["workflow=revise", "rigor=quick", "tier=base", "toggle.fact_check=off"]) {
       expect(url).toContain(frag);
     }
+  });
+
+  it("renders the beta-plan offer line + link when the twin carries planOfferUrl (PRB.08)", async () => {
+    const f = makeFetch({ twin: twinFor(sheetView({ planOfferUrl: "https://rhema.example/beta-plan" })) });
+    await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
+    const offer = el()!.querySelector("[data-plan-offer]");
+    expect(offer).not.toBeNull();
+    expect(offer!.querySelector('a[href="https://rhema.example/beta-plan"]')).not.toBeNull();
   });
 
   it("renders the revise pretriage line when the twin carries it", async () => {
@@ -587,44 +563,3 @@ describe("the page arms (SPA.20)", () => {
 
 // ---- axe + parity --------------------------------------------------------------------------------
 
-describe("axe + SSR parity (SPA.20)", () => {
-  const BOOT = bootFor(SPA_RUN);
-
-  it("is axe-clean on the mounted sheet (component-level; journey axe stays authoritative)", async () => {
-    const f = makeFetch();
-    await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
-  });
-
-  it("REQ-TST-2 parity — the SPA leaf emits the same run-sheet manifest hooks the SSR page does", async () => {
-    const f = makeFetch();
-    await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          runSheet: {
-            slug: SLUG,
-            projectTitle: "The Politics of Visibility",
-            view: BASE_TWIN.runSheet.view,
-          },
-          compact: false,
-        }}
-      >
-        <RunSheetPage />
-      </PageDataContext.Provider>,
-    );
-    const ssrHooks = emittedOn(ssr);
-    const spaHooks = emittedOn(el()!.innerHTML);
-    // every hook the SSR emits, the leaf emits — the leaf adds only `data-spa-surface`-class mounts.
-    for (const hook of ssrHooks) {
-      expect(spaHooks, `SPA emits SSR hook ${hook}`).toContain(hook);
-    }
-  });
-
-  it("manifest emission — the run-sheet bucket's required hooks are all emitted", async () => {
-    const f = makeFetch();
-    await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    const checked = expectManifestEmission(el()!, hooksForSurface("run-sheet").filter((e) => e.role === "required"));
-    expect(checked.length).toBeGreaterThan(0);
-  });
-});

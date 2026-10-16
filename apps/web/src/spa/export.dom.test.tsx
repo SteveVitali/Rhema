@@ -23,20 +23,16 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportDialogDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { ExportPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffExportTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -55,44 +51,38 @@ const DIALOG: ExportDialogDto = {
       label: "Markdown",
       extension: "md",
       blurb: "The canonical file.",
-      provenanceAppendix: true,
-    },
+      provenanceAppendix: true },
     {
       id: "txt",
       label: "Plain text",
       extension: "txt",
       blurb: "Text only.",
-      provenanceAppendix: false,
-    },
+      provenanceAppendix: false },
     {
       id: "html",
       label: "HTML",
       extension: "html",
       blurb: "A self-contained page.",
-      provenanceAppendix: true,
-    },
+      provenanceAppendix: true },
     {
       id: "docx",
       label: "Word (.docx)",
       extension: "docx",
       blurb: "A Word document.",
-      provenanceAppendix: true,
-    },
+      provenanceAppendix: true },
     { id: "rtf", label: "RTF", extension: "rtf", blurb: "Rich text.", provenanceAppendix: false },
     {
       id: "pdf",
       label: "PDF",
       extension: "pdf",
       blurb: "Typeset by Typst.",
-      provenanceAppendix: true,
-    },
+      provenanceAppendix: true },
     {
       id: "latex",
       label: "LaTeX",
       extension: "tex",
       blurb: "A .tex source file.",
-      provenanceAppendix: true,
-    },
+      provenanceAppendix: true },
   ],
   mdProfiles: [
     { id: "substack", label: "Substack", blurb: "Markdown shaped for the Substack editor." },
@@ -105,18 +95,15 @@ const DIALOG: ExportDialogDto = {
       { id: "chicago-author-date", label: "Chicago (author-date)" },
       { id: "harvard", label: "Harvard" },
       { id: "vancouver", label: "Vancouver" },
-    ],
-  },
+    ] },
   provenance: {
     available: true,
     defaultOn: false,
     label: "Block-level provenance.",
-    formats: ["md", "html", "docx", "pdf", "latex"],
-  },
+    formats: ["md", "html", "docx", "pdf", "latex"] },
   surfaces: {
     disclosure: true,
-    exclusivityReminder: "Confirm this piece is not under review anywhere else.",
-  },
+    exclusivityReminder: "Confirm this piece is not under review anywhere else." },
   obligations: {
     blockingOpen: 2,
     open: 3,
@@ -128,27 +115,23 @@ const DIALOG: ExportDialogDto = {
         severity: "blocking",
         state: "open",
         findingId: "f_1",
-        reviewRunId: "run_9",
-      },
+        reviewRunId: "run_9" },
       {
         id: "ob_2",
         title: "Tighten the close",
         severity: "blocking",
         state: "open",
         findingId: "f_2",
-        reviewRunId: null,
-      },
+        reviewRunId: null },
       {
         id: "ob_3",
         title: "Parked until export",
         severity: "major",
         state: "open",
         findingId: "f_3",
-        reviewRunId: "run_9",
-      },
+        reviewRunId: "run_9" },
     ],
-    returnedIds: ["ob_3"],
-  },
+    returnedIds: ["ob_3"] },
   statement: {
     template: "general",
     generated: [
@@ -159,15 +142,12 @@ const DIALOG: ExportDialogDto = {
       {
         id: "ad_1",
         sentence: "I rewrote the ending myself.",
-        createdAt: "2026-09-04T00:00:00.000Z",
-      },
+        createdAt: "2026-09-04T00:00:00.000Z" },
     ],
     markdown: "# AI-use statement\n\n…\n",
     openObligations: 3,
     blockingOpen: 2,
-    generatedAt: "2026-09-04T00:00:00.000Z",
-  },
-};
+    generatedAt: "2026-09-04T00:00:00.000Z" } };
 
 const TWIN: BffExportTwin = {
   export: {
@@ -183,22 +163,17 @@ const TWIN: BffExportTwin = {
         projectSlug: "the-piece",
         goto: [{ label: "Project settings", path: "/p/the-piece/settings" }],
         recentRuns: [],
-        settings: [],
-      }),
+        settings: [] }),
       paletteSearchUrl: "/p/the-piece/palette-search",
       themeUrl: "/ide/theme",
-      paperThemeUrl: "/p/the-piece/paper-theme",
-    },
-  },
-};
+      paperThemeUrl: "/p/the-piece/paper-theme" } } };
 
 // ---- the mount substrate --------------------------------------------------------------------------
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -285,8 +260,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(rootEl);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(rootEl);
   mounted.push(root);
   await act(async () => {
@@ -302,21 +276,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
-/** The REQ-TST-2 emission filter — which `export` manifest entries a markup string emits. */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("export").filter((entry) => {
-    if (entry.kind === "attr")
-      return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix")
-      return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field")
-      return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix")
-      return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-    return false;
-  });
-}
 
 async function submit(form: Element) {
   await act(async () => {
@@ -395,28 +354,6 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
     expect(main.querySelector('a[href="/p/the-piece/export/ai-use/docx"]')).not.toBeNull();
   });
 
-  it("REQ-TST-2 parity — the SPA emits every manifest hook the SSR markup emits on the same fixture", async () => {
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          project: {
-            title: "The Piece",
-            pill: "Edited by you",
-            slug: "the-piece",
-            headDraftId: "d_2",
-          },
-          export: { slug: "the-piece", projectId: "proj_1", dialog: DIALOG },
-          compact: false,
-        }}
-      >
-        <ExportPage />
-      </PageDataContext.Provider>,
-    );
-    const emitted = emittedOn(ssr);
-    expect(emitted.length).toBeGreaterThanOrEqual(10);
-    await mountAt("/p/the-piece/export", BOOT, makeFetch());
-    expectManifestEmission(el()!, emitted);
-  });
 
   it("the ?error=1 flash renders the exportFailed copy through validated search", async () => {
     await mountAt("/p/the-piece/export?error=1", BOOT, makeFetch());
@@ -468,8 +405,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
     const init = post![1] as RequestInit;
     expect(init.headers).toMatchObject({
       "content-type": "application/json",
-      accept: "application/json",
-    });
+      accept: "application/json" });
     expect(JSON.parse(String(init.body))).toEqual({ sentence: "I rewrote the ending myself." });
     await vi.waitFor(() => {
       expect(router.state.location.searchStr).toContain("added=1");

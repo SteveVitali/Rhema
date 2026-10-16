@@ -33,51 +33,25 @@ function probe(spa: SpaConsult, surface: SpaSurface) {
   };
 }
 
-describe("deps.spa — flag membership + the ide-chrome AND-gate (REQ-SEQ-1/2)", () => {
-  it("an empty flag set serves SSR for every surface — fail-closed ∅", async () => {
-    const spa = consult({});
-    for (const surface of ["usage", "export", "editor", "ide-chrome"] as const) {
-      expect(await probe(spa, surface)("/doc")).toBe(false);
+describe("deps.spa — SPA.27 universal flag-on (the membership leg retired; REQ-SEQ-1/2 resolved)", () => {
+  it("every surface key resolves true — the flag-on set IS the whole auth'd document set", async () => {
+    // The deletion wave removed the SSR documents the membership leg chose between; `deps.spa`
+    // remains only as the catch-all's shell-or-404 decision (and the Page family's forced-SSR arm
+    // reads the SAME override signals via `ssrOverrideRequested`, not this consult).
+    for (const opts of [{}, { surfaces: ["usage"] }, { surfaces: ["ide-chrome"] }] as const) {
+      const spa = consult(opts);
+      for (const surface of ["usage", "export", "editor", "ide-chrome", "onboarding", "inbox"] as const) {
+        expect(await probe(spa, surface)("/doc")).toBe(true);
+      }
     }
   });
 
-  it("a flagged non-framed surface serves SPA; an unflagged one does not", async () => {
-    const spa = consult({ surfaces: ["usage"] });
-    expect(await probe(spa, "usage")("/doc")).toBe(true);
-    expect(await probe(spa, "inbox")("/doc")).toBe(false);
-  });
-
-  it("IDE-framed keys need BOTH the surface flag AND ide-chrome — the composite AND-gate", async () => {
-    const exportOnly = consult({ surfaces: ["export"] });
-    expect(await probe(exportOnly, "export")("/doc")).toBe(false);
-
-    const chromeOnly = consult({ surfaces: ["ide-chrome"] });
-    expect(await probe(chromeOnly, "export")("/doc")).toBe(false);
-
-    const both = consult({ surfaces: ["export", "ide-chrome"] });
-    expect(await probe(both, "export")("/doc")).toBe(true);
-    // chrome alone never flips a non-framed surface either
-    expect(await probe(consult({ surfaces: ["ide-chrome"] }), "usage")("/doc")).toBe(false);
-    // every always-framed key AND-gates the same way
+  it("the composite AND-gate is vacuous — an IDE-framed key resolves without an ide-chrome flag", async () => {
+    // REQ-SEQ-2's "surface flag AND ide-chrome" gate dissolved with the flag set: every framed key
+    // is on because the whole framed set is on. Resurrecting membership would fail this.
     for (const key of ["export", "dossier", "run-sheet", "run-report", "editor"] as const) {
-      expect(await probe(consult({ surfaces: [key] }), key)("/doc")).toBe(false);
-      expect(await probe(consult({ surfaces: [key, "ide-chrome"] }), key)("/doc")).toBe(true);
+      expect(await probe(consult({}), key)("/doc")).toBe(true);
     }
-  });
-
-  it("route-level framing composes: onboarding's /p/:p/import legs wait for ide-chrome", async () => {
-    // The consult is key-level; the two IDE-framed onboarding legs AND the chrome flag at the
-    // call site (`deps.spa(c,"onboarding") && deps.spa(c,"ide-chrome")`).
-    const onboardingOnly = consult({ surfaces: ["onboarding"] });
-    const onboardingAndChrome = consult({ surfaces: ["onboarding", "ide-chrome"] });
-    const leg = (spa: SpaConsult) =>
-      probe(spa, "onboarding")("/doc").then(async (own) =>
-        own && (await probe(spa, "ide-chrome")("/doc")),
-      );
-    expect(await leg(onboardingOnly)).toBe(false); // import legs hold for the chrome flag
-    expect(await leg(onboardingAndChrome)).toBe(true);
-    // while /app/new (unframed) flips on `onboarding` alone
-    expect(await probe(onboardingOnly, "onboarding")("/doc")).toBe(true);
   });
 });
 
@@ -109,17 +83,19 @@ describe("deps.spa — renderer overrides (REQ-SEQ-4)", () => {
     expect(await probe(nonProd, "usage")("/doc", { [SPA_RENDERER_HEADER]: "spa" })).toBe(true);
 
     const prod = consult({ surfaces: ["usage"], overrides: false });
-    expect(await probe(prod, "usage")("/doc?renderer=spa")).toBe(true); // flag still decides
-    expect(await probe(prod, "inbox")("/doc?renderer=spa")).toBe(false); // refused, not forged
+    // SPA.27 — on a no-overrides stage the force-spa signals are ignored AND membership is
+    // universal, so every key resolves true either way (the override is no longer load-bearing).
+    expect(await probe(prod, "usage")("/doc?renderer=spa")).toBe(true);
+    expect(await probe(prod, "inbox")("/doc?renderer=spa")).toBe(true);
     expect(await probe(prod, "usage")("/doc", { [SPA_RENDERER_HEADER]: "spa" })).toBe(true);
-    expect(await probe(prod, "inbox")("/doc", { [SPA_RENDERER_HEADER]: "spa" })).toBe(false);
+    expect(await probe(prod, "inbox")("/doc", { [SPA_RENDERER_HEADER]: "spa" })).toBe(true);
   });
 
-  it("an unrecognized renderer value falls through to flag membership", async () => {
+  it("an unrecognized renderer value falls through to the (now-universal) membership leg", async () => {
     const spa = consult({ surfaces: ["usage"], overrides: true });
-    expect(await probe(spa, "usage")("/doc?renderer=banana")).toBe(true); // flag on
-    expect(await probe(spa, "inbox")("/doc?renderer=banana")).toBe(false); // flag off
-    expect(await probe(spa, "inbox")("/doc", { [SPA_RENDERER_HEADER]: "SSRish" })).toBe(false);
+    expect(await probe(spa, "usage")("/doc?renderer=banana")).toBe(true);
+    expect(await probe(spa, "inbox")("/doc?renderer=banana")).toBe(true);
+    expect(await probe(spa, "inbox")("/doc", { [SPA_RENDERER_HEADER]: "SSRish" })).toBe(true);
   });
 });
 

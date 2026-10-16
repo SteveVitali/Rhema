@@ -174,7 +174,9 @@ describe("SSR settle markers (REQ-SEQ-8; design/27)", () => {
 
   it("a param-shaped SSR document stamps the resolved route id or the raw path", async () => {
     const app = createWebApp(spaDeps());
-    const res = await app.request("/p/acme/unknown-leaf"); // unmatched → SSR 404 under /p
+    // SPA.27 — an unmatched SPA-prefixed deep link now serves the shell (the client router owns
+    // not-found); the SSR 404 still answers `?ssr=1` and stamps the raw path.
+    const res = await app.request("/p/acme/unknown-leaf?ssr=1");
     expect(res.status).toBe(404);
     expect(await res.text()).toContain('data-route="/p/acme/unknown-leaf"');
     // A matched shape's SSR 404 (project row absent) stamps the $param id, not the raw path.
@@ -252,13 +254,16 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(await res.text()).toContain('data-renderer="ssr"');
   });
 
-  it("authenticated + flag-off ⇒ today's SSR 404 byte-identical for unknown deep links", async () => {
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set() }));
+  it("authenticated deep links reach the shell flag-independent (SPA.27 — flag-off is vacuous; the leaf owns not-found)", async () => {
+    // The flag-empty posture retired with the SSR documents: an empty `spaSurfaces` deploy still
+    // hands SPA-prefixed deep links to the shell — a resurrected membership leg fails this.
+    const app = createWebApp(spaDeps({ spaSurfaces: new Set(), spaAssetRoot: spaFixture() }));
     const res = await app.request("/p/acme/future-route");
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-renderer="ssr"');
-    expect(html).toContain("data-mounted");
+    expect(html).toContain('data-renderer="spa"');
+    expect(html).toContain('data-spa-boot');
+    expect(html).not.toContain("data-mounted");
   });
 
   it("authenticated + surface flipped ⇒ the shell reaches SPA deep links (client router owns not-found)", async () => {
@@ -316,11 +321,17 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     // the manifest-resolved tags, nonce-stamped by the CSP middleware
     expect(html).toMatch(/<script nonce="[^"]+" type="module" src="\/assets\/spa\/assets\/main-abc123\.js">/);
     expect(html).toContain('<link rel="modulepreload" href="/assets/spa/assets/chunks/shared-def456.js">');
-    // REQ-BND-10 — the boot embed: the effective flags resolved through the same consult.
+    // REQ-BND-10 — the boot embed. SPA.27: the renderer map is static truth — every
+    // surface-keyed document route serves the shell unconditionally, so the map no longer
+    // resolves through `deps.spa` (a `?ssr=1`-served shell must still map "spa" or the leaf's
+    // SsrHandoff would reload-loop). The structural exceptions stay "ssr": server-owned rows
+    // (`surfaces: null`), the public funnel, and pageMount routes on phone (REQ-ED-12).
     const boot = bootOf(html);
     expect(boot.surfaces["/usage"]).toBe("spa");
-    expect(boot.surfaces["/app"]).toBe("ssr");
-    expect(boot.surfaces["/p/$project"]).toBe("ssr"); // editor unflagged
+    expect(boot.surfaces["/app"]).toBe("spa");
+    expect(boot.surfaces["/p/$project"]).toBe("spa"); // the whole auth'd doc set is flag-on now
+    expect(boot.surfaces["/app/usage/r/$runId"]).toBe("ssr"); // server-owned row
+    expect(boot.surfaces["/"]).toBe("ssr"); // the public funnel stays SSR forever
     expect(boot.principal?.userId).toBe("u_1");
     expect(boot.theme.appTheme).toBe("light");
     expect(boot.deviceClass).toBe("desktop");
@@ -329,23 +340,28 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     expect(html).not.toContain("__Host-rhema.session_token");
   });
 
-  it("flag-off ⇒ byte-identical SSR for a registered surface (the flag-empty posture)", async () => {
+  it("SPA.27 — flag-off still serves the shell on a flipped surface: the SSR document is DELETED (the point-of-no-return wave; REQ-TST-1)", async () => {
+    // The flag-empty posture is gone by design: `/usage` has no SSR render path to fall back to,
+    // so a flag-off deploy still answers the shell (and a `?ssr=1` request converges on the same
+    // document — there is no SSR document left to hand to). This is the wave's removal-detecting
+    // pin: resurrecting an SSR arm for a flipped surface fails it.
     const app = createWebApp(
       spaDeps({
         dataSource: {
           checkSession: async () => true,
           listProjects: async () => [],
-          getUsage: async () => undefined, // the SSR path's best-effort read
         } as unknown as DataSource,
       }),
     );
-    const res = await app.request("/usage");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-renderer="ssr"');
-    expect(html).toContain('data-route="/usage"');
-    expect(html).toContain("data-mounted");
-    expect(html).not.toContain("data-spa-boot");
+    for (const path of ["/usage", "/usage?ssr=1"]) {
+      const res = await app.request(path);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('data-renderer="spa"');
+      expect(html).toContain('<div id="spa-root" data-spa-root></div>');
+      expect(html).not.toContain('data-renderer="ssr"');
+      expect(html).not.toContain("data-mounted");
+    }
   });
 
   it("/app's first-five-minutes precedence still wins under a flipped project-home", async () => {

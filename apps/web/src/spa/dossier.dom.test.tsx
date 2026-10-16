@@ -14,14 +14,11 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FindingView } from "@rhema/contracts";
-import type { ChatPanelDto, GateCardDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { DossierPage } from "../pages.js";
+import type { GateCardDto, ChatPanelDto } from "@rhema/api-client";
 import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import type { DossierViewData } from "../dossier-view.js";
@@ -113,11 +110,7 @@ function twinFor(over: Partial<BffDossierTwin> = {}, viewOver: Partial<BffDossie
   };
 }
 
-const OBLIGATION_TWIN: BffObligationNewTwin = {
-  obligationNew: { slug: SLUG, projectTitle: DOSSIER.projectTitle, back: `/p/${SLUG}` },
-};
-
-/** The chat-surfaces.test.ts fixture shape — the `ide.chat` arm for the §10.1 compact parity leg. */
+/** The phone-width Desk chat fixture (chat-surfaces.test.ts's CHAT verbatim). */
 const CHAT: ChatPanelDto = {
   threads: [{ id: "thr_1", name: "Project chat", isDefault: true, archived: false }],
   activeThreadId: "thr_1",
@@ -135,10 +128,14 @@ const CHAT: ChatPanelDto = {
       { id: "interview", label: "Interview me", verb: "chat" },
       { id: "notes", label: "Paste my notes", verb: "notes" },
     ],
-    nextStep: { kind: "sheet", label: "Start", href: `/p/${SLUG}/sheet?workflow=research_burst` },
+    nextStep: { kind: "sheet", label: "Start", href: "/p/demo/sheet?workflow=research_burst" },
   },
   budgets: { credits: 40, searches: 5, fetches: 10 },
   defaultTier: "base",
+};
+
+const OBLIGATION_TWIN: BffObligationNewTwin = {
+  obligationNew: { slug: SLUG, projectTitle: DOSSIER.projectTitle, back: `/p/${SLUG}` },
 };
 
 // ---- the mount substrate (run-sheet.dom.test.tsx's harness) --------------------------------------
@@ -571,6 +568,26 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     });
   });
 
+  it("a finding carrying evidence urls paints the once-per-surface explainer (data-evidence-explainer)", async () => {
+    const f = makeFetch({
+      twin: twinFor({
+        dossier: {
+          ...DOSSIER,
+          findings: [
+            ...DOSSIER.findings,
+            finding({ id: "f_e", severity: "note", title: "Cited", evidence: { urls: [{ url: "https://example.test/src" }] } }),
+          ] } }) });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
+    expect(el()!.querySelector("[data-evidence-explainer]")).not.toBeNull();
+  });
+
+  it("phone width mounts the Page's own chat section (data-phone-chat — §10.1)", async () => {
+    const f = makeFetch({
+      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
+    expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
+  });
+
   it("an unflipped verdict hands the document back to the server", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor({ ...SPA_DOSSIER, "/p/$project/review/$runId": "ssr" }), f.impl);
@@ -659,54 +676,3 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
 
 // ---- REQ-TST-2 — the SSR/SPA parity leg ------------------------------------------------------------
 
-describe("dossier SSR/SPA parity (REQ-TST-2)", () => {
-  it("the SSR DossierPage and the SPA leaf emit the same dossier hooks", async () => {
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          project: { title: DOSSIER.projectTitle, pill: "", slug: SLUG },
-          dossier: DOSSIER,
-          dossierView: { filters: {}, triage: false },
-          compact: false,
-        }}
-      >
-        <DossierPage />
-      </PageDataContext.Provider>,
-    );
-    const f = makeFetch();
-    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER), f.impl);
-    const spa = el()!.outerHTML;
-    // every dossier manifest hook the SSR emits, the SPA must emit too (conditional hooks fixture
-    // the same state — the fixture dossier exercises them identically).
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const missing = hooksForSurface("dossier")
-      .filter((e) => e.kind === "attr")
-      .filter((e) => new RegExp(`\\b${esc(e.hook)}(?:[\\s=>/]|$)`).test(ssr))
-      .filter((e) => !new RegExp(`\\b${esc(e.hook)}(?:[\\s=>/]|$)`).test(spa))
-      .map((e) => e.hook);
-    expect(missing, "hooks the SSR emits but the SPA misses").toEqual([]);
-  });
-
-  it("the compact dossier mounts the §10.1 phone chat section on both renderers", async () => {
-    // SSR — `data.compact === true && ide.chat` renders the Page-internal chat section
-    // (pages.tsx; the Desk is display:none at phone width).
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          project: { title: DOSSIER.projectTitle, pill: "", slug: SLUG },
-          dossier: DOSSIER,
-          dossierView: { filters: {}, triage: false },
-          compact: true,
-          ide: { chat: CHAT },
-        }}
-      >
-        <DossierPage />
-      </PageDataContext.Provider>,
-    );
-    expect(ssr).toContain('data-phone-chat="true"');
-    // SPA — the same arm off the twin's `ide.chat` + the boot's device class.
-    const f = makeFetch({ twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
-    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
-    expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
-  });
-});

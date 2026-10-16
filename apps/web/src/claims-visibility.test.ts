@@ -117,27 +117,34 @@ describe("the landing + pricing pages hide every gated claim (default config)", 
   });
 });
 
-describe("the billing page renders the DTO the api redacted", () => {
-  it("hidden claims: trial_active shows the factual window line; no ≈-loop lines", async () => {
-    const app = createWebApp(deps({ session: () => ({}) }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-trial-state="active"');
-    expect(html).toContain("Trial window — 14 days.");
-    for (const s of CLAIM_TEXTS) expect(html).not.toContain(s);
-    // the "Included" badge rides with the claim text — neither renders while hidden
-    expect(html).not.toContain("Included");
-    for (const s of [PRICING.plans.writer.whatItCovers, PRICING.plans.studio_max.whatItCovers])
-      expect(html).not.toContain(s);
+// SPA.27 — the redacted-DTO rendering is leaf paint now: the twin ships the api's verbatim
+// `plans` DTO, and the claims-visibility invariant (a hidden claim never reaches the payload) is
+// what survives on the server.
+describe("the billing twin ships the DTO the api redacted", () => {
+  const plansOf = async (app: ReturnType<typeof createWebApp>) =>
+    (
+      (await (await app.request("/bff/settings/billing")).json()) as {
+        billing: { plans: { trial?: { includedNote?: string | null }; plans?: Record<string, { whatItCovers?: string | null }> } } | null;
+      }
+    ).billing?.plans;
+
+  it("hidden claims: the plans DTO carries a null includedNote and no claim lines in the payload", async () => {
+    const plans = await plansOf(createWebApp(deps({ session: () => ({}) })));
+    expect(plans?.trial?.includedNote ?? null).toBeNull();
+    // no claim text reaches the payload while the flag is off — the leaf can never paint it.
+    const serialized = JSON.stringify(plans);
+    for (const s of CLAIM_TEXTS) expect(serialized).not.toContain(s);
+    expect(serialized).not.toContain("Included");
   });
 
-  it("claim-on DTO (a covered audience's transmission): the included note + computed coverage lines render", async () => {
+  it("claim-on DTO (a covered audience's transmission): the included note reaches the twin verbatim", async () => {
     // ACT.1 — `isTest: true` is the /billing/plans DTO the api sends a JOURNEY.1 tenant under
     // `test_tenants`; a real viewer's DTO keeps `includedNote` null while the flip is paused.
-    const app = createWebApp(
-      deps({ session: () => ({}) }, { getPlans: async () => plansDto(ALL_ON, true) }),
+    const plans = await plansOf(
+      createWebApp(deps({ session: () => ({}) }, { getPlans: async () => plansDto(ALL_ON, true) })),
     );
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain(PRICING.trial.includedNote);
-    expect(html).toContain(planCoverageLine("writer", surfacePricer())!);
+    expect(plans?.trial?.includedNote).toBe(PRICING.trial.includedNote);
+    // the computed coverage line the leaf paints still resolves through the shared pricer.
+    expect(planCoverageLine("writer", surfacePricer())).not.toBeNull();
   });
 });

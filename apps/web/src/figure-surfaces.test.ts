@@ -125,37 +125,51 @@ describe("/visualize in chat — the verb resolves to the visualize SHEET, never
 });
 
 describe("the /visualize sheet — the consent surface (GET + the Visualize click)", () => {
-  it("GET renders the request field, the spec-kind pick, the honesty note, and the estimate", async () => {
+  it("the twin echoes the request/spec-kind/entry fields + the server-computed estimate", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-politics-of-visibility/visualize?request=chart%20of%20scores&entry=chat");
+    // the document is the shell now; the sheet's facts ride `/bff/p/:slug/visualize` verbatim.
+    expect((await app.request("/p/the-politics-of-visibility/visualize")).status).toBe(200);
+    const res = await app.request("/bff/p/the-politics-of-visibility/visualize?request=chart%20of%20scores&entry=chat");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-visualize-form="true"');
-    expect(html).toContain("chart of scores");
-    expect(html).toContain('name="specKind"');
-    expect(html).toContain('data-insist="true"');
-    expect(html).toContain("[unverified data]");
-    expect(html).toContain('data-estimate="true"');
+    const { visualize } = (await res.json()) as {
+      visualize: {
+        request: string; specKind: string; entryPoint: string;
+        estimateCredits: number; capCredits: number; figureId?: string; priorVersion?: number;
+      };
+    };
+    expect(visualize.request).toBe("chart of scores");
+    expect(visualize.entryPoint).toBe("chat");
+    expect(visualize.estimateCredits).toBeGreaterThan(0); // the honesty note's figure is server-owned
+    expect(visualize.capCredits).toBeGreaterThanOrEqual(visualize.estimateCredits);
   });
 
-  it("GET ?figure=fig_x&prior=1 renders iterate mode (the fig_ prefix strips to the row id)", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-politics-of-visibility/visualize?figure=fig_fig01&prior=1");
-    const html = await res.text();
-    expect(html).toContain('data-iterate-note="true"');
-    expect(html).toContain('name="figureId" value="fig01"');
-    expect(html).toContain('name="priorVersion" value="1"');
+  it("the twin's iterate mode keeps the fig_-prefix strip + the prior-version pick server-owned", async () => {
+    const res = await createWebApp(makeDeps()).request(
+      "/bff/p/the-politics-of-visibility/visualize?figure=fig_fig01&prior=1",
+    );
+    const { visualize } = (await res.json()) as { visualize: { figureId?: string; priorVersion?: number } };
+    expect(visualize.figureId).toBe("fig01");
+    expect(visualize.priorVersion).toBe(1);
   });
 
-  it("an empty request re-renders 422 (no run created)", async () => {
+  it("an empty request never creates a run — form 302s back; a JSON caller gets the 422 envelope", async () => {
     const createRun = vi.fn(async () => ({} as never));
     const app = createWebApp(makeDeps({ createRun: createRun as never }));
+    // SPA.27 — the SSR 422 re-render retired with the sheet; the no-JS floor lands back on the URL.
     const res = await app.request("/p/the-politics-of-visibility/visualize", {
       method: "POST",
       ...form({ request: "   " }),
+      redirect: "manual",
     });
-    expect(res.status).toBe(422);
-    expect(await res.text()).toContain("Describe the figure first");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/visualize");
+    const json = await app.request("/p/the-politics-of-visibility/visualize", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ request: "   " }),
+    });
+    expect(json.status).toBe(422);
+    expect((await json.json() as { error: string }).error).toBe("request_required");
     expect(createRun).not.toHaveBeenCalled();
   });
 
@@ -197,96 +211,98 @@ describe("the /visualize sheet — the consent surface (GET + the Visualize clic
 });
 
 describe("the Figures pane", () => {
-  it("renders the api's rows — badge text verbatim, version, insert + render chips", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-politics-of-visibility/figures");
+  it("the twin ships the api's rows verbatim — badge text, version, the chips' row ids", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/p/the-politics-of-visibility/figures");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-figure-row="fig01"');
-    expect(html).toContain("[unverified data]");
-    expect(html).toContain("v2");
-    expect(html).toContain("/p/the-politics-of-visibility/figures/fig01");
-    expect(html).toContain("/p/the-politics-of-visibility/visualize");
+    const { figures } = (await res.json()) as {
+      figures: { slug: string; items: { id: string; badge?: string | null; headVersion?: number }[] };
+    };
+    expect(figures.slug).toBe("the-politics-of-visibility");
+    expect(figures.items.map((r) => r.id)).toContain("fig01");
+    // `[unverified data]` is the api's badge text — never retyped on the web.
+    expect(JSON.stringify(figures.items)).toContain("[unverified data]");
   });
 
-  it("an empty pane shows the empty copy with the entry-point hint", async () => {
-    const app = createWebApp(makeDeps({ listFigures: async () => [] }));
-    const html = await (await app.request("/p/the-politics-of-visibility/figures")).text();
-    expect(html).toContain('data-figures-empty="true"');
-    expect(html).toContain("/visualize");
+  it("an empty list ships items:[] — the leaf paints the empty copy + entry hint", async () => {
+    const res = await createWebApp(makeDeps({ listFigures: async () => [] })).request(
+      "/bff/p/the-politics-of-visibility/figures",
+    );
+    const { figures } = (await res.json()) as { figures: { items: unknown[] } };
+    expect(figures.items).toEqual([]);
   });
 });
 
+// SPA.27 — the card's render asserts (SVG preview, badge, provenance disclosure, type chips,
+// versions strip, declined suggestion) retired with the document; the twin ships the full
+// FigureCardDto verbatim and the leaf paints it. These pins assert the payload contract +
+// the `{figure:null}` miss the leaf maps to the not-found copy.
 describe("the figure card", () => {
-  it("renders the persisted server-side SVG preview, the badge, and the provenance disclosure", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-politics-of-visibility/figures/fig01");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-figure-preview="true"');
-    expect(html).toContain("<svg data-fig=\"light\"></svg>");
-    expect(html).toContain("[unverified data]");
-    expect(html).toContain('data-provenance="true"');
-    expect(html).toContain('data-prov-kind="true"');
-    expect(html).toContain(">none</dd>");
-    expect(html).toContain('data-figure-data="true"');
-    expect(html).toContain('data-figure-spec="true"');
-    expect(html).toContain('data-figure-versions="true"');
+  const cardOf = async (app: ReturnType<typeof createWebApp>, id = "fig01") =>
+    (
+      (await (await app.request(`/bff/p/the-politics-of-visibility/figures/${id}`)).json()) as {
+        figure: { slug: string; card: typeof FIGURE_CARD | null; headDraftId: string | null } | null;
+      }
+    ).figure;
+
+  it("the twin ships the card verbatim — preview svgs, spec/data, provenance, versions", async () => {
+    const figure = await cardOf(createWebApp(makeDeps()));
+    expect(figure?.slug).toBe("the-politics-of-visibility");
+    expect(figure?.card.specKind).toBe("vega_lite");
+    expect(figure?.card.files.svgLight).toContain("<svg data-fig=\"light\"></svg>");
+    expect(figure?.card.versions.length).toBeGreaterThan(0);
+    expect(JSON.stringify(figure?.card)).toContain("[unverified data]"); // the api's badge text
+    expect(figure?.card.provenance?.kind ?? figure?.card).toBeTruthy();
   });
 
-  it("a vega_lite figure renders the 0-cr type chips; a table figure shows its markdown instead", async () => {
-    const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(html).toContain('data-type-chips="true"');
-    expect(html).toContain('data-chip="bar"');
-
-    const table = createWebApp(
-      makeDeps({
-        getFigure: async () => ({
-          ...FIGURE_CARD,
-          specKind: "table" as const,
-          kind: "table" as const,
-          files: { spec: null, dataCsv: null, svgLight: null, svgDark: null, tableSource: "| a | b |\n|---|---|\n| 1 | 2 |" },
-          render: { lightAvailable: false, darkAvailable: false, pngAvailable: false },
+  it("a table figure ships tableSource verbatim (the leaf paints its markdown instead of chips)", async () => {
+    const figure = await cardOf(
+      createWebApp(
+        makeDeps({
+          getFigure: async () => ({
+            ...FIGURE_CARD,
+            specKind: "table" as const,
+            kind: "table" as const,
+            files: { spec: null, dataCsv: null, svgLight: null, svgDark: null, tableSource: "| a | b |\n|---|---|\n| 1 | 2 |" },
+            render: { lightAvailable: false, darkAvailable: false, pngAvailable: false },
+          }),
         }),
-      }),
+      ),
     );
-    const thtml = await (await table.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(thtml).not.toContain('data-type-chips="true"');
-    expect(thtml).toContain("| a | b |");
+    expect(figure?.card.kind).toBe("table");
+    expect(figure?.card.files.tableSource).toContain("| a | b |");
+    expect(figure?.card.files.svgLight).toBeNull();
   });
 
-  it("the Versions strip lists each iterate's request + a restore form for non-head versions", async () => {
-    const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(html).toContain('data-version="1"');
-    expect(html).toContain("make it a bar chart");
-    expect(html).toContain('data-restore="1"');
-    // the head version never carries a restore button
-    expect(html).not.toContain('data-restore="2"');
+  it("the versions strip's rows ride verbatim — request text + restore eligibility", async () => {
+    const figure = await cardOf(createWebApp(makeDeps()));
+    const versions = figure?.card.versions ?? [];
+    expect(versions.map((v: { n: number }) => v.n)).toEqual([1, 2]);
+    expect(versions[1]?.request).toContain("make it a bar chart");
   });
 
-  it("a declined version shows the suggestion, never silence", async () => {
-    const app = createWebApp(
-      makeDeps({
-        getFigure: async () => ({
-          ...FIGURE_CARD,
-          versions: [{ n: 1, request: "a 3d pie", renderStatus: "declined", renderError: "try a bar chart instead", createdAt: "2026-01-01T00:00:00Z" }],
+  it("a declined version ships its suggestion verbatim — never silence", async () => {
+    const figure = await cardOf(
+      createWebApp(
+        makeDeps({
+          getFigure: async () => ({
+            ...FIGURE_CARD,
+            versions: [{ n: 1, request: "a 3d pie", renderStatus: "declined", renderError: "try a bar chart instead", createdAt: "2026-01-01T00:00:00Z" }],
+          }),
         }),
-      }),
+      ),
     );
-    const html = await (await app.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(html).toContain('data-declined-note="true"');
-    expect(html).toContain("try a bar chart instead");
+    expect(figure?.card.versions[0]).toMatchObject({ renderStatus: "declined", renderError: "try a bar chart instead" });
   });
 
-  it("404s for an unknown figure (the not-found copy)", async () => {
+  it("an unknown figure answers {figure:null} — the leaf maps it to the not-found copy", async () => {
     const app = createWebApp(
       makeDeps({ getFigure: async () => { throw new ApiError(404, "x", "figure_not_found"); } }),
     );
-    const res = await app.request("/p/the-politics-of-visibility/figures/fig_gone");
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain("wasn&#x27;t found");
+    // SPA.27 — the document 404 is deleted; the twin's null IS the not-found the leaf paints.
+    expect((await app.request("/p/the-politics-of-visibility/figures/fig_gone")).status).toBe(200);
+    const twin = await app.request("/bff/p/the-politics-of-visibility/figures/fig_gone");
+    expect(twin.status).toBe(200);
+    expect(((await twin.json()) as { figure: unknown }).figure).toBeNull();
   });
 });
 
@@ -338,20 +354,24 @@ describe("the card's POSTs — fields, chips, restore", () => {
 });
 
 describe("the insert proposal — a card, never a direct draft write", () => {
-  it("a ready card renders the propose form; a not-ready card explains what's missing", async () => {
+  // SPA.27 — propose-form vs not-ready-explanation is leaf paint off the card's `readiness`
+  // (+ the twin's headDraftId the proposal gates on); the payload pins are below.
+  it("the twin ships readiness verbatim — ok:true proposes, missing[] explains", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(html).toContain('data-propose-form="true"');
+    const { figure } = (await (await app.request("/bff/p/the-politics-of-visibility/figures/fig01")).json()) as {
+      figure: { card: { readiness: { ok: boolean; missing: string[] }; pendingProposal: unknown }; headDraftId: string | null };
+    };
+    expect(figure.card.readiness).toEqual({ ok: true, missing: [] });
+    expect(figure.headDraftId).not.toBeNull(); // the propose form's draft target
 
-    const notReady = createWebApp(
+    const notReady = await createWebApp(
       makeDeps({
         getFigure: async () => ({ ...FIGURE_CARD, alt: "", readiness: { ok: false, missing: ["alt" as const] } }),
       }),
-    );
-    const nhtml = await (await notReady.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(nhtml).toContain('data-not-ready="true"');
-    expect(nhtml).toContain("alt text");
-    expect(nhtml).not.toContain('data-propose-form="true"');
+    ).request("/bff/p/the-politics-of-visibility/figures/fig01").then((r) => r.json()) as {
+      figure: { card: { readiness: { ok: boolean; missing: string[] } } };
+    };
+    expect(notReady.figure.card.readiness).toEqual({ ok: false, missing: ["alt"] });
   });
 
   it("propose POSTs the draft + anchor and lands back on the card", async () => {
@@ -369,21 +389,20 @@ describe("the insert proposal — a card, never a direct draft write", () => {
     expect(proposeFigure.mock.calls[0]![3]).toEqual({ draftId: "d_head", afterBlockId: "b7" });
   });
 
-  it("a pending proposal renders the block preview + Accept/Reject forms", async () => {
-    const app = createWebApp(
+  it("a pending proposal rides the card verbatim (the leaf paints the preview + Accept/Reject)", async () => {
+    const res = await createWebApp(
       makeDeps({
         getFigure: async () => ({
           ...FIGURE_CARD,
           pendingProposal: { draftId: "d_head", afterBlockId: "b7", version: 2, markdown: "![a](asset://fig_fig01)\n*Figure 1. cap[^1]*", at: "2026-01-01T00:00:00Z" },
         }),
       }),
-    );
-    const html = await (await app.request("/p/the-politics-of-visibility/figures/fig01")).text();
-    expect(html).toContain('data-pending-proposal="true"');
-    expect(html).toContain('data-proposal-block="true"');
-    expect(html).toContain('data-accept="true"');
-    expect(html).toContain('data-reject="true"');
-    expect(html).not.toContain('data-propose-form="true"');
+    ).request("/bff/p/the-politics-of-visibility/figures/fig01");
+    const { figure } = (await res.json()) as {
+      figure: { card: { pendingProposal: { draftId: string; afterBlockId: string; version: number; markdown: string } | null } };
+    };
+    expect(figure.card.pendingProposal).toMatchObject({ draftId: "d_head", afterBlockId: "b7", version: 2 });
+    expect(figure.card.pendingProposal?.markdown).toContain("asset://fig_fig01");
   });
 
   it("Accept redirects to the spliced draft version (the fork's v(N+1))", async () => {

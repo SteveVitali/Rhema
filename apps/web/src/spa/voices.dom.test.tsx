@@ -17,7 +17,6 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,16 +27,12 @@ import type {
   VoiceListRowDto,
   VoiceSampleDetailDto,
   VoiceSampleDto,
-  VoiceStatusDto,
-} from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { VoiceDetailPage, VoiceNewPage, VoiceReseedPage, VoicesPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
+  VoiceStatusDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -55,8 +50,7 @@ const STATUS: VoiceStatusDto = {
   state: "seed_changed",
   pill: { label: "Needs update", tone: "warn" },
   action: "update_voice",
-  detail: { seedChanged: true, samples: { added: 1, removed: 0, changed: 0 }, growthRatio: null, ageDays: 4 },
-};
+  detail: { seedChanged: true, samples: { added: 1, removed: 0, changed: 0 }, growthRatio: null, ageDays: 4 } };
 
 const CARD_YOURS: VoiceListRowDto = {
   personaId: PID,
@@ -73,8 +67,7 @@ const CARD_YOURS: VoiceListRowDto = {
   tier: "quick",
   members: [],
   registers: ["essay"],
-  status: STATUS,
-};
+  status: STATUS };
 
 const CARD_HOUSE: VoiceListRowDto = {
   personaId: "p2",
@@ -91,8 +84,7 @@ const CARD_HOUSE: VoiceListRowDto = {
   tier: "full",
   members: [],
   registers: [],
-  status: { ...STATUS, action: "none", state: "resting" },
-};
+  status: { ...STATUS, action: "none", state: "resting" } };
 
 const CARD_COMPOSITE: VoiceListRowDto = {
   personaId: "p3",
@@ -112,17 +104,14 @@ const CARD_COMPOSITE: VoiceListRowDto = {
     { personaId: "p9", name: null },
   ],
   registers: [],
-  status: { ...STATUS, action: "none", state: "resting" },
-};
+  status: { ...STATUS, action: "none", state: "resting" } };
 
 const VOICES_LIST: VoiceListDto = {
   voices: [CARD_YOURS, CARD_HOUSE, CARD_COMPOSITE],
   groups: {
     your_voices: [CARD_YOURS],
     house_styles: [CARD_HOUSE],
-    shared_with_you: [CARD_COMPOSITE],
-  },
-};
+    shared_with_you: [CARD_COMPOSITE] } };
 
 const SAMPLE_INCLUDED: VoiceSampleDto = {
   id: "s1",
@@ -137,8 +126,7 @@ const SAMPLE_INCLUDED: VoiceSampleDto = {
   content_sha256: "aaa",
   word_count: 1234,
   quality: "clean",
-  n: 1,
-};
+  n: 1 };
 
 const SAMPLE_OMITTED: VoiceSampleDto = {
   id: "s2",
@@ -153,8 +141,7 @@ const SAMPLE_OMITTED: VoiceSampleDto = {
   content_sha256: "bbb",
   word_count: 90,
   quality: "partial",
-  n: 2,
-};
+  n: 2 };
 
 const SAMPLE_NEW: VoiceSampleDto = {
   id: "s3",
@@ -169,8 +156,7 @@ const SAMPLE_NEW: VoiceSampleDto = {
   content_sha256: null,
   word_count: null,
   quality: null,
-  n: null,
-};
+  n: null };
 
 /** A second pending item — paywalled, so its box starts UNCHECKED: the confirm step's array fold
  *  is exercised honestly (`known` carries both ids; `include` only the checked one). */
@@ -187,8 +173,7 @@ const SAMPLE_NEW_PAYWALLED: VoiceSampleDto = {
   content_sha256: null,
   word_count: null,
   quality: null,
-  n: null,
-};
+  n: null };
 
 const CONNECTION: VoiceConnectionDto = {
   id: "cn1",
@@ -200,8 +185,7 @@ const CONNECTION: VoiceConnectionDto = {
   auto_include_new: true,
   error: "token nearly expired",
   items: 3,
-  included: 1,
-};
+  included: 1 };
 
 const DETAIL: VoiceDetailDto = {
   persona: {
@@ -216,8 +200,7 @@ const DETAIL: VoiceDetailDto = {
     seed_authored_by: "persona_builder",
     seed_updated_at: "2026-10-01T00:00:00Z",
     current_profile_id: "prof1",
-    active_run_id: "r9",
-  },
+    active_run_id: "r9" },
   status: STATUS,
   snapshot: {
     builtAt: "2026-10-01T00:00:00Z",
@@ -225,8 +208,7 @@ const DETAIL: VoiceDetailDto = {
     sampleSet: { s1: "aaa" },
     corpusWordsAtBuild: 4000,
     calibrationStatus: "tested",
-    tier: "quick",
-  },
+    tier: "quick" },
   seedMarkdown: "A seed description.",
   samples: [SAMPLE_INCLUDED, SAMPLE_OMITTED, SAMPLE_NEW, SAMPLE_NEW_PAYWALLED],
   profiles: [
@@ -236,8 +218,7 @@ const DETAIL: VoiceDetailDto = {
       tier: "quick",
       corpus_size_at_build: 4000,
       calibration_status: "tested",
-      built_by_run_id: "r1",
-    },
+      built_by_run_id: "r1" },
   ],
   runs: [
     {
@@ -246,8 +227,7 @@ const DETAIL: VoiceDetailDto = {
       workflow: "profile_voice",
       spent_credits: 120,
       created_at: "2026-10-01T00:00:00Z",
-      ended_at: "2026-10-01T00:10:00Z",
-    },
+      ended_at: "2026-10-01T00:10:00Z" },
   ],
   artifacts: [
     { id: "a1", kind: "profile", mirror_path: "profile/voice.md", version_id: "av1", created_at: "2026-10-01T00:00:00Z" },
@@ -261,8 +241,7 @@ const DETAIL: VoiceDetailDto = {
     ageDays: 4,
     corpusWords: { built: 4000, current: 5200 },
     verb: "Update voice",
-    route: { scope: "delta", workflow: "refresh_voice", inputs: {}, sentence: "Re-run the changed phases." },
-  },
+    route: { scope: "delta", workflow: "refresh_voice", inputs: {}, sentence: "Re-run the changed phases." } },
   updateRoute: { scope: "delta", workflow: "refresh_voice", inputs: {}, sentence: "Re-run the changed phases." },
   upgradeRoute: { scope: "full_from_quick", workflow: "profile_voice", inputs: {}, sentence: "Build the full profile." },
   holdout: { held: true, revealed: true, itemId: "s2", title: "Paywalled post", revealedAt: "2026-10-01T00:00:00Z" },
@@ -274,8 +253,7 @@ const DETAIL: VoiceDetailDto = {
       { feature: "hedging_rate", target: 0.2, prediction: null, actual: 0.6, withinBand: false },
     ],
     withinCount: 1,
-    totalCount: 2,
-  },
+    totalCount: 2 },
   corrections: [
     {
       id: "cr1",
@@ -285,8 +263,7 @@ const DETAIL: VoiceDetailDto = {
       text: "Less hedging.",
       source: "user",
       consumed_by_profile_id: null,
-      at: "2026-10-02T00:00:00Z",
-    },
+      at: "2026-10-02T00:00:00Z" },
   ],
   gate: {
     gateId: "g1",
@@ -299,9 +276,7 @@ const DETAIL: VoiceDetailDto = {
       estimate: { credits: 60, capCredits: 150 },
       knobs: { sampleCap: 40, calibration: true, modelTier: "base" },
       calibrationWarning: "Calibration is off for this build.",
-      waitingUntil: null,
-    },
-  },
+      waitingUntil: null } },
   members: [{ id: "pm1", display_name: "Member Voice", byline: null }],
   buildNotes: [{ id: "bn1", profile_id: "prof1", body: "Last build notes.", created_at: "2026-10-01T00:00:00Z" }],
   hubMarkdown: "Profile hub paragraph.",
@@ -309,8 +284,7 @@ const DETAIL: VoiceDetailDto = {
     { key: "voice-core", path: "profile/voice.md", collapsed: false, advanced: false },
     { key: "voice-measures", path: null, collapsed: true, advanced: true },
   ],
-  tier: "quick",
-};
+  tier: "quick" };
 
 const SAMPLE_DETAIL: VoiceSampleDetailDto = {
   item: {
@@ -323,14 +297,12 @@ const SAMPLE_DETAIL: VoiceSampleDetailDto = {
     access: "paywalled",
     state: "omitted",
     provider: "substack",
-    connection_id: "cn1",
-  },
+    connection_id: "cn1" },
   versions: [
     { id: "v2", n: 2, content_sha256: "bbb", original_sha256: null, quality: "partial", quality_notes: ["scanned page — try the visual tier"], word_count: 90 },
     { id: "v0", n: 1, content_sha256: "aa0", original_sha256: null, quality: "unreadable", quality_notes: null, word_count: null },
   ],
-  document: "The canonical document text.",
-};
+  document: "The canonical document text." };
 
 const RESEED = {
   slug: SLUG,
@@ -344,17 +316,14 @@ const RESEED = {
       { kind: "removed" as const, line: "old guidance" },
       { kind: "added" as const, line: "new guidance" },
     ],
-    guidancePreserved: true,
-  },
-};
+    guidancePreserved: true } };
 
 // ---- the fetch stub -------------------------------------------------------------------------------
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -396,9 +365,7 @@ function makeFetch(opts: FetchOpts = {}) {
           updatePlan: { route: { scope: "delta", workflow: "refresh_voice", inputs: {}, sentence: "Re-run the changed phases." }, estimate: null, upgrade: null, upgradeEstimate: null },
           ...(isSamples ? { connections: opts.connections ?? { connections: [CONNECTION] } } : {}),
           ...(isSamples && url.includes("sample=") ? { sampleDetail: opts.sampleDetail ?? SAMPLE_DETAIL } : {}),
-          ...(url.includes("tab=") ? { tab: new URLSearchParams(url.split("?")[1]).get("tab") } : {}),
-        },
-      });
+          ...(url.includes("tab=") ? { tab: new URLSearchParams(url.split("?")[1]).get("tab") } : {}) } });
     }
     if (url === `/bff/p/${SLUG}/voice/reseed`) {
       return opts.reseedStatus != null && opts.reseedStatus !== 200
@@ -412,8 +379,7 @@ function makeFetch(opts: FetchOpts = {}) {
             url: "https://storage.example.test/quarantine/w1/u1",
             key: "quarantine/w1/u1",
             maxBytes: 10_000_000,
-            requiredHeaders: { "content-type": "text/markdown" },
-          });
+            requiredHeaders: { "content-type": "text/markdown" } });
     }
     // The direct GCS PUT — the signed URL is cross-origin; the cookie never leaves the origin.
     if (url.startsWith("https://storage.example.test/")) {
@@ -455,8 +421,7 @@ const SPA_ALL = {
   "/voices": "spa",
   "/voices/new": "spa",
   "/v/$persona": "spa",
-  "/p/$project/voice/reseed": "spa",
-} as const;
+  "/p/$project/voice/reseed": "spa" } as const;
 
 let assignSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
@@ -468,8 +433,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -485,17 +449,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
-/** The REQ-TST-2 emission filter — which manifest entries the SSR twin emits on a markup string. */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("voices").filter((entry) => {
-    if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix") return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-    return false;
-  });
-}
 
 /** A deferred Response — the REQ-UX-16 leg holds a mutation in flight. */
 function deferred<T>() {
@@ -586,31 +539,6 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
     expect(el()!.querySelector("[data-voice-card]")).toBeNull();
   });
 
-  it("REQ-TST-2 parity — every voices hook the SSR page emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ voices: VOICES_LIST }}>
-        <VoicesPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/voices", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(6);
-    expectManifestEmission(spaMarkup, emitted);
-    for (const literal of [
-      'data-voice-card="p1"',
-      'data-voice-group="your_voices"',
-      'data-voice-group-section="house_styles"',
-      'data-read-only="true"',
-      'data-fork-voice="p2"',
-      'data-composed-from="true"',
-      'data-voice-sources="true"',
-      'data-new-voice="true"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted library (REQ-VFY-6)", async () => {
     await mountAt("/voices", BOOT, makeFetch());
@@ -670,8 +598,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
       sample_text: "some words",
       tier: "quick",
       mode: "self",
-      intent: "save",
-    });
+      intent: "save" });
     await vi.waitFor(() => expect(el()!.querySelector("[data-voice-status]") ?? true).toBeTruthy());
   });
 
@@ -744,18 +671,6 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     await vi.waitFor(() => expect(form.getAttribute("aria-busy")).toBeNull());
   });
 
-  it("REQ-TST-2 parity — the SSR sheet's hooks + fields emit identically", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ voiceNew: {} }}>
-        <VoiceNewPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/voices/new", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(8);
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("component axe on the mounted creation sheet (REQ-VFY-6)", async () => {
     await mountAt("/voices/new", BOOT, makeFetch());
@@ -854,48 +769,25 @@ describe("GET /v/:persona mounted (overview)", () => {
       status: { ...STATUS, action: "build" },
       gate: {
         ...DETAIL.gate!,
-        card: { ...DETAIL.gate!.card, waitingUntil: "2099-01-02T00:00:00Z" },
-      },
-    };
+        card: { ...DETAIL.gate!.card, waitingUntil: "2099-01-02T00:00:00Z" } } };
     await mountAt(`/v/${PID}`, BOOT, makeFetch({ detail: buildable }));
     expect(el()!.querySelector(`form[action="/v/${PID}/build"] [data-build-voice]`)).not.toBeNull();
     expect(el()!.querySelector("[data-gate-waiting]")?.textContent).toContain("Available after");
   });
 
-  it("REQ-TST-2 parity — the overview's SSR hooks emit identically", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ voice: { detail: DETAIL, tab: "overview" } }}>
-        <VoiceDetailPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt(`/v/${PID}`, BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(10);
-    expectManifestEmission(spaMarkup, emitted);
-    for (const literal of [
-      'data-voice-status="true"',
-      'data-voice-tabs="true"',
-      'data-facts-panel="true"',
-      'data-gate-card="true"',
-      'data-hub="true"',
-      'data-projects="true"',
-      'data-voice-delete="true"',
-      'data-update-voice="true"',
-      'data-upgrade-voice="true"',
-      'name="scope"',
-      'name="runId"',
-      'name="action"',
-      'name="confirm"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted overview tab (REQ-VFY-6)", async () => {
     await mountAt(`/v/${PID}`, BOOT, makeFetch());
     await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+  });
+
+  it("an unrevealed hold-out renders the generic data-holdout-hidden note (§9.5 — never names the piece)", async () => {
+    await mountAt(`/v/${PID}`, BOOT, makeFetch({
+      detail: {
+        ...DETAIL,
+        holdout: { held: true, revealed: false, itemId: "s2", title: "Paywalled post", revealedAt: null } },
+    }));
+    expect(el()!.querySelector("[data-holdout-hidden]")).not.toBeNull();
   });
 
   it("a twin 404 renders not-found; a non-401 twin failure renders the designed error", async () => {
@@ -945,8 +837,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({
       byline: "New Byline",
       registers: "essay, review",
-      description: "revised seed",
-    });
+      description: "revised seed" });
   });
 
   it("samples tab — sources pane, review confirm arrays, item badges, drawer, add forms", async () => {
@@ -969,6 +860,14 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(main.querySelector("[data-link-substack]")).not.toBeNull();
     expect(main.querySelector("[data-link-url]")).not.toBeNull();
     expect(main.querySelector("[data-link-export]")).not.toBeNull();
+    // the link flows' field grammar — `provider` rides every connections POST hidden; `handle`
+    // is the substack link's input (the dom-contract's field entries).
+    const substackForm = main.querySelector("[data-link-substack]")!.closest("form")!;
+    expect(substackForm.querySelector('[name="provider"]')).not.toBeNull();
+    expect(substackForm.querySelector('[name="handle"]')).not.toBeNull();
+    expect(main.querySelector("[data-link-url]")!.closest("form")!.querySelector('[name="provider"]')).not.toBeNull();
+    // the URL-sample add form's submit hook.
+    expect(main.querySelector('form[action$="/samples/url"] [data-add-url]')).not.toBeNull();
     // The open drawer — preview + versions + the priced reconstruction (partial ⇒ text; the
     // "scanned" note offers the visual tier too).
     const drawer = main.querySelector("[data-sample-drawer]")!;
@@ -987,6 +886,10 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // The review step — 'new' items ride the confirm form.
     const confirm = src.querySelector("form[data-confirm]")!;
     expect(confirm.getAttribute("action")).toBe(`/v/${PID}/connections/cn1/confirm`);
+    // the multi-value grammar's field hooks — `known` (hidden, every discovered id) + `include`
+    // (the per-item checkbox) are the confirm step's own vocabulary.
+    expect(confirm.querySelectorAll('[name="known"]').length).toBeGreaterThan(0);
+    expect(confirm.querySelectorAll('[name="include"]').length).toBeGreaterThan(0);
     expect(confirm.querySelector('[data-review-item="e3"]')).not.toBeNull();
     expect(confirm.querySelector('[data-review-item="e4"]')).not.toBeNull();
     expect(confirm.querySelector("[data-confirm-cta]")).not.toBeNull();
@@ -1065,77 +968,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(main.querySelector('[data-profile="prof1"]')).not.toBeNull();
   });
 
-  it("REQ-TST-2 parity — the samples tab's SSR hooks emit identically", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{ voice: { detail: DETAIL, tab: "samples", connections: { connections: [CONNECTION] }, sampleDetail: SAMPLE_DETAIL } }}
-      >
-        <VoiceDetailPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt(`/v/${PID}?tab=samples&sample=s2`, BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(10);
-    expectManifestEmission(spaMarkup, emitted);
-    for (const literal of [
-      'data-sources="true"',
-      'data-source="cn1"',
-      'data-provider="substack"',
-      'data-source-error="true"',
-      'data-confirm="true"',
-      'data-review-item="e3"',
-      'data-confirm-cta="true"',
-      'data-sample="s2"',
-      'data-sample-state="omitted"',
-      'data-sample-paywalled="true"',
-      'data-sample-quality="partial"',
-      'data-holdout-badge="true"',
-      'data-sample-drawer="true"',
-      'data-sample-preview="true"',
-      'data-sample-versions="true"',
-      'data-quality-notes="true"',
-      'data-reconstruct-text="true"',
-      'data-reconstruct-visual="true"',
-      'data-samples-form="true"',
-      'data-add-url="true"',
-      'name="include"',
-      'name="known"',
-      'name="provider"',
-      'name="handle"',
-      'name="url"',
-      'name="text"',
-      'name="title"',
-      'name="included"',
-      'name="autoIncludeNew"',
-      'name="dailySync"',
-      'name="tier"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
-  it("REQ-TST-2 parity — description/profile/runs hooks emit identically to SSR", async () => {
-    for (const [tab, literals] of [
-      ["description", ['data-seed-editor="true"', 'data-agent-drafted="true"', 'data-corrections="true"', 'data-correction="cr1"', 'data-consumed="false"', 'data-build-notes="true"', 'data-build-note="bn1"', 'name="byline"', 'name="registers"']],
-      ["profile", ['data-calibration="true"', 'data-calibration-verdict="tested"', 'data-calibration-row="sentence_length"', 'data-within-band="false"', 'data-profile-sections="true"', 'data-profile-section="voice-measures"', 'data-voice-measures="true"', 'data-artifacts="true"', 'data-artifact-kind="profile"']],
-      ["runs", ['data-runs="true"', 'data-run="r1"', 'data-profile="prof1"']],
-    ] as const) {
-      const ssrMarkup = renderToStaticMarkup(
-        <PageDataContext.Provider value={{ voice: { detail: DETAIL, tab } }}>
-          <VoiceDetailPage />
-        </PageDataContext.Provider>,
-      );
-      document.body.innerHTML = "";
-      await mountAt(`/v/${PID}?tab=${tab}`, BOOT, makeFetch());
-      const spaMarkup = el()!.innerHTML;
-      for (const literal of literals) {
-        expect(spaMarkup, literal).toContain(literal);
-        expect(ssrMarkup, literal).toContain(literal);
-      }
-    }
-  });
 
   it("component axe on the mounted samples tab (REQ-VFY-6)", async () => {
     await mountAt(`/v/${PID}?tab=samples`, BOOT, makeFetch());
@@ -1178,21 +1011,6 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
     expect(el()!.textContent).toContain(COPY.notFound.heading);
   });
 
-  it("REQ-TST-2 parity — the reseed page's SSR hooks emit identically", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ voiceReseed: RESEED }}>
-        <VoiceReseedPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expectManifestEmission(spaMarkup, emitted);
-    for (const literal of ['data-reseed-diff="true"', 'data-diff-kind="added"', 'data-guidance-preserved="true"', 'data-adopt-reseed="true"', 'name="reseed"']) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted reseed surface (REQ-VFY-6)", async () => {
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, makeFetch());

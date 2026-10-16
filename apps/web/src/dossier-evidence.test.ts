@@ -6,8 +6,10 @@ import type { ProjectRow } from "@rhema/api-client";
 
 // HOT.1 — the dossier-500 regression pack (PR-J3/BL-52): production-shaped evidence blobs that actually
 // shipped (canonical, the {verdict}-only sidecar carry, the pre-canonical Showcase [{claim, source}]
-// array, a partial/malformed blob) must all SSR without throwing. If a future change bypasses
-// normalizeEvidence at a render seam, the legacy-shape cases fail.
+// array, a partial/malformed blob) must all surface without throwing. SPA.27 — the SSR dossier is
+// deleted; the pack repoints at the `/bff/p/:slug/review/:runId` twin: every shipped shape rides
+// the payload VERBATIM (the twin never normalizes — the leaf's normalizeEvidence coverage lives in
+// `spa/dossier.dom.test.tsx`) and the read never 500s.
 
 const PROJECTS: ProjectRow[] = [
   {
@@ -97,97 +99,87 @@ function makeDeps(findings: readonly FindingView[]): WebDeps {
   return { dataSource, session: () => ({}) };
 }
 
-async function getDossierHtml(findings: readonly FindingView[]): Promise<string> {
+// The twin's `dossier` is the composition's verbatim data-source DTO — findings, claims,
+// fetchLog, deliveryLabel and the showcase flag ride unmassaged.
+async function getDossier(findings: readonly FindingView[]): Promise<DossierData> {
   const app = createWebApp(makeDeps(findings));
-  const res = await app.request("/p/showcase/review/run_1");
+  const res = await app.request("/bff/p/showcase/review/run_1");
   expect(res.status).toBe(200); // the 500 this pack exists to kill
-  return res.text();
+  return ((await res.json()) as { dossier: DossierData }).dossier;
 }
 
-describe("HOT.1 — dossier evidence shapes that shipped in prod all render (REQ-POS-3 surface)", () => {
-  it("canonical evidence renders the url + the verdict chip + the explainer", async () => {
-    const html = await getDossierHtml([
+const evidenceOf = async (findings: readonly FindingView[]) =>
+  (await getDossier(findings)).findings.map((f) => f.evidence);
+
+describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the twin (REQ-POS-3 surface)", () => {
+  it("canonical evidence ships its urls + verdict verbatim (the leaf paints chip + explainer)", async () => {
+    const [ev] = await evidenceOf([
       finding("f_canon", {
         claimId: "cl_1",
         verdict: "contradicted",
         urls: [{ url: SCOTLAND_URL, accessed: "2026-09-30T00:00:00Z" }],
       }),
     ]);
-    expect(html).toContain('data-finding-evidence="true"');
-    expect(html).toContain("Contradicted");
-    expect(html).toContain(encodeURI(SCOTLAND_URL));
-    expect(html).toContain('data-evidence-explainer="true"');
+    expect(ev).toMatchObject({
+      verdict: "contradicted",
+      urls: [{ url: SCOTLAND_URL, accessed: "2026-09-30T00:00:00Z" }],
+    });
   });
 
-  it("the {verdict}-only sidecar carry (the STB.3 Memo shape) renders — no urls, no crash", async () => {
-    const html = await getDossierHtml([finding("f_verdict_only", { verdict: "verified" })]);
-    expect(html).toContain('data-finding-evidence="true"');
-    expect(html).toContain("Verified");
-    // no urls ⇒ no evidence explainer (it only speaks when a URL exists to explain)
-    expect(html).not.toContain('data-evidence-explainer="true"');
+  it("the {verdict}-only sidecar carry (the STB.3 Memo shape) ships verbatim — no urls, no crash", async () => {
+    const [ev] = await evidenceOf([finding("f_verdict_only", { verdict: "verified" })]);
+    expect(ev).toEqual({ verdict: "verified" });
   });
 
-  it("the legacy Showcase [{claim, source}] array renders its URL (pre-normalization this 500'd)", async () => {
-    const html = await getDossierHtml([
+  it("the legacy Showcase [{claim, source}] array ships verbatim (pre-normalization this 500'd)", async () => {
+    const [ev] = await evidenceOf([
       finding("f_legacy", [{ claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL }]),
     ]);
-    expect(html).toContain(encodeURI(SCOTLAND_URL));
-    expect(html).toContain('data-evidence-explainer="true"');
-    expect(html).toContain('data-fetched="true"'); // SCOTLAND_URL is in the fetch log
+    expect(ev).toEqual([{ claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL }]);
   });
 
-  it("a malformed evidence blob (urls: not-an-array) renders the card, no evidence block, no crash", async () => {
-    const html = await getDossierHtml([finding("f_bad", { urls: "not-an-array" })]);
-    expect(html).toContain("finding f_bad");
-    expect(html).not.toContain('data-evidence-explainer="true"');
+  it("a malformed evidence blob (urls: not-an-array) ships verbatim — the leaf degrades it", async () => {
+    const d = await getDossier([finding("f_bad", { urls: "not-an-array" })]);
+    expect(d.findings[0].id).toBe("f_bad");
+    expect(d.findings[0].evidence).toEqual({ urls: "not-an-array" });
   });
 
-  it("a dossier mixing every shipped shape renders in one pass (the real Showcase+Memo page mix)", async () => {
-    const html = await getDossierHtml([
+  it("a dossier mixing every shipped shape ships in one pass (the real Showcase+Memo page mix)", async () => {
+    const d = await getDossier([
       finding("f_a", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL, accessed: "2026-09-30T00:00:00Z" }] }),
       finding("f_b", { verdict: "verified" }),
       finding("f_c", [{ claim: "x", source: "https://archive.org/web/" }]),
       finding("f_d", undefined),
     ]);
-    expect(html).toContain("finding f_a");
-    expect(html).toContain("finding f_b");
-    expect(html).toContain("finding f_c");
-    expect(html).toContain("finding f_d");
-    expect(html).toContain(encodeURI(SCOTLAND_URL));
-    expect(html).toContain("https://archive.org/web/");
+    expect(d.findings.map((f) => f.id)).toEqual(["f_a", "f_b", "f_c", "f_d"]);
+    expect(d.findings[2].evidence).toEqual([{ claim: "x", source: "https://archive.org/web/" }]);
   });
 
   it("REQ-POS-3 — the contradicted Tier-1 claim still carries its fetched URL", async () => {
-    const html = await getDossierHtml([finding("f_canon", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] })]);
-    expect(html).toContain('data-contradicted-tier1="true"');
-    expect(html).toContain('data-fetched="true"');
+    const d = await getDossier([finding("f_canon", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] })]);
+    expect(d.claims[0]).toMatchObject({ tier: 1, verdict: "contradicted", url: SCOTLAND_URL });
+    expect(d.fetchLog).toContain(SCOTLAND_URL); // the leaf's data-fetched pin
   });
 
-  it("RES.2 — the persisted Unverified label renders as the banner above the verdict", async () => {
+  it("RES.2 — the persisted Unverified label rides the payload (the leaf paints the banner)", async () => {
     const data: DossierData = { ...dossier([]), deliveryLabel: "unverified" };
     const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
-    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/p/showcase/review/run_1");
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/bff/p/showcase/review/run_1");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-delivery-label="unverified"');
-    // the banner reads "Unverified" — the reserved run-level word — above the verdict section.
-    expect(html.indexOf('data-delivery-label="unverified"')).toBeLessThan(html.indexOf("Verdict"));
-    // and a dossier with no label renders no banner.
-    const plain = await getDossierHtml([]);
-    expect(plain).not.toContain("data-delivery-label");
+    const body = (await res.json()) as { dossier: DossierData };
+    expect(body.dossier.deliveryLabel).toBe("unverified");
+    // and a dossier with no label ships none.
+    expect((await getDossier([])).deliveryLabel).toBeUndefined();
   });
 
-  it("SPA.6 — the showcase banner's Duplicate affordance carries data-duplicate-form (N7's post target)", async () => {
+  it("SPA.6 — the showcase flag rides the payload (the leaf's banner + Duplicate affordance)", async () => {
     const data: DossierData = { ...dossier([]), showcase: true };
     const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
-    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/p/showcase/review/run_1");
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/bff/p/showcase/review/run_1");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("data-showcase-banner");
-    expect(html).toContain('data-duplicate-form="true"');
-    expect(html).toContain('action="/p/showcase/duplicate"');
-    // an ordinary dossier never grows the showcase affordance.
-    const plain = await getDossierHtml([]);
-    expect(plain).not.toContain("data-duplicate-form");
+    const body = (await res.json()) as { dossier: DossierData };
+    expect(body.dossier.showcase).toBe(true);
+    // an ordinary dossier ships no showcase flag.
+    expect((await getDossier([])).showcase).toBeUndefined();
   });
 });

@@ -90,7 +90,10 @@ function makeDeps(over: Partial<WebDeps> = {}, dataSource: Partial<DataSource> =
 const MOBILE = { headers: { "sec-ch-ua-mobile": "?1" } };
 
 describe("P1.19 — /app/inbox (REQ-IDE-2 amended)", () => {
-  it("renders the three groups in order — Needs you, events, voices — with the badge line", async () => {
+  it("the document serves the shell; the twin ships the api's verbatim order + the badge", async () => {
+    // SPA.27 (REQ-TST-1) — the grouped inbox render retired with the document; the leaf paints
+    // the same `{items,badge,gateCards}` aggregate the `/bff/app/inbox` twin ships. The api owns
+    // ordering (blocked → unread → earlier → voices) — the twin passes it through unmassaged.
     const app = createWebApp(
       makeDeps({}, {
         getInbox: async () => [EVENT_FINISHED, BLOCKED_GATE, BLOCKED_DECISION, VOICE_ROW],
@@ -99,26 +102,23 @@ describe("P1.19 — /app/inbox (REQ-IDE-2 amended)", () => {
     );
     const res = await app.request("/app/inbox");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("data-inbox-badge=\"true\"");
-    // blocked rows lead — the gate row + the decision row render before the event/voice rows.
-    const gateAt = html.indexOf("gate:gate_1");
-    const decisionAt = html.indexOf("decision:dcr_1");
-    const eventAt = html.indexOf("ib_1");
-    const voiceAt = html.indexOf("voice:per_1");
-    expect(gateAt).toBeGreaterThan(-1);
-    expect(decisionAt).toBeGreaterThan(-1);
-    expect(eventAt).toBeGreaterThan(-1);
-    expect(voiceAt).toBeGreaterThan(-1);
-    expect(Math.min(gateAt, decisionAt)).toBeLessThan(eventAt);
-    expect(eventAt).toBeLessThan(voiceAt);
-    // the finished-run row's link IS its §4.2 landing (the review letter for a review).
-    expect(html).toContain('href="/p/seed-essay/review/run_9"');
-    // the decision row offers its own options (decide / re-defer / drop).
-    expect(html).toContain("re-defer");
+    expect(await res.text()).toContain('id="spa-root"');
+
+    const twin = await app.request("/bff/app/inbox");
+    expect(twin.status).toBe(200);
+    const body = (await twin.json()) as {
+      items: InboxItemDto[];
+      badge: number;
+      gateCards: Record<string, unknown>;
+    };
+    expect(body.badge).toBe(2);
+    expect(body.items.map((i) => i.id)).toEqual(["ib_1", "gate:gate_1", "decision:dcr_1", "voice:per_1"]);
+    // the row's href IS its §4.2 landing — verbatim in the DTO.
+    expect(body.items[0].href).toBe("/p/seed-essay/review/run_9");
+    expect(body.items[2].decision?.options).toContain("re-defer");
   });
 
-  it("an expanded gate row mounts the run's real card — Approve posts to the gate route (the SSR side-sheet)", async () => {
+  it("the twin keys the run's real gate card by item id — the leaf mounts it in the row's expand", async () => {
     const card = {
       id: "gate_1",
       runId: "run_1",
@@ -140,12 +140,12 @@ describe("P1.19 — /app/inbox (REQ-IDE-2 amended)", () => {
         listGates: async () => [card as never],
       }),
     );
-    const res = await app.request("/app/inbox", MOBILE);
-    const html = await res.text();
-    // the card mounts inside the row's expand — compact model, phone actions only.
-    expect(html).toContain('data-inbox-gate-card="gate_1"');
-    expect(html).toContain('action="/p/seed-essay/gates/gate_1"');
-    expect(html).toContain('data-compact="true"');
+    // SPA.27 — the SSR expand died with the document; the card join is the twin's contract
+    // (keyed by inbox-item id; a missed join degrades to the deep link, never a 500).
+    const body = (await (await app.request("/bff/app/inbox", MOBILE)).json()) as {
+      gateCards: Record<string, { id: string; runId: string; kind: string }>;
+    };
+    expect(body.gateCards["gate:gate_1"]).toMatchObject({ id: "gate_1", runId: "run_1", kind: "approve_plan" });
   });
 
   it("an empty seam still renders the page; read receipts POST back and redirect", async () => {
@@ -219,106 +219,89 @@ describe("P1.19 — returning to a finished run (REQ-IDE-48)", () => {
   });
 });
 
+// SPA.27 — the §10.1 phone-width drops moved into the leaf: every migrated surface now serves
+// the shell on phone too, and the leaf ANDs its affordances against the boot `deviceClass`
+// (`data-device` on the html tag — the server-owned seam these pins assert). The ONE document
+// that still answers phone SSR is the Page family (REQ-ED-12/REQ-VFY-5 — `pageMount` routes keep
+// their forced-SSR arm), so the project-home pin below still reads a real server document.
 describe("P1.19 — the §10.1 phone-width contract (REQ-SPEC-20; REQ-MOBILE-3 amended)", () => {
-  it("the /app home drops the New project control on phone width", async () => {
+  it("the /app home carries deviceClass=phone in the boot — the leaf drops New project", async () => {
     const app = createWebApp(makeDeps());
     const desktop = await app.request("/app");
-    expect(await desktop.text()).toContain('data-new-project="true"');
+    expect(await desktop.text()).toContain('data-device="desktop"');
     const phone = await app.request("/app", MOBILE);
     const html = await phone.text();
-    expect(html).not.toContain('data-new-project="true"');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain('data-device="phone"'); // the leaf's §10.1 seam
   });
 
-  it("the project home drops the import/run/export affordances on phone width", async () => {
+  it("the project home stays forced-SSR on phone (pageMount) and still drops the affordances", async () => {
     const app = createWebApp(makeDeps());
     const desktop = await app.request("/p/seed-essay");
-    const dhtml = await desktop.text();
-    expect(dhtml).toContain('href="/p/seed-essay/import"');
-    expect(dhtml).toContain('href="/p/seed-essay/export"');
+    // SPA.27 — the desktop overview is the shell now; the links are leaf paint.
+    expect(await desktop.text()).toContain('id="spa-root"');
+    // phone ⇒ forced-SSR Page overview (REQ-ED-12): the §10.1 affordance drops stay server truth.
     const phone = await app.request("/p/seed-essay", MOBILE);
     const html = await phone.text();
+    expect(html).not.toContain('id="spa-root"');
     expect(html).not.toContain('href="/p/seed-essay/import"');
     expect(html).not.toContain('href="/p/seed-essay/run"');
     expect(html).not.toContain('href="/p/seed-essay/export"');
   });
 
-  it("the run sheet renders its blocked note instead of run-start/config on phone width", async () => {
+  it("the run sheet's phone request serves the shell carrying deviceClass=phone", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/seed-essay/run", MOBILE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-phone-blocked="true"');
-    expect(html).not.toContain('action="/p/seed-essay/run"');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain('data-device="phone"'); // the leaf paints the blocked note, never the form
   });
 
-  it("the import and new-project sheets never render their forms on phone width", async () => {
+  it("the import and new-project sheets serve the phone-boot shell (the leaf never mounts the forms)", async () => {
     const app = createWebApp(makeDeps());
     const imp = await app.request("/p/seed-essay/import", MOBILE);
     const impHtml = await imp.text();
-    expect(impHtml).toContain('data-phone-blocked="true"');
-    expect(impHtml).not.toContain('action="/p/seed-essay/import/preview"');
+    expect(impHtml).toContain('id="spa-root"');
+    expect(impHtml).toContain('data-device="phone"');
 
     const np = await app.request("/app/new", MOBILE);
     const npHtml = await np.text();
-    expect(npHtml).toContain('data-phone-blocked="true"');
-    expect(npHtml).not.toContain('action="/app/new"');
+    expect(npHtml).toContain('id="spa-root"');
+    expect(npHtml).toContain('data-device="phone"');
   });
 
-  it("the voice creation sheet and voices list never offer building on phone width", async () => {
+  it("the voice creation sheet and voices list serve the phone-boot shell", async () => {
     const app = createWebApp(
       makeDeps({}, {
         listVoiceGroups: async () => ({ voices: [], groups: { your_voices: [], house_styles: [], shared_with_you: [] } } as never),
       }),
     );
     const list = await app.request("/voices", MOBILE);
-    expect((await list.text())).not.toContain('data-new-voice="true"');
+    const listHtml = await list.text();
+    expect(listHtml).toContain('id="spa-root"');
+    expect(listHtml).toContain('data-device="phone"'); // no building affordances on phone — leaf-owned
     const sheet = await app.request("/voices/new", MOBILE);
     const html = await sheet.text();
-    expect(html).toContain('data-phone-blocked="true"');
-    expect(html).not.toContain('action="/voices/new"');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain('data-device="phone"');
   });
 
-  it("the export dialog never renders its form on phone width", async () => {
-    const app = createWebApp(
-      makeDeps({}, {
-        getExportDialog: async () => ({
-          projectId: "proj_1",
-          formats: [],
-          mdProfiles: [],
-          citations: { styles: [], projectHasBibliography: false },
-          provenance: { offered: false },
-          surfaces: { opedExclusivity: false, academicDisclosure: false },
-          obligations: { blockingOpen: 0, open: 0, line: "No obligations open", items: [], returnedIds: [] },
-          statement: { text: "", versions: [] },
-        } as never),
-      }),
-    );
+  it("the export dialog serves the phone-boot shell (the leaf never mounts the form)", async () => {
+    const app = createWebApp(makeDeps());
     const res = await app.request("/p/seed-essay/export", MOBILE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-phone-blocked="true"');
-    expect(html).not.toContain('data-export-form="true"');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain('data-device="phone"');
   });
 
-  it("billing renders the read-only plan card but no configuration forms on phone width", async () => {
-    const app = createWebApp(
-      makeDeps({}, {
-        getSubscription: async () => ({
-          tier: "free",
-          trial: { state: "none" },
-          autoReload: { enabled: false },
-          subscription: null,
-          hasStripeCustomer: false,
-        } as never),
-        getPlans: async () => ({ trial: { includedNote: "" }, plans: {}, topUpPacks: [] } as never),
-      }),
-    );
+  it("billing serves the phone-boot shell (the read-only card + no config forms are leaf-owned)", async () => {
+    const app = createWebApp(makeDeps());
     const res = await app.request("/settings/billing", MOBILE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-plan-card="true"');
-    expect(html).toContain('data-phone-blocked="true"');
-    expect(html).not.toContain('data-subscribe-form');
-    expect(html).not.toContain('data-auto-reload-form');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain('data-device="phone"');
   });
 });

@@ -17,19 +17,15 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PageDataContext } from "../page-data.js";
-import { OutlinePage, OutlinePromotePage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffOutlinePromoteTwin, BffOutlineTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -54,8 +50,7 @@ const OUTLINE_VIEW = {
       claims: [
         { id: "c1", text: "Platforms frame visibility as empowerment.", provenanceKind: "thread" as const, provenance: { turnId: "turn_1" }, unverified: false },
         { id: "c2", text: "The burden falls unevenly.", provenanceKind: "source" as const, provenance: { url: "https://example.org/two" }, unverified: true },
-      ],
-    },
+      ] },
     {
       ref: "II",
       title: "The argument",
@@ -63,13 +58,11 @@ const OUTLINE_VIEW = {
         { id: "c3", text: "Visibility demands legibility.", provenanceKind: "source" as const, provenance: { url: "https://example.org/one" }, unverified: false },
         { id: "c4", text: "Opting out reads as political.", provenanceKind: "generated" as const, provenance: {}, unverified: false },
         { id: "c5", text: "Selective opacity is defensible.", provenanceKind: "user_typed" as const, provenance: {}, unverified: false },
-      ],
-    },
+      ] },
   ],
   alternativesConsidered: ["the inverse frame"],
   gaps: [{ id: "g1", needed: "A first-person refusal example", sectionRef: "II" }],
-  urls: [{ url: "https://example.org/two", unverified: true }],
-};
+  urls: [{ url: "https://example.org/two", unverified: true }] };
 
 const OUTLINE_TWIN: BffOutlineTwin = {
   outline: {
@@ -79,9 +72,7 @@ const OUTLINE_TWIN: BffOutlineTwin = {
     deleteAction: "/p/the-politics-of-visibility/outline/delete",
     draftEstimateCredits: 12,
     outline: OUTLINE_VIEW,
-    cited: false,
-  },
-};
+    cited: false } };
 
 const PROMOTE_TWIN: BffOutlinePromoteTwin = {
   outlinePromotion: {
@@ -100,39 +91,16 @@ const PROMOTE_TWIN: BffOutlinePromoteTwin = {
       capCredits: 84,
       modelTier: "base",
       rigor: "standard",
-      existing: false,
-    },
+      existing: false },
     scope: "thread",
-    threadId: "thr_1",
-  },
-};
-
-/** The page-data bag the SSR `OutlinePage` consumes — the twin's fields verbatim. */
-const OUTLINE_PAGE_DATA = {
-  slug: "the-politics-of-visibility",
-  editable: true,
-  saveAction: "/p/the-politics-of-visibility/outline",
-  deleteAction: "/p/the-politics-of-visibility/outline/delete",
-  draftEstimateCredits: 12,
-  outline: OUTLINE_VIEW,
-  cited: false,
-} as const;
-
-const PROMOTE_PAGE_DATA = {
-  slug: "the-politics-of-visibility",
-  projectTitle: "The Politics of Visibility",
-  promotion: PROMOTE_TWIN.outlinePromotion!.promotion,
-  scope: "thread" as const,
-  threadId: "thr_1",
-} as const;
+    threadId: "thr_1" } };
 
 // ---- the mount substrate -------------------------------------------------------------------------
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -187,8 +155,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop"
 
 const SPA_OUTLINE = {
   "/p/$project/outline": "spa",
-  "/p/$project/outline/promote": "spa",
-} as const;
+  "/p/$project/outline/promote": "spa" } as const;
 
 let assignSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
@@ -200,8 +167,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(rootEl);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(rootEl);
   mounted.push(root);
   await act(async () => {
@@ -217,17 +183,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
-/** The REQ-TST-2 emission filter — which `outline` manifest entries a markup string emits. */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("outline").filter((entry) => {
-    if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix") return new RegExp("\\bname=[\"'`]" + esc(entry.hook)).test(ssrMarkup);
-    return false;
-  });
-}
 
 /** Submit one form inside an act — fireEvent + the mutation's microtask flush. */
 async function submit(form: Element) {
@@ -330,8 +285,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
 
   it("a failed save lands the failed label on the status line", async () => {
     const f = makeFetch({
-      mutations: { "/p/the-politics-of-visibility/outline": { status: 422, body: { error: "save_failed" } } },
-    });
+      mutations: { "/p/the-politics-of-visibility/outline": { status: 422, body: { error: "save_failed" } } } });
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
     const form = el()!.querySelector("form[data-outline-editor]")!;
     await submit(form);
@@ -369,11 +323,9 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
   it("delete's cited refusal lands ?notice=cited in-router — the same flash URL the 302 carried", async () => {
     const f = makeFetch({
       mutations: {
-        "/p/the-politics-of-visibility/outline/delete": { status: 409, body: { error: "outline_cited" } },
-      },
+        "/p/the-politics-of-visibility/outline/delete": { status: 409, body: { error: "outline_cited" } } },
       // the invalidation's refetch answers the cited truth — the cited note + hidden delete.
-      outlineAfter: { outline: { ...OUTLINE_TWIN.outline!, cited: true } },
-    });
+      outlineAfter: { outline: { ...OUTLINE_TWIN.outline!, cited: true } } });
     const { router } = await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
     await submit(el()!.querySelector("form[action$='/outline/delete']")!);
     await vi.waitFor(() => {
@@ -436,19 +388,6 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     await axeCheck(el()!.querySelector("[data-spa-surface]")!);
   });
 
-  it("REQ-TST-2 parity — every outline hook the SSR twin emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ outline: OUTLINE_PAGE_DATA }}>
-        <OutlinePage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/p/the-politics-of-visibility/outline", BOOT, makeFetch().impl);
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    // The fixture exercises the full editor vocabulary — a thin set means the parity leg drifted.
-    expect(emitted.length).toBeGreaterThanOrEqual(14);
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("unflipped → SsrHandoff — the leaf document-navigates and never fetches the twin", async () => {
     const f = makeFetch();
@@ -490,9 +429,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
         ...turnSheet,
         promotion: { ...turnPromotion, scope: "turn", turnId: "turn_9" },
         scope: "turn",
-        turnId: "turn_9",
-      },
-    };
+        turnId: "turn_9" } };
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=turn&turnId=turn_9", BOOT, makeFetch({ promote: turnTwin }).impl);
     const form = el()!.querySelector('form[action$="/outline/promote"]')!;
     expect(form.querySelector('input[name="scope"]')?.getAttribute("value")).toBe("turn");
@@ -509,8 +446,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
     expect(f.posts[0]!.json).toEqual({
       scope: "thread",
       threadId: "thr_1",
-      slug: "the-politics-of-visibility",
-    });
+      slug: "the-politics-of-visibility" });
     // the redirect target is the (unflipped) project leaf → SsrHandoff → document nav.
     await vi.waitFor(() => {
       expect(assignSpy).toHaveBeenCalledWith("/p/the-politics-of-visibility");
@@ -520,9 +456,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
   it("a refused promote renders the sheet's notice arm (the document's re-render verbatim)", async () => {
     const f = makeFetch({
       mutations: {
-        "/p/the-politics-of-visibility/outline/promote": { status: 404, body: { error: "thread_not_found" } },
-      },
-    });
+        "/p/the-politics-of-visibility/outline/promote": { status: 404, body: { error: "thread_not_found" } } } });
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_gone", BOOT, f.impl);
     const form = el()!.querySelector('form[action$="/outline/promote"]')!;
     await submit(form);
@@ -536,9 +470,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
   it("the started arm renders verbatim when the twin carries it", async () => {
     const f = makeFetch({
       promote: {
-        outlinePromotion: { ...PROMOTE_TWIN.outlinePromotion!, started: { runId: "run_1", slug: "the-politics-of-visibility" } },
-      },
-    });
+        outlinePromotion: { ...PROMOTE_TWIN.outlinePromotion!, started: { runId: "run_1", slug: "the-politics-of-visibility" } } } });
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1", BOOT, f.impl);
     expect(el()!.querySelector("[data-started]")?.textContent).toBe(COPY.promote.startedFmt);
     expect(el()!.querySelector('form[action$="/outline/promote"]')).toBeNull();
@@ -558,10 +490,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
       promote: {
         outlinePromotion: {
           ...PROMOTE_TWIN.outlinePromotion!,
-          promotion: { ...PROMOTE_TWIN.outlinePromotion!.promotion, existing: true },
-        },
-      },
-    });
+          promotion: { ...PROMOTE_TWIN.outlinePromotion!.promotion, existing: true } } } });
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1", BOOT, f.impl);
     expect(el()!.querySelector("[data-existing]")?.textContent).toBe(COPY.promote.existingNote);
   });
@@ -571,19 +500,6 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
     await axeCheck(el()!.querySelector("[data-spa-surface]")!);
   });
 
-  it("REQ-TST-2 parity — every promote hook the SSR sheet emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ outlinePromotion: PROMOTE_PAGE_DATA }}>
-        <OutlinePromotePage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1", BOOT, makeFetch().impl);
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    // the fact rails + the hidden replays — a thin set means the parity leg drifted.
-    expect(emitted.length).toBeGreaterThanOrEqual(5);
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("unflipped → SsrHandoff — no BFF spend", async () => {
     const f = makeFetch();

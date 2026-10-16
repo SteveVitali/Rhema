@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { renderDocument } from "./render.js";
-import { landingElement, loginElement, showcaseElement, projectsElement, inboxElement } from "./routes.js";
+// SPA.27 — the app-surface elements are deleted; `pageElement`/`notFoundElement` stand in for the
+// app-path legs (the title/head contract is path-driven — the element is incidental).
+import { landingElement, loginElement, showcaseElement, pageElement, notFoundElement } from "./routes.js";
 import { COPY } from "./copy.js";
 
 // UX.1 — the document head: a distinct route-aware `<title>` on every route; meta description +
@@ -17,8 +19,8 @@ describe("route-aware document meta (UX.1)", () => {
     expect(title(landing)).toBe(`Rhēma — ${COPY.tagline}`);
     expect(title(renderDocument("/login", loginElement, {}))).toBe("Sign in · Rhēma");
     expect(title(renderDocument("/showcase", showcaseElement, {}))).toBe("Showcase · Rhēma");
-    expect(title(renderDocument("/app", projectsElement, {}))).toBe("Projects · Rhēma");
-    expect(title(renderDocument("/app/inbox", inboxElement, {}))).toBe("Inbox · Rhēma");
+    expect(title(renderDocument("/app", pageElement, {}))).toBe("Projects · Rhēma");
+    expect(title(renderDocument("/app/inbox", notFoundElement, {}))).toBe("Inbox · Rhēma");
     expect(title(renderDocument("/app/settings/preferences", landingElement, {}))).toBe("Preferences · Rhēma");
     expect(title(renderDocument("/app/settings", landingElement, {}))).toBe("Settings · Rhēma");
     expect(title(renderDocument("/billing/return", landingElement, {}))).toBe("Billing · Rhēma");
@@ -46,7 +48,7 @@ describe("route-aware document meta (UX.1)", () => {
     const sc = renderDocument("/showcase", showcaseElement, {}, { origin: "https://rhema.tools" });
     expect(sc).toContain(`<meta name="description" content="${COPY.meta.showcase}">`);
     // the app shell never leaks a marketing description
-    const app = renderDocument("/app", projectsElement, {}, { origin: "https://rhema.tools" });
+    const app = renderDocument("/app", pageElement, {}, { origin: "https://rhema.tools" });
     expect(app).not.toContain('name="description"');
     expect(app).not.toContain('property="og:');
     expect(app).not.toContain('name="twitter:');
@@ -64,7 +66,7 @@ describe("route-aware document meta (UX.1)", () => {
   it("every document links the favicon (svg + ico fallback)", () => {
     for (const html of [
       renderDocument("/", landingElement, {}),
-      renderDocument("/app", projectsElement, {}),
+      renderDocument("/app", pageElement, {}),
       renderDocument("/nope", landingElement, {}),
     ]) {
       expect(html).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml">');
@@ -80,9 +82,11 @@ describe("one page-level <h1> per document (UX.1 — SectionTitle renders <h2>)"
     expect(html).toContain("<h2"); // the section strips render as h2 now
   });
 
-  it("login, showcase, and the empty app surfaces each render exactly one h1", () => {
+  it("login, showcase, and the surviving app-space document (not-found) each render exactly one h1", () => {
     expect(h1Count(renderDocument("/login", loginElement, {}))).toBe(1);
     expect(h1Count(renderDocument("/showcase", showcaseElement, {}))).toBe(1);
-    expect(h1Count(renderDocument("/app/inbox", inboxElement, {}))).toBe(1);
+    // SPA.27 — the one app-pathed SSR document left is the not-found page a `?ssr=1` deep-link 404
+    // emits; it renders exactly one h1 like every document.
+    expect(h1Count(renderDocument("/app/inbox", notFoundElement, {}))).toBe(1);
   });
 });

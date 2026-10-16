@@ -229,7 +229,11 @@ describe("§15.3 — signup intent + the precedence redirect", () => {
     );
     const res = await createWebApp(deps).request("/app");
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("Showcase — a worked example");
+    // SPA.27 — the list is leaf paint now; the surviving contract is NO redirect to the Showcase
+    // walkthrough + the shell mount (the row itself rides the /bff/app list).
+    expect(await res.text()).toContain('id="spa-root"');
+    const twin = await (await createWebApp(deps).request("/bff/app")).json() as { rows: { slug: string; title: string }[] };
+    expect(twin.rows.map((r) => r.title)).toContain("Showcase — a worked example");
   });
 
   it("GET /app?verified=1 mints email.verified through the acquisition channel", async () => {

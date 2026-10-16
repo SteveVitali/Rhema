@@ -17,7 +17,6 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,18 +24,14 @@ import type {
   BillingBalanceDto,
   BillingPlansDto,
   BillingSubscriptionDto,
-  CheckoutStatusDto,
-} from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { BillingPage, BillingReturnPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
+  CheckoutStatusDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import { billingReturnQuery } from "./queries.js";
 import type { BffBillingReturnTwin, BffBillingSettingsTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -58,23 +53,19 @@ const PLANS: BillingPlansDto = {
       display: "Free", monthlyUsd: 0, annualMonthlyUsd: 0, includedCreditsMonthly: 0,
       dailyChatCredits: 10, concurrency: 1, modelTiers: ["base"], chatOnly: true, researchTools: false,
       runWordCap: null, topUps: false, projects: 3, voices: 1, exportFormats: ["md"], sharing: "none",
-      whatItCovers: "Chat on your drafts.",
-    },
+      whatItCovers: "Chat on your drafts." },
     writer: {
       display: "Writer", monthlyUsd: 20, annualMonthlyUsd: 17, includedCreditsMonthly: 2500,
       dailyChatCredits: null, concurrency: 1, modelTiers: ["base", "mid"], chatOnly: false,
       researchTools: true, runWordCap: null, topUps: true, projects: "unlimited", voices: "unlimited",
       exportFormats: "all", sharing: "export",
-      whatItCovers: "Reviews, revisions and research tools.",
-    },
+      whatItCovers: "Reviews, revisions and research tools." },
     team: {
       display: "Team", monthlyUsd: 40, annualMonthlyUsd: 34, includedCreditsMonthly: 5000,
       dailyChatCredits: null, concurrency: 4, modelTiers: ["base", "mid", "frontier"], chatOnly: false,
       researchTools: true, runWordCap: null, topUps: true, projects: "unlimited", voices: "unlimited",
       exportFormats: "all", sharing: "workspace", waitlist: true, seatsIncluded: 1,
-      whatItCovers: "Shared workspaces — join the waitlist.",
-    },
-  },
+      whatItCovers: "Shared workspaces — join the waitlist." } },
   trial: {
     windowDays: 14,
     entitlement: { kind: "review", wordCap: 6000, rigor: "standard", modelTier: "base" },
@@ -83,14 +74,12 @@ const PLANS: BillingPlansDto = {
     // HOT.1 — the api redacts the gated claim to null while `trial.firstReviewIncluded` is hidden.
     includedNote: null,
     postTrialNote: "After the trial, Free: 10 credits a day, chat only.",
-    eligibilityLine: "One trial per person.",
-  },
+    eligibilityLine: "One trial per person." },
   topUpPacks: [
     { id: "pack_10", usd: 10, credits: 1000 },
     { id: "pack_50", usd: 50, credits: 5250 },
   ],
-  autoReloadDefaults: null,
-};
+  autoReloadDefaults: null };
 
 function sub(partial?: Partial<BillingSubscriptionDto>): BillingSubscriptionDto {
   return {
@@ -100,8 +89,7 @@ function sub(partial?: Partial<BillingSubscriptionDto>): BillingSubscriptionDto 
     autoReload: { enabled: false, thresholdCredits: null, packId: null, monthlyCapUsd: null },
     hasStripeCustomer: false,
     purchase: "open",
-    ...partial,
-  };
+    ...partial };
 }
 
 const PAID_SUB = sub({
@@ -110,46 +98,39 @@ const PAID_SUB = sub({
   subscription: {
     id: "sub_1", tier: "writer", cycle: "monthly", status: "active",
     periodStart: "2026-09-01T00:00:00Z", periodEnd: "2026-10-01T00:00:00Z",
-    cancelAtPeriodEnd: false, scheduledTier: null, pastDue: false,
-  },
-});
+    cancelAtPeriodEnd: false, scheduledTier: null, pastDue: false } });
 
 const BALANCE: BillingBalanceDto = {
   spendableCredits: 3100,
   suspended: false,
   clawbackDebt: 0,
   purchase: "open",
-  paymentLinkUrl: "https://buy.stripe.com/test_link",
-};
+  paymentLinkUrl: "https://buy.stripe.com/test_link" };
 
 const CHECKOUT_OPEN: CheckoutStatusDto = {
   state: "open",
   kind: "subscribe",
   returnTo: null,
-  createdAt: new Date().toISOString(),
-};
+  createdAt: new Date().toISOString() };
 
 const CHECKOUT_COMPLETED: CheckoutStatusDto = {
   state: "completed",
   kind: "subscribe",
   returnTo: "/p/new-essay/run",
-  createdAt: new Date().toISOString(),
-};
+  createdAt: new Date().toISOString() };
 
 const CHECKOUT_EXPIRED: CheckoutStatusDto = {
   state: "expired",
   kind: "subscribe",
   returnTo: null,
-  createdAt: new Date(Date.now() - 60_000).toISOString(),
-};
+  createdAt: new Date(Date.now() - 60_000).toISOString() };
 
 // ---- the mount substrate -------------------------------------------------------------------------
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -191,8 +172,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop"
 const SPA_ALL = {
   "/app/settings/billing": "spa",
   "/settings/billing": "spa",
-  "/billing/return": "spa",
-} as const;
+  "/billing/return": "spa" } as const;
 
 let assignSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
@@ -204,8 +184,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(rootEl);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(rootEl);
   mounted.push(root);
   await act(async () => {
@@ -221,17 +200,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
-/** The REQ-TST-2 emission filter — which `billing` manifest entries a markup string emits. */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("billing").filter((entry) => {
-    if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix") return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-    return false;
-  });
-}
 
 /** Submit one form inside an act — fireEvent + the mutation's microtask flush. */
 async function submit(form: Element) {
@@ -295,24 +263,10 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     expect(main.querySelector("[data-no-customer]")).not.toBeNull();
   });
 
-  it("REQ-TST-2 parity — the SPA emits every manifest hook the SSR markup emits on the same fixture", async () => {
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ billing: { subscription: PAID_SUB, plans: PLANS } }}>
-        <BillingPage />
-      </PageDataContext.Provider>,
-    );
-    const emitted = emittedOn(ssr);
-    expect(emitted.length).toBeGreaterThanOrEqual(12);
-    await mountAt("/app/settings/billing", BOOT, makeFetch({
-      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE },
-    }));
-    expectManifestEmission(el()!, emitted);
-  });
 
   it("an active subscription shows the renewal line + cancel + portal + paid top-ups", async () => {
     await mountAt("/app/settings/billing", BOOT, makeFetch({
-      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE },
-    }));
+      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE } }));
     const main = el()!;
     expect(main.querySelector('[data-current-plan="writer"]')).not.toBeNull();
     expect(main.textContent).toContain("Renews 2026-10-01");
@@ -323,11 +277,36 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     expect(main.querySelector('[data-subscribe-form="writer"]')).toBeNull();
   });
 
+  it("a past_due subscription carries the delinquency banner (data-past-due)", async () => {
+    const pastDue = sub({
+      tier: "writer",
+      hasStripeCustomer: true,
+      subscription: { ...PAID_SUB.subscription!, pastDue: true } });
+    await mountAt("/app/settings/billing", BOOT, makeFetch({
+      billing: { billing: { subscription: pastDue, plans: PLANS }, balance: BALANCE } }));
+    expect(el()!.querySelector("[data-past-due]")).not.toBeNull();
+  });
+
+  it("a live trial reports its state verbatim (data-trial-state pending/active/used/denied)", async () => {
+    for (const [state, marker] of [
+      ["trial_pending", "pending"],
+      ["trial_active", "active"],
+      ["trial_denied", "denied"],
+      ["trial_used", "used"],
+    ] as const) {
+      document.body.innerHTML = "";
+      await mountAt("/app/settings/billing", BOOT, makeFetch({
+        billing: {
+          billing: { subscription: sub({ trial: { state, entitlement: null } }), plans: PLANS },
+          balance: BALANCE } }));
+      expect(el()!.querySelector(`[data-trial-state="${marker}"]`), state).not.toBeNull();
+    }
+  });
+
   it("BILL.3 fail-closed — purchase absent mounts NO purchase forms (the paused note renders)", async () => {
     const closed = { ...PAID_SUB, purchase: undefined };
     await mountAt("/app/settings/billing", BOOT, makeFetch({
-      billing: { billing: { subscription: closed, plans: PLANS }, balance: BALANCE },
-    }));
+      billing: { billing: { subscription: closed, plans: PLANS }, balance: BALANCE } }));
     const main = el()!;
     expect(main.querySelector("[data-purchase-paused]")).not.toBeNull();
     expect(main.querySelector("[data-subscribe-form]")).toBeNull();
@@ -339,8 +318,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
 
   it("purchase=closed renders the paused copy + keeps cancel (the SSR's exact arms)", async () => {
     await mountAt("/app/settings/billing", BOOT, makeFetch({
-      billing: { billing: { subscription: { ...PAID_SUB, purchase: "closed" }, plans: PLANS }, balance: BALANCE },
-    }));
+      billing: { billing: { subscription: { ...PAID_SUB, purchase: "closed" }, plans: PLANS }, balance: BALANCE } }));
     const main = el()!;
     expect(main.querySelector("[data-purchase-paused]")).not.toBeNull();
     expect(main.textContent).toContain("Purchases are paused");
@@ -372,9 +350,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
   it("the subscribe POST rides the JSON branch — fields verbatim, the {url} envelope doc-navs to Stripe", async () => {
     const f = makeFetch({
       mutations: {
-        "/app/settings/billing/subscribe": { ok: true, url: "https://checkout.stripe.com/c/pay/cs_1" },
-      },
-    });
+        "/app/settings/billing/subscribe": { ok: true, url: "https://checkout.stripe.com/c/pay/cs_1" } } });
     const { router } = await mountAt("/app/settings/billing", BOOT, f);
     const form = el()!.querySelector<HTMLFormElement>('[data-subscribe-form="writer"]')!;
     expect(form.getAttribute("action")).toBe("/app/settings/billing/subscribe");
@@ -396,9 +372,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE },
       mutations: {
         "/app/settings/billing/topup": { ok: true, url: "https://checkout.stripe.com/c/pay/cs_top" },
-        "/app/settings/billing/portal": { ok: true, url: "https://billing.stripe.com/session/bps_1" },
-      },
-    });
+        "/app/settings/billing/portal": { ok: true, url: "https://billing.stripe.com/session/bps_1" } } });
     await mountAt("/app/settings/billing", BOOT, f);
     const topup = el()!.querySelector<HTMLFormElement>('[data-topup-form="pack_10"]')!;
     await submit(topup);
@@ -415,8 +389,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
 
   it("the cancel/auto-reload/waitlist POSTs carry their fields and follow the ?saved=1 redirect arm", async () => {
     const f = makeFetch({
-      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE },
-    });
+      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE } });
     await mountAt("/app/settings/billing", BOOT, f);
 
     const autoReload = el()!.querySelector<HTMLFormElement>("[data-auto-reload-form]")!;
@@ -429,8 +402,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     await submit(autoReload);
     const arPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/auto-reload" && i != null);
     expect(JSON.parse(String((arPost![1] as RequestInit).body))).toMatchObject({
-      enabled: "1", thresholdCredits: "500", packId: "pack_10", monthlyCapUsd: "50",
-    });
+      enabled: "1", thresholdCredits: "500", packId: "pack_10", monthlyCapUsd: "50" });
     // The {redirect} arm is an in-router nav — the saved flash renders through validated search.
     await vi.waitFor(() => expect(el()!.querySelector("[data-saved]")).not.toBeNull());
     expect(assignSpy).not.toHaveBeenCalled();
@@ -453,9 +425,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
   it("a notice-redirect arm lands the classified copy — never an error page (REQ-BILL-16)", async () => {
     const f = makeFetch({
       mutations: {
-        "/app/settings/billing/subscribe": { ok: true, redirect: "/app/settings/billing?notice=plan_waitlisted" },
-      },
-    });
+        "/app/settings/billing/subscribe": { ok: true, redirect: "/app/settings/billing?notice=plan_waitlisted" } } });
     await mountAt("/app/settings/billing", BOOT, f);
     const form = el()!.querySelector<HTMLFormElement>('[data-subscribe-form="writer"]')!;
     await submit(form);
@@ -471,8 +441,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       return { promise, resolve };
     })();
     const f = makeFetch({
-      hold: { "/app/settings/billing/auto-reload": d.promise },
-    });
+      hold: { "/app/settings/billing/auto-reload": d.promise } });
     await mountAt("/app/settings/billing", BOOT, f);
     const form = el()!.querySelector<HTMLFormElement>("[data-auto-reload-form]")!;
     await act(async () => { fireEvent.submit(form); });
@@ -508,8 +477,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
 
   it("axe — the mounted billing surface carries no component-level violations", async () => {
     await mountAt("/app/settings/billing", BOOT, makeFetch({
-      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE },
-    }));
+      billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE } }));
     await axeCheck(el()!);
   });
 });
@@ -521,8 +489,7 @@ describe("GET /billing/return mounted (SPA.16)", () => {
 
   it("completed renders the confirmed line + the returnTo continue link (same-origin only)", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_COMPLETED, cancelled: false },
-    }));
+      billingReturn: { checkoutReturn: CHECKOUT_COMPLETED, cancelled: false } }));
     const main = el()!;
     expect(main.querySelector('[data-checkout-state="completed"]')).not.toBeNull();
     expect(main.textContent).toContain("Payment confirmed");
@@ -532,16 +499,14 @@ describe("GET /billing/return mounted (SPA.16)", () => {
 
   it("a non-same-origin returnTo degrades to the billing base — never a client-invented target", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: { ...CHECKOUT_COMPLETED, returnTo: "https://evil.example" }, cancelled: false },
-    }));
+      billingReturn: { checkoutReturn: { ...CHECKOUT_COMPLETED, returnTo: "https://evil.example" }, cancelled: false } }));
     const link = el()!.querySelector<HTMLAnchorElement>("[data-checkout-continue]")!;
     expect(link.getAttribute("href")).toBe("/app/settings/billing");
   });
 
   it("open renders the pending line; the poll cadence is the twin's server-owned pollAfterSeconds", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_OPEN, cancelled: false, pollAfterSeconds: 5 },
-    }));
+      billingReturn: { checkoutReturn: CHECKOUT_OPEN, cancelled: false, pollAfterSeconds: 5 } }));
     const main = el()!;
     expect(main.querySelector('[data-checkout-state="open"]')).not.toBeNull();
     expect(main.textContent).toContain("Confirming your payment");
@@ -550,8 +515,7 @@ describe("GET /billing/return mounted (SPA.16)", () => {
 
   it("cancelled renders the cancelled copy and stops the poll", async () => {
     const f = makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_OPEN, cancelled: true },
-    });
+      billingReturn: { checkoutReturn: CHECKOUT_OPEN, cancelled: true } });
     await mountAt("/billing/return?session_id=cs_1&cancelled=1", BOOT, f);
     const main = el()!;
     expect(main.querySelector('[data-checkout-state="cancelled"]')).not.toBeNull();
@@ -560,8 +524,7 @@ describe("GET /billing/return mounted (SPA.16)", () => {
 
   it("expired renders the expired copy — a settled checkout never polls", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_EXPIRED, cancelled: false },
-    }));
+      billingReturn: { checkoutReturn: CHECKOUT_EXPIRED, cancelled: false } }));
     const main = el()!;
     expect(main.querySelector('[data-checkout-state="expired"]')).not.toBeNull();
   });
@@ -583,19 +546,6 @@ describe("GET /billing/return mounted (SPA.16)", () => {
     }
   });
 
-  it("REQ-TST-2 parity — the completed-return markup emits the same manifest hooks as the SSR page", async () => {
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ checkoutReturn: CHECKOUT_COMPLETED }}>
-        <BillingReturnPage />
-      </PageDataContext.Provider>,
-    );
-    const emitted = emittedOn(ssr);
-    expect(emitted.length).toBeGreaterThanOrEqual(2);
-    await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_COMPLETED, cancelled: false },
-    }));
-    expectManifestEmission(el()!, emitted);
-  });
 
   it("an unflipped leaf hands off — zero BFF reads (SsrHandoff)", async () => {
     const f = makeFetch();
@@ -607,8 +557,7 @@ describe("GET /billing/return mounted (SPA.16)", () => {
 
   it("axe — the mounted return surface carries no component-level violations", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
-      billingReturn: { checkoutReturn: CHECKOUT_COMPLETED, cancelled: false },
-    }));
+      billingReturn: { checkoutReturn: CHECKOUT_COMPLETED, cancelled: false } }));
     await axeCheck(el()!);
   });
 });
