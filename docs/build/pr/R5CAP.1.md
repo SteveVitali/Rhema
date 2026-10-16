@@ -67,8 +67,9 @@ OPERATOR row → ruling or named owner. Zero unlanded-untracked, zero unowned.
   the 752-id union; no missing/extras/dupes; verdict grammar + evidence + ref resolution.
 - `check-build-memory` — 0 violations.
 - `check-append-only --base e683c34` — clean.
-- `ci:` — pending at closeout (the recurring first-read class); boundary read recorded in
-  the run ledger.
+- `ci:` — boundary read on head `e9b6dda` (run 38976054306): `typecheck / lint / unit` +
+  `contracts` + `public-safe` pass; `images` + `integration` pending after the 2700 s
+  window — the recurring slow-job class; stack #187–#172 pass.
 
 ## Boundaries
 

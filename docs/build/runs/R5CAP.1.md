@@ -174,6 +174,8 @@ AWAITING rather than smoothed; prod-vs-staging layer honesty recorded (prod stil
   the round-5 corpus.
 - Census completeness: zero unlanded-untracked DECOMPOSE rows; zero unowned OPERATOR
   rows; GD-R5OPS.1-1 flagged AWAITING; `projectStatus` stays IN_PROGRESS.
-- **ci:** pending at closeout — boundary read in the PHASE LOG entry / logs once
-  reported (the recurring first-read class; stack #187–#172 previously green).
+- **ci:** boundary read 2026-10-16T~23:25Z on head `e9b6dda` (run 38976054306):
+  `typecheck / lint / unit` + `contracts` + `public-safe` **pass**; `images` +
+  `integration` **pending after the 2700 s window** — the chain's recurring slow-job
+  class; stack #187–#172 pass. Record `logs/ci-boundary-188-r5cap1.json`.
 - Harness: devin-desktop/swe-2-high/subagent.
