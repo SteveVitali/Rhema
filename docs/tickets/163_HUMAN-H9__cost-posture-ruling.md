@@ -14,7 +14,7 @@
 > per-change on preview evidence.
 
 ## Checklist
-- [ ] Ruling recorded: target-vs-posture decision + the lever pre-authorization granularity
+- [x] Ruling recorded: target-vs-posture decision + the lever pre-authorization granularity — **(a) keep ~$50 target → architecture change required; class-level pre-authorization** (operator, 2026-10-16 → `docs/build/readouts/HUMAN-H9.md`)
 
 ## Exit criterion
 The ruling is recorded verbatim in the readout; 164_COST.1's skeleton expands or parks on it.
