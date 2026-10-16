@@ -1,6 +1,6 @@
 # Rhēma — Frontend SPA Migration Specification
 
-- **Status:** v1.0 — **canonical** · 2026-10-08 · **ratified by the operator** (Q-1…Q-7 register + Q-8…Q-14 §12.2 answers resolved). O2 adversarial review applied (Appendix E, 15 findings, no blockers); R20 reversed per operator ruling — Source mode revived as REQ-ED-17. Hand-off: `docs/decomposition-prompt.md` → `decompose-spec`.
+- **Status:** v1.1 — **canonical** · 2026-10-08 · **ratified by the operator** (Q-1…Q-7 register + Q-8…Q-14 §12.2 answers resolved). O2 adversarial review applied (Appendix E, 15 findings, no blockers); R20 reversed per operator ruling — Source mode revived as REQ-ED-17. **Amended 2026-10-10 → v1.1 (SPAREC.2, as-built reconciliation):** the round-4 chain landed and the operator signed all eight proposed deviations ACCEPTED at GATE-ACCEPT.SPA (2026-10-10); **§14** records the landed shape — the flag machinery's own sunset executed, forced-SSR re-seated on code (ADR-107/108), and the verification procedures amended to their surviving recipes. The v1.0 body is append-only history: where it describes migration-window machinery in the present tense, **§14 supersedes** — nothing above is rewritten. Hand-off: `docs/decomposition-prompt.md` → `decompose-spec`.
 - **Synthesized from:** the frontend-SPA research ledger (`docs/research-ledger.md`), the brief (`docs/frontend-spa-brief.md`), four research notes (`docs/research/01`–`04`) and ten design notes (`docs/design/20`–`29`). Binding inputs are the brief's ⚑ operator-fixed constraints and the ledger's §Q register (Q-1…Q-7, all ratified 2026-10-07).
 - **Supersedes:** the nine SPA design notes on any point of disagreement (they are inputs; this spec is canonical). Amends ADR-007 and ADR-012 via **ADR-106** (§3.6); amends no product-spec `REQ-*` — this document adds its own families (§0.2) and references product requirements by id.
 
@@ -75,6 +75,7 @@ The binding operator decisions (Q-1…Q-7) are restated in Appendix B. The synth
 11. Migration sequencing: flags, flips, rollback, chain interplay
 12. Risks, departures, and open questions
 13. Out of scope
+14. Spec amendments — the as-built record (round-4 reconcile)
 - Appendix A — Requirement index
 - Appendix B — Decision register (operator decisions Q-1…Q-7; synthesis rulings R1–R27)
 - Appendix C — Research index
@@ -295,6 +296,355 @@ All seven answered by the operator 2026-10-07 (interactive ratification session)
 ## 13. Out of scope
 
 Per the brief: backend data-model changes; api route semantics; billing/auth semantics; §16.4 marketing claims (G2 still frozen). Additionally: no public-page redesign, no visual redesign of auth'd surfaces beyond the Q-4 polish budget, no api-versioned endpoints, no mobile-native changes (phone posture is a capability contract, not a new client), no changes to `apps/api`, `apps/collab`, `apps/run-task` beyond what the BFF contract strictly requires (none anticipated — the BFF is additive).
+
+---
+
+## 14. Spec amendments — the as-built record
+
+> **⚑ Amendments — 2026-10-10 (SPAREC.2, manifest row 145).** The round-4 chain landed
+> authored-dormant: every SPA.*/SPAF.*/cleanup ticket engineered and deterministic-green on the
+> chain tip, unmerged pending the operator's ordered activation (`mergePolicy: OPERATOR`; the
+> merge/deploy cadence is `docs/build/reports/SPACAP.2_COMPOSED_VERIFICATION.md` §3). The
+> capstone closure (`docs/build/CAPSTONE_CLOSURE.md` §R4) proposed eight deviations; the operator
+> signed all eight **ACCEPTED** at GATE-ACCEPT.SPA on 2026-10-10
+> (`docs/build/readouts/GATE-ACCEPT.SPA.md`). This section amends the spec to the landed shape.
+> Each amendment names what v1.0 said, what shipped, and the record that authorized it — a
+> signed gate row, an ADR, or the spec's own sunset clause. The v1.0 body is append-only: where
+> it and this section disagree, **this section is correct** and the v1.0 text stands as history.
+> The six verification-procedure requirements (REQ-VFY-6, REQ-VFY-8, REQ-VFY-10, REQ-SEQ-7,
+> REQ-SEQ-9, REQ-SEQ-10) stay **PARTIAL** in `docs/build/COVERAGE_MATRIX.csv` — the amendments
+> record their compensating controls; no PARTIAL is re-labelled MET, and every owed live leg
+> remains a named `docs/tickets/DEFERRALS.md` row. Prod still serves pre-chain ancestors; every
+> live leg below verifies deployed code only and is owed to the deployed tip.
+
+### 14.1 The flag machinery's sunset executed (REQ-SEQ-1..4, REQ-FW-3, REQ-BND-11; §0.3 R7/R8; §3.1; §4's handler order; §11; Appendix D's Overrides/Flag rows)
+
+**v1.0 said:** a per-surface `SPA_SURFACES` flag set chooses SSR-vs-SPA per request —
+`SPA_SURFACES` CSV → `parseSpaSurfaces` (fail-closed ∅) → `WebDeps.spaSurfaces` →
+`deps.spa(c, surface)` inside the fixed handler order → `StageConfig.spaSurfaces` → the
+`SPA_SURFACES` env + `rhema:spaSurfaces` Pulumi key; `?ssr=1`/`x-rhema-renderer: ssr` force SSR
+on every stage through the window; `?renderer=spa`/`x-rhema-renderer: spa` apply where
+`SPA_OVERRIDES=1`; the `<noscript>` floor carries an `?ssr=1` escape link.
+
+**Landed (SPA.27 + SPA.28):** the migration window closed in-repo. Every authenticated
+SPA-space GET serves `spaShellDocument` unconditionally — SPA.27 deleted the flipped surfaces'
+SSR documents; SPA.28 deleted the consult machinery itself (`spa-flag.ts`,
+`WebDeps.spa`/`deps.surfaces`/`deps.spaOverrides`, `parseSpaSurfaces`, `SPA_RENDERER_HEADER`,
+the `SPA_SURFACES`/`SPA_OVERRIDES` env emissions, `StageConfig.spaSurfaces`,
+`rhema:spaSurfaces`). `?ssr=1`, `?renderer=spa`, and `x-rhema-renderer` are **inert request
+text** — the `renderer-overrides.test.ts` source scan is the resurrection tripwire, and
+`check-spa-env.mjs` keeps both retired env names on the banned list (a bundle embedding either
+is still a leak). The journey CLI's `--pin-renderer`/`JOURNEY_PIN_RENDERER` refuse loudly
+(exit 2 — a retired flag that still parses would lie); `--expect-renderer`/`--surface` stay —
+`data-renderer` remains contractually true (`spa` on every authenticated SPA-space document,
+`ssr` on public + forced-SSR arms). The `<noscript>` floor drops the `?ssr=1` escape — a link
+back onto the same shell would lie about the floor it claims to be. **Stage-fact disposition:**
+`SPA_SURFACES`/`SPA_IDE_FRAMED_SURFACES`/`SPA_DOCUMENT_ROUTES` are retained in
+`packages/contracts/src/spa.ts` as always-on *vocabulary* (key names + the document-route
+table) — configuration removed, names kept.
+
+**§4's fixed handler order, as landed:** session gate → `?verified=1` mint → `/app`
+showcase/held-file precedence → `/p/:slug` unread handoff → phone/showcase forced-SSR →
+**shell**. The "renderer override" and "flag membership" steps no longer exist. The shell's
+boot `surfaces` map is now a **static capability truth** (not a flag set): `"spa"` on every
+`SPA_DOCUMENT_ROUTES` row except phone `pageMount` routes, `"ssr"` on server-owned and public
+rows — it exists so a leaf can tell "my document owns this route" from "hand off to a document
+load" (§14.9). REQ-SEQ-5's foundation gate discharged during the build; REQ-SEQ-6's flip order
+executed as designed (14 flips + the `ide-chrome` AND-gate); REQ-SEQ-11/12's coexistence
+contract governed the window and is concluded — the surviving SSR set is the permanent one
+(§14.9).
+
+**Authorized by:** REQ-SEQ-4's own sunset clause + R7 ("retires in post-last-flag cleanup") —
+the deletion executed exactly what the spec pre-authorized; landed by SPA.27/SPA.28
+(`docs/build/runs/SPA.27.md`, `docs/build/runs/SPA.28.md`); consequences signed at
+GATE-ACCEPT.SPA rows 1–2. Matrix: REQ-SEQ-1/-3/-4 + REQ-FW-3 + REQ-BND-11 carry
+`MET-DIFFERENTLY` — served the window, then retired per the spec's own clause.
+
+### 14.2 REQ-VFY-8 amended — the per-flip gate is a single renderer leg
+
+**v1.0 said (§10):** per flip, on one flagged preview deployment — leg A
+(`x-rhema-renderer: ssr` + `--expect-renderer ssr`: the fallback proves unchanged), leg B
+(flag on, `--expect-renderer spa`), leg C (the full `paid:false` suite), then a rollback drill.
+
+**Landed/amended:** leg A is unexecutable — the override machinery it pinned was deleted
+(§14.1) before any live leg ran, under REQ-SEQ-4's own sunset. The surviving recipe, recorded
+verbatim on every affected DEFERRALS row by `D-SPA.28-2` (DONE): per-surface
+`--surface <key> --expect-renderer spa` leg + post-deploy marker curls (`D-SPAF.*-1/-2`), the
+full `paid:false` suite folded into the composed post-tip run (`D-SPACAP.2-1`), and rollback
+verified as `git revert` + redeploy (§14.4). The `--expect-renderer spa` assert is unit-pinned
+(`surface-gates.test.ts` totality, `runner.test.ts`).
+
+**Authorized by:** GATE-ACCEPT.SPA row 1 (ACCEPTED). Verdict stays **PARTIAL** — the live legs
+are owed: `D-SPA.6-1`, every `D-SPA.*-1` preview leg (blocked on `D-MAINT.6-1`, the non-prod
+Resend secret), the `D-SPAF.*-2` prod legs folded into `D-SPACAP.2-1`.
+
+### 14.3 REQ-SEQ-9 amended — flag-off DOM parity is retired by design
+
+**v1.0 said (§11):** a surface ticket keeps its SSR tests green and proves "flag off → SSR
+serves the same DOM contract" on the preview two-leg.
+
+**Landed/amended:** "flag off" no longer exists (§14.1) — the SSR↔SPA parity blocks in the 14
+`spa/*.dom.test.tsx` suites were retired with their now-dead fixtures at SPA.27 (asserting
+parity against a deleted render is a false premise). The compensating control is the emitted
+contract itself: `check:dom-contract` (827 hooks across 18 surfaces) + the per-surface dom
+suites + the removal-detecting scans hold the surviving documents to the one manifest
+vocabulary; the amend notes sit on every affected deferral row (`D-SPA.28-2`).
+
+**Authorized by:** GATE-ACCEPT.SPA row 2 (ACCEPTED). Verdict stays **PARTIAL** (`D-SPA.*-2`
+amended drills; `D-SPA.28-2`).
+
+### 14.4 REQ-SEQ-7 amended — rollback is revert-by-construction
+
+**v1.0 said (§11):** rollback is a config flip (Q-5), drilled per surface on the flagged
+preview.
+
+**Landed/amended:** no flag exists to flip. Rollback of any migrated surface is `git revert`
+of the cleanup commits + redeploy of the reverted images + re-run of the per-surface legs
+(`infra/PROD-BRINGUP.md` §13.2; runbook §3). The `D-SPAF.*-3` arms were deliberately never
+exercised destructively — a destructive drill on live prod flaps real users; the preview
+flag-drop drills whose arm was "drop the flag" (`D-SPA.23-2`/`D-SPA.24-2`) are mooted by §14.1
+and stay OPEN as tracking items whose surviving arm rides the activation.
+
+**Authorized by:** GATE-ACCEPT.SPA row 5 (ACCEPTED). Verdict stays **PARTIAL** (all
+`D-SPA.*-1/-2`, `D-SPAF.*-3`, `D-SPA.6-1` — the harmless-path preview drill).
+
+### 14.5 REQ-SEQ-10 clarified — the nightly pacing is an activation cadence, not code
+
+**v1.0 said (§11):** "≥ one nightly green before the next surface's prod flip"; rollback =
+revert + redeploy.
+
+**Landed/amended:** the gate binds **activation order at merge/deploy time**, not PR authoring
+(the 2026-10-08T19:12Z orchestrator ruling recorded on `D-SPAF.10`'s row): the 15-segment
+bottom-up cadence in `SPACAP.2_COMPOSED_VERIFICATION.md` §3.1 is the enforcement — each
+SPAF-boundary deploy is followed by its marker curls + surface leg + ≥1 nightly journey green
+(`D-SPAF.*-4`) before the next segment merges; the cleanup wave's three tickets carry entry
+gates (`D-SPA.26-1/-27-1/-28-1`) binding them to "all 14 prod flips merged AND ≥1 nightly green
+since the last flip." The whole chain was authored dormant at $0 — prod serves pre-chain
+ancestors, so no bake has run; pacing is a cadence the operator follows, not code that could
+have been written.
+
+**Authorized by:** GATE-ACCEPT.SPA row 6 (ACCEPTED). Verdict stays **PARTIAL** (the 14
+`D-SPAF.*-4` rows + the three cleanup entry gates).
+
+### 14.6 REQ-VFY-10 amended — the owed free steps fold into the composed suite
+
+**v1.0 said (§10):** two coverage debts owed before their flips — a delivered run-report
+render step (gates `run-report`), seeded-dossier mutation sub-steps (gate `dossier`); per-flip
+legs are `$0`-only.
+
+**Landed/amended:** four registry steps stay `expected:"red"` — R6F, T12F, T13F, T17 (T17
+added by SPA.25, §14.10). `expected:"red"` is owed-reporting — a red step can never silently
+pass, and each names its deferral row. Their first prod legs run inside `D-SPACAP.2-1`'s
+composed post-tip suite: a pass reports `ready-to-flip` and the owning ticket flips
+`registry.ts` green with the report attached. The preview legs (`D-SPA.21-1`, `D-SPA.22-1`,
+`D-SPA.25-1`) stay separately owed behind `D-MAINT.6-1`. The `$0`-only clause held everywhere —
+no paid step ever entered a flip gate.
+
+**Authorized by:** GATE-ACCEPT.SPA row 3 (ACCEPTED). Verdict stays **PARTIAL**.
+
+### 14.7 REQ-VFY-6 clarified — component axe is the interim authoritative tier
+
+**v1.0 said (§10):** journey-level axe remains the authoritative WCAG 2.2 AA gate;
+component-axe required on the interactive-component manifest subset.
+
+**Landed/amended:** the journey-level leg (the P1 family) has no green live run — the
+authoritative gate's live evidence is owed via `D-MAINT.6-1` → the `D-SPA.*-1` preview legs →
+`D-SPACAP.2-1` (the P1 steps inside the composed suite). The interim control: component-axe
+runs per component on the interactive-manifest subset in the dom suites (layout-dependent
+rules off) — no component ships axe-unchecked; the journey leg adds layout and real-browser
+reach, not a new contract.
+
+**Authorized by:** GATE-ACCEPT.SPA row 4 (ACCEPTED). Verdict stays **PARTIAL**.
+
+### 14.8 REQ-ED-12 amended via ADR-108 — forced-SSR is code, twin-flagged
+
+**v1.0 said (§4, §6):** phone/showcase keeps the server-decided read-only Page — the boot
+map + `SsrHandoff` covered the client side of that verdict.
+
+**Landed (SPACAP.3 — the G2 fix):** the boot map could see only the phone leg —
+`row.showcase` is row data a request-scoped payload cannot see (the `surfaces` map is
+route-keyed, not slug-keyed). Each of the five Page-family BFF twins (`/p/:slug`, `/v/:v`,
+`/v/:n/diff/:m`, `/a/:artifactId`, `/revisions/:cid`) ships `project.showcase: true` verbatim
+on a showcase row; the five leaf routes consult the shared `twinForcesSsr(twin)` predicate
+(`spa/states.tsx`) and hand off through `SsrHandoff` — the same document-load seam the phone
+leg takes. The client's effective renderer predicate now mirrors the server's
+`isPhoneRequest(c) || row.showcase === true` verbatim: **the boot map owns the phone leg; the
+twin owns the showcase leg.** Forced-SSR remains a server verdict in both directions — the
+client never decides a renderer, only recognizes which document owns the route; the
+aggregates' `readOnly: true` + withheld `collabWsUrl` posture is kept verbatim as
+belt-and-braces.
+
+**Authorized by:** ADR-108 (Accepted 2026-10-10) + GATE-ACCEPT.SPA row 7 (ACCEPTED).
+Removal-detecting pins: `renderer-overrides.test.ts` (5 verbatim arms / 1 boot-map phone leg /
+5 twin emissions / 5 leaf consults), `editor.dom.test.tsx` (showcase twin → `navigateDocument`
+on all five leaves; non-showcase never hands off), `server.test.ts` (the flag on all five
+twins, absent otherwise). Live re-verify owed: `D-SPACAP.3-1` (three legs on the deployed
+tip). REQ-ED-12 stays MET — the divergence was renderer label, never capability; the fix
+closes the label seam.
+
+### 14.9 The forever-SSR island set — ADR-107; SPA.26 retired `outline` only (amends §3.7, §6's "other islands port" clause, REQ-ISL-1's retirement leg, REQ-TL-12)
+
+**v1.0 said:** auth'd islands "retire per-surface as flags flip and are deleted in the
+post-last-flag cleanup wave" — SPA.26's ticket prose named `page`/`ide`/`outline`/`editor`
+entries deleted.
+
+**Landed (SPA.26):** `CLIENT_ENTRIES` = `["ide","page","landing"]`. `outline` retired
+end-to-end — source (`client/outline.ts`), the `/assets/outline.js` route, the SSR mount tag,
+and the island-only mount attributes (`data-autosave`, `data-label-{saving,saved,failed}`);
+`editor` stayed deleted (SPA.24). `page` + `ide` are **permanent SSR islands**, not migration
+leftovers: the forced-SSR Page family (§14.8) is flag-independent and mounts them forever —
+`page.js` carries the read-only PM mount + findings/authorship decorations (design/23 OQ5's
+adopted arm; also the recorded rollback collab path via the same `client/collab.ts` wire,
+REQ-ISL-4); `ide.js` owns pane/menu/theme/palette/feed enhancement on every SSR-framed IDE
+document. The rule is now written on `client-entries.mjs`: an entry leaves `CLIENT_ENTRIES`
+only when nothing served can mount it — a `page`/`ide` removal is a REQ-ED-12 design change,
+not cleanup. `data-outline-editor` stays on the SSR form as the renderer-shared identity (the
+SPA leaf emits it too); the `data-autosave*` vocabulary is leaf-owned in the dom-contract. The
+SSR outline page's no-JS floor is the explicit-Save form posting the same `ed.*` grammar —
+REQ-ISL-11's floor preserved, honestly degraded (no debounced autosave without the island).
+
+**Authorized by:** ADR-107 (Accepted 2026-10-10) — the ticket-prose-vs-trace narrowing is the
+ADR's subject. Matrix: REQ-INV-5 + REQ-ISL-11 carry `MET-DIFFERENTLY(ADR-107)`; REQ-INV-8
+`MET-DIFFERENTLY` (§14.12). §3.7's "`build-client.mjs` is unchanged" is likewise superseded in
+detail — the pipeline contract stands (iife/unhashed/fail-inert, islands `no-cache`), the
+entry set shrank.
+
+### 14.10 REQ-ED-17 landed — Source mode is a plain-text CodeMirror view on the SPA mount (SPA.25; design/30)
+
+**v1.0 said (§6, R20):** "a CodeMirror-class source view bound to the same ProseMirror doc and
+collab session" ships as its own ticket after the `editor` flip — a rebuild, not a port.
+
+**Landed (SPA.25):** `apps/web/src/spa/page-source-mode.ts` — a real CodeMirror 6 view
+(`lineNumbers`/`highlightActiveLine`/`drawSelection`/`history`/`keymap` + editable/readOnly
+compartments + aria-label) loaded only via `import()` so all CM bytes ship in the `codemirror`
+async group. Commits flow through `applySourceMarkdown` (`packages/editor/src/source-mode.ts`)
+— a three-way, top-level-block merge against the live PM doc carrying `ORIGIN_META`
+(`human`/`pasted`) + `SOURCE_EDIT_META`: per-run last-writer-wins on overlapping foreign edits,
+non-overlapping foreign writes survive, the stale line lives on `data-source-note`; `null`
+when buffer ≡ base, so normalization churn never reaches undo/provenance. The PM view mounts
+inside `data-pm-host` — hidden while source mode is up, still mounted, still dispatching (remote
+trs land through `view.dispatch`). Flush points: 500 ms debounce, toggle-off commit,
+`pagehide`/`visibilitychange:hidden`, route-leave, and before the ⌘S `markRestorePoint` mint.
+Five new hooks — `data-source-bar`, `data-source-toggle`, `data-source-host`,
+`data-source-note`, `data-pm-host` (the retired island's `data-editor-*` vocabulary stays
+dropped per REQ-ED-16). **Deviation:** `@codemirror/lang-markdown` + syntax highlighting
+measured the group at 169.8 kB gz vs the 130 kB ceiling — plain-text CM editing ships
+(87.2 kB); the restore seam is one extensions line (design/30 records the call; REQ-SAFE-7's
+ceiling ruled).
+
+**Authorized by:** REQ-ED-17's own "CodeMirror-class" envelope (Q-8/R20 ruling) + design/30's
+owned-decision record — no ADR: scoped implementation calls inside the ticket's contract.
+Matrix: REQ-ED-17 is `MET-ENGINEERED(D-SPA.25-1)` — journey step T17 is `expected:"red"`
+until the flagged preview exists (§14.6 fold; preview leg `D-SPA.25-1`).
+
+### 14.11 REQ-BFF-5 amended in mechanism — form-mode refusals redirect to the sheet URL
+
+**v1.0 said (§5):** refusals are data — inline re-render on the owning surface.
+
+**Landed (SPA.27):** with the flipped surfaces' SSR documents deleted, a form-mode POST
+failure has no document left to re-render — the handler 302s back to the sheet URL and the
+leaf recomposes the identical failure affordance off its BFF twin. The JSON envelope is
+untouched: `{error:"<stable_code>", detail?}` at preserved upstream statuses, JSON callers
+never get a redirect, stale-state 400/404/409 still means "re-read → invalidate the owning
+Query keys."
+
+**Authorized by:** REQ-BFF-5's envelope contract itself — the re-render moved into the leaf's
+recomposition, not a deleted document; recorded as SPA.27's owned deviation
+(`docs/build/runs/SPA.27.md` §4) and folded under GATE-ACCEPT.SPA row 8's whole-live-tail
+acceptance.
+
+### 14.12 Boundary/nav re-scope — `SsrHandoff` covers only the permanent cases; redirect-only rows are `reloadDocument` stubs (REQ-NAV-9, REQ-INV-8, REQ-FW-4, REQ-FW-7)
+
+**v1.0 said (§4, §7):** unflipped strangler targets hand off via `SsrHandoff`→`location.assign`
+driven by the boot flag map; redirect-only aliases are never client routes; loaders map onto
+Query `ensureQueryData`.
+
+**Landed:** no unflipped targets exist — `SsrHandoff` is re-scoped to the permanent cases only:
+forced-SSR arms (phone + twin-flagged showcase, §14.8) and server-owned redirect paths.
+Redirect-only GET rows are registered in the client tree as `reloadDocument` stubs
+(`surfaces === null` → document nav) so the server's canonical 302 still answers — a letter
+deviation from "never client routes" with the wire outcome preserved (REQ-INV-8, REQ-FW-4:
+`MET-DIFFERENTLY`). Loaders orchestrate Query via `ensureQueryData` +
+`defaultPreloadStaleTime: 0` + endpoint-verbatim keys; leaves use `useQuery` + `SurfaceShell`
+rather than `useSuspenseQuery` — the pending contract is identical (REQ-FW-7:
+`MET-DIFFERENTLY`). REQ-NAV-6's keep-alive keys `draft:<draftId>` — the equivalence v1.0 §6
+already recorded.
+
+**Authorized by:** the matrix's MET-DIFFERENTLY dispositions + GATE-ACCEPT.SPA row 8 (the
+whole live tail). REQ-NAV-9's unflipped-handoff clause is moot by §14.1 — its boundary rule
+(SSR-owned paths, `/logout`, external hand-offs, binaries → document navigations) is
+unchanged.
+
+### 14.13 The test-disposition tail executed — REQ-TST-1's retained-net concluded (amends §10's REQ-VFY-9 class map note + §12.3's "SSR test retirement is delayed by design")
+
+**v1.0 said:** ~300 HTML-string SSR tests carry forward as the fallback's safety net until the
+last flag falls; the suite's tail shrinks only in cleanup.
+
+**Landed (SPA.27):** the cleanup ran — 42 test files rewritten per the `research/04`
+disposition map: HTML-string asserts on deleted documents ported to `/bff/*` payload contracts
+(the twins are the documents' own view contracts), shell/boot contracts, and redirect/refusal
+contracts; the REQ-TST-2 SSR↔SPA parity blocks retired (§14.3); `paywall.test.ts`'s scan roots
+made working-directory-correct. Net deletion-dominated (+1,800/−8,275 vs base; `pages.tsx`
+−3,962 to the surviving SSR set). Removal-detecting tripwires committed: `spa-shell.test.ts`
+(flipped + deep-link routes serve the shell flag-independent), `routes.test.ts` (a resurrected
+manifest element would shadow the redirect; no `/edit/` rows), `asset-parity.test.ts` (retired
+bundle names 404 even with a stale artifact on disk; the new manifest leg — every Vite
+manifest artifact answers its `/assets/spa/` URL), `renderer-overrides.test.ts` (§14.1).
+REQ-TL-13 widened alongside: the journeys' asset ledger now captures every same-origin
+`/assets/` path (the Vite bundle's nested `/assets/spa/assets/*` urls) with per-extension
+content-type asserts.
+
+**Authorized by:** the spec's own REQ-TST-1 disposition map + REQ-SEQ-4's sunset; landed by
+SPA.27 (`docs/build/runs/SPA.27.md`).
+
+### 14.14 Polls-as-data is now the only posture on the migrated set (REQ-VFY-4, REQ-BFF-15; §12.3's meta-refresh departure narrowed)
+
+**v1.0 said:** SSR surfaces keep meta-refresh where today they use it; the SPA's poll-as-data
+applies to flipped surfaces only (§12.3).
+
+**Landed (SPA.27):** the migrated surfaces' meta-refresh/poll documents (import progress,
+voice ingest) were deleted with the SSR wave — the poll URL a form POST followed is now the
+leaf's own `refetchInterval` loop at the same server-owned cadence (`{pending,
+pollAfterSeconds}`). The departure narrows to the permanent SSR set (public + forced-SSR +
+surviving form documents): they keep meta-refresh; everywhere else polls-as-data is the sole
+posture.
+
+**Authorized by:** REQ-BFF-15's same-cadence contract + REQ-SEQ-4's sunset; landed by SPA.27.
+
+### 14.15 Bundle ceilings held as adopted — REQ-SAFE-7 / R25
+
+The R25 initial ceilings shipped verbatim in `apps/web/spa-budget.json` and never needed
+calibration: entry graph measured 201.5 kB gz vs the 256,000 B (250 kB) ceiling, the
+`codemirror` group 87.2 kB vs 133,120 B — `check:spa-budget` green on every closeout. The one
+sizing consequence is §14.10's lang-markdown drop. `check:spa-env` covers all SPA sources +
+emitted artifacts and keeps the retired env names banned (§14.1).
+
+**Authorized by:** R25's "calibrated on the first real build" clause — the first real builds
+fit inside the adopted ceilings, so the adopted values stand unamended.
+
+### 14.16 No-drift confirmations — v1.0-carried amendments the build executed as written
+
+For completeness of the reconcile record: the deviations v1.0 already carried were executed
+unchanged — R11's recorded REQ-SAFE-6 amendment (`{url}` validated server-side before
+serialization + client `location.assign`; the literal 302-hop endpoint rejected) landed
+verbatim and reads `MET-DIFFERENTLY` on the matrix; R20/REQ-ED-17's revive-as-designed path
+landed per §14.10; REQ-NAV-6's `draft:<id>` keep-alive keying (the E-12-recorded equivalence)
+is the canonical form; REQ-BND-11's no-JS honesty departure stands (the floor serves without
+the dead escape link — §14.1). No amendment needed on these rows; recorded so the as-built
+map is complete.
+
+### 14.17 The live-verification posture (GATE-ACCEPT.SPA row 8)
+
+Everything in §14 is engineered and deterministic-test green at the chain tip; **none of it
+is deployed** — prod serves pre-chain ancestors (`6ebb1cb…` web / `0acd16d…` api, verified
+2026-10-10). Every live leg is ledgered: the `D-SPA.*-1/-2` preview legs/drills behind
+`D-MAINT.6-1` (the non-prod `rhema-nonprod-resend-api-key` seed — NOT_FOUND on every probe);
+the `D-SPAF.*-1..-4` per-surface prod legs + the `D-SPA.26-1/-27-1/-28-1` cleanup entry gates
+behind the ordered 15-segment merge/deploy; the post-tip composed verification
+(`D-SPACAP.2-1..4`), the G2-fix live leg (`D-SPACAP.3-1`), and `D-MAINT.4-1` behind the
+deployed tip. Prod legs mint sessions through the live `rhema.tools` mailbox — only the
+preview family needs the secret. Signed: GATE-ACCEPT.SPA row 8 (ACCEPTED) — each row is
+ledgered with its verbatim recipe + unblock condition.
 
 ---
 
