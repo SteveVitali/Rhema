@@ -28,7 +28,11 @@ that drive a credit ledger (hold → debit → refund per run phase).
 
 **Deployed topology (prod, `rhema-507501`, us-central1):**
 
-- **`rhema.tools`** — `web` (Cloud Run): the SSR app. Session auth via `__Host-`-prefix cookies,
+- **`rhema.tools`** — `web` (Cloud Run): the SSR app today — the round-4 SPA migration is
+  authored-dormant (unmerged; `docs/build/INTEGRATION_PLAN.md` §R4): after activation the
+  authenticated surfaces serve a Vite/TanStack SPA shell whose data flows through same-origin,
+  session-cookie `/bff/*` endpoints on this same host, while the public funnel and the
+  phone/showcase Page family stay SSR. Session auth via `__Host-`-prefix cookies,
   Better Auth mounted under `/api/auth/*` (Google + magic-link). CSP nonces on every page.
 - **`api.rhema.tools`** — `api` (Cloud Run): the REST/internal API. Session middleware + Origin guard
   on browser routes; run routes (launch/gates/caps); billing, trial, entitlement, import presigns;

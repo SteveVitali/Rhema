@@ -11,7 +11,7 @@ Redis, GCS, Secret Manager, an egress-proxy that is the no-egress sandbox subnet
 and the five-job CI pipeline with the licence policy and public-safe checks. *(Cloud amended
 2026-09-02 from AWS to GCP — see `docs/tickets/00_MANIFEST.md` § Spec amendments applied.)*
 
-## Status (2026-10-04 — honest, not aspirational)
+## Status (2026-10-10 — honest, not aspirational)
 
 - **Prod** is live on `rhema.tools`. `dev` deploys the full stack for verification windows and returns
   to idle between them (ADR-077); `pr-<n>` previews exist only through the guarded
@@ -30,6 +30,18 @@ and the five-job CI pipeline with the licence policy and public-safe checks. *(C
   owning surface.
 - **Efficacy claims:** gate G2 is deferred — no benchmark wave has run, so no superiority or efficacy
   claim appears on any surface, docs included (REQ-EVAL-19; `lintGrowthCopy` enforces it).
+- **Frontend (round 4):** the SPA migration is engineered and deterministic-test green at the chain
+  tip but **authored-dormant** — prod still serves pre-chain ancestors while the operator runs the
+  ordered merge/activation (`docs/build/INTEGRATION_PLAN.md` §R4; spec §14.17;
+  `docs/build/OPERATIONAL_READINESS.md`). The landed architecture is a permanent hybrid, not a
+  transition state: Hono SSR serves the public funnel (`/`, `/invite`, `/pricing`, `/signup`,
+  `/login`, `/showcase` — REQ-BND-1) and the forced-SSR Page family (phone UA + `showcase`
+  projects, read-only — ADR-108); every other authenticated document GET serves the Vite-built
+  TanStack Router + Query SPA shell unconditionally (ADR-106), reading same-origin `/bff/*`
+  session-cookie twins; `page.js`/`ide.js`/`landing.js` are the surviving permanent island set
+  (ADR-107). The migration-window flag machinery is deleted — `?ssr=1`, `?renderer=spa`, and
+  `x-rhema-renderer` are inert request text; rollback is `git revert` + redeploy, not a config
+  flip (SPA.28; spec §14.1/§14.4).
 
 ## Round-3 invariants (REQ-SPEC-29…32, 2026-09-30)
 
@@ -57,7 +69,8 @@ pnpm test
 ```
 
 ## Layout
-- `apps/*` — deployable services: `web` (React Router SSR shell), `api` (Hono REST + SSE, Better
+- `apps/*` — deployable services: `web` (Hono SSR host + Vite/TanStack SPA + same-origin BFF —
+  ADR-106; React Router stays server-side only), `api` (Hono REST + SSE, Better
   Auth), `worker` (pg-boss consumers), `collab` (Hocuspocus WSS + materialization), `run-task` (the
   two-uid agent run image — one GKE Job per run), `fetcher` (network-only link reads), `convert`
   (no-network bytes→markdown), `export` (pandoc/typst rendering), `egress-proxy` (the sandbox's only

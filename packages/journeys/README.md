@@ -53,6 +53,13 @@ pnpm --filter @rhema/journeys exec rhema-journeys \
 the single ≤300-word fixture. `workflow_dispatch` on `.github/workflows/journeys.yml` takes
 `stage`/`steps`/`paid` inputs.
 
+Round-4 additions: `--surface <key[,key…]>` scopes the run to a `SURFACE_GATES` subset and
+`--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` marker
+differs (the activation cadence's per-surface legs use both). `--pin-renderer`/`JOURNEY_PIN_RENDERER`
+are **retired** — the `x-rhema-renderer` override channel was deleted with the flag machinery
+(SPA.28), so the flag refuses loudly (exit 2) rather than lie. `--invite-code <code>` rides the
+MAINT.6 seeded-preview invite path (`RHEMA_INVITE_CODE`).
+
 ## For step owners
 
 Your step is `expected: "red"` until your ticket's Stage B proves it. Run it, watch it pass for the
