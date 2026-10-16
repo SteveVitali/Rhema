@@ -13,7 +13,7 @@
 
 ## Checklist
 - [ ] Merge sweep: bottom-up merge of the open stacked chain incl. #170/#171 + the round-5 stack (BL-01/BL-81)
-- [ ] Seed `rhema-nonprod-resend-api-key` (send-only Resend key — unblocks 165_VERIF.2's 15 preview legs)
+- [x] Seed `rhema-nonprod-resend-api-key` (send-only Resend key — unblocks 165_VERIF.2's 15 preview legs) — **done 2026-10-16**: created in `rhema-507501` (us-central1, `goog-pulumi-provisioned` label convention), version 1 enabled, seeded from the operator-provided key file (orchestrator-executed under explicit delegation; value never printed/committed)
 - [ ] BL-23 consumed-invite mint (if preview legs need a fresh invite code)
 - [ ] BL-33 live-mode Stripe re-verify ruling
 - [ ] BL-34 admin-key reconcile
