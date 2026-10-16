@@ -141,9 +141,39 @@ MEM 7 MET + 3 MISSING · G1 4 MET + 1 PARTIAL.
 - `pnpm vitest run scripts/check-coverage-matrix.test.mjs` — **6/6 pass**: header grammar,
   752-id union (666 product + 86 round-5), exactly one row per id (no missing/extras/dupes),
   verdict grammar, MET-family evidence nonblank, file/deferral/journey refs resolve.
-- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — see below.
-- `node docs/build/tools/check-append-only.mjs --base e683c34` — see below.
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` —
+  **0 violations** (8 warnings, all pre-existing classes: manifest banner/ordering,
+  oversized phase-log entries incl. legacy, index legacy values, old readouts, missing
+  Harness lines on old ledgers).
+- `node docs/build/tools/check-append-only.mjs --base e683c34` — **OK** (PHASE LOG /
+  GATE DECISIONS / DEFERRALS / Plan-extensions only grew).
+
+## Self-review
+
+Mechanical pass: checker repair re-verified via `node --check` + the green suite; the
+two missing-file refs were caught BY the checker itself (its own ref-resolution leg did
+its job — `cogs-levers.test.ts` → `packages/contracts/src/domain/`,
+`seed-bl78-fixtures.test.mjs` does not exist → `window-plan.test.ts`); verdict sums
+recounted mechanically against the matrix (66/1/11/5/3 = 86) after a first-pass miscount
+was corrected in both the ledger and the report; stray backtick in the checker edit
+caught by `node --check` before commit. Design pass: every PARTIAL/MISSING row's routing
+field was re-read against the contract's three allowed routes (closing ticket /
+DEFERRALS row / GATE-ACCEPT.R5 list) — all named; the funded wave judged on machinery
+under the CARRY ruling rather than marked ordinary-MET or unmet; GD-R5OPS.1-1 flagged
+AWAITING rather than smoothed; prod-vs-staging layer honesty recorded (prod still
+`ffbb8ad`; nav verdicts are staging-verified).
 
 ## Evidence report
 
-_(populated at close)_
+- **Closed:** 2026-10-16T22:29Z · **layer:** engineered (docs + checker tooling; $0
+  spend; zero prod writes; no live stage).
+- PR #188 opened against `stevevitali/funded-1-funded-window-wave` (mergePolicy
+  OPERATOR — opened, never merged).
+- Deliverables: `reports/CAPSTONE_GAP_ANALYSIS_R5.md` (all 86 ids + §0–§11 + census +
+  reconciliation + routings); +86 matrix rows over a 752-id union; checker extended for
+  the round-5 corpus.
+- Census completeness: zero unlanded-untracked DECOMPOSE rows; zero unowned OPERATOR
+  rows; GD-R5OPS.1-1 flagged AWAITING; `projectStatus` stays IN_PROGRESS.
+- **ci:** pending at closeout — boundary read in the PHASE LOG entry / logs once
+  reported (the recurring first-read class; stack #187–#172 previously green).
+- Harness: devin-desktop/swe-2-high/subagent.
