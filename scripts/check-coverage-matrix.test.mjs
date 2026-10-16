@@ -21,6 +21,34 @@ const SPEC =
   readFileSync(`${ROOT}/docs/rhema-design-spec.md`, "utf8") +
   "\n" +
   readFileSync(`${ROOT}/docs/frontend-spa-spec.md`, "utf8");
+// R5CAP.1 — the round-5 authoritative corpus (the ratified `docs/post-spa-disposition-spec.md`)
+// plus the two research ledgers that EMIT the ids the spec cites only by family
+// (`REQ-FND-*` → r5_f1's 1..8; REQ-G1-* → r5_g1's 1..5). The round-5 grammar is wider than the
+// product specs': families carry digits (REQ-G1-1), suffixes are alphanumeric and
+// multi-segment (REQ-FIX-P1D, REQ-FIX-BL22-T7DEST, REQ-FIX-BL78-5B4), slash-sets abbreviate
+// sibling ids (REQ-G1-1/2/3/4/5, REQ-FIX-T15/T16, REQ-FIX-BL78-5B4/5B5/M31 — each `/`-part
+// replaces the base's last `-`-segment; a leading-dash part like `REQ-IDE-20/-21` is a
+// sibling of the family root). The two non-ids the spec itself declares are excluded
+// verbatim in R5_NON_IDS below (§4: REQ-NAVC-7..15 were renumbered away into REQ-NAVM-7 +
+// REQ-NAVC-16..23; REQ-NAVC-24 does not exist). The same one-row-per-id rule then applies.
+const R5_SPEC =
+  readFileSync(`${ROOT}/docs/post-spa-disposition-spec.md`, "utf8") +
+  "\n" +
+  readFileSync(`${ROOT}/docs/research/r5_f1_funded-census.md`, "utf8") +
+  "\n" +
+  readFileSync(`${ROOT}/docs/research/r5_g1_dispositions.md`, "utf8");
+const R5_NON_IDS = new Set([
+  "REQ-NAVC-7",
+  "REQ-NAVC-8",
+  "REQ-NAVC-9",
+  "REQ-NAVC-10",
+  "REQ-NAVC-11",
+  "REQ-NAVC-12",
+  "REQ-NAVC-13",
+  "REQ-NAVC-14",
+  "REQ-NAVC-15",
+  "REQ-NAVC-24",
+]);
 const MATRIX_PATH = `${ROOT}/docs/build/COVERAGE_MATRIX.csv`;
 const MATRIX = readFileSync(MATRIX_PATH, "utf8");
 const DEFERRALS = readFileSync(`${ROOT}/docs/tickets/DEFERRALS.md`, "utf8");
@@ -101,6 +129,27 @@ for (const m of SPEC.matchAll(/REQ-([A-Z]+)-(\d+)\.\.(\d+)/g)) {
   for (let n = Number(m[2]); n <= Number(m[3]); n++)
     specIds.add(`REQ-${m[1]}-${n}`);
 }
+// Round-5 corpus: bare ids (digit-carrying families, alphanumeric/multi-segment suffixes),
+// `..` ranges, and slash-set sibling expansion — then the spec-declared non-ids drop out.
+for (const m of R5_SPEC.matchAll(/REQ-([A-Z][A-Z0-9]*)-([0-9A-Z]+(?:-[0-9A-Z]+)*)/g))
+  specIds.add(`REQ-${m[1]}-${m[2]}`);
+for (const m of R5_SPEC.matchAll(/REQ-([A-Z][A-Z0-9]*)-(\d+)\.\.(\d+)/g)) {
+  for (let n = Number(m[2]); n <= Number(m[3]); n++)
+    specIds.add(`REQ-${m[1]}-${n}`);
+}
+for (const m of R5_SPEC.matchAll(
+  /REQ-([A-Z][A-Z0-9]*)-([0-9A-Z]+(?:-[0-9A-Z]+)*)((?:\/-?[0-9A-Z]+(?:-[0-9A-Z]+)*)+)/g,
+)) {
+  const stem = m[2].includes("-") ? m[2].replace(/-[0-9A-Z]+$/, "") : "";
+  for (const part of m[3].split("/").filter(Boolean)) {
+    specIds.add(
+      part.startsWith("-")
+        ? `REQ-${m[1]}${part}`
+        : `REQ-${m[1]}-${stem ? `${stem}-` : ""}${part}`,
+    );
+  }
+}
+for (const id of R5_NON_IDS) specIds.delete(id);
 const sortedSpecIds = [...specIds].sort();
 
 const rows = parseCsv(MATRIX);
