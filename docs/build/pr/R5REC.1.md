@@ -16,7 +16,9 @@ the operator merges the chain bottom-up.** Offline-only docs reconcile; $0; no l
   6 stale `MET` verdicts re-verdicted `MET-ENGINEERED(D-…)` (REQ-FND-5/6/7/8 + REQ-G1-4 →
   D-CAP.2-1; REQ-OPS-5 → its five OPEN carriers); REQ-ED-17 re-verdicted `MET` (D-SPA.25-1
   discharged); 15 unhomed owed sources housed — new rows **BL-85** (BL38.1 residue) +
-  **BL-86** (H8 bundle), appends to BL-05/24/29/36/74. Exit read: **367 expected sources —
+  **BL-86** (H8 bundle), **BL-87** (CI mount-settle flake — second occurrence of the
+  FUNDED.1-classified class, filed D-R5REC.1-1), appends to BL-05/24/29/36/74. Exit read:
+  **368 expected sources —
   complete + non-duplicating + verdict-consistent** (eng 591/752, req 573/752).
 - **Readiness tail.** `OPERATIONAL_READINESS.md` dated addendum: Resend secret seeded;
   preview wave ran (13 done / 5 open); cost $285.80→$198.32 list; soak done, first nightly

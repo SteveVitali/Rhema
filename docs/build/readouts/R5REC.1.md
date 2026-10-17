@@ -76,9 +76,11 @@ the dated `DROPPED` disposition stands).
   (first scheduled-nightly green is merge-dependent); `REQ-OPS-7` → BL-36 (fail-closed
   nightly-golden driver — `GD-R5OPS.1-1` AWAITING); `REQ-MEM-6`, `REQ-MEM-7`, `REQ-MEM-8` →
   BL-05 (spec amendments routed to R5REC.2); `REQ-G1-5` → **BL-86** (new — the H8
-  operator-session bundle, PARTIAL at 1/~12 items).
+  operator-session bundle, PARTIAL at 1/~12 items); `D-R5REC.1-1` → **BL-87** (new — the CI
+  mount-settle flake filed on its second occurrence, per the FUNDED.1 classification's own
+  graduation rule — see the CI note below).
 
-On exit: **367 expected sources — complete + non-duplicating + verdict-consistent.**
+On exit: **368 expected sources — complete + non-duplicating + verdict-consistent.**
 Sums recomputed: engineering closed **591/752**; requirement satisfied **573/752**
 (MET-ENGINEERED never counts as MET — the six re-verdicted rows moved requirement-satisfied
 down from 578, which is the honest number while the funded wave stays carried).
@@ -102,6 +104,16 @@ live; merge sweep operator-owned; H8 bundle 1/~12 done; **`projectStatus: IN_PRO
 sweep (BL-01 → BL-81 → BL-82) · H8's ~11 remaining items (BL-86) · the CDN IAM/origin
 decision (D-R5OPS.1-2) · the `prod:d5a74cc` stamp delete + purge verify (BL-85) · the
 out-of-class cost-lever rulings + billed-actuals export (BL-29).
+
+### 4. CI note — recurring mount-settle flake (filed, non-blocking)
+
+`ci-boundary` run 39064749916 on head `07bb5d5` failed `typecheck / lint / unit` on
+`apps/web/src/spa/outline.dom.test.tsx` "delete's cited refusal lands ?notice=cited
+in-router" — the **same mount-settle flake** first classified at FUNDED.1 (run
+38963033831: "the `submit()` helper's non-null-asserted selector should waitFor; graduates
+to a D-row on recurrence"). This is the recurrence → filed `D-R5REC.1-1` → homed BL-87.
+Identical code passes locally (`pnpm test` 5,814 green on this head); the failed job was
+re-run and the final head-bound read is recorded in `logs/ci-R5REC.1.json` + the PHASE LOG.
 
 _Agent-drafted; unsigned — the operator's dispositions stand as recorded in the cited dated
 cells, and nothing herein signs for them._

@@ -164,7 +164,7 @@ BL-83 accepted deviations (tracked; their re-verifiable arms ride steps 2–3).
 > Dated addendum — the 2026-10-10 body stays as written except where a row below names the
 > supersession. Evidence: `readouts/GATE-ACCEPT.R5.md`, `docs/build/reports/2026-10-16_verif2/`,
 > `docs/build/reports/2026-10-15_VERIF.1-*/`, `docs/build/reports/2026-10-16_COST.1/`,
-> `docs/build/BACKLOG.csv` (reconciled this pass — 367 expected sources, verdict-consistent).
+> `docs/build/BACKLOG.csv` (reconciled this pass — 368 expected sources, verdict-consistent).
 
 **Verdict update:** the chain tip is engineered + **preview-verified** (VERIF.2 live legs ran
 green on `pr-186`), GATE-ACCEPT.R5 passed 2026-10-17 with all 14 deviations ACCEPTED as tracking

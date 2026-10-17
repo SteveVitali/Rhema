@@ -33,8 +33,9 @@ the disposition a cell's latest dated note ratified is what the leading token mu
   `MET-ENGINEERED` over its five OPEN carriers; REQ-ED-17 → `MET` (D-SPA.25-1 discharged).
 - **BACKLOG.csv:** sources appended into BL-05 (REQ-MEM-6/7/8), BL-24 (D-R5OPS.1-1/-2 +
   REQ-OPS-3), BL-29 (D-COST.1-1/-2/-3 + REQ-COST-5), BL-36 (REQ-OPS-7), BL-74 (REQ-OPS-6);
-  **BL-85** (BL38.1 residue: `prod:d5a74cc` stamp + purge verify) and **BL-86** (H8 bundle,
-  REQ-G1-5) added. Every owed source now has exactly one open home.
+  **BL-85** (BL38.1 residue: `prod:d5a74cc` stamp + purge verify), **BL-86** (H8 bundle,
+  REQ-G1-5), and **BL-87** (D-R5REC.1-1 — CI mount-settle flake filed on recurrence) added.
+  Every owed source now has exactly one open home.
 - **BACKLOG.md:** dated 2026-10-17 reconcile section — new sums (591/752 eng, 573/752 req),
   normalization record, ADR-trigger sweep (no newly-fired; ADR-110's economic posture noted),
   row tables updated.
@@ -56,12 +57,19 @@ the disposition a cell's latest dated note ratified is what the leading token mu
 
 ## Evidence report
 
-- `check-backlog.sh`: **367 expected sources — complete + non-duplicating +
+- `check-backlog.sh`: **368 expected sources — complete + non-duplicating +
   verdict-consistent** (entry: 25 issues → exit: 0).
 - Status census after: DONE 193 · OPEN 68 · PARTIAL 29 · WONTFIX 41 (331 rows).
-- Files: `docs/tickets/DEFERRALS.md` (20 status-cell prepends), `docs/build/COVERAGE_MATRIX.csv`
-  (7 re-verdicts), `docs/build/BACKLOG.csv` (5 source-cell appends + BL-85/BL-86),
-  `docs/build/BACKLOG.md`, `docs/build/OPERATIONAL_READINESS.md`,
-  `docs/build/readouts/R5REC.1.md`, `docs/build/runs/R5REC.1.md`, `docs/build/pr/R5REC.1.md`.
+- Files: `docs/tickets/DEFERRALS.md` (20 status-cell prepends + new row D-R5REC.1-1),
+  `docs/build/COVERAGE_MATRIX.csv` (7 re-verdicts), `docs/build/BACKLOG.csv`
+  (5 source-cell appends + BL-85/BL-86/BL-87), `docs/build/BACKLOG.md`,
+  `docs/build/OPERATIONAL_READINESS.md`, `docs/build/readouts/R5REC.1.md`,
+  `docs/build/runs/R5REC.1.md`, `docs/build/pr/R5REC.1.md`.
+- **CI flake recorded (non-blocking, recurring class):** `ci-boundary` run 39064749916 on
+  `07bb5d5` failed `typecheck / lint / unit` on `outline.dom.test.tsx` "delete's cited
+  refusal" — the mount-settle flake first classified at FUNDED.1 (38963033831) whose note
+  said "graduates to a D-row on recurrence"; this is the recurrence → **D-R5REC.1-1 → BL-87**
+  (waitFor + sibling-pattern audit; no live dependency). Failed job re-run; identical code
+  is green locally (5,814 pass / 4 skip / 0 fail on this head).
 - ci: pending — `ci-boundary --stack` recorded at closeout (`docs/build/logs/ci-R5REC.1.json`).
 - Closed: pending at closeout.

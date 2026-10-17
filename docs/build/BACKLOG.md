@@ -10,7 +10,7 @@ expected sources — complete + non-duplicating + verdict-consistent**.
 
 ## Matrix sums (recomputed 2026-10-17 by R5REC.1, 752 rows)
 
-`check-backlog.sh` verdict — **367 expected sources: complete + non-duplicating +
+`check-backlog.sh` verdict — **368 expected sources: complete + non-duplicating +
 verdict-consistent** (was 25 issues on entry; all repaired, detail in `readouts/R5REC.1.md`).
 
 | Measure | Count |
@@ -160,7 +160,8 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | BL-02 | round-4 + upstream `agent-skills` patch — validator-stuck status cells (D-P0.06-3, D-P0.08b-3; D-OBS.1-3's embedded-pipe truncation now joins the class), check-backlog parser, PHASE-LOG rotation |
 | BL-05 | **R5REC.2** — fold G2/G3/H3 overrides + ADR deviations into the spec + land REQ-MEM-6/7/8's spec amendments |
 | BL-06 | **DOC.1 + DOC.2** — repo/agent docs refresh |
-| — | **SPAREC.2** (next in chain) — whatever the ledger's `nextTicket` names after this pass |
+| BL-87 | **CI mount-settle flake** — `outline.dom.test.tsx` "delete's cited refusal" (`submit()`'s non-null-asserted selector races the leaf mount; second occurrence 2026-10-17, run 39064749916 — first was FUNDED.1's 38963033831) → waitFor + sibling audit — **added this pass** |
+| — | **R5REC.2** (next in chain) — whatever the ledger's `nextTicket` names after this pass |
 
 ### Watch rows (per-trigger, evaluated at each sweep)
 
