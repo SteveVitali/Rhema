@@ -71,5 +71,9 @@ the disposition a cell's latest dated note ratified is what the leading token mu
   said "graduates to a D-row on recurrence"; this is the recurrence → **D-R5REC.1-1 → BL-87**
   (waitFor + sibling-pattern audit; no live dependency). Failed job re-run; identical code
   is green locally (5,814 pass / 4 skip / 0 fail on this head).
-- ci: pending — `ci-boundary --stack` recorded at closeout (`docs/build/logs/ci-R5REC.1.json`).
-- Closed: pending at closeout.
+- ci: **pass** — `ci-boundary --pr 190 --stack` on head `32004a7`: all five checks green
+  (run 39067445495 — `typecheck / lint / unit` 40m2s, `contracts`, `integration`,
+  `images`, `public-safe`); stack #189–#172 pass; record `docs/build/logs/ci-R5REC.1.json`.
+  First read on `07bb5d5` (run 39064749916) failed on the recurring mount-settle flake —
+  filed `D-R5REC.1-1`, failed job re-run, final head's full run green.
+- Closed: 2026-10-17T21:36Z.
