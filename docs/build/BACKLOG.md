@@ -50,6 +50,12 @@ routed to R5REC.2).
 COST.1 levers landed inside the authorized class, the out-of-class set stays parked on BL-29.
 No superseded ADRs.
 
+**Correction 2026-10-17 (R5REC.2):** the "ADR-110" in the sweep line above was a
+misreference — at that commit ADR-110 did not exist; the economic-posture trigger is
+**ADR-082** (measured cost posture). ADR-110 is this run's new record — the delegated
+click interceptor — and joins BL-84's watch set. (Same misreference stands in
+`docs/build/runs/R5REC.1.md` — run ledgers are append-only; this note is the correction.)
+
 **Round-4 + upstream rows unchanged:** BL-01..BL-84 preserved; the round-5 additions are
 BL-85/BL-86 only.
 
@@ -89,7 +95,7 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | BL-82 | **Post-tip composed verification** (SHA-matched only): full suite `--expect-renderer spa` (D-SPACAP.2-1), two-tenant BFF probe (D-SPACAP.2-2), public-SSR regression diff vs committed baseline (D-SPACAP.2-3 — baseline captured green 2026-10-10), zero-CSP walk (D-SPACAP.2-4), G2-fix live leg (D-SPACAP.3-1), MAINT.4 OAuth legs (D-MAINT.4-1) | 6 sources; landing: deployed tip after segment 15 |
 | BL-80 | **Non-prod Resend secret + preview legs**: operator seeds `rhema-nonprod-resend-api-key` in `rhema-507501` (NOT_FOUND on every probe through SPA.25) → `preview-stack.mjs` + CI images → session mint (D-MAINT.6-1 — flips D-OPS.1-1 + D-SPA.6-1), all `D-SPA.*-1` preview two-legs + `D-SPA.25-1` (T17), all `D-SPA.*-2` preview drills (23-2/24-2 mooted by the flag deletion — revert+redeploy survives) | 29 sources; landing: operator secret seed |
 | BL-83 | **GATE-ACCEPT.SPA signed deviations** (status `accepted`, tracking not gate-blocking): REQ-VFY-8 (flip procedure amended after deletion), REQ-SEQ-9 (flag-off parity legs unexecutable), REQ-VFY-10 (free steps stay `expected:"red"` — ready-to-flip inside BL-82's run), REQ-VFY-6 (journey axe leg owed), REQ-SEQ-7 (rollback drills never live), REQ-SEQ-10 (nightly pacing unproven until deploys) | 6 PARTIAL matrix rows; re-verifiable arms ride BL-81/82 |
-| BL-84 | **ADR revisit watches**: ADR-104 (G2 deferred), ADR-105 (G3 early-PROCEED), ADR-106 (TanStack+Vite binding), ADR-107 (forever-SSR island set), ADR-108 (showcase twin handoff), ADR-109 (verdict grammar) | 6 sources; standing sweep |
+| BL-84 | **ADR revisit watches**: ADR-104 (G2 deferred), ADR-105 (G3 early-PROCEED), ADR-106 (TanStack+Vite binding), ADR-107 (forever-SSR island set), ADR-108 (showcase twin handoff), ADR-109 (verdict grammar), ADR-110 (delegated click interceptor — 2026-10-17, R5REC.2) | 7 sources; standing sweep |
 
 ### Operator rulings & operator-held deploys (the binding constraints on launch — unchanged)
 
@@ -170,7 +176,7 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | BL-47 | GATE-ACCEPT standing triggers (ADR-001/002/003/011/013/015/016/017) |
 | BL-76 | Product/UX-surface triggers (ADR-044–052, 059–061, 063–070, 099, 102) |
 | BL-77 | Infra/security/process triggers (ADR-040, 073–076, 081, 090–092, 098, 100) |
-| BL-84 | Round-4 + retro-fitted triggers (ADR-104–109) — **added this pass** |
+| BL-84 | Round-4 + retro-fitted triggers (ADR-104–109; +110 added by R5REC.2) — **added this pass** |
 
 ### Accepted / time-based / spec-scheduled
 
