@@ -160,4 +160,28 @@ AWAITING, carried honestly into the deviations draft.
 
 ## Evidence report
 
-_(filled at close, after the head-bound CI read)_
+- PR #189 opened against `stevevitali/r5cap-1-capstone-gap-analysis` (mergePolicy
+  OPERATOR — opened, never merged); head `5cca253`, 5 files +404/−26.
+- Deliverables: `CAPSTONE_CLOSURE.md` `# R5CAP.3` section — R5.0 honest scope; R5.1
+  routed-gap dispositions 1:1 vs `CAPSTONE_GAP_ANALYSIS_R5.md`; R5.2 21-row carrier
+  census; R5.3 **14-row GATE-ACCEPT.R5 deviations draft, unsigned** (`☐ operator`
+  sign-off column — the operator rules at row 170); R5.4 notes incl. GD-R5OPS.1-1
+  AWAITING; R5.5 verdict record. `DEFERRALS.md` 25 dated `2026-10-17 (R5CAP.3)`
+  re-owal notes on the contract-named carriers — zero flips, no row deleted, leading
+  status tokens untouched (append-only tail-appends, verified clean vs `ddbd2e7`).
+  `COVERAGE_MATRIX.csv` REQ-G1-1 row now cites `R5CAP.1;R5CAP.3` + the closure file.
+- Dispositions: every R5CAP.1 routing → **deferred-with-compensating-control** (each
+  binds prod contact / operator execution or ruling / a clock / an empty cohort /
+  R5REC.2's named scope — zero in-tree fixable) or a drafted deviation row; the
+  carried funded wave stays carried (`$0` spent; re-epoch/raise/carry ruling paths on
+  D-CAP.2-1); REQ-MEM-6/7/8 fold-back stays on R5REC.2.
+- `projectStatus` stays IN_PROGRESS — REQ-G1-1's completeness check does not pass
+  (carried wave + open carriers + the AWAITING golden-budget ruling).
+- Live: none-pending — the contract gates the live stage ("live re-verifies only
+  where a routed gap needs one") and no routed gap permitted an in-scope live leg;
+  zero prod contact, zero prod writes, $0.
+- **ci:** `ci-boundary --pr 189 --stack` — **pass** on head `5cca253` (run
+  38986275182 — all five checks; `typecheck / lint / unit` 41m9s read through
+  completion; first bounded read timed out on the recurring slow-job tail, re-read
+  completed green) + stack #188–#172 pass. Record `docs/build/logs/ci-R5CAP.3.json`.
+- Harness: devin-desktop/swe-2-high/subagent.
