@@ -159,6 +159,66 @@ BL-83 accepted deviations (tracked; their re-verifiable arms ride steps 2–3).
 | H2 corpus (not started) | ≈$100k across two quarters | manifest H2 |
 | Live-mode Stripe legs | ≤$50 ceiling authorized; $0 spent (test mode) | `runs/STB.4.md` |
 
+## Round-5 operational-readiness tail — 2026-10-17 (R5REC.1)
+
+> Dated addendum — the 2026-10-10 body stays as written except where a row below names the
+> supersession. Evidence: `readouts/GATE-ACCEPT.R5.md`, `docs/build/reports/2026-10-16_verif2/`,
+> `docs/build/reports/2026-10-15_VERIF.1-*/`, `docs/build/reports/2026-10-16_COST.1/`,
+> `docs/build/BACKLOG.csv` (reconciled this pass — 367 expected sources, verdict-consistent).
+
+**Verdict update:** the chain tip is engineered + **preview-verified** (VERIF.2 live legs ran
+green on `pr-186`), GATE-ACCEPT.R5 passed 2026-10-17 with all 14 deviations ACCEPTED as tracking
+items — and **prod still serves pre-chain `ffbb8ad`**; no round-4/5 code is live. Merge/deploy
+sweep stays operator-owned (`mergePolicy: OPERATOR`, BL-01 → BL-81 → BL-82).
+`projectStatus: IN_PROGRESS`.
+
+### What changed vs the 2026-10-10 read
+
+| Then-stale fact | Now |
+|---|---|
+| `rhema-nonprod-resend-api-key` NOT_FOUND (capability rows 1/13, critical-path step 1, risk 3) | **Seeded by the operator 2026-10-16 (H8 item 1)** — `resend-pull` → `rhema:resendApiKey` → `seed-invite` → N2/N2.invite all green on pr-186; D-MAINT.6-1 DONE. Critical-path step 1 is complete; preview legs unblocked. |
+| Preview-leg family unexecuted (BL-80) | VERIF.2 ran the wave on pr-186: **13 `D-SPA.*-1` rows discharged DONE** (D-SPA.12/13/14/15/17/18/19/21/22/23/25-1 + D-SPA.25-1 incl. T17 → REQ-ED-17 re-verdicted MET); **5 stay OPEN** — D-OPS.1-1 (signed-in suite), D-SPA.6-1, D-SPA.16-1, D-SPA.20-1, D-SPA.24-1 → REQ-OPS-5 honestly `MET-ENGINEERED`. |
+| Prod cost $285.80 list | **$198.32/mo list** after COST.1 executed the H9-authorized class-A levers (`pulumi up` update 151); billed-actuals before/after read owed (D-COST.1-1); out-of-class levers (worker right-size + HA set) paused pending per-lever rulings (D-COST.1-3) — all on BL-29. |
+| H8 operator bundle unscheduled | `docs/tickets/150_HUMAN-H8__operator-session-bundle.md` exists; 1/~12 items done — REQ-G1-5 PARTIAL → BL-86. |
+
+### Soak / SLO posture
+
+- **Soak:** D-OBS.1-2's 24h zero-MaxListenersWarning soak is DONE; the **first scheduled-nightly
+  JOURNEY.1 green is merge-dependent** (`github.sha` = main HEAD ≠ chain tip) — REQ-OPS-6 → BL-74,
+  named owner = the operator merge sweep.
+- **Named-red SLOs stay OPEN:** `D-SLO.1-5`, `D-SLO.1-6`, `D-SLO.1-7`, `D-SLO.1-8` (BL-07) — each
+  breach still pauses feature work on its surface; unchanged by round 5.
+- **New live finding:** the `balance_divergence` alert paged 2026-10-15 — six included-bucket
+  accounts at `expectedHeld=-3860`; classification is owed (R5OPS.1 finding (c)), homed with the
+  first-finding measure on BL-24's family of ops residuals.
+- **CDN usercontent delivery nonfunctional:** signed-URL edge + LB→`rhema-prod-user-content`
+  origin read deny with `AccessDenied` 403 (config verified — `enableCdn`/`USE_ORIGIN_HEADERS`/
+  `signedUrlKeyNames`); repair leg D-R5OPS.1-2 + REQ-OPS-3 PARTIAL → BL-24, needs an operator
+  IAM/decision.
+- **Nightly golden:** driver landed **fail-closed** (refuses without `GOLDEN_BUDGET_RULING=approved`
+  + measured `--scores`; absent-manifest exit-0 is NON-EVIDENCE) — REQ-OPS-7 PARTIAL → BL-36;
+  **the ~$150–300/night budget ruling `GD-R5OPS.1-1` is AWAITING the operator** — an agent must
+  not answer it.
+- **Funded wave:** `GD-FUNDED.1-1` = **CARRY** — the 21-leg funded wave stays owed on `D-CAP.2-1`;
+  $0 spent; a future envelope ruling is required (REQ-FND-5..8 + REQ-G1-4 now honestly
+  `MET-ENGINEERED(D-CAP.2-1)`).
+
+### Operator flags standing after round 5
+
+1. **Merge sweep** — operator-owned bottom-up merge + ordered deploys (BL-01/BL-81/BL-82); the
+   round-5 chain tip is `stevevitali/r5cap-3-capstone-closure` (+ this reconcile branch).
+2. **`GD-R5OPS.1-1`** — nightly-golden budget ruling, AWAITING (BL-36).
+3. **`GD-FUNDED.1-1`** — funded-window envelope ruling, CARRY (BL-71/D-CAP.2-1).
+4. **H8 session** — ~11 remaining items (BL-86 + the item rows it names).
+5. **CDN IAM/origin decision** — usercontent signed-URL repair (D-R5OPS.1-2, BL-24).
+6. **BL38.1 residue** — `prod:d5a74cc` deployments-stamp delete (operator write) + purge verify
+   ~2026-10-30 (BL-85).
+7. **Cost rulings** — out-of-class levers (D-COST.1-3) + billed-actuals export (D-OPS.2-1,
+   D-COST.1-1) on BL-29.
+
+`DONE` still requires every open row to land its disposition; this pass changed posture, not the
+definition.
+
 ### Risks, ranked (2026-10-10 read)
 
 1. **Activation ordering.** A wrong-order merge/deploy (or a tip-only deploy) jumps all-SSR→all-SPA
