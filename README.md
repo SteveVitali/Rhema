@@ -11,7 +11,7 @@ Redis, GCS, Secret Manager, an egress-proxy that is the no-egress sandbox subnet
 and the five-job CI pipeline with the licence policy and public-safe checks. *(Cloud amended
 2026-09-02 from AWS to GCP — see `docs/tickets/00_MANIFEST.md` § Spec amendments applied.)*
 
-## Status (2026-10-10 — honest, not aspirational)
+## Status (2026-10-18 — honest, not aspirational)
 
 - **Prod** is live on `rhema.tools`. `dev` deploys the full stack for verification windows and returns
   to idle between them (ADR-077); `pr-<n>` previews exist only through the guarded
@@ -23,23 +23,32 @@ and the five-job CI pipeline with the licence policy and public-safe checks. *(C
   re-open ruling (ADR-028; GD-BILL.3-1) — no real-money purchase is open to users.
 - **Refund window:** shipped flag-off — `refundWindowMode: "test_tenants"` admits only
   server-flagged `is_test` workspaces; `open` awaits the BL-30 ruling (ADR-071; D-DEF.4-3).
-- **Cost:** the measured prod bill is ~$285/mo list against the ~$50/mo target — the reduction
-  levers are priced but plan-only (OPS.2; ADR-082).
+- **Cost:** the measured prod bill is ~$198/mo list against the ~$50/mo target — COST.1's
+  authorized class-A levers moved it $285.80 → $198.32, but the target stays **unmet**: the
+  remaining levers are paused out-of-class pending per-lever rulings (D-COST.1-3, BL-29;
+  OPS.2; ADR-082).
 - **SLOs:** four named breaches are OPEN on prod (D-SLO.1-5…8 — run success rate, event-delivery p95,
   proxy-vs-SDK divergence, egress-denied spikes); per REQ-ARCH-34 a breach pauses feature work on the
   owning surface.
 - **Efficacy claims:** gate G2 is deferred — no benchmark wave has run, so no superiority or efficacy
   claim appears on any surface, docs included (REQ-EVAL-19; `lintGrowthCopy` enforces it).
-- **Frontend (round 4):** the SPA migration is engineered and deterministic-test green at the chain
-  tip but **authored-dormant** — prod still serves pre-chain ancestors while the operator runs the
-  ordered merge/activation (`docs/build/INTEGRATION_PLAN.md` §R4; spec §14.17;
+- **Frontend (rounds 4–5):** the SPA migration is engineered and deterministic-test green at the
+  chain tip but **authored-dormant** — prod still serves pre-chain ancestors while the operator
+  runs the ordered merge/activation (`docs/build/INTEGRATION_PLAN.md` §R4/§R5; spec §14.17;
   `docs/build/OPERATIONAL_READINESS.md`). The landed architecture is a permanent hybrid, not a
   transition state: Hono SSR serves the public funnel (`/`, `/invite`, `/pricing`, `/signup`,
   `/login`, `/showcase` — REQ-BND-1) and the forced-SSR Page family (phone UA + `showcase`
   projects, read-only — ADR-108); every other authenticated document GET serves the Vite-built
   TanStack Router + Query SPA shell unconditionally (ADR-106), reading same-origin `/bff/*`
   session-cookie twins; `page.js`/`ide.js`/`landing.js` are the surviving permanent island set
-  (ADR-107). The migration-window flag machinery is deleted — `?ssr=1`, `?renderer=spa`, and
+  (ADR-107). Round 5 landed the client half (NAVC.1–NAVC.5; ADR-110; spec §14.18/§14.19): one
+  delegated `document` click interceptor installed by `mountSpa` routes in-tree `<a href>`
+  clicks to `router.navigate`; the ordered guard pipeline + skip-list (modifiers, `target`,
+  `download`, `data-spa-native`, foreign origins, hash-only, out-of-tree, the `RELOAD_STUB_IDS`
+  redirect stubs) stay native or document-navigate; clicks always push and no intent-preload
+  ships. The settle contract extends with it: `data-nav-count="0"` is stamped on every served
+  document and ticks per committed transition, and `data-mounted` drops while a client nav is
+  pending. The migration-window flag machinery is deleted — `?ssr=1`, `?renderer=spa`, and
   `x-rhema-renderer` are inert request text; rollback is `git revert` + redeploy, not a config
   flip (SPA.28; spec §14.1/§14.4).
 

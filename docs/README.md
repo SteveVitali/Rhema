@@ -6,14 +6,15 @@
 
 The Rhēma design record and build memory. Each entry has a **mode** that says how it may change.
 
-**Where the build is (2026-10-10):** the product runs in production on `rhema.tools` (GCP; Cloud SQL
+**Where the build is (2026-10-18):** the product runs in production on `rhema.tools` (GCP; Cloud SQL
 prod / AlloyDB dev+previews); the round-3 launch-readiness invariants are ratified spec —
 REQ-SPEC-29 (browser-journey acceptance via `@rhema/journeys`), REQ-SPEC-30 (tenant isolation in
 depth), REQ-SPEC-31 (research integrity / *Unverified* delivery), REQ-SPEC-32 (cost truthfulness).
-The round-4 frontend-SPA migration is **authored-dormant**: engineered and deterministic-test green
-at the chain tip, unmerged pending the operator's ordered 15-segment activation
-([`build/INTEGRATION_PLAN.md`](./build/INTEGRATION_PLAN.md) §R4) — prod still serves pre-chain
-ancestors, so nothing round-4 is live yet (the spec's §14.17 posture;
+The round-4/5 frontend-SPA migration is **authored-dormant**: engineered and deterministic-test
+green at the chain tip — round 5 added the client-side-navigation mechanism (one delegated
+`document` click interceptor; ADR-110; spec §14.19) — unmerged pending the operator's ordered
+activation ([`build/INTEGRATION_PLAN.md`](./build/INTEGRATION_PLAN.md) §R4/§R5) — prod still
+serves pre-chain ancestors, so nothing round-4/5 is live yet (the spec's §14.17 posture;
 [`build/OPERATIONAL_READINESS.md`](./build/OPERATIONAL_READINESS.md)). Open-state honesty: trial
 interim terms (`audience: "test_tenants"`, ADR-014), purchases `"closed"` (ADR-028), refund window
 `test_tenants`-only (ADR-071; BL-30 pending), four SLO breaches open (D-SLO.1-5…8), G2 deferred —
@@ -38,7 +39,7 @@ no efficacy claims anywhere (REQ-EVAL-19).
 | [`research-ledger.md`](./research-ledger.md) | **frozen** | The round-4 research & design ledger (BM-SYNTH-01) — living until the spec was ratified, frozen since (2026-10-08). |
 | [`OUTLINE_TRACE.md`](./OUTLINE_TRACE.md) | **frozen** | The brief→spec coverage trace for the round-4 spec (synthesis artifact). Not edited. |
 | [`decomposition-prompt.md`](./decomposition-prompt.md) | **frozen** | The round-4 synthesize→decompose hand-off prompt, frozen at ratification (2026-10-08, spec v1.0). |
-| [`frontend-spa-spec.md`](./frontend-spa-spec.md) | **frozen-with-amendments** | The canonical round-4 spec (v1.1): the v1.0 body plus **§14 Spec amendments** — the as-built record. Where the body and §14 disagree, §14 is correct. |
+| [`frontend-spa-spec.md`](./frontend-spa-spec.md) | **frozen-with-amendments** | The canonical round-4 spec (v1.2): the v1.0 body plus **§14 Spec amendments** — the as-built record (§14.18/§14.19 carry the round-5 client-side-navigation fold-back). Where the body and §14 disagree, §14 is correct. |
 | [`rhema-design-spec.md`](./rhema-design-spec.md) | **frozen-with-amendments** | The canonical, ratified design spec (v1.0). Change a requirement by amending here, then the manifest `## Spec amendments applied` + an ADR — never fork the design into a ticket. |
 | [`phase0-exit-readout.md`](./phase0-exit-readout.md) | **append-only** | The G1 Phase-0 exit readout: each criterion → measured/deferred result. Updated by appending measured values as the live legs land. |
 | [`phase1-exit-readout.md`](./phase1-exit-readout.md) | **append-only** | The Phase-1 exit readout (§17, P1.22): each criterion → build evidence or honest "unmeasured"; corrections land as dated entries in its append-only Corrections section. |

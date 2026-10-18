@@ -9,7 +9,26 @@ machinery is deleted and `?ssr=1`/`?renderer=spa`/`x-rhema-renderer` are inert r
 check — `isPhoneRequest(c) || row.showcase === true` keeps phone and showcase documents on the
 server-rendered read-only Page (ADR-108); the public funnel stays SSR forever (REQ-BND-1). This
 posture is **authored-dormant**: prod serves pre-chain ancestors until the operator's ordered
-merge/deploy (`docs/build/INTEGRATION_PLAN.md` §R4; spec §14.17).
+merge/deploy (`docs/build/INTEGRATION_PLAN.md` §R4/§R5; spec §14.17).
+
+## Client-side navigation (round 5; ADR-110; spec §14.19)
+
+`mountSpa` (`src/spa/main.tsx`) installs **one delegated bubble-phase `click` listener on
+`document`** — never `createSpaRouter` — that routes in-tree `<a href>` clicks to
+`router.navigate`. `src/spa/nav-intercept.ts` is the normative ordered guard pipeline +
+skip-list: modifiers/secondary button/contenteditable/`target`/`download`/`data-spa-native`,
+foreign or unparseable origins, hash-only navs, out-of-tree paths, and the `RELOAD_STUB_IDS`
+server-owned redirect stubs stay native or document-navigate (`navigateDocument`;
+`SsrHandoff` is replace-mode via `replaceDocument`). Interception is unconditional once a
+path is in the client tree — it never consults `surfaces`, `deviceClass`, `twinForcesSsr`,
+or `spaRouteFor`; renderer verdicts stay in the leaf pipelines. Clicks always push; no
+intent-preload ships (`defaultPreload:"intent"` deliberately unset).
+
+The settle contract extends: `data-nav-count="0"` is stamped on **every** served document
+(`src/render.tsx` + `src/spa-shell.ts`) and HeadManager (`src/spa/head.tsx`) ticks it once
+per committed in-document transition; `data-mounted` is **removed** while a nav is pending
+and re-stamped on resolution; `data-page-session="<bootNonce>.<seq>"` marks the
+editor-conditional `[data-page-root]` session entries.
 
 ## Build layout (REQ-TL-2/3/12)
 

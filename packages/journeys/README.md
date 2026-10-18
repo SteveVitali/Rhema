@@ -33,6 +33,16 @@ and the deploy-provenance check.
 - `src/stb5a.ts` / `src/stb5b.ts` — the bounded live-leg step sets (BL-21/BL-22 browser walks;
   BL-16…19 paid legs riding the spend guard).
 - `src/provision-res1.ts` — RES.1's live-probe provisioning through the real surfaces.
+- `src/settle.ts` — the settle contract: `awaitMounted`/`settleNav`/`gotoOk`/`reloadSettled`
+  plus the mechanism-pinned `settleClientNav`/`settleDocumentNav` (NAVC.2 / REQ-NAVT): a
+  client nav must tick the **current** document's `data-nav-count` with zero document loads;
+  a document nav must produce a same-origin document response. `SettleScope.documentLoads` is
+  the unconditional response counter — the only signal that survives the document boundary
+  (where the page's own `data-nav-count` resets to `"0"`).
+- `src/window-plan.ts` — the funded-window vocabulary (R5ECON.3): the §5.5 window-opening
+  checklist evaluator + ordering (T9 pre-step → launchers → riders → B19C
+  last-and-conditional), the re-authorized `FUNDED_WINDOW_CAP_USD` envelope, and the
+  REQ-ECON-11 `testCheapRoute:false` opt-out pins (B19C/N6/R4).
 - `fixtures/` — the journey inputs: `paid-fixture.md` (the ≤300-word paid fixture that plants one
   knowingly-false claim for N6), `golden-op-ed.md`, `planted-error-essay.md` /
   `planted-error-excerpt.md` (RES.1), `restore-eval-essay.md` (ECON.2's ~6,000-word restore
@@ -84,6 +94,14 @@ Paid dispatch is **fail-closed** (R5ECON.1). The rules, all enforced at dispatch
   `BEGIN READ ONLY … ROLLBACK`). The exact scope both guards use is the exported
   `FLAGGED_PROXY_SPEND_SCOPE` fragment (`src/spend-guard.ts`), so a read and a refusal can never
   disagree about what counts.
+- **The funded-window driver** (`scripts/live/funded-window.mjs`) substitutes the
+  re-authorized round envelope for the weekly $5 guard: `--headroom <usd>` is required and
+  must cover the selected paid legs' summed `capUsd` (REQ-ECON-9 — every paid leg declares its
+  cap on the registry row); `--dry-run` evaluates the §5.5 window-opening checklist
+  (`windowChecklist`) as pass/fail rows without dispatching — a row that cannot be measured
+  **fails closed**. `JOURNEY_FUNDED_STABLE_TAG=<tag>` points the paid legs at the funded
+  stable tenant (`test+jrn-<tag>@rhema.tools`, seeded by `scripts/live/funded-tenant.mjs` —
+  fresh flagged tenants carry only the daily allowance and 402 on launch).
 
 Round-4 additions: `--surface <key[,key…]>` scopes the run to a `SURFACE_GATES` subset and
 `--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` marker
@@ -91,6 +109,13 @@ differs (the activation cadence's per-surface legs use both). `--pin-renderer`/`
 are **retired** — the `x-rhema-renderer` override channel was deleted with the flag machinery
 (SPA.28), so the flag refuses loudly (exit 2) rather than lie. `--invite-code <code>` rides the
 MAINT.6 seeded-preview invite path (`RHEMA_INVITE_CODE`).
+
+Round-5 additions (NAVC.2 / REQ-NAVT): the settle contract is mechanism-pinned — the runner
+wires an unconditional `documentLoads` response counter into `SettleScope`, every served
+document stamps `data-nav-count="0"`, and `data-mounted` drops while a client nav is pending.
+`settleClientNav`/`settleDocumentNav` prove *how* the browser arrived (a committed
+in-document transition vs a real document response), not just which document rendered;
+`data-page-session="<bootNonce>.<seq>"` marks editor-conditional page-session roots.
 
 ## For step owners
 
