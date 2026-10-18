@@ -9,7 +9,7 @@
 - **Requirement ids stamped:** none — docs row
 - **Live stage:** none · **Production mutations:** none — offline-only, $0, zero live
   contact; every claim verified against the tree (or prior committed build records)
-- **Started:** 2026-10-18T04:20Z
+- **Started:** 2026-10-18T04:20Z · **Closed:** 2026-10-18T05:23Z
 
 ## Deferrals read
 
@@ -118,7 +118,11 @@ file:line/figure read off the tree this run (§14.19; `nav-intercept.ts`;
   no-cookies (257 files) · spa-budget · spa-env (115 src/146 artifacts) · dom-contract.
 - `check-build-memory.sh .` → **0 violations**, 8 pre-existing legacy warnings.
 - `check-append-only.mjs --base f79665e` → **OK**.
-- ci: (recorded at closeout)
+- ci: pass #193@67f4536 (typecheck / lint / unit · contracts · integration · images
+  (build + scan, pin digests) · public-safe (gitleaks / markers / licence policy) —
+  run 39097361640; the 2700s bound expired with `integration`/`images` in flight →
+  job-polled `gh api` to completion → boundary re-read pass) · stack #192–#172 pass
+  · record `logs/ci-R5DOC.1.json`
 
 ## Evidence report
 
@@ -160,4 +164,6 @@ changelog-grade home — noted for the record.
 Nothing else new: `GD-FUNDED.1-1` CARRY / `GD-R5OPS.1-1` AWAITING stand; prod still
 pre-chain `ffbb8ad`.
 
-**ci:** (filled at closeout)
+**ci:** `pass #193@67f4536` — all five checks on run 39097361640 + stack
+#192–#172 pass; the 2700s bound expired on the slow tail, job-polled to
+completion, boundary re-read pass.
