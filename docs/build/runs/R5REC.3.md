@@ -96,4 +96,48 @@ six `check:*` re-run green.
 
 ## Evidence report
 
-_(filled at close — verification counts, CI verdict, file list)_
+- `pnpm turbo build lint typecheck` — **135/135 tasks** (full-turbo cached).
+- `pnpm test` — **501 files passed / 1 skipped; 5,814 tests passed / 4 skipped; 0
+  failures** (332 s). The `outline.dom.test.tsx` flake class (D-R5REC.1-1) did not
+  recur this run; the privsep Docker leg ran green (167 s).
+- `pnpm check:licenses` — OK (822 packages).
+- `pnpm check:protocol-markers` — OK (248 public-facing files).
+- `pnpm check:no-cookies` — OK (257 ingestion-surface files).
+- `pnpm check:spa-budget` — OK (all ceilings held).
+- `pnpm check:spa-env` — OK (115 client files, 146 artifacts, 51 banned names).
+- `pnpm check:dom-contract` — OK (journey ⊆ manifest ⊆ emitted+asserted).
+- `check-build-memory.sh .` — **no violations** (8 warnings, all pre-existing legacy).
+- `check-append-only.mjs --base c09c4b5` — **OK** (history only grew).
+- `merge-dryrun.sh --ci` over all 22 open chain branches onto `origin/main` —
+  **22/22 clean, 0 conflict hunks, 0 red PRs** (CI one-read: 21 pass / 1 pending —
+  #191 docs head `c09c4b5`); evidence committed at
+  `docs/build/reports/R5REC.3/merge-dryrun.{txt,json}`.
+- Live reads (read-only): `curl https://rhema.tools/healthz` +
+  `https://api.rhema.tools/healthz` → `ffbb8ad01b…` both (2026-10-18T01:40Z);
+  `gh pr list/view`, `git merge-base --is-ancestor`, `git log origin/main`.
+- ci: **pending at impl head `9d7a2af`** (run 39087723352 in flight at close-write —
+  the boundary read follows on the final head; never recorded green early).
+- Files: `docs/build/INTEGRATION_PLAN.md` (§R5 appended; §1–§R4 untouched),
+  `docs/build/reports/R5REC.3/merge-dryrun.{txt,json}`,
+  `docs/build/runs/R5REC.3.md`, `docs/build/pr/R5REC.3.md`,
+  `docs/build/BUILD_INDEX.md` (198), `docs/build/LEDGER.md`.
+- Closed: 2026-10-18T01:48Z (boundary read pending — see PHASE LOG).
+
+## Honesty / guard checks
+
+- No merge, no deploy, no prod write, $0 — documentation + read-only evidence only.
+- `GD-R5OPS.1-1` stays AWAITING — recorded as an open operator precondition, never
+  answered. `GD-FUNDED.1-1` CARRY — untouched; a funded re-attempt is described as
+  needing a **fresh** envelope ruling AND the deployed econ regime; never scheduled.
+- `D-R5REC.1-1` (mount-settle flake) deliberately NOT closed — out of scope
+  (process-row plan); flagged in the PR operator-flags.
+- `projectStatus: IN_PROGRESS`; `mergePolicy: OPERATOR`; this PR is never merged by
+  the agent.
+- No deployed/provenance claim is fabricated: prod is recorded as `ffbb8ad`
+  (pre-chain class, inside open PR #171) from a live `/healthz` read; every merge
+  read is a real `gh`/`git` output, committed verbatim.
+- §1–§R4 of `INTEGRATION_PLAN.md` untouched (append-only check proves it); the
+  §R5 section supersedes nothing — it notes the round-4 world it replaced is
+  historical context, inline.
+- The two hard refusals are stated as operator-facing rules, not agent actions:
+  no deploy inside the NAVC range; no funded re-attempt before the econ deploy.
