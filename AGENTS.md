@@ -21,7 +21,10 @@ FINDINGS / GATE DECISIONS / RETURN PASS / PHASE LOG); `docs/build/BUILD_INDEX.md
 `docs/build/readouts/` the gate readouts; `docs/build/logs/` is the one gitignored subtree. `.agents/scratch/`
 is retired (MAINT.1). `docs/tickets/00_MANIFEST.md § The chain` is the authoritative order; a human can drive
 the stacked chain from it alone. `docs/adr/` holds decision records; its `README.md` is **generated** by
-`build-memory adr-index` — never hand-edit it. Contracts + history are **append-only** (amend by a dated note
+`build-memory adr-index` — never hand-edit it. The id grammar the ledgers + run records share: deferral
+carriers `D-<TICKET>-<n>` (DEFERRALS.md), gate decisions `GD-<TICKET>-<n>` (LEDGER GATE DECISIONS), live-found
+defects `F-<TICKET>-<n>`, post-deploy verification streams `V-<n>` (post-spa-disposition spec §9), backlog
+rows `BL-<n>` (BACKLOG.csv). Contracts + history are **append-only** (amend by a dated note
 or a new ADR, never by rewriting a landed file); PRs **stack** and `mergePolicy: OPERATOR` — the operator
 merges bottom-up, a run never merges its own PR; a **gate is a pause, not a block**; **secrets never** enter
 any ledger. Validate with `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` (structure)
@@ -103,9 +106,13 @@ describes landed code. Live posture changes only through the operator's ordered 
   foreign-origin/hash-only/out-of-tree/`RELOAD_STUB_IDS` stays native or doc-navs).
   Interception is unconditional once in-tree — it never consults `surfaces`,
   `deviceClass`, `twinForcesSsr`, or `spaRouteFor`; renderer verdicts stay in leaf
-  pipelines. Clicks always push; no intent-preload ships. Settle contract:
-  `data-nav-count` (every document stamps `"0"`; HeadManager ticks committed
-  transitions) + `data-mounted` removed while a nav is pending.
+  pipelines. Clicks always push; no intent-preload ships. Settle contract
+  (NAVC.2, REQ-NAVT-1/2): `data-nav-count` (every served document stamps `"0"`;
+  HeadManager ticks committed transitions) + `data-mounted` removed while a nav
+  is pending + `data-page-session` on `[data-page-root]` (the keep-alive session
+  identity). Native `hashchange` hops the router never sees are compensated by
+  the IDE controller's `hashchange` listener (`spa/ide/controller.ts`,
+  REQ-NAVM-10).
 - **Transport.** `bffFetch` (`spa/bff.ts`) is the ONE JSON transport — same-origin `/…` paths
   only, `credentials:"same-origin"`, no client POST retries; non-2xx throws
   `BffError{status,code,detail?,requestId}`; 401 → `/login` document nav. Reads are the typed
@@ -150,18 +157,46 @@ pnpm --filter @rhema/journeys exec rhema-journeys \
   --steps N2,N7,R1 \            # CSV of registry ids; omit for the whole registry
   --expect-sha <chain-tip-sha> --out docs/build/reports/<date>_journeys
 ```
-`--paid` adds the paid legs (weekly only, bounded by the spend guard + the single ≤300-word fixture).
-Post-ADR-093 the guard's `JOURNEY_DATABASE_URL` MUST be the **system-role** DSN — an app-login DSN
-reads `usage_records` as $0 through FORCE RLS and blinds the guard. Nightly $0 legs and the weekly
-`--paid` run come from `.github/workflows/journeys.yml`.
+`--paid` adds the paid legs (weekly only, bounded by the $5 ISO-week spend guard + the single
+≤300-word fixture). Every `--paid` dispatch declares `--headroom <legCapUsd>` to pre-flight the
+measured week (REQ-ECON-9 — the cron's standing bound is $3); an operator dispatch additionally
+requires the system-role `JOURNEY_DATABASE_URL` — only the scheduled self-bounding cron may
+attest no-db. Every paid registry row declares `capUsd` ≥ the $0.50 floor
+in advance, and the metered leg-close throws `CapOverrunError` past it (REQ-ECON-7).
+Post-ADR-093 the guard's `JOURNEY_DATABASE_URL` MUST be the **system-role** DSN — an app-login
+DSN reads `usage_records` as $0 through FORCE RLS and blinds the guard, so the bound role is
+probed and a blind pool fails closed. The model-judgment legs pin `cogsLevers` on every launch
+(`cogsLeversFor`; REQ-ECON-11 — N6/R4/B19C pin `testCheapRoute:false` and carry full-tier caps).
+Nightly $0 legs (06:05Z) and the weekly `--paid` run (Mon 04:35Z) come from
+`.github/workflows/journeys.yml`.
+
+The funded-window driver `scripts/live/funded-window.mjs` (R5ECON.1–3) substitutes the weekly
+guard with the operator-funded window's own binding when an envelope is authorized:
+`--dry-run` prints the §5.5 checklist as nine pass/fail rows, each fail-closed when
+unmeasurable — system-role DSN → pinned-scope cumulative (flagged-tenant proxy rows only;
+`req_jrn_` seeded rows excluded, REQ-ECON-6) < the re-authorized `FUNDED_WINDOW_CAP_USD` (~$60)
+→ `--headroom` covering the selected legs' summed `capUsd` → per-leg `CapOverrunError`
+enforcement → the ordering (T9 first → launchers → riders → B19C last-and-conditional) → the
+`JOURNEY_FUNDED_STABLE_TAG` purge-exempt stable tenant (`funded-tenant.mjs`) → REQ-ECON-6
+exclusions → REQ-ECON-11 opt-outs → unpaused. A `cap_overrun` leg-close writes
+`<stateDir>/funded-pause.json` and every later dispatch refuses until the operator re-authorizes. The
+regime was exercised at bind on 2026-10-16 and **refused** — pinned-scope cumulative $80.86 ≥
+~$60, zero legs ran, $0 spent; the wave stays **carried** (GD-FUNDED.1-1 / D-CAP.2-1) until a
+fresh envelope ruling — never describe it as having run.
 
 Round-4 CLI surface: `--surface <key[,key…]>` scopes a run to a `SURFACE_GATES` surface;
 `--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` differs
 (`spa` on every authenticated SPA-space document, `ssr` on public + forced-SSR arms);
 `--invite-code` (env `RHEMA_INVITE_CODE`) seeds the preview invite path. `--pin-renderer`/
 `JOURNEY_PIN_RENDERER` are **retired** (SPA.28 deleted `x-rhema-renderer`) and refuse loudly with
-exit 2. The marker vocabulary `data-renderer` / `data-mounted` / `data-route` is the settle +
-renderer contract — it stays true on both renderers.
+exit 2. The marker vocabulary `data-renderer` / `data-route` / `data-mounted` /
+`data-nav-count` / `data-page-session` is the settle + renderer contract — it stays true on
+both renderers. Settles are mechanism-pinned (`src/settle.ts`): `settleClientNav` requires the
+current document's `data-nav-count` to tick with **zero** document loads;
+`settleDocumentNav` requires the inverse — both read the runner's unconditional
+`documentLoads` same-origin response counter (`runner.ts`), the only proof that survives a
+document swap. Leg ids are family-prefixed (`N*`/`R*`/`T*`/`B*`/`P1.*`/`X1.*`/`C1`;
+sub-assertions suffix `.sub` — `N2.invite`, `R8.inbox`).
 
 ## Adding a package
 1. Create `apps/<name>` or `packages/<name>` with `package.json` (`@rhema/<name>`, `type: module`,
@@ -187,6 +222,16 @@ prompts) may reach a client bundle, the OpenAPI document, or an event payload (R
 Base tier, `max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (Cloud SQL `db-g1-small` —
 amended 2026-09-17 from AlloyDB; the ~$50/mo prod budget cannot carry an AlloyDB primary). Stage facts
 live in `infra/config/stages.ts` and are unit-tested; the Pulumi program in `infra/pulumi/` consumes them.
+
+`pr-<n>` lifecycle goes through ONE guarded path — `scripts/live/preview-stack.mjs` (verbs `init` /
+`select` / `output` / `config` / `resend-pull` / `preview` / `up` / `refresh` / `seed-invite` /
+`destroy` / `rm`): `prod` is refused on every verb including reads, and mutating verbs require the
+stack's `rhema:owner=ops-preview` tag — a stack the guard did not create cannot be adopted. The
+session-capable recipe (MAINT.6/VERIF.2): `init` → `config` the images → `resend-pull` (pipes the
+operator-seeded `rhema-nonprod-resend-api-key` into `rhema:resendApiKey` on stdin, never printed) →
+`up` → the stack's migrate Job → `seed-invite` mints the deterministic non-secret code
+`prv-<n>-test` → journeys run with `--invite-code`. Teardown is three guarded acts — `destroy` →
+zero-orphan enumeration → `rm` (never `destroy --remove`).
 
 ## CI jobs (§13.2), in order
 `typecheck/lint/unit` → `contracts` → `integration` → `images` → `public-safe`. Jobs may be thin
