@@ -126,6 +126,14 @@ Docs row — verification is claim-verbatim-against-tree + the structural detect
   manifest banners, GATE-G3 cell, nextTicket-vs-unlanded, ledger budgets, index values,
   readout guard, harness headers on old ledgers).
 - `node docs/build/tools/check-append-only.mjs --base b139260` → OK.
+- **2026-10-18T09:27Z — head CI closeout.** Impl head `2a48660`: boundary pass, run
+  39106538636, all five checks + stack #193–#172. Stamped head `6f9c610` (closeout
+  records only): run 39110076578 attempt 1 went red on a CI flake —
+  `apps/web/src/spa/figures.dom.test.tsx:435` `el()!.querySelector("form[data-propose-form]")!`
+  raced the leaf mount (`TypeError: null.querySelector`; 5,802 pass / 16 skip / 1 fail)
+  — the **D-R5REC.1-1/BL-87 mount-settle class in a sibling file** (fourth occurrence;
+  dated note appended on the DEFERRALS row). `gh run rerun --failed`: attempt 2 green →
+  boundary re-read **pass** — all five on `6f9c610`. Zero code delta vs `2a48660`.
 
 ## Evidence report
 

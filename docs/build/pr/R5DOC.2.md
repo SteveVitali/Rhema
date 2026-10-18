@@ -65,6 +65,7 @@ structure/voice preserved, **+55/−10** (65 changed lines vs the ~150 budget; f
 | `check-agent-docs-freshness.sh .` | 1 doc scanned, **0 issues** |
 | `check-build-memory.sh .` | 0 violations, 9 warnings (all pre-existing legacy classes) |
 | `check-append-only.mjs --base b139260` | OK — history only grew |
+| Head-bound CI | **pass** #194@`6f9c610` (run 39110076578, all five + stack #193–#172 pass) — attempt 1 flaked on `figures.dom.test.tsx:435` mount-settle (D-R5REC.1-1 sibling class, fourth occurrence; failed job reran green, zero code delta vs boundary-green `2a48660`/run 39106538636) |
 
 ## Acceptance criteria
 
