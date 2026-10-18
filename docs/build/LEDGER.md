@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           5                  # post-spa disposition — spec docs/post-spa-disposition-spec.md (ratified 2026-10-15)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-18T01:48:25Z         # R5REC.3 done — §R5 merge/deploy ordering landed (six segments; NAVC.1→NAVC.4 one deploy unit; econ before funded re-attempt; BL-74 nightly sequencing); GD-R5OPS.1-1 AWAITING; GD-FUNDED.1-1 CARRY; next → R5DOC.1
+updatedAt:       2026-10-18T01:48:25Z         # R5REC.3 done — §R5 merge/deploy plan landed (six segments; NAVC.1→NAVC.4 one deploy unit; econ before funded retry; BL-74 nightly); GD-R5OPS.1-1 AWAITING; GD-FUNDED.1-1 CARRY; next → R5DOC.1
 ```
 
 ## OPEN FINDINGS
