@@ -115,18 +115,20 @@ six `check:*` re-run green.
 - Live reads (read-only): `curl https://rhema.tools/healthz` +
   `https://api.rhema.tools/healthz` → `ffbb8ad01b…` both (2026-10-18T01:40Z);
   `gh pr list/view`, `git merge-base --is-ancestor`, `git log origin/main`.
-- ci: **pass at final head `fa1fc25`** — `ci-boundary --ticket R5REC.3 --stack`:
-  all five checks green on run **39087891888** (`typecheck / lint / unit` 40m36s,
-  `contracts` 1m31s, `integration` 4m18s, `images` 10m8s, `public-safe` 39s); the
+- ci: **pass at final head `85f7b4b`** — `ci-boundary --ticket R5REC.3 --stack`:
+  all five checks green on run **39091282696** (`typecheck / lint / unit` 40m39s,
+  `contracts` 1m48s, `integration` 4m11s, `images` 8m32s, `public-safe` 37s); the
   2700 s bound expired on the `integration`/`images` tail → job-polled to
   completion → boundary re-read pass; stack #191–#172 all pass (the #191 docs-head
-  read that was pending at dry-run time completed green). Record
+  read that was pending at dry-run time completed green). Prior confirmed read:
+  `fa1fc25` all five green (run 39087891888). Record
   `docs/build/logs/ci-R5REC.3.json` (gitignored subtree). No flake recurrence.
 - Files: `docs/build/INTEGRATION_PLAN.md` (§R5 appended; §1–§R4 untouched),
   `docs/build/reports/R5REC.3/merge-dryrun.{txt,json}`,
   `docs/build/runs/R5REC.3.md`, `docs/build/pr/R5REC.3.md`,
   `docs/build/BUILD_INDEX.md` (198), `docs/build/LEDGER.md`.
-- Closed: 2026-10-18T02:46Z — boundary confirmed green at `fa1fc25`.
+- Closed: 2026-10-18T03:42Z — boundary confirmed green at `85f7b4b` (prior confirm
+  `fa1fc25`).
 
 ## Honesty / guard checks
 
