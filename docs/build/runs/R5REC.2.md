@@ -128,10 +128,11 @@ the full test suite re-runs (spec/docs diff expected to leave all 5,814 green);
 - `check-build-memory.sh .` — **no violations** (8 warnings, all pre-existing legacy).
 - `check-append-only.mjs --base 7ae45ba` — **OK** (history only grew).
 - `adr-index.sh` — `docs/adr/README.md` regenerated (1 new row, machine-derived).
-- ci: **pass at `6952998`** — `ci-boundary --pr 191 --stack`: all five checks green
-  (run 39079875677 — `typecheck / lint / unit`, `contracts`, `integration`, `images`,
-  `public-safe`; the 2700 s bound waited out the slow-job tail, first-read green) +
-  stack #190–#172 pass; record `docs/build/logs/ci-R5REC.2.json`. No flake recurrence.
+- ci: **pass at final head `fb09930`** — `ci-boundary --pr 191 --stack`: all five checks
+  green (run **39082209509** — `typecheck / lint / unit`, `contracts`, `integration`,
+  `images`, `public-safe`; the 2700 s bound waited out the slow-job tail, first-read
+  green) + stack #190–#172 pass; record `docs/build/logs/ci-R5REC.2.json`. Prior read:
+  impl head `6952998` all five green (run 39079875677). No flake recurrence.
 - Files: `docs/frontend-spa-spec.md` (v1.2 — §14.18/§14.19 + status + ToC),
   `docs/rhema-design-spec.md` (status + two banner addenda), `docs/adr/` (ADR-110 +
   regenerated README), `docs/tickets/00_MANIFEST.md` (amendment line),
