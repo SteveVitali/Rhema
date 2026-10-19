@@ -429,6 +429,13 @@ export interface PageData {
   };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;
+  /**
+   * REQ-ED-12/ADR-108 — set ONLY by the Page family's forced-SSR arm (`isPhoneRequest(c) ||
+   * row.showcase === true`); renderDocument stamps it as `<html data-ssr-cause>` so the journeys
+   * settle wait + the runner's document-response assert can tell a mandated SSR verdict from a
+   * gated document that wrongly served SSR (ARMB-1). Absent on every other document.
+   */
+  readonly ssrCause?: "phone" | "showcase";
   // ---- PRB.12 — beta analytics chrome ----
   /** the §14.5 level-0 balance chip's data (spendable + held-on-hover); the authed shells render it in nav. */
   readonly balance?: { readonly spendableCredits: number; readonly heldCredits: number };

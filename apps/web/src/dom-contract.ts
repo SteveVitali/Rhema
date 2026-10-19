@@ -124,6 +124,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "REQ-VFY-3 settle marker — never waited on as domcontentloaded",
     ),
     a(
+      "data-ssr-cause",
+      "conditional",
+      "render.tsx htmlAttrs — forced-SSR Page arm only",
+      "REQ-ED-12 verdict cause (phone|showcase); the journeys settle/runner exemption keys on it (ARMB-1)",
+    ),
+    a(
       "data-device",
       "required",
       "spa-shell.ts + device.ts isPhoneUa stamp",

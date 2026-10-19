@@ -17,6 +17,7 @@ import {
   gatedRouteIds,
   onOurOrigin,
   rendererOfDocument,
+  ssrCauseOfDocument,
   type RendererName,
 } from "./settle.js";
 
@@ -217,6 +218,10 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
               }
               const observed = rendererOfDocument(body);
               if (observed !== deps.expectRenderer) {
+                // REQ-ED-12 (ARMB-1) — a Page-family forced-SSR verdict (phone UA / showcase row)
+                // self-reports `data-ssr-cause`; it is the spec-mandated renderer for that request,
+                // not a violation. A gated doc serving ssr WITHOUT the stamp still fails.
+                if (observed === "ssr" && ssrCauseOfDocument(body) != null) return;
                 let path = url;
                 try {
                   path = new URL(url).pathname;

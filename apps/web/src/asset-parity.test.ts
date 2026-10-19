@@ -172,6 +172,21 @@ describe("client-bundle ↔ route parity (HOT.1, REQ-SPEC-29)", () => {
 });
 
 describe("SPA manifest ↔ /assets/spa/** parity (SPA.26 — REQ-TL-13, REQ-TST-8)", () => {
+  it("ARMB-1 — the bundle's runtime-emitted URLs root under the served /assets/spa/ prefix", async () => {
+    // The manifest/shell hrefs above are server-built, but every URL the bundle RUNTIME emits —
+    // dynamic `import()`s, modulepreload dep hrefs, css refs — resolves from vite's `base`. The "/"
+    // default sent browsers to /assets/<chunk>.js, a route nothing serves (the b35473d deploy's
+    // bundle-parity 404s). `base` is a TOP-LEVEL key — `build.base` is silently ignored — so this
+    // imports the real config object rather than grepping the file (a misplaced key fails here).
+    const { default: config } = await import("../vite.config.js");
+    const resolved = typeof config === "function" ? config({ command: "build", mode: "production" }) : config;
+    const cfg = resolved instanceof Promise ? await resolved : resolved;
+    expect(
+      cfg.base,
+      'vite `base` must equal the served subtree — runtime-emitted URLs resolve from it',
+    ).toBe("/assets/spa/");
+  });
+
   it("every manifest artifact (entry, imports, dynamic chunks, css) answers its /assets/spa URL", async () => {
     const spaRoot = spaFixture();
     const app = createWebApp(spaDeps(spaRoot));

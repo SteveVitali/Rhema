@@ -8,8 +8,10 @@ import {
   rendererOfDocument,
   reloadSettled,
   settleNav,
+  ssrCauseOfDocument,
   type RendererName,
   type SettleScope,
+  type SsrCause,
 } from "./settle.js";
 
 // SPA.6 — the settle contract's removal-catching tests (REQ-VFY-3/4/7): the pure helpers are
@@ -47,9 +49,22 @@ describe("onOurOrigin (the foreign-origin guard)", () => {
  *  the data-mounted/data-route/data-renderer check is the removal these tests catch. */
 function fakePage(opts: {
   url: string;
-  attrs: { route: string | null; renderer: RendererName | null; mounted: boolean };
+  attrs: {
+    route: string | null;
+    renderer: RendererName | null;
+    mounted: boolean;
+    ssrCause?: SsrCause | null;
+  };
   gotoStatus?: number;
 }): Page {
+  const attrValue = (name: string): string | null =>
+    name === "data-route"
+      ? opts.attrs.route
+      : name === "data-renderer"
+        ? opts.attrs.renderer
+        : name === "data-ssr-cause"
+          ? (opts.attrs.ssrCause ?? null)
+          : null;
   return {
       url: () => opts.url,
       async waitForFunction(
@@ -58,15 +73,8 @@ function fakePage(opts: {
       ) {
         const el = {
           hasAttribute: (name: string) =>
-            name === "data-mounted"
-              ? opts.attrs.mounted
-              : (name === "data-route" ? opts.attrs.route : opts.attrs.renderer) != null,
-          getAttribute: (name: string) =>
-            name === "data-route"
-              ? opts.attrs.route
-              : name === "data-renderer"
-                ? opts.attrs.renderer
-                : null,
+            name === "data-mounted" ? opts.attrs.mounted : attrValue(name) != null,
+          getAttribute: attrValue,
         };
         const prev = (globalThis as { document?: unknown }).document;
         (globalThis as { document?: unknown }).document = { documentElement: el };
@@ -80,12 +88,7 @@ function fakePage(opts: {
         const el = {
           hasAttribute: (name: string) =>
             name === "data-mounted" ? opts.attrs.mounted : false,
-          getAttribute: (name: string) =>
-            name === "data-route"
-              ? opts.attrs.route
-              : name === "data-renderer"
-                ? opts.attrs.renderer
-                : null,
+          getAttribute: attrValue,
         };
         const prev = (globalThis as { document?: unknown }).document;
         (globalThis as { document?: unknown }).document = { documentElement: el };
@@ -237,6 +240,54 @@ describe("awaitMounted — the scoped renderer assert (SPA.17)", () => {
       attrs: { route: "/p/$project/export", renderer: "spa", mounted: true },
     });
     await expect(awaitMounted(page, EXPORT_SCOPE)).resolves.toBeUndefined();
+  });
+});
+
+describe("the forced-SSR exemption (REQ-ED-12; ARMB-1)", () => {
+  const FORCED_DOC =
+    '<html data-renderer="ssr" data-route="/p/$project" data-mounted data-ssr-cause="showcase">';
+
+  it("ssrCauseOfDocument parses the stamp and rejects anything outside the vocabulary", () => {
+    expect(ssrCauseOfDocument(FORCED_DOC)).toBe("showcase");
+    expect(
+      ssrCauseOfDocument('<html data-renderer="ssr" data-ssr-cause="phone" data-mounted>'),
+    ).toBe("phone");
+    expect(ssrCauseOfDocument(SSR_DOC)).toBeNull(); // a plain SSR doc is NOT a forced verdict
+    expect(ssrCauseOfDocument('<html data-ssr-cause="bogus">')).toBeNull();
+    expect(ssrCauseOfDocument('<div data-ssr-cause="phone">')).toBeNull(); // only <html> counts
+  });
+
+  it("a gated route's forced-SSR document settles — the mandated verdict is not waited on to flip", async () => {
+    const page = fakePage({
+      url: "https://app.test/p/showcase",
+      attrs: {
+        route: "/p/$project",
+        renderer: "ssr",
+        mounted: true,
+        ssrCause: "showcase",
+      },
+    });
+    await expect(
+      awaitMounted(
+        page,
+        { ...SCOPE, expectRenderer: "spa", rendererScope: gatedRouteIds(["editor"]) },
+        { route: "/p/$project" },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it("a gated route's UNSTAMPED ssr document still fails — the stamp is the exemption's proof", async () => {
+    const page = fakePage({
+      url: "https://app.test/p/acme",
+      attrs: { route: "/p/$project", renderer: "ssr", mounted: true },
+    });
+    await expect(
+      awaitMounted(
+        page,
+        { ...SCOPE, expectRenderer: "spa", rendererScope: gatedRouteIds(["editor"]) },
+        { route: "/p/$project" },
+      ),
+    ).rejects.toThrow(/settle wait lapsed/);
   });
 });
 

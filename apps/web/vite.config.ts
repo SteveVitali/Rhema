@@ -8,6 +8,13 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
   appType: "custom", // no index.html — the shell is a Hono-served template (design/21 F5)
+  // ARMB-1 — base MUST be the served subtree (server.ts's /assets/spa/* route), and it is a
+  // TOP-LEVEL key (`build.base` does not exist and is silently ignored). The shell's manifest
+  // hrefs are server-built, but every URL the bundle runtime emits — dynamic imports,
+  // preload-dep hrefs, css refs — resolves from base; the default "/" produced
+  // /assets/<chunk> requests that fell through to the 404 document handler (surfaced live:
+  // bundle-parity counted hundreds of asset 404s on the b35473d deploy).
+  base: "/assets/spa/",
   publicDir: false, // apps/web/public is a GENERATED dir (islands + fonts) — never copy it (F2)
   plugins: [
     tanstackRouter({

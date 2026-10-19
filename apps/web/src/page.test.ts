@@ -98,6 +98,8 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
       const html = await res.text();
       expect(html).toContain('data-renderer="spa"');
       expect(html).not.toContain('data-page-root="1"');
+      // ARMB-1 — and no forced-SSR cause stamp rides a shell document.
+      expect(html).not.toContain("data-ssr-cause");
     }
   });
 
@@ -130,6 +132,8 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
     expect(html).toContain('data-readonly="1"');
     expect(html).toContain("This version is read-only.");
     expect(html).not.toContain("Editing v2");
+    // ARMB-1 — the forced arm self-reports its cause so the journeys renderer assert can honor it.
+    expect(html).toContain('data-ssr-cause="showcase"');
     // the provenance + findings sidecars embed as JSON for the island
     expect(html).toContain("data-page-prov");
     expect(html).toContain("data-page-findings");
@@ -185,6 +189,17 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
     expect(html).toContain('data-readonly="1"');
     expect(html).toContain("A revise run is writing this draft");
     expect(html).toContain('action="/p/the-piece/edit/d_2/cancel-run"');
+  });
+
+  it("a PHONE request on a non-showcase row stamps the phone cause — the same REQ-ED-12 verdict, different trigger", async () => {
+    const app = createWebApp(makeDeps({ listProjects: async () => SPA_PROJECTS }));
+    const res = await app.request("/p/the-piece/v/working", {
+      headers: { "user-agent": "Mobi iPhone" },
+    });
+    const html = await res.text();
+    expect(html).toContain('data-renderer="ssr"');
+    expect(html).toContain('data-ssr-cause="phone"');
+    expect(html).not.toContain('data-renderer="spa"');
   });
 
   it("a frozen draft under the forced-SSR arm renders read-only — the fork-on-type posture is the SPA leaf's", async () => {
