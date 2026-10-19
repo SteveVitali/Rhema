@@ -181,14 +181,15 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     // SPA.22 (REQ-VFY-10) — R6's render half as a FREE step on the seeded delivered run report
     // (`seedDeliveredRunReport` — the dossier fixture plus the ledger/metered facts the report
     // reads). The `run-report` surface gate could not exist until this landed (its weekly paid
-    // holds R6/R9 stay). `expected:"red"` until its first live leg (the Resend secret blocker —
-    // D-SPA.22-1); a red miss reports `owed`, never gates.
+    // holds R6/R9 stay). VERIF.1 — flipped green 2026-10-15 on the deployed tip `ffbb8ad`:
+    // ready-to-flip twice (`2026-10-14_VERIF.1-surfaces` nonce 523e86229f04 +
+    // `2026-10-15_VERIF.1-t13f-rerun`), both runs provenance-matched at $0.
     id: "R6F",
     journey: "both",
     asserts:
       "the seeded delivered run report renders its full Level-3 vocabulary — estimate/metered lines, reasoned differences, phase bars with real durations, seat split, flags, drivers, the claims line, the rate-table link — plus ?advanced=1's Level-4 usage rows",
     owner: "SPA.22",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -282,25 +283,30 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   {
     // SPA.21 (REQ-VFY-10) — T12's write legs as a FREE step on the seeded writable dossier
     // (`seedWritableDossier` — the Showcase fixture on a normal project, `showcaseReadOnlyGuard`-
-    // exempt) instead of the weekly run's own-tenant Review. `expected:"red"` until its first
-    // live leg (the Resend secret blocker — D-SPA.21-1); a red miss reports `owed`, never gates.
+    // exempt) instead of the weekly run's own-tenant Review. VERIF.1 — flipped green 2026-10-15
+    // on the deployed tip `ffbb8ad`: ready-to-flip twice (`2026-10-14_VERIF.1-surfaces` +
+    // `2026-10-15_VERIF.1-t13f-rerun`), provenance-matched at $0.
     id: "T12F",
     journey: "both",
     asserts:
       "on the seeded writable dossier: a defer disposition + note round-trips a reload, Add-to-obligations captures the POST status and waits the ?obligated notice attach (REQ-FIX-T12F — a repaint lag is never read as a missing notice), and /obligations/new files a user row the export summary lists (T12's free twin — the seeded-dossier sub-steps REQ-VFY-10 owed)",
     owner: "SPA.21",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
     // SPA.21 — T13's free twin on the same seeded dossier: the fixture's anchor finding carries a
-    // suggestion, so the Apply + bulk-preview arms run deterministically at $0.
+    // suggestion, so the Apply + bulk-preview arms run deterministically at $0. VERIF.1 — flipped
+    // green 2026-10-15 on `ffbb8ad` (`2026-10-15_VERIF.1-t13f-rerun3` ready-to-flip): the live leg
+    // surfaced two harness defects this chain fixed (seed ids must be ULIDs — a UUID draftId
+    // 500s the apply's revision.move_traced parse; the ?applied=/?bulkdone= notice reads needed
+    // the REQ-FIX-T12F response-capture + attach-wait pattern).
     id: "T13F",
     journey: "both",
     asserts:
-      "on the seeded writable dossier: Apply on the suggestion-bearing anchor finding lands ?applied= and retracts its control; a bulk action's per-item checklist precedes the ?bulkdone= dispatch (T13's free twin — REQ-VFY-10)",
+      "on the seeded writable dossier: Apply on the suggestion-bearing anchor finding lands ?applied= and retracts its control (the POST is captured and the applied notice is awaited — a repaint lag is never read as a missing notice); a bulk action's per-item checklist precedes the ?bulkdone= dispatch (T13's free twin — REQ-VFY-10)",
     owner: "SPA.21",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -335,8 +341,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "both",
     asserts:
       "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — the toggle only exists on data-renderer=spa; SPA.28 deleted the SSR-pin channel, so every authenticated stage answers `spa` here; D-SPA.25-1). REQ-FIX-T17: the leg waits for [data-page-view] content before interacting — the mount attribute precedes the first block paint",
+    // VERIF.1 — flipped green 2026-10-15 on `ffbb8ad` (`2026-10-14_VERIF.1-surfaces` ready-to-flip).
     owner: "SPA.25",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   // ---- phone-width reader ---------------------------------------------------
@@ -381,39 +388,41 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: false,
   },
   {
-    // SPA.18 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
-    // D-SPA.18-*); a red-step failure reports `owed`, it never gates.
+    // SPA.18 — VERIF.1 flipped green 2026-10-15 on `ffbb8ad` (`2026-10-14_VERIF.1-surfaces`
+    // ready-to-flip, provenance-matched, $0).
     id: "P1.outline",
     journey: "phone",
     asserts:
       "/p/:p/outline + /outline/promote at phone width under either renderer: an existing outline renders read-only (no ed.* fields, no delete, no Save submit, no add-claim row — §10.1 verbatim) else the not-found arm; the promote sheet renders its fact rails + consent form or its own not-found arm — never a blank; overflow + axe clean",
     owner: "UX.2",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
-    // SPA.19 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
-    // D-SPA.19-*); a red-step failure reports `owed`, it never gates.
+    // SPA.19 — VERIF.1 flipped green 2026-10-15 on `ffbb8ad` (`2026-10-14_VERIF.1-surfaces`
+    // ready-to-flip, provenance-matched, $0).
     id: "P1.figures",
     journey: "phone",
     asserts:
       "/p/:p/figures, /p/:p/figures/:id, and /p/:p/visualize at phone width under either renderer: the pane renders its rows or the designed empty arm; a missing card id lands the not-found arm; the sheet renders the consent form (request/specKind/insist/estimate) — ?request= prefills verbatim — or its own not-found arm; overflow + axe clean, never a blank",
     owner: "UX.2",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
-    // SPA.21 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
-    // D-SPA.21-1); a red-step failure reports `owed`, it never gates. FIX.1 (REQ-FIX-P1D): the leg
-    // rides a real mobile userAgent context (injected UA-CH headers lost to Chromium's desktop
-    // hint) and asserts the document's own phone classification — data-ssr-cause="phone" on the
-    // forced-SSR verdict or data-device="phone" on a shell — BEFORE the §10.1 capability sweep.
+    // SPA.21 — FIX.1 (REQ-FIX-P1D): the leg rides a real mobile userAgent context (injected
+    // UA-CH headers lost to Chromium's desktop hint) and asserts the document's own phone
+    // classification — data-ssr-cause="phone" on the forced-SSR verdict or data-device="phone"
+    // on a shell — BEFORE the §10.1 capability sweep. VERIF.1 correction: the dossier route is
+    // sole-renderer SPA (SPA.27 — the REQ-ED-12 forced-SSR set is the five Page-family GETs), so
+    // the phone verdict there IS `data-renderer="spa"` + `data-device="phone"`; flipped green
+    // 2026-10-15 on `ffbb8ad` (`2026-10-15_VERIF.1-dfix12-rerun` ready-to-flip).
     id: "P1.dossier",
     journey: "phone",
     asserts:
       "the dossier (/p/:p/review/:runId via /showcase) at phone width: the document self-classifies phone (data-ssr-cause='phone' / data-device='phone') BEFORE the capability sweep, then the letter arm + finding cards render and the §10.1 boundary holds (no bulk controls, no [data-apply] desk affordance mounts), overflow + axe clean, never a blank",
     owner: "UX.2",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

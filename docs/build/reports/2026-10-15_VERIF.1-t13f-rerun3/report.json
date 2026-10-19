@@ -1,0 +1,39 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "5df38a549d50",
+  "startedAt": "2026-10-15T00:29:21.994Z",
+  "finishedAt": "2026-10-15T00:29:42.235Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "ffbb8ad",
+    "observed": {
+      "web": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+      "api": "ffbb8ad01b4383ab7f11088c8427b668bc442b01"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 20183,
+      "screenshot": "T13F.png"
+    }
+  ],
+  "passed": true
+}

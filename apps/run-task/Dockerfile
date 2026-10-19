@@ -90,7 +90,12 @@ RUN apk add --no-cache alpine-sdk linux-headers xz
 WORKDIR /build
 # libcap-ng first: util-linux `setpriv` links it (cap bounding/inheritable/ambient ops). Alpine ships only
 # the shared object — no .a — so it is built static from source (MIT). --without-python3 keeps the build C-only.
-RUN wget -q "https://people.redhat.com/sgrubb/libcap-ng/libcap-ng-${LIBCAPNG_VERSION}.tar.gz" \
+# Upstream (people.redhat.com) first; on failure, two mirrors verified to serve the byte-identical tarball
+# (Fedora's content-addressed source lookaside, then Alpine distfiles). The sha256 pin below is checked
+# whichever host answered, so a mirror can never change what is built.
+RUN { wget -q -T 30 -O "libcap-ng-${LIBCAPNG_VERSION}.tar.gz" "https://people.redhat.com/sgrubb/libcap-ng/libcap-ng-${LIBCAPNG_VERSION}.tar.gz" \
+      || wget -q -T 60 -O "libcap-ng-${LIBCAPNG_VERSION}.tar.gz" "https://src.fedoraproject.org/repo/pkgs/libcap-ng/libcap-ng-${LIBCAPNG_VERSION}.tar.gz/sha512/89fb86454847f354c012411ecdc7e17f07bb40d7e9719ca0b93ea81c436113685bbbb5c1b9cb1b7ac92d216c105c687285304135beb156aedd55ab1c61e4f269/libcap-ng-${LIBCAPNG_VERSION}.tar.gz" \
+      || wget -q -T 60 -O "libcap-ng-${LIBCAPNG_VERSION}.tar.gz" "https://distfiles.alpinelinux.org/distfiles/v3.21/libcap-ng-${LIBCAPNG_VERSION}.tar.gz"; } \
   && echo "${LIBCAPNG_SHA256}  libcap-ng-${LIBCAPNG_VERSION}.tar.gz" | sha256sum -c - \
   && tar xf "libcap-ng-${LIBCAPNG_VERSION}.tar.gz" \
   && cd "libcap-ng-${LIBCAPNG_VERSION}" \

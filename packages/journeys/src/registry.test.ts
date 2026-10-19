@@ -58,8 +58,11 @@ describe("the journey step registry", () => {
         // N11 flipped red→green 2026-10-06 (funded-window A2 redeploy @476a0ed): the claimUrlViews
         // canonical-fold fix deployed; the Leg-3 dossier re-walked 7/7 chipped / 0 chip-less.
         "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "N11",
-        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
-        "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
+        // P1.outline/P1.figures/P1.dossier, R6F, T12F/T13F, T17 flipped red→green 2026-10-15
+        // (VERIF.1 composed pass on the deployed `ffbb8ad` — each registry row carries its
+        // dated live-evidence comment; all seven are `paid:false`, the paid pin is unaffected).
+        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline", "P1.figures", "P1.dossier",
+        "R1", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
         // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
@@ -68,6 +71,7 @@ describe("the journey step registry", () => {
         // Apply + bulk-preview legs landed on the delivered funded dossier, nonce b76029538106-class);
         // T8/T15/T16 stay red — clock/prerequisite rows.
         "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
+        "T12F", "T13F", "T17",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
         // D-P0.03-2 DONE.

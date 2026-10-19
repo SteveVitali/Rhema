@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "a3dffc51cca2",
+  "startedAt": "2026-10-15T00:28:30.598Z",
+  "finishedAt": "2026-10-15T00:28:47.304Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "ffbb8ad",
+    "observed": {
+      "web": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+      "api": "ffbb8ad01b4383ab7f11088c8427b668bc442b01"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16661,
+      "error": "the bulk landing shows no done notice",
+      "screenshot": "T13F.png"
+    }
+  ],
+  "passed": true
+}

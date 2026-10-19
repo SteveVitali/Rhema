@@ -1,0 +1,466 @@
+<!doctype html><html lang="en" data-theme="dark" data-renderer="ssr" data-route="/p/$project" data-mounted data-ssr-cause="showcase" data-app-theme="dark" data-paper="light" data-project="showcase"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><title>Showcase — a worked example · Rhēma</title><script nonce="2AzTjpe7iuBHzypr5cA62g==">!function(){try{var d=document.documentElement;var pref=d.getAttribute('data-app-theme');if(!pref){try{pref=localStorage.getItem('rhema:theme:v1')}catch(e){}}if(pref!=='dark'&&pref!=='light'&&pref!=='auto')pref='dark';d.setAttribute('data-app-theme',pref);var apply=function(){var res=pref;if(pref==='auto'){res=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',res)};apply();if(pref==='auto'&&window.matchMedia){var q=window.matchMedia('(prefers-color-scheme: light)');var on=function(e){if(d.getAttribute('data-app-theme')==='auto'){d.setAttribute('data-theme',e.matches?'light':'dark')}};q.addEventListener?q.addEventListener('change',on):q.addListener&&q.addListener(on)};try{localStorage.setItem('rhema:theme:v1',pref)}catch(e){}var slug=d.getAttribute('data-project');if(slug){if(!d.getAttribute('data-paper')){try{var p=localStorage.getItem('rhema:paper:v1:'+slug);if(p==='light'||p==='follow'||p==='dark')d.setAttribute('data-paper',p)}catch(e){}if(!d.getAttribute('data-paper'))d.setAttribute('data-paper','light')}try{localStorage.setItem('rhema:paper:v1:'+slug,d.getAttribute('data-paper'))}catch(e){}}try{var f=localStorage.getItem('rhema:font:v1');if(f==='sans')d.setAttribute('data-font','sans');var s=localStorage.getItem('rhema:reader-step:v1');if(s&&s!=='0'){var n=parseInt(s,10);if(n>0&&n<=3)d.style.setProperty('--paper-size',(f==='sans'?16:17)+2*n+'px')}}catch(e){}}catch(e){}}();</script><style>@font-face { font-family: 'Literata'; font-style: normal; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Literata'; font-style: italic; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-italic.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900; src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-display: swap; font-weight: 100 800; src: url('/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  --shell-bg: #0f1114;
+  --shell-surface: #161a1f;
+  --shell-raised: #1d2229;
+  --shell-border: #2a3039;
+  --shell-fg: #e6e8eb;
+  --shell-fg-muted: #9aa3ad;
+  --shell-fg-faint: #868d97;
+  --accent: #8ab4f8;
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --font-paper: "Literata", "Lora", Georgia, serif;
+  --font-shell: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --paper-size: 17px;
+  --dur-stream: 120ms;
+  --dur-phase: 160ms;
+  --dur-finding: 200ms;
+  --dur-pane: 160ms;
+  --dur-caret: 1200ms;
+}
+[data-theme="light"] {
+  --shell-bg: #f6f7f9;
+  --shell-surface: #fdfdfe;
+  --shell-raised: #f0f2f6;
+  --shell-border: #e3e6ea;
+  --shell-fg: #1a1d21;
+  --shell-fg-muted: #5c6670;
+  --shell-fg-faint: #646b74;
+  --accent: #2b63c9;
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="light"] {
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+}
+[data-paper="dark"] {
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+}
+.paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+}
+[data-theme="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="dark"] .paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+}
+[data-font="sans"] {
+  --font-paper: "Inter", system-ui, sans-serif;
+  --paper-size: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: var(--font-shell);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.tnum { font-variant-numeric: tabular-nums; }
+.paper {
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--font-paper);
+  font-size: var(--paper-size);
+  line-height: 1.55;
+}
+.paper h1, .paper h2, .paper h3, .paper h4 { font-weight: 600; line-height: 1.25; }
+.paper h1 { font-size: 2em; }
+.paper h2 { font-size: 1.625em; }
+.paper h3 { font-size: 1.375em; }
+.paper h4 { font-size: 1.125em; }
+.paper p { margin: 0 0 1em; text-indent: 0; }
+.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: 13px; }
+.paper a { color: var(--accent); }
+.paper .muted, .muted-paper { color: var(--paper-fg-muted); }
+@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }
+details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }
+details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }
+details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .paper { font-size: 11pt; line-height: 1.4; max-width: 6.5in; color: #1d1c1a; background: #fffdf8; }
+  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }
+}</style><style>.ide { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; background: var(--shell-bg); color: var(--shell-fg); font-family: var(--font-shell); }
+.ide-main { flex: 1; display: flex; min-height: 0; position: relative; }
+.ide-rail { flex: 0 0 56px; width: 56px; display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s2) 0; background: var(--shell-surface); border-right: 1px solid var(--shell-border); z-index: 30; }
+.ide-rail a, .ide-rail button { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-2); color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; text-decoration: none; font-size: 13px; }
+.ide-rail a:hover, .ide-rail button:hover { background: var(--shell-raised); color: var(--shell-fg); }
+.ide-rail .ide-badge { position: relative; }
+.ide-rail .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -2px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.ide-rail .ide-rail-spacer { flex: 1; }
+.ide-files { flex: 0 0 36px; width: 36px; background: var(--shell-surface); border-right: 1px solid var(--shell-border); overflow: hidden; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease; display: flex; flex-direction: column; }
+.ide[data-files="open"] .ide-files { flex-basis: var(--files-w, 240px); width: var(--files-w, 240px); }
+.ide-files .ide-pane-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s2); font-size: 12px; font-weight: 600; color: var(--shell-fg-muted); text-transform: none; letter-spacing: 0; }
+.ide[data-files='strip'] .ide-files .ide-pane-head, .ide[data-files='strip'] .ide-files .ide-files-body { display: none; }
+.ide[data-files='open'] .ide-files .ide-files-strip { display: none; }
+.ide-files .ide-files-strip { display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding-top: var(--s2); }
+.ide-files .ide-files-body { padding: 0 var(--s2) var(--s2); font-size: 13px; color: var(--shell-fg-muted); }
+.ide-files .ide-files-body ul { list-style: none; margin: 0; padding: 0; }
+.ide-files .ide-files-body li { padding: 3px 6px; border-radius: var(--radius-1); }
+.ide-files .ide-files-body li[data-current] { color: var(--shell-fg); background: var(--shell-raised); }
+.ide-files button, .ide-files a { color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; font-size: 12px; text-decoration: none; }
+.ide-center { flex: 1; display: flex; min-width: 0; }
+.ide-page { flex: 1; min-width: 0; overflow: auto; display: flex; justify-content: center; padding: var(--s6) var(--s4); }
+.ide-page .paper { flex: 0 1 68ch; width: 68ch; min-width: min(45ch, 100%); max-width: 80ch; padding: var(--s8) var(--s8); border: 1px solid var(--paper-rule); border-radius: var(--radius-2); box-shadow: 0 1px 3px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.16); height: fit-content; min-height: 60%; }
+[data-theme="light"] .ide-page .paper { box-shadow: 0 1px 2px rgba(30,34,40,0.08), 0 4px 14px rgba(30,34,40,0.07); }
+.ide-margin { flex: 0 0 280px; width: 280px; border-left: 1px solid var(--shell-border); overflow: auto; padding: var(--s3); transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease; }
+.ide[data-margin='ticks'] .ide-margin, .ide-margin[data-mode='ticks'] { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }
+.ide[data-margin='ticks'] .ide-margin [data-margin-surface] { display: none; }
+.ide[data-margin='hidden'] .ide-margin { display: none; }
+.ide-margin .ide-tick { display: block; width: 8px; height: 8px; border-radius: 2px; margin: 0 auto 10px; }
+.ide-margin .ide-fcard { border: 1px solid var(--shell-border); border-left-width: 3px; border-radius: var(--radius-1); padding: var(--s2); margin-bottom: var(--s2); font-size: 12px; background: var(--shell-surface); }
+.ide-margin [data-margin-card] { border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1); margin-bottom: var(--s2); background: var(--shell-surface); }
+.ide-margin [data-margin-card]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ide-margin [data-margin-card][data-selected='true'], [data-desk-row][data-selected='true'] { outline: 2px solid var(--accent); outline-offset: -1px; }
+[data-desk-row][data-selected='true'] td { background: var(--shell-raised); }
+.ide-margin .ide-mchip { font-size: 12px; }
+.ide-margin .ide-mchip > summary { cursor: pointer; }
+[data-desk-row][data-rejected='true'] td { opacity: 0.72; }
+[data-triage-mode] [data-triage-section] table { margin-bottom: var(--s2); }
+.ide-timeline { flex: 0 0 var(--timeline-w, 320px); width: var(--timeline-w, 320px); background: var(--shell-surface); border-left: 1px solid var(--shell-border); overflow: auto; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease, transform var(--dur-pane) ease; display: flex; flex-direction: column; }
+.ide[data-timeline='closed'] .ide-timeline { display: none; }
+.ide-timeline .ide-pane-head { padding: var(--s3); font-size: 12px; font-weight: 600; color: var(--shell-fg-muted); border-bottom: 1px solid var(--shell-border); }
+.ide-timeline .ide-tl-body { padding: var(--s3); font-size: 13px; }
+.ide-desk { flex: 0 0 auto; height: var(--desk-h, 280px); border-top: 1px solid var(--shell-border); background: var(--shell-surface); display: flex; flex-direction: column; transition: height var(--dur-pane) ease; }
+.ide[data-desk='closed'] .ide-desk { height: 0; border-top: none; overflow: hidden; }
+.ide-desk .ide-desk-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }
+.ide-desk .ide-desk-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; }
+.ide-desk .ide-desk-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; }
+.ide-desk .ide-desk-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }
+.ide-desk .ide-desk-body { flex: 1; overflow: auto; padding: var(--s3); font-size: 13px; color: var(--shell-fg-muted); }
+.ide-desk [data-desk-panel] { display: none; }
+.ide[data-desk-tab='chat'] [data-desk-panel='chat'], .ide[data-desk-tab='feed'] [data-desk-panel='feed'], .ide[data-desk-tab='findings'] [data-desk-panel='findings'], .ide[data-desk-tab='claims'] [data-desk-panel='claims'] { display: block; }
+.ide[data-desk-tab='chat'] .ide-desk [data-desk-panel='chat'] { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.chat-desk { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.chat-desk .chat-body { flex: 1 1 auto; min-height: 0; }
+.ide-desk .chat-desk .chat-body { overflow-y: auto; }
+.chat-desk .chat-composer { flex: 0 0 auto; margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--shell-border); }
+.ide-statusbar { flex: 0 0 28px; display: flex; align-items: center; gap: var(--s4); padding: 0 var(--s3); font-size: 12px; color: var(--shell-fg-muted); background: var(--shell-surface); border-top: 1px solid var(--shell-border); font-variant-numeric: tabular-nums; }
+.ide-handle { flex: 0 0 5px; width: 5px; cursor: col-resize; background: transparent; border: none; padding: 0; }
+.ide-handle:hover, .ide-handle:focus-visible { background: var(--accent); opacity: 0.4; }
+.ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-timeline, .ide[data-view='focus'] .ide-desk, .ide[data-view='focus'] .ide-statusbar { display: none; }
+.ide[data-view='focus'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }
+.ide .ide-actions { display: flex; flex-wrap: wrap; gap: var(--s3); }
+.ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }
+@media (max-width: 1599px) {
+  .ide[data-files='open'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }
+  .ide[data-files='open'] .ide-timeline[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, 320px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }
+}
+@media (max-width: 1279px) {
+  .ide .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }
+  .ide .ide-timeline[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, 320px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }
+}
+@media (max-width: 1023px) {
+  .ide[data-files='open'] .ide-files { position: absolute; left: 56px; top: 0; bottom: 0; width: min(var(--files-w, 240px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }
+  .ide .ide-timeline[data-open] { position: absolute; left: 56px; right: 0; bottom: 0; top: auto; width: auto; height: 55%; z-index: 20; border-top: 1px solid var(--shell-border); box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }
+}
+@media (max-width: 767px) {
+  .ide .ide-rail, .ide .ide-files, .ide .ide-timeline, .ide .ide-desk, .ide .ide-margin, .ide .ide-statusbar { display: none !important; }
+  .ide .ide-page { padding: 0; }
+  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }
+  .ide-phonebar { display: flex !important; }
+  .ide .ide-phone-only { display: block; }
+  .ide button { min-height: 24px; min-width: 24px; }
+  .ide [data-gate-actions] button, .ide [data-decision-option], .ide .ide-phone-only .chat-composer button, .ide .ide-phone-only .chat-threads a, .ide .ide-phone-only [data-chat-chip] { min-height: 44px; font-size: 15px; }
+  .ide .ide-phone-only .chat-threads a, .ide .ide-phone-only [data-chat-chip] { display: inline-flex; align-items: center; }
+  .ide .ide-actions a { min-height: 44px; min-width: 44px; padding: 0 var(--s3); border: 1px solid var(--shell-border); border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); text-decoration: none; font-size: 15px; }
+}
+.ide-phonebar { display: none; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--shell-border); background: var(--shell-surface); font-size: 13px; }
+.ide-phonebar a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 var(--s1); }
+.ide-phonebar .ide-badge { position: relative; margin-left: auto; color: var(--shell-fg-muted); text-decoration: none; }
+.ide-phonebar .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.ide-phone-only { display: none; }
+.ide-menu { position: absolute; z-index: 40; min-width: 220px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: var(--s2); }
+.ide-menu [role='menuitemradio'], .ide-menu [role='menuitemcheckbox'], .ide-menu .ide-menu-row { display: flex; align-items: center; gap: var(--s2); width: 100%; padding: 6px 8px; border: none; background: none; color: var(--shell-fg); font-size: 13px; text-align: left; border-radius: var(--radius-1); cursor: pointer; }
+.ide-menu [role='menuitemradio'][aria-checked='true'] { color: var(--accent); }
+.ide-menu .ide-menu-sep { border-top: 1px solid var(--shell-border); margin: var(--s2) 0; }
+.ide-menu .ide-menu-note { font-size: 11px; color: var(--shell-fg-faint); padding: 2px 8px; }
+.ide-state { border: 1px solid var(--shell-border); border-radius: var(--radius-2); padding: var(--s4); background: var(--shell-surface); }
+.ide-state[data-tone='failed'] { border-color: var(--state-failed); }
+.ide-sk-row { height: 12px; border-radius: var(--radius-1); background: var(--shell-raised); margin-bottom: var(--s2); animation: ide-shimmer var(--dur-phase) ease-in-out infinite alternate; }
+@keyframes ide-shimmer { from { opacity: 0.55; } to { opacity: 1; } }
+.ide-stream-block { animation: ide-block-in var(--dur-stream) ease both; }
+@keyframes ide-block-in { from { opacity: 0; } to { opacity: 1; } }
+.ide-finding-in { animation: ide-find-in var(--dur-finding) ease both; }
+@keyframes ide-find-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.ide-caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: text-bottom; animation: ide-caret var(--dur-caret) ease-in-out infinite; }
+@keyframes ide-caret { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.ide-banner { display: flex; gap: var(--s2); align-items: center; padding: var(--s2) var(--s3); border-radius: var(--radius-1); border: 1px solid var(--shell-border); background: var(--shell-raised); font-size: 13px; }
+.ide-banner[data-tone='conflict'] { border-color: var(--state-needs-you); }
+.ide-banner[data-tone='locked'] { border-color: var(--shell-border); color: var(--shell-fg-muted); }
+.ide-pill { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--shell-border); font-size: 11px; color: var(--shell-fg-muted); }
+.ide-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; }
+.ide-modal { background: var(--shell-surface); border: 1px solid var(--shell-border); border-radius: var(--radius-3); padding: var(--s4); width: min(420px, 90vw); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.ide-palette { position: fixed; top: 12vh; left: 50%; transform: translateX(-50%); z-index: 70; width: min(560px, 92vw); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-3); box-shadow: 0 16px 48px rgba(0,0,0,0.5); padding: var(--s2); }
+.ide-palette[hidden] { display: none; }
+.ide-palette input[data-palette-input] { width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit; font-size: 15px; background: var(--shell-bg); color: var(--shell-fg); border: 1px solid var(--shell-border); border-radius: var(--radius-2); outline: none; }
+.ide-palette input[data-palette-input]:focus { border-color: var(--accent); }
+.ide-palette [data-palette-results] { max-height: 50vh; overflow-y: auto; margin-top: var(--s2); }
+.ide-palette .ide-pal-section { font-size: 11px; color: var(--shell-fg-faint); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px 2px; }
+.ide-palette .ide-pal-row { display: flex; align-items: baseline; gap: var(--s2); width: 100%; padding: 7px 10px; border: none; background: none; color: var(--shell-fg); font-size: 14px; text-align: left; border-radius: var(--radius-1); cursor: pointer; }
+.ide-palette .ide-pal-row[data-active] { background: var(--shell-bg); }
+.ide-palette .ide-pal-row[data-disabled] { color: var(--shell-fg-faint); cursor: default; }
+.ide-palette .ide-pal-hint { margin-left: auto; font-size: 12px; color: var(--shell-fg-faint); }
+.ide-palette .ide-pal-pinned { color: var(--accent); font-size: 11px; margin-left: auto; }
+.ide-palette .ide-pal-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+.ide-palette .ide-pal-chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--shell-border); background: var(--shell-bg); color: var(--shell-fg-muted); }
+.ide-palette .ide-pal-error { padding: 8px 10px; font-size: 13px; color: var(--sev-major); }
+.ide-palette .ide-pal-action { padding: 8px 10px; font-size: 13px; color: var(--shell-fg-muted); }
+.ide-palette [data-palette-empty] { padding: 12px 10px; font-size: 13px; color: var(--shell-fg-faint); }
+.ide-cmdmenu { position: fixed; z-index: 72; min-width: 210px; max-width: 320px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: var(--s2); }
+.ide-cmdmenu .ide-pal-row { display: flex; align-items: baseline; gap: var(--s2); width: 100%; padding: 7px 10px; border: none; background: none; color: var(--shell-fg); font-size: 13px; text-align: left; border-radius: var(--radius-1); cursor: pointer; }
+.ide-cmdmenu .ide-pal-row:hover, .ide-cmdmenu .ide-pal-row:focus-visible { background: var(--shell-bg); outline: none; }
+.ide-cmdmenu .ide-pal-row[data-disabled] { color: var(--shell-fg-faint); cursor: default; }
+.ide-cmdmenu .ide-pal-row[data-disabled]:hover { background: none; }
+.ide-cmdmenu .ide-pal-hint { margin-left: auto; font-size: 12px; color: var(--shell-fg-faint); }
+.ide-cmdmenu .ide-cmdmenu-sep { border-top: 1px solid var(--shell-border); margin: var(--s2) 0; }
+.ide-cheatsheet { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; z-index: 70; padding-top: 14vh; }
+.ide-cheatsheet[hidden] { display: none; }
+.ide-cheatsheet-card { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-3); padding: var(--s3) var(--s4); width: min(520px, 92vw); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.ide-cheatsheet-card ul { list-style: none; margin: var(--s2) 0 0; padding: 0; }
+.ide-cheatsheet-row { display: flex; gap: var(--s3); padding: 4px 0; font-size: 13px; align-items: baseline; }
+.ide-cheatsheet-row kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--shell-fg-muted); min-width: 150px; }
+.ide:not([data-advanced='1']) [data-tier='advanced'] { display: none !important; }
+.ide-skip { position: fixed; top: 8px; left: 8px; z-index: 80; transform: translateY(-250%); padding: 8px 14px; border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); border: 1px solid var(--shell-border); font-size: 13px; text-decoration: none; }
+.ide-skip:focus, .ide-skip:focus-visible { transform: none; outline: 2px solid var(--accent); outline-offset: 2px; }
+.ide-menu [role='menuitemradio']:hover, .ide-menu [role='menuitemcheckbox']:hover, .ide-menu .ide-menu-row:hover { background: var(--shell-bg); }
+.ide-menu [role='menuitemradio']:focus-visible, .ide-menu [role='menuitemcheckbox']:focus-visible, .ide-menu .ide-menu-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ide-desk .ide-desk-tabs button:hover { color: var(--shell-fg); }
+.ide-desk .ide-desk-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ide-statusbar button { background: none; border: none; color: var(--shell-fg-muted); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: var(--radius-1); }
+.ide-statusbar button:hover { color: var(--shell-fg); background: var(--shell-raised); }
+.ide-statusbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ide-palette .ide-pal-row:hover { background: var(--shell-bg); }
+.ide-palette .ide-pal-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ide-pane-head button:hover { color: var(--shell-fg); }
+.ide button:focus-visible, .ide a:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.ide-count { font-variant-numeric: tabular-nums; }
+.rm-page-host .rm-page, .rm-page-host .ProseMirror { font-family: var(--font-paper, var(--font-shell)); font-size: var(--paper-size, 17px); line-height: 1.6; outline: none; white-space: pre-wrap; word-wrap: break-word; }
+.rm-page-host .ProseMirror p { margin: 0 0 0.8em; }
+.rm-page-host .ProseMirror h1, .rm-page-host .ProseMirror h2, .rm-page-host .ProseMirror h3 { line-height: 1.25; margin: 1.2em 0 0.5em; }
+.rm-page-host .ProseMirror blockquote { border-left: 3px solid var(--paper-rule, var(--shell-border)); margin: 0 0 0.8em; padding-left: 1em; color: inherit; opacity: 0.92; }
+.rm-page-host .ProseMirror pre { background: var(--shell-raised); border-radius: var(--radius-1); padding: var(--s2) var(--s3); font-size: 0.88em; overflow-x: auto; }
+.rm-page-host .ProseMirror table { border-collapse: collapse; margin: 0 0 0.8em; }
+.rm-page-host .ProseMirror td, .rm-page-host .ProseMirror th { border: 1px solid var(--paper-rule, var(--shell-border)); padding: 4px 10px; }
+.rm-page-host .rm-math-block, .rm-page-preview .rm-math-block { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; text-align: center; padding: var(--s2) 0; color: var(--shell-fg-muted); }
+.rm-page-host .rm-math-inline, .rm-page-preview .rm-math-inline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; color: var(--shell-fg-muted); }
+.rm-page-host .rm-cite, .rm-page-preview .rm-cite { color: var(--accent); font-size: 0.92em; }
+.rm-page-host .rm-frontmatter, .rm-page-preview .rm-frontmatter, .rm-page-host .rm-link-def, .rm-page-preview .rm-link-def, .rm-page-host .rm-html-block, .rm-page-preview .rm-html-block { color: var(--shell-fg-faint); font-size: 0.85em; border-left: 2px solid var(--shell-border); padding-left: var(--s2); margin: 0 0 0.8em; white-space: pre-wrap; }
+.rm-page-host .rm-footnote-def, .rm-page-preview .rm-footnote-def { font-size: 0.88em; color: var(--shell-fg-muted); border-top: 1px solid var(--paper-rule, var(--shell-border)); padding-top: var(--s1); }
+.rm-page-host .rm-footnote-def::before, .rm-page-preview .rm-footnote-def::before { content: '[' attr(data-fn) '] '; color: var(--shell-fg-faint); }
+.rm-page .rm-finding { border-bottom: 1.5px solid var(--sev-minor); }
+.rm-page .rm-finding-blocking, .rm-page .rm-finding-critical { border-bottom: 2px solid var(--sev-blocking, var(--sev-major)); }
+.rm-page .rm-finding-major { border-bottom-color: var(--sev-major); }
+.rm-page .rm-finding-minor { border-bottom-style: dotted; }
+.rm-page .rm-finding-note { border-bottom-width: 1px; border-bottom-color: var(--sev-note); }
+.rm-page .rm-kind-claim { border-bottom-color: var(--kind-claim); }
+.rm-page .rm-kind-discourse { border-bottom-color: var(--kind-discourse); }
+.rm-page .rm-kind-argument { border-bottom-color: var(--kind-argument); }
+.rm-page .rm-kind-structure { border-bottom-color: var(--kind-structure); }
+.rm-page .rm-kind-craft { border-bottom-color: var(--kind-craft); }
+.rm-page .rm-kind-voice { border-bottom-color: var(--kind-voice); }
+.rm-page .rm-kind-continuity { border-bottom-color: var(--kind-continuity); }
+.rm-page .rm-suggestion-preview { background: color-mix(in srgb, var(--kind-craft) 16%, transparent); border-radius: 2px; }
+.rm-page .rm-suggestion-replacement { color: var(--sev-minor); background: color-mix(in srgb, var(--sev-minor) 14%, transparent); border-radius: 2px; padding: 0 2px; }
+.rm-page .rm-finding-block { box-shadow: inset 3px 0 0 var(--sev-minor); }
+.rm-page .rm-finding-block.rm-finding-major { box-shadow: inset 3px 0 0 var(--sev-major); }
+.rm-page .rm-finding-block.rm-finding-blocking, .rm-page .rm-finding-block.rm-finding-critical { box-shadow: inset 3px 0 0 var(--sev-blocking, var(--sev-major)); }
+.rm-page .rm-finding-block.rm-kind-claim { box-shadow: inset 3px 0 0 var(--kind-claim); }
+.rm-page .rm-finding-block.rm-kind-discourse { box-shadow: inset 3px 0 0 var(--kind-discourse); }
+.rm-page .rm-finding-block.rm-kind-argument { box-shadow: inset 3px 0 0 var(--kind-argument); }
+.rm-page .rm-finding-block.rm-kind-structure { box-shadow: inset 3px 0 0 var(--kind-structure); }
+.rm-page .rm-finding-block.rm-kind-craft { box-shadow: inset 3px 0 0 var(--kind-craft); }
+.rm-page .rm-finding-block.rm-kind-voice { box-shadow: inset 3px 0 0 var(--kind-voice); }
+.rm-page .rm-finding-block.rm-kind-continuity { box-shadow: inset 3px 0 0 var(--kind-continuity); }
+.rm-page .rm-proposal-target { box-shadow: inset 3px 0 0 var(--accent); }
+.rm-page .rm-author-agent { box-shadow: inset 3px 0 0 var(--accent); }
+.rm-page .rm-author-assistant { box-shadow: inset 3px 0 0 var(--sev-note); }
+.rm-page .rm-author-mixed { box-shadow: inset 3px 0 0 var(--sev-major); }
+.rm-page .rm-author-human { box-shadow: none; }
+.rm-page-host[data-readonly='1'] .ProseMirror { caret-color: transparent; }
+.rm-source-bar { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s2); }
+.rm-source-toggle { font-family: var(--font-shell); font-size: 12px; color: var(--shell-fg-muted); background: transparent; border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: 2px 10px; cursor: pointer; }
+.rm-source-toggle[aria-pressed='true'] { color: var(--shell-fg); border-color: var(--accent); }
+.rm-source-note { font-family: var(--font-shell); font-size: 12px; color: var(--sev-major); }
+.rm-source-host .cm-editor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; line-height: 1.6; border: 1px solid var(--shell-border); border-radius: var(--radius-1); }
+.rm-source-host .cm-editor.cm-focused { outline: 1px solid var(--accent); outline-offset: -1px; }
+.rm-source-host .cm-content { padding: var(--s2) var(--s3); caret-color: var(--shell-fg); }
+.rm-source-host .cm-gutters { background: var(--shell-raised); color: var(--shell-fg-faint); border-right: 1px solid var(--shell-border); font-size: 0.85em; }
+.rm-page-host .ProseMirror-gapcursor { position: relative; }
+.rm-page-host .ProseMirror-selectednode { outline: 2px solid var(--accent); }
+.rm-page-host .ProseMirror-hideselection *::selection { background: transparent; }</style></head><body><div class="ide" data-ide="1" data-project="showcase" data-project-id="01M4XCGEQ2W7R6SHRHKGKR628C" data-user="01M4XCGEPBJMZR90W460X5R25H" data-view="write" data-files="strip" data-timeline="open" data-desk="closed" data-desk-tab="chat" data-margin="hidden" data-finding-cards="1" data-paper-theme="light" data-app-theme-pref="dark" data-theme-url="/ide/theme" data-paper-url="/p/showcase/paper-theme" data-run-next="/p/showcase/run"><div class="ide-phonebar"><a href="/app" aria-label="Home">← Home</a><strong>Showcase — a worked example</strong><a href="/app/inbox" class="ide-badge" data-count="0" title="Inbox" aria-label="Inbox">◎</a></div><div class="ide-main"><nav class="ide-rail" aria-label="Project navigation"><a href="/app" title="Home" aria-label="Home">⌂</a><a href="/app/inbox" class="ide-badge" data-count="0" title="Inbox" aria-label="Inbox">◎</a><span class="ide-rail-spacer"></span><button type="button" data-ide-view-menu="true" title="View" aria-haspopup="menu" aria-expanded="false">▤</button><a href="/app/settings" title="Settings" aria-label="Settings">⚙</a></nav><aside class="ide-files" data-pane="files" aria-label="Files"><div class="ide-files-strip"><button type="button" data-ide-files-toggle="true" title="Files ⌘1" aria-label="Files ⌘1">▤</button></div><div class="ide-pane-head"><span>Files</span><button type="button" data-ide-files-toggle="true" aria-label="Close Files" style="margin-left:auto">×</button></div><div class="ide-files-body"><nav data-files-pane="true" aria-label="Files" style="font-size:12.5px"><section data-files-section="outline" style="margin-bottom:10px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;color:var(--shell-fg-muted, #9aa3ad)">Outline</div><ul style="list-style:none;margin:0;padding:0"><li data-file-row="01M4XCGETW82RHT0D33DV66VFW" data-kind="outline" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/a/01M4XCGETW82RHT0D33DV66VFW" data-file-link="true" style="color:inherit">Outline</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 77 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li></ul></section><section data-files-section="drafts" style="margin-bottom:10px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;color:var(--shell-fg-muted, #9aa3ad)">Drafts</div><ul style="list-style:none;margin:0;padding:0"><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGEY0Y7QXGG7K2YWV8DXF" data-kind="draft" data-level="SE" data-lock="immutable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/v/1" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v1</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 399 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGF0G77X2WDNGKCRGPPZC" data-kind="draft" data-level="SE" data-lock="editable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Editable" aria-label="Editable">✎ </span><a href="/p/showcase/v/2" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v2</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 377 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGF0G77X2WDNGKCRGPPZC" data-kind="draft" data-level="SE" data-lock="editable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Editable" aria-label="Editable">✎ </span><a href="/p/showcase/v/2" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v2</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 377 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGF0G77X2WDNGKCRGPPZC" data-kind="draft" data-level="SE" data-lock="editable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Editable" aria-label="Editable">✎ </span><a href="/p/showcase/v/2" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v2</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 377 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li><li data-file-row="01M4XCGF0G77X2WDNGKCRGPPZC" data-kind="draft" data-level="SE" data-lock="editable" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Editable" aria-label="Editable">✎ </span><a href="/p/showcase/v/2" data-file-link="true" style="color:inherit">Draft</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · v2</span><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 377 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span></li></ul></section><section data-files-section="rounds" style="margin-bottom:10px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;color:var(--shell-fg-muted, #9aa3ad)">Rounds</div><ul style="list-style:none;margin:0;padding:0"><li data-file-row="01M4XCGF39XBC292KHJZYE781K" data-kind="editors_letter" data-level="SR" data-lock="immutable" data-readonly="1" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/a/01M4XCGF39XBC292KHJZYE781K" data-file-link="true" style="color:inherit">Editors letter</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 262 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span><span data-readonly-note="true" class="sr-only">Read-only — agent memory.</span></li><li data-file-row="01M4XCGF66KDVSJWQA1XZMXDJC" data-kind="response_letter" data-level="SR" data-lock="immutable" data-readonly="1" style="padding:3px 0;font-size:12.5px"><span data-lock-icon="true" title="Immutable" aria-label="Immutable">🔒 </span><a href="/p/showcase/a/01M4XCGF66KDVSJWQA1XZMXDJC" data-file-link="true" style="color:inherit">Response letter</a><span style="color:var(--shell-fg-muted, #9aa3ad)"> · 75 words</span><span data-provenance="true" style="display:block;font-size:10.5px;padding-left:18px;color:var(--shell-fg-muted, #9aa3ad)">System</span><span data-readonly-note="true" class="sr-only">Read-only — agent memory.</span></li></ul></section></nav></div></aside><button type="button" class="ide-handle" data-ide-handle="files" aria-hidden="true" tabindex="-1"></button><div class="ide-center"><main id="ide-page" class="ide-page" data-pane="page" aria-label="Showcase — a worked example" tabindex="-1"><div class="paper" data-paper-surface="true"><h1 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Showcase — a worked example</h1><p style="color:var(--shell-fg-muted);font-size:13px">Draft</p><p class="ide-actions" style="display:flex;gap:16px"><a href="/p/showcase/import">Import a draft</a><a href="/p/showcase/run">Run review</a><a href="/p/showcase/export">Export</a><a data-edit-source="true" href="/p/showcase/v/working">Edit source</a></p><div data-page-mount="working" style="margin-top:12px"><div data-page-root="1" data-draft-id="01M4XCGEQ2DGF0D4NY028TC3XE" data-draft-n="2" data-doc-url="/p/showcase/edit/01M4XCGEQ2DGF0D4NY028TC3XE/doc" data-collab-url="" data-fork-fmt="Editing v{n} · findings from v{base} follow your text" data-locked="0" data-readonly="1"><div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div data-sync-pill="true" role="status" aria-live="polite" data-label-synced="synced ✓" data-label-syncing="syncing…" data-label-offline="offline · {n} changes queued" data-label-readonly="read-only" data-label-queued="offline — queued" data-label-locked="read-only" style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid var(--shell-border);background:var(--shell-raised);font-size:12px;color:var(--shell-fg-muted);white-space:nowrap">synced ✓</div></div><div data-page-banner="lock" style="border:1px solid var(--shell-border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:none;gap:12px;align-items:center;justify-content:space-between;border-color:var(--sev-major)" data-writer-text="A {workflow} run is writing this draft — editing is locked until it finishes." data-reader-text="A {workflow} run is reading the frozen draft — editing is locked until it finishes."><span data-page-banner-text="true"></span><form style="margin:0" action="/p/showcase/edit/01M4XCGEQ2DGF0D4NY028TC3XE/cancel-run" method="post"><button type="submit" style="font-size:12px">Cancel run to edit</button></form></div><div data-page-banner="readonly" style="border:1px solid var(--shell-border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;gap:12px;align-items:center;justify-content:space-between"><span>This version is read-only.</span></div><div data-page-host="true" class="rm-page-host" data-readonly="1"><div data-page-preview="true" class="rm-page-preview"><h1><span>The archive that remembers</span></h1><p><span>Every civilization writes down what it cannot afford to forget, and then forgets what it wrote. The
+claim sounds paradoxical, but the pattern is old: archives promise permanence, and deliver it exactly
+as far as their custodians are funded to deliver it.</span></p><p><span>The digital archive was supposed to end this. Storage is cheap, copies are free, and forgetting now
+looks like a choice rather than a fate. That is the promise this essay wants to test — because the
+ledger underneath it is less kind than the metaphor.</span></p><h2><span>Three shelves</span></h2><p><span>Start with the census. The 1871 United Kingdom census survives in the enumerators&#x27; books almost
+intact — a reminder that paper, kept dry, is a very good archive. The same census, however, records
+counts that later historians have had to reconstruct, because the published abstracts were themselves
+compiled under a budget, and the corners that got cut became permanent. The archive remembered what
+it was paid to remember.</span></p><p><span>Now the 1990s web. The Internet Archive&#x27;s crawls preserved a slice of it, and the slice is
+impressive — but the slice is a slice. Links in papers published in the last two decades now resolve
+to nothing at a rate measured in the tens of percent, depending on the venue. The dead link is the
+digital archive&#x27;s missing shelf: not a fire, not a flood, just a hosting bill nobody paid.</span></p><p><span>The earlier version of this essay claimed that &quot;the 1871 census recorded 3.1 million households in
+Scotland.&quot; It does not — the recorded figure is about 560,000 households, and the error survives
+because citing a confident number is easier than checking one. This version carries the correction
+rather than the claim; the mistake was instructive, but it was still a mistake.</span></p><h2><span>What remembering costs</span></h2><p><span>The conclusion is not that digital archives fail. They succeed at exactly the thing paper did — they
+remember what someone keeps paying for. The honest version of the promise is narrower and better: an
+archive that remembers is not a technology but a budget line, renewed every year, with someone&#x27;s name
+on it. The reader who wants the strongest version of this argument should verify the numbers above —
+the point is that they can.</span></p></div></div><script nonce="2AzTjpe7iuBHzypr5cA62g==" type="application/json" data-page-doc="1">{"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"The archive that remembers"}]},{"type":"paragraph","content":[{"type":"text","text":"Every civilization writes down what it cannot afford to forget, and then forgets what it wrote. The\nclaim sounds paradoxical, but the pattern is old: archives promise permanence, and deliver it exactly\nas far as their custodians are funded to deliver it."}]},{"type":"paragraph","content":[{"type":"text","text":"The digital archive was supposed to end this. Storage is cheap, copies are free, and forgetting now\nlooks like a choice rather than a fate. That is the promise this essay wants to test — because the\nledger underneath it is less kind than the metaphor."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Three shelves"}]},{"type":"paragraph","content":[{"type":"text","text":"Start with the census. The 1871 United Kingdom census survives in the enumerators' books almost\nintact — a reminder that paper, kept dry, is a very good archive. The same census, however, records\ncounts that later historians have had to reconstruct, because the published abstracts were themselves\ncompiled under a budget, and the corners that got cut became permanent. The archive remembered what\nit was paid to remember."}]},{"type":"paragraph","content":[{"type":"text","text":"Now the 1990s web. The Internet Archive's crawls preserved a slice of it, and the slice is\nimpressive — but the slice is a slice. Links in papers published in the last two decades now resolve\nto nothing at a rate measured in the tens of percent, depending on the venue. The dead link is the\ndigital archive's missing shelf: not a fire, not a flood, just a hosting bill nobody paid."}]},{"type":"paragraph","content":[{"type":"text","text":"The earlier version of this essay claimed that \"the 1871 census recorded 3.1 million households in\nScotland.\" It does not — the recorded figure is about 560,000 households, and the error survives\nbecause citing a confident number is easier than checking one. This version carries the correction\nrather than the claim; the mistake was instructive, but it was still a mistake."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"What remembering costs"}]},{"type":"paragraph","content":[{"type":"text","text":"The conclusion is not that digital archives fail. They succeed at exactly the thing paper did — they\nremember what someone keeps paying for. The honest version of the promise is narrower and better: an\narchive that remembers is not a technology but a budget line, renewed every year, with someone's name\non it. The reader who wants the strongest version of this argument should verify the numbers above —\nthe point is that they can."}]}]}</script><script nonce="2AzTjpe7iuBHzypr5cA62g==" type="application/json" data-page-prov="1">{}</script><script nonce="2AzTjpe7iuBHzypr5cA62g==" type="application/json" data-page-findings="1">[{"findingId":"01M4XCGF785P59T5CSH0DVACKV","severity":"blocking","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"claim","suggestion":{"text":"Carry the correction in the open: name the figure, name the real count, keep the lesson.","action":"replace"}},{"findingId":"01M4XCGF7CCC854174Q3034BZZ","severity":"major","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"claim"},{"findingId":"01M4XCGF7ESMZRMH02CCE0PSGG","severity":"minor","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"discourse"},{"findingId":"01M4XCGF7EW7ABJ1DFETVXGPVR","severity":"minor","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"structure"},{"findingId":"01M4XCGF7FG3DNBF7ARTKB53QM","severity":"major","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"claim"},{"findingId":"01M4XCGF7HXFAEXJXENBF51H9Z","severity":"note","anchor":{"blockId":"b1","quote":"","startOffset":0,"endOffset":0,"confidence":0,"unanchored":true},"lost":false,"kind":"craft"}]</script><div data-findings-rail="true" data-lost-note-text="passage changed — still applies?" style="margin-top:18px;border-top:1px solid var(--shell-border);padding-top:10px"><h2 style="font-size:13px;font-weight:600;margin:0 0 8px">Findings on this draft</h2><div data-finding-id="01M4XCGF785P59T5CSH0DVACKV" style="border-left:3px solid;border-left-color:var(--sev-blocking);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">The Scotland figure is wrong — and the argument leans on it</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div><div data-finding-id="01M4XCGF7CCC854174Q3034BZZ" style="border-left:3px solid;border-left-color:var(--sev-major);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">The link-rot estimate needs its source</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div><div data-finding-id="01M4XCGF7ESMZRMH02CCE0PSGG" style="border-left:3px solid;border-left-color:var(--sev-minor);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">The verify-it-yourself invitation needs the numbers checkable</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div><div data-finding-id="01M4XCGF7EW7ABJ1DFETVXGPVR" style="border-left:3px solid;border-left-color:var(--sev-minor);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">The three-shelf structure earns the frame</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div><div data-finding-id="01M4XCGF7FG3DNBF7ARTKB53QM" style="border-left:3px solid;border-left-color:var(--sev-major);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">Second read: the 1871 census is not the first to record religion</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div><div data-finding-id="01M4XCGF7HXFAEXJXENBF51H9Z" style="border-left:3px solid;border-left-color:var(--sev-note);padding-left:10px;margin-bottom:8px;font-size:13px"><div style="font-weight:600">&#x27;A budget line, renewed every year&#x27; is the sentence to keep</div><div style="color:var(--shell-fg-muted);font-size:12px">from Review of v1</div></div></div><script nonce="2AzTjpe7iuBHzypr5cA62g==" src="/assets/page.js" defer=""></script></div></div><section data-approval-settings="true" style="margin-top:20px;max-width:68ch"><h2 style="font-size:15px;font-weight:600;color:var(--shell-fg);margin:0 0 10px">Approvals</h2><form style="padding:10px 14px;border:1px solid var(--shell-border);border-radius:8px" action="/p/showcase/settings/approvals" method="post"><fieldset style="border:none;margin:0;padding:0"><legend style="font-size:13px;font-weight:600;color:var(--shell-fg-muted)">Approval policy</legend><label data-policy="named" style="display:block;font-size:13px;color:var(--shell-fg);margin-top:6px"><input type="radio" name="policy" checked="" value="named"/> Named approvals<span style="display:block;margin-left:20px;font-size:12px;color:var(--shell-fg-faint)">The named cards open; each carries its deadline.</span></label><label data-policy="wait_each" style="display:block;font-size:13px;color:var(--shell-fg);margin-top:6px"><input type="radio" name="policy" value="wait_each"/> Wait for me at each<span style="display:block;margin-left:20px;font-size:12px;color:var(--shell-fg-faint)">A card opens and waits after every phase — no deadlines.</span></label><label data-policy="run_to_completion" style="display:block;font-size:13px;color:var(--shell-fg);margin-top:6px"><input type="radio" name="policy" value="run_to_completion"/> Run to completion<span style="display:block;margin-left:20px;font-size:12px;color:var(--shell-fg-faint)">Named approvals resolve by policy; spend and refusal cards still wait for you.</span></label></fieldset><fieldset style="border:none;margin:12px 0 0;padding:0"><legend style="font-size:13px;font-weight:600;color:var(--shell-fg-muted)">Deadlines by approval</legend><table data-override-grid="true" style="margin-top:6px;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:2px 12px 2px 0;color:var(--shell-fg-faint)">Approval</th><th style="text-align:left;padding:2px 12px 2px 0;color:var(--shell-fg-faint)">Default</th><th style="text-align:left;padding:2px 0;color:var(--shell-fg-faint)">This project</th></tr></thead><tbody><tr data-override-row="confirm_cost"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Confirm the cost</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">168 h</td><td style="padding:3px 0"><span data-never-override="true" style="color:var(--shell-fg-faint)">always waits for you</span></td></tr><tr data-override-row="approve_plan"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve the plan</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">24 h</td><td style="padding:3px 0"><select name="ov_approve_plan" aria-label="Approve the plan — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="172800000">48 h</option></select></td></tr><tr data-override-row="approve_scope"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve scope</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><select name="ov_approve_scope" aria-label="Approve scope — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="7200000">2 h</option><option value="86400000">24 h</option><option value="259200000">72 h</option></select></td></tr><tr data-override-row="approve_triage"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve triage</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><select name="ov_approve_triage" aria-label="Approve triage — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="7200000">2 h</option><option value="86400000">24 h</option><option value="259200000">72 h</option></select></td></tr><tr data-override-row="approve_outline"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve the outline</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><select name="ov_approve_outline" aria-label="Approve the outline — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="7200000">2 h</option><option value="86400000">24 h</option><option value="259200000">72 h</option></select></td></tr><tr data-override-row="approve_sample"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve the sample</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">24 h</td><td style="padding:3px 0"><select name="ov_approve_sample" aria-label="Approve the sample — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="172800000">48 h</option></select></td></tr><tr data-override-row="approve_cutlist"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Approve the cut list</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">2 h</td><td style="padding:3px 0"><select name="ov_approve_cutlist" aria-label="Approve the cut list — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="14400000">4 h</option></select></td></tr><tr data-override-row="choose_thesis"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Choose a thesis</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><select name="ov_choose_thesis" aria-label="Choose a thesis — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="7200000">2 h</option><option value="86400000">24 h</option><option value="259200000">72 h</option></select></td></tr><tr data-override-row="continue_rounds"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Continue?</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><select name="ov_continue_rounds" aria-label="Continue? — This project" style="font-size:12px"><option value="" selected="">default</option><option value="wait">wait for me</option><option value="7200000">2 h</option><option value="86400000">24 h</option><option value="259200000">72 h</option></select></td></tr><tr data-override-row="spend_overrun"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Spend overrun</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">wait for me</td><td style="padding:3px 0"><span data-never-override="true" style="color:var(--shell-fg-faint)">always waits for you</span></td></tr><tr data-override-row="resume_partial"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">Resume from the partial</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">720 h</td><td style="padding:3px 0"><span data-never-override="true" style="color:var(--shell-fg-faint)">always waits for you</span></td></tr><tr data-override-row="refusal"><td style="padding:3px 12px 3px 0;color:var(--shell-fg)">The run refused</td><td style="padding:3px 12px 3px 0;color:var(--shell-fg-muted)">168 h</td><td style="padding:3px 0"><span data-never-override="true" style="color:var(--shell-fg-faint)">always waits for you</span></td></tr></tbody></table></fieldset><button type="submit" style="margin-top:10px;font-size:12px">Save approvals</button></form><div data-standing-guidance="true" style="margin-top:14px;padding:10px 14px;border:1px solid var(--shell-border);border-radius:8px"><h3 style="font-size:13px;font-weight:600;color:var(--shell-fg-muted);margin:0 0 6px">Standing notes</h3><p style="font-size:12px;color:var(--shell-fg-faint);margin:4px 0">No standing notes yet — “…and remember this for this project” on any approval adds one.</p><form style="margin-top:8px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap" action="/p/showcase/guidance" method="post"><input type="text" required="" placeholder="e.g. Prefer direct quotes over paraphrase" style="flex:1 1 240px;font-size:13px;padding:6px 10px;border-radius:7px;border:1px solid var(--shell-border);background:var(--shell-bg);color:var(--shell-fg)" name="body"/><input type="text" aria-label="Applies to" placeholder="all workflows" style="font-size:12px;padding:5px 8px;border-radius:7px;border:1px solid var(--shell-border);background:var(--shell-bg);color:var(--shell-fg);width:140px" name="workflows"/><button type="submit" style="font-size:12px">Add a standing note</button></form></div></section><div data-voice-picker="true" style="margin-top:20px;padding:10px 14px;border:1px solid var(--shell-border);border-radius:8px;max-width:68ch"><h2 style="font-size:13px;font-weight:600;color:var(--shell-fg);margin:0 0 6px">Voice</h2><form action="/p/showcase/voice" method="post"><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--shell-fg-muted);flex-wrap:wrap"><select name="personaId" style="font-size:13px"><option value="" selected="">No voice (ad-hoc)</option><option value="01M4XCRWBWSTZEG8VVG9HWZ62D">JRN-2E362972F79D-VOICEA</option><option value="01M4XGFG99EBCANKRSFRHX48QB">JRN-21E6BE472D54-VOICEA</option><option value="01M4XS120SKYNF32KEZAJVZ53G">JRN-36C84434353F-VOICEA</option></select><span style="font-size:12px;color:var(--shell-fg-faint)">This project writes with an ad-hoc voice.</span></label><button type="submit" style="font-size:12px;margin-top:6px">Save</button></form></div><div style="margin-top:20px"><section data-decisions-list="true"><h2 style="font-size:15px;font-weight:600;color:var(--shell-fg);margin:0 0 8px">Decisions</h2><p data-decisions-empty="true" style="font-size:13px;color:var(--shell-fg-muted);margin:0">Nothing is waiting on your call.</p></section></div></div></main><aside class="ide-margin" data-pane="margin" aria-label="Findings" role="complementary"><span class="sr-only">Finding markers</span></aside></div><button type="button" class="ide-handle" data-ide-handle="timeline" aria-hidden="true" tabindex="-1"></button><aside class="ide-timeline" data-pane="timeline" data-open="true" aria-label="Timeline"><div class="ide-pane-head"><span>Timeline</span><button type="button" data-ide-timeline-toggle="true" aria-label="Close Timeline" style="margin-left:auto">×</button></div><div class="ide-tl-body"><div data-timeline-pane="true" style="font-size:13px"><div data-timeline-verbs="true" style="display:flex;gap:8px;margin-bottom:12px"><a href="/p/showcase/run?workflow=draft" data-verb="draft" style="font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg);text-decoration:none">Draft ▾</a><a href="/p/showcase/run?workflow=review" data-verb="review" style="font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg);text-decoration:none">Review ▾</a><a href="/p/showcase/run?workflow=revise" data-verb="revise" style="font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg);text-decoration:none">Revise ▾</a></div><div data-next-step="review" style="border:1px solid var(--shell-border);border-radius:12px;padding:12px 16px;margin-bottom:14px;background:var(--shell-raised)"><a href="/p/showcase/run" style="font-weight:600;color:var(--shell-fg)">Review v2</a><span style="margin-left:8px;font-size:12px;color:var(--shell-fg-muted);font-variant-numeric:tabular-nums">est. 3,462 cr</span><span data-next-step-duration="true" style="margin-left:8px;font-size:12px;color:var(--shell-fg-faint);font-variant-numeric:tabular-nums">~28–53 min</span></div><section data-round="1" style="margin-bottom:16px"><p data-round-summary="true" style="margin:0;font-size:12px;color:var(--shell-fg-muted)"><span>v1</span><span> → review (6)</span></p><ul style="list-style:none;margin:8px 0;padding:0"><li data-timeline-run="01M4XCGEQ250TANHRSYXRNZ90R" style="margin-bottom:10px"><p style="margin:0 0 4px;font-size:12px;color:var(--shell-fg-muted)">review · 2026-10-14</p><section data-run-card="01M4XCGEQ250TANHRSYXRNZ90R" data-run-state="completed" style="border:1px solid var(--shell-border);border-radius:12px;background:var(--shell-surface);padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:14px;color:var(--shell-fg)">Completed</span><span data-credits="true" style="font-size:12px;color:var(--shell-fg-muted);font-variant-numeric:tabular-nums">3,860 / 5,850 cr</span></div><div aria-hidden="true" style="height:4px;border-radius:999px;background:var(--shell-raised);overflow:hidden;margin-bottom:12px"><div data-credit-meter="true" style="width:66%;height:100%;background:var(--state-running)"></div></div><ul style="list-style:none;margin:0;padding:0"><li data-phase="intake" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>intake</span></li><li data-phase="craft" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>craft</span></li><li data-phase="verification" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>verification</span></li><li data-phase="discourse" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>discourse</span></li><li data-phase="second_read" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>Second read (independent)</span></li><li data-phase="argument" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>argument</span></li><li data-phase="letter" data-phase-status="done" style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--shell-fg);font-size:13px"><span aria-hidden="true" style="width:14px;color:var(--state-ready)">✓</span><span>letter</span></li></ul><p data-estimate="true" style="margin-top:10px;margin-bottom:0;font-size:12px;color:var(--shell-fg-muted);font-variant-numeric:tabular-nums">3,860 cr spent · est. 3,900</p><ul data-deliverables="true" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0"><li data-deliverable="letter" style="font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg-muted)">Letter</li><li data-deliverable="findings" style="font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg-muted)">6 findings</li><li data-deliverable="claims" style="font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg-muted)">6 claims</li><li data-deliverable="response" style="font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--shell-border);color:var(--shell-fg-muted)">Response</li></ul><div data-walkthrough="failed" style="margin-top:10px;font-size:13px"><p style="margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--shell-fg-muted)">What it delivered</p><p style="margin:0;color:var(--shell-fg-muted);font-size:12px">The walkthrough couldn&#x27;t be written — retry when ready.</p></div><div data-run-actions="true" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px"><a href="/p/showcase/review/01M4XCGEQ250TANHRSYXRNZ90R" style="font-size:12px">Open the delivered review</a><a href="/p/showcase/r/01M4XCGEQ250TANHRSYXRNZ90R#report" data-run-report="" style="font-size:12px">Run report</a><form style="display:inline" action="/p/showcase/r/01M4XCGEQ250TANHRSYXRNZ90R/walkthrough" method="post"><button type="submit" data-run-action="retry_walkthrough" style="font-size:12px">Retry</button></form></div></section></li></ul><span data-version-chip="1" style="font-size:12px;color:var(--shell-fg-muted);font-variant-numeric:tabular-nums"><a href="/p/showcase/v/1" style="color:inherit">v1</a></span></section><p data-origin-chip="outline" style="margin-top:8px;font-size:12px;color:var(--shell-fg-faint)">Outline</p></div></div></aside></div><section class="ide-desk" data-pane="desk" aria-label="Desk"><div class="ide-desk-head"><div class="ide-desk-tabs" role="tablist" aria-label="Desk"><button type="button" role="tab" data-ide-desk-tab="chat" aria-selected="true">Chat</button><button type="button" role="tab" data-ide-desk-tab="feed" aria-selected="false">Live feed</button><button type="button" role="tab" data-ide-desk-tab="findings" aria-selected="false">Findings</button><button type="button" role="tab" data-ide-desk-tab="claims" aria-selected="false">Claims</button></div><button type="button" data-ide-desk-toggle="true" aria-label="Close Desk" style="color:var(--shell-fg-muted);background:none;border:none;cursor:pointer">×</button></div><div class="ide-desk-body" role="tabpanel"><div data-desk-panel="chat"><div class="chat-desk" data-chat="1" data-chat-thread="01M4XCGPT1MTFMF9D4EFHMXYCH"><div class="chat-body"><div class="chat-threads" role="navigation" aria-label="Threads"><ul style="list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap"><li><a href="/p/showcase?thread=01M4XCGPT1MTFMF9D4EFHMXYCH#chat" data-chat-thread-link="01M4XCGPT1MTFMF9D4EFHMXYCH" aria-current="true" style="font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--shell-line);color:var(--shell-fg);text-decoration:none">Project chat ·</a></li></ul></div><div class="chat-log" data-chat-log="true" aria-live="polite"><p style="color:var(--shell-fg-muted);font-size:13px">Nothing here yet — ask a question, or start with a chip above.</p></div><details class="chat-remembers" data-chat-remembers="true"><summary style="font-size:12px">What the assistant remembers</summary><form style="margin-top:6px" action="/p/showcase/chat/corrections" method="post"><input type="hidden" name="threadId" value="01M4XCGPT1MTFMF9D4EFHMXYCH"/><textarea name="text" rows="2" placeholder="Correct something the assistant remembers…" style="width:100%;font-size:12px"></textarea><button type="submit">Save correction</button></form></details><div class="chat-pins" data-chat-pins="true"><strong style="font-size:12px">Pinned</strong><span style="font-size:11px;color:var(--shell-fg-faint);margin-left:6px">0 pins · footprint 0</span><ul style="list-style:none;margin:4px 0;padding:0"></ul><form style="display:flex;gap:6px" action="/p/showcase/chat/pins" method="post"><input type="hidden" name="threadId" value="01M4XCGPT1MTFMF9D4EFHMXYCH"/><input placeholder="Pin a fact or reference…" aria-label="Pin a fact or reference…" style="flex:1;font-size:12px" name="summary"/><button type="submit">Pin</button></form></div><div class="chat-sources" data-chat-sources="true"><strong style="font-size:12px">Chat sources</strong><p style="font-size:12px;color:var(--shell-fg-muted)">No sources yet — they land here from research and attachments.</p></div></div><form class="chat-composer" data-chat-composer="true" action="/p/showcase/chat/turns" method="post"><input type="hidden" name="threadId" value="01M4XCGPT1MTFMF9D4EFHMXYCH"/><textarea name="message" rows="2" required="" placeholder="Ask about this project…" aria-label="Ask about this project…" style="width:100%;font-size:13px"></textarea><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="submit">Send</button><span role="radiogroup" aria-label="Model tier" style="display:inline-flex;gap:4px"><label data-chat-tier="base" style="font-size:12px"><input type="radio" name="modelTier" checked="" value="base"/> Base</label><label data-chat-tier="balanced" style="font-size:12px"><input type="radio" name="modelTier" value="balanced"/> Balanced</label><label data-chat-tier="frontier" style="font-size:12px"><input type="radio" name="modelTier" value="frontier"/> Frontier</label></span><span data-chat-strip="true" style="font-size:12px;color:var(--shell-fg-faint);margin-left:auto">0/40 credits · 0/5 searches · 0/10 fetches</span></div></form></div></div><div data-desk-panel="feed" aria-live="polite"><p>No run activity yet.</p></div><div data-desk-panel="findings"><div data-ide-state="empty-findings" style="color:var(--shell-fg-muted);font-size:13px">No findings yet.</div></div><div data-desk-panel="claims"><p>No claims yet.</p></div></div></section><footer class="ide-statusbar" aria-label="Status"><span>v2</span><span class="ide-count" data-status-words="true" data-fmt="{n} words">374 words</span><span class="ide-count" data-status-readmin="true" data-fmt="{n} min read">2 min read</span><span style="margin-left:auto"></span><button type="button" data-ide-theme-menu="true" aria-haspopup="menu" aria-expanded="false">Theme</button></footer><div class="ide-menu" data-ide-menu="view" role="menu" aria-label="View" hidden=""><button type="button" role="menuitemradio" aria-checked="true" data-ide-view="write" class="ide-menu-row">Write</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-view="read" class="ide-menu-row">Read</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-view="focus" class="ide-menu-row">Focus</button><div class="ide-menu-sep"></div><button type="button" role="menuitemcheckbox" aria-checked="true" data-ide-toggle="findingCards" class="ide-menu-row">Finding cards</button><button type="button" role="menuitemcheckbox" aria-checked="true" data-ide-toggle="suggestionsInline" class="ide-menu-row">Inline suggestions</button><button type="button" role="menuitemcheckbox" aria-checked="false" data-tier="advanced" data-ide-toggle="authorship" class="ide-menu-row">Authorship</button><button type="button" role="menuitemcheckbox" aria-checked="false" data-ide-toggle="advanced" class="ide-menu-row">Advanced</button><div class="ide-menu-sep"></div><div class="ide-menu-note">Serif paper / Sans paper</div><button type="button" class="ide-menu-row" data-ide-font="serif" role="menuitemradio" aria-checked="true">Serif paper</button><button type="button" class="ide-menu-row" data-ide-font="sans" role="menuitemradio" aria-checked="false">Sans paper</button><div class="ide-menu-sep"></div><button type="button" class="ide-menu-row" data-ide-reader="down">Smaller text</button><button type="button" class="ide-menu-row" data-ide-reader="up">Bigger text</button></div><div class="ide-menu" data-ide-menu="theme" role="menu" aria-label="Theme" hidden=""><div class="ide-menu-note">Theme</div><button type="button" role="menuitemradio" aria-checked="true" data-ide-theme="dark" class="ide-menu-row">Dark</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-theme="light" class="ide-menu-row">Light</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-theme="auto" class="ide-menu-row">Auto (system)</button><div class="ide-menu-sep"></div><div class="ide-menu-note">Paper</div><button type="button" role="menuitemradio" aria-checked="true" data-ide-paper="light" class="ide-menu-row">Pinned light</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-paper="follow" class="ide-menu-row">Follow app theme</button><button type="button" role="menuitemradio" aria-checked="false" data-ide-paper="dark" class="ide-menu-row">Pinned dark</button></div><div class="ide-palette" data-ide-palette="true" role="dialog" aria-label="Command palette" aria-modal="true" hidden="" data-palette-sections="{&quot;run&quot;:&quot;Run&quot;,&quot;goto&quot;:&quot;Go to&quot;,&quot;recent&quot;:&quot;Recent runs&quot;,&quot;threads&quot;:&quot;Threads&quot;,&quot;settings&quot;:&quot;Settings&quot;}" data-palette="{&quot;projectSlug&quot;:&quot;showcase&quot;,&quot;nextStep&quot;:{&quot;command&quot;:&quot;/review&quot;,&quot;label&quot;:&quot;Review&quot;,&quot;estimateCredits&quot;:3462},&quot;goto&quot;:[{&quot;label&quot;:&quot;v1&quot;,&quot;path&quot;:&quot;/p/showcase/v/1&quot;,&quot;keywords&quot;:[&quot;v1&quot;,&quot;version&quot;]},{&quot;label&quot;:&quot;New obligation…&quot;,&quot;path&quot;:&quot;/p/showcase/obligations/new&quot;,&quot;keywords&quot;:[&quot;obligation&quot;,&quot;new&quot;,&quot;add&quot;,&quot;track&quot;]}],&quot;recentRuns&quot;:[{&quot;label&quot;:&quot;review · completed&quot;,&quot;path&quot;:&quot;/p/showcase/r/01M4XCGEQ250TANHRSYXRNZ90R&quot;,&quot;keywords&quot;:[&quot;review&quot;,&quot;completed&quot;]}],&quot;settings&quot;:[{&quot;label&quot;:&quot;Project settings&quot;,&quot;path&quot;:&quot;/p/showcase/settings&quot;},{&quot;label&quot;:&quot;Account settings&quot;,&quot;path&quot;:&quot;/app/settings/account&quot;},{&quot;label&quot;:&quot;Usage&quot;,&quot;path&quot;:&quot;/usage&quot;},{&quot;label&quot;:&quot;Billing&quot;,&quot;path&quot;:&quot;/app/settings/billing&quot;},{&quot;label&quot;:&quot;Project usage&quot;,&quot;path&quot;:&quot;/p/showcase/usage&quot;}]}" data-palette-search="/p/showcase/palette-search"><input type="text" data-palette-input="true" placeholder="Type / for a command, or search…" aria-label="Type / for a command, or search…" autoComplete="off" spellCheck="false"/><div data-palette-results="true" role="listbox" aria-label="Nothing matches."></div><div data-palette-empty="true" hidden="">Nothing matches.</div></div><div class="ide-cheatsheet" data-ide-cheatsheet="true" role="dialog" aria-label="Keyboard" hidden=""><div class="ide-cheatsheet-card"><div class="ide-pane-head"><span>Keyboard</span><button type="button" data-ide-cheatsheet-close="true" aria-label="Close">×</button></div><ul><li class="ide-cheatsheet-row"><kbd>⌘K</kbd><span>Command palette</span></li><li class="ide-cheatsheet-row"><kbd>⌘1 · ⌘2 · ⌘J</kbd><span>Files · Timeline · Desk</span></li><li class="ide-cheatsheet-row"><kbd>⌘⇧M · ⌘⇧F · ⌘⇧L · ⌘⇧T</kbd><span>View menu · Focus · Paper theme · Triage</span></li><li class="ide-cheatsheet-row"><kbd>⌘S</kbd><span>Mark a named restore point</span></li><li class="ide-cheatsheet-row"><kbd>⌘⇧R</kbd><span>Run the next step</span></li><li class="ide-cheatsheet-row"><kbd>⌘⇧D · ⌘⇧E · ⌘⇧V</kbd><span>Draft · Review · Revise sheets</span></li><li class="ide-cheatsheet-row"><kbd>⌘G · ⌘I · ⌘,</kbd><span>Oldest open approval · Inbox · Project settings</span></li><li class="ide-cheatsheet-row"><kbd>?</kbd><span>This cheat sheet</span></li><li class="ide-cheatsheet-row"><kbd>J/K · P · A D R F E · Enter/Esc</kbd><span>Findings — in the Findings list only</span></li><li class="ide-cheatsheet-row"><kbd>⌘⇧C · [ · ] · ⌘Z/⌘⇧Z</kbd><span>Compare · versions · undo/redo</span></li></ul></div></div></div><script nonce="2AzTjpe7iuBHzypr5cA62g==" src="/assets/ide.js" defer></script><script nonce="2AzTjpe7iuBHzypr5cA62g==">(function(){var s="project",t0=Date.now();function beat(){var ms=Date.now()-t0;if(ms<4000)return;t0=Date.now();var b=JSON.stringify({surface:s,ms:ms});if(navigator.sendBeacon){navigator.sendBeacon("/a/dwell",new Blob([b],{type:"application/json"}));}else{fetch("/a/dwell",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true});}}setInterval(function(){if(document.visibilityState==="visible")beat();},30000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")beat();});})();</script></body></html>

@@ -1,0 +1,13 @@
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-7G/pExKjH7y6rv31D5GBpw=='; style-src 'self' 'unsafe-inline'; img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self' wss://rhema.tools https://storage.googleapis.com; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://billing.stripe.com https://buy.stripe.com https://accounts.google.com
+content-type: text/html; charset=UTF-8
+referrer-policy: strict-origin-when-cross-origin
+x-content-type-options: nosniff
+x-rhema-request-id: 8d314949c0980d5fd1ec5790fbdeb9cc
+x-cloud-trace-context: 8d314949c0980d5fd1ec5790fbdeb9cc;o=1
+date: Wed, 14 Oct 2026 23:59:30 GMT
+server: Google Frontend
+content-length: 29623
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000
+

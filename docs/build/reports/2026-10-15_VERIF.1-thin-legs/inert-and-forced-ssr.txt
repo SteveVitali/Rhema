@@ -1,0 +1,18 @@
+=== inert-override legs on the deployed tip (session: jrn-a) ===
+GET /app?ssr=1 (+plain) → 200 data-renderer="spa"
+GET /app?renderer=spa (+plain) → 200 data-renderer="spa"
+GET /app (+x-rhema-renderer: ssr) → 200 data-renderer="spa"
+
+=== showcase forced-SSR document (session) ===
+GET /p/showcase → 200
+data-renderer="ssr"
+data-ssr-cause="showcase"
+src="/assets/ide.js"
+src="/assets/page.js"
+
+=== phone-UA forced-SSR leaf (no session needed for verdict) ===
+GET /p/showcase/v/working (iPhone UA) → 200
+data-renderer="ssr"
+data-ssr-cause="phone"
+src="/assets/ide.js"
+src="/assets/page.js"

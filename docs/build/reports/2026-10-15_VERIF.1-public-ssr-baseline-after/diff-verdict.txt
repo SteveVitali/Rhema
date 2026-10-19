@@ -1,0 +1,6 @@
+/ semantic fields MATCH | markers.dataRenderer null → "ssr" (allowed) | bytes 29555 → 29623
+/pricing semantic fields MATCH | markers.dataRenderer null → "ssr" (allowed) | bytes 31939 → 31994
+/signup semantic fields MATCH | markers.dataRenderer null → "ssr" (allowed) | bytes 13028 → 13082
+/login semantic fields MATCH | markers.dataRenderer null → "ssr" (allowed) | bytes 12496 → 12549
+/showcase semantic fields MATCH | markers.dataRenderer null → "ssr" (allowed) | bytes 19683 → 19759
+DIFF VERDICT: all semantic fields match; only allowed marker/byte deltas

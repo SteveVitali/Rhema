@@ -1,0 +1,18 @@
+D-SPACAP.2-4 — zero-CSP-warning walk + header contract, prod @ ffbb8ad (2026-10-15)
+
+(a) per-step capture: every leg in the 2026-10-14_VERIF.1-surfaces composed run +
+    the dfix12/t13f reruns reports consoleErrors:[] + failedRequests:[] (the single
+    historical exception — T13F's apply-POST 502 on 2026-10-15T00:2xZ — was a server-side
+    fixture defect, not a CSP violation; the repaired leg re-ran clean with empty arrays).
+    assertBundleParity (REQ-TL-13) held on every leg — no console error passed silently.
+(b) header contract on an authenticated flagged doc (session: jrn-a):
+    GET https://rhema.tools/app → 200
+    content-security-policy: default-src 'self';
+      script-src 'self' 'nonce-PGUN3tivMoS3j9dhZZCCAg=='   ← nonce present; NO unsafe-eval / unsafe-inline
+      style-src 'self' 'unsafe-inline'                      ← style-only inline allowed by design
+      img-src 'self' https://usercontent.rhema.tools data:
+      connect-src 'self' wss://rhema.tools https://storage.googleapis.com
+      font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';
+      form-action 'self' + stripe/google checkout origins
+VERDICT: PASS — nonce'd script-src without unsafe-eval/unsafe-inline on a flagged SPA document;
+         zero CSP/console/request failures across the walked surfaces.
