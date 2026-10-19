@@ -1,0 +1,94 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "5e5d0bfd8ab6",
+  "startedAt": "2026-10-14T15:44:23.500Z",
+  "finishedAt": "2026-10-14T15:50:54.592Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "d5a74cc",
+    "observed": {
+      "web": "d5a74cc",
+      "api": "d5a74cc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "R6F",
+      "journey": "both",
+      "owner": "SPA.22",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15609,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "R6F.png"
+    },
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14373,
+      "error": "the ?obligated= landing shows no obligated notice",
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 13099,
+      "error": "the seeded dossier carries no suggestion-bearing finding — the fixture regressed",
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "PUT https://storage.googleapis.com/rhema-prod-user-content/quarantine/01M4XHDE1P6W89V0YDTASNDBVE/01M4XHDN5VWPMDC3B1YGW21E1A?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-prod-api%40rhema-507501.iam.gserviceaccount.com%2F20261014%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261014T154514Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=4e64b3c6b761178406fae50f1f071ae3ef6d568d0f5af477b87848b13c2e4b3928da326dc9ad53edf925e1ab2800206261da04e443a96497b47dfdc0a4fa22a2e8903d3659a93fd6ec742e467cf7a908230e1d5f40087a56e96f774ad7a808e988bc3fd9de59ff50a250e8386d0c1646717fb260ccfbd947ac1e638eb5cde03d33d8a63981a4d54fe4caf44626b93dcdda2d435a593ea133722ed1130ac7c051f83024b87e72786548964c16af550146bd2450718ee3c9bae23335d74f9310835d848fe322466e158bdd2534a781708ef7d7bf0eaa8deaaaa5cd25a3ee8d2f658bb37669e0a2e5321af42ec1f9fc9e66c99cc12ed884014955aadd563987b858 net::ERR_ABORTED"
+      ],
+      "durationMs": 339226,
+      "error": "failed requests on visited pages: PUT https://storage.googleapis.com/rhema-prod-user-content/quarantine/01M4XHDE1P6W89V0YDTASNDBVE/01M4XHDN5VWPMDC3B1YGW21E1A?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-prod-api%40rhema-507501.iam.gserviceaccount.com%2F20261014%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261014T154514Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=4e64b3c6b761178406fae50f1f071ae3ef6d568d0f5af477b87848b13c2e4b3928da326dc9ad53edf925e1ab2800206261da04e443a96497b47dfdc0a4fa22a2e8903d3659a93fd6ec742e467cf7a908230e1d5f40087a56e96f774ad7a808e988bc3fd9de59ff50a250e8386d0c1646717fb260ccfbd947ac1e638eb5cde03d33d8a63981a4d54fe4caf44626b93dcdda2d435a593ea133722ed1130ac7c051f83024b87e72786548964c16af550146bd2450718ee3c9bae23335d74f9310835d848fe322466e158bdd2534a781708ef7d7bf0eaa8deaaaa5cd25a3ee8d2f658bb37669e0a2e5321af42ec1f9fc9e66c99cc12ed884014955aadd563987b858 net::ERR_ABORTED",
+      "screenshot": "T5.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8519,
+      "error": "no project.purge job queued for 01M4XHR0CPVTCYTG5DZR89GZR8 — the delete enqueued nothing",
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}

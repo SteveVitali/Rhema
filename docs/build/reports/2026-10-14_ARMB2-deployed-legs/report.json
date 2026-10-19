@@ -1,0 +1,63 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "e1c7d8eb422f",
+  "startedAt": "2026-10-14T17:53:04.552Z",
+  "finishedAt": "2026-10-14T17:53:58.463Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+    "observed": {
+      "web": "ffbb8ad01b4383ab7f11088c8427b668bc442b01",
+      "api": "ffbb8ad01b4383ab7f11088c8427b668bc442b01"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14848,
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31206,
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7583,
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": true
+}

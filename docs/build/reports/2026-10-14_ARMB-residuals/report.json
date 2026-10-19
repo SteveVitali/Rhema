@@ -1,0 +1,95 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "c18872724415",
+  "startedAt": "2026-10-14T16:02:31.362Z",
+  "finishedAt": "2026-10-14T16:04:59.903Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "d5a74cc",
+    "observed": {
+      "web": "d5a74cc",
+      "api": "d5a74cc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 47192,
+      "error": "page.textContent: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-credits-line]')\n",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8633,
+      "error": "the project page has no Edit source affordance",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://7f5289a90e5e.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://acc15d2c56f3.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 45509,
+      "error": "N9 billing Buy 1,000 credits: not in the DOM",
+      "screenshot": "N9.png"
+    },
+    {
+      "id": "T17",
+      "journey": "both",
+      "owner": "SPA.25",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12916,
+      "error": "the source view did not seed the canonical markdown",
+      "screenshot": "T17.png"
+    },
+    {
+      "id": "T3",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 33726,
+      "error": "the import did not land on notice=imported (https://rhema.tools/app/settings/data) — D-STB.5a-2",
+      "screenshot": "T3.png"
+    }
+  ],
+  "passed": false
+}

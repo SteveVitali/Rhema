@@ -177,6 +177,10 @@ async function presignPut(f: File): Promise<string> {
     headers: { ...pre.requiredHeaders },
     body: f,
   });
+  // fetch resolves on headers — drain the body so Chromium closes the request entry; an
+  // unconsumed body stays pending until the next document nav aborts it (live: the
+  // requestfailed sweep flagged ERR_ABORTED on PUTs whose bytes had landed).
+  await put.arrayBuffer().catch(() => new ArrayBuffer(0));
   if (!put.ok) throw new BffError(put.status, "upload_failed", { detail: `upload PUT ${put.status}` });
   return pre.key;
 }
