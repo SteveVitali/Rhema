@@ -15,9 +15,16 @@ and the machine ledger + build index were reconstructed from git and the pull re
 build finally has a committed completion record.
 
 - `LEDGER.md` — the machine-state file (`orchestrate-build` and `drive-build.sh` parse it): CURRENT
-  STATE / OPEN FINDINGS / GATE DECISIONS / RETURN PASS / PHASE LOG.
+  STATE / OPEN FINDINGS / GATE DECISIONS / RETURN PASS / PHASE LOG. The PHASE LOG rotates one
+  `## PHASE LOG — Round <n>` region per build round (REQ-MEM-4, HYGIENE.1): when a new round's
+  first entry lands, append the round's `##` heading *after* the previous region's last line —
+  older regions stay byte-frozen (append-only), and the checker's per-region rules judge only the
+  current region.
 - `BUILD_INDEX.md` — one row per landed chain row (one per PR #1–#25).
 - `runs/<ID>.md` — the `implement-spec` run ledger for each ticket · `pr/<ID>.md` — its PR body.
+  Entry-ID convention (REQ-MEM-5): `<ID>` is the ticket/run id verbatim (`HYGIENE.1`, `ARMB.2`) and
+  BUILD_INDEX `evidence` cells point at `runs/<ID>.md` (else `pr/<ID>.md`); a dated operational run
+  that is not one ticket keeps `runs/<NAME>-<YYYY-MM-DD>.md` (e.g. `runs/ARMB-2026-10-14.md`).
 - `readouts/GATE-G<k>.md` — gate readouts (append-only) · `planning/` — re-planning rounds.
 - `tools/`, `fixtures/`, `reports/` — committed · `logs/` — the one gitignored subtree.
 
