@@ -25,6 +25,7 @@ export {
   seedShowcaseProject,
   seedWritableDossier,
   seedDeliveredRunReport,
+  seedOpenApprovalGate,
   SHOWCASE_FIXTURE_CLAIMS,
   SHOWCASE_FIXTURE_FINDINGS,
   type ShowcaseSeedDeps,

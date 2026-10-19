@@ -287,7 +287,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T12F",
     journey: "both",
     asserts:
-      "on the seeded writable dossier: a defer disposition + note round-trips a reload, Add-to-obligations lands ?obligated, and /obligations/new files a user row the export summary lists (T12's free twin — the seeded-dossier sub-steps REQ-VFY-10 owed)",
+      "on the seeded writable dossier: a defer disposition + note round-trips a reload, Add-to-obligations captures the POST status and waits the ?obligated notice attach (REQ-FIX-T12F — a repaint lag is never read as a missing notice), and /obligations/new files a user row the export summary lists (T12's free twin — the seeded-dossier sub-steps REQ-VFY-10 owed)",
     owner: "SPA.21",
     expected: "red",
     paid: false,
@@ -316,7 +316,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T15",
     journey: "both",
     asserts:
-      "an open approval's Inbox row lands the focused ?gate= card at the head of the artifact with live decide controls (D-P1.19-1 deep-link leg — owed while no open gate exists)",
+      "the seeded open approve_triage gate (waiting_gate run — seedOpenApprovalGate, no run launched) lists the Inbox row whose ?gate= deep link lands the focused card at the head of the artifact with live decide controls (D-P1.19-1 deep-link leg; D-CAP.1-1's named carrier — REQ-FIX-T15)",
     owner: "STB.5a",
     expected: "red",
     paid: true,
@@ -325,7 +325,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T16",
     journey: "both",
     asserts:
-      "a fact change on a profiled persona lands a group-3 stale-voice row and the digest claims it once (D-P1.19-1 — owed: no test tenant carries persona_profiles; asserts the no-profile negative today)",
+      "the no-profile negative, then a seeded persona_profiles snapshot + a real pasted sample lands the group-3 stale-voice row (samples_changed via the shared deriveVoiceStatus read — D-P1.19-1; the Monday-digest claim half stays clock-owed on D-FIX.1-4)",
     owner: "STB.5a",
     expected: "red",
     paid: true,
@@ -334,7 +334,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T17",
     journey: "both",
     asserts:
-      "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — the toggle only exists on data-renderer=spa; SPA.28 deleted the SSR-pin channel, so every authenticated stage answers `spa` here; D-SPA.25-1)",
+      "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — the toggle only exists on data-renderer=spa; SPA.28 deleted the SSR-pin channel, so every authenticated stage answers `spa` here; D-SPA.25-1). REQ-FIX-T17: the leg waits for [data-page-view] content before interacting — the mount attribute precedes the first block paint",
     owner: "SPA.25",
     expected: "red",
     paid: false,
@@ -404,11 +404,14 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   },
   {
     // SPA.21 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
-    // D-SPA.21-1); a red-step failure reports `owed`, it never gates.
+    // D-SPA.21-1); a red-step failure reports `owed`, it never gates. FIX.1 (REQ-FIX-P1D): the leg
+    // rides a real mobile userAgent context (injected UA-CH headers lost to Chromium's desktop
+    // hint) and asserts the document's own phone classification — data-ssr-cause="phone" on the
+    // forced-SSR verdict or data-device="phone" on a shell — BEFORE the §10.1 capability sweep.
     id: "P1.dossier",
     journey: "phone",
     asserts:
-      "the dossier (/p/:p/review/:runId via /showcase) at phone width under either renderer: the letter arm + finding cards render, the §10.1 capability boundary holds (no bulk affordances mount — the Desk is display:none), overflow + axe clean, never a blank",
+      "the dossier (/p/:p/review/:runId via /showcase) at phone width: the document self-classifies phone (data-ssr-cause='phone' / data-device='phone') BEFORE the capability sweep, then the letter arm + finding cards render and the §10.1 boundary holds (no bulk controls, no [data-apply] desk affordance mounts), overflow + axe clean, never a blank",
     owner: "UX.2",
     expected: "red",
     paid: false,
@@ -554,7 +557,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T8",
     journey: "both",
     asserts:
-      "the export token gate answers 404 to a bogus token (the 410 expired-link half is owed — the 26h test-tenant purge deletes the row before its 7-day expiry can ever fire)",
+      "the export token gate answers 404 to a bogus token, and — when JOURNEY_T8_EXPORT_TOKEN binds a backdated mint (scripts/live/mint-t8-export.mjs, operator-run) — a real 410 export_link_expired (FIX.1's un-owed arm; the mint itself stays operator-gated)",
     owner: "STB.5a",
     expected: "red",
     paid: false,

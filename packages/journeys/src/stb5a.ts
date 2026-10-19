@@ -10,7 +10,8 @@
 import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "playwright";
 import pg from "pg";
-import { seedDeliveredRunReport, seedWritableDossier, type MigrationDb } from "@rhema/db";
+import { sha256Hex } from "@rhema/contracts";
+import { seedDeliveredRunReport, seedOpenApprovalGate, seedWritableDossier, type MigrationDb } from "@rhema/db";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
@@ -848,7 +849,9 @@ const T7: StepFn = async (ctx) => {
  *  route while the row's own ready link answered bytes in T3. A live expired token can never be
  *  produced on this tenant class: the row is workspace-scoped and the 26 h test-tenant purge
  *  deletes it before the 7-day expiry ever fires (the ticket's clock-rule options ii/iii both need
- *  a purge exemption or an operator hand-date). */
+ *  a purge exemption or an operator hand-date). FIX.1 ships the operator hand-date:
+ *  `scripts/live/mint-t8-export.mjs` (D-FIX.1-1) mints the backdated ready row; bound as
+ *  `JOURNEY_T8_EXPORT_TOKEN`, the leg's 410 arm runs for real. */
 const T8: StepFn = async (ctx) => {
   // anonymous — the token gate is unauthenticated; minting a user here would burn a magic-link
   // throttle slot for nothing (SEC.2's per-IP caps make every extra mint the run pays for real).
@@ -857,9 +860,27 @@ const T8: StepFn = async (ctx) => {
   if (bogus.status() !== 404) {
     throw new Error(`a bogus export token → ${bogus.status()}, expected the token gate's 404`);
   }
+  // REQ-FIX-T8 — the operator minted a backdated ready row (`scripts/live/mint-t8-export.mjs`,
+  // D-FIX.1-1) and bound its token here: the download must answer 410 `export_link_expired`.
+  const minted = process.env.JOURNEY_T8_EXPORT_TOKEN;
+  if (minted) {
+    const res = await context.request.get(
+      `${ctx.apiBaseUrl}/export/download?token=${encodeURIComponent(minted)}`,
+    );
+    if (res.status() !== 410) {
+      throw new Error(`the minted expired export token → ${res.status()}, expected the 410 expiry arm`);
+    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (body.error !== "export_link_expired") {
+      throw new Error(`the expired token answered ${JSON.stringify(body).slice(0, 120)}, not export_link_expired`);
+    }
+    assertBundleParity(ctx);
+    return;
+  }
   throw new Error(
     "owed — the 410 half needs a live expired token (7 d), which the 26 h test-tenant purge makes unreachable " +
-      "without a purge exemption or an operator hand-dated row; the fire date is recorded in DEFERRALS",
+      "without a purge exemption or an operator hand-dated row; the mint recipe + fire date are on D-FIX.1-1 " +
+      "(scripts/live/mint-t8-export.mjs → bind JOURNEY_T8_EXPORT_TOKEN)",
   );
 };
 
@@ -1189,10 +1210,30 @@ const T12F: StepFn = async (ctx) => {
   const oblBtn = page.locator("[data-add-obligation]").first();
   if ((await oblBtn.count()) > 0) {
     await assertClick(oblBtn, "the Add-to-obligations control");
+    // REQ-FIX-T12F — capture the POST's status AND wait for the notice to attach: a bare
+    // `count() === 0` read after the nav can't tell a repaint lag from a failed POST.
+    const postP = page
+      .waitForResponse(
+        (r) => r.request().method() === "POST" && /\/findings\/[^/]+\/obligations$/.test(new URL(r.url()).pathname),
+        { timeout: 20_000 },
+      )
+      .catch(() => null);
     await oblBtn.click();
+    const post = await postP;
     await page.waitForURL(/obligated=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
-    if ((await page.locator('[data-finding-notice="obligated"]').count()) === 0) {
-      throw new Error("the ?obligated= landing shows no obligated notice");
+    const notice = page.locator('[data-finding-notice="obligated"]');
+    try {
+      await notice.waitFor({ state: "attached", timeout: 15_000 });
+    } catch {
+      const status = post?.status();
+      const detail = await post?.text().catch(() => "");
+      throw new Error(
+        status == null
+          ? "the ?obligated= landing shows no obligated notice — no obligations POST was captured (a navigation/repaint race)"
+          : status >= 400
+            ? `the obligation POST failed → ${status}${detail ? ` (${detail.slice(0, 160)})` : ""} — a product failure, not a repaint race`
+            : `the ?obligated= landing shows no obligated notice after a ${status} POST — the redirect landed but the notice never painted (a repaint race)`,
+      );
     }
   }
 
@@ -1585,16 +1626,62 @@ const T14: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * FIX.1 (REQ-FIX-T15) — provision the seeded writable dossier on the leg's tenant AND park its
+ * review run at an unresolved `approve_triage` gate (`seedOpenApprovalGate`): the inbox's group-1a
+ * query needs `resolved_at is null`, `held = false`, `r.state = 'waiting_gate'`, and an
+ * owner-visible project — all four ride the seed. Idempotent on the per-leg slug base
+ * (`jrn-t15-gate`); the gate insert is idempotent on "an open gate already parks the run".
+ */
+async function seededGateDossier(email: string, tag: string): Promise<{ slug: string; runId: string; gateId: string }> {
+  const { tenantId, ownerId } = await tenantIdentity(email);
+  const client = await db().connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const res = await seedWritableDossier(migrationDbOf(client), {
+      workspaceId: tenantId,
+      ownerId,
+      ids: () => randomUUID(),
+      slugBase: `jrn-${tag}-gate`,
+      title: `JRN ${tag} gated dossier (seeded writable)`,
+      seedLabel: "journey-gate-seed",
+    });
+    const gate = await seedOpenApprovalGate(
+      migrationDbOf(client),
+      { ids: () => randomUUID() },
+      { runId: res.reviewRunId },
+    );
+    await client.query("commit");
+    return { slug: res.slug, runId: res.reviewRunId, gateId: gate.gateId };
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 /** T15 (RED; paid) — the `?gate=` click-through: an open approval's Inbox row lands the focused
- *  gate card at the head of the artifact (§5.11/§4.2). Owed while no open gate exists — the leg
- *  may not launch a run to park one (invariant #11), and every weekly leg launches with autorun. */
+ *  gate card at the head of the artifact (§5.11/§4.2). FIX.1 seeds the substrate — the leg may
+ *  not launch a run to park one (invariant #11): a `waiting_gate` run + unresolved
+ *  `approve_triage` gate on the returning tenant's seeded dossier. `JOURNEY_DATABASE_URL` unset ⇒
+ *  the step reports owed, never fabricates. */
 const T15: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
+  const { page, email } = await ctx.returningUser("a");
+  const { gateId } = await seededGateDossier(email, "t15");
   await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
-  const gateRow = page.locator('[data-inbox-row][data-inbox-kind="gate"]').first();
+  // prefer the seeded gate's own row (its ?gate= href names it); any other open gate still proves
+  // the mechanism when the seed's row can't be singled out.
+  let gateRow = page.locator(
+    `[data-inbox-row][data-inbox-kind="gate"]:has(a[href*="gate=${gateId}"])`,
+  ).first();
+  if ((await gateRow.count()) === 0) {
+    gateRow = page.locator('[data-inbox-row][data-inbox-kind="gate"]').first();
+  }
   if ((await gateRow.count()) === 0) {
     throw new Error(
-      "no open approval gate on the tenant — the click-through is owed (no leg launches a gated run)",
+      `the seeded open gate ${gateId} renders no Inbox row — the group-1a gate query saw nothing`,
     );
   }
   const open = gateRow.locator("a[data-inbox-open]").first();
@@ -1618,37 +1705,96 @@ const T15: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/** FIX.1 (REQ-FIX-T16) — the `persona_profiles` substrate T16's stale-voice arm needs, WITHOUT the
+ *  paid profile run (invariant #11; ratified Q-ECON.g): a deterministic snapshot row keyed to the
+ *  persona's CURRENT facts — `seed_sha256` verbatim, an EMPTY included-corpus map, `built_at` now —
+ *  so the leg's own fact change (the paste sample) is what tips `deriveVoiceStatus` into
+ *  `samples_changed` through the shared read path. `JOURNEY_DATABASE_URL` unset ⇒ owed. */
+async function seedVoiceProfile(email: string, personaRef: string): Promise<void> {
+  const { tenantId } = await tenantIdentity(email);
+  const client = await db().connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const persona = (
+      await client.query(
+        `select id, seed_sha256 from personas
+          where (slug = $1 or id = $1) and workspace_id = $2 and deleted_at is null`,
+        [personaRef, tenantId],
+      )
+    ).rows[0] as { id: string; seed_sha256: string | null } | undefined;
+    if (!persona) throw new Error(`no persona row for ${personaRef} on ${tenantId} (the voice create did not land)`);
+    const already = (
+      await client.query(`select id from persona_profiles where persona_id = $1 order by built_at desc limit 1`, [
+        persona.id,
+      ])
+    ).rows[0] as { id: string } | undefined;
+    if (!already) {
+      await client.query(
+        `insert into persona_profiles
+           (id, persona_id, built_by_run_id, built_at, tier, seed_sha256, sample_set_hash,
+            sample_set, corpus_size_at_build, calibration_status, artifact_ids, build_note)
+         values ($1,$2,null,$3,'quick',$4,$5,'{}'::jsonb,0,'untested','{}',$6)`,
+        [
+          randomUUID(),
+          persona.id,
+          new Date().toISOString(),
+          persona.seed_sha256,
+          // sampleSetHash({}) — the frozen empty-corpus map's hash (sha256 of the empty join).
+          sha256Hex(""),
+          JSON.stringify({ seed: "journey-t16", note: "FIX.1 substrate — the leg's sample add is the fact change" }),
+        ],
+      );
+    }
+    await client.query("commit");
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 /** T16 (RED; paid) — the stale-voice leg (D-P1.19-1e): a fact change (a new sample) on a persona
- *  with a built profile lands a group-3 Inbox row, and the weekly digest claims it once. Owed: no
- *  test tenant carries a persona_profiles row — the profile build is a paid run this ticket may
- *  not launch (a Quick build is ~$1 and inside the cap, but invariant #11 forbids any run). What
- *  the leg CAN assert today: a sample added to a PROFILELESS persona produces NO stale row (the
- *  staleness signal correctly requires a built profile — REQ-PERSONA-13's facts basis). */
+ *  with a built profile lands a group-3 Inbox row, and the weekly digest claims it once. FIX.1
+ *  seeds the profile row directly (REQ-FIX-T16) — the paid build stays unlaunched. The leg keeps
+ *  the profileless negative (no profile ⇒ no stale row), then the seeded profile + the real
+ *  sample add must land the group-3 row. The Monday-digest claim half stays clock-owed (the sweep
+ *  is a weekly cron, not a substrate) — recorded on BL-22 / the FIX.1 row, not asserted here. */
 const T16: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
+  const { page, email } = await ctx.returningUser("a");
   const pid = await createVoice(page, ctx, "T16VOICE");
-  // a fact change — add a paste sample through the real form.
+  // the profileless negative — staleness must NOT compute without a built profile
+  // (REQ-PERSONA-13's facts basis).
+  await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
+  if (
+    (await page.locator(`[data-inbox-section="voices"] [data-inbox-row]:has-text("T16VOICE")`).count()) > 0
+  ) {
+    throw new Error("a stale-voice row landed for a persona with NO profile — staleness computed without a profile");
+  }
+  // seed the built-profile snapshot (empty corpus), then the real fact change through the form.
+  await seedVoiceProfile(email, pid);
   await gotoOk(page, `${ctx.webBaseUrl}/v/${pid}?tab=samples`);
   const pasteForm = page.locator("[data-samples-form]").first();
-  if ((await pasteForm.count()) > 0) {
-    const area = pasteForm.locator("textarea").first();
-    if ((await area.count()) > 0) {
-      await area.fill(`${ctx.marker("SAMPLE")}\n\nA paragraph of new material — the fact change the staleness leg feeds on.`);
-      await pasteForm.locator('button[type="submit"], button:not([type])').first().click();
-      await settleNav(page, ctx);
-    }
+  if ((await pasteForm.count()) === 0) {
+    throw new Error("the voice samples tab renders no paste form — the fact change cannot land");
   }
+  const area = pasteForm.locator("textarea").first();
+  if ((await area.count()) === 0) throw new Error("the samples form renders no paste textarea");
+  await area.fill(`${ctx.marker("SAMPLE")}\n\nA paragraph of new material — the fact change the staleness leg feeds on.`);
+  await pasteForm.locator('button[type="submit"], button:not([type])').first().click();
+  await settleNav(page, ctx);
   await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
   const staleFor = await page
     .locator(`[data-inbox-section="voices"] [data-inbox-row]:has-text("T16VOICE")`)
     .count();
-  if (staleFor > 0) {
-    throw new Error("a stale-voice row landed for a persona with NO profile — staleness computed without a profile");
+  if (staleFor === 0) {
+    throw new Error(
+      "the seeded profile + new sample landed no group-3 stale-voice row — " +
+        "deriveVoiceStatus did not reach an attention state on the real fact change",
+    );
   }
-  throw new Error(
-    "owed — the built-profile half needs a paid voice build (a run this ticket may not launch): " +
-      "a stale group-3 row after a new sample + the Monday digest's single claim",
-  );
+  assertBundleParity(ctx);
 };
 
 export const STB5A_IMPLS: Readonly<Record<string, StepFn>> = {
