@@ -89,4 +89,8 @@ inside this head).
 
 ## CI
 
-_(recorded at closeout — exact-head read via `ci-boundary.sh --pr <n> --stack`)_
+`ci: pass #195@52389f4` — all five jobs (images / integration / contracts / public-safe /
+typecheck+lint+unit), run 39465573137, `ci-boundary.sh --pr 195 --stack` read
+2026-10-20T18:10:11Z. **The mount-settle class did not recur** (unit 32m24s, first
+attempt). A second consecutive green run is recorded in the run ledger at closeout —
+the BL-87 / D-R5REC.1-1 flips ride it per their verify clause.

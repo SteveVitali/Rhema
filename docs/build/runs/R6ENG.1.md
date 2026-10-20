@@ -10,8 +10,11 @@
 - **Requirement ids stamped:** REQ-ENG-1 REQ-ENG-4 REQ-ENG-5 REQ-ENG-6 REQ-ENG-8
 - **Live stage:** offline-only · **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-20T16:34:33Z
-- **Closed:** (pending)
-- **ci:** (pending)
+- **Closed:** 2026-10-20T18:1xZ (commit-A closeout; the BL-87/D-R5REC.1-1 flips ride commit B
+  on the second consecutive green CI read — their verify clause)
+- **ci:** pass #195@`52389f4` (run 39465573137 — all five jobs, first attempt; unit 32m24s
+  read through — zero mount-settle recurrence; boundary re-read 2026-10-20T18:10:11Z after
+  the images tail outlasted the 2700s bound, the #193 precedent)
 
 ## Deferrals read
 
@@ -162,8 +165,38 @@ re-proof already landed via D-CAP.3-1 2026-10-06). `D-P1.22-2` gets a dated disp
 
 ## Evidence log
 
-_(populated at Phase 5)_
+| gate | command | result |
+| --- | --- | --- |
+| turbo | `pnpm turbo build lint typecheck` | **135/135** |
+| tests | `pnpm test` | **502 files / 5,827 pass / 4 skip / 0 fail** |
+| licenses | `pnpm check:licenses` | 822 packages OK |
+| markers | `pnpm check:protocol-markers` | 248 files clean |
+| cookies | `pnpm check:no-cookies` | 257 surfaces clean |
+| budget | `pnpm check:spa-budget` | ceilings held |
+| env | `pnpm check:spa-env` | 115 sources clean |
+| dom | `pnpm check:dom-contract` | journey ⊆ manifest ⊆ emitted ⊆ asserted |
+| build-memory | `check-build-memory.sh .` | **0 violations** (7 pre-existing legacy warnings) |
+| append-only | `check-append-only.mjs --base e4a43a2` | OK |
+| drift | `cirep1-drift-audit.mjs` | `NO DRIFT` (47 manifests) |
+| matrix | `check-coverage-matrix.test.mjs` | 6/6 |
+| flake loop | vitest × 25 on the two files | **25/25 clean** — `flake-iterations.md` |
+| provenance | two test files | **22 green** — exact/drift/code/non-ancestor/outside-repo arms |
 
 ## Evidence report
 
-_(populated at Phase 6)_
+PR **#195** `stevevitali/r6eng-1-ci-provenance-hygiene` → `stevevitali/r6-planning-corpus`
+(OPERATOR — unmerged). Carries the round-6 planning/decomposition commits
+(r5-synthesis → #172 precedent). Head `52389f4`.
+
+**CI read (exact head):** `ci: pass #195@52389f4` — images / integration / contracts /
+public-safe / typecheck+lint+unit all pass, run 39465573137, read 2026-10-20T18:10:11Z
+via `ci-boundary.sh --pr 195 --stack` (record `/tmp/…/ci-boundary.qoczm3`; the images tail
+outlasted the first 2700s bound → job-polled → boundary re-read, the #193 precedent).
+`typecheck / lint / unit` green **32m24s first attempt — zero mount-settle recurrence.**
+
+**AC layer statement:** every engineered AC is offline-verified except the AC's first
+clause — "two consecutive green full-suite CI runs" needs a second head's read: commit A
+(this one) triggers run #2; the BL-87 + D-R5REC.1-1 flips land in commit B only on that
+second green, per the deferral's verbatim verify clause. No live/deploy/nightly/funded
+claim is made anywhere — REQ-ENG-8's first real nightly read is R6SWP.1's; BL-74's
+scheduled-nightly evidence stays owed.
