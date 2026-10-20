@@ -21,6 +21,15 @@
 > **D-R5OPS.1-2** — contract ruled **API-minted signed URLs** (moves out of (e) → a post-deploy
 > engineering leg, `R6POST.3`); **G2/H2** — stays (h) parked with a named revisit (R6TAIL.1 /
 > first nightly green). Effective (e) count drops by ~2 (D-R5OPS.1-2 out; D-P0.15-4 half-ruled).
+>
+> **Batch 2 (same session):** **cost levers ruled on projections** — `D-COST.1-3`/`D-OPS.2-2`:
+> (a) worker right-size **conditional-authorized** (REQ-ENG-7 soak → REQ-DISC-4 flip, −$26/mo);
+> (c) SQL f1-micro + (e) proxy MIG **REJECTED**; (b) GKE spot + (d) Redis removal **PARKED**
+> pending designs; (f) HA set **unruled/parked**. The ruling half of the lever rows is discharged;
+> the execution half (soak + flip) is engineering/posture work — effective (e) drops by ~2
+> (D-COST.1-3, D-OPS.2-2). **H8 scheduling ruled "split sessions"** — session-1 acts anytime,
+> session-2 browser legs post-deploy; the ~20 BL-86 items stay owed as acts, not rulings.
+> Honest cost floor now ~$172/mo — the ~$50 target is not reachable under these rulings.
 
 ## 0. Counting method (reproducible)
 

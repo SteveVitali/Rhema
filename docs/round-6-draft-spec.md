@@ -89,6 +89,9 @@ are spec-stable, never reused.)
 - `REQ-ENG-6` memory hygiene: BL-02 cell-shape sweep verified clean; flagged backlog rows (BL-06,
   BL-74, BL-80, BL-82, BL-24/22 partial flags) dispositioned — flipped with evidence or re-parked
   with a named residual. (R6TAIL-adjacent)
+- `REQ-ENG-7` cold-import soak: reproduce `D-P0.15h-3`'s throttled cold-import failure mode at the
+  right-sized worker shape (0.5vCPU/512Mi) — the `D-COST.1-3` (a) precondition. Evidence = the soak
+  report; only soak-green unlocks REQ-DISC-4's authorized flip. (D-COST.1-3 (a))
 
 **AC:** `pnpm turbo build lint typecheck` + `pnpm test` + all six `check:*` green; two consecutive
 full-suite CI greens post-ENG-1; no deferral cell edited without evidence.
@@ -135,6 +138,13 @@ free legs; no leg claims green without its committed evidence.
   (`GOLDEN_BUDGET_RULING=approved` one-shot + measured `--scores` + score-floor gate +
   exit-readout flip). The recurring-cadence half stays owed on `D-P0.15-4`, ruled on the
   validation evidence. (D-P0.15-4, BL-36)
+- `REQ-DISC-4` worker right-size flip (**conditional authorization RULED 2026-10-20**): once
+  REQ-ENG-7's soak is green, the one stage-fact field
+  (`cloudRun.services.worker.resources` 1vCPU/1Gi → 0.5/512Mi) flips via `pulumi up` on prod
+  (−$26/mo); `billing-read.mjs` recomputation + §13.5 probes appended to the run report. The
+  remaining levers are dispositioned by ruling: (c) SQL f1-micro REJECTED, (e) proxy MIG REJECTED,
+  (b) GKE spot and (d) Redis removal PARKED pending designs, (f) HA set UNRULED/parked.
+  (D-COST.1-3, D-OPS.2-2)
 
 ### REQ-CLK-* — clock-bound verification
 
@@ -176,8 +186,8 @@ free legs; no leg claims green without its committed evidence.
 | ~~envelope ruling~~ **RULED 2026-10-20 (GD-ENV.R6): ~$150 pinned-scope** | REQ-DISC-1 |
 | ~~golden ruling~~ **RULED IN PART 2026-10-20 (GD-R5OPS.1-1): one-time ≤$300 validation; recurring cadence deferred to evidence** | REQ-DISC-3 |
 | ~~CDN ruling~~ **RULED 2026-10-20: API-minted signed URLs** | REQ-POST-7 |
-| lever rulings | out-of-class levers (worker right-size, Cloud SQL HA, the three in-class COST levers) | D-OPS.2-2, D-COST.1-3 |
-| session items | H8 remainder per BL-86 checklist (invite mint, Stripe live-mode, admin key, pen test, exposure review, pricing/entitlement rulings, refund ruling, Google sign-in leg, leg-cap reconcile, browser session) | all (e)-class rows |
+| ~~lever rulings~~ **RULED 2026-10-20 (D-COST.1-3 + D-OPS.2-2 batch, on projections): (a) worker right-size conditional-authorized on soak-green (REQ-ENG-7 → REQ-DISC-4); (c) SQL f1-micro + (e) proxy MIG REJECTED; (b) GKE spot + (d) Redis PARKED pending designs; (f) HA set unruled/parked. Honest floor ~$172/mo — the ~$50 target is not reachable under this ruling** | REQ-DISC-4 + parked-lever rows |
+| session items — **scheduling RULED 2026-10-20: "Split sessions"** (acts remain owed) | session-1 (anytime): billing-export flip, guarded `--execute`s, `D-BL38.1-1` stamp ruling, product rulings (refund go-live, unit-econ, levers A+B); session-2 (post-deploy): browser/live legs (Google sign-in, Stripe, Safari editor, phone-width, pen test) | all (e)-class rows |
 | posture rulings | domains-bearing stage, Stripe-bearing stage (may be deferred — legs stay owed honestly) | class (c) rows |
 | misc rulings | `GD-RES.2-1` retro refund/relabel; D-ECON.1-2 cap input; D-RES.2-3 coverage class; D-DEF.4-3 go-live; D-ACT.1-3 flip; D-BL38.1-1 stamp shape; D-ECON.2-7 restore | respective rows |
 
