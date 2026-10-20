@@ -1,0 +1,99 @@
+# Decomposition prompt — round 6 (post-merge discharge + residual engineering)
+
+*DRAFT invocation record for `decompose-spec` — to run in `mode=extend` against the committed
+build memory **only after the operator signs off** `docs/round-6-draft-spec.md`. Written
+2026-10-20 on branch `stevevitali/r6-planning-corpus` (off chain tip `d8bfebc`) beside the census
+`docs/research/r6_open_work_census.md`. **Nothing below is ratified** — the manifest is untouched
+and `nextTicket` remains `(chain exhausted)` until the ratifying session.*
+
+## Invocation (proposed — run only post-sign-off)
+
+```
+decompose-spec spec=docs/round-6-draft-spec.md mode=extend \
+  ledger=true dispatch_target=subagent granularity=balanced \
+  tickets_dir=docs/tickets
+```
+
+## Binding constraints (from the spec + the 2026-10-19/20 operator rulings)
+
+- **mode=extend**: open a `### Round 6` banner in `docs/tickets/00_MANIFEST.md`'s chain table; fork
+  tickets from the then-current `chainTip` (the deployable tip — `d8bfebc` at prompt-freeze,
+  re-confirm at SETUP). Never rename existing ticket files; append under `## Plan extensions`.
+  Manifest numbering would resume at **row 176**.
+- **The census is the contract source.** Tickets cite `r6_open_work_census.md` row ids +
+  `round-6-draft-spec.md` REQ families (`REQ-ENG-*`, `REQ-POST-*`, `REQ-DISC-*`, `REQ-CLK-*`,
+  `REQ-TAIL-*`). Nothing restates design already landed.
+- **Deploy posture (operator ruling, ledgered 2026-10-20):** merge later; deploys operate from the
+  latest chain tip; prod stays `ffbb8ad` until the operator acts. No ticket performs a merge or a
+  `pulumi up` on prod — both stay `mergePolicy: OPERATOR` / Stage-B operator acts.
+- **Operator-owned (HUMAN/GATE rows, never implement-spec inputs):** the merge sweep (BL-01/BL-81),
+  deploy authorization, the fresh funded envelope (⚑ amount operator-owned — **never invent**),
+  `GD-R5OPS.1-1` golden ruling, the CDN delivery-contract ruling (D-R5OPS.1-2), out-of-class lever
+  rulings (D-OPS.2-2/D-COST.1-3), `GD-RES.2-1` retro ruling, the H8 session remainder (BL-86),
+  billing-export console flip (D-OPS.2-1), guarded `--execute` prod writes (D-FIX.1-1/-3),
+  posture-stage rulings (class c), product rulings (D-ECON.1-2, D-RES.2-3, D-DEF.4-3, D-ACT.1-3,
+  D-BL38.1-1, D-ECON.2-7).
+- **Hard ordering:**
+  - REQ-ENG tickets are offline and land first.
+  - REQ-POST legs all gate on the deployed tip + provenance match.
+  - The funded re-attempt gates on fresh envelope + deployed tip + `JOURNEY_FUNDED_STABLE_TAG`
+    tenant + system-role DSN; `funded-window.mjs --dry-run` must print 9/9; ordering
+    T9 → launchers → riders → B19C last-and-conditional; a second refusal is a finding, never spend.
+  - Clock items fire at their dates (~2026-10-30 purge verify; first-Monday digest claim; +30d
+    destruction; ≥24h post-flip billing read) wherever the chain happens to be.
+  - The cleanup wave (D-SPA.28-1) gates on ≥1 green scheduled nightly on `main` HEAD.
+  - REQ-RES.3's protocol fix (`REQ-ENG-3`) must land **before** any paid verification leg that would
+    re-drain a claim-scaled research budget.
+- **Honest accounting:** the funded wave is *carried* (bind refused 2026-10-16, $0 spent); no ticket
+  may describe it as run. No secrets in any artifact. Deferral cells flip only with evidence.
+- **Out of scope (hard):** G2/H2 eval program (BL-40/43/44/45 + D-P0.13-*/14-*), partner program
+  (BL-39), §16.4 marketing claims, 1.x spec-scheduled scope (BL-73), new feature work, standing
+  watches (BL-47/76/77/84 stay open as tracking).
+- **Tail**: `tail=full` — real reconciliation surface (backlog dispositions incl. the §5-flagged
+  near-dischargeable rows, spec fold-back BL-05, capstone append, ledger state by the closing run).
+
+## Candidate ticket table (dependency-ordered; decomposer may revise)
+
+| # | id | name | kind | deps | gate? | live? | size |
+|---|---|---|---|---|---|---|---|
+| 176 | `R6ENG.1` | in-tree repairs: mount-settle flake + sibling audit (D-R5REC.1-1/BL-87), SSE head-fix (D-SLO.1-6), RES.3 checkpointing contract (D-RES.3-1/BL-79), tsconfig dep-drift (CIREP.1), guard-binding convention doc (D-STB.5b-1/BL-72), BL-02 cell-shape sweep | implement | — | no | no (offline; 2 green CI runs) | L |
+| — | `176a_GATE-R6A` | **GATE** — round-6 authorization bundle: spec sign-off already landed at decomposition time; this pause collects deploy authorization + ruling pack (envelope, golden, CDN, levers, posture stages, session scheduling) | GATE (operator) | R6ENG.1 (or parallel) | yes | no | — |
+| — | `176b_HUMAN-R6H` | **HUMAN** — operator session: H8 remainder per BL-86 (invite mint+consume, Stripe live-mode ruling/legs, admin key, pen-test procurement, exposure review, unit-econ + refund + entitlement + misc rulings, billing-export flip, Google sign-in leg, leg-cap reconcile, browser-session legs per BL-32, guarded `--execute`s D-FIX.1-1/-3, D-BL38.1-1 stamp ruling) | HUMAN | 176a | — | operator live legs | — |
+| 177 | `R6POST.1` | post-deploy prod arms: `--expect-renderer ssr` re-proof (D-SPA.6-1), signed-in session legs (D-OPS.1-1), deep-link restore (D-CAP.1-1), two-tenant/read probes as needed, `balance_divergence` forensic classification (system-DSN read), T8 410 leg after the mint | implement | deploy of tip (operator) + 176a | after deploy | yes — prod reads/journeys, $0 legs | M |
+| 178 | `R6POST.2` | posture stages: domains-bearing stage legs (D-SPA.24-1 — N8/R10.keepalive collab) + Stripe-bearing stage legs (D-SPA.16-1/-20-1 — N9 billing walk) | implement | operator stage/stripe posture ruling (176a) | ruling-gated | yes — `pr-<n>`/posture stage | M |
+| 179 | `R6POST.3` | CDN repair leg: post-ruling signed-URL key + origin-read grant, `repair-cdn-delivery.mjs`, signed-delivery re-proof + usercontent header leg (D-R5OPS.1-2; D-P1.22-2 residual half) | implement | CDN ruling (176a) + deploy | ruling-gated | yes — prod | S |
+| — | `179a_GATE-R6B` | **GATE** — funded-window re-open: fresh envelope ruling ⚑ + deployed-tip provenance + tenant provisioning + dry-run 9/9 | GATE (operator) | deploy + 176a | yes | no | — |
+| 180 | `R6FND.1` | funded wave re-attempt: the 21 paid registry steps + paid new-visitor journey + carried legs (D-CAP.2-1, D-FIX.1-2 T15/T16, D-P0.15-3, D-PRB.02-3, D-PRB.04-2, D-P1.10-1/-11-1/-12-1/-14-1/-19-1/-21-2, D-DEF.1-1, D-RES.1-1/-2/-3, D-CITE.1-2/-3/-5, D-ECON.2-2/-3/-4, D-STB.5b-3/-5) — ordering T9→launchers→riders→B19C; refusal=report | implement | 179a GATE + REQ-ENG-3 landed | yes | yes — prod, funded (⚑ envelope) | XL |
+| 181 | `R6CLK.1` | clock-bound verifies: ~10-30 purge fire (D-BL38.1-2), Monday digest claim-once (D-FIX.1-4), +30d destruction (D-P1.04-2 — or operator hand-date), post-flip billed actuals (D-COST.1-1 after D-OPS.2-1), SLO window re-reads (D-SLO.1-5/-7/-8) | implement | dates; flip for -4 | no | yes — prod reads | S |
+| 182 | `R6SWP.1` | cleanup wave: SPA.28 flag-machinery deletion verification + entry-gate evidence (D-SPA.28-1), post-cleanup nightly green, residual doc cleanup | implement | REQ-POST-4 nightly green on main HEAD | no | yes — nightly evidence | M |
+| 183 | `R6TAIL.1` | reconcile + capstone tail: backlog dispositions (flagged BL-06/74/80/82 + BL-24/22 partial flags), BL-05 spec fold-back, coverage-matrix refresh, CLOSURE entry, PHASE LOG + state fields by this closing run | implement | all above | no | no | M |
+
+## Operator decisions that must land before decomposition is ratified
+
+1. **Spec sign-off** — this draft ratified or revised.
+2. **Deploy authorization** — merge sweep posture + `pulumi up` of the tip (ordered activation).
+3. **Fresh funded envelope** — ⚑ operator amount; the ~$60 bound already refused at $80.86
+   pinned-scope. `GD-FUNDED.1-1` CARRY stands; the *envelope number* needs re-ruling.
+4. **Golden ruling** — `GD-R5OPS.1-1` (~$150–300/night question).
+5. **CDN delivery-contract ruling** — repair posture for D-R5OPS.1-2.
+6. **Lever classes** — out-of-class levers (D-OPS.2-2, D-COST.1-3) ruled or parked.
+7. **Posture stages** — domains-bearing and Stripe-bearing stages authorized or deferred.
+8. **Session scheduling** — the R6H bundle sized (it can split across sessions; items are
+   independent).
+9. **Remaining product rulings** — `GD-RES.2-1`, D-ECON.1-2, D-RES.2-3, D-DEF.4-3, D-ACT.1-3,
+   D-BL38.1-1, D-ECON.2-7.
+
+## Partition guidance
+
+- **176 is the only zero-gate ticket** — land it first; it also removes the recurring flake that has
+  already cost three CI reruns.
+- **177/178/179 are disjoint live-leg tickets** — schedule in any order post-deploy; only 179 waits
+  on its ruling.
+- **180 is the spend ticket** — its dry-run + ordering + pause-sentinel machinery is already landed
+  (`funded-window.mjs`); the ticket is execution + per-leg evidence, not new machinery.
+- **181 can run opportunistically** — its verifies are reads at dates; keep it one ticket so clock
+  work has a single home.
+- **182 must not open early** — SPA.28's own entry gate requires the green nightly.
+- **183 is the only ticket that writes `projectStatus`/`lastCompleted`** — per ledger rules.
+- Traffic-bound residuals (class g) that outlive the round stay open with dated re-read notes —
+  closing them early would fabricate evidence.
