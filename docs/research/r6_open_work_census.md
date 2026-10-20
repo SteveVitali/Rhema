@@ -13,6 +13,15 @@
 `docs/round-6-draft-spec.md` (**DRAFT — unratified — pending operator sign-off**) and decomposed by
 `docs/decomposition-prompt-r6.md`. Nothing here merges, deploys, or spends.
 
+> **2026-10-20 amendment — operator rulings applied (GATE DECISIONS batch 1).** The class counts
+> below are as-compiled; four rulings landed after compilation: **GD-ENV.R6** — funded envelope
+> re-authorized at **~$150 pinned-scope** (class b's precondition is now deploy + tenant + DSN,
+> the ruling half discharged); **GD-R5OPS.1-1** — answered in part (**one-time ≤$300 post-deploy
+> golden validation**; nightly cadence declined; the recurring-cadence half stays in (e));
+> **D-R5OPS.1-2** — contract ruled **API-minted signed URLs** (moves out of (e) → a post-deploy
+> engineering leg, `R6POST.3`); **G2/H2** — stays (h) parked with a named revisit (R6TAIL.1 /
+> first nightly green). Effective (e) count drops by ~2 (D-R5OPS.1-2 out; D-P0.15-4 half-ruled).
+
 ## 0. Counting method (reproducible)
 
 `docs/tickets/DEFERRALS.md` is the authoritative source. Rows are `|`-delimited; the **status cell is

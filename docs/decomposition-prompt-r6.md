@@ -57,13 +57,14 @@ decompose-spec spec=docs/round-6-draft-spec.md mode=extend \
 | # | id | name | kind | deps | gate? | live? | size |
 |---|---|---|---|---|---|---|---|
 | 176 | `R6ENG.1` | in-tree repairs: mount-settle flake + sibling audit (D-R5REC.1-1/BL-87), SSE head-fix (D-SLO.1-6), RES.3 checkpointing contract (D-RES.3-1/BL-79), tsconfig dep-drift (CIREP.1), guard-binding convention doc (D-STB.5b-1/BL-72), BL-02 cell-shape sweep | implement | — | no | no (offline; 2 green CI runs) | L |
-| — | `176a_GATE-R6A` | **GATE** — round-6 authorization bundle: spec sign-off already landed at decomposition time; this pause collects deploy authorization + ruling pack (envelope, golden, CDN, levers, posture stages, session scheduling) | GATE (operator) | R6ENG.1 (or parallel) | yes | no | — |
+| — | `176a_GATE-R6A` | **GATE** — round-6 authorization bundle: spec sign-off already landed at decomposition time; this pause collects deploy authorization + the remaining ruling pack (**envelope, golden, and CDN were ruled 2026-10-20** — remaining: levers, posture stages, session scheduling, misc rulings) | GATE (operator) | R6ENG.1 (or parallel) | yes | no | — |
 | — | `176b_HUMAN-R6H` | **HUMAN** — operator session: H8 remainder per BL-86 (invite mint+consume, Stripe live-mode ruling/legs, admin key, pen-test procurement, exposure review, unit-econ + refund + entitlement + misc rulings, billing-export flip, Google sign-in leg, leg-cap reconcile, browser-session legs per BL-32, guarded `--execute`s D-FIX.1-1/-3, D-BL38.1-1 stamp ruling) | HUMAN | 176a | — | operator live legs | — |
 | 177 | `R6POST.1` | post-deploy prod arms: `--expect-renderer ssr` re-proof (D-SPA.6-1), signed-in session legs (D-OPS.1-1), deep-link restore (D-CAP.1-1), two-tenant/read probes as needed, `balance_divergence` forensic classification (system-DSN read), T8 410 leg after the mint | implement | deploy of tip (operator) + 176a | after deploy | yes — prod reads/journeys, $0 legs | M |
 | 178 | `R6POST.2` | posture stages: domains-bearing stage legs (D-SPA.24-1 — N8/R10.keepalive collab) + Stripe-bearing stage legs (D-SPA.16-1/-20-1 — N9 billing walk) | implement | operator stage/stripe posture ruling (176a) | ruling-gated | yes — `pr-<n>`/posture stage | M |
-| 179 | `R6POST.3` | CDN repair leg: post-ruling signed-URL key + origin-read grant, `repair-cdn-delivery.mjs`, signed-delivery re-proof + usercontent header leg (D-R5OPS.1-2; D-P1.22-2 residual half) | implement | CDN ruling (176a) + deploy | ruling-gated | yes — prod | S |
-| — | `179a_GATE-R6B` | **GATE** — funded-window re-open: fresh envelope ruling ⚑ + deployed-tip provenance + tenant provisioning + dry-run 9/9 | GATE (operator) | deploy + 176a | yes | no | — |
-| 180 | `R6FND.1` | funded wave re-attempt: the 21 paid registry steps + paid new-visitor journey + carried legs (D-CAP.2-1, D-FIX.1-2 T15/T16, D-P0.15-3, D-PRB.02-3, D-PRB.04-2, D-P1.10-1/-11-1/-12-1/-14-1/-19-1/-21-2, D-DEF.1-1, D-RES.1-1/-2/-3, D-CITE.1-2/-3/-5, D-ECON.2-2/-3/-4, D-STB.5b-3/-5) — ordering T9→launchers→riders→B19C; refusal=report | implement | 179a GATE + REQ-ENG-3 landed | yes | yes — prod, funded (⚑ envelope) | XL |
+| 179 | `R6POST.3` | usercontent delivery leg (**contract RULED 2026-10-20 — API-minted signed URLs**): GCS V4 signed-URL mint in the api, `usercontent-cdn-verify.mjs` probes re-pointed at the minted path, usercontent header leg (D-R5OPS.1-2; D-P1.22-2 residual half) — edge-signing repair not pursued | implement | deploy | no (ruled) | yes — prod | S |
+| 179a | `R6GLD.1` | golden validation (**RULED 2026-10-20, GD-R5OPS.1-1 in part**): one-time ≤$300 post-deploy run of `nightly-golden-driver.mjs` (`GOLDEN_BUDGET_RULING=approved` one-shot + measured `--scores` + score-floor flip); recurring-cadence half stays owed on D-P0.15-4 | implement | deploy | no (ruled) | yes — prod, ≤$300 | S |
+| — | `179b_GATE-R6B` | **GATE** — funded-window re-open: envelope already RULED 2026-10-20 (**~$150 pinned-scope, GD-ENV.R6**) — this pause collects deployed-tip provenance + tenant provisioning + dry-run 9/9 + the operator's go signal | GATE (operator) | deploy + 176a | yes | no | — |
+| 180 | `R6FND.1` | funded wave re-attempt: the 21 paid registry steps + paid new-visitor journey + carried legs (D-CAP.2-1, D-FIX.1-2 T15/T16, D-P0.15-3, D-PRB.02-3, D-PRB.04-2, D-P1.10-1/-11-1/-12-1/-14-1/-19-1/-21-2, D-DEF.1-1, D-RES.1-1/-2/-3, D-CITE.1-2/-3/-5, D-ECON.2-2/-3/-4, D-STB.5b-3/-5) — ordering T9→launchers→riders→B19C; refusal=report | implement | 179b GATE + REQ-ENG-3 landed | yes | yes — prod, funded (~$150 ruled) | XL |
 | 181 | `R6CLK.1` | clock-bound verifies: ~10-30 purge fire (D-BL38.1-2), Monday digest claim-once (D-FIX.1-4), +30d destruction (D-P1.04-2 — or operator hand-date), post-flip billed actuals (D-COST.1-1 after D-OPS.2-1), SLO window re-reads (D-SLO.1-5/-7/-8) | implement | dates; flip for -4 | no | yes — prod reads | S |
 | 182 | `R6SWP.1` | cleanup wave: SPA.28 flag-machinery deletion verification + entry-gate evidence (D-SPA.28-1), post-cleanup nightly green, residual doc cleanup | implement | REQ-POST-4 nightly green on main HEAD | no | yes — nightly evidence | M |
 | 183 | `R6TAIL.1` | reconcile + capstone tail: backlog dispositions (flagged BL-06/74/80/82 + BL-24/22 partial flags), BL-05 spec fold-back, coverage-matrix refresh, CLOSURE entry, PHASE LOG + state fields by this closing run | implement | all above | no | no | M |
@@ -72,10 +73,12 @@ decompose-spec spec=docs/round-6-draft-spec.md mode=extend \
 
 1. **Spec sign-off** — this draft ratified or revised.
 2. **Deploy authorization** — merge sweep posture + `pulumi up` of the tip (ordered activation).
-3. **Fresh funded envelope** — ⚑ operator amount; the ~$60 bound already refused at $80.86
-   pinned-scope. `GD-FUNDED.1-1` CARRY stands; the *envelope number* needs re-ruling.
-4. **Golden ruling** — `GD-R5OPS.1-1` (~$150–300/night question).
-5. **CDN delivery-contract ruling** — repair posture for D-R5OPS.1-2.
+3. ~~**Fresh funded envelope**~~ **RULED 2026-10-20 (GD-ENV.R6): ~$150 pinned-scope** —
+   measured $80.86 + declared caps $54.50 + ~$15 margin.
+4. ~~**Golden ruling**~~ **RULED IN PART 2026-10-20 (GD-R5OPS.1-1): one-time ≤$300
+   post-deploy validation;** nightly cadence declined, recurring deferred to evidence.
+5. ~~**CDN delivery-contract ruling**~~ **RULED 2026-10-20: API-minted signed URLs** —
+   edge-signing repair not pursued; D-R5OPS.1-2 becomes an engineering leg.
 6. **Lever classes** — out-of-class levers (D-OPS.2-2, D-COST.1-3) ruled or parked.
 7. **Posture stages** — domains-bearing and Stripe-bearing stages authorized or deferred.
 8. **Session scheduling** — the R6H bundle sized (it can split across sessions; items are

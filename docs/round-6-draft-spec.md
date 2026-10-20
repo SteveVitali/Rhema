@@ -14,6 +14,14 @@
 
 - **Unratified.** Round 6 exists only if the operator signs off on this spec; `nextTicket` remains
   `(chain exhausted)` and the manifest (rows 1–175 landed) is untouched by this document.
+- **2026-10-20 — operator rulings applied (GATE DECISIONS batch 1).** Four ⚑ items in this draft
+  are now ruled: the funded envelope is **re-authorized at ~$150 pinned-scope** (GD-ENV.R6);
+  `GD-R5OPS.1-1` is **answered in part — one-time ≤$300 post-deploy golden validation**, nightly
+  cadence declined; the CDN delivery contract is ruled **API-minted signed URLs**
+  (`D-R5OPS.1-2` → engineering leg, edge-repair not pursued); G2/H2 stays **parked with a named
+  revisit** (R6TAIL.1 / first nightly green). The remaining ⚑ items are: spec sign-off, deploy
+  authorization, cost-lever rulings, posture stages, session scheduling, and the misc rulings
+  in §6.
 - **Predecessor ruling recorded:** the 2026-10-19/20 operator posture — "I'll merge the stack later.
   For now, we work off the latest chain tip. You should just deploy from the chain tip later on." —
   is ledgered in `docs/build/LEDGER.md` PHASE LOG (2026-10-20 entry: merge later, deploy from tip,
@@ -102,25 +110,31 @@ Prerequisite: operator merge sweep + tip deploy; `check-deploy-provenance --expe
 - `REQ-POST-6` posture stages: domains-bearing stage for D-SPA.24-1's N8/R10.keepalive legs;
   Stripe-bearing stage for D-SPA.16-1/-20-1's N9 legs. (class c — needs ⚑ operator stage/stripe
   posture; may be deferred by ruling)
-- `REQ-POST-7` CDN repair leg **only after** the CDN delivery-contract ruling (⚑ operator):
-  signed-URL key + origin-read grant per `scripts/live/repair-cdn-delivery.mjs`, then the
-  signed-delivery legs re-run. (D-R5OPS.1-2, D-P1.22-2 residual)
+- `REQ-POST-7` CDN/usercontent delivery leg (**ruled 2026-10-20 — API-minted signed URLs**):
+  the delivery contract changes to GCS V4 signed URLs minted by the api; the
+  `usercontent-cdn-verify.mjs` probes re-point at the minted path; the edge-signing
+  origin-read repair is not pursued. (D-R5OPS.1-2, D-P1.22-2 residual)
 
 **AC:** each leg's report committed under `docs/build/reports/`; provenance match; $0 spend for
 free legs; no leg claims green without its committed evidence.
 
 ### REQ-DISC-* — operator-gated discharge
 
-- `REQ-DISC-1` funded wave re-attempt: gates — **fresh envelope ruling ⚑ operator** + deployed tip +
-  `JOURNEY_FUNDED_STABLE_TAG` tenant + system-role DSN; `funded-window.mjs --dry-run` 9/9 before any
-  dispatch; ordering T9 → launchers → riders → B19C last-and-conditional; per-leg `CapOverrunError`
-  armed. Covers D-CAP.2-1 + the 21 paid steps + every (b)-class row in the census. **If the bind
-  refuses again, the refusal is the finding** — reported, not spent past.
+- `REQ-DISC-1` funded wave re-attempt: gates — **envelope RULED 2026-10-20: ~$150 pinned-scope
+  (GD-ENV.R6)** + deployed tip + `JOURNEY_FUNDED_STABLE_TAG` tenant + system-role DSN;
+  `funded-window.mjs --dry-run` 9/9 before any dispatch; ordering T9 → launchers → riders →
+  B19C last-and-conditional; per-leg `CapOverrunError` armed. Covers D-CAP.2-1 + the 21 paid
+  steps + every (b)-class row in the census. **If the bind refuses again, the refusal is the
+  finding** — reported, not spent past.
 - `REQ-DISC-2` guarded substrate executes: `mint-t8-export.mjs --execute` (D-FIX.1-1),
   `seed-bl78-fixtures.mjs --execute` + `--entitlement` (D-FIX.1-3, D-STB.5b-4, D-MAINT.3-1) —
   operator-authorization-gated prod writes; rollback lines executed or recorded.
-- `REQ-DISC-3` golden run: **after** `GD-R5OPS.1-1` answers (⚑ operator) — nightly golden on a live
-  stage + score-floor gate + exit-readout flip. (D-P0.15-4, BL-36)
+- `REQ-DISC-3` golden run: **RULED IN PART 2026-10-20 (GD-R5OPS.1-1)** — the nightly cadence is
+  **declined** (~$150–300/night ≈ $4.5–9k/mo vs the $50/mo target); approved instead is a
+  **one-time ≤$300 post-deploy validation** of `nightly-golden-driver.mjs`
+  (`GOLDEN_BUDGET_RULING=approved` one-shot + measured `--scores` + score-floor gate +
+  exit-readout flip). The recurring-cadence half stays owed on `D-P0.15-4`, ruled on the
+  validation evidence. (D-P0.15-4, BL-36)
 
 ### REQ-CLK-* — clock-bound verification
 
@@ -159,9 +173,9 @@ free legs; no leg claims green without its committed evidence.
 |---|---|---|
 | spec sign-off | ratify/revise this draft | the round itself |
 | deploy authorization | merge sweep + `pulumi up` of the tip (ordered activation per BL-01/BL-81; segments per `INTEGRATION_PLAN.md` §R5 — record the executed order in the run) | REQ-POST-* |
-| envelope ruling | fresh funded-window cap (~$60 prior bound is stale — refused at $80.86 pinned-scope) — **amount ⚑ operator, never invented** | REQ-DISC-1 |
-| golden ruling | `GD-R5OPS.1-1` — nightly golden budget (~$150–300/night question) | REQ-DISC-3 |
-| CDN ruling | delivery-contract repair posture (signed-URL key + origin-read grant) | REQ-POST-7 |
+| ~~envelope ruling~~ **RULED 2026-10-20 (GD-ENV.R6): ~$150 pinned-scope** | REQ-DISC-1 |
+| ~~golden ruling~~ **RULED IN PART 2026-10-20 (GD-R5OPS.1-1): one-time ≤$300 validation; recurring cadence deferred to evidence** | REQ-DISC-3 |
+| ~~CDN ruling~~ **RULED 2026-10-20: API-minted signed URLs** | REQ-POST-7 |
 | lever rulings | out-of-class levers (worker right-size, Cloud SQL HA, the three in-class COST levers) | D-OPS.2-2, D-COST.1-3 |
 | session items | H8 remainder per BL-86 checklist (invite mint, Stripe live-mode, admin key, pen test, exposure review, pricing/entitlement rulings, refund ruling, Google sign-in leg, leg-cap reconcile, browser session) | all (e)-class rows |
 | posture rulings | domains-bearing stage, Stripe-bearing stage (may be deferred — legs stay owed honestly) | class (c) rows |
