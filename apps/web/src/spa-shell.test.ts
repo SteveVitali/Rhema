@@ -85,6 +85,9 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
     expect(html).toContain('data-device="desktop"');
     expect(html).toContain('data-project="acme"');
     expect(html).toContain('data-app-theme="light"');
+    // REQ-NAVT-1 (O2-F18): the committed-transition counter starts at "0" on the shell too —
+    // a document load landing a fresh "0" is the nav-mechanism detector.
+    expect(html).toContain('data-nav-count="0"');
     // REQ-SEQ-8: the shell carries data-renderer but NOT data-mounted — the client flips it after
     // first data paint (a [data-mounted] probe must never satisfy on a bare shell).
     expect(html).not.toContain("data-mounted");
@@ -158,15 +161,18 @@ describe("spaManifestEntry — the Vite manifest resolution (REQ-TL-4/5)", () =>
 });
 
 describe("SSR settle markers (REQ-SEQ-8; design/27)", () => {
-  it("every SSR document carries data-renderer=ssr + data-route + data-mounted", async () => {
+  it("every SSR document carries data-renderer=ssr + data-route + data-mounted + data-nav-count=0", async () => {
     const app = createWebApp(spaDeps({ session: () => null })); // the public docs render for an anonymous viewer
     const login = await (await app.request("/login")).text();
     expect(login).toContain('data-renderer="ssr"');
     expect(login).toContain('data-route="/login"');
     expect(login).toContain("data-mounted");
+    // REQ-NAVT-1 (O2-F18) — SSR documents carry the counter too: the reset IS the detector.
+    expect(login).toContain('data-nav-count="0"');
     const landing = await (await app.request("/")).text();
     expect(landing).toContain('data-route="/"');
     expect(landing).toContain("data-mounted");
+    expect(landing).toContain('data-nav-count="0"');
     const missing = await app.request("/nope");
     const body = await missing.text();
     expect(missing.status).toBe(404);

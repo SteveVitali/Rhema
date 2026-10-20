@@ -19,6 +19,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SPA_DOCUMENT_ROUTES } from "@rhema/contracts";
 import { createSpaRouter } from "./main.js";
+import { HeadManager } from "./head.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import { sessionQuery } from "./queries.js";
@@ -84,6 +85,7 @@ beforeEach(() => {
   docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
+  document.documentElement.removeAttribute("data-nav-count");
   document.title = "";
 });
 
@@ -165,6 +167,113 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
     await mountAt("/app/settings/billing", bootFor({ "/app/settings/billing": "spa" }), f);
     expect(docNavSpy).not.toHaveBeenCalled();
     expect(f.mock.calls.map((c) => c[0])).not.toContain("/session");
+  });
+});
+
+describe("the nav-mechanism contract (REQ-NAVT-1/2)", () => {
+  it("mounts at data-nav-count=0 — hydration is the seed run, never a transition", async () => {
+    // StrictMode double-invokes the mount effect — the key-seed guard means the second run
+    // can't count either, so a mounted-at-"0" read pins both hydration AND double-mount.
+    await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("0");
+  });
+
+  it("increments once per committed transition — push and replace both count", async () => {
+    const { router } = await mountAt(
+      "/usage",
+      bootFor({ "/usage": "spa", "/app/new": "spa" }),
+    );
+    await act(async () => {
+      await router.navigate({ to: "/app/new" });
+    });
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
+    await act(async () => {
+      await router.navigate({ to: "/usage", replace: true });
+    });
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("2");
+    // a search-delta commit counts too — it's a distinct committed location
+    await act(async () => {
+      router.history.push("/usage?archived=1");
+      await router.load();
+    });
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("3");
+  });
+
+  it("a Back pop counts as a committed transition — the restored entry's key differs", async () => {
+    const { router } = await mountAt(
+      "/usage",
+      bootFor({ "/usage": "spa", "/app/new": "spa" }),
+    );
+    await act(async () => {
+      await router.navigate({ to: "/app/new" });
+    });
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
+    await act(async () => {
+      router.history.back();
+      await router.load();
+    });
+    expect(router.state.location.pathname).toBe("/usage");
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("2");
+  });
+
+  it("data-mounted LEAVES while a nav pends — the mid-transition false-pass is closed (REQ-NAVT-2)", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const rootRoute = createRootRoute({
+      component: () => (
+        <>
+          <HeadManager />
+          <Outlet />
+        </>
+      ),
+    });
+    const routeA = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/a",
+      component: () => <main data-spa-surface>A</main>,
+    });
+    const routeB = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/b",
+      loader: () => gate,
+      pendingMs: 0,
+      component: () => <main data-spa-surface>B</main>,
+    });
+    const router = createRouter({
+      routeTree: rootRoute.addChildren([routeA, routeB]),
+      history: createMemoryHistory({ initialEntries: ["/a"] }),
+    });
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    mounted.push(root);
+    await act(async () => {
+      root.render(<RouterProvider router={router} />);
+      await router.load();
+    });
+    expect(document.documentElement.hasAttribute("data-mounted")).toBe(true);
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("0");
+    // commit the navigation but hold the loader — the pending window is now open.
+    let navDone: Promise<unknown> | undefined;
+    await act(async () => {
+      navDone = router.navigate({ to: "/b" });
+      await Promise.resolve();
+    });
+    expect(router.state.isLoading).toBe(true);
+    // data-route already flipped to the pending route, but the mounted marker must be GONE —
+    // before REQ-NAVT-2 the stale pair (`/b` + still-mounted) let a settle false-pass.
+    expect(document.documentElement.getAttribute("data-route")).toBe("/b");
+    expect(document.documentElement.hasAttribute("data-mounted")).toBe(false);
+    // the committed transition counted already — the tally is commit-scoped, not resolve-scoped.
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
+    release();
+    await act(async () => {
+      await navDone;
+    });
+    expect(document.documentElement.hasAttribute("data-mounted")).toBe(true);
+    expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
   });
 });
 

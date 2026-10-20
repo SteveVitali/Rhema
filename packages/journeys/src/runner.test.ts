@@ -93,13 +93,14 @@ function fakeCtxPage(opts: {
   docHtml: string;
   status?: number;
   contentType?: string;
+  resourceType?: string;
 }) {
   const listeners = new Map<string, ((arg: unknown) => void)[]>();
   const response = {
     url: () => opts.docUrl,
     status: () => opts.status ?? 200,
     headers: () => ({ "content-type": opts.contentType ?? "text/html" }),
-    request: () => ({ resourceType: () => "document" }),
+    request: () => ({ resourceType: () => opts.resourceType ?? "document" }),
     text: async () => opts.docHtml,
   };
   const page = {
@@ -128,7 +129,9 @@ function browserWithPages(pages: ReturnType<typeof fakeCtxPage>[]) {
     contexts: () => contexts,
     newContext: async (o?: Record<string, unknown>) => {
       newContextCalls.push(o ?? {});
-      return contexts[0]!;
+      // round-robin: each ctx.anon() wires the NEXT scripted page (single-anon tests are
+      // unaffected — they only ever take contexts[0]).
+      return contexts[(newContextCalls.length - 1) % contexts.length]!;
     },
   } as unknown as Browser;
   return { browser, newContextCalls };
@@ -225,6 +228,61 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
     await run([step("G13", "green")], { G13: async (ctx) => { await ctx.anon(); } }, false, { browser });
     expect(newContextCalls[0]).not.toHaveProperty("extraHTTPHeaders");
     expect(JSON.stringify(newContextCalls[0])).not.toContain("x-rhema-renderer");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NAVC.2 — the UNCONDITIONAL document-load counter (REQ-NAVT-3, O2-F20). It used to ride the
+// `expectRenderer` gate, so an unpinned run observed nothing and a mechanism assert would have
+// been blind; now the count is always live on `ctx.documentLoads` — only the renderer ASSERT
+// stays pin-gated.
+
+describe("runJourneys — the unconditional documentLoads counter (NAVC.2; REQ-NAVT-3, O2-F20)", () => {
+  const SSR = '<html data-renderer="ssr" data-route="/app" data-mounted data-nav-count="0">';
+
+  it("counts a served document with NO renderer pinned — the un-gating is the point", async () => {
+    const { browser } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
+    const r = await run(
+      [step("G20", "green")],
+      {
+        G20: async (ctx) => {
+          const { page } = await ctx.anon();
+          expect(ctx.documentLoads).toBe(0);
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+          expect(ctx.documentLoads).toBe(1); // live getter — the response listener wrote through
+          await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+          expect(ctx.documentLoads).toBe(2);
+        },
+      },
+      false,
+      { browser }, // deliberately NO expectRenderer — the count must not gate on it
+    );
+    expect(r.results[0]!.outcome).toBe("pass");
+  });
+
+  it("non-document / foreign / non-2xx / non-HTML responses never count", async () => {
+    const pages = [
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR, resourceType: "xhr" }),
+      fakeCtxPage({ docUrl: "https://checkout.stripe.com/c/pay/cs_1", docHtml: SSR }),
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR, status: 404 }),
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: "<svg/>", contentType: "image/svg+xml" }),
+    ];
+    const { browser } = browserWithPages(pages);
+    const r = await run(
+      [step("G21", "green")],
+      {
+        G21: async (ctx) => {
+          for (let i = 0; i < pages.length; i += 1) {
+            const { page } = await ctx.anon(); // each anon wires the next scripted page
+            await (page as unknown as { emitDoc(): Promise<void> }).emitDoc();
+          }
+          expect(ctx.documentLoads).toBe(0);
+        },
+      },
+      false,
+      { browser, expectRenderer: "ssr" }, // even pinned, a non-landed document must not count
+    );
+    expect(r.results[0]!.outcome).toBe("pass");
   });
 });
 

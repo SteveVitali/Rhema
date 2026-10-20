@@ -75,6 +75,22 @@ describe("route-aware document meta (UX.1)", () => {
   });
 });
 
+describe("the all-documents nav counter (REQ-NAVT-1, O2-F18)", () => {
+  it("every SSR document stamps data-nav-count=\"0\" — the reset IS the mechanism detector", () => {
+    for (const html of [
+      renderDocument("/", landingElement, {}),
+      renderDocument("/login", loginElement, {}),
+      renderDocument("/app", pageElement, {}),
+      renderDocument("/p/essay/run", landingElement, {
+        project: { title: "Essay", pill: "P", slug: "essay" },
+      }),
+      renderDocument("/nope", notFoundElement, {}),
+    ]) {
+      expect(html).toContain('data-nav-count="0"');
+    }
+  });
+});
+
 describe("one page-level <h1> per document (UX.1 — SectionTitle renders <h2>)", () => {
   it("the landing hero carries the only h1; section strips are h2", () => {
     const html = renderDocument("/", landingElement, {});
