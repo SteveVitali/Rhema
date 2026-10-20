@@ -382,3 +382,50 @@ each needs a status-flip ticket or R5REC.1-family reconcile pass, not silent clo
   operator's merge sweep lands the chain on main AND a deploy follows.
 - **Prod baseline is still `ffbb8ad`** (pre-chain); every (a)-class leg assumes the operator's
   deploy-from-tip act.
+
+## 8. Corrections — 2026-10-20 (orchestrator critique; append-only, rows above unedited)
+
+The operator retargeted round 6 to a public launch ("a fully production-ready public launch-ready
+deploy to rhema.tools, with no remaining deferred work"). A critique of this census against the
+live DEFERRALS cells and the canonical launch criteria found:
+
+1. **Mislabelled rows in §2 (g):**
+   - `D-SLO.1-7` is **`proxy_vs_sdk_cost_runs_over5pct_1h`** (four real-tenant attempts with
+     15.5–22.9% divergence), not "funnel page-load p95".
+   - `D-SLO.1-8` is **`egress_denied_10m`** (9–12 denials on `api.anthropic.com/api/hello` and
+     `/v1/messages?beta=true`), not "run-round e2e".
+2. **Misclassified class:** `D-SLO.1-5/-7/-8` each carry a $0 forensic lever that can be executed
+   now: the two named failed runs; `usage.reconcile` attribution; the egress-canary source read.
+   They are **(f)+(g)** — verdict and fix now, window re-read post-launch. The draft spec v0.2 homes
+   them to `REQ-FOR-1` + `REQ-WATCH-1`.
+3. **Launch prerequisites absent from the census** (it counted owed rows, not launch criteria):
+   - G2's hard launch gate (ADR-104) — resolved by ADR-111;
+   - §17 Phase-1 exit criteria — amended by ADR-111;
+   - `GD-BILL.3-1` purchase re-open, awaiting since 2026-10-02 and never in the round-6 ruling pack —
+     ruled `GD-LAUNCH-MONEY.R6`;
+   - the metered-debit flip preconditions in `docs/ops/debit-mode-flip.md`;
+   - legal/trust pages (none exist in `apps/` or `packages/`);
+   - backup-restore and rollback drills (never rehearsed);
+   - alert delivery to a real sink;
+   - the golden cohort's four-protocol coverage (the driver enumerates three fixture projects).
+4. **Rulings that changed rows after compilation:**
+   - `D-ECON.1-2` and `D-ACT.1-1` → **WONTFIX**.
+   - `D-DEF.4-3`/`D-ACT.1-3` → open at launch (superseding batch-3b "keep gated").
+   - `D-P1.22-3`, `D-P1.21-1`, `D-P1.17-1`, `D-PRB.01-2` → launch-blocking.
+   - `D-P0.15-4` → closes on the amended golden criterion.
+   - `D-R5OPS.1-1` → post-launch target.
+   - The HA set → ruled.
+
+   The class totals in §6 are as-compiled; the authoritative mapping is now
+   `docs/round-6-draft-spec.md` v0.2 §7.
+5. **Posture wording:** "prod baseline still `ffbb8ad` (pre-chain)" is imprecise. `ffbb8ad` is the
+   ARMB.2 head — round 4's Arm-B tip deploy (the SPA is live). What is undeployed is round 5 onward.
+6. **§0's counting snippet does not reproduce §0's numbers.** It loops the keywords in priority
+   order (`OPEN` first), so any cell whose dated tail mentions "OPEN" anywhere counts as OPEN. Run
+   at `cc33845+` it prints OPEN 227 / DONE 78 / PARTIAL 27. The stated rule is **positional**: the
+   first canonical token in cell order. The positional parse reproduces the census figures: at
+   2026-10-20 post-batch-4 it reads **DONE 193 / OPEN 67 / PARTIAL 29 / WONTFIX 43 = 332**
+   (69 → 67 OPEN = `D-ECON.1-2` + `D-ACT.1-1` → WONTFIX). The corrected regex is
+   `/(^|[^A-Z0-9-])(OPEN|PARTIAL|DONE|WONTFIX)(?=[^A-Z]|$)/` applied with `.match` (first
+   occurrence). A coverage check over all **96** OPEN/PARTIAL ids against
+   `docs/round-6-draft-spec.md` v0.2 found **0 unhomed rows**.

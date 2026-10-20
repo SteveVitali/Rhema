@@ -1,213 +1,491 @@
 <!--
-  docs/round-6-draft-spec.md — round-6 DRAFT specification.
+  docs/round-6-draft-spec.md — round-6 specification, v0.2.
 
-  STATUS: **DRAFT — unratified — pending operator sign-off.**
-  This is a planning artifact commissioned 2026-10-19/20 on branch
-  `stevevitali/r6-planning-corpus` (off chain tip `d8bfebc`). It does NOT ratify round 6, edits no
-  manifest row, opens/closes no deferral, schedules no deploy, and authorizes no spend. Every
-  operator-owned quantity is marked ⚑ operator — no amount is invented here.
+  STATUS: **DRAFT v0.2 — unratified — pending operator sign-off.**
+  v0.1 (2026-10-20, commit 196161a) scoped round 6 as "post-merge discharge". v0.2 (2026-10-20, same
+  day) retargets it to a **public launch of rhema.tools with no remaining deferred work**, per the
+  operator directive and the twelve batch-4 rulings (LEDGER § GATE DECISIONS ### Round 6), after an
+  orchestrator critique found v0.1 could not reach launch. It edits no manifest row and closes no
+  deferral. It authorizes nothing beyond the recorded rulings and the scoped `GD-DEPLOY.R6`
+  pre-authorization.
 -->
 
-# Round 6 — post-merge discharge + residual engineering — DRAFT
+# Round 6 — public launch readiness — DRAFT v0.2
 
-## 0. Status and authority
+## 0. Status, authority, and what changed from v0.1
 
-- **Unratified.** Round 6 exists only if the operator signs off on this spec; `nextTicket` remains
-  `(chain exhausted)` and the manifest (rows 1–175 landed) is untouched by this document.
-- **2026-10-20 — operator rulings applied (GATE DECISIONS batch 1).** Four ⚑ items in this draft
-  are now ruled: the funded envelope is **re-authorized at ~$150 pinned-scope** (GD-ENV.R6);
-  `GD-R5OPS.1-1` is **answered in part — one-time ≤$300 post-deploy golden validation**, nightly
-  cadence declined; the CDN delivery contract is ruled **API-minted signed URLs**
-  (`D-R5OPS.1-2` → engineering leg, edge-repair not pursued); G2/H2 stays **parked with a named
-  revisit** (R6TAIL.1 / first nightly green). The remaining ⚑ items are: spec sign-off, deploy
-  authorization, cost-lever rulings, posture stages, session scheduling, and the misc rulings
-  in §6.
-- **Predecessor ruling recorded:** the 2026-10-19/20 operator posture — "I'll merge the stack later.
-  For now, we work off the latest chain tip. You should just deploy from the chain tip later on." —
-  is ledgered in `docs/build/LEDGER.md` PHASE LOG (2026-10-20 entry: merge later, deploy from tip,
-  corpus commissioned). Merge sweep stays `mergePolicy: OPERATOR`; production remains `ffbb8ad`
-  until the operator acts.
-- **What round 6 is:** discharge and verification of the 98 open/partial deferral rows + open
-  backlog/finding items censused in `docs/research/r6_open_work_census.md` — i.e., proving landed
-  code true on live stages, running carried live legs, executing operator-gated substrates, and a
-  small set of in-tree repairs. **What it is not:** new product construction, new features, new
-  surfaces, or marketing/efficacy claims.
+- **Unratified.** Round 6 exists once the operator signs off on this version. `nextTicket` stays
+  `(chain exhausted)` until `decompose-spec mode=extend` lands the manifest rows.
+- **Objective (operator, 2026-10-20, verbatim):** "by the end of this next orchestrate-build drive we
+  have a fully production-ready public launch-ready deploy to rhema.tools, with no remaining deferred
+  work."
+- **Done means** (`GD-DONE.R6`, "Zero launch-blocking + owned"): round 6 closes with **zero
+  launch-blocking OPEN rows**. Every other row is closed on evidence, WONTFIX by ruling, or converted
+  to a dated, owned post-launch obligation with live alerting, read by the in-round post-launch
+  ticket (§4.9). Nothing is carried silently.
+- **Authority:** all operator rulings of 2026-10-19/20 (LEDGER § GATE DECISIONS — the legacy table's
+  2026-10-20 rows and `### Round 6`), **ADR-111** (launch decoupled from G2; §17 exit row amended),
+  and the dated §17 amendment in `docs/rhema-design-spec.md`.
+- **Corrections to v0.1** (the orchestrator critique, 2026-10-20 — see census §8):
+  1. v0.1 could not produce a launch. G2 was out of scope, but ADR-104 made it a hard launch
+     gate. Resolved by ADR-111.
+  2. §17 Phase-1 exit criteria were unaddressed. Amended by ADR-111.
+  3. The money flips were missing: purchase open (`GD-BILL.3-1`), metered debit + notice, refund
+     window, trial. All are now ruled.
+  4. There were no legal/trust pages anywhere in `apps/` or `packages/`, and no restore or rollback
+     drill had ever been rehearsed.
+  5. The deploy was assigned to the operator, but the operator ruled that the agent deploys from
+     the tip. That is now a scoped pre-authorization.
+  6. The signed-URL code (v0.1's `R6POST.3`) sat after the deploy. It is now pre-deploy code
+     (§4.1, REQ-POST-7).
+  7. Nightly green was undeliverable under merge-later. It is now a merge row plus REQ-ENG-8.
+  8. The worker soak (REQ-ENG-7) was mislabelled offline. It is a live preview soak.
+  9. Three tickets exceeded the SWE-2 256k non-compacting budget and are now split.
+  10. The census mislabelled `D-SLO.1-7/-8` and misclassified `D-SLO.1-5/-7/-8` as traffic-bound.
+- **Posture facts (re-confirm at SETUP):**
+  - **Prod serves `ffbb8ad`**, the ARMB.2 head — round 4's Arm-B tip deploy, so the SPA is live.
+    The round-5 code (NAVC, the econ regime, the funded-window machinery, R5OPS drivers) is **not
+    deployed**.
+  - The ledger chain tip is `stevevitali/r5doc-2-agent-docs-refresh`. This planning branch merged
+    it at `cc33845`.
+  - `signupMode` is `open` on prod, but `purchaseMode` is `closed` and the trial and refund window
+    serve `test_tenants` only, so a real user can sign up today and do nothing.
+  - #170–#174 are merged; #175–#194 are open.
 
 ## 1. Goals
 
-1. Zero open engineering-fixable items in-tree (mount-settle flake, SLO head-fix, RES.3
-   checkpointing, dep-drift, guard-binding convention).
-2. Every merge+deploy-bound prod arm discharged on the deployed tip with provenance-matched
-   evidence (`check-deploy-provenance --expect <tip>` all-PASS first).
-3. The carried funded wave executed or honestly re-refused — never described as run without legs.
-4. Every clock-bound item verified at its date; every operator-gated item either discharged in the
-   operator session or re-parked with a dated ruling.
-5. Memory reconciled: flagged backlog rows dispositioned (flip or named residual), capstone closure
-   appended, ledger state updated by the closing run — not by this spec.
+1. **Code complete before deploy:** the CI flake is gone; the SSE fix, RES.3 checkpointing,
+   API-minted usercontent delivery, the metered-debit notice, the legal/trust pages and nightly
+   provenance tolerance have all landed.
+2. **The deployed tip is proven and recoverable:**
+   - the agent deploys the tip under `GD-DEPLOY.R6`;
+   - provenance is all-PASS;
+   - the restore, rollback and playbook drills are rehearsed;
+   - alerts reach a real operator sink;
+   - HA and the worker right-size are in place.
+3. **Every owed live leg is discharged on the deployed tip:** prod arms, posture stages, the funded
+   wave (or an honest refusal), the golden validation on all four protocols, the operator's
+   browser/money legs, and the guarded one-off writes.
+4. **Launch-blocking externals are closed:** the pen test has zero open criticals/highs, the
+   launch content is signed off, and the legal text is approved.
+5. **The launch is executed and watched:**
+   - the operator merges and the nightly is green on `main` == prod;
+   - `GATE-LAUNCH` passes;
+   - the flips execute in their ruled order;
+   - the launch + 14 d read closes or converts every cohort-bound row.
+6. **Memory is reconciled:** capstone, accepted deviations, backlog/spec/integration reconcile and
+   docs. `projectStatus` is updated by the closing run only.
 
-## 2. Posture — deploy from the tip
+## 2. Posture
 
-- Work branches continue off the **latest chain tip** (`d8bfebc` at census time — re-resolve at
-  ratification). Deploy legs assume the operator's merge sweep + deploy of that tip to prod;
-  nothing here performs either act.
-- Preview `pr-<n>` stages remain available via `scripts/live/preview-stack.mjs` where a leg is
-  preview-scoped; the nonprod Resend secret is already seeded (2026-10-16).
-- Provenance discipline is unchanged: a "prod" leg is only prod when `build.gitSha` matches the
-  deployed tip; the scheduled nightly can only go green after the chain lands on `main` AND prod
-  carries that HEAD (D-OBS.1-3's recorded structural dependency).
+- **Deploy:** `GD-DEPLOY.R6` (pre-authorization, expires GATE-ACCEPT.R6). Round-6 tickets that name
+  the deploy as a production mutation may `pulumi up` stage `prod` with a chain-tip SHA (and the
+  post-merge `main` HEAD) when **all** of these hold:
+  - the preview shows zero replace/delete on stateful resources;
+  - migrations pass the additive lint;
+  - the monthly cost delta is ≤ $15 (the `GD-HA.R6` levers excepted);
+  - `check-deploy-provenance` is all-PASS afterwards.
 
-## 3. REQ-id families (proposed)
+  Any failure pauses that deploy for the operator. Each code-changing ticket after the first deploy
+  redeploys its own tip under the same terms.
+- **Merges stay the operator's** (`mergePolicy: OPERATOR`). There are two in-round merge rows:
+  **MERGE-1** before GATE-LAUNCH, so `main` == prod and the nightly can go green, and **MERGE-2**
+  right after the launch-flip PR, so post-launch nightlies read the flipped SHA. The final sweep of
+  tail PRs is the operator's closing act. REQ-ENG-8 keeps deploy-neutral (docs-only) merges from
+  breaking nightly provenance.
+- **Spend:**
+  - funded wave: ≤ the ~$150 pinned-scope lifetime cap (`GD-ENV.R6`; $80.86 already measured);
+  - showcase dossier run: must fit the remaining envelope or GATE-R6B pauses;
+  - golden validation: ≤ $300 one-time (`GD-R5OPS.1-1`);
+  - preview/posture/drill stacks: ≤ $8 each (VERIF.2 precedent), torn down and verified;
+  - HA: +$37.75/mo (`GD-HA.R6`); worker right-size: −$26/mo (conditional).
+
+  The pen-test vendor cost is the operator's.
+- **Operator-only, never agent:** merges; real-money charges (the operator's own purchase legs);
+  creating or rotating third-party credentials; DNS changes beyond those the posture-stage ticket
+  names; any target-relaxing ADR not already ruled; destroying stateful resources. One-off prod data
+  writes execute only on the operator's go inside their named ticket (§4.4).
+
+## 3. REQ families
 
 | family | cluster | nature |
 |---|---|---|
-| `REQ-ENG-*` | in-tree engineering repairs | code/test/docs work, offline, CI-provable |
-| `REQ-POST-*` | post-merge prod-arm verification | deployed-tip journey/evidence legs |
-| `REQ-DISC-*` | operator-gated discharge | funded wave, guarded executes, posture stages |
-| `REQ-CLK-*` | clock-bound verification | dated reads/sweeps |
-| `REQ-TAIL-*` | reconcile + memory hygiene | backlog dispositions, capstone tail, ledger |
+| `REQ-ENG-*` | pre-deploy engineering | code/test/docs, CI-provable; ENG-7 is the one live-preview leg |
+| `REQ-LCH-*` | launch surfaces + content + money readiness | code + research + operator approvals |
+| `REQ-FOR-*` | prod forensics | read-only system-role prod reads, $0 |
+| `REQ-WRT-*` | guarded one-off prod writes | dry-run → operator go → execute → verify |
+| `REQ-DEP-*` | deploy, drills, infra posture | agent deploys under `GD-DEPLOY.R6` |
+| `REQ-POST-*` | live verification on the deployed tip | $0 journey/evidence legs |
+| `REQ-DISC-*` | funded + golden discharge | gated spend |
+| `REQ-SEC-*` | external pen test | operator procurement + agent triage |
+| `REQ-GO-*` | merge, nightly, launch gate, flips | the launch itself |
+| `REQ-CLK-*` | clock-bound reads | dated |
+| `REQ-WATCH-*` | post-launch read | launch + 14 d |
+| `REQ-TAIL-*` | reconcile + capstone | tail=full |
 
-(Names are proposals; the ratifying session may renumber. Round-5 namespacing precedent: REQ-ids
-are spec-stable, never reused.)
+REQ-ids are spec-stable and never reused. v0.1 ids are kept where their scope survives.
 
-## 4. Clusters and acceptance criteria
+## 4. Requirements and acceptance criteria
 
-### REQ-ENG-* — engineering repairs (offline; no live dependency)
+### 4.1 REQ-ENG — pre-deploy engineering
 
-- `REQ-ENG-1` mount-settle: `outline.dom.test.tsx` delete's cited refusal + all bare/`!` selector
-  accesses replaced with mounted/settled `waitFor`; sibling `*.dom.test.tsx` audit committed;
-  two consecutive green full-suite CI runs. (D-R5REC.1-1, BL-87)
-- `REQ-ENG-2` SSE head-fix: post-commit wakeup on the finalize path (or equivalent) cutting the
-  ~3s agent-completion delivery gap; in-tree proof + measurement-window re-read recipe committed.
-  (D-SLO.1-6)
-- `REQ-ENG-3` RES.3 contract: verification-phase `phase<N>` checkpointing + late-arrival contract +
-  retry-gate consult + budget isolation; protocol change lands with tests; no paid leg may run
-  before it. (D-RES.3-1, BL-79)
-- `REQ-ENG-4` project-reference drift: the five `@rhema/*` packages gain their tsconfig references;
-  `CIREP.1` check green. (open finding)
-- `REQ-ENG-5` guard-binding convention: the system-role `JOURNEY_DATABASE_URL` binding convention
-  documented where the runbook/ADR reads it; `$0` read re-proof recipe committed. (D-STB.5b-1, BL-72)
-- `REQ-ENG-6` memory hygiene: BL-02 cell-shape sweep verified clean; flagged backlog rows (BL-06,
-  BL-74, BL-80, BL-82, BL-24/22 partial flags) dispositioned — flipped with evidence or re-parked
-  with a named residual. (R6TAIL-adjacent)
-- `REQ-ENG-7` cold-import soak: reproduce `D-P0.15h-3`'s throttled cold-import failure mode at the
-  right-sized worker shape (0.5vCPU/512Mi) — the `D-COST.1-3` (a) precondition. Evidence = the soak
-  report; only soak-green unlocks REQ-DISC-4's authorized flip. (D-COST.1-3 (a))
+- `REQ-ENG-1` **Mount-settle flake.** Replace bare/`!` selector access in `outline.dom.test.tsx`
+  and `figures.dom.test.tsx` with mounted/settled `waitFor`, audit every `*.dom.test.tsx`, and
+  commit the audit. Two consecutive green full-suite CI runs. (D-R5REC.1-1, BL-87)
+- `REQ-ENG-2` **SSE finalize-path post-commit wakeup.** Close the publish/commit race that leaves
+  terminal-batch events on the 10 s safety poll. Unit-pin the race; the live window re-read is
+  REQ-POST-8. (D-SLO.1-6)
+- `REQ-ENG-3` **RES.3 verification-phase checkpointing.** `phase<N>` checkpoints, the late-arrival
+  contract, a retry-gate consult and budget isolation, with tests. No paid leg runs before it
+  lands. (D-RES.3-1, BL-79)
+- `REQ-ENG-4` **Project-reference drift.** The five `@rhema/*` packages gain their tsconfig
+  references; the CIREP.1 check is green. (open finding)
+- `REQ-ENG-5` **Guard-binding convention documented.** The system-role `JOURNEY_DATABASE_URL`
+  binding convention is documented where the runbook/ADR is read; the live $0 read is REQ-FOR-3.
+  (D-STB.5b-1 doc half, BL-72)
+- `REQ-ENG-6` **Memory hygiene.**
+  - Verify the BL-02 cell-shape sweep is clean.
+  - Disposition the census §5 flags (BL-06, BL-80, BL-82, BL-74, the BL-24 injection-smoke half,
+    the D-P1.22-2 injection half): flip with cited evidence or keep with a named residual.
+  - Re-point the `REQ-FIX-BL22-T7DEST` coverage-matrix routing from `D-FIX.1-4` to `D-P1.04-2`.
+- `REQ-ENG-7` **Worker right-size soak** (a **live preview leg**, not offline). On a `pr-<n>` stack
+  at 0.5 vCPU/512Mi, reproduce `D-P0.15h-3`'s throttled cold-import failure mode. Green unlocks
+  REQ-DEP-3's flip; red keeps the worker at 1 vCPU/1Gi with the soak as evidence. Tear the preview
+  down. (D-COST.1-3 (a))
+- `REQ-ENG-8` **Nightly provenance tolerance.** `journeys.yml` / the provenance assert accept
+  `main` HEAD when the deployed SHA is an ancestor of HEAD and `git diff <deployed>..HEAD` touches
+  only deploy-neutral paths (the committed allowlist — `docs/**` and build memory). Any other diff
+  fails as today. Unit-pin both arms. (new — required for honest post-launch nightlies)
 
-**AC:** `pnpm turbo build lint typecheck` + `pnpm test` + all six `check:*` green; two consecutive
-full-suite CI greens post-ENG-1; no deferral cell edited without evidence.
+**AC (all ENG):** `pnpm turbo build lint typecheck`, `pnpm test`, all six `check:*`,
+`check-build-memory` and `check-append-only` green; no deferral cell is edited without evidence.
 
-### REQ-POST-* — post-merge prod-arm verification (gated on deployed tip)
+### 4.2 REQ-LCH — launch surfaces, content, money readiness
 
-Prerequisite: operator merge sweep + tip deploy; `check-deploy-provenance --expect <tip>` all-PASS.
+- `REQ-LCH-1` **Legal/trust pages** (`GD-LEGAL.R6`).
+  - Public SSR routes for Terms of Service, Privacy Policy, Refund Policy, Acceptable Use and
+    Contact/Support, added to `SPA_PUBLIC_ROUTES` + `SPA_DOCUMENT_ROUTES` with footer links on
+    every public page.
+  - Text drafted from the spec's actual posture: data rights (§13.4 export/delete, 14-day grace),
+    retention schedule, no-training statement and model-provider list, the §12.8 residual-risk
+    sentence, credit/refund math (§14.4), never-cookies ingestion, contact path.
+  - Each page carries a committed `approved: false` content flag; `GATE-LAUNCH` requires `true`,
+    set only after the operator's verbatim approval.
+  - DOM-contract, no-cookies and launch-surface lint all green; the pages make no efficacy claim.
+- `REQ-LCH-2` **Launch content prep** (`GD-CONTENT.R6`, $0 research).
+  - (a) **H4:** verify every seeded venue/outlet row against its live venue page and record the
+    proposed `verified_at` stamps with the URL and the quoted cap.
+  - (b) **H5:** a shortlist of Showcase essay candidates (≈2,000 words, Essay protocol, likely to
+    carry a contradicted Tier-1 claim), each with a licensing packet (rights holder, terms, ask).
+  - (c) A proposed final sample-dossier content set.
+  - The operator approves (a) and (c) and licenses one (b) candidate in HUMAN-R6H2.
+  - (D-P1.21-1, D-P1.17-1, D-PRB.01-2)
+- `REQ-LCH-3` **Showcase dossier build** (paid).
+  - A real Full-board run on the licensed essay on prod, inside the GATE-R6B envelope; the cap is
+    declared from the estimator before dispatch.
+  - Replace `SHOWCASE_FIXTURE` with the real bundle and get `assertShowcaseFixture` green
+    (REQ-POS-3: ≥1 contradicted Tier-1 claim with its fetched URL).
+  - Redeploy and seed; the Showcase-on-fresh-account leg is green. Final operator sign-off is a
+    GATE-LAUNCH item.
+  - (D-P1.17-1, D-P1.17-2 Showcase half)
+- `REQ-LCH-4` **Apply the H4 stamps** once approved: `seedProtocols` sets
+  `venue_table_verified_at`, and rendering shows verified, not stale. (D-P1.21-1)
+- `REQ-LCH-5` **Money-flip readiness** (`GD-LAUNCH-MONEY.R6`; code only — nothing flips here).
+  - (a) **The notice mechanism already exists** — `scripts/live/send-metered-notice.mjs` and
+    `docs/ops/debit-mode-flip.md` step 0. Verify its copy against the charge-what-we-meter
+    behaviour and the one estimator config (REQ-SPEC-32). Add a public-facing explanation where new
+    users see it (pricing, run sheet). Run the notice **dry-run** against prod and record the
+    recipient count. If it is > 0, the effective date (≥ 30 days after sending, per REQ-BILL-2 /
+    ADR-014) is on the launch critical path, and the send is a HUMAN-R6H1 go.
+  - (a′) Read the runbook's preconditions 1–2 on prod: `cap_calibration_reports` must have
+    `adopted=true` rows for the cells that drive paid surfaces, with in-sample cap reach ≤ 10%. If
+    they are unmet, record the gap and what REQ-DISC-1's measurements can contribute. **An unmet
+    precondition at GATE-LAUNCH is a finding for an operator ruling — never flipped past.**
+  - (b) Pricing, run-sheet and trial claims verified consistent with `pricing.json` and the
+    estimator.
+  - (c) Refund-policy copy matches the §14.4 refund math.
+  - (d) A test proving the $50/day kill switch and the 1-concurrent trial cap hold under `everyone`.
+  - (e) Every flip prepared as a one-line stage-fact diff with its ordered runbook in
+    `docs/ops/launch-flips.md`.
+  - (f) The launch-surface lint extended to the legal pages and the notice.
 
-- `REQ-POST-1` prod SSR arm: `--expect-renderer ssr` re-proof incl. phone-UA uncapped pane + edit
-  POST + seam conformance + clean observability + control legs. (D-SPA.6-1)
-- `REQ-POST-2` signed-in session legs: mailto/invite-accept/`/r/:token` expiry/OAuth initiation on
-  prod (or preview where scoped). (D-OPS.1-1)
-- `REQ-POST-3` deep-link restore: `…/v/<version>#f-<finding>` lands the host with `?view=findings` +
-  anchor scroll, verified in the deployed suite. (D-CAP.1-1)
-- `REQ-POST-4` nightly green: first scheduled `journeys.yml` nightly on `main` HEAD with
-  provenance match + zero unexpected failures. (D-OBS.1-3, BL-74 residual)
-- `REQ-POST-5` forensics read: `balance_divergence` classification of the six included-bucket
-  accounts (system-role read; authorized posture only). (open finding, BL-24 family)
-- `REQ-POST-6` posture stages (**RULED 2026-10-20 — "authorize both"**): domains-bearing
-  `pr-<n>` stage for D-SPA.24-1's N8/R10.keepalive collab legs; Stripe test-mode (`sk_test`)
-  stage for D-SPA.16-1/-20-1's N9 legs. Setup + bounded spend land in R6POST.2. (class c)
-- `REQ-POST-7` CDN/usercontent delivery leg (**ruled 2026-10-20 — API-minted signed URLs**):
-  the delivery contract changes to GCS V4 signed URLs minted by the api; the
-  `usercontent-cdn-verify.mjs` probes re-point at the minted path; the edge-signing
-  origin-read repair is not pursued. (D-R5OPS.1-2, D-P1.22-2 residual)
+### 4.3 REQ-FOR — prod forensics (read-only, $0)
 
-**AC:** each leg's report committed under `docs/build/reports/`; provenance match; $0 spend for
-free legs; no leg claims green without its committed evidence.
+- `REQ-FOR-1` **Named-red SLO forensics.**
+  - `D-SLO.1-5`: the two named failed runs (`phase_blocked`, `cap_reached`).
+  - `D-SLO.1-7`: the four >5% proxy-vs-SDK attempts, attributed via `usage.reconcile`.
+  - `D-SLO.1-8`: read the run-task egress-canary source against the `api/hello` and `?beta=true`
+    denials.
 
-### REQ-DISC-* — operator-gated discharge
+  Each gets a verdict: defect (fix in this ticket if small, else a run-time insert) or by-design
+  (an ADR proposal — any denominator or target semantic change **pauses for the operator**).
+  The weekly windows then re-read in REQ-WATCH-1.
+- `REQ-FOR-2` **`balance_divergence` classification** of the six included-bucket accounts
+  (`expectedHeld=-3860`). Verdict test-tenant soak or real ledger defect; a defect is
+  launch-blocking. (open finding, BL-24 family)
+- `REQ-FOR-3` **Weekly paid-guard live re-proof** on the system-role DSN: a $0 read showing the
+  `pg_roles` probe passes and the meter sums. (D-STB.5b-1 live half, BL-72)
 
-- `REQ-DISC-1` funded wave re-attempt: gates — **envelope RULED 2026-10-20: ~$150 pinned-scope
-  (GD-ENV.R6)** + deployed tip + `JOURNEY_FUNDED_STABLE_TAG` tenant + system-role DSN;
-  `funded-window.mjs --dry-run` 9/9 before any dispatch; ordering T9 → launchers → riders →
-  B19C last-and-conditional; per-leg `CapOverrunError` armed. Covers D-CAP.2-1 + the 21 paid
-  steps + every (b)-class row in the census. **If the bind refuses again, the refusal is the
-  finding** — reported, not spent past.
-- `REQ-DISC-2` guarded substrate executes: `mint-t8-export.mjs --execute` (D-FIX.1-1),
-  `seed-bl78-fixtures.mjs --execute` + `--entitlement` (D-FIX.1-3, D-STB.5b-4, D-MAINT.3-1) —
-  operator-authorization-gated prod writes; rollback lines executed or recorded.
-- `REQ-DISC-3` golden run: **RULED IN PART 2026-10-20 (GD-R5OPS.1-1)** — the nightly cadence is
-  **declined** (~$150–300/night ≈ $4.5–9k/mo vs the $50/mo target); approved instead is a
-  **one-time ≤$300 post-deploy validation** of `nightly-golden-driver.mjs`
-  (`GOLDEN_BUDGET_RULING=approved` one-shot + measured `--scores` + score-floor gate +
-  exit-readout flip). The recurring-cadence half stays owed on `D-P0.15-4`, ruled on the
-  validation evidence. (D-P0.15-4, BL-36)
-- `REQ-DISC-4` worker right-size flip (**conditional authorization RULED 2026-10-20**): once
-  REQ-ENG-7's soak is green, the one stage-fact field
-  (`cloudRun.services.worker.resources` 1vCPU/1Gi → 0.5/512Mi) flips via `pulumi up` on prod
-  (−$26/mo); `billing-read.mjs` recomputation + §13.5 probes appended to the run report. The
-  remaining levers are dispositioned by ruling: (c) SQL f1-micro REJECTED, (e) proxy MIG REJECTED,
-  (b) GKE spot and (d) Redis removal PARKED pending designs, (f) HA set UNRULED/parked.
-  (D-COST.1-3, D-OPS.2-2)
+### 4.4 REQ-WRT — guarded one-off prod writes
 
-### REQ-CLK-* — clock-bound verification
+Each is a committed script: dry-run by default, `--execute` fail-closed on an operator go env var,
+pre-state capture before any write, one transaction, post-state verify.
 
-- `REQ-CLK-1` ~2026-10-30: `project.purge` fire for tombstoned `01M3SK380GQX41RKMD4KVFB34Q`
-  verified in job table + tenant list. (D-BL38.1-2)
-- `REQ-CLK-2` first Monday post-window: weekly digest claims the seeded stale-voice persona exactly
-  once (`notification_deliveries` count = 1; second tick writes none). (D-FIX.1-4)
-- `REQ-CLK-3` destruction half: purge-exempt tombstone's real +30d fire — or the operator hand-date
-  arm. (D-P1.04-2)
-- `REQ-CLK-4` billed-actuals read ≥24h after the D-OPS.2-1 console flip; classes P1–P5 appended.
-  (D-COST.1-1; gated on operator flip)
-- `REQ-CLK-5` measurement-window re-reads: D-SLO.1-5/-7/-8 verdict refresh on real-traffic evidence
-  as windows elapse. (class g — may stay tracking past round 6)
+- `REQ-WRT-1` **GD-RES.2-1 "refund + relabel"**: refund `01M3EAAZG2…` (56cr) + `01M3SK62…`
+  (340cr), and relabel the zero-coverage deliveries `unverified`. The test-tenant probes get no
+  credit action. (D-RES.2-2, BL-75)
+- `REQ-WRT-2` **D-BL38.1-1**: rewrite the `prod:d5a74cc` deployments id to the 40-char SHA. Closes
+  when the `cleanup-bl38-residue.mjs --dry-run` observation is gone.
+- `REQ-WRT-3` **D-P1.04-2 hand-date arm**: back-date one purpose-made, purge-exempt test
+  tombstone's `deleted_at` by 30 d so the real `project.purge` destruction fires on the next sweep.
+  The verify is REQ-CLK-3.
 
-### REQ-TAIL-* — reconcile + capstone tail
+### 4.5 REQ-DEP — deploy, drills, infra posture
 
-- `REQ-TAIL-1` backlog dispositions per REQ-ENG-6's flag list.
-- `REQ-TAIL-2` spec-reconciliation residue: BL-05 fold-backs (G2/G3/H3 overrides, ADR lineage) —
-  docs-only.
-- `REQ-TAIL-3` round-6 capstone: CLOSURE entry, coverage-matrix refresh where legs landed, ledger
-  PHASE LOG, `projectStatus`/`lastCompleted` updated by the closing run only.
+- `REQ-DEP-1` **Tip deploy** (`GD-DEPLOY.R6`).
+  1. Stand up a `pr-<n>` preview of the tip and run the `paid:false` suite with
+     `--expect-renderer spa` (VERIF.2 recipe); tear it down.
+  2. Prod `pulumi preview` classified against the pre-authorization conditions; additive migration
+     lint.
+  3. `pulumi up`; `check-deploy-provenance --expect <tip>` all-PASS on web+api; `record-deployment`.
+  4. Post-deploy smoke, plus the `git revert` + redeploy rollback recipe for this SHA written down.
+
+  Any failed condition pauses.
+- `REQ-DEP-2` **Readiness drills.**
+  - (a) A PITR **restore drill**: restore to a scratch Cloud SQL instance, verify row counts and a
+    tenant read, then destroy it. This is a named mutation that creates a new instance and never
+    touches the live one; it needs the operator's go.
+  - (b) A **rollback drill** on a preview: deploy N, revert to N−1, verify the markers.
+  - (c) The **egress-denied playbook drill** (D-P1.22-2).
+  - (d) **Alert delivery** to the real operator sink bound in HUMAN-R6H1. Each alert policy is
+    proven to page.
+  - (e) The on-call/incident runbook names the operator as responder and the paging path.
+- `REQ-DEP-3` **Infra posture** (`GD-HA.R6`; the `D-COST.1-3` (a) ruling).
+  - Cloud SQL REGIONAL and egress-proxy MIG×2, in the maintenance window the operator names in
+    HUMAN-R6H1.
+  - The worker right-size flip **only if REQ-ENG-7 is green**.
+  - `billing-read.mjs` recomputation plus §13.5 probes clean.
+
+  (D-OPS.2-2, D-COST.1-3 (a)+(f))
+
+### 4.6 REQ-POST — live verification on the deployed tip ($0)
+
+Prerequisite: REQ-DEP-1 provenance all-PASS. Each leg's report is committed under
+`docs/build/reports/`.
+
+- `REQ-POST-1` **Prod SSR arm:** `--expect-renderer ssr` re-proof incl. the phone-UA uncapped pane,
+  edit POST, seam conformance, clean observability and control legs. (D-SPA.6-1)
+- `REQ-POST-2` **Signed-in session legs:** mailto, invite-accept (consuming the HUMAN-R6H1 invite —
+  proves the shared throttle), `/r/:token` expiry, OAuth initiation. (D-OPS.1-1, D-SEC.2-1,
+  D-PRB.01-1)
+- `REQ-POST-3` **Deep-link restore** `…/v/<version>#f-<finding>`. (D-CAP.1-1)
+- `REQ-POST-4` **Nightly green** — owned by REQ-GO-2.
+- `REQ-POST-5` **Fixture-backed legs** after the HUMAN-R6H1 executes:
+  - the T8 410 leg (D-FIX.1-1);
+  - the `--entitlement` N5-family render probes (D-MAINT.3-1);
+  - the export legs: import round-trip parity spot-check; the 7-day expiry 410 arm is REQ-CLK-6
+    (D-P1.18-1).
+- `REQ-POST-6` **Posture stages** (ruled "authorize both"). A domains-bearing `pr-<n>` stage (DNS
+  records named as the ticket's production mutation) for N8/R10.keepalive. A Stripe test-mode stage
+  (the `sk_test` key seeded by the operator in HUMAN-R6H1) for N9. Teardown verified.
+  (D-SPA.24-1, D-SPA.16-1, D-SPA.20-1)
+- `REQ-POST-7` **Usercontent delivery.**
+  - Code (pre-deploy, §4.1 ticket set): API-minted GCS V4 signed URLs with
+    `response-content-disposition=attachment` for non-allowlisted types and a short TTL; the
+    tenant check happens before minting. A new ADR-112 amends the §13.3 usercontent-origin
+    contract; edge-signing repair is not pursued.
+  - Live (post-deploy): `usercontent-cdn-verify.mjs` re-pointed at the minted path. Unsigned →
+    denied; signed → 200; tampered → denied; header leg — no `Set-Cookie`, attachment/octet-stream.
+
+  (D-R5OPS.1-2, D-P1.22-2 usercontent half)
+- `REQ-POST-8` **SSE window re-read** after REQ-ENG-2 is deployed: event-delivery p95 ≤ 2,000 ms on
+  the next measurement window. (D-SLO.1-6)
+- `REQ-POST-9` **Public funnel legs:** Lighthouse + axe on prod (hero LCP < 2.5 s, CLS < 0.05,
+  reduced-motion), and the drop-zone → signup → ingest ≤ 20 s round-trip on a flagged account.
+  The funnel metrics are REQ-WATCH-1's. (D-P1.17-2 agent half)
+
+### 4.7 REQ-DISC — funded + golden discharge
+
+- `REQ-DISC-1` **Funded wave re-attempt** behind GATE-R6B.
+  - Gates: envelope ~$150 pinned-scope (ruled); `funded-window.mjs --dry-run` 9/9; deployed-tip
+    provenance; `JOURNEY_FUNDED_STABLE_TAG` tenant seeded + purge-exempt; system-role DSN; REQ-ENG-3
+    landed.
+  - Ordering: T9 → launchers → riders → B19C last-and-conditional, with per-leg `CapOverrunError`
+    armed. **Split into three tickets** along that ordering.
+  - Covers D-CAP.2-1 + every census (b)-class row (D-FIX.1-2, D-P0.15-3, D-PRB.02-3, D-PRB.04-2
+    live half, D-P1.10-1/-11-1/-12-1/-14-1/-19-1/-21-2, D-DEF.1-1, D-RES.1-1/-2/-3,
+    D-CITE.1-2/-3/-5, D-ECON.2-2/-3/-4, D-STB.5b-3/-4/-5) plus the paid new-visitor journey; the
+    ECON.1-4 cells it measures are folded.
+  - **A refusal at bind is the finding** — reported, never spent past.
+- `REQ-DISC-3` **Golden validation** (ADR-111 amended criterion).
+  - **First, verify the cohort covers all four protocols.** The driver enumerates "all workflows on
+    the default tier × the three fixture projects", and the P1.21 protocols 2–4 may have no fixture
+    project. Add the missing protocol fixtures (with committed floors) before any paid dispatch.
+  - Estimate the whole cohort; **if it exceeds $300, pause for the operator** — never trim
+    protocols silently.
+  - Then one ≤ $300 run of `nightly-golden-driver.mjs` (`GOLDEN_BUDGET_RULING=approved` one-shot +
+    measured `--scores`) on **all four protocols** at the launch-candidate SHA — after every
+    protocol-affecting change, incl. REQ-ENG-3 and any REQ-SEC-2 fix.
+  - Score floors are green.
+  - Record the standing "re-run on protocol-affecting deploys" rule in `docs/ops/`.
+  - (D-P0.15-4, BL-36)
+
+(`REQ-DISC-2` and `REQ-DISC-4` from v0.1 are superseded by REQ-WRT-* / HUMAN-R6H1 executes and
+REQ-DEP-3; their ids are retired, not reused.)
+
+### 4.8 REQ-SEC, REQ-GO — pen test and the launch
+
+- `REQ-SEC-1` **Pen-test engagement:** the operator procures it (HUMAN-R6H1) using
+  `docs/security/pen-test-scope.md` + `pen-test-vendor-package.md`, and the vendor tests the
+  deployed tip (HUMAN-R6PEN).
+- `REQ-SEC-2` **Triage per `docs/security/pen-test-findings-triage.md`.** Every finding is
+  classified. Criticals and highs are fixed and re-verified (in-ticket if small, else run-time
+  inserts under `mode=extend`). Mediums and lows become dated owned obligations. **Exit: zero open
+  criticals/highs.** (D-P1.22-3, BL-35; `GD-PEN.R6`)
+- `REQ-GO-1` **MERGE-1** (HUMAN): the operator merges #175 → the last pre-launch round-6 PR
+  bottom-up.
+- `REQ-GO-2` **Post-merge redeploy + nightly green.**
+  - Redeploy `main` HEAD (tree-equal to the tip); provenance PASS.
+  - The first scheduled `journeys.yml` nightly is green on `main` HEAD.
+  - D-SPA.28-1's entry gate evidence; BL-74/BL-81 residuals.
+  - (D-OBS.1-3, D-SPA.28-1)
+- `REQ-GO-3` **GATE-LAUNCH** (operator gate; thresholds pre-registered — §6).
+- `REQ-GO-4` **Launch flips** (`GD-LAUNCH-MONEY.R6`), in order, each verified live before the next:
+  1. `debitMode` → metered, per `docs/ops/debit-mode-flip.md` — preconditions 1–4 hold, the notice
+     effective date has been reached, and the step-3 verifies run within an hour;
+  2. `purchaseMode` → open (GD-BILL.3-1);
+  3. `REFUND_WINDOW_MODE` → open (D-DEF.4-3);
+  4. trial audience → everyone with the kill switch verified (D-ACT.1-3).
+
+  Then:
+  - Post-flip smoke on a fresh non-test account (trial claim visible, purchase reaches Stripe;
+    marked analytics-opt-out so it never pollutes the organic cohort).
+  - Launch-surface lint green.
+  - The monitoring watch is armed.
+  - The ADR-008 "no public launch moment" bar is lifted by ADR-111; the public announcement
+    itself is the operator's act, and any copy passes REQ-EVAL-19.
+- `REQ-GO-5` **MERGE-2** (HUMAN): the operator merges the launch-flip PR promptly, so post-launch
+  nightlies read the flipped SHA.
+
+### 4.9 REQ-CLK, REQ-WATCH — dated reads and the post-launch read
+
+- `REQ-CLK-1` ~2026-10-30: the `project.purge` fire for `01M3SK380GQX41RKMD4KVFB34Q`.
+  (D-BL38.1-2)
+- `REQ-CLK-2` The first Monday digest after the funded wave seeds T16 claims the stale-voice
+  persona exactly once. (D-FIX.1-4)
+- `REQ-CLK-3` The hand-dated tombstone's destruction is verified (REQ-WRT-3). (D-P1.04-2)
+- `REQ-CLK-4` Billed actuals ≥ 24 h after the D-OPS.2-1 console flip, classes P1–P5 appended, and
+  the export-vs-observed confirmation. (D-COST.1-1, D-OPS.1-3)
+- `REQ-CLK-5` The admin-key `usage.reconcile` nightly runs green after HUMAN-R6H1 binds
+  `ANTHROPIC_ADMIN_KEY`. (D-ECON.1-1, D-PRB.08-1)
+- `REQ-CLK-6` The T8 export's 7-day expiry 410 arm. (D-P1.18-1 expiry half)
+- `REQ-WATCH-1` **Launch + 14 d read** (`GD-WATCH.R6`), on the committed queries, organic
+  non-test cohort only:
+  - first-finding p50 ≤ 4 min — the ADR-111 post-launch target (D-R5OPS.1-1);
+  - `import_preview_p95_s` plus the convert-svc min-scale decision (D-COST.1-2);
+  - the weekly SLO windows (D-SLO.1-5/-7/-8, after REQ-FOR-1's verdicts);
+  - ECON cells and cap calibration (D-ECON.1-3/-4, D-ECON.2-5/-6);
+  - the lever-A/B restore re-check (D-ECON.2-7);
+  - the funnel metrics (D-P1.17-2 remainder).
+
+  A row with sufficient samples closes on evidence. A thin one converts to a standing alert-backed
+  watch with a named owner and re-read date (`owner:`/`trigger:` cells).
+
+### 4.10 REQ-TAIL — reconcile + capstone (tail=full)
+
+- `REQ-TAIL-1` Capstone gap analysis (R6CAP.1) and closure + deviations draft (R6CAP.3) →
+  GATE-ACCEPT.R6.
+- `REQ-TAIL-2` Backlog reconcile:
+  - BL-73 and BL-47/76/77/84 reclassified as roadmap/watch (`GD-ROADMAP.R6`).
+  - The G2/H2 rows (D-P0.13-1/-3/-4/-5, D-P0.14-1/-2/-3, D-P0.15c-4, D-PRB.02-2; BL-40/43/44/45)
+    re-homed to the ADR-111 post-launch research program with owner + trigger.
+  - Owned post-launch obligations for D-P0.12-3 (matcher tuning on real dispositions), D-RES.2-3
+    (fact_check class) and the parked cost levers (b)/(d).
+  - `OPERATIONAL_READINESS.md` rewritten to the launched truth.
+- `REQ-TAIL-3` Spec reconcile: the §13.3 usercontent amendment (ADR-112), the §17/ADR-111 fold
+  check, and BL-05 fold-backs.
+- `REQ-TAIL-4` Integration plan for the round-6 stack and the final merge sweep runbook.
+- `REQ-TAIL-5` The repo-docs and agent-docs refreshes. Then the closing run updates
+  `projectStatus`/`lastCompleted`. **`DONE` only if GATE-ACCEPT.R6 is signed and zero
+  launch-blocking rows remain.**
 
 ## 5. Ordering constraints
 
-1. `REQ-ENG-*` first — pure offline, unblocks nothing but is unblocked by nothing.
-2. **Operator gate** (§6) before anything live.
-3. Merge sweep + tip deploy (operator) → `REQ-POST-*`.
-4. Envelope ruling + deployed tip + tenant → `REQ-DISC-1` funded wave; B19C last-and-conditional.
-5. Clock items at their dates regardless of ticket order.
-6. Cleanup wave (D-SPA.28-1 / SPA.28 residual) only after REQ-POST-4's green nightly.
-7. `REQ-TAIL-*` last.
+1. Phase A (pre-deploy): REQ-ENG-1..6/-8, REQ-POST-7 code, REQ-LCH-1/-2/-5, REQ-FOR-*, REQ-WRT-*.
+   REQ-ENG-7's soak needs only a preview, so it can run in Phase A.
+2. **HUMAN-R6H1 starts at ratification** and runs parallel to Phase A. Pen-test procurement is on
+   the critical path (vendor timeline).
+3. REQ-DEP-1 after all Phase-A code has landed → REQ-DEP-2, REQ-DEP-3 → HUMAN-R6PEN can start.
+4. REQ-POST-* after REQ-DEP-1. HUMAN-R6H2 (browser/money legs + approvals) after REQ-DEP-1 and
+   REQ-LCH-1/-2.
+5. GATE-R6B → REQ-DISC-1 (three tickets) → REQ-LCH-3 (Showcase build, needs the HUMAN-R6H2
+   licensing) → REQ-LCH-4.
+6. REQ-SEC-2 when the vendor report lands. **REQ-DISC-3 golden after the last protocol-affecting
+   change** (REQ-ENG-3, any REQ-SEC-2 fix).
+7. MERGE-1 → REQ-GO-2 → **GATE-LAUNCH** → REQ-GO-4 → MERGE-2.
+8. REQ-CLK-* fire at their dates wherever the chain is. REQ-WATCH-1 runs at launch + 14 d.
+9. REQ-TAIL-* last.
 
-## 6. Required operator gates (all ⚑ operator; none guessed past — a gate is a pause, not a block)
+## 6. Gates and HUMAN rows (pre-registered; a gate is a pause, not a block)
 
-| gate | question | unblocks |
+| row | kind | contents / thresholds |
 |---|---|---|
-| spec sign-off | ratify/revise this draft | the round itself |
-| deploy authorization | merge sweep + `pulumi up` of the tip (ordered activation per BL-01/BL-81; segments per `INTEGRATION_PLAN.md` §R5 — record the executed order in the run) | REQ-POST-* |
-| ~~envelope ruling~~ **RULED 2026-10-20 (GD-ENV.R6): ~$150 pinned-scope** | REQ-DISC-1 |
-| ~~golden ruling~~ **RULED IN PART 2026-10-20 (GD-R5OPS.1-1): one-time ≤$300 validation; recurring cadence deferred to evidence** | REQ-DISC-3 |
-| ~~CDN ruling~~ **RULED 2026-10-20: API-minted signed URLs** | REQ-POST-7 |
-| ~~lever rulings~~ **RULED 2026-10-20 (D-COST.1-3 + D-OPS.2-2 batch, on projections): (a) worker right-size conditional-authorized on soak-green (REQ-ENG-7 → REQ-DISC-4); (c) SQL f1-micro + (e) proxy MIG REJECTED; (b) GKE spot + (d) Redis PARKED pending designs; (f) HA set unruled/parked. Honest floor ~$172/mo — the ~$50 target is not reachable under this ruling** | REQ-DISC-4 + parked-lever rows |
-| session items — **scheduling RULED 2026-10-20: "Split sessions"** (acts remain owed) | session-1 (anytime): billing-export flip, guarded `--execute`s, `D-BL38.1-1` stamp ruling, product rulings (refund go-live, unit-econ, levers A+B); session-2 (post-deploy): browser/live legs (Google sign-in, Stripe, Safari editor, phone-width, pen test) | all (e)-class rows |
-| ~~posture rulings~~ **RULED 2026-10-20 — "authorize both"**: domains-bearing `pr-<n>` + Stripe test-mode stages execute in `R6POST.2` | class (c) rows |
-| ~~misc rulings~~ **RULED 2026-10-20 (batch 3b)**: GD-RES.2-1 "refund + relabel" (2 real rows ~396cr; execution = session-1 prod writes); D-ECON.1-2 → WONTFIX (control accepted); go-lives stay gated (`D-DEF.4-3`, `D-ACT.1-3` — launch posture); `D-BL38.1-1` rewrite-in-place (session-1 act); `D-RES.2-3` parked → future ticket; `D-ECON.2-7` keep-pending | respective rows |
+| HUMAN-R6H1 | HUMAN (anytime; target: ratification day) | Pen-test procurement kick-off. D-OPS.2-1 billing-export console flip. Bind a real alert sink (email/phone/webhook) for REQ-DEP-2(d). Seed the Stripe `sk_test` key in nonprod Secret Manager (REQ-POST-6); name the domains-bearing stage DNS records. `ANTHROPIC_ADMIN_KEY` (D-ECON.1-1). D-SEC.1-2 exposure-window review sign-off. Guarded executes: `mint-t8-export.mjs --execute` (D-FIX.1-1), `seed-bl78-fixtures.mjs --execute` + `--entitlement` (D-FIX.1-3, D-STB.5b-4, D-MAINT.3-1). Invite mint (D-SEC.2-1). The **BL-13 pricing/unit-economics ruling** (launch-blocking — purchase opens on it). The HA maintenance window. Go signals for REQ-WRT-1/-2/-3 and REQ-DEP-2(a). |
+| HUMAN-R6H2 | HUMAN (post-REQ-DEP-1) | Browser/money legs: Google sign-in round-trip + 409 merge + revoked grant (D-MAINT.4-1); Stripe live round-trip + real-money purchase + Portal change-plan/pending-email (D-P1.16-1, D-BILL.3-1/-2 — flagged tenant, purchase allowlisted); Safari caret (D-EDIT.1-2); source editor (D-PRB.07-1); versions rail (D-P1.08-1); PUT override (D-P1.09-1); settings walk (D-P1.20-1); real-phone legs (D-P1.19-2); EventSource chip on a live run (D-PRB.04-2 browser half); leg-cap reconcile (BL-69). Approvals: legal text verbatim (REQ-LCH-1), H4 stamps (REQ-LCH-2a), sample dossier (REQ-LCH-2c), license one essay (REQ-LCH-2b). |
+| HUMAN-R6PEN | HUMAN (post-REQ-DEP-1) | The vendor engagement executes; the report is delivered to the repo's triage path. |
+| GATE-R6B | GATE | Funded window open — envelope ~$150 pinned-scope (ruled) with the cumulative measured < cap and ≥ the declared remaining caps + the Showcase run estimate; dry-run 9/9; deployed-tip provenance; tenant + DSN; REQ-ENG-3 landed. |
+| HUMAN-MERGE-1 | HUMAN | The operator merges the stack bottom-up through the last pre-launch PR. |
+| **GATE-LAUNCH** | GATE | **All must hold:** (1) zero launch-blocking OPEN DEFERRALS rows — the launch-blocking set is every row the §7 accounting tags `LB`; (2) REQ-SEC-2 zero open criticals/highs; (3) REQ-LCH-1 `approved: true` on every page; (4) Showcase + sample dossier + H4 stamps signed off; (5) REQ-DISC-3 golden green on all four protocols at the launch-candidate SHA; (6) REQ-GO-2 nightly green on `main` == prod; (7) REQ-DEP-2 drills all PASS + alerts paging; (8) REQ-DEP-3 HA live; (9) REQ-FOR-2 has no ledger defect; (10) the BL-13 pricing ruling is recorded; (11) REQ-DISC-1 is complete or its refusal is dispositioned; (12) the launch-surface lint is green; (13) the `debit-mode-flip.md` preconditions 1–3 hold (calibration adopted with ≤ 10% cap reach, notice sent, effective date reached) — or the operator rules on the recorded gap. The operator's go is recorded verbatim. |
+| HUMAN-MERGE-2 | HUMAN | The operator merges the launch-flip PR. |
+| GATE-ACCEPT.R6 | GATE (tail) | The operator signs the round-6 accepted-deviations list. |
 
-## 7. Out of scope (explicit)
+## 7. Row accounting (every census row → its home)
 
-- **G2 wave-1 LIFT + the H2 corpus program** (D-P0.13-*, D-P0.14-*, D-P0.15c-4, D-PRB.02-2;
-  BL-40/43/44/45) — strategic-deferred; the hard gate before §16.4 marketing claims and public
-  launch is unaffected.
-- **New feature work / new surfaces** — none. Every ticket in the decomposition is discharge,
-  verification, repair, or operator execution.
-- **Marketing / efficacy claims** — forbidden until G2 reads; no copy leg in this corpus touches them.
-- **Spec-scheduled 1.x / Later scope** (BL-73's 33 MISSING rows) — parked by design, not forgotten.
-- **Standing watches** (BL-47, BL-76, BL-77, BL-84) — stay open as tracking items; they are not
-  round-6 work.
+`LB` = launch-blocking (must be DONE or WONTFIX by ruling before GATE-LAUNCH). `PL` = an owned
+post-launch obligation is allowed (closed by REQ-WATCH-1 or reclassified by REQ-TAIL-2).
 
-## 8. Honest-accounting invariants carried into round 6
+| census class | rows → requirement (tag) |
+|---|---|
+| (f) engineering | D-R5REC.1-1 → ENG-1 (LB); D-SLO.1-6 → ENG-2 + POST-8 (LB); D-RES.3-1 → ENG-3 (LB); D-STB.5b-1 → ENG-5 + FOR-3 (LB) |
+| (a) deploy-bound | D-SPA.6-1 → POST-1; D-OPS.1-1 → POST-2; D-CAP.1-1 → POST-3; D-OBS.1-3, D-SPA.28-1 → GO-2 (all LB) |
+| (b) funded | the 23 rows → DISC-1 (LB: each closes on evidence, or the refusal at bind is dispositioned at GATE-LAUNCH (11)) |
+| (c) posture | D-SPA.24-1, D-SPA.16-1, D-SPA.20-1 → POST-6 (LB) |
+| (d) clock | D-BL38.1-2 → CLK-1; D-FIX.1-4 → CLK-2; D-P1.04-2 → WRT-3 + CLK-3; D-COST.1-1 → CLK-4 (PL — dated reads after launch are allowed; each has a fixed date) |
+| (e) ruled/operator | D-P0.15-4 → DISC-3 (LB); D-R5OPS.1-2 → POST-7 (LB); D-RES.2-2 → WRT-1 (LB); D-BL38.1-1 → WRT-2 (LB); D-FIX.1-1 → R6H1 + POST-5 (LB); D-FIX.1-3, D-STB.5b-4, D-MAINT.3-1 → R6H1 + POST-5/DISC-1 (LB); D-SEC.2-1, D-PRB.01-1 → R6H1 + POST-2 (LB); D-SEC.1-2 → R6H1 (LB); D-P1.22-3 → SEC-1/2 (LB); D-P1.22-2 → DEP-2(c) + POST-7 (LB); D-OPS.2-1 → R6H1 (LB); D-OPS.1-3 → CLK-4 (PL); D-OPS.2-2, D-COST.1-3 → DEP-3 + TAIL-2 for (b)/(d) (LB for (a)/(f)); D-ECON.1-1, D-PRB.08-1 → R6H1 + CLK-5 (PL); D-P1.16-1, D-BILL.3-1, D-BILL.3-2, D-MAINT.4-1, D-EDIT.1-2, D-PRB.07-1, D-P1.08-1, D-P1.09-1, D-P1.19-2, D-P1.20-1 → R6H2 (LB); D-P1.17-1, D-PRB.01-2, D-P1.21-1 → LCH-2/-3/-4 + R6H2 (LB); D-P1.17-2 → POST-9 + LCH-3 + WATCH-1 (LB except the funnel metrics, PL); D-P1.18-1 → POST-5 + CLK-6 (PL for the expiry arm); D-DEF.4-3, D-ACT.1-3 → GO-4 (closed by launch); D-ECON.2-7 → WATCH-1 (PL); D-RES.2-3 → TAIL-2 (PL — roadmap); **D-ECON.1-2, D-ACT.1-1 → WONTFIX by ruling (closed 2026-10-20)** |
+| (g) cohort | D-SLO.1-5, D-SLO.1-7, D-SLO.1-8 → FOR-1 (LB: verdict + fix) + WATCH-1 (PL: window re-read); D-R5OPS.1-1, D-COST.1-2, D-ECON.1-3, D-ECON.1-4, D-ECON.2-5, D-ECON.2-6 → WATCH-1 (PL) |
+| (h) strategic | the ten G2/H2/eval rows → TAIL-2 re-home to the ADR-111 research program (PL); D-P0.12-3 → TAIL-2 owned obligation (PL) |
+| findings | balance_divergence → FOR-2 (LB); CIREP.1 → ENG-4 (LB); matrix routing → ENG-6 |
+| backlog | every open BL row follows its D-children above; BL-13 → R6H1 ruling (LB); BL-73, BL-47/76/77/84 → TAIL-2 roadmap |
 
-- The funded wave is **carried, never described as run**: bind refused 2026-10-16 (cumulative
-  $80.86 ≥ ~$60, tenant missing, 0 legs, $0 spent).
-- No secret in any artifact; system-role DSNs bind over the IAP tunnel inside authorized runs only.
-- Provenance discipline: SHA-matched deploys only; `workflow_dispatch` provenance never satisfies a
-  "deployed tip" assert.
-- Deferral cells flip only with evidence; flagged rows dispositioned by a reconcile pass, not silently.
+## 8. Cross-cutting invariants (every ticket re-checks)
+
+- **Honest evidence.** No leg claims green without committed evidence plus provenance. A refusal
+  or a red result is a finding, never re-labelled. Deferral cells flip only with evidence.
+- **Claims bar.** No efficacy or superiority claim on any surface (REQ-EVAL-19,
+  `COMPARATIVE_WAVE_MET = false`). ADR-111 changes the launch, not the claims.
+- **Money truth.** Debits equal metered burn clamped at the cap once the metered flip lands
+  (REQ-SPEC-32). Every user-visible price, duration or trial claim comes from the one config.
+- **Tenancy.** The user-serving role cannot bypass RLS. A new tenant read extends the two-tenant
+  probe. A signed-URL mint checks the tenant first.
+- **Scoped authority.** Deploys only under `GD-DEPLOY.R6`'s conditions. One-off prod writes only on
+  the operator's go. Spend only through the fail-closed guards (system-role DSN, cumulative +
+  per-leg caps, ordering).
+- **Secrets never** in any artifact; keys are bound by the operator (`provided: yes/no` only).
+- **Cohort hygiene.** Every agent- or operator-created account is `is_test` or analytics-opt-out,
+  so it never enters an organic cohort read.
+- **Context budget.** Each ticket's working set fits a fresh SWE-2 (256k, non-compacting) run with
+  rigor headroom. A worker that finds its ticket overflowing stops and requests a split.
+- **Preview hygiene.** Every `pr-<n>` stack a ticket creates is destroyed, and its teardown is
+  verified, in the same ticket.
+
+## 9. Out of scope (explicit)
+
+- **Executing the G2/H2 research program.** Re-homed post-launch by ADR-111; its rows are
+  reclassified, not worked.
+- **Launch claims of any efficacy or superiority.**
+- **New product features or surfaces** beyond the legal/trust pages and the metered-debit notice,
+  both of which launch requires.
+- **The 1.x/Later roadmap** (BL-73) and the standing ADR watches (roadmap per `GD-ROADMAP.R6`).
+- **Redis HA** (declined); levers (c) SQL f1-micro and (e) proxy micro/off (rejected); levers (b)
+  GKE spot and (d) Redis removal (parked → post-launch roadmap obligations).
+- **The public announcement or PR itself** — the operator's act.
