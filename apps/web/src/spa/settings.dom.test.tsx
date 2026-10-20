@@ -37,8 +37,7 @@ import { ACCOUNT_DELETION_CONFIRMATION, NOTIFICATION_EVENT_TYPES } from "@rhema/
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -304,7 +303,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass: "desktop", surfaces };
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -348,8 +347,7 @@ async function submit(form: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -357,7 +355,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -428,7 +426,7 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     // The router serializes the "1" flag JSON-quoted (`?saved=%221%22`) — the flash rendered above.
     expect(router.state.location.href).toContain("saved=");
     await vi.waitFor(() => expect(reads()).toBeGreaterThan(baseline));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("the email-change and session-revoke forms post their own JSON branches", async () => {
@@ -445,7 +443,7 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     await submit(revoke);
     const revPost = f.mock.calls.find(([u]) => String(u) === "/app/settings/sessions/revoke" && u[1] != null);
     expect(JSON.parse(String((revPost![1] as RequestInit).body))).toEqual({ sessionId: "s2" });
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("REQ-BFF-21 — ?confirmEmail=<token> is consumed in beforeLoad; the token never reaches the shell", async () => {
@@ -480,18 +478,18 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {
     await mountAt("/app/settings/account", BOOT, makeFetch({ accountStatus: 502 }));
     expect(el()?.querySelector("[data-spa-error]")).not.toBeNull();
-    expect(assignSpy).not.toHaveBeenCalledWith("/login");
+    expect(docNavSpy).not.toHaveBeenCalledWith("/login");
   });
 
   it("a 401 twin answer drops the session and document-navigates to /login (REQ-FW-6)", async () => {
     await mountAt("/app/settings/account", BOOT, makeFetch({ accountStatus: 401 }));
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("/login"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("/login"));
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/account", bootFor({ "/app/settings/account": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/app/settings/account");
+    expect(docNavSpy).toHaveBeenCalledWith("/app/settings/account");
     expect(el()?.querySelector("[data-settings-nav]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/settings/account")).toBe(false);
   });
@@ -541,7 +539,7 @@ describe("GET /app/settings/preferences mounted", () => {
     expect(body["consentUnder"]).toBe("240");
     expect(body["appTheme"]).toBe("dark");
     await vi.waitFor(() => expect(el()!.querySelector("[data-settings-saved]")).not.toBeNull());
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
 
@@ -593,7 +591,7 @@ describe("GET /app/settings/notifications mounted", () => {
     expect(body["qh_enabled"]).toBe("on");
     expect(body["qh_start"]).toBe("21:00");
     expect(body["rp_p1"]).toBe("on");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
 
@@ -637,7 +635,7 @@ describe("GET /app/settings/integrations mounted", () => {
     expect(post).toBeDefined();
     expect((post![1] as RequestInit).method).toBe("POST");
     await vi.waitFor(() => expect(el()!.querySelector("[data-settings-saved]")).not.toBeNull());
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
 });
@@ -711,7 +709,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     const pref = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/preference-learning" && u[1] != null);
     // preferenceOptOut=false ⇒ the learning checkbox is checked ⇒ "learning":"on" rides the body.
     expect(JSON.parse(String((pref![1] as RequestInit).body))).toEqual({ learning: "on" });
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("the export-request POST lands ?notice=requested → data-export-notice", async () => {
@@ -901,7 +899,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     const retireForm = el()!.querySelector(`form[action="/p/${SLUG}/guidance/g1/retire"]`)!;
     await submit(retireForm);
     expect(f.mock.calls.some(([u]) => String(u) === `/p/${SLUG}/guidance/g1/retire` && u[1] != null)).toBe(true);
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("?notice= renders the flash line; ?saved=1 renders the saved line", async () => {
@@ -920,7 +918,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/settings`, bootFor({ "/p/$project/settings": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/settings`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/settings`);
     expect(el()?.querySelector("[data-approval-settings]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u).startsWith("/bff/p/"))).toBe(false);
   });
@@ -968,7 +966,7 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
     });
     await mountAt("/app/settings/preferences", BOOT, f);
     await submit(el()!.querySelector('form[action="/app/settings/preferences"]')!);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://billing.example.test/portal"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://billing.example.test/portal"));
   });
 });
 

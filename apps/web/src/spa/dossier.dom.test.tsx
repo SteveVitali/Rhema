@@ -24,9 +24,8 @@ import { COPY } from "../copy.js";
 import type { DossierViewData } from "../dossier-view.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffDossierTwin, BffObligationNewTwin } from "./queries.js";
-import { expectManifestEmission } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -206,7 +205,7 @@ const SPA_DOSSIER = {
   "/p/$project/obligations/new": "spa",
 } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 let beaconSpy: ReturnType<typeof vi.spyOn>;
 const mounted: Root[] = [];
 
@@ -251,8 +250,7 @@ async function submit(form: Element, submitter?: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   // The presence + showcase-anchor pings ride sendBeacon — happy-dom's transport would otherwise
   // hit a real socket. Stubbed for the whole file; the gate/presence legs inspect the calls
   // (the inbox.dom.test.tsx precedent).
@@ -264,7 +262,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -591,7 +589,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
   it("an unflipped verdict hands the document back to the server", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor({ ...SPA_DOSSIER, "/p/$project/review/$runId": "ssr" }), f.impl);
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/review/${RUN}`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/review/${RUN}`);
   });
 
   it("component axe — the dossier's interactive subset (REQ-VFY-6)", async () => {

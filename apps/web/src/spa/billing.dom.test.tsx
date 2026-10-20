@@ -28,10 +28,9 @@ import type {
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import { billingReturnQuery } from "./queries.js";
 import type { BffBillingReturnTwin, BffBillingSettingsTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -174,7 +173,7 @@ const SPA_ALL = {
   "/settings/billing": "spa",
   "/billing/return": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -209,8 +208,7 @@ async function submit(form: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -218,7 +216,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -363,7 +361,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     expect(init.headers).toMatchObject({ "content-type": "application/json", accept: "application/json" });
     expect(JSON.parse(String(init.body))).toMatchObject({ tier: "writer", cycle: "monthly" });
     // REQ-BFF-27 — the server-validated Stripe URL is a DOCUMENT navigation, never a router push.
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_1"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_1"));
     expect(router.state.location.pathname).toBe("/app/settings/billing");
   });
 
@@ -378,13 +376,13 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     await submit(topup);
     const topupPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/topup" && i != null);
     expect(JSON.parse(String((topupPost![1] as RequestInit).body))).toEqual({ packId: "pack_10" });
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_top"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_top"));
 
     const portal = el()!.querySelector<HTMLFormElement>("[data-portal-form]")!;
     await submit(portal);
     const portalPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/portal" && i != null);
     expect(portalPost).toBeDefined();
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("https://billing.stripe.com/session/bps_1"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://billing.stripe.com/session/bps_1"));
   });
 
   it("the cancel/auto-reload/waitlist POSTs carry their fields and follow the ?saved=1 redirect arm", async () => {
@@ -405,7 +403,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       enabled: "1", thresholdCredits: "500", packId: "pack_10", monthlyCapUsd: "50" });
     // The {redirect} arm is an in-router nav — the saved flash renders through validated search.
     await vi.waitFor(() => expect(el()!.querySelector("[data-saved]")).not.toBeNull());
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
 
     const waitlist = el()!.querySelector<HTMLFormElement>("[data-waitlist-form]")!;
     const email = waitlist.querySelector<HTMLInputElement>('[name="email"]')!;
@@ -431,7 +429,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     await submit(form);
     await vi.waitFor(() => expect(el()!.querySelector("[data-notice]")).not.toBeNull());
     expect(el()!.querySelector("[data-notice]")?.textContent).toContain("plan isn");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("REQ-UX-16 — the in-flight form carries aria-busy + disabled controls, restored on settle", async () => {
@@ -461,8 +459,8 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
   it("an unflipped leaf hands off to the server without spending a BFF read (SsrHandoff)", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/billing", bootFor({ ...SPA_ALL, "/app/settings/billing": "ssr" }), f);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalled());
-    expect(assignSpy.mock.calls[0]?.[0]).toContain("/app/settings/billing");
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalled());
+    expect(docNavSpy.mock.calls[0]?.[0]).toContain("/app/settings/billing");
     expect(f.mock.calls.filter(([u]) => String(u) === "/bff/settings/billing")).toHaveLength(0);
   });
 
@@ -550,8 +548,8 @@ describe("GET /billing/return mounted (SPA.16)", () => {
   it("an unflipped leaf hands off — zero BFF reads (SsrHandoff)", async () => {
     const f = makeFetch();
     await mountAt("/billing/return?session_id=cs_1", bootFor({ ...SPA_ALL, "/billing/return": "ssr" }), f);
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalled());
-    expect(assignSpy.mock.calls[0]?.[0]).toContain("/billing/return");
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalled());
+    expect(docNavSpy.mock.calls[0]?.[0]).toContain("/billing/return");
     expect(f.mock.calls.filter(([u]) => String(u).startsWith("/bff/billing/return"))).toHaveLength(0);
   });
 

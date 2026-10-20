@@ -91,9 +91,10 @@ describes landed code. Live posture changes only through the operator's ordered 
 - **Forced-SSR is a server verdict (REQ-ED-12, ADR-108).** The five Page-family GETs serve SSR
   on `isPhoneRequest(c) || row.showcase === true`. The boot `surfaces` map owns the phone leg;
   the BFF twin's `project.showcase` owns the showcase leg — leaves consult `twinForcesSsr`
-  (`spa/states.tsx`) and hand off through `SsrHandoff` → `navigateDocument` (`spa/dom.ts`, the
-  one document-navigation seam; `/logout`, external hand-offs, binaries are document
-  navigations). The client never decides a renderer.
+  (`spa/states.tsx`) and hand off through `SsrHandoff` → `replaceDocument` (`spa/dom.ts`, the
+  one document-navigation seam — `navigateDocument`/`replaceDocument` share the `spaRuntime`
+  arms; `/logout`, external hand-offs, binaries are document navigations). The client never
+  decides a renderer.
 - **Transport.** `bffFetch` (`spa/bff.ts`) is the ONE JSON transport — same-origin `/…` paths
   only, `credentials:"same-origin"`, no client POST retries; non-2xx throws
   `BffError{status,code,detail?,requestId}`; 401 → `/login` document nav. Reads are the typed

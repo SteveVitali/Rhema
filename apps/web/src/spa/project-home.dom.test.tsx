@@ -22,9 +22,8 @@ import type { ProjectRow, ProjectSearchHitDto, VoiceListRowDto } from "@rhema/ap
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffAppHomeTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -192,7 +191,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop"
 
 const SPA_ALL = { "/app": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -230,8 +229,7 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -239,7 +237,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -384,7 +382,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     expect((post![1] as RequestInit).method).toBe("POST");
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ groupBy: "voice" });
     await vi.waitFor(() => expect(bffAppReads(f)).toBeGreaterThan(baseline));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("a row-menu action POSTs its /p/:slug path as JSON — the envelope's /app redirect navigates in-router", async () => {
@@ -398,7 +396,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     expect(post).toBeDefined();
     expect((post![1] as RequestInit).headers).toMatchObject({ "content-type": "application/json" });
     // The /app redirect stays in-router — no document nav back to the server.
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("the deleted row's Restore POSTs /p/:slug/restore → the envelope's /app?deleted=1 rides in-router", async () => {
@@ -410,7 +408,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     });
     const post = f.mock.calls.find(([u]) => String(u) === "/p/zeta-gone/restore");
     expect(post).toBeDefined();
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("a search GET form navigates in-router to the same /app?… URL (never a BFF POST)", async () => {
@@ -428,7 +426,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     await vi.waitFor(() =>
       expect(f.mock.calls.some(([u]) => String(u) === "/bff/app?q=alpha")).toBe(true),
     );
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("REQ-UX-16 — an in-flight POST marks its form aria-busy + disabled, then releases", async () => {
@@ -472,13 +470,13 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {
     await mountAt("/app", BOOT, makeFetch({ homeStatus: 502 }));
     expect(el()?.querySelector("[data-spa-error]")).not.toBeNull();
-    expect(assignSpy).not.toHaveBeenCalledWith("/login");
+    expect(docNavSpy).not.toHaveBeenCalledWith("/login");
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/app", bootFor({ "/app": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/app");
+    expect(docNavSpy).toHaveBeenCalledWith("/app");
     expect(el()?.querySelector("[data-new-project]")).toBeNull();
     expect(bffAppReads(f)).toBe(0);
   });

@@ -11,10 +11,11 @@
 // The file holds no literal data-* selector strings (the lint scans src/spa: every hook literal
 // must resolve to the manifest) — hooks always arrive via DomContractEntry values.
 
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 import axe from "axe-core";
 import type { DomContractEntry, DomContractSurface } from "../dom-contract.js";
 import { hooksForSurface } from "../dom-contract.js";
+import { spaRuntime } from "./dom.js";
 
 /**
  * Interactive manifest subset for component-level axe (design/27: "the manifest's interactive
@@ -32,6 +33,27 @@ export const AXE_INTERACTIVE = [
 ] as const;
 
 const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
+
+/**
+ * The ONE observable document-navigation seam (REQ-NAVM-5 / O2-F10): installs a single spy on
+ * BOTH `spaRuntime` arms (`assign` + `replace`) so a spec asserts "a document nav happened"
+ * without caring which history mode carried it — and can never stub `assign` alone while a
+ * `replace`-arm nav (SsrHandoff) escapes unobserved. `assign`/`replace` are the whole
+ * `window.location` doc-nav vocabulary, so the shared spy is complete coverage. Returns the
+ * spy; pair with `restoreDocumentNav` in `afterEach`.
+ */
+export function stubDocumentNav(): ReturnType<typeof vi.fn> {
+  const spy = vi.fn();
+  spaRuntime.assign = spy;
+  spaRuntime.replace = spy;
+  return spy;
+}
+
+/** Restores the production `spaRuntime` arms after a `stubDocumentNav` install. */
+export function restoreDocumentNav(): void {
+  spaRuntime.assign = (href) => window.location.assign(href);
+  spaRuntime.replace = (href) => window.location.replace(href);
+}
 
 /** Implicit-role element selectors — a bare `<button>` satisfies the `button` role entry. */
 const ROLE_TAGS: Record<string, string> = {

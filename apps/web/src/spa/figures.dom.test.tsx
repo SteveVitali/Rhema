@@ -23,9 +23,8 @@ import type { FigureCardDto, FigureListItemDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -168,7 +167,7 @@ const SPA_FIGURES = {
   "/p/$project/figures/$figureId": "spa",
   "/p/$project/visualize": "spa" } as const;
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -203,8 +202,7 @@ async function submit(form: Element) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -212,7 +210,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -274,7 +272,7 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
       bootFor({ ...SPA_FIGURES, "/p/$project/figures": "ssr" }),
       f.impl,
     );
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/figures`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/figures`);
     expect(f.impl.mock.calls.some(([u]) => String(u).startsWith(`/bff/p/${SLUG}`))).toBe(false);
   });
 });
@@ -467,7 +465,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     await submit(el()!.querySelector("[data-accept]")!.closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/proposals/accept`);
     await vi.waitFor(() => {
-      expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/4`);
+      expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/4`);
     });
   });
 
@@ -561,7 +559,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
       bootFor({ ...SPA_FIGURES, "/p/$project/figures/$figureId": "ssr" }),
       f.impl,
     );
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/figures/fig01`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/figures/fig01`);
     expect(f.impl.mock.calls.some(([u]) => String(u).startsWith(`/bff/p/${SLUG}`))).toBe(false);
   });
 });
@@ -660,9 +658,9 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
       f.impl,
     );
     await vi.waitFor(() => {
-      expect(assignSpy).toHaveBeenCalled();
+      expect(docNavSpy).toHaveBeenCalled();
     });
-    const href = String(assignSpy.mock.calls[0]![0]);
+    const href = String(docNavSpy.mock.calls[0]![0]);
     expect(href).toContain(`/p/${SLUG}/visualize?`);
     expect(href).toContain("request=");
     expect(href).toContain("kind=vega_lite");

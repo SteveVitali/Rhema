@@ -20,9 +20,8 @@ import type { GateCardDto, InboxItemDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffInboxTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -148,7 +147,7 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass: "desktop", surfaces };
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 let beaconSpy: ReturnType<typeof vi.spyOn>;
 const mounted: Root[] = [];
 
@@ -176,8 +175,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   // The auto-proceed card's presence pings ride sendBeacon — happy-dom's transport would otherwise
   // hit a real socket for every mounted row. Stubbed for the whole file; the presence leg inspects.
   beaconSpy = vi.spyOn(navigator, "sendBeacon").mockReturnValue(true);
@@ -188,7 +186,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -301,7 +299,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ item: "evt_new" });
     // The twin refetches on settle — the row's unread state repaints from the server.
     await vi.waitFor(() => expect(inboxReads()).toBeGreaterThan(baseline));
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("read-all posts the JSON branch + invalidates", async () => {
@@ -314,7 +312,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     const post = f.mock.calls.find(([u]) => String(u) === "/app/inbox/read-all");
     expect(post).toBeDefined();
     expect((post![1] as RequestInit).method).toBe("POST");
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("the empty aggregate renders the designed empty state — badge counts zero blocked", async () => {
@@ -337,13 +335,13 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {
     await mountAt("/app/inbox", BOOT, makeFetch({ inboxStatus: 502 }));
     expect(el()?.querySelector("[data-spa-error]")).not.toBeNull();
-    expect(assignSpy).not.toHaveBeenCalledWith("/login");
+    expect(docNavSpy).not.toHaveBeenCalledWith("/login");
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/app/inbox", bootFor({ "/app/inbox": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/app/inbox");
+    expect(docNavSpy).toHaveBeenCalledWith("/app/inbox");
     expect(el()?.querySelector("[data-inbox-badge]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/app/inbox")).toBe(false);
   });

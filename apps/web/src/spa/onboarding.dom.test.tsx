@@ -20,8 +20,7 @@ import type { ProtocolCardDto, VoiceListRowDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 // The hold seam is module-mocked: the SAME primitives landing.ts runs, driven by fixture records.
 const holdState: { record: { token: string; name: string; type: string; size: number; bytes: ArrayBuffer } | null; deleted: number } = {
@@ -190,7 +189,7 @@ const SPA_ALL = {
   "/p/$project/import/preview": "spa" } as const;
 const BOOT = bootFor({ ...SPA_ALL });
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -233,8 +232,7 @@ function setFile(input: HTMLInputElement, file: File) {
 }
 
 beforeEach(() => {
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   holdState.record = null;
   holdState.deleted = 0;
   document.documentElement.removeAttribute("data-route");
@@ -244,7 +242,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -295,7 +293,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
       title: "Fresh" });
     // the envelope redirect goes through the router → the unflipped /p leaf hands the
     // document back to the server (SsrHandoff) — verbatim flash parameters preserved.
-    expect(assignSpy).toHaveBeenCalledWith("/p/fresh?created=scratch");
+    expect(docNavSpy).toHaveBeenCalledWith("/p/fresh?created=scratch");
   });
 
   it("an upload entry runs presign→direct-PUT→quarantineKey — bytes never ride the JSON body", async () => {
@@ -372,7 +370,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
     const f = makeFetch();
     await mountAt("/app/new", bootFor({ ...SPA_ALL, "/app/new": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith("/app/new");
+    expect(docNavSpy).toHaveBeenCalledWith("/app/new");
     expect(el()?.querySelector("[data-new-project-form]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/app/new")).toBe(false);
   });
@@ -462,7 +460,7 @@ describe("GET /app/new/preview mounted (SPA.14)", () => {
     expect(body.entry).toBe("draft");
     expect(body.action).toBe("create");
     // the ?hc= echo → the unflipped /p leaf hands off; the consumed handshake lands server-side
-    expect(assignSpy).toHaveBeenCalled();
+    expect(docNavSpy).toHaveBeenCalled();
   });
 });
 
@@ -507,7 +505,7 @@ describe("GET /p/:slug/import mounted (SPA.14)", () => {
     // `ide-chrome` off the route stamps ssr, so the leaf hands the document straight back
     // (SsrHandoff) without ever touching the twin.
     await mountAt(`/p/${SLUG}/import`, bootFor({ ...SPA_ALL, "/p/$project/import": "ssr" }), f);
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}/import`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/import`);
     expect(el()?.querySelector(`form[action="/p/${SLUG}/import/preview"]`)).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === `/bff/p/${SLUG}/import`)).toBe(false);
   });
@@ -540,7 +538,7 @@ describe("GET /p/:slug/import/preview mounted (SPA.14)", () => {
     await submit(form, create);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/p/${SLUG}/import/create` && i?.method === "POST");
     expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ qk: "q1", action: "create" });
-    expect(assignSpy).toHaveBeenCalledWith(`/p/${SLUG}`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}`);
   });
 
   it("component axe on the mounted ready preview (REQ-VFY-6)", async () => {

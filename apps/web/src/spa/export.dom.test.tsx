@@ -30,9 +30,8 @@ import type { ExportDialogDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { spaRuntime } from "./dom.js";
 import type { BffExportTwin } from "./queries.js";
-import { axeCheck } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -250,7 +249,7 @@ class MemStorage {
   }
 }
 
-let assignSpy: ReturnType<typeof vi.fn>;
+let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>) {
@@ -285,8 +284,7 @@ async function submit(form: Element) {
 
 beforeEach(() => {
   FakeEventSource.instances = [];
-  assignSpy = vi.fn();
-  spaRuntime.assign = assignSpy;
+  docNavSpy = stubDocumentNav();
   vi.stubGlobal("localStorage", new MemStorage());
   vi.stubGlobal("EventSource", FakeEventSource);
   document.documentElement.removeAttribute("data-route");
@@ -296,7 +294,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const r of mounted.splice(0)) act(() => r.unmount());
-  spaRuntime.assign = (href) => window.location.assign(href);
+  restoreDocumentNav();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -415,7 +413,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
       const reads = f.mock.calls.filter(([u]) => u === "/bff/p/the-piece/export").length;
       expect(reads).toBeGreaterThan(readsBefore);
     });
-    expect(assignSpy).not.toHaveBeenCalled();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("REQ-UX-16 — the in-flight addition disables its controls + aria-busy, restored on settle", async () => {
@@ -450,7 +448,7 @@ describe("the export + ide-chrome AND-gate", () => {
     const f = makeFetch();
     await mountAt("/p/the-piece/export", bootFor({ "/p/$project/export": "ssr" }), f);
     // the handoff is a document navigation to the leaf's own URL — the server re-decides.
-    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith("/p/the-piece/export"));
+    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("/p/the-piece/export"));
     expect(el()!.querySelector("[data-export-form]")).toBeNull();
     expect(el()!.querySelector("[data-ide]")).toBeNull();
     // and the loader never spent the BFF read it would throw away.
