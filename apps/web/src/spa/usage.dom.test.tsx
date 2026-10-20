@@ -18,7 +18,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffProjectUsageTwin, BffUsageTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -129,6 +129,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -189,7 +195,7 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/usage", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("beats the SSR dwell heartbeat to /a/dwell — REQ-BETA-10's React-effect port", async () => {
@@ -267,7 +273,7 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     const back = main.querySelector<HTMLAnchorElement>("nav a");
     expect(back?.getAttribute("href")).toBe(`/p/${SLUG}`);
     expect(back?.textContent).toBe(COPY.projectUsage.backToProject);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
 

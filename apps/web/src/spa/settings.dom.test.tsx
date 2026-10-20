@@ -37,7 +37,7 @@ import { ACCOUNT_DELETION_CONFIRMATION, NOTIFICATION_EVENT_TYPES } from "@rhema/
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -325,6 +325,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -409,7 +415,7 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     const reads = () => f.mock.calls.filter(([u]) => String(u) === "/bff/settings/account").length;
     const baseline = reads();
     expect(baseline).toBeGreaterThanOrEqual(1);
-    const form = el()!.querySelector('form[action="/app/settings/account"]')!;
+    const form = (await settled('form[action="/app/settings/account"]'));
     expect(form.getAttribute("method")).toBe("post");
     await submit(form);
     const post = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/account" && i != null);
@@ -432,14 +438,14 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
   it("the email-change and session-revoke forms post their own JSON branches", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/account", BOOT, f);
-    const emailForm = el()!.querySelector('form[action="/app/settings/account/email"]')!;
+    const emailForm = (await settled('form[action="/app/settings/account/email"]'));
     const input = emailForm.querySelector<HTMLInputElement>('[name="email"]')!;
     input.value = "n@x.test";
     await submit(emailForm);
     const emailPost = f.mock.calls.find(([u]) => String(u) === "/app/settings/account/email" && u[1] != null);
     expect(emailPost).toBeDefined();
     expect(JSON.parse(String((emailPost![1] as RequestInit).body))).toEqual({ email: "n@x.test" });
-    const revoke = el()!.querySelector('form[action="/app/settings/sessions/revoke"]')!;
+    const revoke = (await settled('form[action="/app/settings/sessions/revoke"]'));
     await submit(revoke);
     const revPost = f.mock.calls.find(([u]) => String(u) === "/app/settings/sessions/revoke" && u[1] != null);
     expect(JSON.parse(String((revPost![1] as RequestInit).body))).toEqual({ sessionId: "s2" });
@@ -472,7 +478,7 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
 
   it("component axe on the mounted account section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/account", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {
@@ -529,7 +535,7 @@ describe("GET /app/settings/preferences mounted", () => {
   it("the prefs form posts the flat vocabulary as JSON and lands ?saved=1", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/preferences", BOOT, f);
-    const form = el()!.querySelector('form[action="/app/settings/preferences"]')!;
+    const form = (await settled('form[action="/app/settings/preferences"]'));
     await submit(form);
     const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/preferences" && u[1] != null);
     expect(post).toBeDefined();
@@ -545,7 +551,7 @@ describe("GET /app/settings/preferences mounted", () => {
 
   it("component axe on the mounted preferences section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/preferences", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });
 
@@ -581,7 +587,7 @@ describe("GET /app/settings/notifications mounted", () => {
   it("the matrix form posts the flat vocabulary as JSON and lands ?saved=1", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/notifications", BOOT, f);
-    const form = el()!.querySelector('form[action="/app/settings/notifications"]')!;
+    const form = (await settled('form[action="/app/settings/notifications"]'));
     await submit(form);
     const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/notifications" && u[1] != null);
     expect(post).toBeDefined();
@@ -597,7 +603,7 @@ describe("GET /app/settings/notifications mounted", () => {
 
   it("component axe on the mounted matrix (REQ-VFY-6 — the select-name additions carry)", async () => {
     await mountAt("/app/settings/notifications", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });
 
@@ -615,7 +621,7 @@ describe("GET /app/settings/integrations mounted", () => {
     // Every card carries its "what we never do" line (§14.7).
     expect(main.querySelectorAll("[data-integration-never]").length).toBe(3);
     // The degraded connection row: status, handle, persona, items, error, disconnect form.
-    const conn = main.querySelector('[data-connection="cn1"]')!;
+    const conn = (await settled('[data-connection="cn1"]'));
     expect(conn).not.toBeNull();
     expect(conn.querySelector('[data-conn-status="degraded"]')).not.toBeNull();
     expect(conn.querySelector("[data-conn-error]")?.textContent).toContain("token expired");
@@ -629,7 +635,7 @@ describe("GET /app/settings/integrations mounted", () => {
   it("disconnect posts the JSON branch to the connection's own path", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/integrations", BOOT, f);
-    const form = el()!.querySelector('form[action="/app/settings/integrations/cn1/disconnect"]')!;
+    const form = (await settled('form[action="/app/settings/integrations/cn1/disconnect"]'));
     await submit(form);
     const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/integrations/cn1/disconnect" && u[1] != null);
     expect(post).toBeDefined();
@@ -683,7 +689,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
 
   it("the export download stays a document <a> — never an intercepted fetch (REQ-BFF-17)", async () => {
     await mountAt("/app/settings/data", BOOT, makeFetch());
-    const dl = el()!.querySelector<HTMLAnchorElement>("[data-export-download]")!;
+    const dl = (await settled<HTMLAnchorElement>("[data-export-download]"));
     // A plain href the browser navigates — no form, no button role.
     expect(dl.tagName).toBe("A");
     expect(dl.closest("form")).toBeNull();
@@ -697,7 +703,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
       "/app/settings/data/support-access",
       "/app/settings/data/preference-learning",
     ]) {
-      await submit(el()!.querySelector(`form[action="${action}"]`)!);
+      await submit((await settled(`form[action="${action}"]`)));
       const post = f.mock.calls.find(([u]) => String(u) === action && u[1] != null);
       expect(post, action).toBeDefined();
       expect((post![1] as RequestInit).headers).toMatchObject({ "content-type": "application/json" });
@@ -715,7 +721,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the export-request POST lands ?notice=requested → data-export-notice", async () => {
     const f = makeFetch();
     const { router } = await mountAt("/app/settings/data", BOOT, f);
-    await submit(el()!.querySelector('form[action="/app/settings/data/export"]')!);
+    await submit((await settled('form[action="/app/settings/data/export"]')));
     const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/export" && u[1] != null);
     expect(post).toBeDefined();
     await vi.waitFor(() => {
@@ -727,7 +733,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the import POST rides multipart FormData — never a JSON field (REQ-BFF-17)", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/data", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("[data-account-import]")!;
+    const form = (await settled<HTMLFormElement>("[data-account-import]"));
     const file = form.querySelector<HTMLInputElement>('[name="archive"]')!;
     // happy-dom's DataTransfer is unavailable — assign the file list directly.
     Object.defineProperty(file, "files", { value: [new File(["zip"], "backup.zip", { type: "application/zip" })], configurable: true });
@@ -747,7 +753,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the delete form posts the typed confirmation; the cancel form posts inside the grace", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/data", BOOT, f);
-    const del = el()!.querySelector<HTMLFormElement>("[data-delete-account-form]")!;
+    const del = (await settled<HTMLFormElement>("[data-delete-account-form]"));
     const confirmation = del.querySelector<HTMLInputElement>('[name="confirmation"]')!;
     confirmation.value = "delete";
     await submit(del);
@@ -769,7 +775,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     await mountAt("/app/settings/data", BOOT, fetchImpl);
     const main = el()!;
     expect(main.querySelector("[data-deletion-banner]")).not.toBeNull();
-    const cancel = main.querySelector<HTMLFormElement>('form[action="/app/settings/account/delete/cancel"]')!;
+    const cancel = (await settled<HTMLFormElement>('form[action="/app/settings/account/delete/cancel"]'));
     expect(cancel.querySelector("[data-deletion-cancel]")).not.toBeNull();
     expect(main.querySelector("[data-delete-account-form]")).toBeNull();
     // The analytics toggle reflects the twin's opt-out state.
@@ -813,7 +819,7 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
 
   it("component axe on the mounted data section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/data", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });
 
@@ -842,7 +848,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(main.querySelector("[data-approval-settings]")).not.toBeNull();
     expect(main.querySelector('[data-policy="named"]')).not.toBeNull();
     expect(main.querySelector('[name="policy"]')).not.toBeNull();
-    const grid = main.querySelector("[data-override-grid]")!;
+    const grid = (await settled("[data-override-grid]"));
     expect(grid).not.toBeNull();
     expect(grid.querySelectorAll("[data-override-row]").length).toBe(3);
     // REQ-SPEC-1 — the non-overridable kind shows "always waits for you", never a control.
@@ -865,7 +871,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
   it("the settings form posts the flat vocabulary to /p/:slug/settings", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/settings`, BOOT, f);
-    await submit(el()!.querySelector(`form[action="/p/${SLUG}/settings"]`)!);
+    await submit((await settled(`form[action="/p/${SLUG}/settings"]`)));
     const post = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings` && u[1] != null);
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
@@ -879,7 +885,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
   it("the approvals form posts policy + ov_* + returnTo; guidance posts body + workflows", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/settings`, BOOT, f);
-    await submit(el()!.querySelector(`form[action="/p/${SLUG}/settings/approvals"]`)!);
+    await submit((await settled(`form[action="/p/${SLUG}/settings/approvals"]`)));
     const post = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings/approvals` && u[1] != null);
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
@@ -887,7 +893,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(body["ov_approve_scope"]).toBe("86400000");
     expect(body["returnTo"]).toBe(`/p/${SLUG}/settings`);
     // The guidance edit disclosure's save posts the replace vocabulary.
-    const editForm = el()!.querySelector(`form[action="/p/${SLUG}/settings/guidance/g1"]`)!;
+    const editForm = (await settled(`form[action="/p/${SLUG}/settings/guidance/g1"]`));
     await submit(editForm);
     const gPost = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings/guidance/g1` && u[1] != null);
     expect(gPost).toBeDefined();
@@ -896,7 +902,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(gBody["workflows"]).toBe("review");
     expect(gBody["returnTo"]).toBe(`/p/${SLUG}/settings`);
     // The retire CTA posts to the shared retire path.
-    const retireForm = el()!.querySelector(`form[action="/p/${SLUG}/guidance/g1/retire"]`)!;
+    const retireForm = (await settled(`form[action="/p/${SLUG}/guidance/g1/retire"]`));
     await submit(retireForm);
     expect(f.mock.calls.some(([u]) => String(u) === `/p/${SLUG}/guidance/g1/retire` && u[1] != null)).toBe(true);
     expect(docNavSpy).not.toHaveBeenCalled();
@@ -912,7 +918,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
 
   it("component axe on the mounted project settings (REQ-VFY-6 — the override grid carries)", async () => {
     await mountAt(`/p/${SLUG}/settings`, BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
@@ -933,7 +939,7 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
     const gate = deferred<Response>();
     const f = makeFetch({ hold: { "/app/settings/preferences": gate.promise } });
     await mountAt("/app/settings/preferences", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app/settings/preferences"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/settings/preferences"]'));
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -965,7 +971,7 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
       mutations: { "/app/settings/preferences": { ok: true, url: "https://billing.example.test/portal" } },
     });
     await mountAt("/app/settings/preferences", BOOT, f);
-    await submit(el()!.querySelector('form[action="/app/settings/preferences"]')!);
+    await submit((await settled('form[action="/app/settings/preferences"]')));
     await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://billing.example.test/portal"));
   });
 });

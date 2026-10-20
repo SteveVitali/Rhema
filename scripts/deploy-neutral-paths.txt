@@ -1,0 +1,18 @@
+# R6ENG.1 (REQ-ENG-8; ADR-114) — the deploy-neutral path allowlist.
+#
+# The deploy-provenance gates (`scripts/check-deploy-provenance.mjs` and its in-process twin
+# `packages/journeys/src/provenance.ts`) accept a deployed SHA that trails the expected HEAD
+# ONLY when (1) the deployed SHA is a git ancestor of the expected SHA, and (2) every path in
+# `git diff <deployed>..<expected>` is neutral under this list. A path is neutral when it can
+# never change the deployed artifact's behavior — documentation + committed build memory, and
+# CI-only tool configuration consumed by a job and never shipped. Anything else is code drift
+# and the check fails exactly as it did before REQ-ENG-8. `.github/workflows/**` is
+# deliberately NOT neutral: a workflow edit changes what verification runs, so the strict arm
+# stands for it (see ADR-114's alternatives).
+#
+# Grammar: one rule per line; `#` comments and blank lines are ignored. A rule ending in `/`
+# subtree-matches every path under it; any other rule must equal the path exactly.
+# Consumers: R6SWP.1 and R6WATCH.1 read this file as the single source of truth.
+
+docs/
+.gitleaks.toml

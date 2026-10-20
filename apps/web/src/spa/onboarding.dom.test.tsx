@@ -20,7 +20,7 @@ import type { ProtocolCardDto, VoiceListRowDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 // The hold seam is module-mocked: the SAME primitives landing.ts runs, driven by fixture records.
 const holdState: { record: { token: string; name: string; type: string; size: number; bytes: ArrayBuffer } | null; deleted: number } = {
@@ -210,6 +210,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -258,7 +264,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
     for (const entry of ["scratch", "outline", "draft"]) {
       expect(main.querySelector(`[data-entry="${entry}"]`), entry).not.toBeNull();
     }
-    const form = main.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
     expect(form.getAttribute("data-held")).toBe("1");
     expect(form.getAttribute("data-new-project-form")).toBe("true");
     for (const field of ['name="entry"', 'name="heldToken"', 'name="title"', 'name="protocolId"', 'name="venue"', 'name="personaId"', 'name="file"', 'name="paste"', 'name="startVersion"']) {
@@ -283,7 +289,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
   it("a scratch submit posts the JSON vocabulary and rides the envelope's redirect", async () => {
     const f = makeFetch();
     await mountAt("/app/new", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
     form.querySelector<HTMLInputElement>('[name="title"]')!.value = "Fresh";
     await submit(form);
     const post = f.mock.calls.find(([u, i]) => String(u) === "/app/new" && i?.method === "POST");
@@ -300,7 +306,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
     const puts: { url: string; init?: RequestInit }[] = [];
     const f = makeFetch({ puts });
     await mountAt("/app/new?entry=draft", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
     setFile(
       form.querySelector<HTMLInputElement>('input[name="file"]')!,
       new File(["# Draft\n\nbody"], "draft.md", { type: "text/markdown" }),
@@ -331,13 +337,13 @@ describe("GET /app/new mounted (SPA.14)", () => {
           warnings: [] } } };
     const f = makeFetch({ newPost: inline });
     await mountAt("/app/new?entry=draft", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
     setFile(
       form.querySelector<HTMLInputElement>('input[name="file"]')!,
       new File(["x"], "draft.md", { type: "text/markdown" }),
     );
     await submit(form);
-    const create = el()!.querySelector<HTMLFormElement>('form[data-conversion-form]')!;
+    const create = (await settled<HTMLFormElement>('form[data-conversion-form]'));
     expect(create.getAttribute("action")).toBe("/app/new/create");
     for (const field of ['name="entry"', 'name="title"', 'name="protocolId"', 'name="qk"']) {
       expect(create.innerHTML, field).toContain(field);
@@ -349,7 +355,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
   it("a scratch validation refusal renders the alert, never a silent no-op", async () => {
     const f = makeFetch();
     await mountAt("/app/new", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
     const base = f;
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -364,7 +370,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
 
   it("component axe on the mounted sheet (REQ-VFY-6)", async () => {
     await mountAt("/app/new?entry=draft", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
@@ -390,10 +396,10 @@ describe("the held-draft contract (ONB.1)", () => {
     const notice = main.querySelector("[data-held-notice]")?.textContent ?? "";
     expect(notice).toContain("n1-held-draft.md");
     expect(main.querySelector("[data-held-discard]")).not.toBeNull();
-    const token = main.querySelector<HTMLInputElement>('input[name="heldToken"]')!.value;
+    const token = (await settled<HTMLInputElement>('input[name="heldToken"]')).value;
     // DataTransfer may be absent under happy-dom — the attach branch is honest either way:
     // when the file attached, the token stamps; otherwise the reattach notice paints.
-    const files = main.querySelector<HTMLInputElement>('input[name="file"]')!.files?.length ?? 0;
+    const files = (await settled<HTMLInputElement>('input[name="file"]')).files?.length ?? 0;
     if (files === 1) expect(token).toBe("hold_abc123");
     // the record itself is never touched by hydration (no claim-on-attach)
     expect(holdState.record).not.toBeNull();
@@ -412,7 +418,7 @@ describe("the held-draft contract (ONB.1)", () => {
     holdState.record = HOLD;
     await mountAt("/app/new?entry=draft", BOOT, makeFetch());
     await act(async () => {});
-    const discard = el()!.querySelector<HTMLElement>("[data-held-discard]")!;
+    const discard = (await settled<HTMLElement>("[data-held-discard]"));
     await act(async () => {
       discard.click();
     });
@@ -444,7 +450,7 @@ describe("GET /app/new/preview mounted (SPA.14)", () => {
   it("ready paints the §5.3 preview — create posts /app/new/create with the replay grammar", async () => {
     const f = makeFetch();
     await mountAt("/app/new/preview?entry=draft&qk=q1&src=draft.md", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[data-conversion-form]')!;
+    const form = (await settled<HTMLFormElement>('form[data-conversion-form]'));
     expect(form.getAttribute("action")).toBe("/app/new/create");
     for (const field of ['name="entry"', 'name="title"', 'name="qk"', 'name="heldToken"']) {
       // heldToken only renders when the search carries it — qk/entry/title are unconditional
@@ -471,7 +477,7 @@ describe("GET /p/:slug/import mounted (SPA.14)", () => {
     await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.import.heading);
-    const form = main.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/import/preview"]`)!;
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/import/preview"]`));
     for (const field of ['name="file"', 'name="paste"']) {
       expect(form.innerHTML, field).toContain(field);
     }
@@ -483,7 +489,7 @@ describe("GET /p/:slug/import mounted (SPA.14)", () => {
     const puts: { url: string; init?: RequestInit }[] = [];
     const f = makeFetch({ puts });
     await mountAt(`/p/${SLUG}/import`, BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/import/preview"]`)!;
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/import/preview"]`));
     setFile(
       form.querySelector<HTMLInputElement>('input[name="file"]')!,
       new File(["x"], "paper.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }),
@@ -531,7 +537,7 @@ describe("GET /p/:slug/import/preview mounted (SPA.14)", () => {
   it("ready paints the preview — create posts /import/create and rides the /p/:slug redirect", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/import/preview?qk=q1&src=paper.docx`, BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[data-conversion-form]')!;
+    const form = (await settled<HTMLFormElement>('form[data-conversion-form]'));
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/import/create`);
     expect(form.innerHTML).toContain('name="qk"');
     const create = form.querySelector('[data-conversion-action="create"]')!;
@@ -543,6 +549,6 @@ describe("GET /p/:slug/import/preview mounted (SPA.14)", () => {
 
   it("component axe on the mounted ready preview (REQ-VFY-6)", async () => {
     await mountAt(`/p/${SLUG}/import/preview?qk=q1&src=paper.docx`, BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });

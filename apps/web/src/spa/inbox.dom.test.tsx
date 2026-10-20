@@ -21,7 +21,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffInboxTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -169,6 +169,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -233,7 +239,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
 
   it("the gate row mounts the real §6.4 card — joined by inbox-item id, no presence <script>", async () => {
     await mountAt("/app/inbox", BOOT, makeFetch());
-    const row = el()!.querySelector('[data-inbox-row="blk_gate"]')!;
+    const row = (await settled('[data-inbox-row="blk_gate"]'));
     // The card is mounted inside the row's expand, keyed by the GATE id.
     const cardHost = row.querySelector('[data-inbox-gate-card="gate_1"]');
     expect(cardHost).not.toBeNull();
@@ -245,7 +251,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     // useGatePresence effect replaces it (asserted by the beacon leg below).
     expect(cardHost!.querySelector("script")).toBeNull();
     // The decision row renders the inline answer controls.
-    const dec = el()!.querySelector('[data-inbox-row="blk_dec"]')!;
+    const dec = (await settled('[data-inbox-row="blk_dec"]'));
     expect(dec.querySelectorAll("[data-decision-option]").length).toBe(2);
   });
 
@@ -269,7 +275,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
 
   it("a missed gate join degrades the row to its deep link + the decide note", async () => {
     await mountAt("/app/inbox", BOOT, makeFetch({ inbox: twin({ gateCards: {} }) }));
-    const row = el()!.querySelector('[data-inbox-row="blk_gate"]')!;
+    const row = (await settled('[data-inbox-row="blk_gate"]'));
     expect(row.querySelector("[data-inbox-gate-card]")).toBeNull();
     expect(row.textContent).toContain(COPY.inbox.decideNote);
     expect(row.querySelector('[data-inbox-open]')?.getAttribute("href")).toBe(`/p/${SLUG}?gate=gate_1`);
@@ -283,7 +289,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     const inboxReads = () => f.mock.calls.filter(([u]) => String(u) === "/bff/app/inbox").length;
     const baseline = inboxReads();
     expect(baseline).toBeGreaterThanOrEqual(1);
-    const button = el()!.querySelector<HTMLButtonElement>('[data-inbox-row="evt_new"] [data-inbox-mark-read]')!;
+    const button = (await settled<HTMLButtonElement>('[data-inbox-row="evt_new"] [data-inbox-mark-read]'));
     const form = button.closest("form")!;
     expect(form.getAttribute("action")).toBe("/app/inbox/read");
     expect(form.getAttribute("method")).toBe("post");
@@ -305,7 +311,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
   it("read-all posts the JSON branch + invalidates", async () => {
     const f = makeFetch();
     await mountAt("/app/inbox", BOOT, f);
-    const form = el()!.querySelector('form[action="/app/inbox/read-all"]')!;
+    const form = (await settled('form[action="/app/inbox/read-all"]'));
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -329,7 +335,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/app/inbox", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {

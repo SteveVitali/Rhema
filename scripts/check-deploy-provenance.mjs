@@ -10,6 +10,14 @@
 //
 // `--deployed <sha>` carries an already-resolved deployed SHA (e.g. the `deployments` row) into the
 // same comparison without this script needing DB access.
+//
+// R6ENG.1 (REQ-ENG-8; ADR-114): a strict mismatch gets ONE second opinion — when the deployed
+// SHA is a git ancestor of the expected SHA and `git diff <deployed>..<expected>` touches only
+// the deploy-neutral allowlist (`scripts/deploy-neutral-paths.txt`), the deploy is honestly
+// current-under-docs-only-drift and the label PASSes with a drift note. Non-ancestry, an
+// unresolvable SHA, or ANY non-neutral path fails exactly as it did before — fail-closed.
+
+import { deployNeutralDrift } from "./deploy-neutral.mjs";
 
 const args = process.argv.slice(2);
 const take = (flag) => {
@@ -55,9 +63,20 @@ const match = (sha) => {
 
 let ok = true;
 for (const [label, sha] of Object.entries(observed)) {
-  const good = match(sha);
+  let good = match(sha);
+  let drift = false;
+  if (!good && sha != null) {
+    // REQ-ENG-8 second opinion — ancestor + deploy-neutral-diff-only. `deployNeutralDrift` is
+    // fail-closed: absent/unknown/unresolvable SHAs and non-repo cwds all return ok:false.
+    const verdict = deployNeutralDrift(expectSha, sha);
+    good = verdict.ok;
+    drift = verdict.ok;
+  }
   if (!good) ok = false;
-  console.log(`${good ? "PASS" : "FAIL"}  ${label}  deployed=${sha ?? "(absent)"}  expected=${expectSha}`);
+  console.log(
+    `${good ? "PASS" : "FAIL"}  ${label}  deployed=${sha ?? "(absent)"}  expected=${expectSha}` +
+      (drift ? "  (deploy-neutral drift: deployed ⊂ ancestors of HEAD, allowlisted diff only)" : ""),
+  );
 }
 
 if (!ok) {

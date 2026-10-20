@@ -82,6 +82,16 @@ pulumi config set          rhema:proxyBaseUrl        'http://<proxy-internal-add
 #   rhema:stripePaymentLinkUrl— the Stripe Payment Link URL the exhaustion panel 302s to (PRB.17)
 ```
 
+**Operator-local env — never a `rhema:*` config key:** `rhema-journeys --paid` dispatches
+(and `scripts/live/funded-window.mjs`) read `JOURNEY_DATABASE_URL` from the operator's shell.
+It MUST be the **system-role** DSN — an elevated `rolsuper OR rolbypassrls` string in the
+`apiSystemDatabaseUrl`/`workerSystemDatabaseUrl` class, reached over the IAP tunnel — never
+the app-login `app-database-url`: `usage_records` is FORCE-RLS, so an app-role bind reads $0
+and would greenlight an unmeasured week. Both spend guards probe `pg_roles` before the meter
+query ever runs, so a blind pool is a refusal, not a measurement (ADR-093). The scheduled
+cron is the one exception — it cannot reach the private DB and self-bounds to one paid
+leg/week. The full convention lives in `packages/journeys/README.md` § "Spend guards".
+
 ### Config keys the program reads but the operator normally does NOT set
 
 Completeness reference (the `infra/config/runbook-completeness.test.ts` gate requires every

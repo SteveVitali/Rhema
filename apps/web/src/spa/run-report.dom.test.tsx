@@ -32,7 +32,7 @@ import { hooksForSurface } from "../dom-contract.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffRunReportTwin } from "./queries.js";
-import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -316,6 +316,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   await act(async () => {
     await new Promise((r) => setTimeout(r, 0));
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, rootEl };
 }
 
@@ -483,7 +489,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       },
     });
     const { router } = await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`)!;
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
     expect(form.getAttribute("data-refund-form")).toBe("true");
     expect(el()!.textContent).toContain("Get 160 cr back");
     await submit(form);
@@ -523,7 +529,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       },
     });
     await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`)!;
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
     await submit(form);
     // the 4xx arm: the twin re-reads and the fresh block is the answer — no role=alert, no flash.
     await waitFor(() => expect(f.reads()).toBeGreaterThanOrEqual(2));
@@ -570,7 +576,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       mutations: { [`/p/${SLUG}/r/${RUN}/refund`]: gate },
     });
     await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`)!;
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
     const btn = form.querySelector<HTMLButtonElement>("button")!;
     await act(async () => {
       const ev = new Event("submit", { bubbles: true, cancelable: true });

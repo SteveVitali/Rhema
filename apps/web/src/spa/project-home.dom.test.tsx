@@ -23,7 +23,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffAppHomeTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -212,6 +212,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -281,7 +287,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     expect(main.querySelector('[data-project-row="proj_run"][data-indicator="running"]')).not.toBeNull();
     expect(main.querySelector('[data-project-row="proj_ready"][data-indicator="ready"]')).not.toBeNull();
     expect(main.querySelector('[data-project-row="proj_quiet"][data-indicator="quiet"]')).not.toBeNull();
-    const menu = main.querySelector('[data-project-row="proj_needs"]')!;
+    const menu = (await settled('[data-project-row="proj_needs"]'));
     expect(menu.querySelectorAll("[data-menu-action]").length).toBeGreaterThanOrEqual(3);
     expect(menu.querySelector('[data-menu-form="archive"]')?.getAttribute("action")).toBe("/p/alpha-essay/archive");
     // The drafts-held row carries its Change-voice disabled reason (§9.6's soft lock).
@@ -371,7 +377,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     const f = makeFetch();
     await mountAt("/app", BOOT, f);
     const baseline = bffAppReads(f);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-group-by]")!;
+    const form = (await settled<HTMLFormElement>("form[data-group-by]"));
     const select = form.querySelector<HTMLSelectElement>('select[name="groupBy"]')!;
     await act(async () => {
       select.value = "voice";
@@ -388,7 +394,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
   it("a row-menu action POSTs its /p/:slug path as JSON — the envelope's /app redirect navigates in-router", async () => {
     const f = makeFetch();
     await mountAt("/app", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('[data-menu-form="archive"]')!;
+    const form = (await settled<HTMLFormElement>('[data-menu-form="archive"]'));
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -402,7 +408,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
   it("the deleted row's Restore POSTs /p/:slug/restore → the envelope's /app?deleted=1 rides in-router", async () => {
     const f = makeFetch();
     await mountAt("/app?deleted=1", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-restore-form]")!;
+    const form = (await settled<HTMLFormElement>("form[data-restore-form]"));
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -414,7 +420,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
   it("a search GET form navigates in-router to the same /app?… URL (never a BFF POST)", async () => {
     const f = makeFetch();
     const { router } = await mountAt("/app", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('form[action="/app"][method="get"]')!;
+    const form = (await settled<HTMLFormElement>('form[action="/app"][method="get"]'));
     const q = form.querySelector<HTMLInputElement>('input[name="q"]')!;
     await act(async () => {
       q.value = "alpha";
@@ -433,7 +439,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     const gate = deferred<Response>();
     const f = makeFetch({ hold: { "/app/grouping": gate.promise } });
     await mountAt("/app", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-group-by]")!;
+    const form = (await settled<HTMLFormElement>("form[data-group-by]"));
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -464,7 +470,7 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/app?archived=1&deleted=1", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {

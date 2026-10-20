@@ -39,3 +39,22 @@ issued under an untrusted role, and refusal triggers at `>=` the cap (the bounda
 
 Reopen if a reporting role gains bounded `usage_records` visibility (the probe changes to
 "role can read the table"), or the guard moves into infra (Pulumi-composed DSN).
+
+## Addendum — 2026-10-20 (R6ENG.1 / REQ-ENG-5 — the binding convention, stated at both read points)
+
+The convention this decision produced — **`JOURNEY_DATABASE_URL` is always the system-role
+DSN** (an elevated `rolsuper OR rolbypassrls` role reached over the IAP tunnel; never the
+app-login `app-database-url`, whose FORCE-RLS bind reads `usage_records` as $0 and would
+greenlight an unmeasured week) — is now written where a reader actually looks:
+
+- `packages/journeys/README.md` § "Spend guards — the system-DSN convention" (BL-72) — the
+  operational text: both guards probe `pg_roles` before the meter query, a blind pool refuses,
+  and the scheduled cron is the one self-bounding exception.
+- `infra/PROD-BRINGUP.md` §2 — the runbook's DSN/secrets surface names the operator-local
+  `JOURNEY_DATABASE_URL` and points back here (it is operator env, never a `rhema:*` config
+  key, so it was never covered by the completeness gate).
+
+The guard behavior was verified live on 2026-10-06 (D-CAP.3-1: a system-role bind measured the
+real week; a blind app-role bind refused before the meter query issued). The live two-role
+re-proof on the current head remains R6FOR.1's — `D-STB.5b-1` stays PARTIAL until that run
+records; this addendum changes no decision, only where the convention is read.
