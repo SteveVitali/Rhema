@@ -21,6 +21,7 @@ import { SPA_DOCUMENT_ROUTES } from "@rhema/contracts";
 import { createSpaRouter } from "./main.js";
 import { HeadManager } from "./head.js";
 import type { SpaBoot } from "./boot.js";
+import { bffFetch } from "./bff.js";
 import { spaRuntime } from "./dom.js";
 import { sessionQuery } from "./queries.js";
 import { PendingShell } from "./states.js";
@@ -149,6 +150,22 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
     const f = sessionFetch(401);
     const { queryClient } = await mountAt("/usage", bootFor({ "/usage": "spa" }, false), f);
     expect(f).toHaveBeenCalledWith("/session", expect.objectContaining({ credentials: "same-origin" }));
+    expect(docNavSpy).toHaveBeenCalledWith("/login");
+    expect(queryClient.getQueryData(sessionQuery.queryKey)).toBeUndefined();
+  });
+
+  it("REQ-NAVC-20 — the 401 leg invalidates with refetchType:'none' (never a mid-teardown refetch) and hands the DOCUMENT to /login", async () => {
+    const f = sessionFetch(401);
+    const { queryClient } = await mountAt("/usage", bootFor({ "/usage": "spa" }, false), f);
+    expect(docNavSpy).toHaveBeenCalledWith("/login");
+    // Re-drive the seam through any twin 401 (the stub answers 401 to every path): the handler
+    // the boot installed must mark the session query stale WITHOUT re-firing it — a refetching
+    // invalidation would re-issue the 401ing read against a dying session (Q-A4-2's pin).
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    await expect(bffFetch("/bff/anything-401")).rejects.toMatchObject({ status: 401 });
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: sessionQuery.queryKey, refetchType: "none" }),
+    );
     expect(docNavSpy).toHaveBeenCalledWith("/login");
     expect(queryClient.getQueryData(sessionQuery.queryKey)).toBeUndefined();
   });

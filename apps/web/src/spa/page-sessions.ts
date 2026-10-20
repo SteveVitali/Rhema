@@ -44,6 +44,13 @@ export interface PageSessionWire {
 export interface PageSessionEntry {
   /** the map key verbatim — `draft:<draftId>` (renamed by `rekey`). */
   readonly key: string;
+  /**
+   * NAVC.3 / REQ-NAVT-5 — the entry's `<bootNonce>.<seq>` page-session identity, minted once at
+   * `acquire` and carried verbatim across `rekey` (the SESSION survives the fork; a
+   * destroy+recreate mints a fresh seq, a new document boot a fresh nonce). `page-mount.tsx`
+   * stamps it on `[data-page-root]` as `data-page-session`.
+   */
+  readonly sessionId: string;
   draftId: string;
   readonly state: EditorState;
   session: PageSessionWire | null;
@@ -68,6 +75,12 @@ export interface PageSessionRegistryOptions {
   /** `setTimeout`-shaped scheduler — tests inject a manual queue. Returns a cancel token. */
   readonly schedule?: (fn: () => void, ms: number) => unknown;
   readonly cancel?: (handle: unknown) => void;
+  /**
+   * NAVC.3 / REQ-NAVT-5 — the `<bootNonce>` leg of every `sessionId` this registry mints. One
+   * nonce per document boot (the registry is per-boot — the module singleton's nonce is minted
+   * at module init); tests inject a fixed value for deterministic assertions.
+   */
+  readonly bootNonce?: string;
 }
 
 export const PAGE_SESSION_IDLE_TTL_MS = 120_000;
@@ -77,6 +90,10 @@ export class PageSessionRegistry {
   private readonly entries = new Map<string, PageSessionEntry>();
   private readonly idleTtlMs: number;
   private readonly maxEntries: number;
+  /** the `<bootNonce>` leg of minted sessionIds — one per registry (= per document boot). */
+  readonly bootNonce: string;
+  /** the monotonic `<seq>` leg — incremented once per minted entry. */
+  private seq = 0;
   private readonly now: () => number;
   private readonly schedule: (fn: () => void, ms: number) => unknown;
   private readonly cancel: (handle: unknown) => void;
@@ -84,6 +101,7 @@ export class PageSessionRegistry {
   constructor(opts: PageSessionRegistryOptions = {}) {
     this.idleTtlMs = opts.idleTtlMs ?? PAGE_SESSION_IDLE_TTL_MS;
     this.maxEntries = opts.maxEntries ?? PAGE_SESSION_MAX_ENTRIES;
+    this.bootNonce = opts.bootNonce ?? globalThis.crypto.randomUUID();
     this.now = opts.now ?? (() => Date.now());
     this.schedule =
       opts.schedule ??
@@ -125,6 +143,7 @@ export class PageSessionRegistry {
     const made = init();
     const entry: PageSessionEntry = {
       key,
+      sessionId: `${this.bootNonce}.${++this.seq}`,
       draftId,
       state: made.state,
       session: made.session ?? null,
@@ -140,11 +159,19 @@ export class PageSessionRegistry {
    * Drop a hold. At zero refs the route-leave flush runs (the pagehide-equivalent —
    * `session.flushOnHide`) and the idle-destroy timer arms. Extra releases are a no-op, never a
    * negative refcount.
+   *
+   * REQ-NAVC-17 — a map miss is a no-op, and `expected` (the caller's held entry) adds an
+   * identity check: a release that arrives after the map slot changed hands (the held entry
+   * was rekeyed away and the key re-acquired) must NOT decrement the new occupant's refs.
+   * The armed timer callback closes over the entry itself and re-checks identity at fire time
+   * (`entries.get(entry.key) === entry` inside `destroyEntry`), so a stale timer can never
+   * destroy a re-acquired entry at the same key. `entry.key` is read lazily inside the
+   * callback so an idle entry that was `rekey`ed still dies under its NEW key at TTL.
    */
-  release(draftId: string): void {
+  release(draftId: string, expected?: PageSessionEntry): void {
     const key = PageSessionRegistry.keyFor(draftId);
     const entry = this.entries.get(key);
-    if (!entry || entry.refs <= 0) return;
+    if (!entry || (expected != null && entry !== expected) || entry.refs <= 0) return;
     entry.refs -= 1;
     if (entry.refs > 0) return;
     entry.idleSince = this.now();
@@ -154,7 +181,12 @@ export class PageSessionRegistry {
       /* the flush is best-effort — a broken wire never blocks unmount */
     }
     if (entry.destroyHandle == null) {
-      entry.destroyHandle = this.schedule(() => this.destroyEntry(key), this.idleTtlMs);
+      entry.destroyHandle = this.schedule(() => {
+        // REQ-NAVC-17 — two kills this callback can never commit: a re-acquired key (the
+        // generation check inside `destroyEntry`) and a re-HELD entry (a cancelled-but-
+        // already-dispatched timer must not destroy a live mount's session).
+        if (entry.refs === 0) this.destroyEntry(entry.key, entry);
+      }, this.idleTtlMs);
     }
   }
 
@@ -168,10 +200,17 @@ export class PageSessionRegistry {
     if (fromKey === toKey) return this.entries.get(fromKey) ?? null;
     const entry = this.entries.get(fromKey);
     if (!entry) return null;
+    // REQ-NAVC-17 — a HELD entry at the target refuses the rekey outright (the check runs
+    // BEFORE `rebind` so a refused rekey never repoints the source's wire). A mounted session
+    // may legitimately hold the target draft (a second leaf open on the child); destroying it
+    // would tear down a live mount's state — the caller treats null as "leave it".
+    const target = this.entries.get(toKey);
+    if (target != null && target.refs > 0) return null;
     entry.session?.rebind?.(toDraftId);
-    // a live entry at the target loses — the rebound session wins (the fork IS the doc's future).
+    // a live IDLE entry at the target loses — the rebound session wins (the fork IS the doc's
+    // future). `destroyEntry` re-checks identity so a slot that changed hands is never touched.
     const evicted = this.entries.get(toKey);
-    if (evicted) this.destroyEntry(toKey);
+    if (evicted) this.destroyEntry(toKey, evicted);
     this.entries.delete(fromKey);
     entry.draftId = toDraftId;
     (entry as { key: string }).key = toKey;
@@ -187,7 +226,7 @@ export class PageSessionRegistry {
     const t = this.now();
     for (const [key, entry] of [...this.entries]) {
       if (entry.refs === 0 && entry.idleSince != null && t - entry.idleSince >= this.idleTtlMs) {
-        this.destroyEntry(key);
+        this.destroyEntry(key, entry);
       }
     }
   }
@@ -206,13 +245,19 @@ export class PageSessionRegistry {
         if (!oldest || (oldest.idleSince != null && entry.idleSince < oldest.idleSince)) oldest = entry;
       }
       if (!oldest) return; // every slot is held — the cap yields to live mounts
-      this.destroyEntry(oldest.key);
+      this.destroyEntry(oldest.key, oldest);
     }
   }
 
-  private destroyEntry(key: string): void {
+  /**
+   * REQ-NAVC-17 — the generation check: when `expected` is given (every internal caller passes
+   * the entry it decided to destroy), a slot that now holds a DIFFERENT entry is left alone —
+   * a timer/eviction decided against the OLD occupant can never kill the entry that
+   * re-acquired the key since.
+   */
+  private destroyEntry(key: string, expected?: PageSessionEntry): void {
     const entry = this.entries.get(key);
-    if (!entry) return;
+    if (!entry || (expected != null && entry !== expected)) return;
     this.entries.delete(key);
     if (entry.destroyHandle != null) {
       this.cancel(entry.destroyHandle);

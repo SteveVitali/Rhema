@@ -232,8 +232,10 @@ export function PageMount(props: PageMountProps): ReactNode {
       sourceRef.current?.commitNow();
       provFlushRef.current?.();
       // release by the entry's CURRENT draftId — a frozen-fork rekey moves it mid-mount, and the
-      // child id is the live key (releasing the stale parent id would strand the refcount).
-      registry.release(held?.draftId ?? props.draftId);
+      // child id is the live key (releasing the stale parent id would strand the refcount). The
+      // held entry itself is the identity check (REQ-NAVC-17): if the map slot it names now
+      // holds a different entry the release is a no-op rather than the new occupant's decrement.
+      registry.release(held?.draftId ?? props.draftId, held ?? undefined);
     };
   }, [registry, props.draftId]);
 
@@ -322,6 +324,11 @@ export function PageMount(props: PageMountProps): ReactNode {
     // SPA.24 — the collab half (client/page.ts verbatim, scoped to this mount's page root).
     // ======================================================================================
     const root = host.closest<HTMLElement>("[data-page-root]");
+    // NAVC.3 / REQ-NAVT-5 — stamp the registry entry's `<bootNonce>.<seq>` identity on the page
+    // root. It tracks the ENTRY (not the React mount): a StrictMode remount or a keep-alive
+    // remount rewrites the same value verbatim; only a destroy+recreate or a new document boot
+    // mints a different token.
+    root?.setAttribute("data-page-session", entry.sessionId);
     const wire = isCollabWire(entry.session) ? entry.session : null;
     let chromeCleanup: (() => void) | null = null;
 
@@ -547,6 +554,7 @@ export function PageMount(props: PageMountProps): ReactNode {
     return () => {
       chromeCleanup?.();
       window.removeEventListener("rhema:authorship", onAuthorship);
+      root?.removeAttribute("data-page-session");
       view.dom.removeEventListener("paste", onPaste);
       if (provTimer != null) {
         window.clearTimeout(provTimer);

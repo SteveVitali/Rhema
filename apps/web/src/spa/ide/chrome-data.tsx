@@ -67,17 +67,24 @@ const EMPTY: IdeChromeData = {};
 
 interface IdeChromeDataCtx {
   readonly data: IdeChromeData;
-  /** false until a leaf's first publish lands — the controller's bind effect waits on it so the
-   *  pane-storage identity (`projectId` arrives via publish, not the slug) is stable before any
-   *  localStorage read/write. A leaf that never publishes leaves the chrome unbound. */
+  /** false until a leaf's first publish lands AND whenever no leaf is publishing — the
+   *  controller's bind effect waits on it so the pane-storage identity (`projectId` arrives via
+   *  publish, not the slug) is stable before any localStorage read/write. NAVC.3 / REQ-NAVC-22:
+   *  an unmount UNPUBLISHES — between the old leaf's cleanup and the new leaf's first publish
+   *  `published` reads false again, so the bind effect can never run against the EMPTY bag whose
+   *  `data.projectId ?? slug` fallback would bind `rhema:panes:v1:<u>:<slug>` (a slug-as-
+   *  projectId wrong-key window lasting as long as the next leaf's twin read). */
   readonly published: boolean;
   readonly set: (d: IdeChromeData) => void;
+  /** Clear the bag AND the flag — a leaf's cleanup, not a publish of empty data. */
+  readonly unpublish: () => void;
 }
 
 const IdeChromeDataContext = createContext<IdeChromeDataCtx>({
   data: EMPTY,
   published: false,
   set: () => undefined,
+  unpublish: () => undefined,
 });
 
 /** Mounts at the `p.$project` layout so every framed leaf can publish its chrome slice. */
@@ -91,7 +98,17 @@ export function IdeChromeDataProvider({ children }: { children?: ReactNode }): R
     },
     [],
   );
-  const value = useMemo(() => ({ data, published, set }), [data, published, set]);
+  const unpublish = useMemo(
+    () => () => {
+      setData(EMPTY);
+      setPublished(false);
+    },
+    [],
+  );
+  const value = useMemo(
+    () => ({ data, published, set, unpublish }),
+    [data, published, set, unpublish],
+  );
   return <IdeChromeDataContext.Provider value={value}>{children}</IdeChromeDataContext.Provider>;
 }
 
@@ -99,13 +116,17 @@ export function IdeChromeDataProvider({ children }: { children?: ReactNode }): R
  * A surface leaf publishes its chrome slice for as long as it is mounted. `data` MUST be a
  * memoized object (one useMemo over the leaf's loader data) — the effect is identity-keyed, and
  * the slice is whole-replace: unmount or a new memo clears/replaces the bag, never merges.
+ * Cleanup UNPUBLISHES (not `set(EMPTY)`): within one commit the new leaf's `set` still wins the
+ * batch (`published` never visibly flickers on a same-leaf republish or a same-commit leaf
+ * swap); on a leave-with-no-successor the flag falls so the controller unbinds rather than
+ * rebinds under the slug placeholder (REQ-NAVC-22).
  */
 export function useIdeChromeData(data: IdeChromeData): void {
-  const { set } = useContext(IdeChromeDataContext);
+  const { set, unpublish } = useContext(IdeChromeDataContext);
   useEffect(() => {
     set(data);
-    return () => set(EMPTY);
-  }, [set, data]);
+    return () => unpublish();
+  }, [set, unpublish, data]);
 }
 
 /** The layout's read side — the merged bag + the publish flag `IdeChrome` threads onto `<IdeShell>`. */

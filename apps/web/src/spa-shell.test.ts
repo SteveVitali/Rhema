@@ -495,3 +495,39 @@ describe("CSP on the shell (REQ-FW-3)", () => {
     for (const tag of scripts) expect(tag).toContain('nonce="');
   });
 });
+
+describe("cache-control on authenticated responses (NAVC.3 / REQ-NAVC-20's bfcache posture)", () => {
+  it("an authed shell document carries `no-store` — the bfcache floor", async () => {
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
+    const res = await app.request("/usage");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("the session probe + a BFF twin carry `no-store` when the request is authed", async () => {
+    const app = createWebApp(spaDeps());
+    expect((await app.request("/session")).headers.get("cache-control")).toBe("no-store");
+    expect((await app.request("/bff/feed-labels")).headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("a handler's own cache policy wins verbatim — immutable assets keep `immutable` even when authed", async () => {
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
+    const res = await app.request("/assets/spa/assets/main-abc123.js");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    // the favicon's public-day policy likewise survives an authed request
+    const fav = await app.request("/favicon.ico");
+    expect(fav.headers.get("cache-control")).toBe("public, max-age=86400");
+  });
+
+  it("anonymous requests are never stamped — the public funnel keeps its own posture", async () => {
+    const app = createWebApp(spaDeps({ session: () => null }));
+    const res = await app.request("/login");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBeNull();
+    // and an anonymous /session 401 isn't stamped either (nothing authed was computed for it)
+    const denied = await app.request("/session");
+    expect(denied.status).toBe(401);
+    expect(denied.headers.get("cache-control")).toBeNull();
+  });
+});

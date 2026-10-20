@@ -61,6 +61,14 @@ export function HeadManager(): ReactNode {
     // uses, so `data-route` agrees across renderers; an unknown path stamps its normalized path
     // (the SSR fallback convention).
     html.setAttribute("data-route", spaRouteFor(pathname).routeId ?? (pathname.replace(/\/+$/, "") || "/"));
+    // NAVC.3 / REQ-NAVC-22 — the `data-project` context stamp must follow the route: the served
+    // document stamps it once at boot, so a cross-project client nav otherwise leaves it naming
+    // the OLD project for the document's remaining lifetime. It flips with the commit (same
+    // timing as `data-route` — a pending hop already names its target) and leaves entirely
+    // outside `/p/:slug` space — the SSR parity answer (an unframed document never carries it).
+    const projectSlug = /^\/p\/([^/]+)/.exec(pathname)?.[1] ?? null;
+    if (projectSlug != null) html.setAttribute("data-project", projectSlug);
+    else html.removeAttribute("data-project");
     const title = docMetaFor(pathname).title;
     document.title = title;
     if (announcer.current) {
