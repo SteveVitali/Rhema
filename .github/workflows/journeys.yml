@@ -10,9 +10,14 @@ name: journeys
 # Credentials against rhema-journeys@ — no key, no mailbox credential, nothing secret in CI.
 
 on:
-  schedule:
-    - cron: "5 6 * * *"     # nightly $0 legs
-    - cron: "35 4 * * 1"    # weekly paid leg (Monday 04:35 UTC — inside the off-peak window)
+  # R6CI.1 (2026-10-20; ADR-115; operator insert 176a ruling D7) — both scheduled runs are
+  # PAUSED: no ticket currently consumes the nightly/weekly signal and the paid Monday leg
+  # bills for nothing. The seeded-ephemeral-DB machinery + the $0/$5 guards below are
+  # preserved unchanged for `workflow_dispatch` (which stays live). The sweeps return at
+  # R6SWP.1 — restore by uncommenting the `schedule:` block and removing this marker.
+  # schedule:
+  #   - cron: "5 6 * * *"     # nightly $0 legs
+  #   - cron: "35 4 * * 1"    # weekly paid leg (Monday 04:35 UTC — inside the off-peak window)
   workflow_dispatch:
     inputs:
       stage:

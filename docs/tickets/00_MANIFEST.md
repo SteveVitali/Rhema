@@ -536,6 +536,11 @@ Every round-6 ticket's *Operating clauses* section cites these (the gap table ca
 9. No ledger-only push to an open-PR branch after a boundary confirm (operator ruling D8,
    2026-10-20 — each push is a ~55-min CI run): orchestrator ledger notes commit locally on the
    tip and carry into the next ticket's first push on its own branch.
+10. Full-CI cadence (operator rulings D4/D5, 2026-10-20; ADR-115 + `docs/development.md`): a
+    green **full** run is owed per round-6 gate and per deploy SHA — never per ticket; a
+    per-ticket boundary read accepts a fast-path pass; `main` never reuses a PR pass, and
+    `workflow_dispatch` (`gh workflow run ci.yml --ref <branch>`) is the forcing function
+    for a full run between pushes.
 
 ## Out of scope (no ticket does this; the capstone verifies none crept in)
 
