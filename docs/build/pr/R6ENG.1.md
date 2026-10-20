@@ -87,11 +87,12 @@ inside this head).
 
 ## CI
 
-`ci: pass #195@2a172ea` — all five jobs, run 39481383638 (2026-10-20T19:53:44Z,
-**third consecutive green full-suite read**, unit 27m53s — the flip head itself) +
-pass @`9d0f7fb` (run 39472603332, unit 40m3s) + pass @`52389f4` (run 39465573137,
-unit 32m24s). **The mount-settle class did not recur on any head** —
-D-R5REC.1-1's verify clause (two consecutive green `pnpm test` legs + no bare
+`ci: pass #195@59cd35b` — all five jobs, run 39487615793 (2026-10-20T20:40:55Z,
+**fourth consecutive green full-suite read** — the docs-only bookkeeping head, the same
+docs-only head class that produced the R5DOC.2 flake) + pass @`2a172ea` (run 39481383638,
+unit 27m53s — the flip head) + pass @`9d0f7fb` (run 39472603332, unit 40m3s) + pass
+@`52389f4` (run 39465573137, unit 32m24s). **The mount-settle class did not recur on any
+head** — D-R5REC.1-1's verify clause (two consecutive green `pnpm test` legs + no bare
 `querySelector` on the named selectors) is met; **D-R5REC.1-1 → DONE** and BL-87 → closed
-in the closeout commit. A final docs-only bookkeeping commit rides this PR; its run's
-status is read, not presumed.
+in the closeout commit. A final docs-only record commit rides this PR; its run's status
+is read on the PR checks, not presumed.

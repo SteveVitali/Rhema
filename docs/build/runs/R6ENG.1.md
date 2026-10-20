@@ -12,13 +12,15 @@
 - **Started:** 2026-10-20T16:34:33Z
 - **Closed:** 2026-10-20T19:11:51Z (commit-B closeout — BL-87/D-R5REC.1-1 flipped on the second
   consecutive green read, their verbatim verify clause)
-- **ci:** **three consecutive green full-suite reads** — pass #195@`52389f4`
+- **ci:** **four consecutive green full-suite reads** — pass #195@`52389f4`
   (run 39465573137, all five; unit 32m24s — zero mount-settle recurrence; boundary re-read
   after the images tail outlasted the 2700s bound) + pass #195@`9d0f7fb` (run 39472603332,
   all five; unit 40m3s) + pass #195@`2a172ea` (run 39481383638, all five green
-  2026-10-20T19:53:44Z — the flip head's trailing read; unit 27m53s). The flip head's
-  record lands in commit C; commit C is docs-only, its own run's status is stated at
-  hand-off, never claimed.
+  2026-10-20T19:53:44Z — the flip head; unit 27m53s) + pass #195@`59cd35b` (run
+  39487615793, all five green 2026-10-20T20:40:55Z — the docs-only commit-C head, the
+  same docs-only head class that produced the R5DOC.2 flake; unit ~28m). Commit D
+  records this read (docs-only); its own dispatched run's status is read on the PR
+  checks at hand-off, never presumed.
 
 ## Deferrals read
 
