@@ -10,11 +10,13 @@
 - **Requirement ids stamped:** REQ-ENG-1 REQ-ENG-4 REQ-ENG-5 REQ-ENG-6 REQ-ENG-8
 - **Live stage:** offline-only · **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-20T16:34:33Z
-- **Closed:** 2026-10-20T18:1xZ (commit-A closeout; the BL-87/D-R5REC.1-1 flips ride commit B
-  on the second consecutive green CI read — their verify clause)
-- **ci:** pass #195@`52389f4` (run 39465573137 — all five jobs, first attempt; unit 32m24s
-  read through — zero mount-settle recurrence; boundary re-read 2026-10-20T18:10:11Z after
-  the images tail outlasted the 2700s bound, the #193 precedent)
+- **Closed:** 2026-10-20T19:0xZ (commit-B closeout — BL-87/D-R5REC.1-1 flipped on the second
+  consecutive green read, their verbatim verify clause)
+- **ci:** **two consecutive green full-suite reads on fix-carrying heads** —
+  pass #195@`52389f4` (run 39465573137, all five; unit 32m24s — zero mount-settle
+  recurrence; boundary re-read after the images tail outlasted the 2700s bound) +
+  pass #195@`9d0f7fb` (run 39472603332, all five; unit 40m3s). Trailing read on the
+  commit-B head recorded at closeout.
 
 ## Deferrals read
 
@@ -194,9 +196,9 @@ via `ci-boundary.sh --pr 195 --stack` (record `/tmp/…/ci-boundary.qoczm3`; the
 outlasted the first 2700s bound → job-polled → boundary re-read, the #193 precedent).
 `typecheck / lint / unit` green **32m24s first attempt — zero mount-settle recurrence.**
 
-**AC layer statement:** every engineered AC is offline-verified except the AC's first
-clause — "two consecutive green full-suite CI runs" needs a second head's read: commit A
-(this one) triggers run #2; the BL-87 + D-R5REC.1-1 flips land in commit B only on that
-second green, per the deferral's verbatim verify clause. No live/deploy/nightly/funded
-claim is made anywhere — REQ-ENG-8's first real nightly read is R6SWP.1's; BL-74's
-scheduled-nightly evidence stays owed.
+**AC layer statement:** every engineered AC is verified — the AC's first clause ("two
+consecutive green full-suite CI runs") is met: run 39465573137 @ `52389f4` + run
+39472603332 @ `9d0f7fb`, both all-five green on fix-carrying heads, the unit leg
+zero-flake both times. BL-87 + **D-R5REC.1-1 → DONE** flipped on that evidence (commit B).
+No live/deploy/nightly/funded claim is made anywhere — REQ-ENG-8's first real nightly read
+is R6SWP.1's; BL-74's scheduled-nightly evidence stays owed; the funded wave stays CARRIED.

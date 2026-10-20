@@ -166,7 +166,7 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | BL-02 | round-4 + upstream `agent-skills` patch — validator-stuck status cells (D-P0.06-3, D-P0.08b-3; D-OBS.1-3's embedded-pipe truncation now joins the class), check-backlog parser, PHASE-LOG rotation |
 | BL-05 | **R5REC.2** — fold G2/G3/H3 overrides + ADR deviations into the spec + land REQ-MEM-6/7/8's spec amendments |
 | BL-06 | **closed 2026-10-20 (R6ENG.1 census §5 disposition)** — DOC.1 #114/`20e29ec` (incl. the phase1-exit-readout dated correction), DOC.2 #115, tail refresh R5DOC.1 #193 + R5DOC.2 #194 all landed green |
-| BL-87 | **CI mount-settle flake** — `outline.dom.test.tsx` "delete's cited refusal" (`submit()`'s non-null-asserted selector races the leaf mount; second occurrence 2026-10-17, run 39064749916 — first was FUNDED.1's 38963033831) → waitFor + sibling audit — **added this pass** |
+| BL-87 | **closed 2026-10-20 (R6ENG.1)** — `settled()`/`SETTLE_TIMEOUT` + `data-mounted` gates on all 15 router-mount dom tests + the `*After` posts-gating root cause; verify clause met: two consecutive green CI unit legs (runs 39465573137 + 39472603332) + 25/25 local |
 | — | **R5REC.2** (next in chain) — whatever the ledger's `nextTicket` names after this pass |
 
 ### Watch rows (per-trigger, evaluated at each sweep)

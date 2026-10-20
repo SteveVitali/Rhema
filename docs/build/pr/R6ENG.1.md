@@ -82,15 +82,14 @@ inside this head).
 - **No live/deploy/nightly evidence.** The REQ-ENG-8 nightly arm is unit-pinned +
   locally exercised; the first real docs-only-merge nightly read is R6SWP.1's, and
   the scheduled-nightly evidence for BL-74 stays owed.
-- **BL-87 / D-R5REC.1-1 stay OPEN until the exact-head CI read** — the local loop is
-  evidence, the flips ride the PR's two green CI runs per their verify clauses.
-- Two consecutive green full-suite CI runs (the AC's first clause) are recorded at
-  closeout via `ci-boundary.sh --pr <n> --stack`, not asserted here.
+- **BL-87 / D-R5REC.1-1 flipped on the two consecutive green exact-head CI reads** (runs
+  39465573137 + 39472603332) — recorded in the closeout commit's ledger row; see CI below.
 
 ## CI
 
-`ci: pass #195@52389f4` — all five jobs (images / integration / contracts / public-safe /
-typecheck+lint+unit), run 39465573137, `ci-boundary.sh --pr 195 --stack` read
-2026-10-20T18:10:11Z. **The mount-settle class did not recur** (unit 32m24s, first
-attempt). A second consecutive green run is recorded in the run ledger at closeout —
-the BL-87 / D-R5REC.1-1 flips ride it per their verify clause.
+`ci: pass #195@9d0f7fb` — all five jobs, run 39472603332 (**second consecutive green
+full-suite read**, unit 40m3s) + earlier pass @`52389f4` (run 39465573137, unit 32m24s),
+`ci-boundary.sh --pr 195 --stack`. **The mount-settle class did not recur on either head** —
+D-R5REC.1-1's verify clause (two consecutive green `pnpm test` legs + no bare
+`querySelector` on the named selectors) is met; **D-R5REC.1-1 → DONE** and BL-87 → closed
+in the closeout commit.
