@@ -10,13 +10,15 @@
 - **Requirement ids stamped:** REQ-ENG-1 REQ-ENG-4 REQ-ENG-5 REQ-ENG-6 REQ-ENG-8
 - **Live stage:** offline-only · **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-20T16:34:33Z
-- **Closed:** 2026-10-20T19:0xZ (commit-B closeout — BL-87/D-R5REC.1-1 flipped on the second
+- **Closed:** 2026-10-20T19:11:51Z (commit-B closeout — BL-87/D-R5REC.1-1 flipped on the second
   consecutive green read, their verbatim verify clause)
-- **ci:** **two consecutive green full-suite reads on fix-carrying heads** —
-  pass #195@`52389f4` (run 39465573137, all five; unit 32m24s — zero mount-settle
-  recurrence; boundary re-read after the images tail outlasted the 2700s bound) +
-  pass #195@`9d0f7fb` (run 39472603332, all five; unit 40m3s). Trailing read on the
-  commit-B head recorded at closeout.
+- **ci:** **three consecutive green full-suite reads** — pass #195@`52389f4`
+  (run 39465573137, all five; unit 32m24s — zero mount-settle recurrence; boundary re-read
+  after the images tail outlasted the 2700s bound) + pass #195@`9d0f7fb` (run 39472603332,
+  all five; unit 40m3s) + pass #195@`2a172ea` (run 39481383638, all five green
+  2026-10-20T19:53:44Z — the flip head's trailing read; unit 27m53s). The flip head's
+  record lands in commit C; commit C is docs-only, its own run's status is stated at
+  hand-off, never claimed.
 
 ## Deferrals read
 

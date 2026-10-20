@@ -87,9 +87,11 @@ inside this head).
 
 ## CI
 
-`ci: pass #195@9d0f7fb` — all five jobs, run 39472603332 (**second consecutive green
-full-suite read**, unit 40m3s) + earlier pass @`52389f4` (run 39465573137, unit 32m24s),
-`ci-boundary.sh --pr 195 --stack`. **The mount-settle class did not recur on either head** —
+`ci: pass #195@2a172ea` — all five jobs, run 39481383638 (2026-10-20T19:53:44Z,
+**third consecutive green full-suite read**, unit 27m53s — the flip head itself) +
+pass @`9d0f7fb` (run 39472603332, unit 40m3s) + pass @`52389f4` (run 39465573137,
+unit 32m24s). **The mount-settle class did not recur on any head** —
 D-R5REC.1-1's verify clause (two consecutive green `pnpm test` legs + no bare
 `querySelector` on the named selectors) is met; **D-R5REC.1-1 → DONE** and BL-87 → closed
-in the closeout commit.
+in the closeout commit. A final docs-only bookkeeping commit rides this PR; its run's
+status is read, not presumed.
