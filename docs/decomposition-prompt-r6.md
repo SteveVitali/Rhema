@@ -57,11 +57,11 @@ decompose-spec spec=docs/round-6-draft-spec.md mode=extend \
 | # | id | name | kind | deps | gate? | live? | size |
 |---|---|---|---|---|---|---|---|
 | 176 | `R6ENG.1` | in-tree repairs: mount-settle flake + sibling audit (D-R5REC.1-1/BL-87), SSE head-fix (D-SLO.1-6), RES.3 checkpointing contract (D-RES.3-1/BL-79), tsconfig dep-drift (CIREP.1), guard-binding convention doc (D-STB.5b-1/BL-72), BL-02 cell-shape sweep, **cold-import soak reproducing D-P0.15h-3 at 0.5vCPU/512Mi (D-COST.1-3 (a) precondition — REQ-ENG-7)** | implement | — | no | no (offline; 2 green CI runs) | L |
-| — | `176a_GATE-R6A` | **GATE** — round-6 authorization bundle: spec sign-off already landed at decomposition time; this pause collects deploy authorization + the remaining ruling pack (**envelope, golden, CDN, levers, and session-scheduling were ruled 2026-10-20** — remaining: posture stages (domains-bearing, Stripe-bearing), misc product rulings, the operator's go) | GATE (operator) | R6ENG.1 (or parallel) | yes | no | — |
-| — | `176b_HUMAN-R6H-ACTS` | **HUMAN** — operator session 1 (anytime, **scheduling RULED 2026-10-20 "split sessions"**): billing-export console flip (D-OPS.2-1), guarded `--execute`s (D-FIX.1-1 mint-t8, D-FIX.1-3 seed-bl78), D-BL38.1-1 stamp-shape ruling, product rulings (refund go-live D-DEF.4-3, unit-econ BL-13, levers A+B D-ECON.2-7, GD-RES.2-1, D-ECON.1-2, D-RES.2-3, D-ACT.1-3), invite mint+consume (D-SEC.2-1), exposure review (D-SEC.1-2), pen-test procurement (D-P1.22-3), admin key (D-ECON.1-1) | HUMAN | 176a | — | operator acts | — |
+| — | `176a_GATE-R6A` | **GATE** — round-6 authorization bundle: spec sign-off already landed at decomposition time; this pause collects deploy authorization + the operator's go (**the entire ruling pack was dispositioned 2026-10-20**: envelope ~$150, golden one-shot, CDN api-minted, levers, session scheduling, posture stages, misc product rulings) | GATE (operator) | R6ENG.1 (or parallel) | yes | no | — |
+| — | `176b_HUMAN-R6H-ACTS` | **HUMAN** — operator session 1 (anytime, **scheduling RULED 2026-10-20 "split sessions"**): billing-export console flip (D-OPS.2-1), guarded `--execute`s (D-FIX.1-1 mint-t8, D-FIX.1-3 seed-bl78), **GD-RES.2-1 execution (refund ~396cr on 2 real rows + delivery relabels — ruled 2026-10-20)**, **D-BL38.1-1 stamp rewrite (ruled — id → 40-char sha)**, invite mint+consume (D-SEC.2-1), exposure review (D-SEC.1-2), pen-test procurement (D-P1.22-3), admin key (D-ECON.1-1), unit-econ BL-13 residual | HUMAN | 176a | — | operator acts | — |
 | — | `176c_HUMAN-R6H-BROWSER` | **HUMAN** — operator session 2 (post-deploy): browser/live legs — Google sign-in round-trip (D-MAINT.4-1), Stripe live-mode ruling/legs (D-P1.16-1, D-BILL.3-1/-2), Safari editor leg (D-EDIT.1-2), source-editor leg (D-PRB.07-1), versions-rail/put-override/settings legs (D-P1.08-1/-09-1/-20-1), phone-width legs (D-P1.19-2), showcase/funnel legs (D-P1.17-1/-2, D-P1.21-1, D-PRB.01-2), leg-cap reconcile | HUMAN | deploy + 176a | — | operator browser legs | — |
 | 177 | `R6POST.1` | post-deploy prod arms: `--expect-renderer ssr` re-proof (D-SPA.6-1), signed-in session legs (D-OPS.1-1), deep-link restore (D-CAP.1-1), two-tenant/read probes as needed, `balance_divergence` forensic classification (system-DSN read), T8 410 leg after the mint, **worker right-size flip (REQ-DISC-4 — authorized 2026-10-20 conditional on R6ENG.1 soak-green; one stage-fact `pulumi up` field, −$26/mo, report the recomputation)** | implement | deploy of tip (operator) + 176a | after deploy | yes — prod reads/journeys, $0 legs + one authorized pulumi change | M |
-| 178 | `R6POST.2` | posture stages: domains-bearing stage legs (D-SPA.24-1 — N8/R10.keepalive collab) + Stripe-bearing stage legs (D-SPA.16-1/-20-1 — N9 billing walk) | implement | operator stage/stripe posture ruling (176a) | ruling-gated | yes — `pr-<n>`/posture stage | M |
+| 178 | `R6POST.2` | posture stages (**authorized 2026-10-20 — "authorize both"**): domains-bearing `pr-<n>` stage legs (D-SPA.24-1 — N8/R10.keepalive collab) + Stripe test-mode stage legs (D-SPA.16-1/-20-1 — N9 billing walk); stage setup + teardown in-scope | implement | 176a | after 176a | yes — `pr-<n>`/posture stage | M |
 | 179 | `R6POST.3` | usercontent delivery leg (**contract RULED 2026-10-20 — API-minted signed URLs**): GCS V4 signed-URL mint in the api, `usercontent-cdn-verify.mjs` probes re-pointed at the minted path, usercontent header leg (D-R5OPS.1-2; D-P1.22-2 residual half) — edge-signing repair not pursued | implement | deploy | no (ruled) | yes — prod | S |
 | 179a | `R6GLD.1` | golden validation (**RULED 2026-10-20, GD-R5OPS.1-1 in part**): one-time ≤$300 post-deploy run of `nightly-golden-driver.mjs` (`GOLDEN_BUDGET_RULING=approved` one-shot + measured `--scores` + score-floor flip); recurring-cadence half stays owed on D-P0.15-4 | implement | deploy | no (ruled) | yes — prod, ≤$300 | S |
 | — | `179b_GATE-R6B` | **GATE** — funded-window re-open: envelope already RULED 2026-10-20 (**~$150 pinned-scope, GD-ENV.R6**) — this pause collects deployed-tip provenance + tenant provisioning + dry-run 9/9 + the operator's go signal | GATE (operator) | deploy + 176a | yes | no | — |
@@ -84,11 +84,14 @@ decompose-spec spec=docs/round-6-draft-spec.md mode=extend \
    right-size conditional-authorized on soak-green (REQ-ENG-7 → REQ-DISC-4); (c) SQL f1-micro +
    (e) proxy MIG **REJECTED**; (b) GKE spot + (d) Redis **PARKED** pending designs; (f) HA set
    unruled/parked. Honest floor ~$172/mo — ~$50 target not reachable under this ruling.
-7. **Posture stages** — domains-bearing and Stripe-bearing stages authorized or deferred.
+7. ~~**Posture stages**~~ **RULED 2026-10-20 — "authorize both"** — domains-bearing `pr-<n>` +
+   Stripe test-mode stages execute in `R6POST.2`.
 8. ~~**Session scheduling**~~ **RULED 2026-10-20 — "Split sessions":** session-1 acts anytime
    (`176b_HUMAN-R6H-ACTS`), session-2 browser/live legs post-deploy (`176c_HUMAN-R6H-BROWSER`).
-9. **Remaining product rulings** — `GD-RES.2-1`, D-ECON.1-2, D-RES.2-3, D-DEF.4-3, D-ACT.1-3,
-   D-BL38.1-1, D-ECON.2-7 (session-1 content — could be answered there rather than here).
+9. ~~**Remaining product rulings**~~ **RULED 2026-10-20 (batch 3b)** — GD-RES.2-1 "refund +
+   relabel" (execution = session-1 prod writes); `D-ECON.1-2` → WONTFIX; `D-DEF.4-3`/`D-ACT.1-3`
+   stay gated; `D-BL38.1-1` rewrite-in-place (session-1); `D-RES.2-3` parked; `D-ECON.2-7`
+   keep-pending.
 
 ## Partition guidance
 

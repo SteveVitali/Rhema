@@ -110,9 +110,9 @@ Prerequisite: operator merge sweep + tip deploy; `check-deploy-provenance --expe
   provenance match + zero unexpected failures. (D-OBS.1-3, BL-74 residual)
 - `REQ-POST-5` forensics read: `balance_divergence` classification of the six included-bucket
   accounts (system-role read; authorized posture only). (open finding, BL-24 family)
-- `REQ-POST-6` posture stages: domains-bearing stage for D-SPA.24-1's N8/R10.keepalive legs;
-  Stripe-bearing stage for D-SPA.16-1/-20-1's N9 legs. (class c — needs ⚑ operator stage/stripe
-  posture; may be deferred by ruling)
+- `REQ-POST-6` posture stages (**RULED 2026-10-20 — "authorize both"**): domains-bearing
+  `pr-<n>` stage for D-SPA.24-1's N8/R10.keepalive collab legs; Stripe test-mode (`sk_test`)
+  stage for D-SPA.16-1/-20-1's N9 legs. Setup + bounded spend land in R6POST.2. (class c)
 - `REQ-POST-7` CDN/usercontent delivery leg (**ruled 2026-10-20 — API-minted signed URLs**):
   the delivery contract changes to GCS V4 signed URLs minted by the api; the
   `usercontent-cdn-verify.mjs` probes re-point at the minted path; the edge-signing
@@ -188,8 +188,8 @@ free legs; no leg claims green without its committed evidence.
 | ~~CDN ruling~~ **RULED 2026-10-20: API-minted signed URLs** | REQ-POST-7 |
 | ~~lever rulings~~ **RULED 2026-10-20 (D-COST.1-3 + D-OPS.2-2 batch, on projections): (a) worker right-size conditional-authorized on soak-green (REQ-ENG-7 → REQ-DISC-4); (c) SQL f1-micro + (e) proxy MIG REJECTED; (b) GKE spot + (d) Redis PARKED pending designs; (f) HA set unruled/parked. Honest floor ~$172/mo — the ~$50 target is not reachable under this ruling** | REQ-DISC-4 + parked-lever rows |
 | session items — **scheduling RULED 2026-10-20: "Split sessions"** (acts remain owed) | session-1 (anytime): billing-export flip, guarded `--execute`s, `D-BL38.1-1` stamp ruling, product rulings (refund go-live, unit-econ, levers A+B); session-2 (post-deploy): browser/live legs (Google sign-in, Stripe, Safari editor, phone-width, pen test) | all (e)-class rows |
-| posture rulings | domains-bearing stage, Stripe-bearing stage (may be deferred — legs stay owed honestly) | class (c) rows |
-| misc rulings | `GD-RES.2-1` retro refund/relabel; D-ECON.1-2 cap input; D-RES.2-3 coverage class; D-DEF.4-3 go-live; D-ACT.1-3 flip; D-BL38.1-1 stamp shape; D-ECON.2-7 restore | respective rows |
+| ~~posture rulings~~ **RULED 2026-10-20 — "authorize both"**: domains-bearing `pr-<n>` + Stripe test-mode stages execute in `R6POST.2` | class (c) rows |
+| ~~misc rulings~~ **RULED 2026-10-20 (batch 3b)**: GD-RES.2-1 "refund + relabel" (2 real rows ~396cr; execution = session-1 prod writes); D-ECON.1-2 → WONTFIX (control accepted); go-lives stay gated (`D-DEF.4-3`, `D-ACT.1-3` — launch posture); `D-BL38.1-1` rewrite-in-place (session-1 act); `D-RES.2-3` parked → future ticket; `D-ECON.2-7` keep-pending | respective rows |
 
 ## 7. Out of scope (explicit)
 

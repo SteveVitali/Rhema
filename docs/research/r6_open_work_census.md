@@ -30,6 +30,15 @@
 > (D-COST.1-3, D-OPS.2-2). **H8 scheduling ruled "split sessions"** — session-1 acts anytime,
 > session-2 browser legs post-deploy; the ~20 BL-86 items stay owed as acts, not rulings.
 > Honest cost floor now ~$172/mo — the ~$50 target is not reachable under these rulings.
+>
+> **Batch 3 (same session):** **posture stages authorized — "authorize both"** (domains-bearing
+> `pr-<n>` + Stripe test-mode stages → `R6POST.2`; class c's blocker resolves). **The misc
+> product pack pre-answered:** GD-RES.2-1 "refund + relabel" (execution = session-1 prod writes),
+> `D-ECON.1-2` → **WONTFIX** (control accepted), `D-DEF.4-3`/`D-ACT.1-3` stay gated (launch
+> posture), `D-BL38.1-1` rewrite-in-place (session-1 act), `D-RES.2-3` parked → future ticket,
+> `D-ECON.2-7` keep-pending. Net (e)-class movement: `D-ECON.1-2` leaves OPEN entirely
+> (WONTFIX); `D-RES.2-2`, `D-BL38.1-1` keep OPEN on execution only. **Every pre-decomposition
+> ruling is now dispositioned** — GATE-R6A's remaining asks are deploy authorization + the go.
 
 ## 0. Counting method (reproducible)
 
