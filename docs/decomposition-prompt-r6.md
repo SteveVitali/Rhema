@@ -6,8 +6,8 @@ merged the ledger tip `f893e85` at `cc33845`). v0.1 (`196161a`) scoped a dischar
 retargets the round to the public launch (ADR-111; LEDGER § GATE DECISIONS ### Round 6). v0.3 folds
 the batch-5 rulings: pen test post-launch + pre-launch agent review (ADR-112), the $100 golden
 cohort, BL-13, `GD-PREAUTH-ACTS.R6`, exposure forensics, a public-domain Showcase, legal
-placeholders. Nothing
-below is ratified until sign-off.*
+placeholders. **Ratified 2026-10-20 (`GD-RATIFY.R6`) and executed the same day — manifest rows
+176–208; this file is now the frozen invocation record.***
 
 ## Invocation
 

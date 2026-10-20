@@ -111,6 +111,12 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
   pen test, the nightly-golden budget, the H3/ADR-008 revisit, real-device checks. None is covered by round 3's
   standing authorization (ADR-013); tickets that reach a gated remainder first defer it (H7 pending).
 
+- **H10–H13 — Round-6 operator rows** (round 6, 2026-10-20; every judgment call ruled the same day —
+  LEDGER § GATE DECISIONS ### Round 6): `185a_HUMAN-H10` session 1 (acts only — start at
+  ratification: billing-export flip, alert sink, Stripe test key, Anthropic admin key, invite mint);
+  `190a_HUMAN-H11` session 2 (post-deploy browser/money legs + content/legal approvals);
+  `196a_HUMAN-H12` merge sweep 1 (pre-launch); `198a_HUMAN-H13` merge the launch-flip PR.
+
 ## The chain
 
 | # | Ticket file | Phase | Scope (one line) |
@@ -340,6 +346,52 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 174 | `174_R5DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs | — |
 | 175 | `175_R5DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs | — |
 
+
+### Round 6 — public launch readiness (spec: `docs/round-6-draft-spec.md` v0.3, ratified 2026-10-20)
+
+| # | file | phase | scope | gate |
+|---|---|---|---|---|
+| 176 | `176_R6ENG.1__ci-provenance-hygiene.md` | R6 pre-deploy | mount-settle flake + sibling audit, tsconfig refs, BL-02/§5 flags, **nightly provenance tolerance** (REQ-ENG-1/4/5/6/8) | — |
+| 177 | `177_R6ENG.2__sse-finalize-wakeup.md` | R6 pre-deploy | SSE finalize-path post-commit wakeup (REQ-ENG-2) | — |
+| 178 | `178_R6ENG.3__res3-verification-checkpointing.md` | R6 pre-deploy | RES.3 verification checkpointing + budget-aware retry gate (REQ-ENG-3) | — |
+| 179 | `179_R6UCD.1__api-minted-usercontent-urls.md` | R6 pre-deploy | API-minted signed usercontent URLs + ADR-113 (REQ-POST-7 code) | — |
+| 180 | `180_R6LGL.1__legal-trust-pages.md` | R6 pre-deploy | legal/trust public pages, placeholders + `approved:false` (REQ-LCH-1) | — |
+| 181 | `181_R6MNY.1__money-flip-readiness.md` | R6 pre-deploy | money-flip readiness: notice dry-run, calibration read, claims, `launch-flips.md` (REQ-LCH-5) | — |
+| 182 | `182_R6FOR.1__prod-forensics.md` | R6 forensics | named-red SLO verdicts + balance_divergence + guard live read, $0 (REQ-FOR-1/2/3) | semantics → operator |
+| 182a | `182a_R6FOR.2__rls-exposure-forensics.md` | R6 forensics | RLS-exposure forensics over preserved logs → disclosure verdict (REQ-FOR-4) | notice → H11 |
+| 183 | `183_R6CNT.1__launch-content-prep.md` | R6 content | H4 venue evidence, public-domain Showcase shortlist, sample dossier (REQ-LCH-2) | — |
+| 184 | `184_R6WRT.1__guarded-one-off-writes.md` | R6 writes | GD-RES.2-1 refund+relabel, BL38 stamp, tombstone hand-date (REQ-WRT-1/2/3) | pre-auth (GD-PREAUTH-ACTS.R6) |
+| 185 | `185_R6SOAK.1__worker-rightsize-soak.md` | R6 preview | worker 0.5/512Mi cold-import soak on `pr-<n>` (REQ-ENG-7) | — |
+| 185a | `185a_HUMAN-H10__operator-session-1.md` | R6 marker | **human** — session 1, acts only | — |
+| 186 | `186_R6DEP.1__tip-deploy.md` | R6 deploy | tip deploy to prod: preview suite → classified preview → `pulumi up` → provenance (REQ-DEP-1) | pre-auth (GD-DEPLOY.R6) |
+| 187 | `187_R6OPS.1__readiness-drills.md` | R6 deploy | restore / rollback / playbook drills + alert delivery + on-call (REQ-DEP-2) | pre-auth (restore) |
+| 188 | `188_R6INF.1__infra-posture.md` | R6 deploy | SQL REGIONAL + proxy MIG×2 + worker flip iff soak green (REQ-DEP-3) | pre-auth (GD-HA.R6) |
+| 189 | `189_R6POST.1__prod-arms.md` | R6 live | prod arms: SSR, signed-in, deep-link, fixtures, usercontent, SSE, Lighthouse (REQ-POST-1/2/3/5/7/8/9) | pre-auth (mint/seed) |
+| 190 | `190_R6POST.2__posture-stages.md` | R6 live | domains-bearing + Stripe test-mode posture stages (REQ-POST-6) | pre-auth (preview DNS) |
+| 190a | `190a_HUMAN-H11__operator-session-2.md` | R6 marker | **human** — session 2: browser/money legs + approvals | — |
+| 190b | `190b_GATE-R6B__funded-window-reopen.md` | R6 marker | **gate** — funded window re-open (~$150 pinned-scope) | operator |
+| 191 | `191_R6FND.1__funded-wave-launchers.md` | R6 funded | bind + T9 + launchers (REQ-DISC-1 part 1) | R6B |
+| 192 | `192_R6FND.2__funded-wave-riders.md` | R6 funded | gate launchers + riders + resume + census pairs incl. RES.3 verify (REQ-DISC-1 part 2) | R6B |
+| 193 | `193_R6FND.3__funded-wave-b19c-census.md` | R6 funded | B19C conditional + paid new-visitor + (b)-row disposition (REQ-DISC-1 part 3) | R6B |
+| 194 | `194_R6CNT.2__showcase-build.md` | R6 content | apply H11 approvals: Showcase build, H4 stamps, legal flags, exposure notice (REQ-LCH-3/4) | H11 |
+| 195 | `195_R6SECR.1__adversarial-security-review.md` | R6 security | pre-launch adversarial security review — zero open criticals/highs (REQ-SEC-3) | — |
+| 196 | `196_R6GLD.1__golden-validation.md` | R6 golden | $100 minimal four-protocol golden validation at the launch-candidate SHA (REQ-DISC-3) | pause > $100 |
+| 196a | `196a_HUMAN-H12__merge-sweep-1.md` | R6 marker | **human** — merge sweep 1 (pre-launch) | — |
+| 197 | `197_R6SWP.1__post-merge-nightly.md` | R6 launch | redeploy `main` HEAD + first scheduled nightly green (REQ-GO-2, REQ-POST-4) | pre-auth (GD-DEPLOY.R6) |
+| 197a | `197a_GATE-LAUNCH__public-launch.md` | R6 marker | **gate** — public launch (13 pre-registered thresholds) | operator |
+| 198 | `198_R6LCH.1__launch-flips.md` | R6 launch | metered → purchase → refund → trial everyone (REQ-GO-4) | LAUNCH |
+| 198a | `198a_HUMAN-H13__merge-launch-pr.md` | R6 marker | **human** — merge the launch-flip PR | — |
+| 199 | `199_R6CLK.1__clock-reads.md` | R6 clock | dated reads: purge, digest, destruction, billed actuals, reconcile, T8 expiry (REQ-CLK-1..6) | — |
+| 200 | `200_R6WATCH.1__post-launch-read.md` | R6 watch | **skeleton** — launch + 14 d cohort read → close or owned watch (REQ-WATCH-1) | launch + 14 d |
+| 201 | `201_R6CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-6 REQ coverage + §7 accounting completeness | — |
+| 202 | `202_R6CAP.3__capstone-closure.md` | tail | **capstone** — routed gaps + accepted-deviations draft | — |
+| 203 | `203_GATE-ACCEPT.R6__accepted-deviations.md` | tail | **gate** — operator signs the R6 deviations list | operator |
+| 204 | `204_R6REC.1__backlog-and-readiness.md` | tail | **reconcile** — backlog + readiness; G2/H2 re-home; roadmap; owned obligations | — |
+| 205 | `205_R6REC.2__spec-reconciliation.md` | tail | **reconcile** — spec fold-back (ADR-111/112/113) | — |
+| 206 | `206_R6REC.3__integration-plan.md` | tail | **reconcile** — §R6 merge plan (never merges) | — |
+| 207 | `207_R6DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs (launched state) | — |
+| 208 | `208_R6DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs + the closing ledger write | — |
+
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
 **G1 — Phase-0 exit (spec §17 Phase-0 row, exit criterion):** "a Review of each of the three real
@@ -383,6 +435,19 @@ tenant + purge exemption → REQ-ECON-6 seed exclusions live. Estimated ~$20–4
 **GATE-ACCEPT.R5 — Round-5 accepted deviations:** the operator signs R5CAP.3's deviations list
 (expected: deferred intent-preload allowlist, levered-vs-unlevered cap basis, honestly-owed
 substrate legs, NAVC-18 freshness parity trade-off).
+
+**GATE-R6B — Funded window re-open (round 6):** `docs/round-6-draft-spec.md` §6 verbatim —
+"Funded window open — envelope ~$150 pinned-scope (ruled) with the cumulative measured < cap and ≥
+the declared remaining caps + the Showcase run estimate; dry-run 9/9; deployed-tip provenance;
+tenant + DSN; REQ-ENG-3 landed."
+
+**GATE-LAUNCH — Public launch (round 6):** the 13 pre-registered thresholds of
+`docs/round-6-draft-spec.md` §6, verbatim in `197a_GATE-LAUNCH__public-launch.md`. ADR-111
+permits the launch; this gate decides it.
+
+**GATE-ACCEPT.R6 — Round-6 accepted deviations:** the operator signs R6CAP.3's list (expected:
+launch without G2, the external pen test post-launch, first-finding as a post-launch target, the
+minimal golden cohort, the cost floor vs the ~$50 target).
 
 ## Phase gates & special points
 
@@ -443,6 +508,31 @@ substrate legs, NAVC-18 freshness parity trade-off).
     clamped at the cap; every price/duration/trial claim a user sees comes from the one estimator/entitlement
     config; a Review that could not research says so and refunds the research phases.
 
+15. **Scoped authority** (round 6): prod deploys only under `GD-DEPLOY.R6`'s conditions; one-off prod acts
+    only under `GD-PREAUTH-ACTS.R6` (dry-run equals the itemized scope) or the operator's go; spend only
+    through the fail-closed guards. A failed condition pauses — it is never reasoned around.
+16. **Cohort hygiene** (round 6): every agent- or operator-created account is `is_test` or
+    analytics-opt-out, so no synthetic activity enters an organic cohort read.
+17. **Context budget + preview hygiene** (round 6): each ticket fits one fresh SWE-2 (256k,
+    non-compacting) run — a worker that finds its ticket overflowing stops and requests a split; every
+    `pr-<n>` stack a ticket creates is destroyed and its teardown verified in the same ticket.
+
+## Operating rules
+
+Every round-6 ticket's *Operating clauses* section cites these (the gap table carries one row each):
+1. Dates and stamps come from `date -u` at the moment of writing (BM-CLOCK-01) — never estimated.
+2. CI is read at the exact head claimed (`ci-boundary --pr <n> --stack`) and recorded; a docs delta on
+   a green head gets its own read.
+3. Every AC states the layer it reached (engineered / fixture-verified / staging-verified /
+   live-executed / human-completed); no leg claims green without committed evidence + provenance.
+4. Protected records (contracts, history, LEDGER PHASE LOG, DEFERRALS cells) are only appended; a
+   correction is a dated note.
+5. Gate and ruling words are recorded verbatim; a pre-authorization is honored only within its
+   items, conditions and expiry.
+6. No secret value in any artifact (`provided: yes/no`); no PII committed (aggregates only).
+7. The run ledger header names the harness/model/tier (BM-HARNESS-01).
+8. No living-record pins in tests (BM-TEST-01).
+
 ## Out of scope (no ticket does this; the capstone verifies none crept in)
 
 Publishing integrations (Q-9 — export-only); persona ethics gating (Q-11); plagiarism detection;
@@ -460,6 +550,13 @@ via `packages/harness` — REQ-ARCH-10); Temporal (stage 3 trigger not reached i
 **Round 3 (2026-09-30) — additionally out of scope:** merging the stacked PRs (D1 — REC.3 writes the plan, the
 operator merges); H2/G2 and any §16.4 efficacy claim (D5); BL-31 matcher-3 tuning (round 4, needs adjudication
 data); working copies / suggestion reconciliation (still 1.x — EDIT.1 forks to v(N+1)); new 1.x features of any kind.
+
+**Round 6 (2026-10-20) — additionally out of scope:** executing the G2/H2 research program (re-homed
+post-launch by ADR-111); any §16.4 efficacy/superiority claim; the external pen-test engagement + its
+triage (post-launch, ADR-112 — R6REC.1 records the ≤ 60-day obligation); new features beyond the legal
+pages and the notice surfacing; BL-73 1.x roadmap + standing watches (roadmap per `GD-ROADMAP.R6`);
+Redis HA (declined); cost levers (c)/(e) (rejected) and (b)/(d) (parked → post-launch roadmap); the
+public announcement itself (the operator's act); merging (operator).
 
 ## Requirement-ID → ticket index (authoritative for coverage)
 
@@ -597,6 +694,22 @@ has exactly one owner.
 | REQ-MEM-1..5/9/10 | HYGIENE.1 · REQ-MEM-6/7/8 → R5REC.2 |
 | REQ-G1-1..5 | R5CAP.1/R5CAP.3 (1/4/5) · VERIF.1+VERIF.2 (3: V-1/V-2) · HYGIENE.1 (2 + 3: V-3) · HUMAN-H8 (5: bundle) |
 
+**Round-6 families** (`docs/round-6-draft-spec.md` v0.3 — `REQ-[A-Z]+-[0-9]+`; one primary owner each):
+
+| REQ family | ticket(s) |
+|---|---|
+| REQ-ENG-1/4/5/6/8 | R6ENG.1 · REQ-ENG-2 → R6ENG.2 · REQ-ENG-3 → R6ENG.3 · REQ-ENG-7 → R6SOAK.1 |
+| REQ-LCH-1 | R6LGL.1 (approval flags: R6CNT.2) · REQ-LCH-2 → R6CNT.1 · REQ-LCH-3/4 → R6CNT.2 · REQ-LCH-5 → R6MNY.1 |
+| REQ-FOR-1/2/3 | R6FOR.1 · REQ-FOR-4 → R6FOR.2 (notice send: R6CNT.2) |
+| REQ-WRT-1/2/3 | R6WRT.1 |
+| REQ-DEP-1 | R6DEP.1 · REQ-DEP-2 → R6OPS.1 · REQ-DEP-3 → R6INF.1 |
+| REQ-POST-1/2/3/5/7/8/9 | R6POST.1 (REQ-POST-7 code half: R6UCD.1) · REQ-POST-6 → R6POST.2 · REQ-POST-4 → R6SWP.1 |
+| REQ-DISC-1 | R6FND.1 → R6FND.2 → R6FND.3 · REQ-DISC-3 → R6GLD.1 · (REQ-DISC-2/4 retired, v0.1) |
+| REQ-SEC-3 | R6SECR.1 · REQ-SEC-1/2 → post-launch obligation (ADR-112; recorded by R6REC.1) |
+| REQ-GO-1 | HUMAN-H12 · REQ-GO-2 → R6SWP.1 · REQ-GO-3 → GATE-LAUNCH · REQ-GO-4 → R6LCH.1 · REQ-GO-5 → HUMAN-H13 |
+| REQ-CLK-1..6 | R6CLK.1 · REQ-WATCH-1 → R6WATCH.1 |
+| REQ-TAIL-1 | R6CAP.1/R6CAP.3 · REQ-TAIL-2 → R6REC.1 · REQ-TAIL-3 → R6REC.2 · REQ-TAIL-4 → R6REC.3 · REQ-TAIL-5 → R6DOC.1/R6DOC.2 |
+
 ## Spec amendments applied
 
 - **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
@@ -692,6 +805,17 @@ has exactly one owner.
   mechanism; the REQ-NAVC/NAVM/NAVT families and GATE-ACCEPT.R5's signed rows 1/2/4 are
   cross-referenced; COVERAGE_MATRIX REQ-MEM-6/7/8 → MET. **(ADR-110; GATE-ACCEPT.R5)**
 
+- **2026-10-20 — round-6 launch posture (operator rulings; `docs/rhema-design-spec.md` §17 dated
+  banner):** the public launch is decoupled from G2 (ADR-104's launch clause and ADR-008's "no
+  launch moment" superseded in part — claims stay lint-blocked); §17's Phase-1 exit row amended
+  (golden validation green on all four protocols at the launch SHA + re-run on protocol-affecting
+  deploys; first-finding ≤ 4 min → a post-launch organic target). **(ADR-111; GD-LAUNCH-G2.R6,
+  GD-S17.R6)**
+- **2026-10-20 — external pen test moves post-launch (operator ruling `GD-PEN.R6b`):** P1.22's
+  "criticals are launch-blocking" rule now binds the in-round adversarial review (REQ-SEC-3); the
+  external engagement completes ≤ 60 days after launch. **(ADR-112)** — and, owed in-round, the
+  §13.3 usercontent delivery amendment lands with R6UCD.1 **(ADR-113)**.
+
 ## Decomposition decisions (operator may veto; see the session report)
 
 1. Phase-0 port scope = Review/Revise/Fact-check/persona-Quick; Draft/Outline/Research ports
@@ -727,7 +851,43 @@ has exactly one owner.
    D4 sharpened (coverage-based, new refund class, D.2 vocabulary, REQ-VIS-9 reconciled); standing authorization
    tightened (metered-cost caps, mechanical "additive" check, more pauses).
 
+10. **Round 6 (2026-10-20; `decompose-spec mode=extend`; ADR-111/112).** Inputs:
+    `docs/round-6-draft-spec.md` v0.3 (operator sign-off "Okay, I sign off v0.3."),
+    `docs/decomposition-prompt-r6.md` v0.3 (the frozen invocation record),
+    `docs/research/r6_open_work_census.md` (+ §8 corrections). Sized for **subagent** dispatch on SWE-2
+    High (256k, non-compacting). 33 implement/skeleton/tail rows + 4 HUMAN + 3 GATE = 40 rows (176–208).
+    Tail = full (CAP.2 omitted — R6POST.1/R6SWP.1 + GATE-LAUNCH are the composed verification).
+    **Phase-4 review** (the explicit re-read-from-disk discipline — no fresh-context subagent this
+    session): 0 blocker · 3 major · 3 minor, all folded in.
+    - MAJOR: orphan seam — nobody owned setting the legal `approved: true` flags or sending an
+      approved exposure notice → assigned to R6CNT.2 (renamed "apply H11's approvals").
+    - MAJOR: orphan seam — D-RES.3-1's paid live half (launch-blocking) had no funded leg →
+      R6FND.2 census.
+    - MAJOR: the CI chain-descent flag (digest) traced to 8 `.gitleaks.toml` allowlist lines on
+      `main` absent from the chain (round-3 merge artifact) → R6ENG.1's deploy-neutral allowlist
+      covers CI-only config; HUMAN-H12 records it.
+    - MINOR: overflow clauses added to R6POST.1 and R6OPS.1; the "(as in 176)" AC shorthand was
+      expanded in every file, since a worker loads one file; T8 mint + BL-78 seed moved post-deploy
+      (R6POST.1).
+
+    Shared decisions owned by the first ticket: the provenance allowlist (R6ENG.1), the mint helper
+    (R6UCD.1), the `approved` flag shape (R6LGL.1), `launch-flips.md` (R6MNY.1), the funded cap
+    default (R6FND.1), the golden minimal-cohort mode (R6GLD.1). **The plan is revisable at run
+    time** — orchestrate-build may split an overflowing ticket or merge trivial ones and writes the
+    change back here.
+
 ## Plan extensions (append-only: inserts, splits, rounds)
+
+- **2026-10-20 — ROUND 6 (public launch readiness; `docs/round-6-draft-spec.md` v0.3, operator-ratified
+  2026-10-20).** 40 rows appended under the `### Round 6` banner (176–208, suffix-letter markers):
+  - 4 HUMAN markers (H10–H13);
+  - 3 gates (GATE-R6B, GATE-LAUNCH, GATE-ACCEPT.R6);
+  - 24 implement-spec tickets + 1 skeleton (R6WATCH.1);
+  - the full tail (R6CAP.1/.3, R6REC.1–3, R6DOC.1–2).
+
+  Stacks on `stevevitali/r6-planning-corpus`; R6ENG.1's PR carries the planning commits (the
+  `r5-synthesis` → #172 precedent). `mergePolicy: OPERATOR`. Decomposition prompt:
+  `docs/decomposition-prompt-r6.md`.
 
 - **2026-10-15 — ROUND 5 (post-SPA disposition; `docs/post-spa-disposition-spec.md` canonical, operator-ratified
   2026-10-15).** 27 rows appended under the `### Round 5` banner: 2 HUMAN markers (H8 operator

@@ -1,7 +1,8 @@
 <!--
   docs/round-6-draft-spec.md — round-6 specification, v0.2.
 
-  STATUS: **DRAFT v0.3 — unratified — pending operator sign-off.**
+  STATUS: **RATIFIED v0.3 — operator sign-off 2026-10-20 ("Okay, I sign off v0.3." — LEDGER
+  GATE DECISIONS `GD-RATIFY.R6`); decomposed the same day into manifest rows 176–208.**
   v0.3 (2026-10-20, same day) folds the batch-5 rulings: pen test deferred + agent review (ADR-112),
   $100 minimal golden cohort, BL-13 anchors, trial $50/day, exposure forensics, the acts
   pre-authorization, a public-domain Showcase, legal placeholders.
@@ -13,12 +14,12 @@
   pre-authorization.
 -->
 
-# Round 6 — public launch readiness — DRAFT v0.3
+# Round 6 — public launch readiness — v0.3 (ratified 2026-10-20)
 
 ## 0. Status, authority, and what changed from v0.1
 
-- **Unratified.** Round 6 exists once the operator signs off on this version. `nextTicket` stays
-  `(chain exhausted)` until `decompose-spec mode=extend` lands the manifest rows.
+- **Ratified 2026-10-20** (`GD-RATIFY.R6`). `decompose-spec mode=extend` landed manifest rows
+  176–208 the same day; `nextTicket` → R6ENG.1. (Was: "Unratified … until the operator signs off".)
 - **Objective (operator, 2026-10-20, verbatim):** "by the end of this next orchestrate-build drive we
   have a fully production-ready public launch-ready deploy to rhema.tools, with no remaining deferred
   work."
