@@ -204,6 +204,7 @@ class MemStorage {
 /** window/document event types the mounted leaves bind — the balance target. */
 const TRACKED_TYPES = [
   "keydown",
+  "hashchange", // NAVC.4 — the controller's native-fragment compensation listener (REQ-NAVM-10)
   "visibilitychange",
   "pagehide",
   "rhema:restore-point",
@@ -443,6 +444,7 @@ describe("REQ-NAVC-22 — listeners, timers, and the one EventSource", () => {
     // the QueryClient FocusManager's `visibilitychange` (both die at document unload only).
     const mountedNet = netSince(baseline);
     expect(mountedNet["window:keydown"]).toBeGreaterThanOrEqual(1);
+    expect(mountedNet["window:hashchange"]).toBeGreaterThanOrEqual(1); // NAVC.4's fragment compensation
     expect(mountedNet["window:pagehide"]).toBeGreaterThanOrEqual(2); // page-mount + router's per-boot one
     expect(mountedNet["window:rhema:restore-point"]).toBeGreaterThanOrEqual(1);
     expect(mountedNet["window:rhema:authorship"]).toBeGreaterThanOrEqual(1);

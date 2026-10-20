@@ -75,12 +75,20 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
       pathname: loc.pathname,
       searchStr,
       hash: loc.hash,
-      push: (href) => {
+      push: (href, opts) => {
         // `#finding-x` keeps the current path+search (the island's `location.assign("#x")`).
-        router.history.push(href.startsWith("#") ? `${loc.pathname}${searchStr}${href}` : href);
+        const target = href.startsWith("#") ? `${loc.pathname}${searchStr}${href}` : href;
+        // `history.push` carries no scroll options — the REQ-NAVC-16 scroll-preserving arms
+        // (version stepping, `?triage`) commit through `navigate({href})` instead.
+        if (opts?.resetScroll === false) void router.navigate({ href: target, resetScroll: false });
+        else router.history.push(target);
       },
-      replace: (href) => {
-        router.history.replace(href);
+      replace: (href, opts) => {
+        if (opts?.resetScroll === false) {
+          void router.navigate({ href, replace: true, resetScroll: false });
+        } else {
+          router.history.replace(href);
+        }
       },
     };
   }, [router, loc]);
