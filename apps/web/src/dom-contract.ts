@@ -262,6 +262,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("button", "every document", "asserted via getByRole + implicit <button>"),
     u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
     u("saved", "conditional", "server.ts redirects"),
+    a(
+      "data-spa-native",
+      "conditional",
+      "spa/surfaces/* non-document GET links (usage.csv, export/download, export/ai-use/*)",
+      "REQ-NAVM-8/REQ-NAVC-13 — opts an anchor out of the delegated click interceptor so the GET stays a native document request; inert on SSR (no listener installed)",
+    ),
   ],
   // ---- /usage + /p/:p/usage ----
   usage: [

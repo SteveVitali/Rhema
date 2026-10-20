@@ -315,6 +315,7 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 151 | `151_HYGIENE.1__memory-hygiene.md` | R5 hygiene | parser alignment + status-cell normalization + literal DROP closes + INDEX/anchor fixes | — |
 | 152 | `152_FIX.1__journey-fixture-repairs.md` | R5 fixtures | owed-leg substrate: P1.dossier UA, T17/T12F/T13F/T15/T16, T8 mint script (gated) | — |
 | 153 | `153_VERIF.1__composed-verification-ffbb8ad.md` | R5 stream-V | $0 SHA-exact composed pass on ffbb8ad (BL-82, D-SPA.28-1, D-SPACAP.2-*, D-CAP.1-2) | — |
+| 153a | `153a_CIREP.1__ancestor-ci-repairs.md` | R5 repair | **run-time insert** — green the two inherited ancestor reds (#173 contracts / #174 unit) + re-fork navc-1 | — |
 | 154 | `154_NAVC.1__delegated-interceptor.md` | R5 nav | delegated click interceptor + stub ids + data-spa-native + SsrHandoff replace + spy migration | — |
 | 154a | `154a_NAVC.5__ssrhandoff-replace-seam.md` | R5 nav | SsrHandoff replace-mode seam + ~12-suite assign→replace spy migration | — |
 | 155 | `155_NAVC.2__settle-contract.md` | R5 nav | data-nav-count (all docs) + mounted-pending + settleClientNav/settleDocumentNav + documentLoads | — |
@@ -831,3 +832,11 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   Closes D-OPS.1-1 + D-SPA.6-1; unblocks every remaining surface's legs A/B/C. Trigger: SPA.11 found
   D-OPS.1-1 as the operative blocker for all signed-in preview legs; operator ruled "real Resend key on
   non-prod" (2026-10-08 ledger phase log).
+- **2026-10-15 — INSERT** `153a_CIREP.1` (run-time insert, BM-MANIFEST-03 — no new PR; repairs on the #173/#174
+  heads): green the two inherited ancestor reds surfaced by the NAVC.1 boundary CI read — FIX.1's
+  `@rhema/findings-core` dev-dep lacks the `packages/db` composite project reference (contracts leg) and
+  VERIF.1's seven registry green-flips weren't synced to the pinned baseline at `registry.test.ts:53`
+  (typecheck/lint/unit). Additive commits on the ancestor branches (`fd5ade2`/`0623042` SHAs preserved —
+  REQ-SPEC-29), then a re-fork of the NAVC.1 branch onto the repaired head preserving the crashed worker's
+  WIP. Slots between `153` and `154`; nextTicket → CIREP.1; `blockedOn` stays until the pass read.
+  Trigger: operator election (dispatch question) + orchestrate-build §2.3 step 4 exit-3.

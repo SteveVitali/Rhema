@@ -17,6 +17,7 @@ import { routeTree } from "./routeTree.gen.js";
 import { readSpaBoot, setSpaBoot, type SpaBoot } from "./boot.js";
 import { setSessionExpiredHandler } from "./bff.js";
 import { navigateDocument } from "./dom.js";
+import { installSpaClickInterceptor } from "./nav-intercept.js";
 import { makeSpaQueryClient, sessionQuery } from "./queries.js";
 import { PendingShell, SpaNotFound, SpaRouteError } from "./states.js";
 
@@ -50,8 +51,14 @@ export function createSpaRouter(opts?: {
   const router = createRouter({
     routeTree,
     context: { queryClient, boot } satisfies SpaContext,
-    // REQ-FW-7 + design/20 F2: primary-nav hover/focus warms the route's queries.
-    defaultPreload: "intent",
+    // REQ-NAVM-7 (NAVC.1, spec §2.6) — NO preload at ship: `defaultPreload:"intent"` is
+    // deliberately NOT set. Every preload runs `beforeLoad`+`loader`, and several are
+    // side-effecting — `postProjectHandoff` POST (`p.$project.index`), `confirmEmail`
+    // token consumption, mark-read twin GETs (r5_a3 audit). A future PRELOAD_SAFE
+    // routeId allowlist (a delegated pointerover/focusin leg) is gated on each listed
+    // route certifying its beforeLoad+loader side-effect-free first.
+    // `defaultPreloadStaleTime: 0` stays — the REQ-FW-7 query convention, inert while
+    // nothing preloads.
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
     // design/25 F9: nearest-scope not-found — `p.$project` and per-surface notFoundComponents can
@@ -69,6 +76,10 @@ export function createSpaRouter(opts?: {
 /** Mount onto the shell's `[data-spa-root]` node (the server already stamped `data-renderer="spa"`). */
 export function mountSpa(root: HTMLElement): void {
   const { router } = createSpaRouter();
+  // REQ-NAVM-1/2 — ONE delegated bubble-phase `click` listener on `document`, installed
+  // at mount (never inside `createSpaRouter` — the router-direct dom suites must stay
+  // un-intercepted). The listener outlives the mount for the document's lifetime.
+  installSpaClickInterceptor(router);
   createRoot(root).render(
     <StrictMode>
       <RouterProvider router={router} />

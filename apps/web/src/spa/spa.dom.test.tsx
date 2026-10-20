@@ -273,12 +273,15 @@ describe("the tree contract (REQ-NAV-1) + router config (REQ-FW-7)", () => {
     }
   });
 
-  it("pins the router's contract options — intent preload, scroll restoration, fuzzy not-found", () => {
+  it("pins the router's contract options — NO preload (REQ-NAVM-7), scroll restoration, fuzzy not-found", () => {
     const { router } = createSpaRouter({
       boot: bootFor({}),
       history: createMemoryHistory({ initialEntries: ["/usage"] }),
     });
-    expect(router.options.defaultPreload).toBe("intent");
+    // REQ-NAVM-7 (NAVC.1) — `defaultPreload:"intent"` is deliberately unset: side-effecting
+    // beforeLoad/loader arms (postProjectHandoff POST, confirmEmail, mark-read twins) must
+    // never run on hover. A future PRELOAD_SAFE allowlist is gated on a per-route audit.
+    expect(router.options.defaultPreload).toBeUndefined();
     expect(router.options.defaultPreloadStaleTime).toBe(0);
     expect(router.options.scrollRestoration).toBe(true);
     expect(router.options.notFoundMode).toBe("fuzzy");

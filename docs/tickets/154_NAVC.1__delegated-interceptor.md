@@ -70,3 +70,14 @@ is recorded in 173_R5REC.3's §R5 plan.
 
 ## Requirement IDs to satisfy and stamp in the PR
 REQ-NAVM-1 REQ-NAVM-2 REQ-NAVM-3 REQ-NAVM-4 REQ-NAVM-6 REQ-NAVM-7 REQ-NAVM-8 REQ-NAVC-13 REQ-NAVT-8
+
+## Reconciliation notes (append-only)
+
+- **2026-10-15 (NAVC.1 run) — stale AC row.** The second acceptance criterion
+  ("SsrHandoff commits replace-mode document nav; spy suites migrated and green")
+  predates the chain insert `154a_NAVC.5__ssrhandoff-replace-seam.md`: REQ-NAVM-5
+  (the `spaRuntime.replace`/`replaceDocument` seam, `SsrHandoff` routing, and the
+  ~12-suite `spaRuntime.assign` spy migration) is owned by NAVC.5, as this
+  contract's own Out-of-scope row already states. The row text is left verbatim;
+  this note is the reconciliation — NAVC.1's deliverable is the interceptor
+  itself, and that AC is discharged by NAVC.5's run, not this PR.
