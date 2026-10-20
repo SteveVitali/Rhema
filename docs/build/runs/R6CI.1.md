@@ -142,3 +142,42 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   `check:licenses` ✓; `check:protocol-markers` ✓; `check:spa-budget` ✓; `check:spa-env` ✓;
   prettier on both workflows ✓; js-yaml parse of both workflows ✓ (dispatch present,
   schedule absent).
+- 2026-10-20T22:32:11Z — pushed `9871f9f` (impl `5d6e34a` + pr-record commit); PR **#196**
+  opened vs `stevevitali/r6eng-1-ci-provenance-hygiene` (mergePolicy=OPERATOR). Dispatch
+  pre-flight: `gh workflow run ci.yml --ref stevevitali/r6ci-1-ci-cost-phase-1` →
+  **accepted, HTTP 200 — no 422** (run `39508572358`, event `workflow_dispatch`, head
+  `9871f9f`); `D-R6CI.1-2` therefore NOT needed — the dispatch run itself is the green
+  proof. Two full runs in flight: PR `39508570350` (merge commit, `pull_request`) +
+  dispatch `39508572358` (branch head). The `fast-path` job concluded success on the PR
+  run — decide emitted `mode=full` (no anchors exist yet → `no-valid-anchor`).
+  `ci-boundary.sh --pr 196 --max-wait 5400` waiting.
+- 2026-10-20T22:33Z — first live evidence: the `fast-path` job's decide step on PR run
+  `39508570350` logged `decide: mode=full reason=no-valid-anchor` + the `CI-FULL-PATH`
+  notice, job concluded `success` in ~6 s — the fail-closed no-anchor path is live
+  (workflow `permissions:` resolved to `Actions: read` + `Contents: read` per the runner
+  header; the artifact listing call succeeded — no `artifact list failed` reason).
+- **`--maxWorkers` measurement (AC3) — VERDICT: DROP.** Unit-job vitest leg on run
+  `39508570350` (`--minWorkers=1 --maxWorkers=2`): **40m41s** (22:31:13→23:11:54Z) —
+  green, but the SLOWEST of the last four reads; the three prior unflagged `pnpm test`
+  legs on #195 measured 40m47s / 32m45s / 27m05s (runs 39494314034 / 39487615793 /
+  39481383638). The flag does not demonstrate "green + faster" (the long tail is per-file
+  PGlite instances two workers cannot split, and 2 workers add contention) → per the
+  contract's keep-iff rule the flag is dropped; `pnpm test` restored. The revert touches
+  `ci.yml`, so it rides a full-classified head per the push-sequencing rule (never the
+  docs-only closeout head).
+- 2026-10-20T23:30Z — **boundary PASS on the code head:** `ci: pass #196@9871f9f`
+  (run 39508570350 — all seven jobs: fast-path, unit, contracts, integration, images,
+  public-safe, `ci-pass anchor`) + anchor artifact `ci-pass-f8d415d7c1…` live
+  (expired=false). Dispatch run `39508572358` (head `9871f9f`, event
+  `workflow_dispatch`) ran full by the event gate and went **red on two pre-existing
+  latent legs**, unrelated to the fast path: (a) `public-safe` gitleaks — on non-PR
+  events the action scans `--full-history --all` and flagged the Oct-4 fixture literal
+  `journey2026stb5a` (citeproc citation key, `packages/journeys/src/stb5a-helpers.ts`);
+  fixed by pinning the literal in `.gitleaks.toml` (same class as the two existing
+  fixture entries — verified locally: `gitleaks dir` clean). (b) `contracts` migration
+  lint — `git fetch origin "$BASE" --depth=1` grafts a merge-base-less ref on non-PR
+  events (`BASE=main`), so `origin/main...HEAD` errors `no merge base`; fixed by an
+  unbounded fetch (the job's checkout is already `fetch-depth: 0`; verified locally —
+  `merge-base` resolves, lint passes). Both fixes are required for `workflow_dispatch`
+  to function as the D4 full-run forcing function; they ride the next (full-classified)
+  push — both touch non-eligible paths, so the fast path is never implicated.

@@ -89,10 +89,11 @@ jobs:
       # chromium so the unit job's assertions are never vacuous (the test fails hard under CI otherwise).
       - run: pnpm --filter @rhema/journeys exec playwright install chromium
         if: needs.fast-path.outputs.mode == 'full'
-      # R6CI.1: --maxWorkers=2 on the 2-vCPU runner (vitest defaults to 1 worker) — measured on
-      # this PR and kept only while green + faster (ADR-115). --minWorkers=1 is required: the
-      # default minWorkers is cpus-1, which conflicts with maxWorkers=2 on any runner >3 vCPU.
-      - run: pnpm exec vitest run --minWorkers=1 --maxWorkers=2
+      # R6CI.1 measured `--minWorkers=1 --maxWorkers=2` on this PR (run 39508570350): the leg
+      # took 40m41s vs the three prior unflagged legs 40m47s/32m45s/27m05s — green but NOT
+      # faster (the suite's long tail is per-file PGlite instances two workers don't split).
+      # Per the contract's keep-iff-green-and-faster rule the flag is dropped; `pnpm test` stays.
+      - run: pnpm test
         if: needs.fast-path.outputs.mode == 'full'
       # SPA.7 (REQ-VFY-2/REQ-TST-2): the emitted-DOM contract gate — journey selector literals ⊆
       # the committed manifest ⊆ emitted+asserted. A pure source scan; no build or browser needed.
@@ -146,10 +147,11 @@ jobs:
         if: needs.fast-path.outputs.mode == 'full'
       # HOT.1 (ADR-013): the additive-migration lint — rejects DROP/RENAME/type changes/table
       # rewrites/role changes in migrations newer than the PR base; the prod deploy runbook re-runs
-      # it against the `_migrations` max.
+      # it against the `_migrations` max. R6CI.1: the fetch is unbounded — the three-dot diff needs
+      # the merge base, which a `--depth=1` graft cannot supply on push/dispatch (BASE=main).
       - run: |
           BASE="${{ github.base_ref || 'main' }}"
-          git fetch origin "$BASE" --depth=1 || true
+          git fetch origin "$BASE" || true
           node scripts/check-additive-migrations.mjs --since-git "origin/$BASE"
         if: needs.fast-path.outputs.mode == 'full'
       # R6CI.1 — the former `pnpm --filter … build` leg and the duplicate contracts/db vitest run

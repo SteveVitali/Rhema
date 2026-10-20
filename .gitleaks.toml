@@ -18,7 +18,11 @@ paths = [
 # P1.22 sweep — the only committed-tree hits are these three pinned TEST fixtures (a Better-Auth test
 # secret and a quarantine object key, both literals, both valueless outside a test). Narrowly scoped:
 # a real credential still fails CI.
+# 2026-10-20 (R6CI.1): + `journey2026stb5a` — the citeproc citation-key literal in
+# packages/journeys/src/stb5a-helpers.ts. Same fixture class; needed because non-PR events
+# (workflow_dispatch/push) make gitleaks-action scan FULL history, where this surfaces.
 regexes = [
   '''test-secret-0123456789abcdef0123456789abcdef''',
   '''quarantine/ws1/up1''',
+  '''journey2026stb5a''',
 ]
