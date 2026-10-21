@@ -167,9 +167,10 @@
 - 2026-10-21T22:57Z — closeout commit `0acd09f` pushed; the impl-head run was superseded and
   the full suite ran at the new head — **`ci: pass #205@0acd09f`** (run 39684481044, all
   seven legs + `ci-pass` anchor; typecheck/lint/unit 44m41s).
-- 2026-10-21T23:08Z — ci-stamp correction `1ad2ad7` pushed; full suite re-ran at the final
-  head — **`ci: pass #205@1ad2ad7`** (run 39691335133, all seven legs + `ci-pass` anchor).
-  Final head `1ad2ad7`; unmerged (OPERATOR).
+- 2026-10-21T23:08Z — ci-stamp correction `1ad2ad7` pushed; full suite re-ran at that head
+  — **`ci: pass #205@1ad2ad7`** (run 39691335133, all seven legs + `ci-pass` anchor).
+  Ledger-stamp commit `658536e` rides on top (docs-only, no code delta since the verified
+  head); unmerged (OPERATOR).
 
 ## Gap table
 
