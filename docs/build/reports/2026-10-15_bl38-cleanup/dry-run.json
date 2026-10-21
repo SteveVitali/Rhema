@@ -1,0 +1,70 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-10-15T23:44:59.816Z",
+  "items": [
+    {
+      "key": "draft",
+      "name": "stale draft 01M3D7E119PP2HA9GP6XT2DG87 (v7, human_upload)",
+      "status": "deletable",
+      "guards": [
+        {
+          "name": "placement",
+          "ok": true,
+          "detail": "my-first-project@01M2V3PM11XSF05VJ9G01PM5ZB"
+        }
+      ],
+      "counts": {
+        "drafts": 1,
+        "live_docs": 0,
+        "restore_points": 0,
+        "provenance_maps": 0,
+        "artifact_versions": 1,
+        "artifacts": 1
+      }
+    },
+    {
+      "key": "deployment",
+      "name": "stray deployments row prod:82179e1",
+      "status": "deletable",
+      "guards": [
+        {
+          "name": "signature",
+          "ok": true,
+          "detail": "0.4.0+test"
+        },
+        {
+          "name": "twin",
+          "ok": true,
+          "detail": "prod:82179e1356b1d574739f759f1eecb111af73729b @ Sat Sep 26 2026 05:05:38 GMT-0400 (Eastern Daylight Time)"
+        }
+      ],
+      "counts": {
+        "deployments": 1
+      }
+    },
+    {
+      "key": "account",
+      "name": "review account 14stevevitali+rhema-review@gmail.com (+ seeded Showcase copy)",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    },
+    {
+      "key": "lad",
+      "name": "Library-After-Dark projects (\"The Library After Dark\" + \"The Library After Dark (review test)\")",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    }
+  ],
+  "observations": [
+    "LAD-titled project 01M3SK380GQX41RKMD4KVFB34Q \"The Library After Dark (review test)\" on workspace 01M2V3PM11XSF05VJ9G01PM5ZB (tombstoned Wed Sep 30 2026 17:41:10 GMT-0400 (Eastern Daylight Time)) — out-of-scope, untouched",
+    "additional short-sha deployments row prod:d5a74cc — out-of-scope",
+    "additional human_upload draft 01M34Z3C51V3W4G69G454PCHG0 (v1) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M353A7K5GEQSTQR46DX9N163 (v2) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M354HF9HAYF09SVZ9SYDPQZR (v3) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M359SMBXQERPSQH2ZG5G433N (v4) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M35FPR721WH35ZGSQXSQ9CTX (v5) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M35KC9K6N6R2P6EJD19T30E9 (v6) on my-first-project — out-of-scope"
+  ]
+}

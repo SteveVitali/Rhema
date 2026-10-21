@@ -105,7 +105,6 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | BL-35 | External pen-test procurement + triage — **H7, money** |
 | BL-36 | Nightly golden run + score-floor gate — **H7, ~$150–300/night** |
 | BL-37 | Cross-tenant exposure-window review + disclosure — **H7** |
-| BL-38 | Prod test-data residue cleanup — **H7** |
 | BL-39 | H3 partner-program deferred scope — **H7** |
 | BL-40 | H2 corpus — **H2, ~$100 k** |
 | BL-41 | H4 venue-table real `verified_at` stamps — **H4** |
@@ -148,8 +147,10 @@ and no operator secret; every owed row is carried with an unchanged status and a
 
 ### Closed (landed — record only)
 
-BL-03, BL-04, BL-08..BL-12, BL-14, BL-15, BL-26..BL-28, BL-48, BL-49, BL-52..BL-55, BL-57..BL-65
-(unchanged since the 2026-10-04 read; nothing closed this pass).
+BL-03, BL-04, BL-08..BL-12, BL-14, BL-15, BL-26..BL-28, BL-38, BL-48, BL-49, BL-52..BL-55, BL-57..BL-65
+(BL-38 closed 2026-10-15 — BL38.1 prod residue cleanup: draft v7 + `prod:82179e1` deleted live,
+review account + LAD projects already hard-deleted by the scheduled pipeline; findings
+`prod:d5a74cc` + the row-5 purge verify → D-BL38.1-1/-2).
 
 ---
 

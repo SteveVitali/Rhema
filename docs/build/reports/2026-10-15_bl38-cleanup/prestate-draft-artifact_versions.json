@@ -1,0 +1,18 @@
+[
+  {
+    "id": "01M3D7E106HJ7DQGZ3FX3ZZ9TZ",
+    "artifact_id": "01M3D7E1067ESCAZTEQ61VFV7D",
+    "ordinal": 1,
+    "content_sha256": "<redacted>",
+    "s3_key": "<redacted>",
+    "bytes": 153,
+    "word_count": 20,
+    "media_type": "text/markdown",
+    "created_by": "<redacted>",
+    "created_at": "2026-09-25T21:27:08.055Z",
+    "immutable": true,
+    "parse_status": null,
+    "producer_query_id": null,
+    "block_id_map": "<redacted>"
+  }
+]
