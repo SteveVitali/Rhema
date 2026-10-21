@@ -34,6 +34,7 @@ import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend, resettleRun } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
 import type { OrchestratorDeps } from "./internal-api.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { SqlClient } from "./tx.js";
 
 /**
@@ -149,7 +150,12 @@ export async function sweepStrandedRuns(
       await revokeRunCredentials(tx, row.id, now);
       return true;
     });
-    if (settled) outcomes.push({ kind: "provisioning_failed", runId: row.id, workspaceId: row.workspace_id });
+    if (settled) {
+      // REQ-ENG-2 — the sweep committed a terminal settle; republish the committed high-water so the
+      // run's last batch wakes the SSE tail instead of riding the safety poll.
+      await publishCommittedEventHighWater(deps, row.workspace_id, row.id);
+      outcomes.push({ kind: "provisioning_failed", runId: row.id, workspaceId: row.workspace_id });
+    }
   }
 
   // ---- Leg B (D-P0.10-2): stranded `queued` → re-send the launch job. ----

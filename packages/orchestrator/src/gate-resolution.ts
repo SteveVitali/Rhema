@@ -18,6 +18,7 @@ import { RUN_JOBS } from "./queue.js";
 import { serializeGateOverlay } from "./gate-overlay.js";
 import { captureGuidanceTx } from "./guidance.js";
 import { canTransition, isTerminal, type RunState } from "./state-machine.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { SqlClient } from "./tx.js";
 
 /** Conditional-update resolve (REQ-DATA-35): flip `resolved_at` only if still unresolved. Returns the winner. */
@@ -456,6 +457,12 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
   // pod quiesces at the next tool-batch boundary (the reaper then completes the settle).
   if (result.ok && result.resolved && box.requestCancel) {
     await deps.heartbeats.requestCancel(args.runId).catch(() => undefined);
+  }
+  // REQ-ENG-2 — a `stop` that ended the run committed its terminal batch (decision + state_changed +
+  // settle) in this tx; republish the committed high-water so the SSE tail wakes instead of riding
+  // the safety poll.
+  if (result.ok && result.resolved && isTerminal(result.state)) {
+    await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
   }
   return result;
 }

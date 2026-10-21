@@ -17,7 +17,7 @@
 
 import { parseRunEvent, RUN_EVENTS } from "@rhema/contracts";
 import type { EventInput, AppendedEvent, EventWriter } from "./event-writer.js";
-import type { SqlClient } from "./tx.js";
+import type { SqlClient, TxRunner } from "./tx.js";
 
 /** The largest event batch the internal `POST events` endpoint accepts in one call (§12.5: ≤250 or 2 s). */
 export const MAX_EVENT_BATCH = 250;
@@ -39,6 +39,34 @@ export interface RunEventPublisher {
 export interface RunEventSubscriber {
   /** Call `onSeq` on each published high-water seq for `runId`; returns an unsubscribe function. */
   subscribe(runId: string, onSeq: (seq: number) => void): () => void;
+}
+
+/**
+ * REQ-ENG-2 (D-SLO.1-6) — the post-commit wakeup for a run's terminal batch. `append` publishes the
+ * seq inside the still-uncommitted transaction; a woken SSE tail pumps immediately, reads only
+ * committed rows, sees nothing, and — when that batch was the run's LAST — has no next publish to
+ * re-wake it, so the terminal events ride the 10 s safety poll (the six ~2.2 s outliers that pushed
+ * event-delivery p95 to 2,238 ms). Call this AFTER a run-end commit resolves: it re-reads the
+ * committed `run_event_seq` high-water in a fresh tenant transaction and re-publishes it, so the
+ * wakeup lands after the rows are visible and the tail delivers the terminal batch at publish speed.
+ * Best-effort like every wakeup: a lost republish is recovered by the same safety re-poll it
+ * replaces (§12.5 — Redis is a wakeup only, never a source of truth).
+ */
+export async function publishCommittedEventHighWater(
+  deps: { readonly txRunner: TxRunner; readonly eventPublisher?: RunEventPublisher },
+  workspaceId: string,
+  runId: string,
+): Promise<void> {
+  if (!deps.eventPublisher) return;
+  try {
+    const res = await deps.txRunner.run(workspaceId, (tx) =>
+      tx.query("select seq from run_event_seq where run_id = $1", [runId]),
+    );
+    const seq = (res.rows[0] as { seq: number } | undefined)?.seq;
+    if (typeof seq === "number" && seq > 0) await deps.eventPublisher.publish(runId, seq);
+  } catch {
+    /* a lost wakeup is recovered by the tail's safety re-poll — never throw into a run-end path. */
+  }
 }
 
 /** The UTC calendar day of an instant — the `run_events` partition key. */

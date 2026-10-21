@@ -120,3 +120,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-112](ADR-112-external-pen-test-deferred-post-launch.md) | The external pen test moves after launch; a pre-launch adversarial security review gates the launch instead | round-6 planning (operator ruling `GD-PEN.R6b`, superseding `GD-PEN.R6` — LEDGER § GATE | Accepted |
 | [ADR-114](ADR-114-deploy-neutral-provenance-tolerance.md) | Deploy-provenance accepts a deployed SHA that is an ancestor of HEAD when the intervening diff is deploy-neutral | R6ENG.1 (REQ-ENG-8) | Accepted |
 | [ADR-115](ADR-115-ci-fast-path-same-tree-anchor.md) | CI fast path — docs-only/same-tree heads reuse a full green verdict via a repo-wide anchor | R6CI.1 (operator insert 176a; rulings D1–D9) | Accepted |
+| [ADR-116](ADR-116-post-commit-event-republish.md) | Post-commit event republish — run-end paths re-publish the committed high-water seq | R6ENG.2 | Accepted |

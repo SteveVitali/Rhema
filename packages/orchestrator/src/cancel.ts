@@ -17,6 +17,7 @@ import {
 } from "./spend.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import type { OrchestratorDeps } from "./internal-api.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { SqlClient } from "./tx.js";
 
 export interface CancelRunArgs {
@@ -128,6 +129,10 @@ export async function cancelRun(deps: OrchestratorDeps, args: CancelRunArgs): Pr
 
   // Post-commit flag for the live task (the harness polls it at the next heartbeat boundary). In-memory in
   // tests; a no-op for a run that was already terminal.
-  if (result.ok && !result.alreadyTerminal) await deps.heartbeats.requestCancel(args.runId);
+  if (result.ok && !result.alreadyTerminal) {
+    // REQ-ENG-2 — republish the committed high-water so the terminal batch wakes the SSE tail.
+    await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
+    await deps.heartbeats.requestCancel(args.runId);
+  }
   return result;
 }
