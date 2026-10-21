@@ -275,7 +275,7 @@ describe("the Showcase dossier seed (§15.4)", () => {
     // second_read_model fires) summing to the run's metered 4110 cr > the 3860 cr charged.
     const usage = (
       await db.query(
-        `select step_id, role, credits, model_tier, source, provider from usage_records where run_id = $1 order by credits desc`,
+        `select step_id, role, credits, model_tier, source, provider, provider_request_id from usage_records where run_id = $1 order by credits desc`,
         [r.reviewRunId],
       )
     ).rows as {
@@ -285,10 +285,17 @@ describe("the Showcase dossier seed (§15.4)", () => {
       model_tier: string;
       source: string;
       provider: string;
+      provider_request_id: string | null;
     }[];
     expect(usage.length).toBe(5);
     expect(usage.reduce((a, u) => a + u.credits, 0)).toBe(4110);
     expect(usage.every((u) => u.source === "proxy" && u.provider === "anthropic")).toBe(true);
+    // REQ-ECON-6 — every seeded usage row carries the `req_jrn_` exclusion marker so the spend
+    // guards never sum fixture fiction (the marker is provider_request_id; source stays proxy
+    // because the report's reconciliation needs real-looking metered rows).
+    for (const u of usage) {
+      expect(u.provider_request_id, u.step_id).toMatch(/^req_jrn_/);
+    }
     expect(usage.map((u) => u.step_id).sort()).toEqual(
       ["step:craft", "step:discourse", "step:letter", "step:second_read", "step:verification"].sort(),
     );

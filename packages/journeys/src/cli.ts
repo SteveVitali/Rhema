@@ -10,6 +10,9 @@
 // --expect-renderer <ssr|spa> (fails the run when a served document's data-renderer differs) |
 // --invite-code <code> (MAINT.6 — the seeded preview invite; env RHEMA_INVITE_CODE — rides the
 // /signup form's `code` field, which the web stamps `rhema_ic` on the magic link's callbackURL).
+// R5ECON.1 (REQ-ECON-8/9) — operator `--paid` fails CLOSED: a system-role JOURNEY_DATABASE_URL
+// plus a declared --headroom leg cap are required; only the scheduled self-bounding cron
+// (GITHUB_EVENT_NAME=schedule) may run measured-spend-blind (the no-db attestation).
 // SPA.28 — `--pin-renderer` is RETIRED (REQ-SEQ-4's removal leg): the `x-rhema-renderer` channel
 // is deleted, so the flag + JOURNEY_PIN_RENDERER are refused below instead of silently dropped.
 // --stage resolves the stage's public origins (prod is the only stage with real DNS today —
@@ -22,8 +25,10 @@ import { STEP_REGISTRY } from "./registry.js";
 import {
   gateEcho,
   gatedStepIds,
+  paidDispatchPreflight,
   parseRendererFlag,
   parseSurfaces,
+  parseUsdFlag,
 } from "./cli-flags.js";
 import { ALL_IMPLS } from "./impls.js";
 import { createGmailClient } from "./mailbox.js";
@@ -51,6 +56,17 @@ const origins = stage ? stageOrigins(stage) : undefined;
 const web = arg("--web") ?? process.env.JOURNEY_WEB_URL ?? origins?.web ?? "http://localhost:3000";
 const api = arg("--api") ?? process.env.JOURNEY_API_URL ?? origins?.api ?? web;
 const paid = has("--paid");
+// R5ECON.1 (REQ-ECON-9) — the dispatched leg's declared cap; required on every paid dispatch
+// (the cron passes its standing $3 bound via the workflow; see journeys.yml).
+const headroomParsed = parseUsdFlag(
+  arg("--headroom") ?? process.env.JOURNEY_HEADROOM_USD,
+  "--headroom",
+);
+if (headroomParsed.error) {
+  console.error(headroomParsed.error);
+  process.exit(2);
+}
+const headroomUsd = headroomParsed.value;
 const nonce = arg("--nonce") ?? journeyNonce();
 const date = new Date().toISOString().slice(0, 10);
 const outDir = arg("--out") ?? `docs/build/reports/${date}_JOURNEY.1-journeys`;
@@ -123,6 +139,21 @@ if (steps.length === 0) {
   process.exit(2);
 }
 
+// R5ECON.1 (REQ-ECON-8/9) — the paid-dispatch posture, decided in cli-flags (the refusal table
+// is unit-tested there). Refusal happens BEFORE any network work (a refused run never touches
+// the stage): operator --paid needs the system DSN + a declared --headroom; the scheduled cron
+// alone may attest no-db.
+const posture = paidDispatchPreflight({
+  paid,
+  systemDsnBound: process.env.JOURNEY_DATABASE_URL !== undefined,
+  scheduledCron: process.env.GITHUB_EVENT_NAME === "schedule",
+  headroomUsd,
+});
+if (posture.error) {
+  console.error(posture.error);
+  process.exit(posture.exitCode ?? 3);
+}
+
 // provenance (REQ-ARCH-39): read every reachable /healthz BEFORE walking — a stale deploy is a
 // fail-closed run, not an amber footnote.
 const observed: Record<string, string | null> = {};
@@ -132,10 +163,11 @@ for (const [label, base] of Object.entries({ web, api })) {
 const provOk = expectSha ? provenanceMatch(expectSha, observed) : false;
 
 // The measured spend-guard path needs a DB read — JOURNEY_DATABASE_URL binds a read pool when the
-// runner can reach the stage's Postgres (operator-driven legs). D-STB.5b-1: that DSN MUST be the
-// system role — an app-login DSN reads usage_records as $0 through FORCE RLS, so the guard probes
-// the bound role and fails closed on a blind pool. Scheduled CI can't reach the private DB: the
-// no-db attestation stands because the cron itself bounds paid runs to one leg/week.
+// runner can reach the stage's Postgres (operator-driven legs; REQUIRED off the cron path per the
+// preflight above). D-STB.5b-1: that DSN MUST be the system role — an app-login DSN reads
+// usage_records as $0 through FORCE RLS, so the guard probes the bound role and fails closed on a
+// blind pool. Scheduled CI can't reach the private DB: the no-db attestation stands because the
+// cron itself bounds paid runs to one leg/week.
 let spendDb: { query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> } | undefined;
 let spendPool: pg.Pool | undefined;
 if (paid && process.env.JOURNEY_DATABASE_URL) {
@@ -149,8 +181,12 @@ if (paid && !spend.withinCap) {
   console.error(`spend guard refused: ${spend.reason}`);
   process.exit(3);
 }
-if (paid && spend.weeklyMeteredUsd !== null && spend.weeklyMeteredUsd + 3 > spend.capUsd) {
-  console.error(`spend guard refused: $${spend.weeklyMeteredUsd} already metered this week`);
+// REQ-ECON-9 — the declared leg cap pre-flights the measured week: the dispatch refuses when
+// the week's spend + the leg's cap would cross the weekly bound.
+if (paid && spend.weeklyMeteredUsd !== null && spend.weeklyMeteredUsd + headroomUsd! > spend.capUsd) {
+  console.error(
+    `spend guard refused: $${spend.weeklyMeteredUsd} already metered this week (leg cap --headroom $${headroomUsd} would cross $${spend.capUsd})`,
+  );
   process.exit(3);
 }
 
@@ -197,8 +233,13 @@ try {
 
 for (const r of report.results) {
   const mark =
-    r.outcome === "pass" ? "PASS" : r.outcome === "owed" ? "owed" : r.outcome === "skipped" ? "skip" : r.outcome === "ready-to-flip" ? "FLIP" : "FAIL";
+    r.outcome === "pass" ? "PASS" : r.outcome === "owed" ? "owed" : r.outcome === "skipped" ? "skip" : r.outcome === "ready-to-flip" ? "FLIP" : r.outcome === "cap_overrun" ? "CAP!" : "FAIL";
   console.log(`${mark.padEnd(5)} ${r.id.padEnd(10)} [${r.owner}] ${r.error ?? ""}`);
+}
+if (report.results.some((r) => r.outcome === "cap_overrun")) {
+  // REQ-ECON-7 — a cap overrun pauses the funded window: the run already exited non-zero via
+  // report.passed; make the budget verdict unmissable in the operator's log tail.
+  console.error("funded window paused — a leg closed cap_overrun; do not dispatch further paid legs without re-authorization");
 }
 console.log(`provenance ${provOk ? "match" : "NO-MATCH"} · spend $${report.spend.weeklyMeteredUsd ?? "?"} ≤ $${report.spend.capUsd} · report ${outDir}/report.json`);
 

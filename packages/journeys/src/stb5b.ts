@@ -9,8 +9,10 @@ import path from "node:path";
 import type { BrowserContext } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { apiFetch, db } from "./stb5a.js";
+import { SEED_SPEND_EXCLUSION_SQL } from "./spend-guard.js";
 import {
   STB5B_CAPS,
+  assertLegCapUsd,
   baitUserSource,
   buildFullBoardFetchBody,
   buildHighWaterReviewBody,
@@ -213,11 +215,12 @@ async function createRun(
   return runId;
 }
 
-/** Metered USD for one run (the same proxy-source rows the weekly guard sums). */
+/** Metered USD for one run (the same proxy-source rows the weekly guard sums — REQ-ECON-6's
+ *  seed-marker exclusion applies here too: the cap's meter never counts seeded fiction). */
 async function runSpendUsd(tenantId: string, runId: string): Promise<number> {
   const rows = await scopedQuery(
     tenantId,
-    `select coalesce(sum(list_cost_usd),0)::float8 as usd from usage_records where run_id = $1 and source = 'proxy'`,
+    `select coalesce(sum(u.list_cost_usd),0)::float8 as usd from usage_records u where u.run_id = $1 and u.source = 'proxy' and ${SEED_SPEND_EXCLUSION_SQL}`,
     [runId],
   );
   return Number((rows[0] as { usd: number } | undefined)?.usd ?? 0);
@@ -231,16 +234,22 @@ async function writeEvidence(ctx: StepCtx, stepId: string, evidence: Record<stri
   ).catch(() => undefined);
 }
 
-/** Fold asserts → throw `owed` when any assert failed (red steps report owed, never fail). */
-
+/** Fold asserts → throw `owed` when any assert failed (red steps report owed, never fail).
+ *  R5ECON.1 (REQ-ECON-7): the declared per-leg cap is ENFORCED at close — the evidence blob is
+ *  written first (capUsd + meteredUsd always land), then a `meteredUsd > capUsd` leg throws
+ *  `CapOverrunError` (the runner's `cap_overrun` verdict; it pauses the funded window) BEFORE
+ *  the owed arm — an overrun is a budget emergency, never a silent pass nor a plain owed. */
 async function finishLeg(
   ctx: StepCtx,
   stepId: string,
   asserts: Stb5bAssert[],
+  meteredUsd: number,
   extra: Record<string, unknown>,
 ): Promise<void> {
+  const capUsd = STB5B_CAPS[stepId];
   const failed = asserts.filter((a) => !a.pass);
-  await writeEvidence(ctx, stepId, { capUsd: STB5B_CAPS[stepId], asserts, ...extra });
+  await writeEvidence(ctx, stepId, { capUsd, meteredUsd, asserts, ...extra });
+  assertLegCapUsd(stepId, meteredUsd, capUsd);
   if (failed.length > 0) {
     throw new Error(
       `${stepId} owed — ${failed.map((a) => `${a.id}: ${a.evidence.slice(0, 220)}`).join(" | ")}`,
@@ -283,7 +292,7 @@ const B16: StepFn = async (ctx) => {
     steps,
     artifactPaths,
   });
-  await finishLeg(ctx, "B16", asserts, { runId, projectId: project.projectId, meteredUsd: usd });
+  await finishLeg(ctx, "B16", asserts, usd, { runId, projectId: project.projectId });
 };
 
 // ---------------------------------------------------------------- B17 — BL-17b high-water publish (+ BL-17a finding)
@@ -387,7 +396,7 @@ const B17: StepFn = async (ctx) => {
     maxDbSeq: seqRow?.hi ?? 0,
     commitEventTypes: types,
   });
-  await finishLeg(ctx, "B17", asserts, { runId, meteredUsd: usd, liveSeqs: liveSeqs.slice(-20), replayMax: Math.max(0, ...replaySeqs) });
+  await finishLeg(ctx, "B17", asserts, usd, { runId, liveSeqs: liveSeqs.slice(-20), replayMax: Math.max(0, ...replaySeqs) });
 };
 
 // ---------------------------------------------------------------- B18A — BL-18a Full-board fetch leg
@@ -413,7 +422,7 @@ const B18A: StepFn = async (ctx) => {
     fetchAllowRows: fetchRows,
     verificationStepPresent: steps.some((s) => s.phase === "verification" && s.state === "done"),
   });
-  await finishLeg(ctx, "B18A", asserts, { runId, meteredUsd: usd, fetchRows: fetchRows.length });
+  await finishLeg(ctx, "B18A", asserts, usd, { runId, fetchRows: fetchRows.length });
 };
 
 // ---------------------------------------------------------------- B18B — BL-18b memo user-source deny
@@ -459,7 +468,7 @@ const B18B: StepFn = async (ctx) => {
     pauseSignals: pauses,
     attemptObserved: forHost.length > 0 || denyRows > 0 || pauses > 0,
   });
-  await finishLeg(ctx, "B18B", asserts, { runId, meteredUsd: usd, host, domains });
+  await finishLeg(ctx, "B18B", asserts, usd, { runId, host, domains });
 };
 
 // ---------------------------------------------------------------- B19A — BL-19a approve_plan structured edit
@@ -576,9 +585,8 @@ const B19A: StepFn = async (ctx) => {
     markerFound: overlayIds.length > 0 && nextPhaseCommitted,
     marker,
   });
-  await finishLeg(ctx, "B19A", asserts, {
+  await finishLeg(ctx, "B19A", asserts, usd, {
     runId,
-    meteredUsd: usd,
     overlayVersionIds: overlayIds,
     note: "content-level marker carry (the draft artifact's prose) is evidence-only — the DB-provable half is the user-authored structure-plan version the next phase materialized from",
   });
@@ -685,10 +693,9 @@ const B19B: StepFn = async (ctx) => {
     marker,
     approvedEventSeen: events.includes("outline.approved"),
   });
-  await finishLeg(ctx, "B19B", asserts, {
+  await finishLeg(ctx, "B19B", asserts, usd, {
     runId,
     turnRunId,
-    meteredUsd: usd,
     overlayVersionIds: overlayIds,
     promotedPaths: promoted.map((r) => r.p),
   });

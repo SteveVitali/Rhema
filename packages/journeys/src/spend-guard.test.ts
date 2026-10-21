@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { checkWeeklySpendCap, WEEKLY_PAID_CAP_USD, type SpendDb } from "./spend-guard.js";
+import { JOURNEY_SEED_USAGE_REQUEST_PREFIX } from "@rhema/db";
+import {
+  CapOverrunError,
+  checkWeeklySpendCap,
+  FLAGGED_PROXY_SPEND_SCOPE,
+  SEED_SPEND_EXCLUSION_SQL,
+  WEEKLY_PAID_CAP_USD,
+  type SpendDb,
+} from "./spend-guard.js";
 
 // JOURNEY.1 — the weekly $5 spend guard: reads flagged-tenant usage for the ISO week, fails the
 // paid run before dispatch when the cap is spent.
@@ -65,5 +73,42 @@ describe("checkWeeklySpendCap", () => {
     const capture: { sql?: string } = {};
     await checkWeeklySpendCap({ db: fakeDb(999, capture, false) });
     expect(capture.sql).toBeUndefined();
+  });
+});
+
+// R5ECON.1 (REQ-ECON-6, B3-F3) — seeded fixture rows must never count as spend: every guard
+// query shares the one scope fragment, which carries the `req_jrn_` marker exclusion.
+describe("REQ-ECON-6 — the seed-row exclusion", () => {
+  it("the shared scope pins flagged tenants + the meter of record + the req_jrn_ marker", () => {
+    expect(FLAGGED_PROXY_SPEND_SCOPE).toContain("w.is_test = true");
+    expect(FLAGGED_PROXY_SPEND_SCOPE).toContain("u.source = 'proxy'");
+    expect(FLAGGED_PROXY_SPEND_SCOPE).toContain(JOURNEY_SEED_USAGE_REQUEST_PREFIX);
+    expect(SEED_SPEND_EXCLUSION_SQL).toContain("provider_request_id");
+    expect(SEED_SPEND_EXCLUSION_SQL).toContain("not like");
+    // REQ-ECON-13 (Q-ECON.d, ratified): the scope is bucket-blind — entitlement/Included proxy
+    // spend counts; no credit-bucket predicate may narrow the guard.
+    expect(FLAGGED_PROXY_SPEND_SCOPE).not.toContain("bucket");
+    expect(FLAGGED_PROXY_SPEND_SCOPE).not.toContain("included");
+  });
+  it("the weekly query consumes the shared scope (seeded req_jrn_* rows are excluded)", async () => {
+    const capture: { sql?: string } = {};
+    await checkWeeklySpendCap({ db: fakeDb(0, capture) });
+    expect(capture.sql).toContain(FLAGGED_PROXY_SPEND_SCOPE);
+    expect(capture.sql).toContain("req_jrn_");
+  });
+});
+
+// R5ECON.1 (REQ-ECON-7) — the distinct overrun verdict the runner classifies.
+describe("CapOverrunError", () => {
+  it("names the step, the metered figure, the cap, and the verdict", () => {
+    const e = new CapOverrunError("B16", 6.25, 1);
+    expect(e).toBeInstanceOf(Error);
+    expect(e.name).toBe("CapOverrunError");
+    expect(e.stepId).toBe("B16");
+    expect(e.meteredUsd).toBe(6.25);
+    expect(e.capUsd).toBe(1);
+    expect(e.message).toContain("cap_overrun");
+    expect(e.message).toContain("$6.25");
+    expect(e.message).toContain("$1.00");
   });
 });

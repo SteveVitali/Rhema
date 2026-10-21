@@ -11,6 +11,7 @@ import type { Browser, BrowserContext, Page } from "playwright";
 import type { JourneyStep } from "./registry.js";
 import type { MailboxClient } from "./mailbox.js";
 import { JourneySessions, stableIdentity, freshIdentity, assertTestIdentity } from "./session.js";
+import { CapOverrunError } from "./spend-guard.js";
 import { marker } from "./nonce.js";
 import { spaRouteFor, type SpaSurface } from "@rhema/contracts";
 import {
@@ -71,7 +72,10 @@ export interface StepCtx {
 
 export type StepFn = (ctx: StepCtx) => Promise<void>;
 
-export type StepOutcome = "pass" | "fail" | "owed" | "ready-to-flip" | "skipped";
+// R5ECON.1 (REQ-ECON-7) — `cap_overrun` is the distinct verdict a leg earns when its metered
+// spend exceeds the declared capUsd: it classifies regardless of the step's expected color,
+// fails the run, and pauses the funded window (every later step skips).
+export type StepOutcome = "pass" | "fail" | "owed" | "ready-to-flip" | "skipped" | "cap_overrun";
 
 export interface StepResult {
   readonly id: string;
@@ -151,6 +155,9 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
   });
   const results: StepResult[] = [];
   const startedAt = new Date().toISOString();
+  // REQ-ECON-7 — the funded-window pause: once a leg closes `cap_overrun` no further leg
+  // dispatches (a cap breach is a budget emergency — the spend stop is the point).
+  let windowPausedBy: string | null = null;
 
   for (const step of deps.steps) {
     const impl = deps.impls[step.id];
@@ -170,6 +177,11 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       durationMs: 0,
     };
     results.push(res);
+    if (windowPausedBy != null) {
+      res.outcome = "skipped";
+      res.error = `funded window paused — ${windowPausedBy} closed cap_overrun (REQ-ECON-7)`;
+      continue;
+    }
     if (step.paid && !deps.paid) {
       res.outcome = "skipped";
       res.error = "paid step — nightly runs exclude it (the weekly --paid leg carries it)";
@@ -307,16 +319,24 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     // fails the run exactly like an impl throw (on a red step it reports owed — REQ-VFY-7).
     await Promise.allSettled(docReads);
     wireCurrent = undefined;
-    if (stepError == null && rendererViolations.length > 0) {
-      stepError = new Error(
-        `expect-renderer=${deps.expectRenderer}: ${rendererViolations.join("; ")}`,
-      );
-    }
-    if (stepError == null) {
-      res.outcome = step.expected === "green" ? "pass" : "ready-to-flip";
+    if (stepError instanceof CapOverrunError) {
+      // REQ-ECON-7 — the distinct verdict, whatever the step's expected color: cap overruns
+      // never collapse into `owed` (a red step) or `fail` (a green one).
+      res.outcome = "cap_overrun";
+      res.error = stepError.message;
+      windowPausedBy = step.id;
     } else {
-      res.error = stepError instanceof Error ? stepError.message : String(stepError);
-      res.outcome = step.expected === "red" ? "owed" : "fail";
+      if (stepError == null && rendererViolations.length > 0) {
+        stepError = new Error(
+          `expect-renderer=${deps.expectRenderer}: ${rendererViolations.join("; ")}`,
+        );
+      }
+      if (stepError == null) {
+        res.outcome = step.expected === "green" ? "pass" : "ready-to-flip";
+      } else {
+        res.error = stepError instanceof Error ? stepError.message : String(stepError);
+        res.outcome = step.expected === "red" ? "owed" : "fail";
+      }
     }
     res.durationMs = Date.now() - t0;
     try {
@@ -336,8 +356,9 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     for (const c of deps.browser.contexts()) await c.close().catch(() => undefined);
   }
 
-  // `fail` is only ever assigned to expected-green steps (red failures classify as `owed`).
-  const passed = !results.some((r) => r.outcome === "fail");
+  // `fail` is only ever assigned to expected-green steps (red failures classify as `owed`);
+  // `cap_overrun` is the REQ-ECON-7 budget verdict — it fails the run either way.
+  const passed = !results.some((r) => r.outcome === "fail" || r.outcome === "cap_overrun");
   const report: JourneyReport = {
     tool: "rhema-journeys",
     nonce: deps.nonce,

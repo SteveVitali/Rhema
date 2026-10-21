@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Browser } from "playwright";
 import { runJourneys } from "./runner.js";
+import { CapOverrunError } from "./spend-guard.js";
 import type { JourneyStep } from "./registry.js";
 import type { MailboxClient } from "./mailbox.js";
 
@@ -79,6 +80,44 @@ describe("runJourneys — the expected-flag semantics", () => {
     expect(res.consoleErrors).toEqual([]);
     expect(res.failedRequests).toEqual([]);
     expect(typeof res.durationMs).toBe("number");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R5ECON.1 (REQ-ECON-7) — the cap_overrun verdict: a leg whose metered spend exceeds its
+// declared capUsd closes `cap_overrun` (never owed/fail), fails the run, and pauses the
+// funded window — every later step in the dispatch skips.
+
+describe("runJourneys — cap_overrun pauses the funded window (REQ-ECON-7)", () => {
+  it("a CapOverrunError classifies cap_overrun on a red step, fails the run, and skips every later leg", async () => {
+    const r = await run(
+      [step("P-a", "red", true), step("P-b", "red", true), step("G-p", "green")],
+      {
+        "P-a": async () => {
+          throw new CapOverrunError("P-a", 6.25, 1.0);
+        },
+        "P-b": async () => undefined, // must NEVER run — the window is paused
+        "G-p": async () => undefined,
+      },
+      true,
+    );
+    const a = r.results.find((x) => x.id === "P-a")!;
+    expect(a.outcome).toBe("cap_overrun"); // the distinct verdict — not owed, not fail
+    expect(a.error).toContain("cap_overrun");
+    const b = r.results.find((x) => x.id === "P-b")!;
+    expect(b.outcome).toBe("skipped");
+    expect(b.error).toContain("paused");
+    const g = r.results.find((x) => x.id === "G-p")!;
+    expect(g.outcome).toBe("skipped"); // the pause halts free legs too — the dispatch is dead
+    expect(r.passed).toBe(false);
+  });
+  it("cap_overrun on a green step is still cap_overrun — the verdict ignores expected color", async () => {
+    const r = await run(
+      [step("G-c", "green")],
+      { "G-c": async () => { throw new CapOverrunError("G-c", 9, 5); } },
+    );
+    expect(r.results[0]!.outcome).toBe("cap_overrun");
+    expect(r.passed).toBe(false);
   });
 });
 

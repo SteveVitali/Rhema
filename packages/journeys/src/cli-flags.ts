@@ -75,3 +75,57 @@ export function gateEcho(key: SpaSurface): string {
     (g.weeklyHolds.length ? ` · weekly-holds: ${g.weeklyHolds.join(",")}` : "")
   );
 }
+
+/**
+ * R5ECON.1 (REQ-ECON-9) — `--headroom <usd>`: the dispatched leg's declared cap, pre-flighted
+ * against the measured spend. undefined ⇒ unset; anything non-positive is a misuse (exit 2).
+ */
+export function parseUsdFlag(
+  raw: string | undefined,
+  flag: string,
+): { value?: number; error?: string } {
+  if (raw === undefined) return {};
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    return { error: `${flag} must be a positive USD figure — got ${JSON.stringify(raw)}` };
+  }
+  return { value: n };
+}
+
+/**
+ * R5ECON.1 (REQ-ECON-8/9/13; B3-F2) — the paid-dispatch posture. An operator `--paid` dispatch
+ * fails CLOSED: it needs `JOURNEY_DATABASE_URL` bound to the SYSTEM-role DSN (an app-login pool
+ * reads `usage_records` as $0 through FORCE RLS — D-STB.5b-1; the guard's own `pg_roles` probe
+ * still runs on whatever pool is bound) AND a declared `--headroom` leg cap. The ONE exception
+ * is the scheduled self-bounding cron (`GITHUB_EVENT_NAME=schedule` — the weekly job cannot
+ * reach the private DB and bounds itself to one paid leg/week): it keeps the no-db attestation.
+ * `paid:false` runs carry no posture requirement. Returns the refusal — nothing here exits.
+ */
+export function paidDispatchPreflight(args: {
+  readonly paid: boolean;
+  readonly systemDsnBound: boolean;
+  readonly scheduledCron: boolean;
+  readonly headroomUsd: number | undefined;
+}): { error?: string; exitCode?: number } {
+  if (!args.paid) return {};
+  if (!args.scheduledCron && !args.systemDsnBound) {
+    return {
+      error:
+        "--paid dispatch requires JOURNEY_DATABASE_URL bound to the system-role DSN " +
+        "(REQ-ECON-8 / D-STB.5b-1): an RLS-blind pool reads usage_records as $0 and the guard " +
+        "would greenlight an unmeasured week. The no-db attestation survives only on the " +
+        "scheduled self-bounding cron (GITHUB_EVENT_NAME=schedule) — refusing to dispatch an " +
+        "unmeasured paid leg",
+      exitCode: 3,
+    };
+  }
+  if (args.headroomUsd === undefined) {
+    return {
+      error:
+        "--paid dispatch requires --headroom <legCapUsd> (REQ-ECON-9): the leg's declared cap " +
+        "must pre-flight against the measured spend before dispatch — refusing",
+      exitCode: 3,
+    };
+  }
+  return {};
+}
