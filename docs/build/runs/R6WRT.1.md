@@ -21,7 +21,7 @@
 - **Started:** 2026-10-21T21:52Z · **Closed:** 2026-10-21T22:14Z
 - **Live access:** prod via IAP tunnel → **system-role** `postgres` DSN (`rhema-prod-alloydb-password`);
   reads inside `BEGIN READ ONLY`; the three executes are the only writes, each one transaction.
-- **ci:** pass #205@0acd09f (run 39684481044, all seven legs + `ci-pass` anchor;
+- **ci:** pass #205@1ad2ad7 (run 39691335133, all seven legs + `ci-pass` anchor;
   boundary JSON `docs/build/logs/ci-R6WRT.1.json`)
 
 ## Deferrals read
@@ -165,9 +165,11 @@
   JSON `docs/build/logs/ci-R6WRT.1.json`). LEDGER advanced (nextTicket R6SOAK.1, chainTip →
   this branch), BUILD_INDEX row 211, PHASE LOG done entry; DEFERRALS flips recorded above.
 - 2026-10-21T22:57Z — closeout commit `0acd09f` pushed; the impl-head run was superseded and
-  the full suite ran at the new head — final boundary: **`ci: pass #205@0acd09f`** (run
-  39684481044, all seven legs + `ci-pass` anchor; typecheck/lint/unit 44m41s). ci stamps
-  corrected to the final head.
+  the full suite ran at the new head — **`ci: pass #205@0acd09f`** (run 39684481044, all
+  seven legs + `ci-pass` anchor; typecheck/lint/unit 44m41s).
+- 2026-10-21T23:08Z — ci-stamp correction `1ad2ad7` pushed; full suite re-ran at the final
+  head — **`ci: pass #205@1ad2ad7`** (run 39691335133, all seven legs + `ci-pass` anchor).
+  Final head `1ad2ad7`; unmerged (OPERATOR).
 
 ## Gap table
 
