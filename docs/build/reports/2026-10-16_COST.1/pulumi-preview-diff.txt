@@ -1,0 +1,67 @@
+Previewing update (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/80931f98-52de-4c8c-8a15-f5e18de0e9e3
+
+  pulumi:pulumi:Stack: (same)
+    [urn=urn:pulumi:prod::rhema::pulumi:pulumi:Stack::rhema-prod]
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-collab-0796455]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-collab]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ scaling: {
+              ~ minInstanceCount: 1 => 0
+            }
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-fetcher-31c9c51]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-fetcher]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ scaling: {
+              ~ minInstanceCount: 1 => 0
+            }
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-export-81798eb]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-export]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ scaling: {
+              ~ minInstanceCount: 1 => 0
+            }
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-web-72f1683]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-web]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ scaling: {
+              ~ minInstanceCount: 1 => 0
+            }
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-convert-svc-a3874fc]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-convert-svc]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ resources: {
+                          ~ cpuIdle: false => true
+                        }
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-api-e745ce0]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-api]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ scaling: {
+              ~ minInstanceCount: 1 => 0
+            }
+        }
+Resources:
+    ~ 6 to update
+    166 unchanged

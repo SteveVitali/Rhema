@@ -203,6 +203,45 @@ export interface VpcConfig {
   subnets: VpcSubnet[];
 }
 
+/**
+ * COST.1 (REQ-COST-3) — the Cloud Run serving posture as test-asserted stage facts, moved out
+ * of `compute.ts`'s ternaries so a lever is a data flip the tests pin (REQ-COST-1/2 execution
+ * evidence = the fact + the `pulumi up`, not an inferred program behavior). `convertSvc` sits
+ * beside `services` because it is declared outside the services loop (ONB.1).
+ */
+export type CloudRunServiceName = "export" | "fetcher" | "api" | "web" | "worker" | "collab";
+
+/**
+ * CPU-billing posture — maps to the container `cpuIdle` field / `run.googleapis.com/cpu-
+ * throttling` annotation. `"request"` (cpuIdle=true) allocates CPU only while a request is
+ * being processed — the cold-floor posture; `"instance"` (cpuIdle=false) keeps CPU allocated
+ * between requests, required ONLY for services doing real background work (the worker's
+ * pg-boss consumers + crons). Instance-billed min instances bill at ~5× the request-billed
+ * min-instance rate — the convert-svc drift class COST.1 reverts.
+ */
+export type CpuBillingMode = "request" | "instance";
+
+export interface CloudRunServicePosture {
+  /** Resident instances. 0 = scale-to-zero (cold floor — the ruling-(a) default); ≥1 = warm floor. */
+  minInstances: number;
+  maxInstances: number;
+  cpuBilling: CpuBillingMode;
+  /** Explicit container resource shape (worker right-size / convert-svc headroom levers). */
+  resources?: {
+    cpu: string;
+    memory: string;
+    /** Free burst CPU during instance startup — blunts cold-start latency (worker cold-import, convert-svc previews). */
+    startupCpuBoost?: boolean;
+  };
+}
+
+export interface CloudRunPosture {
+  /** The services-loop posture (export/fetcher/api/web/worker/collab). */
+  services: Record<CloudRunServiceName, CloudRunServicePosture>;
+  /** ONB.1's warm convert service — its min floor exists FOR `import_preview_p95_s` ≤ 20 s. */
+  convertSvc: CloudRunServicePosture;
+}
+
 export interface StageConfig {
   kind: StageKind;
   /** The stage's managed Postgres (AlloyDB on dev/preview; Cloud SQL on prod — amended 2026-09-17). */
@@ -277,6 +316,12 @@ export interface StageConfig {
    * billing module creates nothing.
    */
   readonly billingAccountId?: string;
+  /**
+   * COST.1 — the Cloud Run serving posture (REQ-COST-3; min-instance counts, CPU-billing
+   * mode, per-service resource shapes). The deployed numbers the tests assert are the
+   * numbers that deploy — a lever is a fact flip + `pulumi up`, never a program edit.
+   */
+  readonly cloudRun: CloudRunPosture;
 }
 
 /**
@@ -309,6 +354,56 @@ function baseVpc(): VpcConfig {
   };
 }
 
+/**
+ * COST.1 — the shared Cloud Run posture every stage starts from: EVERYTHING scale-to-zero
+ * and request-billed (the cold floor) except the always-on worker — it consumes pg-boss and
+ * runs every cron (run.reap, slo.probe, test-tenant.purge, usage.reconcile, slo.review.weekly),
+ * so it can NEVER scale to zero and needs CPU allocated outside a request (`instance`-billed).
+ * The worker's explicit 1 vCPU/1Gi + startup-boost shape is pinned by the live cold-import
+ * finding (D-P0.15h-3: the throttled ~9-min @kubernetes/client-node import on 512Mi); convert
+ * carries the same 1Gi headroom for mammoth/pdf.js spikes (ONB.1).
+ */
+function cloudRunPosture(p: {
+  /** max scale for the standard services (prod 10, non-prod 2). */
+  max: number;
+  /** worker max (prod 3, non-prod 1). */
+  workerMax: number;
+  /** convert-svc min — prod keeps the SLO floor warm, non-prod scales to zero. */
+  convertMin: number;
+  /** convert-svc max (prod 4, non-prod 2). */
+  convertMax: number;
+}): CloudRunPosture {
+  return {
+    services: {
+      export: { minInstances: 0, maxInstances: p.max, cpuBilling: "request" },
+      fetcher: { minInstances: 0, maxInstances: p.max, cpuBilling: "request" },
+      api: { minInstances: 0, maxInstances: p.max, cpuBilling: "request" },
+      web: { minInstances: 0, maxInstances: p.max, cpuBilling: "request" },
+      // collab is the single-writer MVP shape (§5.10): max=1 at EVERY stage until the
+      // multi-instance design lands — a Redis sync tier is the named upgrade.
+      collab: { minInstances: 0, maxInstances: 1, cpuBilling: "request" },
+      worker: {
+        // Forbidden to zero (D1-F5): min=0 kills every consumer + cron. `instance` billing
+        // keeps CPU alive between requests for the queue loops.
+        minInstances: 1,
+        maxInstances: p.workerMax,
+        cpuBilling: "instance",
+        resources: { cpu: "1", memory: "1Gi", startupCpuBoost: true },
+      },
+    },
+    convertSvc: {
+      // The warm floor IS the service's purpose (ONB.1/ADR-044: `import_preview_p95_s` ≤ 20 s).
+      // Request-BILLED either way — the live `cpu-throttling:"false"` drift COST.1 reverts
+      // (−$42/mo) while keeping the resident instance for the SLO. Zeroing the floor rides
+      // the cold-start re-probe (D-COST.1-2).
+      minInstances: p.convertMin,
+      maxInstances: p.convertMax,
+      cpuBilling: "request",
+      resources: { cpu: "1", memory: "1Gi", startupCpuBoost: true },
+    },
+  };
+}
+
 export const STAGES: Record<StageKind, StageConfig> = {
   dev: {
     kind: "dev",
@@ -325,6 +420,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA.28 — `spaSurfaces` retired (see the StageConfig migration note): the dev flips
     // SPA.10…23 all landed and the field no longer wires to anything.
     requiredSecrets: DEV_REQUIRED_SECRETS,
+    cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
   },
   preview: {
     kind: "preview",
@@ -339,6 +435,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
+    cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
   },
   prod: {
     kind: "prod",
@@ -367,6 +464,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
     // rhema-507501`). Enables the $50 budget alert + the `billing_export` BigQuery dataset.
     billingAccountId: "018CB8-639CF9-C243C7",
+    // COST.1 (H9 ruling-(a), class A "all scale-to-zero floors") — prod's request-billed
+    // services scale to ZERO: api/web/collab/export/fetcher join dev/preview in the cold
+    // floor (−$48.60/mo vs the 5×min=1 warm floor). The worker stays min=1 instance-billed
+    // (forbidden to zero); convert-svc keeps ONLY its min=1 SLO floor, request-billed — the
+    // codified revert of the live `cpu-throttling:"false"` drift (−$42.12/mo, REQ-COST-2).
+    cloudRun: cloudRunPosture({ max: 10, workerMax: 3, convertMin: 1, convertMax: 4 }),
   },
 };
 

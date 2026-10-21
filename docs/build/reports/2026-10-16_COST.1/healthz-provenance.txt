@@ -1,0 +1,3 @@
+# healthz provenance post-update-151 (2026-10-16T01:37:12Z)
+{"ok":true,"service":"api","build":{"gitSha":"ffbb8ad01b4383ab7f11088c8427b668bc442b01"}}
+{"ok":true,"service":"web","build":{"gitSha":"ffbb8ad01b4383ab7f11088c8427b668bc442b01"}}

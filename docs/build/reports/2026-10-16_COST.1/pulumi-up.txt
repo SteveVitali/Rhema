@@ -1,0 +1,110 @@
+Previewing update (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/96bfa113-c233-4965-b888-a43c91db5287
+
+
+@ Previewing update......
+ ~  gcp:cloudrunv2:Service rhema-prod-export update [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-fetcher update [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-collab update [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-convert-svc update [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-web update [diff: ~template]
+@ Previewing update....
+ ~  gcp:cloudrunv2:Service rhema-prod-api update [diff: ~template]
+    pulumi:pulumi:Stack rhema-prod  
+Resources:
+    ~ 6 to update
+    166 unchanged
+
+Updating (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/updates/151
+
+
+@ Updating.......
+ ~  gcp:cloudrunv2:Service rhema-prod-web updating (0s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-fetcher updating (0s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-export updating (0s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-convert-svc updating (0s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-collab updating (0s) [diff: ~template]
+@ Updating........................
+ ~  gcp:cloudrunv2:Service rhema-prod-fetcher updated (21s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-web updated (21s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-convert-svc updated (21s) [diff: ~template]
+ ~  gcp:cloudrunv2:Service rhema-prod-export updated (21s) [diff: ~template]
+@ Updating....
+ ~  gcp:cloudrunv2:Service rhema-prod-api updating (0s) [diff: ~template]
+@ Updating............
+ ~  gcp:cloudrunv2:Service rhema-prod-collab updated (31s) [diff: ~template]
+@ Updating..........................
+ ~  gcp:cloudrunv2:Service rhema-prod-api updated (31s) [diff: ~template]
+@ Updating.....
+    pulumi:pulumi:Stack rhema-prod  
+Outputs:
+    anthropicSecretId   : "rhema-prod-anthropic-api-key"
+    appDatabaseDsnOutput: [secret]
+    bucketNames         : [
+        [0]: "rhema-prod-artifacts"
+        [1]: "rhema-prod-user-content"
+        [2]: "rhema-prod-benchmark-enclave"
+    ]
+    cloudSqlInstance    : "rhema-prod-postgres"
+    databaseHost        : "10.46.0.3"
+    dnsRecords          : [
+        [0]: {
+            name : "rhema.tools."
+            type : "A"
+            value: "34.8.177.69"
+        }
+        [1]: {
+            name : "api.rhema.tools."
+            type : "A"
+            value: "34.8.177.69"
+        }
+        [2]: {
+            name : "usercontent.rhema.tools."
+            type : "A"
+            value: "34.8.177.69"
+        }
+    ]
+    gkeCluster          : "rhema-prod-run-task-gke-c13cb80"
+    lbIpAddress         : "34.8.177.69"
+    maxUsdPerRun        : 100
+    projectId           : "rhema-507501"
+    redisHost           : "10.46.100.251"
+    regionName          : "us-central1"
+    requiredSecrets     : [
+        [0]: "anthropic-api-key"
+        [1]: "run-token-signing-key"
+        [2]: "alloydb-password"
+        [3]: "better-auth-secret"
+        [4]: "google-oauth-client-secret"
+        [5]: "stripe-secret"
+        [6]: "stripe-webhook-secret"
+        [7]: "email-action-secret"
+        [8]: "resend-api-key"
+        [9]: "anthropic-admin-key"
+        [10]: "ops-alert-webhook-url"
+        [11]: "user-content-signing-key"
+        [12]: "app-database-url"
+        [13]: "collab-database-url"
+        [14]: "turbo-cache-token"
+    ]
+    sandboxIsolated     : {
+        egressTargets          : [
+            [0]: "fw:egress-proxy"
+        ]
+        hasCloudNat            : false
+        hasDefaultInternetRoute: false
+    }
+    sandboxSubnet       : "https://www.googleapis.com/compute/v1/projects/rhema-507501/regions/us-central1/subnetworks/rhema-prod-sandbox-51212bc"
+    stageKind           : "prod"
+    turboCacheUrl       : "https://rhema-prod-turbo-cache-9a75e3a-tkbl73n3tq-uc.a.run.app"
+    vpcSelfLink         : "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/networks/rhema-prod-net-ae9fc54"
+
+Resources:
+    ~ 6 updated
+    166 unchanged
+
+Duration: 1m1s
+

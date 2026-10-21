@@ -103,6 +103,75 @@ describe("managed Postgres engine + preview guards (AC2 — GCP; prod→Cloud SQ
   });
 });
 
+describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) class A)", () => {
+  const ALL_SERVICES = ["export", "fetcher", "api", "web", "worker", "collab"] as const;
+
+  it("prod: every request-billed service scales to ZERO — the authorized cold floor (−$48.60/mo)", () => {
+    const s = STAGES.prod.cloudRun.services;
+    for (const svc of ["export", "fetcher", "api", "web", "collab"] as const) {
+      expect(s[svc].minInstances, svc).toBe(0);
+      expect(s[svc].cpuBilling, svc).toBe("request");
+    }
+    // collab stays single-writer at every stage (§5.10 — no Redis sync tier yet).
+    expect(s.collab.maxInstances).toBe(1);
+    // prod's burst ceiling is 10 for the standard services.
+    for (const svc of ["export", "fetcher", "api", "web"] as const) {
+      expect(s[svc].maxInstances, svc).toBe(10);
+    }
+  });
+
+  it("prod: the worker is min=1 INSTANCE-billed — forbidden to scale to zero (pg-boss + all crons)", () => {
+    const w = STAGES.prod.cloudRun.services.worker;
+    expect(w.minInstances).toBe(1);
+    expect(w.cpuBilling).toBe("instance"); // cpuIdle:false — CPU outside requests
+    expect(w.maxInstances).toBe(3);
+    // the D-P0.15h-3 cold-import shape is pinned in the fact, not a program ternary.
+    expect(w.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
+  });
+
+  it("prod: convert-svc keeps ONLY its min=1 SLO floor, REQUEST-billed — the codified drift revert (−$42.12/mo)", () => {
+    const c = STAGES.prod.cloudRun.convertSvc;
+    // REQ-COST-2: the live `cpu-throttling:"false"` divergence is reverted — the fact pins
+    // request billing explicitly so the `up` converges live to IaC intent.
+    expect(c.cpuBilling).toBe("request");
+    // the warm floor stays: it exists FOR import_preview_p95_s ≤ 20 s (ONB.1/ADR-044).
+    expect(c.minInstances).toBe(1);
+    expect(c.maxInstances).toBe(4);
+    expect(c.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
+  });
+
+  it("every stage: the worker can never be scaled to zero or request-billed", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      const w = cfg.cloudRun.services.worker;
+      expect(w.minInstances, name).toBeGreaterThanOrEqual(1);
+      expect(w.cpuBilling, name).toBe("instance");
+    }
+  });
+
+  it("non-prod stages keep their cold floor + smaller ceilings (shape preserved)", () => {
+    for (const stage of ["dev", "preview"] as const) {
+      const s = STAGES[stage].cloudRun;
+      for (const svc of ALL_SERVICES) {
+        if (svc === "worker") continue;
+        expect(s.services[svc].minInstances, `${stage}/${svc}`).toBe(0);
+        expect(s.services[svc].cpuBilling, `${stage}/${svc}`).toBe("request");
+      }
+      expect(s.services.export.maxInstances).toBe(2);
+      expect(s.services.worker.maxInstances).toBe(1);
+      expect(s.convertSvc.minInstances).toBe(0);
+      expect(s.convertSvc.maxInstances).toBe(2);
+      expect(s.convertSvc.cpuBilling).toBe("request");
+    }
+  });
+
+  it("posture covers exactly the six services-loop names + convert-svc", () => {
+    for (const cfg of Object.values(STAGES)) {
+      expect(Object.keys(cfg.cloudRun.services).sort()).toEqual([...ALL_SERVICES].sort());
+      expect(cfg.cloudRun.convertSvc).toBeDefined();
+    }
+  });
+});
+
 describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () => {
   it("prod is open (PRB.15's deliberate flip); every non-prod stage stays invite — the flag fails closed", () => {
     expect(STAGES.prod.signupMode).toBe("open");

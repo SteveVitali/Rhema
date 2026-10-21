@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-10-16T01:36:29.342Z",
+  "totalUsdMonth": 198.32,
+  "lines": [
+    {
+      "service": "Cloud Run warm floor (9 svc)",
+      "usdMonth": 64.80000000000001,
+      "src": [
+        "Services Min Instance CPU (Request-based billing) ($0.000003/s)",
+        "Services CPU (Instance-based billing) in us-central1 ($0.000018/s)",
+        "rhema-prod-api-e745ce0: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-collab-0796455: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-convert-svc-a3874fc: min=1 1vCPU 1.0GiB → $12.96",
+        "rhema-prod-export-81798eb: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-fetcher-31c9c51: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-ops-alert-catcher: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-turbo-cache-9a75e3a: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-web-72f1683: min=0 1vCPU 0.5GiB → $0.00",
+        "rhema-prod-worker-cbdaf0f: min=1 1vCPU 1.0GiB cpuIdle=false → $51.84"
+      ]
+    },
+    {
+      "service": "Memorystore BASIC 1GB",
+      "usdMonth": 35.77,
+      "src": [
+        "Redis Capacity Basic M1 Iowa/South Carolina/Oregon ($0.0490/GiBy.h)"
+      ]
+    },
+    {
+      "service": "GKE node e2-medium ×1 (+100GB pd)",
+      "usdMonth": 28.4591683,
+      "src": [
+        "E2 Instance Core running in Americas ($0.0218/h)",
+        "E2 Instance Ram running in Americas ($0.0029/GiBy.h)",
+        "Storage PD Capacity ($0.0400/GiBy.mo) ×100GB"
+      ]
+    },
+    {
+      "service": "Cloud SQL db-g1-small + 10GB SSD + backups",
+      "usdMonth": 28.05,
+      "src": [
+        "Cloud SQL for PostgreSQL: Zonal - Small instance in Americas ($0.0350/h)",
+        "Cloud SQL for PostgreSQL: Zonal - Standard storage in Americas ($0.1700/GiBy.mo)",
+        "Cloud SQL: Backups in Americas ($0.0800/GiBy.mo) (×10GB kept ≤ instance size)"
+      ]
+    },
+    {
+      "service": "HTTPS LB (1 rules + ~20GB)",
+      "usdMonth": 18.41,
+      "src": [
+        "Cloud Load Balancer Forwarding Rule Minimum Global ($0.0250/h)",
+        "Global External Application Load Balancer Inbound Data Processing for Iowa (us-central1) ($0.0080/GiBy) (est. 20GB — web/api traffic)"
+      ]
+    },
+    {
+      "service": "Proxy MIG e2-small ×1 (+10GB pd)",
+      "usdMonth": 12.629584150000001,
+      "src": [
+        "E2 Instance Core running in Americas ($0.0218/h)",
+        "E2 Instance Ram running in Americas ($0.0029/GiBy.h)",
+        "Storage PD Capacity ($0.0400/GiBy.mo) ×10GB"
+      ]
+    },
+    {
+      "service": "External IPv4 (2 in-use)",
+      "usdMonth": 7.3,
+      "src": [
+        "est. $0.005/hr in-use — the in-use IPv4 SKU is not description-matchable in the catalog"
+      ]
+    },
+    {
+      "service": "Cloud NAT ×1 (gateway + ~5GB/mo)",
+      "usdMonth": 1.2469999999999999,
+      "src": [
+        "Networking Cloud Nat Gateway Uptime ($0.0014/h)",
+        "Networking Cloud Nat Data Processing ($0.0450/GiBy) (est. 5GB — proxy/provider egress)"
+      ]
+    },
+    {
+      "service": "Artifact Registry (~8GB)",
+      "usdMonth": 0.75,
+      "src": [
+        "Artifact Registry Storage ($0.1000/GiBy.mo) (est. 8GB images − 0.5GB free)"
+      ]
+    },
+    {
+      "service": "Secret Manager (16 versions, 6 free)",
+      "usdMonth": 0.6,
+      "src": [
+        "Secret version replica storage ($0.0600/mo)"
+      ]
+    },
+    {
+      "service": "GCS (~15GB std)",
+      "usdMonth": 0.3,
+      "src": [
+        "Standard Storage US Regional ($0.0200/GiBy.mo) (est. 15GB — artifacts/user-content/cloudbuild)"
+      ]
+    },
+    {
+      "service": "GKE cluster management fee",
+      "usdMonth": 0,
+      "src": [
+        "$0.10/hr/cluster — EXEMPT: GKE free tier covers the first zonal Standard cluster per billing account"
+      ]
+    }
+  ]
+}
