@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { gateFixtures, formatReport } from "./nightly-golden.mjs";
 
 const FLOORS = { materialRecallFloor: 0.8, citedFetched: true, attestationViolationsMax: 0, schemaValid: true };
@@ -38,5 +41,15 @@ describe("nightly-golden runner (§13.5; REQ-ARCH-36/REQ-EVAL-17)", () => {
     const gate = gateFixtures({ fixtures: [] });
     expect(gate.blocked).toBe(false);
     expect(gate.results).toEqual([]);
+  });
+
+  it("R5OPS.1 (REQ-OPS-7): the absent-manifest exit-0 labels itself NON-EVIDENCE verbatim", () => {
+    // A green-looking nightly-golden run that never saw a manifest must not read as evidence —
+    // pin the marker so nobody rewords it away.
+    const src = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), "nightly-golden.mjs"),
+      "utf8",
+    );
+    expect(src).toContain("NON-EVIDENCE: exit 0 here means no golden run occurred");
   });
 });

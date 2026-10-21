@@ -1,0 +1,35 @@
+{
+ "req": "REQ-OPS-3",
+ "at": "2026-10-15T22:25:20.322Z",
+ "object": "quarantine/01M2R2E1WA81E1BQJX94K1SZQ4/prb16-imp-1.md",
+ "backend_bucket": {
+  "name": "rhema-prod-usercontent-backend-7dea6dd",
+  "bucketName": "rhema-prod-user-content",
+  "enableCdn": true,
+  "cacheMode": "USE_ORIGIN_HEADERS",
+  "signedUrlKeyNames": [
+   "rhema-tools-key"
+  ],
+  "signedUrlCacheMaxAgeSec": "0"
+ },
+ "host_rule": {
+  "urlMap": "rhema-prod-urlmap-6f2b86e",
+  "pathMatcher": "usercontent"
+ },
+ "probes": {
+  "unsigned": {
+   "status": 403,
+   "server": "UploadServer"
+  },
+  "signed": {
+   "status": 403,
+   "content_type": "application/xml; charset=UTF-8",
+   "set_cookie": false,
+   "cache_control": "private,max-age=0"
+  },
+  "corrupted_signature": {
+   "status": 403
+  }
+ },
+ "verdict": "CONFIG-OK-ORIGIN-DENIED — enableCdn+USE_ORIGIN_HEADERS+rhema-tools-key verified via gcloud, but signed/unsigned/corrupted all return the GCS origin's AccessDenied 403: the edge does not gate on the signature and the LB→private-bucket origin read is denied (no objectViewer grant). NON-EVIDENCE for the signed-delivery path — recorded as a live finding."
+}
