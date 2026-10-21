@@ -12,7 +12,7 @@
 - **Live stage:** offline-only (the live window re-read is R6POST.1's `REQ-POST-8`)
 - **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-21T01:38Z
-- **Closed:** (open)
+- **Closed:** 2026-10-21T02:47Z — engineered; PR #197 (unmerged, OPERATOR)
 
 ## Deferrals read
 
@@ -165,8 +165,22 @@ After the deploy carrying this fix:
   8 files + 2 worker handlers) — all carry the republish; non-terminal transitions (queued, waiting_gate,
   cancelling, finalizing, provisioning, running, orphaned) deliberately do not (a later batch or the
   terminal republish covers them).
-- **CI:** (boundary read pending — appended at closeout).
+- **CI (code head, full):** `ci: pass #197@6179d4d` — run 39529812897, all seven legs
+  (`fast-path` decide → full; `public-safe`, `contracts`, `typecheck / lint / unit`,
+  `integration`, `images (build + scan, pin digests)`) + `ci-pass` anchor written →
+  the docs closeout head is fast-path eligible.
+- **CI (closeout head):** (appended after the docs-only push — expected fast path.)
 
 ## Evidence report
 
-(pending closeout — head SHA, PR #, boundary verdicts)
+- **Head SHAs:** code `6179d4d` (full CI pass, run 39529812897); closeout (see PHASE LOG).
+- **PR:** #197, base `stevevitali/r6ci-1-ci-cost-phase-1` — **unmerged** (mergePolicy OPERATOR).
+- **Deliverables:** REQ-ENG-2 satisfied — post-commit republish on every run-end terminal path
+  (12 call sites) via `publishCommittedEventHighWater` + `OrchestratorDeps.eventPublisher`,
+  bound to `RedisRunEventBus` in api + worker; deterministic race pin + wakeup-vs-poll
+  attribution (15-test file, 12/15 red pre-fix); REQ-POST-8 live re-read recipe (above);
+  ADR-116 + regenerated index; `D-SLO.1-6` dated note — stays OPEN (live leg is R6POST.1).
+- **Verification:** scoped suites 99 files / 1,156 tests / 0 fail · turbo 135/135 · six
+  check:* green · check-build-memory 0 violations (7 legacy warnings) · append-only OK
+  vs `4761fa3` · boundary read on #197 verbatim above.
+- **Spend:** $0 — offline-only; no prod/cloud contact; CI minutes only.
