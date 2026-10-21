@@ -12,6 +12,7 @@ import {
   costCardFigures,
   creditsLabel,
   draftCardCredits,
+  planCoverageLine,
   pricingFaq,
   pricingMatrix,
   quickReviewLine,
@@ -184,6 +185,14 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
     expect(q.a).toContain(reviewNoFactCheckCredits(PRICE, academic.words, academic.claims, "base")!.toLocaleString("en-US"));
   });
 
+  it("the FAQ's trial-pocket figure is DERIVED from PRICING.trial.pocketCredits — no literal", () => {
+    const faq = pricingFaq(PRICE);
+    const q = faq.find((f) => f.q === "What if I run out of credits?")!;
+    expect(q.a).toContain(`${PRICING.trial.pocketCredits.toLocaleString("en-US")}-credit trial pocket`);
+    // no other digit-claim slips in — every figure the answer carries traces to a constant
+    expect(q.a).toContain(`${PRICING.topUp.expiryMonths} months`);
+  });
+
   it("an absent pricer fails CLOSED — every figure is an em-dash/null, never a remembered number", () => {
     const data = buildPricingPageData();
     for (const card of data.cards) {
@@ -214,6 +223,80 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
 
   it("rangeLabel renders the Base→Frontier span, not a midpoint", () => {
     expect(rangeLabel({ low: 1200, high: 3400 })).toBe("1,200 – 3,400");
+  });
+});
+
+// R6MNY.1 (REQ-LCH-5b; GD-BL13.R6 "Keep anchors, metered") — the "≈N essay Reviews" coverage lines
+// are recomputed from the estimator's RAW figure and floored, so a plan never promises more loops
+// than its included credits buy. These tests pin that invariant against the real estimator path AND
+// an adversarial pricer whose figures land on rounding boundaries; a hand-edited figure (a stale
+// loop count, a non-derived claim) fails them.
+describe("R6MNY.1 — 'what it covers' never over-promises (GD-BL13.R6)", () => {
+  const gatedTiers = (Object.keys(PRICING.plans) as (keyof typeof PRICING.plans)[]).filter(
+    (t) => PRICING.plans[t].whatItCoversClaimId != null,
+  );
+  const essay = PRICING.costCardShapes.find((s) => s.key === "essay")!;
+
+  it("every printed loop figure × the raw per-loop estimate ≤ the plan's included credits", () => {
+    for (const tier of gatedTiers) {
+      const line = planCoverageLine(tier, PRICE)!;
+      expect(line, `${tier} computes`).not.toBeNull();
+      const printed = [...line.matchAll(/≈([\d.]+)/g)].map((m) => parseFloat(m[1]!));
+      const p = planOf(tier);
+      expect(printed.length).toBe(p.modelTiers.length);
+      for (const [i, mt] of p.modelTiers.entries()) {
+        const raw = PRICE.estimate({
+          workflow: "review",
+          rigor: "standard",
+          modelTier: mt,
+          inputs: { words: essay.words, claims: essay.claims },
+        })!;
+        // floored-to-0.1 ⇒ printed ≤ true ratio ⇒ printed × raw ≤ included, always.
+        expect(printed[i]!, `${tier}/${mt}: ${printed[i]} × ${raw}`).toBeLessThanOrEqual(
+          p.includedCreditsMonthly / raw + 1e-9,
+        );
+        expect(printed[i]! * raw, `${tier}/${mt}`).toBeLessThanOrEqual(
+          p.includedCreditsMonthly + 1e-9,
+        );
+      }
+    }
+  });
+
+  it("floors — a true 1.49-loop ratio prints ≈1.4, not ≈1.5 (never the generous rounding)", () => {
+    // An adversarial pricer: Base costs just over `included/1.5` so the true ratio is 1.49 —
+    // a nearest-round implementation would print ≈1.5 and promise loops the credits don't buy.
+    const p = planOf("writer");
+    const rawBase = Math.ceil(p.includedCreditsMonthly / 1.49);
+    const adversarial: SurfacePricer = {
+      estimate: () => rawBase,
+      perVerifiedClaim: () => null,
+    };
+    const line = planCoverageLine("writer", adversarial)!;
+    expect(line).toContain("≈1.4 ");
+    expect(line).not.toContain("≈1.5");
+    // and the printed figure is verifiably within budget on the same raw figure.
+    expect(parseFloat(line.match(/≈([\d.]+)/)![1]!) * rawBase).toBeLessThanOrEqual(
+      p.includedCreditsMonthly,
+    );
+  });
+
+  it("hides rather than over-promise when the credits buy under one loop", () => {
+    const p = planOf("writer");
+    const tooDear: SurfacePricer = {
+      estimate: () => p.includedCreditsMonthly * 20, // true ratio ≈ 0.05 — below one honest loop
+      perVerifiedClaim: () => null,
+    };
+    expect(planCoverageLine("writer", tooDear)).toBeNull();
+  });
+
+  it("no remembered figure — a pricer returning different numbers changes the rendered line", () => {
+    const doubled: SurfacePricer = {
+      estimate: (a) => PRICE.estimate(a)! * 2,
+      perVerifiedClaim: () => null,
+    };
+    for (const tier of gatedTiers) {
+      expect(planCoverageLine(tier, doubled)).not.toBe(planCoverageLine(tier, PRICE));
+    }
   });
 });
 

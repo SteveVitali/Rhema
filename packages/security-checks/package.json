@@ -30,6 +30,7 @@
     "@rhema/fetcher": "workspace:*",
     "@rhema/hooks": "workspace:*",
     "@rhema/infra": "workspace:*",
+    "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/mirror": "workspace:*",
     "@rhema/orchestrator": "workspace:*",

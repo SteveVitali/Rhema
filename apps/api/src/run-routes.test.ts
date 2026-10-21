@@ -9,7 +9,7 @@ import {
   type TestDeps,
 } from "@rhema/orchestrator/testing";
 import { agentTypesSeed } from "@rhema/db";
-import { PRICING } from "@rhema/contracts";
+import { PRICING, type PricingPublication } from "@rhema/contracts";
 import { provisionTrial } from "@rhema/ledger";
 import { testEntryDeps } from "@rhema/ledger/testing";
 import { createApp, type Principal } from "./index.js";
@@ -1420,6 +1420,162 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     const r = await post();
     expect(r.status).toBe(422);
     expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
+  });
+});
+
+// R6MNY.1 (REQ-LCH-5d; GD-LAUNCH-MONEY.R6; GD-TRIAL-CEIL.R6 "Keep $50/day") — the ruled launch
+// posture serves the trial to `everyone`, guarded by the $50/day kill switch and the 1-concurrent
+// cap. The config NEVER flips here: each test stages `audience: "everyone"` in-process (restored in
+// `finally`) and drives REAL — unflagged — workspaces through the live HTTP gate, proving the two
+// guards hold under exactly the posture R6LCH.1 will open.
+describe("POST /projects/:id/runs — the trial gate under `everyone` (R6MNY.1; REQ-LCH-5d)", () => {
+  type P = PricingPublication["trial"]["audience"];
+  /** Stage the launch audience for the block; the shipped config is restored unconditionally. */
+  const asEveryone = async <T>(fn: () => Promise<T>): Promise<T> => {
+    const prev: P = PRICING.trial.audience;
+    (PRICING.trial as { audience: P }).audience = "everyone";
+    try {
+      return await fn();
+    } finally {
+      (PRICING.trial as { audience: P }).audience = prev;
+    }
+  };
+
+  /** A trial seed on an UNFLAGGED (real) workspace — the audience `everyone` exposes. */
+  async function seedRealTrial(userId: string) {
+    const s = await seedProject(db, {
+      userId,
+      billingAccountId: `ba_${userId}`,
+      workspaceId: `ws_${userId}`,
+      projectId: `prj_${userId}`,
+      draftN: 1,
+      plan: null,
+    });
+    await db.txRunner.run(s.workspaceId, (tx) =>
+      provisionTrial(tx, testEntryDeps(), { billingAccountId: s.billingAccountId }),
+    );
+    const entitlement = (
+      await db.client.query("select id from trial_entitlements where billing_account_id = $1", [
+        s.billingAccountId,
+      ])
+    ).rows[0] as { id: string };
+    const tapp = createApp({
+      ...deps,
+      principal: () => ({
+        userId: s.userId,
+        workspaceId: s.workspaceId,
+        billingAccountId: s.billingAccountId,
+      }),
+    });
+    const post = (over: Record<string, unknown> = {}, entitlementId: string | undefined = entitlement.id) =>
+      tapp.request(`/projects/${s.projectId}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          runBody({
+            idempotencyKey: `idem-${userId}-1`,
+            modelTier: "base",
+            modelProfile: { tier: "base" },
+            rigor: "standard",
+            ...(entitlementId ? { entitlementId } : {}),
+            draftId: s.draftId,
+            inputs: { draftId: s.draftId, sidecar: true },
+            inputSnapshot: { wordCount: 2000 },
+            ...over,
+          }),
+        ),
+      });
+    return { s, tapp, entitlementId: entitlement.id, post };
+  }
+
+  it("a real workspace's entitlement claim is admitted — the audience gate no longer refuses it", async () => {
+    await asEveryone(async () => {
+      const { s, post } = await seedRealTrial("usr_ev1");
+      const r = await post();
+      expect(r.status).toBe(201);
+      const { runId } = (await r.json()) as { runId: string };
+      const run = (
+        await db.pg.query("select state, entitlement_id from runs where id = $1", [runId])
+      ).rows[0] as { state: string; entitlement_id: string | null };
+      expect(run.state).toBe("queued");
+      expect(run.entitlement_id).not.toBeNull();
+      // the unlock ran its audit row — admission is gated, not free.
+      expect(
+        (
+          await db.client.query(
+            "select decision from trial_unlock_checks where billing_account_id = $1",
+            [s.billingAccountId],
+          )
+        ).rows.map((c: { decision: string }) => c.decision),
+      ).toEqual(["allow"]);
+    });
+  });
+
+  it("the $50/day kill switch holds under everyone — a paused day refuses the real claim (429 trial_ceiling)", async () => {
+    await asEveryone(async () => {
+      const { post } = await seedRealTrial("usr_ev2");
+      // the deps clock is fixed at 2026-09-02 — stage the day's counter at/over the derived ceiling.
+      // `paused_at` is the sticky trip; either arm (paused_at OR credits ≥ dailySpendCeilingCredits)
+      // must refuse an unflagged workspace — only a flagged test tenant is exempt.
+      await db.client.query(
+        "insert into trial_spend_daily (day, credits, paused_at) values ('2026-09-02', $1, now())",
+        [PRICING.trial.dailySpendCeilingCredits],
+      );
+      const r = await post();
+      expect(r.status).toBe(429);
+      expect(((await r.json()) as { error: string }).error).toBe("trial_ceiling");
+      expect(
+        (await db.pg.query("select count(*)::int n from runs")).rows[0],
+      ).toMatchObject({ n: 0 });
+      // the denial is audited too — the entitlement stays locked for tomorrow, not denied.
+      const checks = (
+        await db.client.query(
+          "select decision, reason from trial_unlock_checks where billing_account_id = 'ba_usr_ev2'",
+          [],
+        )
+      ).rows as { decision: string; reason: string }[];
+      expect(checks[0]!.decision).toBe("paused");
+    });
+  });
+
+  it("the 1-concurrent cap holds under everyone — one live run, the second POST 429s", async () => {
+    await asEveryone(async () => {
+      const { s, tapp, post } = await seedRealTrial("usr_ev3");
+      // run 1: the entitlement claim — creates queued (the one live slot).
+      const first = await post();
+      expect(first.status).toBe(201);
+      // a SECOND project on the same billing account (run_in_progress is per-project; the
+      // concurrency count is per-account — the cap the flip protects is account-wide).
+      const s2 = await seedProject(db, {
+        userId: s.userId,
+        billingAccountId: s.billingAccountId,
+        workspaceId: s.workspaceId,
+        projectId: "prj_usr_ev3b",
+        draftN: 1,
+        plan: null,
+      });
+      const second = await tapp.request(`/projects/${s2.projectId}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          runBody({
+            idempotencyKey: "idem-ev3-2",
+            modelTier: "base",
+            modelProfile: { tier: "base" },
+            rigor: "standard",
+            draftId: s2.draftId,
+            inputs: { draftId: s2.draftId, sidecar: true },
+            inputSnapshot: { wordCount: 2000 },
+          }),
+        ),
+      });
+      expect(second.status).toBe(429);
+      const body = (await second.json()) as { error: string; limit: number; active: number };
+      expect(body.error).toBe("concurrency_limit");
+      // inTrial (trial_active) ⇒ the effective cap is the trial's, never the plan's.
+      expect(body.limit).toBe(PRICING.trial.concurrency);
+      expect(body.active).toBe(1);
+    });
   });
 });
 

@@ -550,6 +550,9 @@ importers:
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../packages/protocols
+      '@rhema/run-sheet':
+        specifier: workspace:*
+        version: link:../packages/run-sheet
       '@rhema/run-task':
         specifier: workspace:*
         version: link:../apps/run-task
@@ -1130,6 +1133,9 @@ importers:
       '@rhema/infra':
         specifier: workspace:*
         version: link:../../infra
+      '@rhema/ledger':
+        specifier: workspace:*
+        version: link:../ledger
       '@rhema/live-clients':
         specifier: workspace:*
         version: link:../live-clients
@@ -7734,6 +7740,14 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)(lightningcss@1.33.0)
 
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1)(lightningcss@1.33.0))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@26.4.1)(lightningcss@1.33.0)
+
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -10795,7 +10809,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1)(happy-dom@20.14.5)(lightningcss@1.33.0):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1)(lightningcss@1.33.0))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1)(lightningcss@1.33.0))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

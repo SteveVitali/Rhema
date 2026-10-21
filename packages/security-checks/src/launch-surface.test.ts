@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   COMPARATIVE_WAVE_MET,
+  LEGAL_PAGES,
   lintGrowthCopy,
   PRICING,
   PUBLIC_CLAIMS,
@@ -11,7 +12,8 @@ import {
   claimsForAudience,
   publicClaimEnabled,
 } from "@rhema/contracts";
-import { collectCopyStrings } from "@rhema/web";
+import { meteredNoticeTemplate } from "@rhema/ledger";
+import { collectCopyStrings, createWebApp, type DataSource } from "@rhema/web";
 
 // P1.22 W8 — the launch-surface lint (REQ-EVAL-19 + REQ-POS-4/5/13). P1.17's `lintGrowthCopy` covers the
 // marketing funnel keys; this sweep covers EVERYTHING ELSE that ships: the full copy table (IDE chrome,
@@ -72,6 +74,11 @@ const SURFACE_FILES = [
   "apps/api/src/invite.ts",
   "apps/worker/src/notification-jobs.ts",
   "apps/worker/src/export-jobs.ts",
+  // R6MNY.1 (REQ-LCH-5f) — the paid-account metered notice is launch-surface copy: its template,
+  // its live entrypoint, and its runner are swept like every other shipped surface.
+  "packages/ledger/src/metered-notice.ts",
+  "integration/src/metered-notice.ts",
+  "scripts/live/send-metered-notice.mjs",
 ];
 
 const clientDir = join(REPO, "apps/web/src/client");
@@ -189,4 +196,50 @@ describe("the audit-local surface scan — shipped sources, comments stripped", 
     const hits = CLAIM_PATTERNS.filter((re) => re.test(src)).map((re) => String(re));
     expect(hits, `${file} matched ${hits.join(", ")}`).toEqual([]);
   });
+});
+
+// R6MNY.1 (REQ-LCH-5f) — the lint's rendered-output half for the two surfaces the money-flip adds:
+// the paid-account metered NOTICE (its template is surface copy — the source scan above covers the
+// files; this sweeps the rendered text/html) and the five LEGAL pages rendered end-to-end (the copy
+// table covers the strings; this catches anything the ⟦KEY⟧ rendering or the banner would emit).
+describe("the rendered metered notice sweeps clean (REQ-LCH-5f)", () => {
+  const msg = meteredNoticeTemplate({ effectiveDate: "2026-11-02", appOrigin: "https://rhema.tools" });
+
+  it("the rendered subject/text/html carry no claim pattern and pass the wired lint", () => {
+    for (const surface of [msg.subject, msg.text, msg.html]) {
+      const hits = CLAIM_PATTERNS.filter((re) => re.test(surface)).map((re) => String(re));
+      expect(hits, `notice matched ${hits.join(", ")}`).toEqual([]);
+    }
+    expect(
+      lintGrowthCopy([
+        { key: "metered-notice.subject", text: msg.subject },
+        { key: "metered-notice.text", text: msg.text },
+      ]),
+    ).toEqual([]);
+    // REQ-BILL-18's rule — the notice never frames the change as a bill.
+    for (const surface of [msg.subject, msg.text, msg.html]) {
+      expect(surface).not.toMatch(/you will be billed/i);
+    }
+  });
+});
+
+describe("the rendered legal pages sweep clean — and stay unapproved (REQ-LCH-5f)", () => {
+  const app = createWebApp({
+    dataSource: { checkSession: async () => true } as unknown as DataSource,
+    session: () => null,
+  });
+
+  it.each(LEGAL_PAGES.map((p) => [p.routeId, p.approved] as const))(
+    "%s renders no claim pattern — and its draft banner holds while approved is %s",
+    async (routeId, approved) => {
+      const res = await app.request(routeId);
+      expect(res.status, routeId).toBe(200);
+      const html = await res.text();
+      const hits = CLAIM_PATTERNS.filter((re) => re.test(html)).map((re) => String(re));
+      expect(hits, `${routeId} matched ${hits.join(", ")}`).toEqual([]);
+      // The operator-owned posture (R6LGL.1): an unapproved page MUST still show its draft banner —
+      // the launch sweep pins that nothing quietly ships approved text.
+      if (!approved) expect(html, routeId).toContain("data-legal-draft");
+    },
+  );
 });

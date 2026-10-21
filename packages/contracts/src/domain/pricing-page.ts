@@ -293,10 +293,17 @@ export interface PlanCard {
   readonly freeNotes?: { readonly trialWindow?: string; readonly postTrial: string };
 }
 
-/** One decimal place, floor at 0.1, strip a trailing ".0" — the coverage figure's convention. */
-function coverageFigure(loops: number): string {
-  const r = Math.round(loops * 10) / 10;
-  return String(Math.max(0.1, r)).replace(/\.0$/, "");
+/**
+ * One decimal place, FLOORED, strip a trailing ".0" — the coverage figure's convention.
+ * R6MNY.1 (GD-BL13.R6; REQ-LCH-5b) — the "≈N" figure never promises more runs than the credits
+ * buy: a true 0.79 prints "0.7", never the nearest-rounded "0.8". Under one honest loop the line
+ * hides (`null`) rather than print a figure a full run would contradict.
+ */
+function coverageFigure(loops: number): string | null {
+  if (!(loops > 0)) return null;
+  const r = Math.floor(loops * 10) / 10;
+  if (r < 0.1) return null;
+  return String(r).replace(/\.0$/, "");
 }
 
 /**
@@ -304,15 +311,23 @@ function coverageFigure(loops: number): string {
  * included-credit bundle, priced as full essay Reviews (the essay card's shape at Standard rigor)
  * through the shared pricer. `null` ⇒ the line cannot be computed honestly and stays hidden — a
  * gated plan NEVER falls back to the pricing.json copy.
+ * R6MNY.1 (GD-BL13.R6): the divisor is the RAW estimator figure, never the card-rounded one — a
+ * rounded-down divisor would quietly promise loops the credits do not buy.
  */
 export function planCoverageLine(tier: PlanTier, price: SurfacePricer | undefined): string | null {
   const p = planOf(tier);
   const essay = PRICING.costCardShapes.find((s) => s.key === "essay")!;
   const parts: string[] = [];
   for (const modelTier of p.modelTiers) {
-    const round = reviewCardCredits(price, essay.words, essay.claims, modelTier);
-    if (round == null || round <= 0) return null;
-    const loops = coverageFigure(p.includedCreditsMonthly / round);
+    const raw = price?.estimate({
+      workflow: "review",
+      rigor: "standard",
+      modelTier,
+      inputs: { words: essay.words, claims: essay.claims },
+    });
+    if (raw == null || raw <= 0) return null;
+    const loops = coverageFigure(p.includedCreditsMonthly / raw);
+    if (loops == null) return null;
     parts.push(
       modelTier === p.modelTiers[0]
         ? `≈${loops} essay Reviews on ${MODEL_TIER_LABELS[modelTier]}`
@@ -493,7 +508,8 @@ export function pricingFaq(price: SurfacePricer | undefined): readonly FaqItem[]
     },
     {
       q: "What if I run out of credits?",
-      a: `Top-ups never expire for ${PRICING.topUp.expiryMonths} months, and the 150-credit trial pocket is yours to spend. Nothing auto-bills — auto-reload is opt-in with your own monthly cap.`,
+      // R6MNY.1 — the pocket figure derives from pricing.json (a hand-edited literal would drift).
+      a: `Top-ups never expire for ${PRICING.topUp.expiryMonths} months, and the ${PRICING.trial.pocketCredits}-credit trial pocket is yours to spend. Nothing auto-bills — auto-reload is opt-in with your own monthly cap.`,
     },
     {
       q: "Do unused credits roll over?",

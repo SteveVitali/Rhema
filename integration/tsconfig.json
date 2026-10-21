@@ -18,6 +18,7 @@
     { "path": "../infra" },
     { "path": "../packages/db" },
     { "path": "../packages/ledger" },
+    { "path": "../packages/run-sheet" },
     { "path": "../packages/live-clients" }
   ],
   "exclude": ["dist", "**/*.test.ts"]

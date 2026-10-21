@@ -10,6 +10,7 @@
     { "path": "../db" },
     { "path": "../engine" },
     { "path": "../hooks" },
+    { "path": "../ledger" },
     { "path": "../live-clients" },
     { "path": "../mirror" },
     { "path": "../orchestrator" },
