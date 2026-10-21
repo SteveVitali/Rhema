@@ -18,7 +18,8 @@
 - **Gate status:** none. The text's approval is HUMAN-H11; GATE-LAUNCH requires
   `approved: true` on every page.
 - **Started:** 2026-10-21T06:58Z
-- **Closed:** (open)
+- **Closed:** 2026-10-21T08:14Z — `ci: pass #200@1f6c632` (code head full green; the docs
+  closeout head rides the fast-path leg)
 
 ## Deferrals read
 
@@ -105,7 +106,7 @@ Out of scope: final legal wording authority; filling the placeholders (HUMAN-H11
 | AC — five routes render SSR w/ footer; census + dom-contract green | engineered | engineered | met | `legal-pages.test.ts` ×14 green; `pnpm check:dom-contract` OK |
 | AC — test fails if approved:true while a placeholder remains | engineered | engineered | met | `legal.test.ts` (violations fire on synthetic approved+unfilled; shipped set clean) + `legal-pages.test.ts` (rendered-mark count == unfilled ⟦KEY⟧ occurrences; invariant pinned) |
 | AC — launch-surface lint covers the new pages | engineered | engineered | met | `launch-surface.test.ts` SURFACE_FILES += `apps/web/src/legal.tsx` (copy strings covered via `collectCopyStrings` scans) |
-| AC — universal phase-gate | agentic | engineered | met (partial legs pending closeout) | verification green; PR body + REQ-LCH-1 stamp + BUILD_INDEX/LEDGER/PHASE LOG in the closeout commit; no new DEFERRALS row (approval/fill = chain tickets 190a/194, not a deferred AC) |
+| AC — universal phase-gate | agentic | engineered | met | verification green; `ci: pass #200@1f6c632` read + recorded (Evidence report); PR body `docs/build/pr/R6LGL.1.md` carries the REQ-LCH-1 stamp; BUILD_INDEX row 206 + LEDGER advance + PHASE LOG in the closeout commit; no new DEFERRALS row (approval/fill = chain tickets 190a/194, not a deferred AC) |
 
 ### Review appendix — claim → source citations (deliverable 3)
 
@@ -163,5 +164,12 @@ Out of scope: final legal wording authority; filling the placeholders (HUMAN-H11
 
 See `docs/build/pr/R6LGL.1.md` — the same AC→evidence table.
 
-- ci: (pending — recorded after the boundary read)
-- Boundary read: (pending — the exact `ci-boundary.sh` output lands here verbatim)
+- ci: `pass #200@1f6c632` — code head `1f6c632` full green (run 39561928282: ci-pass
+  anchor, integration, images (build + scan, pin digests), contracts, public-safe
+  (gitleaks / markers / licence policy), typecheck / lint / unit, fast-path — all seven
+  legs). Record: `/tmp/r6lgl1-ci.json` (ci-boundary/1).
+- Boundary read (verbatim):
+  `ci: pass #200@1f6c632 (ci-pass anchor 39561928282; integration 39561928282; images
+  (build + scan, pin digests) 39561928282; contracts 39561928282; public-safe (gitleaks /
+  markers / licence policy) 39561928282; typecheck / lint / unit 39561928282; fast-path
+  39561928282)`
