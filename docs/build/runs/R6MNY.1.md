@@ -198,5 +198,8 @@ readiness script (192) and the launch-flips runbook (83). Recorded per operating
   runtime surface applies.
 - **Size:** ~435 modified + ~299 new ≈ 734 vs ~400 budget — over; dominated by tests +
   the readiness script + the runbook. Recorded, not hidden.
-- **ci:** read at closeout (see PHASE LOG entry).
-- **Closed:** 2026-10-21 (set at closeout commit).
+- **ci:** `pass #201@8545045` (run 39611938474 — all seven legs + `ci-pass` anchor).
+  First head `ca5267d` failed `public-safe` (gitleaks `generic-api-key` on the
+  `idem-usr_ev3-2` test literal) — renamed `idem-ev3-2`, history amended on this
+  unmerged branch (`--force-with-lease`), gitleaks clean locally, re-run green.
+- **Closed:** 2026-10-21T14:51Z.
