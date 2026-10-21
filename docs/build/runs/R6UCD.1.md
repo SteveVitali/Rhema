@@ -16,7 +16,8 @@
   the app origin) ships in the next deploy under `GD-DEPLOY.R6`; named in the PR.
 - **Gate status:** none (contract ruled 2026-10-20 — "API-minted signed URLs")
 - **Started:** 2026-10-21T04:46Z
-- **Closed:** —
+- **Closed:** 2026-10-21 — `ci: pass #199@fd0183a` (code head `c13e37a` full green, run 39551122784;
+  docs closeout head fast-path, run 39557060302). PR #199 OPEN, mergePolicy OPERATOR.
 
 ## Deferrals read
 
@@ -49,11 +50,11 @@ Out of scope: edge-signing/IAM repair (ruled); CDN removal (cost/infra decision 
 
 ## Acceptance criteria
 
-- [ ] Mint tests: foreign-tenant id → 404, no URL; allowlisted vs non-allowlisted disposition;
-      TTL bound *(deterministic · engineered)*
-- [ ] usercontent/CSP audit tests stay green (no `Set-Cookie`, `__Host-` posture) *(deterministic)*
-- [ ] ADR-113 + §13.3 banner landed; ADR index regenerated *(deterministic)*
-- [ ] universal phase-gate AC *(agentic)*
+- [x] Mint tests: foreign-tenant id → 404, no URL; allowlisted vs non-allowlisted disposition;
+      TTL bound *(deterministic · engineered)* — `usercontent-routes.test.ts` 7/7, `upload.test.ts` 11/11
+- [x] usercontent/CSP audit tests stay green (no `Set-Cookie`, `__Host-` posture) *(deterministic)* — `usercontent-csp.test.ts` 10/10
+- [x] ADR-113 + §13.3 banner landed; ADR index regenerated *(deterministic)*
+- [x] universal phase-gate AC *(agentic)* — CI green end-to-end (`#199@fd0183a`)
 
 ## Plan
 
@@ -171,10 +172,17 @@ Design (recorded before code; ADR-113 lands with it):
   the test literal `key: "quarantine/ws1/img"` (`upload.test.ts`; same fixture class as the already-
   allowlisted `quarantine/ws1/up1`). Fix: the test now uses the allowlisted literal; the history was
   amended (`d1b67cc` → **`c13e37a`**, force-pushed on the unmerged branch — a fix-on-top commit could
-  not help because gitleaks scans every commit in the PR range). `fast-path` re-passed on the new head;
-  full `typecheck / lint / unit` + `public-safe` + `integration` + `images` re-running under CI run
-  `39551122784`.
+  not help because gitleaks scans every commit in the PR range).
+- **2026-10-21 — `c13e37a` FULL GREEN** (run `39551122784`): fast-path 22s · typecheck/lint/unit
+  44m27s · public-safe 38s (gitleaks clean — zero findings) · contracts 28s · integration 4m7s ·
+  images 11m35s · **ci-pass anchor written** (`ci-pass-45e97cab81a9…`).
+- **2026-10-21 — `fd0183a` fast-path green** (run `39557060302`, the docs closeout head):
+  same-tree anchor on `c13e37a`, delta all-eligible — every leg's fast-path verdict green in
+  ~2.5 min wall. **`ci: pass #199@fd0183a`.**
 
 ## Evidence report
 
-(filled at Phase 6)
+All ticket ACs discharged deterministically; the live probes (unsigned → 403 at the origin,
+signed → 2xx + header contract, tampered + expired → denied against the real minted path on the
+deployed tip) ride **R6POST.1** under `D-R5OPS.1-2` (stays PARTIAL). PR #199 OPEN — mergePolicy
+OPERATOR; the operator merges the chain bottom-up.
