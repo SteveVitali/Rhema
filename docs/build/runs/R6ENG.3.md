@@ -15,7 +15,9 @@
 - **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-21
 - **Closed:** 2026-10-21 — **PR #198** (`9f1240d` code head; ci: pass — run 39539400068,
-  all seven legs + `ci-pass` anchor); unmerged, OPERATOR merges bottom-up
+  all seven legs + `ci-pass` anchor); unmerged, OPERATOR merges bottom-up.
+  Docs closeout head `5bbf83a`: **`ci: pass #198@5bbf83a`** (run 39544643985 — the R6CI.1
+  fast path: docs-only head green in ~3 min).
 
 ## Deferrals read
 
