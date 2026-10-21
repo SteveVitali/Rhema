@@ -140,6 +140,22 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
     expect(c.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
   });
 
+  it("preview: the worker carries the R6SOAK.1 right-size CANDIDATE shape (0.5/512Mi, boost kept)", () => {
+    // REQ-ENG-7 / D-COST.1-3 (a) — the pr-<n> soak measures exactly this shape; the prod pin
+    // above stays at 1 vCPU/1Gi until the soak-green flip lands (R6INF.1).
+    const w = STAGES.preview.cloudRun.services.worker;
+    expect(w.minInstances).toBe(1);
+    expect(w.cpuBilling).toBe("instance");
+    expect(w.maxInstances).toBe(1);
+    expect(w.resources).toEqual({ cpu: "0.5", memory: "512Mi", startupCpuBoost: true });
+    // dev is NOT the soak target — it keeps the D-P0.15h-3-pinned shape.
+    expect(STAGES.dev.cloudRun.services.worker.resources).toEqual({
+      cpu: "1",
+      memory: "1Gi",
+      startupCpuBoost: true,
+    });
+  });
+
   it("every stage: the worker can never be scaled to zero or request-billed", () => {
     for (const [name, cfg] of Object.entries(STAGES)) {
       const w = cfg.cloudRun.services.worker;

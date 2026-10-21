@@ -375,6 +375,13 @@ function cloudRunPosture(p: {
   convertMin: number;
   /** convert-svc max (prod 4, non-prod 2). */
   convertMax: number;
+  /**
+   * R6SOAK.1 (REQ-ENG-7; D-COST.1-3 (a)) — an explicit worker resource override for the stage.
+   * Unset ⇒ the D-P0.15h-3-pinned 1 vCPU/1Gi shape; the preview stage carries the right-size
+   * candidate (0.5 vCPU/512Mi) so the pr-<n> soak measures exactly the shape a green verdict
+   * authorizes for prod — a stage-fact flip R6INF.1 owns, never a prod change here.
+   */
+  workerResources?: CloudRunServicePosture["resources"];
 }): CloudRunPosture {
   return {
     services: {
@@ -391,7 +398,7 @@ function cloudRunPosture(p: {
         minInstances: 1,
         maxInstances: p.workerMax,
         cpuBilling: "instance",
-        resources: { cpu: "1", memory: "1Gi", startupCpuBoost: true },
+        resources: p.workerResources ?? { cpu: "1", memory: "1Gi", startupCpuBoost: true },
       },
     },
     convertSvc: {
@@ -438,7 +445,17 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
-    cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
+    // R6SOAK.1 (REQ-ENG-7) — the preview's worker runs the right-size CANDIDATE shape
+    // (0.5 vCPU/512Mi, boost + instance billing preserved) so the pr-<n> cold-import soak
+    // measures exactly what a green verdict would flip prod to. Dev stays at the
+    // D-P0.15h-3-pinned 1 vCPU/1Gi; prod's flip is R6INF.1's, gated on soak-green.
+    cloudRun: cloudRunPosture({
+      max: 2,
+      workerMax: 1,
+      convertMin: 0,
+      convertMax: 2,
+      workerResources: { cpu: "0.5", memory: "512Mi", startupCpuBoost: true },
+    }),
   },
   prod: {
     kind: "prod",
