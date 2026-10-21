@@ -7,7 +7,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** e981ec5
 - **Started:** 2026-10-21T19:36Z
-- **Closed:** —
+- **Closed:** 2026-10-21T20:10Z
 
 ## Deferrals read
 
@@ -47,7 +47,7 @@ Docs-only deliverable — no new runtime behavior. Invariants asserted by existi
 
 - Branch `stevevitali/r6cnt-1-launch-content-prep` cut at `f2226f6`; DEFERRALS/GD-CONTENT.R6/GD-SHOWCASE.R6/anchors re-confirmed.
 - Venue rows inventoried: `packages/protocols/src/protocols.ts` — Academic table: PLOS ONE `abstractMaxWords:300` (`as_of`); Op-ed table: 6 outlet rows (`as_of`); Memo `silent-read` (no cap row — shape verification only); Essay `venue_bar.table` empty (own-archive kind).
-- H4 research done: PLOS ONE matches verbatim; 6 outlet rows drifted from live guidance (NYT 800–1,200 / WaPo ≤800 / WSJ 400–1,000 / LAT 750–1,000 / USAToday 550–750 / Globe ~800); 4 fetch blocks (403/402) — evidence via search-index page quotes, flagged not guessed.
+- H4 research done: PLOS ONE matches verbatim; 6 outlet rows drifted from live guidance (NYT 800–1,200 / WaPo ≤800 / WSJ 400–1,000 / LAT 750–1,000 / USAToday 550–750 / Globe ~800); 3 fetch blocks (403/402) — evidence via each outlet's own-page text in search-index quotes, flagged not guessed.
 - H5 research done: 5 candidates, all dual-jurisdiction PD (pre-1930 pub + author dead >70yr); word counts measured on fetched Gutenberg texts; each carries ≥1 contradicted Tier-1 claim w/ fetched source URL(s).
 - Dossier proposal drafted in `SampleDossier` shape for the recommended pick (Wells), contingent on H11's essay choice.
 
@@ -76,4 +76,10 @@ Docs-only deliverable — no new runtime behavior. Invariants asserted by existi
 
 ## Evidence report
 
-(to fill at close)
+- **PR:** https://github.com/SteveVitali/Rhema/pull/204 (head `5c2c1eb`)
+- **Deliverables:** `reports/2026-10-21_R6CNT.1/` — h4-venue-evidence.md (8/8 rows: URL + quoted cap + proposed `verified_at`; 1 verbatim match, 6 flagged drifted, 1 shape-only) · h5-showcase-shortlist.md (5 PD candidates, PD basis + measured word counts + contradicted Tier-1 claims w/ fetched URLs; Wells recommended, Swift/Twain length-flagged) · sample-dossier-proposal.md (REQ-POS-3 `SampleDossier` shape; real deep URLs).
+- **Verification:** `pnpm turbo build lint typecheck` 135/135 · `pnpm test` 508 files / **5,978 pass / 0 fail / 4 skipped** · six `check:*` green · ci-boundary: **pass #204@5c2c1eb** (run 39666869828, all seven legs + ci-pass anchor; `logs/ci-R6CNT.1.json`).
+- **Deviations:** size ~300 → +326/−3 (docs-only: reports 198, run ledger 79, PR body 44, DEFERRALS notes 5) — recorded honestly; 4 source URLs fetch-gated for this fetcher (wsj.com, washingtonpost.com helpcenter, usatoday.com, jfcoopersociety.org, cambridge.org, pubmed/europepmc) — recorded inline on each row and corroborated via fetched secondary pages or each outlet's own-page text in the search index; nothing unverifiable was asserted.
+- **Deferrals:** none opened/closed; dated notes appended to D-P1.21-1 / D-P1.17-1 / D-PRB.01-2 — posture unchanged, HUMAN-H11 decides.
+- **$ spend: $0.** Fetch-only research; zero prod mutations; nothing seeded; no secrets written.
+- **ci:** `ci: pass #204@5c2c1eb (ci-pass anchor 39666869828; integration; images; contracts; public-safe; typecheck/lint/unit; fast-path)`

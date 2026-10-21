@@ -21,8 +21,9 @@ search results; those rows are flagged, not silently trusted. Re-fetch in a brow
 | Globe (Op-ed) | ≤700 | https://apps.bostonglobe.com/opinion/graphics/2021/06/meet-globe-opinion/ | "About 800 words is a good target length." (fetched; older Globe pages still say "keep the piece to 700 words") | **FLAGGED** — current Globe guidance ~800 vs seed ≤700 | after operator rules on `maxWords` |
 | Memo silent-read | no cap — row shape only | n/a (internal format; `venue_bar.kind = "silent-read"`, prompt only, no table) | n/a | **shape confirmed in code** — nothing external to fetch | n/a |
 
-Summary: 1 row matches verbatim (PLOS ONE), 6 outlet rows differ from the live guidance (2 confirmed
-by fetch, 4 on search-index quotes after fetch blocks), 1 row is shape-only. The seed looks drawn
+Summary: 1 row matches verbatim (PLOS ONE), 6 outlet rows differ from the live guidance (3 confirmed
+by direct fetch — NYT/LAT/Globe; 3 on each outlet's own-page text via search index after 403/402
+fetch blocks — WaPo/WSJ/USAToday), 1 row is shape-only. The seed looks drawn
 from ~2010-era guidance (OpEd Project lists); live guidance has drifted. Recommendation for H11:
 approve PLOS ONE's `verified_at` now; for the six flagged rows choose update-to-live-values
 (recommended: NYT 800–1,200, WaPo ≤800, WSJ 400–1,000, LAT 750–1,000, USAToday 550–750, Globe ≤800 —
