@@ -71,9 +71,12 @@ export const ALL_SECRET_IDS = [
   "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08).
   //   REQUIRED on prod again (amended 2026-09-18 — PRB.17's gate answer chose the "tiny webhook
   //   catcher" alert path, so the worker's OPS_ALERT_WEBHOOK_URL env must exist before prod serves)
-  "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
-  //   (the *.usercontent.rhema.tools origin serves only signed requests; the same key is added to the
-  //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
+  "user-content-signing-key", // api — the CDN edge-signing key for the PRIVATE user-content bucket.
+  //   INERT since 2026-10-21 (ADR-113, R6UCD.1): the edge-signed path never worked (LB→bucket
+  //   origin read denied) and the operator ruled its repair out — the api mints GCS V4 signed GETs
+  //   on storage.googleapis.com instead (IAM signBlob, no key material). The secret + the backend
+  //   bucket's key entry stay deployed (CDN removal is a separate cost/infra decision) but NO code
+  //   reads them — the api SA's objectAdmin grant on the bucket is what makes minting possible.
   "app-database-url", // SEC.1 — the `rhema_app_login` user-serving DSN for api + worker. Its version
   //   is PULUMI-MANAGED (a @pulumi/random password materialized as the version by the program itself
   //   — never operator-seeded, never committed; the value sits encrypted in stack state + SM only).

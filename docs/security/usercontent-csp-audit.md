@@ -51,3 +51,25 @@ domain gap, it's a cookie-shape contract:
 - The nonce middleware marks *every* script tag — DOM injection defenses (escaping) remain the real
   control for user text inside pages; CSP is the second layer.
 - Live response-header verification against prod objects is **Stage B** (operator-gated).
+
+---
+
+## ⚑ Amendment — 2026-10-21 (R6UCD.1 / ADR-113): delivery moved to API-minted v4 URLs
+
+The origins table above keeps the `usercontent.rhema.tools` row for history, but the delivery
+mechanism is now the api's **GCS V4 signed GETs on `storage.googleapis.com`** (minted after a
+tenant check — `GET /usercontent/sign`, or the tenant-scoped row resolve behind
+`/voices/:id/samples/:itemId/raw`). The isolation properties this audit asserts are unchanged
+and now hold by construction:
+
+- **No `Set-Cookie` ever** — the served URL lands on `googleapis.com`, outside every
+  `rhema.tools` cookie scope; the mint route itself sets no cookie either.
+- **Non-allowlisted → attachment + octet-stream** — bound *into the signature* via the v4
+  `response-content-type` / `response-content-disposition` params (GCS serves them verbatim;
+  `X-Content-Type-Options` cannot ride a signed URL, so the attachment disposition carries the
+  no-render guarantee on this path — `userContentResponsePolicy` in
+  `packages/contracts/src/upload.ts` is the single decision; the convert-side
+  `servingHeadersFor`/`RENDERED_ALLOWLIST` re-derive from the same allowlist).
+- **Cookieless sibling-origin posture** — `usercontent.*` CDN infrastructure is deployed but
+  inert (ADR-113 §4); nothing emits those URLs. CSP `img-src` keeps the `usercontent` admission
+  for now (harmless while inert; tightening it is cosmetic).

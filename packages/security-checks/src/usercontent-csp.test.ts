@@ -126,7 +126,10 @@ describe("web + api CSP (the written-down policy, enforced per response)", () =>
     ]) {
       expect(csp, directive).toContain(directive);
     }
-    expect(csp).toContain("img-src 'self' https://usercontent.rhema.tools data:");
+    // R6UCD.1 (ADR-113): allowlisted images render via api-minted v4 URLs on the GCS host, so
+    // img-src admits it alongside the (inert) usercontent origin — cookie scope is unaffected
+    // (img loads carry no credentials to a foreign origin anyway; the signed URL is the check).
+    expect(csp).toContain("img-src 'self' https://usercontent.rhema.tools https://storage.googleapis.com data:");
     // a second request gets a DIFFERENT nonce.
     const res2 = await app.request("/");
     const m2 = /script-src 'self' 'nonce-([^']+)'/.exec(res2.headers.get("content-security-policy")!);

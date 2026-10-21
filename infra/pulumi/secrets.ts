@@ -41,7 +41,9 @@ export interface Secrets {
   anthropicAdminKey: gcp.secretmanager.Secret;
   /** The ops alert sink (worker's >2%-drift / balance-divergence webhook — PRB.08). */
   opsAlertWebhookUrl: gcp.secretmanager.Secret;
-  /** The CDN signed-url key for the private user-content origin (api signs; the backend bucket verifies). */
+  /** The CDN signed-url key for the private user-content origin. INERT (ADR-113 / R6UCD.1): the
+   *  edge-signed contract is retired in favor of api-minted GCS V4 signed GETs — nothing reads
+   *  this secret; retained only until the separate CDN-removal/cost decision. */
   userContentSigningKey: gcp.secretmanager.Secret;
   /** Every provisioned secret keyed by its unprefixed id (`anthropic-api-key` → `rhema-<stack>-…`). */
   byId: Record<string, gcp.secretmanager.Secret>;

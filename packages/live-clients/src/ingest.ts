@@ -18,6 +18,7 @@ import {
   parseQuarantineKey,
   type ConversionResult,
   type SignedUrlProvider,
+  type UserContentSigner,
 } from "@rhema/contracts";
 import { fetchGceMetadataAccessToken } from "./k8s-launcher.js";
 
@@ -32,6 +33,10 @@ export interface SignedUrlRequest {
   readonly expires: number;
   /** Headers the signature binds — the client MUST send them verbatim. */
   readonly extensionHeaders?: Readonly<Record<string, string>>;
+  /** R6UCD.1 — signed `response-content-disposition` (GETs only): GCS serves this verbatim. */
+  readonly responseDisposition?: string;
+  /** R6UCD.1 — signed `response-content-type` (GETs only). */
+  readonly responseType?: string;
 }
 
 /** The slice of @google-cloud/storage's File the presigner needs. */
@@ -92,6 +97,42 @@ export async function createGcsV4GetPresigner(
       expires: Date.now() + expiresSeconds * 1000,
     });
     return Array.isArray(res) ? String(res[0]) : String(res);
+  };
+}
+
+/**
+ * R6UCD.1 (REQ-POST-7, ADR-113) — the deploy binding of the api's `UserContentSigner` seam: a v4
+ * GET presigner for the user-content bucket that binds the §13.3 response contract INTO the
+ * signature (`response-content-disposition` / `response-content-type`). GCS serves those headers
+ * verbatim — the served file can never render as active content regardless of its stored
+ * metadata, and the URL lands on `storage.googleapis.com` where no `rhema.tools` cookie can ride.
+ * Same IAM signBlob path as the PUT presigner — no key material on the service. The caller owns
+ * the tenant check (this is the thin cloud seam); `USERCONTENT_URL_TTL_SECONDS` is the TTL bound.
+ */
+export interface GcsV4UserContentSignerDeps {
+  readonly bucket: string;
+  readonly now?: () => number;
+  readonly storage?: GcsSignedUrlStorageLike;
+}
+export async function createGcsV4UserContentSigner(
+  deps: GcsV4UserContentSignerDeps,
+): Promise<UserContentSigner> {
+  const { Storage } = (await import("@google-cloud/storage")) as typeof import("@google-cloud/storage");
+  const storage = (deps.storage ?? new Storage()) as GcsSignedUrlStorageLike;
+  const now = deps.now ?? Date.now;
+  return {
+    async signGet({ key, expiresSeconds, responseType, responseDisposition }) {
+      const expires = now() + expiresSeconds * 1000;
+      const res = await storage.bucket(deps.bucket).file(key).getSignedUrl({
+        version: "v4",
+        action: "read",
+        expires,
+        responseDisposition,
+        responseType,
+      });
+      const url = Array.isArray(res) ? String(res[0]) : String(res);
+      return { url, expiresAt: expires };
+    },
   };
 }
 

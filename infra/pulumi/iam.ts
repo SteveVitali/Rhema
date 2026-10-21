@@ -86,8 +86,10 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("api-verifies-email-action", secrets.emailActionSecret, serviceAccounts["api"]);
   // P1.16 — the api also reads the Billing key (Checkout/Portal session creation, STRIPE_SECRET_KEY_NAME).
   grantSecret("api-reads-stripe", secrets.stripeSecret, serviceAccounts["api"]);
-  // The api signs the CDN download URLs the private `*.usercontent.rhema.tools` origin verifies (the same
-  // key is `add-signed-url-key`'d onto the backend bucket out-of-band — the runbook's post-up step).
+  // INERT (ADR-113 / R6UCD.1, 2026-10-21): the edge-signed CDN contract is retired — the api mints
+  // GCS V4 signed GETs on storage.googleapis.com via IAM signBlob instead (its objectAdmin grant on
+  // the user-content bucket is what makes that possible). This grant stays deployed but unused;
+  // removing it is part of the separate CDN-removal/cost decision.
   grantSecret("api-signs-usercontent", secrets.userContentSigningKey, serviceAccounts["api"]);
   // The billing worker reads Stripe (PRB.08), mints the same one-click HMAC (PRB.09), reads the Resend
   // transport key + the provider admin key for usage.reconcile, and publishes to the ops alert sink.

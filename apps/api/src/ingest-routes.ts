@@ -9,7 +9,7 @@
 // than degrading to a server-side direct fetch.
 
 import { Hono } from "hono";
-import { parseQuarantineKey } from "@rhema/contracts";
+import { mintUserContentUrl, parseQuarantineKey, type UserContentSigner } from "@rhema/contracts";
 import {
   createProviderRegistry,
   normalizeItemUrl,
@@ -69,6 +69,13 @@ export interface IngestApiDeps {
   readonly converter?: Converter;
   /** Canonical-document + raw-byte persistence (the workspace content store). */
   readonly contentStoreFor?: (workspaceId: string) => Promise<ContentStore> | ContentStore;
+  /**
+   * R6UCD.1 (REQ-POST-7, ADR-113) — the user-content mint seam. Bound ⇒ `/raw`'s `original_key`
+   * leg (bytes on the user-content bucket, ownership already proven by the tenant-scoped row
+   * resolve) answers 302 to a short-lived v4 signed GET instead of proxying bytes. Unset ⇒ the
+   * legacy proxy path stands (tests; the deploy always binds it).
+   */
+  readonly userContentSigner?: UserContentSigner;
   /** Test/dev binding: run the sync inline inside the request instead of queueing (prod leaves it
    *  unset — the worker owns the pass). */
   readonly inlineSync?: boolean;
@@ -593,6 +600,19 @@ export function createIngestRoutes(deps: IngestApiDeps): Hono {
       return row ?? null;
     });
     if (!res) return c.json({ error: "not_found" }, 404);
+    // R6UCD.1 (ADR-113) — the original_key leg points at the user-content bucket: when the mint
+    // seam is bound, 302 to a short-lived v4 signed GET (the tenant check is the RLS-scoped row
+    // resolve above; the served headers ride the signature — octet-stream + attachment for every
+    // non-allowlisted type). The proxy stays only as the unbound-seam fallback.
+    if (res.original_key && deps.userContentSigner) {
+      try {
+        const minted = await mintUserContentUrl(deps.userContentSigner, { key: res.original_key });
+        return c.redirect(minted.url, 302);
+      } catch (e) {
+        logApiRouteError(c, e, { status: 503, msg: "usercontent_sign_failed" });
+        return c.json({ error: "usercontent_unavailable" }, 503);
+      }
+    }
     let bytes: Uint8Array | null = null;
     if (res.original_key && deps.ingestBlobs) {
       bytes = await deps.ingestBlobs.read(res.original_key).catch(() => null);

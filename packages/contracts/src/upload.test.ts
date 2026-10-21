@@ -4,10 +4,17 @@ import {
   quarantineKey,
   convertedResultKey,
   parseQuarantineKey,
+  parseConvertedKey,
+  userContentKeyOwner,
+  userContentResponsePolicy,
+  mintUserContentUrl,
+  USERCONTENT_RENDERED_TYPES,
+  USERCONTENT_URL_TTL_SECONDS,
   QUARANTINE_PREFIX,
   CONVERTED_PREFIX,
   MAX_UPLOAD_BYTES,
   type SignedUrlProvider,
+  type UserContentSigner,
 } from "./upload.js";
 
 // The quarantine upload wire contract (REQ-ARCH-24; §13.3): key shape, size bound, converted-output
@@ -71,5 +78,101 @@ describe("parseQuarantineKey", () => {
     ]) {
       expect(parseQuarantineKey(bad, "ws1")).toBeNull();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R6UCD.1 (REQ-POST-7, ADR-113) — the API-minted user-content delivery vocabulary.
+// ---------------------------------------------------------------------------
+
+describe("userContentResponsePolicy (the §13.3 serve contract)", () => {
+  it("renders allowlisted image types inline as themselves", () => {
+    for (const t of USERCONTENT_RENDERED_TYPES) {
+      expect(userContentResponsePolicy(t)).toEqual({ contentType: t, contentDisposition: "inline" });
+    }
+    // case + parameter normalization still resolves the base type
+    expect(userContentResponsePolicy("Image/PNG; foo=bar")).toEqual({
+      contentType: "image/png",
+      contentDisposition: "inline",
+    });
+  });
+
+  it("forces attachment + application/octet-stream for EVERYTHING else", () => {
+    for (const t of ["text/html", "image/svg+xml", "application/pdf", "text/javascript", "", null, undefined, "weird"]) {
+      expect(userContentResponsePolicy(t)).toEqual({
+        contentType: "application/octet-stream",
+        contentDisposition: "attachment",
+      });
+    }
+    // svg is an image/* but is NOT on the allowlist — it must never render inline.
+    expect(userContentResponsePolicy("image/svg+xml").contentDisposition).toBe("attachment");
+  });
+});
+
+describe("parseConvertedKey / userContentKeyOwner", () => {
+  it("parses converted/<ws>/<id>.json and enforces the bound workspace", () => {
+    expect(parseConvertedKey("converted/ws1/u1.json")).toEqual({ workspaceId: "ws1", uploadId: "u1" });
+    expect(parseConvertedKey("converted/ws1/u1.json", "ws1")).not.toBeNull();
+    expect(parseConvertedKey("converted/ws1/u1.json", "other")).toBeNull();
+    for (const bad of ["converted/ws1/u1", "converted/../u1.json", "converted/ws1", "converted//u1.json", 42, null]) {
+      expect(parseConvertedKey(bad)).toBeNull();
+    }
+  });
+
+  it("extracts the tenant segment of mint-eligible keys and rejects tenant-less shapes", () => {
+    expect(userContentKeyOwner("quarantine/ws1/u1")).toEqual({ workspaceId: "ws1" });
+    expect(userContentKeyOwner("converted/ws1/u1.json")).toEqual({ workspaceId: "ws1" });
+    // ingest-originals/<sha> carries NO tenant segment — only a tenant-scoped row resolve can
+    // prove ownership (the /raw path); the generic mint route must never guess.
+    for (const bad of [
+      "ingest-originals/0123abcd",
+      "restore/ws1/x",
+      "quarantine/../x",
+      "quarantine/ws1/u1/extra",
+      "exports/ws1/x.zip",
+      "",
+      42,
+      null,
+      undefined,
+    ]) {
+      expect(userContentKeyOwner(bad)).toBeNull();
+    }
+  });
+});
+
+describe("mintUserContentUrl (the ONE mint decision)", () => {
+  const signer = (calls: Parameters<UserContentSigner["signGet"]>[0][]): UserContentSigner => ({
+    async signGet(a) {
+      calls.push(a);
+      return { url: `https://storage.googleapis.com/bkt/${a.key}?X-Goog-Signature=x`, expiresAt: 1_000 + a.expiresSeconds * 1_000 };
+    },
+  });
+
+  it("mints a short-lived GET with the §13.3 response-* params signed in", async () => {
+    const calls: Parameters<UserContentSigner["signGet"]>[0][] = [];
+    const out = await mintUserContentUrl(signer(calls), { key: "quarantine/ws1/u1", contentType: "text/html" });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual({
+      key: "quarantine/ws1/u1",
+      expiresSeconds: USERCONTENT_URL_TTL_SECONDS,
+      responseType: "application/octet-stream",
+      responseDisposition: "attachment",
+    });
+    expect(out.expiresAt).toBe(1_000 + USERCONTENT_URL_TTL_SECONDS * 1_000);
+    expect(out.url).toContain("quarantine/ws1/u1");
+  });
+
+  it("signs allowlisted types as inline and clamps a too-long TTL to the bound", async () => {
+    const calls: Parameters<UserContentSigner["signGet"]>[0][] = [];
+    const out = await mintUserContentUrl(signer(calls), {
+      key: "quarantine/ws1/up1", // the allowlisted fixture literal (.gitleaks.toml)
+      contentType: "image/webp",
+      expiresSeconds: 86_400, // a caller can NEVER buy a longer-lived URL than the bound
+    });
+    expect(calls[0]!.expiresSeconds).toBeLessThanOrEqual(USERCONTENT_URL_TTL_SECONDS);
+    expect(calls[0]!.expiresSeconds).toBe(USERCONTENT_URL_TTL_SECONDS);
+    expect(calls[0]!.responseType).toBe("image/webp");
+    expect(calls[0]!.responseDisposition).toBe("inline");
+    expect(out.expiresAt).toBeLessThanOrEqual(1_000 + USERCONTENT_URL_TTL_SECONDS * 1_000);
   });
 });

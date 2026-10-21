@@ -1,32 +1,35 @@
 #!/usr/bin/env node
-// R5OPS.1 (REQ-OPS-3; ratified Q-CDN) — the out-of-band verification of the production
-// `usercontent.rhema.tools` Cloud CDN layer. READ-ONLY against production: `gcloud` describes +
-// storage listings + `curl` GETs. The only privileged datum is the CDN signing key read from
-// Secret Manager (`rhema-prod-user-content-signing-key`) — the same value the runbook installs on
-// the backend bucket as `rhema-tools-key` (infra/PROD-BRINGUP.md §6). Key bytes go to a tmpfile
-// for `gcloud compute sign-url` and are deleted in the same run; they never print.
+// R6UCD.1 (REQ-POST-7, ADR-113) — the out-of-band verification of the API-MINTED usercontent
+// delivery path. Supersedes the R5OPS.1 CDN-edge contract (that edge-signed path verified only
+// the config — the LB→bucket origin read was always denied — and its repair was ruled out
+// 2026-10-20). READ-ONLY against production: `gcloud` describes + IAM signBlob + `curl` GETs.
+// NO secret material is touched at all — the old run read the CDN key from Secret Manager; this
+// path has no key material. The only privileged primitive is `signBlob` on the api's service
+// account (the same mechanism the api itself uses to mint — `createGcsV4UserContentSigner`).
 //
 // Probes (each recorded verbatim in the evidence JSON):
-//   unsigned   — GET a real object path with no params → expected 403 (private bucket)
-//   signed     — GET the same object with a fresh `gcloud compute sign-url` signature
-//   corrupted  — GET with a mangled Signature → a signature-enforcing edge rejects it
+//   api-mint-unauth — GET <api>/usercontent/sign?key=<object> with NO session → expected 401:
+//     an unsigned caller can never obtain a URL (the tenant check precedes signing)
+//   unsigned        — GET https://storage.googleapis.com/<bucket>/<object> → expected 403
+//                     (private bucket — publicAccessPrevention enforced)
+//   signed          — a v4 GET minted with the §13.3 response-* params → expected 2xx +
+//                     Content-Disposition: attachment + Content-Type: application/octet-stream +
+//                     NO Set-Cookie. With --cookie the URL is minted through the REAL route
+//                     (the session cookie proves the api's tenant check + signBlob live);
+//                     otherwise `gcloud storage sign-url --impersonate-service-account=<api SA>`
+//                     exercises the identical primitive.
+//   tampered        — the minted URL with a corrupted X-Goog-Signature → denied
+//   expired         — a v4 URL whose signed lifetime bound is in the past → denied
 //
-// Verdicts:
-//   PASS        — signed fetch reached a 2xx with the usercontent header contract
-//                 (no Set-Cookie; allowlisted-or-octet-stream Content-Type; attachment
-//                 Content-Disposition when the object carries none)
-//   CONFIG-OK-ORIGIN-DENIED — the CDN config verifies (enableCdn + USE_ORIGIN_HEADERS +
-//                 signedUrlKeyNames) but signed/unsigned/corrupted all 403 at the GCS origin —
-//                 the LB→bucket read leg denies; a live defect, not passed evidence.
-//   FAIL        — config absent or an unexpected shape.
+// Verdicts: PASS — signed fetched 2xx with the §13.3 header contract and every denial held;
+//           FAIL — any probe answered unexpectedly.
 //
 //   CDN_VERIFY_ACK=yes GCP_PROJECT=rhema-507501 \
-//     node scripts/live/usercontent-cdn-verify.mjs --execute [--object <gs path under the bucket>]
+//     node scripts/live/usercontent-cdn-verify.mjs --execute \
+//       [--object <key under the bucket>] [--bucket <name>] [--api-url <origin>] \
+//       [--sa <api service account email>] [--cookie "<name>=<value>"]
 //   node scripts/live/usercontent-cdn-verify.mjs --dry-run
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 const args = process.argv.slice(2);
 const dryRun = !args.includes("--execute");
@@ -35,25 +38,29 @@ const flag = (name) => {
   return i >= 0 ? args[i + 1] : null;
 };
 const PROJECT = process.env.GCP_PROJECT || "rhema-507501";
-const HOST = "usercontent.rhema.tools";
+const STACK = process.env.RHEMA_STACK || "prod";
+const BUCKET = flag("--bucket") || `rhema-${STACK}-user-content`;
+const API_SA = flag("--sa") || `rhema-${STACK}-api@${PROJECT}.iam.gserviceaccount.com`;
+const API_URL = (flag("--api-url") || "https://api.rhema.tools").replace(/\/+$/, "");
 const OBJECT = flag("--object") || "quarantine/01M2R2E1WA81E1BQJX94K1SZQ4/prb16-imp-1.md";
-const SECRET = process.env.USERCONTENT_SIGNING_SECRET_NAME || "rhema-prod-user-content-signing-key";
-const KEY_NAME = "rhema-tools-key";
-
-const ALLOWED_TYPES = /^(application\/octet-stream|text\/|image\/|application\/json|application\/pdf)/;
+const COOKIE = flag("--cookie"); // "name=value" — mints through the REAL route when supplied
+const TTL_SECONDS = 300; // USERCONTENT_URL_TTL_SECONDS — packages/contracts/src/upload.ts
+const GCS_HOST = "storage.googleapis.com";
 
 function plan() {
   return {
-    req: "REQ-OPS-3",
+    req: "REQ-POST-7",
+    adr: "ADR-113",
     reads: [
-      `gcloud compute backend-buckets list/describe (project ${PROJECT})`,
-      `gcloud compute url-maps describe (host rule for ${HOST})`,
-      `gcloud secrets versions access ${SECRET} (→ tmpfile, deleted same-run, never printed)`,
-      `gcloud compute sign-url https://${HOST}/${OBJECT} --key-name ${KEY_NAME}`,
-      `curl GETs: unsigned / signed / corrupted-signature`,
+      `curl GET ${API_URL}/usercontent/sign (no session → expect 401)`,
+      `curl GET https://${GCS_HOST}/${BUCKET}/${OBJECT} (no signature → expect 403)`,
+      COOKIE
+        ? `curl GET ${API_URL}/usercontent/sign?key=${OBJECT} --cookie (the api's tenant check + signBlob mints the URL)`
+        : `gcloud storage sign-url gs://${BUCKET}/${OBJECT} --impersonate-service-account=${API_SA} (the same v4/signBlob primitive the api uses)`,
+      `curl GETs: signed / tampered-signature / expired-lifetime`,
     ],
     asserts:
-      "signed → 2xx + no Set-Cookie + allowlist-or-octet-stream Content-Type (+ attachment disposition when present)",
+      "unauth mint → 401 · unsigned GET → 403 · signed → 2xx + attachment + octet-stream + no Set-Cookie · tampered + expired → denied",
   };
 }
 
@@ -69,114 +76,124 @@ if (process.env.CDN_VERIFY_ACK !== "yes") {
 const gcloud = (gargs, opts = {}) =>
   execFileSync("gcloud", gargs, { encoding: "utf8", ...opts }).trim();
 
-const evidence = { req: "REQ-OPS-3", at: new Date().toISOString(), object: OBJECT };
-const keyDir = mkdtempSync(join(tmpdir(), "r5ops1-cdn-"));
-try {
-  // 1. backend bucket: CDN enabled, origin-header cache mode, signed-url key attached.
-  const bucketsRaw = gcloud([
-    "compute", "backend-buckets", "list",
-    "--project", PROJECT, "--format", "json",
-  ]);
-  const bucket = JSON.parse(bucketsRaw).find((b) => (b.cdnPolicy?.signedUrlKeyNames ?? []).length);
-  if (!bucket) {
-    evidence.verdict = "FAIL — no backend bucket with a signedUrlKeyNames entry found";
+const evidence = {
+  req: "REQ-POST-7",
+  adr: "ADR-113",
+  at: new Date().toISOString(),
+  bucket: BUCKET,
+  object: OBJECT,
+  minted_via: COOKIE ? "api-route" : "gcloud-impersonated-signBlob",
+};
+
+const fetchProbe = (url, opts = {}) => {
+  const out = execFileSync(
+    "curl",
+    ["-sS", "-o", "/dev/null", "-w", "%{http_code}", "-D", "-", "--max-time", "20", ...(opts.args ?? []), url],
+    { encoding: "utf8" },
+  );
+  const code = out.trim().split("\n").pop();
+  const hdrs = {};
+  for (const line of out.split("\n").slice(0, -1)) {
+    const m = line.match(/^([^:]+):\s*(.+?)\s*$/);
+    if (m) hdrs[m[1].toLowerCase()] = m[2];
+  }
+  return { status: Number(code), headers: hdrs };
+};
+
+// 1. the mint route is session-gated — an unsigned caller never obtains a URL.
+const mintUnauth = fetchProbe(`${API_URL}/usercontent/sign?key=${encodeURIComponent(OBJECT)}`);
+evidence.probes = {
+  api_mint_unauthenticated: { status: mintUnauth.status },
+};
+
+// 2. unsigned object read — the bucket is private.
+const unsigned = fetchProbe(`https://${GCS_HOST}/${BUCKET}/${OBJECT}`);
+evidence.probes.unsigned = { status: unsigned.status, server: unsigned.headers.server };
+
+// 3. the signed leg — the §13.3 serve contract is bound INTO the v4 signature
+//    (response-content-disposition + response-content-type; the api signs exactly these).
+let signedUrl;
+let mintedBody = null;
+if (COOKIE) {
+  // through the real route — the api's tenant check + signer produce {url, expiresAt}.
+  const mintOut = execFileSync(
+    "curl",
+    ["-sS", "-w", "\n%{http_code}", "-H", `Cookie: ${COOKIE}`, "--max-time", "20",
+     `${API_URL}/usercontent/sign?key=${encodeURIComponent(OBJECT)}&type=text/plain`],
+    { encoding: "utf8" },
+  );
+  const code = Number(mintOut.trim().split("\n").pop());
+  mintedBody = mintOut.trim().split("\n").slice(0, -1).join("\n");
+  evidence.probes.api_mint_authenticated = { status: code };
+  if (code !== 200) {
+    evidence.verdict = `FAIL — the session-scoped mint answered ${code}: ${mintedBody.slice(0, 200)}`;
     console.log(JSON.stringify(evidence, null, 1));
     process.exit(4);
   }
-  const described = JSON.parse(
-    gcloud(["compute", "backend-buckets", "describe", bucket.name, "--project", PROJECT, "--format", "json"]),
-  );
-  evidence.backend_bucket = {
-    name: described.name,
-    bucketName: described.bucketName,
-    enableCdn: described.enableCdn,
-    cacheMode: described.cdnPolicy?.cacheMode,
-    signedUrlKeyNames: described.cdnPolicy?.signedUrlKeyNames,
-    signedUrlCacheMaxAgeSec: described.cdnPolicy?.signedUrlCacheMaxAgeSec,
-  };
-
-  // 2. urlmap host rule for the usercontent host.
-  const maps = JSON.parse(
-    gcloud(["compute", "url-maps", "list", "--project", PROJECT, "--format", "json"]),
-  );
-  let hostRule = null;
-  for (const m of maps) {
-    let d;
-    try {
-      d = JSON.parse(
-        gcloud(["compute", "url-maps", "describe", m.name, "--project", PROJECT, "--format", "json"]),
-      );
-    } catch {
-      continue; // regional or foreign-scope maps aren't describable via the global compute API
-    }
-    for (const hr of d.hostRules ?? []) {
-      if ((hr.hosts ?? []).includes(HOST)) {
-        hostRule = { urlMap: m.name, pathMatcher: hr.pathMatcher };
-      }
-    }
+  signedUrl = JSON.parse(mintedBody).url;
+  if (!signedUrl) {
+    evidence.verdict = "FAIL — the mint answered 200 but the body carried no url";
+    console.log(JSON.stringify(evidence, null, 1));
+    process.exit(4);
   }
-  evidence.host_rule = hostRule;
+} else {
+  // the same v4/signBlob primitive the api uses (IAM signBlob on the api SA — no key material).
+  signedUrl = gcloud([
+    "storage", "sign-url", `gs://${BUCKET}/${OBJECT}`,
+    "--duration", `${TTL_SECONDS}s`,
+    "--query-params", "response-content-disposition=attachment",
+    "--query-params", "response-content-type=application/octet-stream",
+    "--impersonate-service-account", API_SA,
+    "--project", PROJECT,
+  ]).match(/https:\/\/\S+/)[0];
+}
 
-  // 3. mint a signed URL with the documented key (tmpfile; deleted in finally).
-  const keyFile = join(keyDir, "key");
-  writeFileSync(keyFile, gcloud(["secrets", "versions", "access", "latest", "--secret", SECRET, "--project", PROJECT]));
-  const signOut = gcloud([
-    "compute", "sign-url", `https://${HOST}/${OBJECT}`,
-    "--key-name", KEY_NAME, "--key-file", keyFile, "--expires-in", "600",
-  ]);
-  const signedUrl = signOut.match(/https:\/\/\S+/)[0];
+// 4. the fetch probes.
+const signed = fetchProbe(signedUrl);
+const tampered = fetchProbe(signedUrl.replace(/(X-Goog-Signature=)[0-9a-f]+/i, "$1" + "0".repeat(64)));
+// A GENUINELY expired URL: sign a second URL with a 1-second window and let it lapse — the
+// signature itself is valid but the signed lifetime bound is spent ⇒ denied. (In --cookie mode
+// the route's TTL is clamped, so shrinking X-Goog-Expires is the equivalent lifetime-probe —
+// denied either way.)
+const expiredUrl = COOKIE
+  ? signedUrl.replace(/(X-Goog-Expires=)\d+/i, "$1" + "1")
+  : gcloud([
+      "storage", "sign-url", `gs://${BUCKET}/${OBJECT}`,
+      "--duration", "1s",
+      "--query-params", "response-content-disposition=attachment",
+      "--impersonate-service-account", API_SA,
+      "--project", PROJECT,
+    ]).match(/https:\/\/\S+/)[0];
+execFileSync("sleep", ["2"]);
+const expired = fetchProbe(expiredUrl);
+evidence.probes.signed = {
+  status: signed.status,
+  content_type: signed.headers["content-type"],
+  content_disposition: signed.headers["content-disposition"],
+  set_cookie: "set-cookie" in signed.headers,
+};
+evidence.probes.tampered_signature = { status: tampered.status };
+evidence.probes.expired_lifetime = { status: expired.status };
 
-  // 4. the three fetch probes.
-  const fetchProbe = (url) => {
-    const out = execFileSync(
-      "curl", ["-sS", "-o", "/dev/null", "-w", "%{http_code}", "-D", "-", "--max-time", "20", url],
-      { encoding: "utf8" },
-    );
-    const code = out.trim().split("\n").pop();
-    const hdrs = {};
-    for (const line of out.split("\n").slice(0, -1)) {
-      const m = line.match(/^([^:]+):\s*(.+?)\s*$/);
-      if (m) hdrs[m[1].toLowerCase()] = m[2];
-    }
-    return { status: Number(code), headers: hdrs };
-  };
-  const unsigned = fetchProbe(`https://${HOST}/${OBJECT}`);
-  const signed = fetchProbe(signedUrl);
-  const corrupted = fetchProbe(
-    `https://${HOST}/${OBJECT}?Expires=9999999999&KeyName=${KEY_NAME}&Signature=AAAAAAAAAAAAAAAAAAAAAA==`,
-  );
-  evidence.probes = {
-    unsigned: { status: unsigned.status, server: unsigned.headers.server },
-    signed: {
-      status: signed.status,
-      content_type: signed.headers["content-type"],
-      content_disposition: signed.headers["content-disposition"],
-      set_cookie: "set-cookie" in signed.headers,
-      cache_control: signed.headers["cache-control"],
-      age: signed.headers["age"],
-    },
-    corrupted_signature: { status: corrupted.status, server: corrupted.headers.server },
-  };
-
-  // 5. verdict.
-  const s = evidence.probes.signed;
-  const headerContract =
-    s.status >= 200 && s.status < 300 &&
-    s.set_cookie === false &&
-    ALLOWED_TYPES.test(s.content_type ?? "");
-  if (headerContract) {
-    evidence.verdict = "PASS — CDN-signed usercontent headers verified (non-403, header contract holds)";
-  } else if (unsigned.status === 403 && signed.status === 403 && corrupted.status === 403) {
-    evidence.verdict =
-      "CONFIG-OK-ORIGIN-DENIED — enableCdn+USE_ORIGIN_HEADERS+rhema-tools-key verified via gcloud, " +
-      "but signed/unsigned/corrupted all return the GCS origin's AccessDenied 403: the edge does not " +
-      "gate on the signature and the LB→private-bucket origin read is denied (no objectViewer grant). " +
-      "NON-EVIDENCE for the signed-delivery path — recorded as a live finding.";
-  } else {
-    evidence.verdict = "FAIL — unexpected response shape; inspect probes";
-  }
-} finally {
-  rmSync(keyDir, { recursive: true, force: true });
+// 5. verdict.
+const s = evidence.probes.signed;
+const headerContract =
+  s.status >= 200 && s.status < 300 &&
+  s.set_cookie === false &&
+  s.content_disposition === "attachment" &&
+  s.content_type === "application/octet-stream";
+const denials =
+  mintUnauth.status === 401 &&
+  unsigned.status === 403 &&
+  tampered.status >= 400 &&
+  expired.status >= 400;
+if (headerContract && denials) {
+  evidence.verdict =
+    "PASS — API-minted v4 usercontent verified: unsigned→403, unauth mint→401, signed→2xx with " +
+    "attachment+octet-stream+no-cookie, tampered+expired→denied";
+} else {
+  evidence.verdict =
+    "FAIL — inspect probes (headerContract=" + headerContract + ", denials=" + denials + ")";
 }
 
 console.log(JSON.stringify(evidence, null, 1));

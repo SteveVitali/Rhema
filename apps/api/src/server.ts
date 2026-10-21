@@ -32,6 +32,7 @@ import {
   fetchGceMetadataInstanceId,
   createStorageV4SignedUrlProvider,
   createGcsV4GetPresigner,
+  createGcsV4UserContentSigner,
   createGcsObjects,
   createGcsBlobStore,
   createConvertJobPreview,
@@ -392,6 +393,12 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // `/account/export/download` answered 503 `download_unavailable`). v4 GET over the objects bucket
     // (where `handleAccountExport` stores the zip), same signBlob path as the PUT presigner.
     exportPresign: await createGcsV4GetPresigner(env.objectsBucket),
+    // R6UCD.1 (REQ-POST-7, ADR-113) — the user-content mint: v4 GETs over the user-content bucket
+    // with the §13.3 response-* params signed in. Replaces the (inert) edge-signed CDN path; the
+    // api SA already holds objectAdmin on this bucket (infra/pulumi/iam.ts `api-rw-usercontent`).
+    ...(env.userContentBucket
+      ? { userContentSigner: await createGcsV4UserContentSigner({ bucket: env.userContentBucket }) }
+      : {}),
     // PRB.13 — `signup.mode` (REQ-BETA-19 amended): stage-config-driven; the routes it gates (POST
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).

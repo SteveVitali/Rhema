@@ -213,6 +213,11 @@ Grouped by the ruling/session that unblocks them.
 **CDN delivery-contract ruling (⚑ operator — signed-URL key + origin-read grant posture):**
 | D-R5OPS.1-2 | CDN signed-delivery chain is nonfunctional at `ffbb8ad` (unsigned→403, signed→503); repair = signed-URL key generation + origin-read IAM, driver at `scripts/live/repair-cdn-delivery.mjs` | R6POST.1 after ruling |
 
+> ⚑ **2026-10-21 update (ADR-113 / R6UCD.1):** the ruling landed — edge-signing/IAM repair was
+> ruled OUT; the contract changed to API-minted GCS V4 signed GETs. `repair-cdn-delivery.mjs` is
+> retired unwritten (it never existed); the code half of D-R5OPS.1-2 landed in R6UCD.1 and the
+> live verify leg rides R6POST.1 via the re-pointed `usercontent-cdn-verify.mjs`.
+
 **Out-of-class cost levers (⚑ operator — outside H9's pre-authorized classes):**
 | D-OPS.2-2 | worker right-size + Cloud SQL HA — re-auth the class or land the named levers | operator-only; levers execute in a future window |
 | D-COST.1-3 | the three in-class levers ruled or parked | operator-only |

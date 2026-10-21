@@ -1156,13 +1156,16 @@ export function createCompute(args: ComputeArgs): Compute {
   // amended 2026-09-17 — the session side is defended by host-only `__Host-` cookies, see
   // apps/api/src/auth.ts) and served attachment/octet-stream by `servingHeadersFor`
   // (apps/convert/src/serving.ts). Objects stay private:
-  // the app signs download URLs (CDN signed-url key added by the operator out-of-band — the runbook's
-  // post-up step), so nothing is world-readable and `USE_ORIGIN_HEADERS` honors the private/no-store
-  // cache-control the serving layer emits.
+  // AMENDED 2026-10-21 (ADR-113, R6UCD.1): delivery is API-MINTED GCS V4 signed GETs on
+  // storage.googleapis.com — the edge-signed CDN contract never worked (the LB→bucket origin read
+  // was denied; the edge cannot sign for a private origin it cannot read) and the operator ruled
+  // its repair out. This backend bucket + host rule stay DEPLOYED BUT INERT — nothing in the
+  // codebase emits `usercontent.*` URLs and the CDN signing key is uninstalled/unreferenced;
+  // removal is a separate cost/infra decision, not this ticket.
   const userContentBackend = domains
     ? new gcp.compute.BackendBucket(name("usercontent-backend"), {
         bucketName: args.buckets["user-content"].name,
-        enableCdn: true, // CDN is REQUIRED for the signed-url mechanism (the edge verifies the signature)
+        enableCdn: true, // INERT (ADR-113) — the edge-signed contract is retired; kept only because CDN removal is its own decision
         cdnPolicy: { cacheMode: "USE_ORIGIN_HEADERS" },
       })
     : undefined;

@@ -232,10 +232,18 @@ Then arm the private user-content origin: the SAME `user-content-signing-key` va
 the backend bucket so the CDN edge verifies the signatures the api will mint (D-PRB.02-1's signer is a
 later leg — the key plumbing exists now):
 
+> **⚑ RETIRED 2026-10-21 (ADR-113 / R6UCD.1):** this step is superseded — the edge-signed CDN
+> contract was verified nonfunctional (LB→bucket origin read denied; `D-R5OPS.1-2`) and its
+> repair was ruled out. The api mints GCS V4 signed GETs on `storage.googleapis.com` via IAM
+> signBlob instead — no key to install. If `rhema-tools-key` was already installed it may stay
+> (inert) until a separate CDN-removal decision; `user-content-signing-key` stays seeded and
+> listed only because nothing has removed it — no code reads it.
+
 ```bash
-gcloud compute backend-buckets add-signed-url-key \
-  --backend-bucket rhema-prod-usercontent-backend \
-  --key-name rhema-tools-key --key-value "<the same base64url key stored in rhema-prod-user-content-signing-key>"
+# RETIRED (ADR-113) — do NOT run: the edge-signed usercontent contract is superseded.
+# gcloud compute backend-buckets add-signed-url-key \
+#   --backend-bucket rhema-prod-usercontent-backend \
+#   --key-name rhema-tools-key --key-value "<the same base64url key stored in rhema-prod-user-content-signing-key>"
 ```
 
 ## 7. Migrations + protocol seed on prod Cloud SQL
