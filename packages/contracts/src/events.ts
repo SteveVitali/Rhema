@@ -472,6 +472,20 @@ export const RUN_EVENTS = {
     density: "internal",
     payload: z.record(z.string(), z.unknown()),
   },
+  // RES.3 (REQ-ENG-3) — the durable phase-checkpoint marker: a research-class phase's produced versions
+  // persisted mid-flight (before a non-complete verdict), so a retry/re-drive resumes mounted work
+  // instead of re-researching. Ids + paths only — the attestation fact a checkpoint-commit consults.
+  "phase.checkpointed": {
+    visibility: "internal",
+    density: "internal",
+    payload: z.object({
+      phase: boundedText,
+      ordinal: z.number().int(),
+      attempt: z.number().int(),
+      paths: z.array(boundedText).max(64),
+      versionIds: z.array(z.string()).max(64),
+    }),
+  },
 } as const satisfies Record<string, EventDef>;
 
 export type RunEventType = keyof typeof RUN_EVENTS;

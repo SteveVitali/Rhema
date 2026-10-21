@@ -14,6 +14,8 @@ import {
   commitStep,
   failStep,
   harvestStep,
+  checkpointStep,
+  researchBudgetState,
   audit,
   hydration,
   buildHarnessRunSpec,
@@ -1377,6 +1379,55 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
   });
 
+  // RES.3 (REQ-ENG-3) — the phase checkpoint: persist a research phase's produced versions on a
+  // non-complete outcome so a retry/re-drive resumes mounted work instead of re-researching.
+  // Same wire shape as harvest minus the usage snapshot (no provisional ledger row — a checkpoint
+  // is not a commit); attempt-fenced (a superseded attempt's late checkpoint is refused and never
+  // lands). Token-authed; the content store binds like harvest.
+  internal.post("/runs/:id/steps/:key/checkpoint", (c) => {
+    const run = c.get("run");
+    return guard(c, async () => {
+      const body = (await c.req.json()) as CheckpointBody;
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(run.workspaceId) : deps.store;
+      if (!store) return c.json({ error: "checkpoint requires a content store" }, 500);
+      const versions: NewVersion[] = (body.versions ?? []).map((v) => ({
+        path: v.path,
+        root: v.root,
+        kind: v.kind,
+        namespace: v.namespace,
+        sha256: v.sha256,
+        bytes: Buffer.from(v.bytesB64, "base64"),
+        wordCount: v.wordCount,
+        ...(v.producerQueryId !== undefined ? { producerQueryId: v.producerQueryId } : {}),
+      }));
+      const res = await checkpointStep(
+        { ...deps, store },
+        {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+          stepKey: c.req.param("key"),
+          ordinal: body.ordinal,
+          seat: body.seat,
+          ...(body.projectId !== undefined ? { projectId: body.projectId } : {}),
+          ...(body.personaId !== undefined ? { personaId: body.personaId } : {}),
+          versions,
+        },
+      );
+      return c.json(res, res.ok ? 200 : 409);
+    });
+  });
+
+  // RES.3 — the retry gate's consult: the run's claim-scaled research bound minus proxy-metered
+  // spend across every attempt (preflight/backfill isolated off the bound). Read-only — the pod
+  // consults it before re-executing a research phase; the proxy stays the meter of record.
+  internal.get("/runs/:id/research-budget", (c) => {
+    const run = c.get("run");
+    return guard(c, async () =>
+      c.json(await researchBudgetState(deps, { runId: run.runId, workspaceId: run.workspaceId })),
+    );
+  });
+
   // Finalize → deliver (§12.4 step 8; D-P0.09-1/D-P0.12-1). The run-task posts the delivering dossier at the
   // final commit; the api runs the @rhema/mirror delivery transaction (validation → correspondence + freeze +
   // the obligation hook → attestation) atomically with `finalizing → completed`. The content store is bound to
@@ -1693,6 +1744,15 @@ interface HarvestBody {
   personaId?: string | null;
   versions: HarvestVersionBody[];
   usage: UsageSnapshot;
+}
+/** RES.3 — the checkpoint payload (`…/steps/:key/checkpoint`): harvest-shape minus the usage row —
+ *  a checkpoint persists work, it does not book spend. */
+interface CheckpointBody {
+  ordinal: number;
+  seat: AgentTypeKey;
+  projectId?: string | null;
+  personaId?: string | null;
+  versions: HarvestVersionBody[];
 }
 /** The finalizing run's delivery payload the run-task posts to `POST /internal/runs/:id/deliver`. The money
  *  fields are optional — a harness POST omits them and the route resolves them from the run row (server truth). */

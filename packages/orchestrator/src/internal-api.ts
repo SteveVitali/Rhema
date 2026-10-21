@@ -60,6 +60,11 @@ import { applyOutlineApproval } from "./outline-delivery.js";
 import { applyFigureDelivery, enqueueFigureRender } from "./figure-delivery.js";
 import type { FigureClaimsMountProvider } from "./figure-claims.js";
 import {
+  readRunWebToolsPolicy,
+  researchBudgetConsult,
+  type ResearchBudgetConsult,
+} from "./research-budget.js";
+import {
   absorbMeteredGap,
   incrementalMeteredDebit,
   netDebitedCredits,
@@ -909,6 +914,172 @@ export async function harvestStep(deps: HarvestStepDeps, args: HarvestStepArgs):
   }
 }
 
+// ---------------------------------------------------------------------------- phase checkpointing (RES.3)
+
+export interface CheckpointStepArgs {
+  readonly runId: string;
+  readonly attempt: number;
+  readonly workspaceId: string;
+  readonly stepKey: string;
+  readonly ordinal: number;
+  readonly seat: AgentTypeKey;
+  readonly projectId?: string | null;
+  readonly personaId?: string | null;
+  /** the produced writable versions to checkpoint (content-addressed bytes — same shape as harvest). */
+  readonly versions: readonly NewVersion[];
+}
+
+export type CheckpointStepResult =
+  | {
+      readonly ok: true;
+      readonly producedVersionIds: string[];
+      /** path → head version-id for every reported path (fresh or already-head) — the same map a
+       *  harvest reply carries, so a checkpoint-commit can feed the delivery's deliveredVersionIds. */
+      readonly byPath: Record<string, string>;
+    }
+  | { readonly ok: false; readonly code: "stale_task"; readonly currentAttempt: number };
+
+/**
+ * `POST /internal/runs/:id/steps/:key/checkpoint` (RES.3; REQ-ENG-3). Persist the phase's produced
+ * writable versions on a NON-complete outcome — the `phase<N>` checkpoint a later retry or stranded
+ * re-drive resumes from: the persisted versions become artifact heads, and this run's own
+ * `steps.produced_version_ids` union makes them mount on the next hydration (BL-66 exempts the run's
+ * own produced set from the cross-run `agents/**` exclusion), readwrite under the seat's namespace.
+ *
+ * Contract, one fenced tx:
+ *   - FENCED like harvest — a checkpoint written by a SUPERSEDED attempt is refused `stale_task`
+ *     (the late-arrival contract: an old attempt's late write can never overwrite the head a newer
+ *     attempt already resumed against — and never lands as a version at all).
+ *   - IDEMPOTENT content-wise — a version whose sha256 already IS the artifact head is skipped
+ *     (checkpoint calls can legitimately re-report an unchanged remount; a no-change write must not
+ *     mint a duplicate-head version row the way persistHarvest would, since that path assumes the
+ *     pod-side diff already dropped identical files).
+ *   - ACCUMULATING — `produced_version_ids` unions (never replaces): several checkpoint calls in
+ *     one attempt (each retry boundary) accumulate, and the committed row keeps the union.
+ *   - `phase.checkpointed` marks each checkpoint that persisted at least one fresh version —
+ *     internal telemetry only (paths + version ids, no content).
+ *   - A committed 'done' step row is never touched (a checkpoint arriving after commit is a no-op
+ *     beyond the version write itself — the dedup makes that a true no-op for unchanged content).
+ */
+export async function checkpointStep(deps: HarvestStepDeps, args: CheckpointStepArgs): Promise<CheckpointStepResult> {
+  try {
+    return await deps.txRunner.run(args.workspaceId, async (tx): Promise<CheckpointStepResult> => {
+      await fence(tx, args.runId, args.attempt);
+
+      // the artifact scope is a SERVER fact (the run's project/persona), never trusted from the pod.
+      const scope = (await tx.query("select project_id, persona_id from runs where id = $1", [args.runId])).rows[0] as
+        | { project_id: string | null; persona_id: string | null }
+        | undefined;
+      const projectId = scope?.project_id ?? args.projectId ?? null;
+      const personaId = scope?.persona_id ?? args.personaId ?? null;
+
+      // drop versions whose bytes already equal the current artifact head (a checkpoint of an
+      // unchanged remount must not mint an identical-head version row).
+      const headSha = new Map<string, string>();
+      if (args.versions.length > 0) {
+        const heads = await tx.query(
+          `select a.mirror_path, av.content_sha256 from artifacts a
+             join artifact_versions av on av.id = a.head_version_id
+            where a.workspace_id = $1 and a.mirror_path = any($2)`,
+          [args.workspaceId, args.versions.map((v) => v.path) as string[]],
+        );
+        for (const r of heads.rows as { mirror_path: string; content_sha256: string }[]) {
+          headSha.set(r.mirror_path, r.content_sha256);
+        }
+      }
+      const fresh = args.versions.filter((v) => headSha.get(v.path) !== v.sha256);
+
+      const persisted = await persistHarvest(
+        tx,
+        deps.store,
+        { ids: deps.ids, clock: deps.clock },
+        { workspaceId: args.workspaceId, projectId, personaId },
+        fresh,
+      );
+      const persistedIds = persisted.map((p) => p.versionId);
+
+      // Union the freshly persisted ids into the step row's produced set. The insert arm covers a
+      // checkpoint arriving before beginStep's row; the conflict arm unions onto a running/failed row
+      // and NEVER touches a committed ('done') row — a late checkpoint can never rewrite a committed
+      // produced set, it only lands the version content itself.
+      const upserted = await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids)
+         values ($1,$2,$3,$4,'running',$5,$6)
+         on conflict (run_id, ordinal) do update set
+           produced_version_ids = (
+             select array(select distinct v from unnest(steps.produced_version_ids || excluded.produced_version_ids) as v)),
+           attempt = excluded.attempt
+         where steps.state <> 'done'
+         returning produced_version_ids`,
+        [
+          deps.ids("step"),
+          args.runId,
+          args.stepKey,
+          args.ordinal,
+          args.attempt,
+          persistedIds as string[],
+        ],
+      );
+      const producedVersionIds =
+        (upserted.rows[0] as { produced_version_ids: string[] } | undefined)?.produced_version_ids ??
+        // the conflict row was 'done' — the update was refused; report the committed set (the
+        // checkpointed versions persisted above are still durable, just not re-attributed).
+        (((await tx.query("select produced_version_ids from steps where run_id = $1 and ordinal = $2", [
+          args.runId,
+          args.ordinal,
+        ])).rows[0] as { produced_version_ids: string[] } | undefined)?.produced_version_ids ??
+          persistedIds);
+
+      // path → head id for EVERY reported path — a deduped version still maps to the head it equals,
+      // so the loop's delivery map covers checkpointed artifacts whether or not this call persisted.
+      const byPath: Record<string, string> = {};
+      if (args.versions.length > 0) {
+        const heads = await tx.query(
+          `select a.mirror_path, a.head_version_id from artifacts a
+            where a.workspace_id = $1 and a.mirror_path = any($2)`,
+          [args.workspaceId, args.versions.map((v) => v.path) as string[]],
+        );
+        for (const r of heads.rows as { mirror_path: string; head_version_id: string | null }[]) {
+          if (r.head_version_id) byPath[r.mirror_path] = r.head_version_id;
+        }
+      }
+
+      if (persisted.length > 0) {
+        await deps.eventWriter.append(tx, {
+          runId: args.runId,
+          type: "phase.checkpointed",
+          payload: {
+            phase: args.stepKey,
+            ordinal: args.ordinal,
+            attempt: args.attempt,
+            paths: persisted.map((p) => p.path),
+            versionIds: persistedIds,
+          },
+          at: deps.clock.now(),
+        });
+      }
+      return { ok: true, producedVersionIds, byPath };
+    });
+  } catch (e) {
+    if (e instanceof StaleTaskError) return { ok: false, code: "stale_task", currentAttempt: e.currentAttempt };
+    throw e;
+  }
+}
+
+/**
+ * `GET /internal/runs/:id/research-budget` (RES.3) — the token-authed read the pod's retry gate
+ * consults before re-executing a research phase: the run's claim-scaled bound minus its proxy-metered
+ * spend across every attempt (research-budget.ts). Read-only — the fencing comes from the run-token
+ * middleware like the other reads; a stale attempt can see the figure but can write nothing.
+ */
+export async function researchBudgetState(
+  deps: OrchestratorDeps,
+  args: { runId: string; workspaceId: string },
+): Promise<ResearchBudgetConsult> {
+  const webTools = await readRunWebToolsPolicy(deps, args);
+  return researchBudgetConsult(deps, { ...args, webTools });
+}
+
 // ---------------------------------------------------------------------------- commit / fail / finalize
 
 /** Where the run goes after a committed step (decided by the phase loop's completion oracle). */
@@ -1301,6 +1472,12 @@ const CAP_REACHED_REASON = /reached its cap|cap[_\s-]?reached|cap of \d+ credits
  * BILL.3 (§14.6) adds `provider_transient`: that class only reaches failStep after the phase retry
  * policy is exhausted, so the run must settle `failed` (refund + release) rather than stay `running`
  * for the reaper to re-enqueue into the same provider outage.
+ *
+ * RES.3 (REQ-ENG-3) adds `research_budget_exhausted`: the retry-gate consult found the run's
+ * claim-scaled research bound spent (all attempts summed) AND the checkpointed work did not satisfy
+ * the phase contract. A retry could only burn zero tools for zero honest output — so the run
+ * terminalizes here instead of crash-looping through stranded re-drives (the RES.3 live arm: three
+ * re-executions drained the exact bound before the last tool-less attempt wrote honesty).
  */
 function terminalPhaseFailure(errorClass: string, reason: string | undefined): { code: string } | null {
   if (errorClass === "budget" || (reason != null && CAP_REACHED_REASON.test(reason))) {
@@ -1310,6 +1487,7 @@ function terminalPhaseFailure(errorClass: string, reason: string | undefined): {
   if (errorClass === "blocked") return { code: "phase_blocked" };
   if (errorClass === "replan") return { code: "phase_replan" };
   if (errorClass === "research_preflight_failed") return { code: "research_preflight_failed" };
+  if (errorClass === "research_budget_exhausted") return { code: "research_budget_exhausted" };
   return null;
 }
 

@@ -35,6 +35,7 @@ import {
   type HarnessRunSpec,
   type PhaseResultFile,
   type PredicateFacts,
+  type ResearchBudgetConsult,
 } from "@rhema/orchestrator";
 import { resolveProducedPath } from "./work-reader.js";
 import { describePreflightFailures } from "./research-preflight.js";
@@ -228,6 +229,19 @@ export interface FailCall {
   readonly errorClass: string;
   readonly reason?: string;
 }
+/**
+ * RES.3 (REQ-ENG-3) — the checkpoint call: persist a research phase's produced writable versions on
+ * a non-complete outcome (the `phase<N>` checkpoint a retry/re-drive resumes). Same wire shape as
+ * `HarvestCall` minus the usage snapshot — a checkpoint persists work; it books no spend.
+ */
+export interface CheckpointCall {
+  readonly stepKey: string;
+  readonly ordinal: number;
+  readonly seat: AgentTypeKey;
+  readonly projectId?: string | null;
+  readonly personaId?: string | null;
+  readonly versions: readonly NewVersion[];
+}
 /** The `/steps/:key/fail` reply — `backEdge` when the failure self-report routed a bounded re-plan (the run
  *  stays `running`; the loop re-fetches the spec and re-runs the reset phase), `gateId` when it escalated to a
  *  blocking Approval (the run parks `waiting_gate`; the pod exits like any other gate). */
@@ -253,6 +267,18 @@ export interface HarnessApiClient {
    *  old wiring (a client that predates the seam) — the commit's measured durationMs then carries
    *  the timing fallback. */
   beginStep?(args: { stepKey: string; ordinal: number; of: number }): Promise<{ ok: boolean }>;
+  /**
+   * RES.3 — persist the phase's produced versions on a non-complete verdict (the `phase<N>`
+   * checkpoint). Optional: an unbound seam degrades to the pre-RES.3 shape (the next attempt
+   * re-runs from the committed tree) — the budget gate still fires, so the drain cannot recur.
+   */
+  checkpoint?(args: CheckpointCall): Promise<{ producedVersionIds: string[]; byPath: Record<string, string> }>;
+  /**
+   * RES.3 — the live research-budget consult (`GET …/research-budget`): remaining =
+   * claim-scaled bound − proxy-metered spend across ALL attempts. `null` on a route failure —
+   * the loop falls back to the spec-stamped consult, never to an unbounded retry.
+   */
+  researchBudget?(): Promise<ResearchBudgetConsult | null>;
   harvest(args: HarvestCall): Promise<HarvestReply>;
   commit(args: CommitCall): Promise<{ ok: boolean; state?: string; code?: string }>;
   failStep(args: FailCall): Promise<FailStepResult>;
@@ -268,6 +294,14 @@ export interface CommitLoopDeps {
   readonly workspaceId: string;
   /** RES.1 — the research-preflight probe seam (see `PreflightFn`); unbound ⇒ fail closed. */
   readonly preflight?: PreflightFn;
+  /**
+   * RES.3 — read the mounted `/work` WITHOUT executing the agent (the checkpoint-commit
+   * inspector): the checkpointed artifacts remounted at hydration are exactly what the retry
+   * gate evaluates when the budget is dead — legs (a)/(b) (sdkSubtype/phaseResult) are the
+   * checkpoint-commit's own honest markers, only the leg-(c) predicates gate it. Unbound ⇒ a
+   * dead budget with no usable checkpoint is the terminal `research_budget_exhausted` fail.
+   */
+  inspectWork?(spec: HarnessRunSpec): Promise<PhaseRunOutputs>;
   /** gate-policy context for a `gateAfter` gate; default: named policy, informational approve_scope. */
   gateContext?(now: Date): GatePolicyContext;
   now?(): Date;
@@ -374,26 +408,136 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       await (deps.client.beginStep?.({ stepKey: phase.key, ordinal: phase.index, of: spec.request.of }) ??
         Promise.resolve()).catch(() => undefined);
 
-      // run the phase; re-run ONCE (guided) on a re-runnable incomplete verdict (mirror runPhase).
-      let outputs = await deps.runPhase(spec, {});
-      let verdict = evaluateOracle(
-        { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
-        createFactsEvaluator(outputs.facts),
-      );
+      // RES.3 (REQ-ENG-3) — the research-phase checkpoint + retry gate. The RES.3 live burn (run
+      // 01M48VNKY6F263TCQRVBJ8JRQA: 12 searches + 12 fetches spent, ZERO files written, then a
+      // guided retry and two stranded re-drives re-researched against the same claim-scaled bound
+      // until it hit exactly 17/48) happened because (a) produced work died with the pod and
+      // (b) nothing consulted the bound before re-executing. The contract here:
+      //   · CHECKPOINT — a research phase's produced versions persist on EVERY non-complete verdict
+      //     (`checkpointStep` — they become the artifact heads a later attempt remounts);
+      //   · CONSULT — the bound is re-read before any re-execution (spec-stamped at build + live
+      //     before the guided retry), summed across ALL attempts — a fresh pod/session is a fresh
+      //     charge against the SAME run envelope, never a reset;
+      //   · GATE — `exhausted` means a re-run can produce nothing a checkpoint cannot: commit the
+      //     checkpointed work when it satisfies the phase's own contract (the REQ-SPEC-31
+      //     Unverified path rides the normal delivery from there), else the honest terminal
+      //     `research_budget_exhausted` — never a silent re-drain.
+      const researchPhase = phase.phaseClass === "research";
+      let producedIds = [...(spec.checkpoint?.producedVersionIds ?? [])];
+      let checkpointByPath: Record<string, string> = { ...(spec.checkpoint?.byPath ?? {}) };
+      let checkpointCommit = false;
+
+      // checkpoint the exec's produced work (best-effort — a checkpoint failure must never mask
+      // the verdict path; the gate still fires, so the drain cannot recur).
+      const checkpointProduced = async (produced: PhaseRunOutputs): Promise<void> => {
+        if (!researchPhase || !deps.client.checkpoint || produced.versions.length === 0) return;
+        try {
+          const res = await deps.client.checkpoint({
+            stepKey: phase.key,
+            ordinal: phase.index,
+            seat: spec.request.seat as AgentTypeKey,
+            projectId: spec.delivery?.projectId ?? null,
+            versions: produced.versions,
+          });
+          producedIds = [...new Set([...producedIds, ...res.producedVersionIds])];
+          checkpointByPath = { ...checkpointByPath, ...res.byPath };
+        } catch {
+          /* best-effort — see above */
+        }
+      };
+
+      // the dead-boundary resolution, shared by the pre-exec + post-exec gates: honest work only —
+      // the remounted checkpoint must satisfy EVERY declared completion predicate on its own bytes
+      // (the phase's own contract — an absent ledger or an under-inventory row set stays a fail)
+      // AND produced ids must be on record (nothing checkpointed ⇒ nothing to commit).
+      const resolveDeadBudget = async (
+        consult: ResearchBudgetConsult,
+      ): Promise<
+        | { kind: "checkpoint_commit"; outputs: PhaseRunOutputs }
+        | { kind: "gated" }
+        | { kind: "failed"; reason: string }
+      > => {
+        if (deps.inspectWork && producedIds.length > 0) {
+          const inspected = await deps.inspectWork(spec).catch(() => null);
+          if (inspected) {
+            const evaluator = createFactsEvaluator(inspected.facts);
+            if (predicates.every((p) => evaluator(p).passed)) {
+              return { kind: "checkpoint_commit", outputs: inspected };
+            }
+          }
+        }
+        const reason =
+          `research budget exhausted — ${consult.searchesUsed}/${consult.searchBudget} searches, ` +
+          `${consult.fetchesUsed}/${consult.fetchBudget} fetches consumed across all attempts; ` +
+          `no usable checkpoint satisfies the phase contract`;
+        const failed = await deps.client.failStep({
+          stepKey: phase.key,
+          ordinal: phase.index,
+          errorClass: "research_budget_exhausted",
+          reason,
+        });
+        if (failed.ok && failed.gateId) return { kind: "gated" as const };
+        return { kind: "failed" as const, reason };
+      };
+
+      let outputs: PhaseRunOutputs;
+      let verdict: ReturnType<typeof evaluateOracle>;
+
+      // gate 1 — the pre-exec consult: a stranded re-drive whose bound is already dead never spawns
+      // an exec at all (the RES.3 third+ executions: each a fresh pod that re-ran verification whole).
+      if (researchPhase && spec.researchBudget?.exhausted === true) {
+        const resolved = await resolveDeadBudget(spec.researchBudget);
+        if (resolved.kind === "failed") {
+          return { kind: "failed", phasesCommitted, errorClass: "research_budget_exhausted", reason: resolved.reason };
+        }
+        if (resolved.kind === "gated") return { kind: "gated", phasesCommitted };
+        outputs = resolved.outputs;
+        checkpointCommit = true;
+        verdict = { outcome: "complete", predicates: [] };
+      } else {
+        outputs = await deps.runPhase(spec, {});
+        verdict = evaluateOracle(
+          { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
+          createFactsEvaluator(outputs.facts),
+        );
+      }
+
       if (verdict.outcome === "incomplete" && RERUN_CLASSES.has(verdict.errorClass)) {
         const policy = retryPolicyFor(verdict.errorClass);
         if (policy.maxRetries > 0) {
-          // PRB.16b F15 — fold each failed predicate's TARGET + detail (incl. sidecar schema issues)
-          // into the guidance: the bare reason named only predicate KINDS, so a retry re-guessed the
-          // same contract violation (live: `rows` written for the required `entries` array ×3).
-          const guidance = policy.guided
-            ? `Previous attempt incomplete: ${verdict.reason}${describePredicateFailures(verdict.failedPredicates)}. Complete every declared artifact.`
+          // RES.3 — checkpoint the produced work BEFORE the retry decision: the last write is what
+          // a later attempt resumes, and it lands even when the bound is already dead.
+          if (researchPhase) await checkpointProduced(outputs);
+          // gate 2 — the live consult (the exec may just have drained the bound); the spec-stamped
+          // figure is the fallback when the consult route is down — never an unbounded retry.
+          const consult = researchPhase
+            ? ((await deps.client.researchBudget?.().catch(() => null)) ?? spec.researchBudget)
             : undefined;
-          outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
-          verdict = evaluateOracle(
-            { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
-            createFactsEvaluator(outputs.facts),
-          );
+          if (researchPhase && consult?.exhausted === true) {
+            const resolved = await resolveDeadBudget(consult);
+            if (resolved.kind === "failed") {
+              return { kind: "failed", phasesCommitted, errorClass: "research_budget_exhausted", reason: resolved.reason };
+            }
+            if (resolved.kind === "gated") return { kind: "gated", phasesCommitted };
+            outputs = resolved.outputs;
+            checkpointCommit = true;
+            verdict = { outcome: "complete", predicates: [] };
+          } else {
+            // PRB.16b F15 — fold each failed predicate's TARGET + detail (incl. sidecar schema issues)
+            // into the guidance: the bare reason named only predicate KINDS, so a retry re-guessed the
+            // same contract violation (live: `rows` written for the required `entries` array ×3).
+            const guidance = policy.guided
+              ? `Previous attempt incomplete: ${verdict.reason}${describePredicateFailures(verdict.failedPredicates)}. Complete every declared artifact.`
+              : undefined;
+            outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
+            verdict = evaluateOracle(
+              { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
+              createFactsEvaluator(outputs.facts),
+            );
+            // RES.3 — checkpoint the retry's produced work on ITS non-complete verdict too (its
+            // writes are the resume point for the next stranded re-drive).
+            if (researchPhase && verdict.outcome !== "complete") await checkpointProduced(outputs);
+          }
         }
       }
 
@@ -430,6 +574,9 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       }
 
       // complete: harvest+persist the produced versions (→ version ids + provisional credits), then commit.
+      // RES.3 — fold the accumulated checkpoint ids/paths in: the produced set of record is the UNION
+      // (a checkpoint-commit's own harvest persists nothing — its versions already ARE the heads —
+      // but the checkpointed ids must ride the commit's `produced_version_ids` to stay attributed).
       const harvested = await deps.client.harvest({
         stepKey: phase.key,
         ordinal: phase.index,
@@ -438,6 +585,8 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         versions: outputs.versions,
         usage: outputs.usage,
       });
+      const allProducedVersionIds = [...new Set([...producedIds, ...harvested.producedVersionIds])];
+      const byPath = { ...checkpointByPath, ...harvested.byPath };
 
       const isLastPhase = phase.index === spec.request.of - 1;
       // P1.09 — the server-authored gate-policy facts on the spec are the default context (project
@@ -457,8 +606,8 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       // (mergedTriageLedger → serializeGateOverlay) read — `decideCommitNext` never supplied it, so
       // every gate opened with NULL and the overlay path was dead code.
       if (next.kind === "gate" && phase.gateArtifact) {
-        const produced = resolveProducedPath(Object.keys(harvested.byPath), phase.gateArtifact);
-        const versionId = produced ? harvested.byPath[produced] : undefined;
+        const produced = resolveProducedPath(Object.keys(byPath), phase.gateArtifact);
+        const versionId = produced ? byPath[produced] : undefined;
         if (versionId) next = { ...next, artifactVersionId: versionId };
       }
 
@@ -466,13 +615,16 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         stepKey: phase.key,
         ordinal: phase.index,
         of: spec.request.of,
-        producedVersionIds: harvested.producedVersionIds,
+        producedVersionIds: allProducedVersionIds,
         credits: harvested.provisionalCredits,
         // RPT.1 — the pod-measured phase span; the begin row's `started_at` wins when it exists.
         durationMs: Math.max(0, now().getTime() - phaseStartedMs),
         result: {
           status: "done",
-          sdkSubtype: outputs.subtype,
+          // RES.3 — a checkpoint-commit is honest about HOW it completed: no exec ran, the
+          // checkpointed artifacts satisfied the contract. The marker lands on the step row +
+          // `step.finished` so the report/attestation never reads it as a clean model pass.
+          sdkSubtype: checkpointCommit ? "research_budget_exhausted" : outputs.subtype,
           predicatesPassed: true,
           compactions: 0,
         },
@@ -513,7 +665,7 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
           const delivery = assembleDeliveryArgs(
             spec,
             deps.workspaceId,
-            harvested.byPath,
+            byPath,
             outputs.delivery,
           );
           const del = await deps.client.deliver({ delivery });

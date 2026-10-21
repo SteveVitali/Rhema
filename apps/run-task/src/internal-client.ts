@@ -4,9 +4,16 @@
 // over the `@rhema/api` internal routes; it is deploy wiring (exercised against the live api in Stage B), so it
 // is not unit-tested offline — the loop it feeds is tested with an in-process client (harness-loop.test.ts).
 
-import type { CommitCall, FailCall, FailStepResult, HarnessApiClient, HarvestCall } from "./harness-loop.js";
+import type {
+  CheckpointCall,
+  CommitCall,
+  FailCall,
+  FailStepResult,
+  HarnessApiClient,
+  HarvestCall,
+} from "./harness-loop.js";
 import type { DeliveryArgs, NewVersion } from "@rhema/mirror";
-import type { HarnessRunSpec } from "@rhema/orchestrator";
+import type { HarnessRunSpec, ResearchBudgetConsult } from "@rhema/orchestrator";
 
 export interface HarnessApiClientConfig {
   readonly apiBaseUrl: string;
@@ -114,6 +121,31 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
         },
       );
       return { ok: json.ok === true, ...(json.state ? { state: json.state } : {}), ...(json.code ? { code: json.code } : {}) };
+    },
+
+    // RES.3 (REQ-ENG-3) — the phase checkpoint: persist a non-complete research phase's produced
+    // versions so a retry/re-drive resumes them (same wire shape as harvest minus the usage row).
+    async checkpoint(args: CheckpointCall) {
+      const { json } = await postJson<{ producedVersionIds?: string[]; byPath?: Record<string, string> }>(
+        `/steps/${encodeURIComponent(args.stepKey)}/checkpoint`,
+        {
+          ordinal: args.ordinal,
+          seat: args.seat,
+          projectId: args.projectId ?? null,
+          personaId: args.personaId ?? null,
+          versions: args.versions.map(toWireVersion),
+        },
+      );
+      return { producedVersionIds: json.producedVersionIds ?? [], byPath: json.byPath ?? {} };
+    },
+
+    // RES.3 — the retry gate's consult: the run's claim-scaled bound minus proxy-metered spend
+    // across all attempts. `null` on a route failure — the loop then trusts the spec-stamped
+    // consult (the gate degrades to the pre-call figure, never to an unbounded retry).
+    async researchBudget(): Promise<ResearchBudgetConsult | null> {
+      const res = await fetch(runUrl("/research-budget"), { headers: authHeaders() });
+      if (!res.ok) return null;
+      return (await res.json().catch(() => null)) as ResearchBudgetConsult | null;
     },
 
     async failStep(args: FailCall): Promise<FailStepResult> {

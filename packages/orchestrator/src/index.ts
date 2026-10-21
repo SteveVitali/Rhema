@@ -30,6 +30,7 @@ export * from "./provision.js";
 export * from "./resolver.js";
 export * from "./user-sources.js";
 export * from "./internal-api.js";
+export * from "./research-budget.js";
 export * from "./runspec.js";
 export * from "./delivery.js";
 export * from "./citation-completeness.js";
