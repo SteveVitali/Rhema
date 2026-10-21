@@ -94,6 +94,16 @@ export interface ComputeArgs {
    */
   googleOauthClientId?: pulumi.Input<string>;
   /**
+   * VERIF.2 — non-prod public origins (plain deploy config, `rhema:appBaseUrl` /
+   * `rhema:apiPublicUrl`): prod derives `appOrigin`/`apiOrigin` from `domains`; previews have
+   * no domains, so they set their own `*.run.app` URLs here. Without `APP_BASE_URL` the api's
+   * `authSecretsReady` gate can never open — Better Auth stays unmounted and `/api/auth/*` 404s
+   * (F-VERIF.2-2, found live on pr-186). `API_PUBLIC_URL` also feeds trustedOrigins and
+   * `INTERNAL_AUTH_AUDIENCE`. Unset ⇒ prior behavior (non-prod simply doesn't set them).
+   */
+  appBaseUrl?: pulumi.Input<string>;
+  apiPublicUrl?: pulumi.Input<string>;
+  /**
    * PRB.17 — the Stripe Payment Link URL (plain deploy config, `rhema:stripePaymentLinkUrl`; a URL is
    * not a secret). The api returns it in `GET /billing/balance` as `paymentLinkUrl`; the web exhaustion
    * panel + billing surface 302 to it on `open_payment_link`. Unset ⇒ the surfaces hide the action.
@@ -154,8 +164,11 @@ export function createCompute(args: ComputeArgs): Compute {
   const name = (suffix: string) => `rhema-${stack}-${suffix}`;
   const domains = cfg.domains; // prod-only (undefined on dev/preview — stage facts)
   // The public origins the stage's domains imply (prod); non-prod services simply don't set them.
-  const appOrigin = domains ? `https://${domains.app}` : undefined;
-  const apiOrigin = domains ? `https://${domains.api}` : undefined;
+  // VERIF.2 — non-prod public origins come from config (`rhema:appBaseUrl`/`rhema:apiPublicUrl`
+  // — the stage's own *.run.app URLs); prod keeps the domains-derived origins. This is what lets
+  // a preview mount Better Auth at all (F-VERIF.2-2).
+  const appOrigin = domains ? `https://${domains.app}` : args.appBaseUrl;
+  const apiOrigin = domains ? `https://${domains.api}` : args.apiPublicUrl;
   const imageFor = (svc: ServiceName): pulumi.Input<string> =>
     args.serviceImages?.[svc] ?? placeholderImage;
 
@@ -812,7 +825,11 @@ export function createCompute(args: ComputeArgs): Compute {
                     ...(requires("better-auth-secret")
                       ? [{ name: "BETTER_AUTH_SECRET_NAME", value: secretVersion(secrets.betterAuthSecret) }]
                       : []),
-                    ...(requires("google-oauth-client-secret")
+                    // VERIF.2 — mount the NAME whenever the container exists on this stack
+                    // (non-prod stacks carry the container + placeholder even though
+                    // `google-oauth-client-secret` is not in `requiredSecrets`; without the env
+                    // the api's authSecretsReady gate stays closed — F-VERIF.2-2).
+                    ...(secrets.byId["google-oauth-client-secret"]
                       ? [
                           {
                             name: "GOOGLE_OAUTH_CLIENT_SECRET_NAME",
@@ -961,8 +978,10 @@ export function createCompute(args: ComputeArgs): Compute {
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
                     // P1.03 — the Page's collab transport: same-origin WSS on the APP host (the
                     // `__Host-` session cookie rides the upgrade; the LB path-routes /collab/*).
-                    ...(appOrigin
-                      ? [{ name: "COLLAB_WS_URL", value: `wss://${domains!.app}/collab` }]
+                    // Only exists when real domains + the LB host map do — a run.app origin
+                    // cannot path-route /collab, so previews omit the wire (static read view).
+                    ...(domains
+                      ? [{ name: "COLLAB_WS_URL", value: `wss://${domains.app}/collab` }]
                       : []),
                   ],
                 }

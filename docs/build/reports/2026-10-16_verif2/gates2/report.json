@@ -1,0 +1,98 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "24e47071bc29",
+  "startedAt": "2026-10-16T05:50:23.471Z",
+  "finishedAt": "2026-10-16T05:51:32.181Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "observed": {
+      "web": null,
+      "api": null
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8336,
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Access to fetch at 'https://storage.googleapis.com/rhema-pr-186-user-content/quarantine/01M51M65MVNT3C1F58K3VSZCXC/01M51M6DDVV5EEZ1YZR9VV8WTG?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-pr-186-api%40rhema-507501.iam.gserviceaccount.com%2F20261016%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261016T055040Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=8ea6dba386e7935f690ac64a800aa605c67cd0b0335694ee37ad13ae3164423cc95371e21e9edb2429a7f6ae2e9effb0fb7a76b67aacff05ea1eae667c4c58327292c0c2441589478de04dcc9b12b5fcb1a70d36017de034c3bd415acf920770d870ab650b21d4e14ec644346170c65e607c738133b9993b9e8294ae98d6918ef1f38a5db4ffbfaa35e106415007ffbc5be6115b63dbc0382610104764588ef8232e399d9de99177c39c95d3f76ba008c29b18690f2901bbad7b92ddc821848fd76661ff7e07c718aabdf634aa54e512edbba9470d40f7181c9c48ca9f70ee966bfc7fc767a258b32ff969ed1e333551549ee0b988ef30dd1201894c4f9c6018' from origin 'https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED"
+      ],
+      "failedRequests": [
+        "PUT https://storage.googleapis.com/rhema-pr-186-user-content/quarantine/01M51M65MVNT3C1F58K3VSZCXC/01M51M6DDVV5EEZ1YZR9VV8WTG?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-pr-186-api%40rhema-507501.iam.gserviceaccount.com%2F20261016%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261016T055040Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=8ea6dba386e7935f690ac64a800aa605c67cd0b0335694ee37ad13ae3164423cc95371e21e9edb2429a7f6ae2e9effb0fb7a76b67aacff05ea1eae667c4c58327292c0c2441589478de04dcc9b12b5fcb1a70d36017de034c3bd415acf920770d870ab650b21d4e14ec644346170c65e607c738133b9993b9e8294ae98d6918ef1f38a5db4ffbfaa35e106415007ffbc5be6115b63dbc0382610104764588ef8232e399d9de99177c39c95d3f76ba008c29b18690f2901bbad7b92ddc821848fd76661ff7e07c718aabdf634aa54e512edbba9470d40f7181c9c48ca9f70ee966bfc7fc767a258b32ff969ed1e333551549ee0b988ef30dd1201894c4f9c6018 net::ERR_FAILED"
+      ],
+      "durationMs": 28574,
+      "error": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator('[data-conversion-form]') to be visible\n",
+      "screenshot": "N3.png"
+    },
+    {
+      "id": "P1.project",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2863,
+      "screenshot": "P1.project.png"
+    },
+    {
+      "id": "P1.runsheet",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3186,
+      "screenshot": "P1.runsheet.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Access to fetch at 'https://storage.googleapis.com/rhema-pr-186-user-content/quarantine/01M51M77PT2C8DKP5SBHAG3T0C/01M51M7H84Y4YXZCKP9B4DKA3V?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-pr-186-api%40rhema-507501.iam.gserviceaccount.com%2F20261016%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261016T055117Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=1115d73aa7b534b87f7133b9d33b215956007d998250a85b99afe9296c46e39c0877880a5c6cbec5e062c9969821458ea46067f71afe8d7c2a54d5044b7e32f23c9a446eebf34d5768fb7ad8c25641125fb01af8b1c306f44cde3001fca456347a1472dc2172a4a24b3cf86a5e6bf97f458ecb99ea28a523ef71fbd0091032c503209f05e6049b2f4e49aa462571ed680d84f887a6a4061fc793220a9672d133b63bcd67e30477f62e3edd5316db0e7263810f03cfbaa09307dd588cb08dba76eeb62de3f9e0a5f1e4b6e6b80385201b4cfd55907b7f997ce35ec1bdaa262b155e521df68b3682d19a2349d7e0450bb7c8cbff3c6572da96266b4d7c4ecfb63a' from origin 'https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED"
+      ],
+      "failedRequests": [
+        "PUT https://storage.googleapis.com/rhema-pr-186-user-content/quarantine/01M51M77PT2C8DKP5SBHAG3T0C/01M51M7H84Y4YXZCKP9B4DKA3V?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=rhema-pr-186-api%40rhema-507501.iam.gserviceaccount.com%2F20261016%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261016T055117Z&X-Goog-Expires=300&X-Goog-SignedHeaders=host%3Bx-goog-content-length-range&X-Goog-Signature=1115d73aa7b534b87f7133b9d33b215956007d998250a85b99afe9296c46e39c0877880a5c6cbec5e062c9969821458ea46067f71afe8d7c2a54d5044b7e32f23c9a446eebf34d5768fb7ad8c25641125fb01af8b1c306f44cde3001fca456347a1472dc2172a4a24b3cf86a5e6bf97f458ecb99ea28a523ef71fbd0091032c503209f05e6049b2f4e49aa462571ed680d84f887a6a4061fc793220a9672d133b63bcd67e30477f62e3edd5316db0e7263810f03cfbaa09307dd588cb08dba76eeb62de3f9e0a5f1e4b6e6b80385201b4cfd55907b7f997ce35ec1bdaa262b155e521df68b3682d19a2349d7e0450bb7c8cbff3c6572da96266b4d7c4ecfb63a net::ERR_FAILED"
+      ],
+      "durationMs": 25312,
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator('li[data-source][data-provider=\"substack_export\"]').first()\n",
+      "screenshot": "T5.png"
+    }
+  ],
+  "passed": false
+}

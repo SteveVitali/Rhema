@@ -586,6 +586,19 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
   });
 
+  it("phone width withholds the desk affordances — bulk controls AND the per-finding Apply (§10.1/Q-1; VERIF.2 F-VERIF.2-3)", async () => {
+    const f = makeFetch({
+      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
+    const root = el()!;
+    // the fixture's suggestion-carrying cards (f_1, f_2) must NOT mount the apply verb at
+    // phone width — P1.dossier's live leg caught it leaking on pr-186.
+    expect(root.querySelector("[data-apply], [data-apply-form]")).toBeNull();
+    expect(root.querySelector("[data-bulk-controls]")).toBeNull();
+    // the disposition verbs stay — the phone arm is "the same five verbs + a note".
+    expect(root.querySelector("[data-disposition-form]")).not.toBeNull();
+  });
+
   it("an unflipped verdict hands the document back to the server", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor({ ...SPA_DOSSIER, "/p/$project/review/$runId": "ssr" }), f.impl);

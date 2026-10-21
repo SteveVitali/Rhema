@@ -245,6 +245,20 @@ async function awaitHeldFile(page: Page, timeoutMs = 15_000): Promise<string> {
  *  later /app/new loads, the file input populated each time. IndexedDB is per-origin per-context, so
  *  the whole leg runs in ONE anonymous context — sessions.signIn's separate context would partition
  *  the hold away (which is also the honest proof the hold is client-side, never account-bound). */
+/** VERIF.2 — fill the signup form's `code` field when the run carries `--invite-code`, mirroring
+ *  `JourneySessions.mint`: invite-mode forms render it required+visible; open-mode hides it in a
+ *  `<details>` disclosure a human would open. No code ⇒ leave the form untouched (open-mode prod
+ *  behaves exactly as before). */
+async function fillInviteCodeIfScoped(page: Page, ctx: StepCtx): Promise<void> {
+  if (!ctx.inviteCode) return;
+  const codeInput = page.locator('input[name="code"]');
+  if (!(await codeInput.isVisible())) {
+    const disclosure = page.locator('details:has(input[name="code"]) > summary');
+    if (await disclosure.isVisible()) await disclosure.click();
+  }
+  await codeInput.fill(ctx.inviteCode);
+}
+
 const N1: StepFn = async (ctx) => {
   const { page } = await ctx.anon();
   await gotoOk(page, ctx.webBaseUrl + "/");
@@ -263,6 +277,10 @@ const N1: StepFn = async (ctx) => {
   const email = freshIdentity(ctx.nonce, "n1held");
   assertTestIdentity(email);
   await page.fill('input[name="email"]', email);
+  // VERIF.2 (F-VERIF.2-5) — invite-mode stages (every preview: `signupMode:"invite"`, previews
+  // never self-serve) require the seeded code on the form's real field — same wire a human
+  // produces, same disclosure rule as the session mint.
+  await fillInviteCodeIfScoped(page, ctx);
   const sentAt = Math.floor(Date.now() / 1000) - 30;
   await page.click('button[name="method"][value="magic_link"]');
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
@@ -316,6 +334,7 @@ const N3: StepFn = async (ctx) => {
   const email = freshIdentity(ctx.nonce, "n3held");
   assertTestIdentity(email);
   await page.fill('input[name="email"]', email);
+  await fillInviteCodeIfScoped(page, ctx);
   const sentAt = Math.floor(Date.now() / 1000) - 30;
   await page.click('button[name="method"][value="magic_link"]');
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
@@ -1632,7 +1651,6 @@ async function rectsOverlap(a: { x: number; y: number; w: number; h: number } | 
 // —— SPA.6 (REQ-VFY-8; design/27 F9): P1 is split per-surface so `--surface` gates exactly the legs
 //    a flip touches (`--steps P1` still selects the whole family by id-prefix). The probes are the
 //    composite's verbatim; shared setup/assert helpers are hoisted.
-const MOBILE_HEADERS = { "sec-ch-ua-mobile": "?1" };
 /** The one mobile UA the phone-capability legs ride (FIX.1 / REQ-FIX-P1D): `sec-ch-ua-mobile`
  *  injected through `setExtraHTTPHeaders` LOSES to Chromium's own desktop UA-CH on the wire —
  *  proven live 2026-10-15 (`data-device="desktop"` under `?1`). A real mobile `userAgent` makes
@@ -1670,13 +1688,24 @@ const assertTargetSize = async (page: Page, sel: string, minPx: number, label: s
   if (bad.length > 0) throw new Error(`${label}: sub-${minPx}px targets: ${bad.join("; ")}`);
 };
 
-/** The signed-in phone prologue the P1 legs share — the returning-user context carrying the mobile
- *  UA hint (`setExtraHTTPHeaders` REPLACES the context's header map — the mobile UA merge is the
- *  only header the leg needs; SPA.28 removed the renderer pin this used to merge back in). */
+/** The signed-in phone prologue the P1 legs share — a REAL mobile context (IPHONE_USER_AGENT +
+ *  isMobile/hasTouch), not the `sec-ch-ua-mobile` hint: the hint loses to Chromium's own desktop
+ *  UA-CH on the wire (FIX.1's live read — `data-device="desktop"` under `?1` on 2026-10-15), so
+ *  every §10.1 sweep under it reads the DESKTOP arm. P1.dossier got the real-UA arm in FIX.1;
+ *  VERIF.2 sweeps the shared prologue the same way (F-VERIF.2-4 — caught live on pr-186 by
+ *  P1.project/P1.runsheet reading the desktop action row). The session carries via storageState;
+ *  the phone context closes with the step's browser teardown. */
 async function p1PhoneProject(ctx: StepCtx): Promise<{ page: Page; slug: string }> {
-  const { context, page } = await ctx.returningUser("a");
-  await context.setExtraHTTPHeaders({ ...MOBILE_HEADERS });
-  await page.setViewportSize(PHONE_VIEWPORT);
+  const { context } = await ctx.returningUser("a");
+  const phone = await ctx.browser.newContext({
+    baseURL: ctx.webBaseUrl,
+    storageState: await context.storageState(),
+    userAgent: IPHONE_USER_AGENT,
+    viewport: PHONE_VIEWPORT,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await phone.newPage();
   await gotoOk(page, `${ctx.webBaseUrl}/app`, ctx);
   await followProjectLink(page, ctx);
   const slug = /^\/p\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1];

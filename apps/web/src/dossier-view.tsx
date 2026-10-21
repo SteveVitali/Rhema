@@ -496,7 +496,12 @@ export function findingControlsFor(
   const gate = applyGate(view);
   return (
     <>
-      {view.suggestion != null && gate.ok ? (
+      {/* VERIF.2 (F-VERIF.2-3) — the per-finding Apply verb rides the SAME §10.1/Q-1 desktop
+          boundary as the bulk controls: compact withholds it (the phone arm is the five
+          disposition verbs + the note). The gate existed for `[data-bulk-controls]` but Apply
+          was missed — the preview's seeded dossier is the first fixture applyable enough to
+          expose it (prod's showcase findings carried no applyable suggestion). */}
+      {view.suggestion != null && gate.ok && compact !== true ? (
         <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} data-apply-form={view.id} style={{ display: "inline" }}>
           <button
             type="submit"

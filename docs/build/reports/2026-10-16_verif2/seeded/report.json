@@ -1,0 +1,78 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "9dfdef0f62bb",
+  "startedAt": "2026-10-16T05:24:00.231Z",
+  "finishedAt": "2026-10-16T05:24:57.853Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "observed": {
+      "web": null,
+      "api": null
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "R6F",
+      "journey": "both",
+      "owner": "SPA.22",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11037,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "R6F.png"
+    },
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 17524,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 17980,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10877,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}

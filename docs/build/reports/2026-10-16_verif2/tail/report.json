@@ -1,0 +1,65 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "32ae3f23fb5a",
+  "startedAt": "2026-10-16T06:10:23.982Z",
+  "finishedAt": "2026-10-16T06:10:33.862Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "e7b21aecb",
+    "observed": {
+      "web": "e7b21aecb",
+      "api": "e7b21aecb"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3469,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "C1",
+      "journey": "both",
+      "owner": "ACT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2062,
+      "screenshot": "C1.png"
+    },
+    {
+      "id": "X1.detail",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 3937,
+      "screenshot": "X1.detail.png"
+    }
+  ],
+  "passed": true
+}

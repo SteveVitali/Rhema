@@ -1,0 +1,53 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "1004177ab867",
+  "startedAt": "2026-10-16T06:10:44.193Z",
+  "finishedAt": "2026-10-16T06:13:22.321Z",
+  "webBaseUrl": "https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-186-api-1a185a3-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "e7b21aecb",
+    "observed": {
+      "web": "e7b21aecb",
+      "api": "e7b21aecb"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 106218,
+      "error": "import: the fork banner never flipped to \"Editing vN\" (the fork/rebind loop did not land)",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 51632,
+      "error": "N9 billing Choose Writer: stayed on https://rhema-pr-186-web-09daf30-tkbl73n3tq-uc.a.run.app/app/settings/billing?notice=stripe_unconfigured — no Stripe-hosted hand-off",
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": false
+}
