@@ -5,6 +5,12 @@
 # (`docs/` or `.gitleaks.toml`) — the fast path cannot claim "same verdict" for a reader
 # without running it. Cheap: ~2–3 min.
 #
+# Build coupling (2026-10-21, hosted proof): the two package-resident files below import
+# workspace code whose exports resolve through `dist/` — the fast head builds the
+# owners' dep closures first (`turbo build --filter=@rhema/security-checks...
+# --filter=@rhema/journeys...` in ci.yml — a remote-cache hit on fast heads). If a
+# future audit entry lives under another package, extend that filter.
+#
 # Recorded audit (2026-10-20, on d79b40b):
 #   candidates — grep -rlE "(docs/|\.gitleaks\.toml)" --include='*.test.ts'
 #     --include='*.test.tsx' --include='*.test.mjs' packages apps scripts infra integration tools

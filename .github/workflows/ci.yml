@@ -109,6 +109,15 @@ jobs:
         if: needs.fast-path.outputs.mode == 'full'
       # R6CI.1 — on a fast-path head the committed docs-reader audit subset still runs: these are
       # the only tests whose verdicts can read deploy-neutral content (scripts/ci/neutral-readers.txt).
+      # R6CI.1: the subset's two packages import workspace code (`@rhema/orchestrator`,
+      # `@rhema/live-clients`, `@rhema/run-task`, journeys' impls) that resolves through
+      # `dist/` — vitest cannot resolve workspace exports on an unbuilt tree. Build just
+      # the subset owners' dep closures; on a fast head the non-docs tree is identical to
+      # the anchored head's by construction, so this is a remote-cache hit (seconds). If
+      # neutral-readers.txt ever lists a file under another package, extend this filter.
+      - name: build subset deps (fast-path heads)
+        if: needs.fast-path.outputs.mode == 'fast'
+        run: pnpm turbo build --filter=@rhema/security-checks... --filter=@rhema/journeys...
       - name: docs-reader subset (fast-path heads)
         if: needs.fast-path.outputs.mode == 'fast'
         run: |

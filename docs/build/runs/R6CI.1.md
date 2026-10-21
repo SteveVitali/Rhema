@@ -199,3 +199,20 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   reason=no-valid-anchor` — correct: the delta since `9871f9f` carries `ci.yml` +
   `.gitleaks.toml` (non-eligible). **Docs-only closeout head follows — the hosted
   fast-path demonstration.**
+- 2026-10-21T00:29Z — **fast path engaged live (run 39521432408 @ `f3dc2a5`):**
+  `CI_MODE=fast`, reason `same-tree anchor ci-pass-a2cfd72db903… (run 39515554971) —
+  75e9faf ancestor, delta all-eligible`; all full legs skipped; decide + verdict
+  notices correct; `ci-anchor` skipped — **no anchor written** (artifact list
+  unchanged). **And the hosted proof caught a real gap:** the docs-reader subset step
+  failed — `secrets-manifests.test.ts`/`observability.test.ts`/`registry.test.ts`
+  import workspace packages (`@rhema/live-clients`, `@rhema/orchestrator`,
+  `@rhema/run-task`, journeys impls) whose exports resolve through `dist/`; a fast
+  head skips `turbo build`, so vitest cannot resolve workspace entries (locally it
+  passed only because the dev tree is built). **Fix:** a fast-gated
+  `pnpm turbo build --filter=@rhema/security-checks... --filter=@rhema/journeys...`
+  step before the subset — the non-docs tree is identical to the anchored head's by
+  construction, so it's a remote-cache hit in seconds (verified locally: 35 tasks,
+  all cached, 77ms); the subset audit file documents the coupling. The fix touches
+  `ci.yml` (non-eligible) → next head forced full → then a second docs head re-proves
+  fast. Fail-closed held end-to-end: a classification error never occurred; a *subset
+  environment* error did, and only on the path the proof exists to exercise.
