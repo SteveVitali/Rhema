@@ -71,12 +71,14 @@
 | dated verdict notes on touched deferral rows | met | DEFERRALS.md dated notes appended to D-SLO.1-5/-7/-8 + D-STB.5b-1; LEDGER OPEN FINDINGS note on `balance_divergence`. Weekly-window rereads stay owed to R6WATCH.1. |
 | read-only prod, tunnel closed, $0 spend, no `--send` | met | IAP tunnel → `postgres` system DSN, SELECT-only session queries, tunnel closed after reads; zero mutations, zero spend. |
 | SLO denominator/target unchanged | met | no `slo.ts` or ops-config edit; the only semantics artifact is the proposed-not-adopted ADR. |
-| ~350 changed lines | met (over by ~15) | ~365 lines excl. the pre-existing untracked digest file; measured at commit. |
+| ~350 changed lines | deviation | 465 changed lines at the code commit (+449/−16); docs-heavy — report (116) + ADR (86) + ledgers/notes dominate; code+tests ≈ 80. |
 | universal phase-gate AC | met | green gate + checks below; ids stamped; ADR-119 for the owned decision; BUILD_INDEX/LEDGER advance lands in closeout. |
 
 ## Evidence log
 
 - `pnpm turbo build lint typecheck` → **135/135 tasks OK** (96 cached).
+- **`ci: pass #202@1fd587b`** (run 39627128194 — all seven legs + `ci-pass` anchor; boundary JSON `docs/build/logs/ci-R6FOR.1.json`).
+- `check-build-memory.sh .` → **0 violations** (8 legacy warnings) · `check-append-only.mjs --base 7c9dc5e` → **OK**.
 - `pnpm test` → **507 files, 5,966 tests passed** (4 skipped) — incl. new `credential.test.ts` family-prefix cases + `showcase.test.ts` fold-invariant.
 - `pnpm check:licenses` OK (822 pkgs) · `check:protocol-markers` OK · `check:no-cookies` OK · `check:spa-budget` OK · `check:spa-env` OK · `check:dom-contract` OK.
 - `adr-index.sh docs/adr` regenerated `docs/adr/README.md` (+1 row, ADR-119).
@@ -90,6 +92,6 @@ See `docs/build/reports/2026-10-21_R6FOR.1/prod-forensics.md` (committed, aggreg
 
 **Self-review (two passes).** P1 — each diff hunk re-read: `isModelAllowed` lowercases both sides and requires the `-` boundary (no `claude-haiku-4-5x` admit; a request shorter than the family still denies); the seed hold carries `source='hold'` + run_id matching the live hold shape; the test's SQL fold mirrors `balanceEffect` deltas exactly (grant/release/refund +avail; hold/expire −avail; hold +held; debit/release −held; debit doesn't touch avail). P2 — gap table cross-checked against the ticket's named items; no SLO code touched; ADR-119 flagged proposed/not-adopted in the ADR itself, the report, the deferral notes, and the PR body.
 
-**Deviations.** (1) `isModelAllowed` defect was found inside the D-SLO.1-8 forensic scope and fixed — it widens the model allowlist to family-prefix semantics the allowlists were authored for; strictly more permissive within a priced family, never across families. (2) ADR-119 is an agent proposal carrying `approved: no` — the ticket's mid-run pause is unavailable to a subagent, so the ADR + prominent flagging substitute per the task brief. (3) ~365 changed lines vs ~350 (docs-heavy: report + ADR + notes).
+**Deviations.** (1) `isModelAllowed` defect was found inside the D-SLO.1-8 forensic scope and fixed — it widens the model allowlist to family-prefix semantics the allowlists were authored for; strictly more permissive within a priced family, never across families. (2) ADR-119 is an agent proposal carrying `approved: no` — the ticket's mid-run pause is unavailable to a subagent, so the ADR + prominent flagging substitute per the task brief. (3) 465 changed lines vs ~350 (docs-heavy: report + ADR + notes; code+tests ≈ 80 lines).
 
 **Spend:** $0 (read-only forensic queries; no `--send`, no paid legs, no inference).
