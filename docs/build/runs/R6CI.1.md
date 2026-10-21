@@ -10,8 +10,9 @@
 - **Requirement ids stamped:** none (operator insert — the Authority block D1–D9 stands in)
 - **Live stage:** CI/Actions surface only · **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-20T22:15:47Z
-- **Closed:** (open)
-- **ci:** (pending — first push is a forced full run; second push is the hosted fast-path proof)
+- **Closed:** (open — docs-only closeout head; final fast-path read pending)
+- **ci:** pass #196@`75e9faf` (run 39515554971, all seven jobs + `ci-pass` anchor) ·
+  dispatch run 39515615073 @ `75e9faf` green · docs-only closeout head in flight
 
 ## Deferrals read
 
@@ -60,17 +61,21 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
 
 ## Acceptance criteria
 
-- [ ] Classifier fail-closed with tests: docs-only head eligible; code head, workflow touch,
+- [x] Classifier fail-closed with tests: docs-only head eligible; code head, workflow touch,
   `.gitleaks.toml`, `docs/build/tools/**`, `record_policy/**`, ambiguous diff, missing/invalid
-  anchor, fast-mode producer → each `full` *(deterministic · engineered)*
-- [ ] `gitleaks` + `check:no-cookies` unconditional on every head *(engineered, hosted)*
-- [ ] `scripts/ci/neutral-readers.txt` committed with the recorded audit grep *(deterministic)*
+  anchor, fast-mode producer → each `full` *(deterministic · engineered — 32/32)*
+- [x] `gitleaks` + `check:no-cookies` unconditional on every head *(engineered — workflow `if:`
+  audit pinned by test; hosted-verified on the full heads; fast-head read appended below)*
+- [x] `scripts/ci/neutral-readers.txt` committed with the recorded audit grep *(deterministic —
+  45/45 subset tests)*
 - [ ] Hosted proofs: full run + anchor artifact → docs head fast-path → dispatch attempt
-  (or `D-R6CI.1-2` with 422 verbatim) *(engineered, hosted)*
-- [ ] `ci-boundary.sh` green at the PR's final head *(deterministic)*
-- [ ] ADR-115 + `docs/development.md` + `D-R6CI.1-1` landed; concurrency + `permissions:`
+  (or `D-R6CI.1-2` with 422 verbatim) *(engineered, hosted — full+dispatch green, anchors live;
+  fast-head read pending)*
+- [ ] `ci-boundary.sh` green at the PR's final head *(deterministic — green @`75e9faf`; re-read
+  at the closeout head pending)*
+- [x] ADR-115 + `docs/development.md` + `D-R6CI.1-1` landed; concurrency + `permissions:`
   pinned; journeys paused with dated marker *(deterministic)*
-- [ ] Universal phase-gate AC *(agentic)*
+- [ ] Universal phase-gate AC *(agentic — validators run at closeout)*
 
 ## Plan
 
@@ -181,3 +186,16 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   `merge-base` resolves, lint passes). Both fixes are required for `workflow_dispatch`
   to function as the D4 full-run forcing function; they ride the next (full-classified)
   push — both touch non-eligible paths, so the fast path is never implicated.
+- 2026-10-21T00:25Z — **both fix-verification runs GREEN on `75e9faf`.** PR run
+  `39515554971` (all seven jobs + `ci-pass` anchor) and — critically — dispatch run
+  `39515615073` (event `workflow_dispatch`, all seven jobs incl. `ci-pass anchor`):
+  gitleaks clean with the pinned fixture literal; the migration lint resolved
+  `origin/main...HEAD` after the unbounded fetch. `workflow_dispatch` is verified as a
+  working on-demand full-run forcing function (D4) — the 2026-10-20 dispatch failure
+  was two pre-existing latent legs, now fixed; `D-R6CI.1-2` stays unwritten (the
+  contract scopes it to a 422). Anchor `ci-pass-a2cfd72d…` (hash of `75e9faf`'s
+  non-docs tree) live from both runs, `expired=false`. Boundary: `ci: pass
+  #196@75e9faf`. The `fast-path` job's decide log on this head: `mode=full
+  reason=no-valid-anchor` — correct: the delta since `9871f9f` carries `ci.yml` +
+  `.gitleaks.toml` (non-eligible). **Docs-only closeout head follows — the hosted
+  fast-path demonstration.**

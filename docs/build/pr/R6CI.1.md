@@ -69,9 +69,11 @@ Authority block is the requirement record (stamped verbatim below).
 - **Duplicate tests.** `contracts`' `vitest run packages/contracts packages/db` + its
   `pnpm --filter … build` dropped (root `pnpm test` covers `packages/**`); the
   `integration` DATABASE_URL/Docker legs stay.
-- **`--maxWorkers=2`** on the unit vitest leg (with `--minWorkers=1` — vitest 2.1.9's
-  default `minWorkers` = cpus−1 conflicts on >3-vCPU hosts). Measured on this PR; kept only
-  if green + faster — numbers in the run ledger.
+- **`--maxWorkers` measurement (AC3) — VERDICT: DROP.** Unit-leg vitest under
+  `--minWorkers=1 --maxWorkers=2`: **40m41s** (run 39508570350) — green but the slowest
+  of four reads (prior unflagged `pnpm test` legs on #195: 40m47s / 32m45s / 27m05s).
+  Not "green + faster" → `pnpm test` restored (the tail is per-file PGlite workers can't
+  split). Numbers + reasoning in `docs/build/runs/R6CI.1.md`.
 - **journeys pause (D7).** Both crons (`5 6 * * *` nightly, `35 4 * * 1` weekly `--paid`)
   commented out with a dated `R6SWP.1`-restore marker; `workflow_dispatch` unchanged.
 
@@ -86,13 +88,22 @@ the delta reading permits. Recorded in ADR-115 + the run ledger.
 
 ## Hosted proofs (this PR is the demonstration)
 
-1. **Code head → full run.** This push touches `ci.yml`; no anchor can vouch → full.
-   Boundary read + `ci-pass-<h>` artifact recorded in `docs/build/runs/R6CI.1.md`.
+1. **Code heads → full runs.** `9871f9f` (run 39508570350, 52m, all seven jobs green)
+   and `75e9faf` (run 39515554971 — the `--maxWorkers` revert + the two dispatch-leg
+   fixes). Anchors `ci-pass-f8d415d7…` and `ci-pass-a2cfd72d…` live (`expired=false`).
+   Boundary: `ci: pass #196@75e9faf`.
 2. **Docs-only head → fast path.** The ledger closeout push: jobs conclude `success`
-   with `CI-FAST-PATH` notices; guards + subset ran; minutes-scale duration.
-3. **`workflow_dispatch` pre-flight.** `gh workflow run ci.yml --ref <branch>` — green
-   run = proof; HTTP 422 (trigger absent on `main` until merge) = `D-R6CI.1-2` with the
-   response verbatim.
+   with `CI-FAST-PATH` notices; guards + subset ran; minutes-scale duration; no anchor
+   written. *(recorded verbatim in `docs/build/runs/R6CI.1.md` once the head lands)*
+3. **`workflow_dispatch` pre-flight → GREEN.** First attempt (run 39508572358 @
+   `9871f9f`) triggered fine (no 422 → `D-R6CI.1-2` unwritten) but surfaced **two
+   pre-existing latent legs** a PR-only graph never exercised: gitleaks scans full
+   history on non-PR events and flagged the `journey2026stb5a` citeproc-key fixture
+   literal (`.gitleaks.toml` now pins it — same class as the two existing fixture
+   entries); the contracts migration lint's `git fetch … --depth=1` left
+   `origin/main...HEAD` without a merge base on `BASE=main` (fetch is now unbounded;
+   the job's checkout was already `fetch-depth: 0`). Both fixes verified by run
+   **39515615073** @ `75e9faf` — all seven jobs green incl. `ci-pass anchor`.
 
 ## Test plan
 
