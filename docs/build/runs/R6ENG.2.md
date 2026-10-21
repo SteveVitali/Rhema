@@ -169,7 +169,10 @@ After the deploy carrying this fix:
   (`fast-path` decide → full; `public-safe`, `contracts`, `typecheck / lint / unit`,
   `integration`, `images (build + scan, pin digests)`) + `ci-pass` anchor written →
   the docs closeout head is fast-path eligible.
-- **CI (closeout head):** (appended after the docs-only push — expected fast path.)
+- **CI (closeout head, FAST path):** `ci: pass #197@3a09735` — run 39535044829, 2m35s
+  wall (`fast-path` decide → `mode: fast` on the `6179d4d` anchor; guards + committed
+  `neutral-readers.txt` audit subset green; a fast run writes no anchor — the code
+  head's `ci-pass` anchor covers this head's identical non-docs tree).
 
 ## Evidence report
 
