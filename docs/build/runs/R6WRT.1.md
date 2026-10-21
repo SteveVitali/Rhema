@@ -18,10 +18,11 @@
   rollback material retained; expires GATE-LAUNCH. **VOID CONDITIONS:** a dry-run/scope mismatch
   voids the pre-authorization FOR THAT ACT (do not execute; record + flag first in report-back);
   a prod incident from an act voids the whole pre-auth.
-- **Started:** 2026-10-21T21:52Z · **Closed:** (pending)
+- **Started:** 2026-10-21T21:52Z · **Closed:** 2026-10-21T22:14Z
 - **Live access:** prod via IAP tunnel → **system-role** `postgres` DSN (`rhema-prod-alloydb-password`);
   reads inside `BEGIN READ ONLY`; the three executes are the only writes, each one transaction.
-- **ci:** (pending)
+- **ci:** pass #205@50ab10c (run 39684299191, fast-path leg; boundary JSON
+  `docs/build/logs/ci-R6WRT.1.json`)
 
 ## Deferrals read
 
@@ -158,6 +159,11 @@
   `pnpm test` 510 files / 6016 passed / 6 skipped; `check:licenses` (822 pkgs),
   `check:protocol-markers` (251 files), `check:no-cookies` (257), `check:spa-budget`,
   `check:spa-env`, `check:dom-contract` — all OK. New pins: 39/39.
+- 2026-10-21T22:12Z — impl commit `50ab10c` (+2,873/−3, 32 files) pushed; PR **#205** opened
+  (base `r6cnt-1-launch-content-prep` — stack preserved; mergePolicy=OPERATOR, not merged).
+- 2026-10-21T22:14Z — ci-boundary: **`ci: pass #205@50ab10c`** (fast-path run 39684299191;
+  JSON `docs/build/logs/ci-R6WRT.1.json`). LEDGER advanced (nextTicket R6SOAK.1, chainTip →
+  this branch), BUILD_INDEX row 211, PHASE LOG done entry; DEFERRALS flips recorded above.
 
 ## Gap table
 
