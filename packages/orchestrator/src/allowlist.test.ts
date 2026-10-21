@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
-import { rosterModelIds, mainModelForTier, routeModelForPhaseClass } from "@rhema/engine";
+import { rosterModelIds, mainModelForTier, routeModelForPhaseClass, buildAgentRoster, TEST_CHEAP_ROUTE_MODEL } from "@rhema/engine";
 import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, CITE_BACKFILL_FETCH_ALLOWANCE, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE, RESEARCH_PARALLELISM } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
@@ -27,6 +27,19 @@ describe("roster ↔ proxy allowlist ↔ rate table alignment (F4)", () => {
         expect(isModelPriceable(CURRENT_RATE_TABLE_VERSION, id!)).toBe(true);
       });
     }
+    // R5ECON.2 (REQ-ECON-12) — the testCheapRoute arm's reachable set: the arm's main-context id AND
+    // every model the cheapRoute roster variant emits must be on the tier's allowlist AND priceable
+    // under the frozen rate table, on EVERY tier the lever can freeze for (it is tier-agnostic).
+    it(`${tier}: the testCheapRoute arm's whole model set is allowlisted AND priceable`, () => {
+      const ids = new Set([
+        TEST_CHEAP_ROUTE_MODEL,
+        ...Object.values(buildAgentRoster({ tier, cheapRoute: true })).map((a) => a.model),
+      ]);
+      for (const id of ids) {
+        expect(allow.has(id)).toBe(true);
+        expect(isModelPriceable(CURRENT_RATE_TABLE_VERSION, id)).toBe(true);
+      }
+    });
   }
 });
 
@@ -200,6 +213,17 @@ describe("authorResearchPreflight (RES.1 — REQ-SPEC-31(3) pair matrix)", () =>
     expect(spec.pairs.every((p) => p.tool === "web_search")).toBe(true);
     const both = authorResearchPreflight({ modelTier: "base", webTools: { search: false, fetch: false } });
     expect(both.pairs).toEqual([]);
+  });
+
+  // R5ECON.2 (REQ-ECON-12) — the preflight pair matrix covers the arm's model on every tier it can
+  // freeze under: a cheap-routed research-class call must have been proven tool-capable before the
+  // run's first paid phase (the matrix is authored off the same MODELS_BY_TIER the proxy admits).
+  it("every tier probes TEST_CHEAP_ROUTE_MODEL × both server tools (the cheap-route pair coverage)", () => {
+    for (const tier of MODEL_TIERS as readonly ModelTier[]) {
+      const spec = authorResearchPreflight({ modelTier: tier, webTools: null });
+      expect(spec.pairs).toContainEqual({ model: TEST_CHEAP_ROUTE_MODEL, tool: "web_search" });
+      expect(spec.pairs).toContainEqual({ model: TEST_CHEAP_ROUTE_MODEL, tool: "web_fetch" });
+    }
   });
 });
 

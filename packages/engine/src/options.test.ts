@@ -69,6 +69,7 @@ const LEVERS = {
   l3PhaseRouting: true,
   l4CacheTtl5m: true,
   l5ResearchEnvelope: true,
+  testCheapRoute: false,
 };
 
 describe("buildQueryOptions (§12.2)", () => {
@@ -201,6 +202,31 @@ describe("buildQueryOptions — the ECON.2 levers", () => {
     // OFF ⇒ flat main model regardless of class.
     expect(buildWith(reqWithLevers({ ...LEVERS, l3PhaseRouting: false }, "research"), "balanced").model)
       .toBe("claude-opus-5");
+  });
+
+  // R5ECON.2 (REQ-ECON-1/2) — the intra-tier cheap route: every phase class's main context
+  // resolves Haiku when the frozen lever is ON; off ⇒ the request is the pre-arm shape bit for bit.
+  it("testCheapRoute: all four phase classes resolve claude-haiku-4-5 on every tier", () => {
+    const on = { ...LEVERS, testCheapRoute: true };
+    for (const cls of ["research", "judge", "generate", "package"] as const) {
+      for (const tier of ["base", "balanced", "frontier"] as const) {
+        expect(buildWith(reqWithLevers(on, cls), tier).model).toBe("claude-haiku-4-5");
+      }
+    }
+    // the arm is the STRONGER route — it overrides L3's per-class table too.
+    const onWithL3 = { ...LEVERS, testCheapRoute: true, l3PhaseRouting: true };
+    expect(buildWith(reqWithLevers(onWithL3, "judge"), "frontier").model).toBe("claude-haiku-4-5");
+    // …and the judge-cell subagents cheap-route with it (the researcher keeps its per-tier model).
+    const agents = buildWith(reqWithLevers(on, "judge"), "balanced").agents;
+    for (const role of ["second-reader", "fidelity-auditor", "gap-analyst", "holdout-calibrator"]) {
+      expect(agents[role]!.model).toBe("claude-haiku-4-5");
+    }
+    expect(agents["researcher"]!.model).toBe("claude-sonnet-5");
+    // OFF / absent ⇒ the arm changes nothing (the pre-arm options shape is preserved bit for bit).
+    expect(buildWith(reqWithLevers({ ...LEVERS, testCheapRoute: false }, "judge"), "base").model)
+      .toBe("claude-sonnet-5");
+    expect(buildWith(reqWithLevers(undefined, "judge"), "base").agents["second-reader"]!.model)
+      .toBe("claude-sonnet-5");
   });
 
   it("L4: the ON arm omits ENABLE_PROMPT_CACHING_1H (5-m TTL); off ⇒ the §12.2 1-h env + advisory", () => {

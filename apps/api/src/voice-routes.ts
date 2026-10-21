@@ -56,6 +56,7 @@ import { normalizeUrl } from "@rhema/hooks";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
 import type { Principal } from "./run-routes.js";
 import { recordAnalyticsEvent } from "@rhema/ledger";
+import { resolveRunCogsLevers } from "./cogs-levers.js";
 import { loadVoiceStatus } from "./voice-status.js";
 import type { Converter } from "./import.js";
 
@@ -1037,6 +1038,9 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       calibration?: boolean;
       /** multi-register voices pick ONE register for the run (§9.6; feeds `inputs.register`). */
       register?: string;
+      /** R5ECON.2 — the per-leg COGS-lever arm (B19C pins `testCheapRoute:false`, REQ-ECON-11);
+       *  honored only on `is_test` workspaces. */
+      cogsLevers?: unknown;
     };
     const tier = body.tier === "full" ? "full" : "quick";
     const modelTier: ModelTier =
@@ -1132,6 +1136,9 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       calibration_status: tier === "quick" ? "untested" : "pending",
       tier,
     };
+    // R5ECON.2 — the same shared lever resolution/freeze as the run route; the B19C registry pin
+    // arrives here as `body.cogsLevers.testCheapRoute === false` (is_test-only, REQ-ECON-11).
+    const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, body.cogsLevers);
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey ?? `voice-build:${personaId}:${deps.ids("idem")}`,
       workflow: "profile_voice",
@@ -1172,11 +1179,13 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         estimateCredits: est.estimateCredits,
         capCredits: est.capCredits,
         modelTier,
+        cogsLevers,
       },
       inputSnapshot: {
         wordCount: ctx.facts.words,
         sampleCount: Object.keys(ctx.facts.sampleSet).length,
         tier,
+        cogsLevers,
       },
       sheetLaunched: body.sheetLaunched !== false,
       lockSetSpec: { personaId },
@@ -1279,6 +1288,8 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       register?: string;
       modelTier?: string;
       idempotencyKey?: string;
+      /** R5ECON.2 — the per-leg COGS-lever arm; honored only on `is_test` workspaces. */
+      cogsLevers?: unknown;
     };
     const plan = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const v = await loadVoiceStatus(tx, { personaId });
@@ -1343,6 +1354,9 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       calibration_status: workflow === "calibrate_voice" ? "pending" : plan.v.snapshot?.calibrationStatus ?? "untested",
       tier,
     };
+    // R5ECON.2 — the shared lever resolution/freeze (refresh/calibrate/reseed legs ride the same
+    // is_test arm; a posted `cogsLevers` is the REQ-ECON-11 opt-out).
+    const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, body.cogsLevers);
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey ?? `voice-update:${personaId}:${deps.ids("idem")}`,
       workflow,
@@ -1373,11 +1387,13 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
           blockedDomains: [],
         },
         ...(typeof body.register === "string" && body.register ? { register: body.register } : {}),
+        cogsLevers,
       },
       inputSnapshot: {
         wordCount: plan.facts.words,
         sampleCount: Object.keys(plan.facts.sampleSet).length,
         scope: route.scope,
+        cogsLevers,
       },
       sheetLaunched: true,
       lockSetSpec: { personaId },
@@ -1741,7 +1757,13 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const body = (await c.req.json().catch(() => ({}))) as { reseed?: boolean; modelTier?: string; idempotencyKey?: string };
+    const body = (await c.req.json().catch(() => ({}))) as {
+      reseed?: boolean;
+      modelTier?: string;
+      idempotencyKey?: string;
+      /** R5ECON.2 — the per-leg COGS-lever arm; honored only on `is_test` workspaces. */
+      cogsLevers?: unknown;
+    };
     const ctx = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const proj = await tx.query(
         `select id, persona_id, persona_profile_snapshot_id from projects where id = $1`,
@@ -1790,6 +1812,8 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         modelTier: "base",
         inputs: { words: 0 },
       });
+      // R5ECON.2 — the shared lever resolution/freeze for the reseed leg.
+      const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, body.cogsLevers);
       const res = await createRun(deps, {
         idempotencyKey: body.idempotencyKey ?? `voice-adopt:${projectId}:${deps.ids("idem")}`,
         workflow: "reseed_charter",
@@ -1811,8 +1835,9 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
           personaId: ctx.personaId,
           profileSnapshotId: ctx.snapshotId,
           priorSnapshotId: ctx.p.persona_profile_snapshot_id,
+          cogsLevers,
         },
-        inputSnapshot: { adopt: true },
+        inputSnapshot: { adopt: true, cogsLevers },
         sheetLaunched: true,
         lockSetSpec: { personaId: ctx.personaId },
       });

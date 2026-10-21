@@ -10,7 +10,7 @@
 import type { AgentTypeKey, CorrespondenceKind, ModelTier, SidecarFilename, WorkflowKey } from "@rhema/contracts";
 import { COGS_FANOUT_BASELINE, COGS_FANOUT_TUNED, MODEL_TIERS, SIDECAR_CONTRACT_HINTS, sanitizeCogsLevers } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
-import { mainModelForTier } from "@rhema/engine";
+import { mainModelForTier, TEST_CHEAP_ROUTE_MODEL } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
 import { recordSubagentLaunch } from "@rhema/mirror";
 import { EMPTY_URL_POLICY, resolveSeatRoots, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
@@ -633,7 +633,10 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       // the manifest paths are project-root-relative; the scoped query reads them at their materialized
       // absolute location under the project root (the same root `request.cwd` names).
       const roots = resolveSeatRoots({ personaId: hyd.personaId ?? undefined });
-      const model = mainModelForTier(tier ?? "base");
+      // R5ECON.2 (REQ-ECON-1) — the cheap-route arm covers the second-reader's scoped launch too:
+      // it is judge-class work, and `subagent_launches.model` must name the SERVED model the proxy
+      // will meter (REQ-ECON-4 — never a tier label inferred at read time).
+      const model = levers.testCheapRoute ? TEST_CHEAP_ROUTE_MODEL : mainModelForTier(tier ?? "base");
       await deps.txRunner.run(args.workspaceId, (tx) =>
         recordSubagentLaunch(tx, { ids: deps.ids, clock: deps.clock }, {
           runId: args.runId,

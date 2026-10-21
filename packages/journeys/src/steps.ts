@@ -24,6 +24,7 @@ import {
 // the IndexedDB draft (sessions.signIn mints a NEW context — a separate storage partition where
 // the hold does not exist). The identities are still test-mailbox-only.
 import { freshIdentity, assertTestIdentity } from "./session.js";
+import { cogsLeversFor } from "./registry.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
 import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
@@ -1003,6 +1004,38 @@ export async function createDraftProject(
   return m[1];
 }
 
+/**
+ * R5ECON.2 (REQ-ECON-11) — install the registry's declared `cogsLevers` pin on a page's launch
+ * POSTs. When the step's registry row pins a lever (N6/R4's `testCheapRoute:false` — model
+ * judgment is the assert, so the `COGS_LEVERS_TEST` default-ON arm must never reach the leg), this
+ * intercept merges the pin into the POST body the real click produces: a JSON body gets the key
+ * merged in, a urlencoded form body gets the field appended — the same `cogsLevers` wire name the
+ * BFF forwards and the api resolves (is_test-only). The pin lands at the wire rather than the DOM
+ * so the launch stays the verbatim user path on BOTH renderers. No pin ⇒ no intercept.
+ */
+async function pinCogsLevers(page: Page, stepId: string, pathRe: RegExp): Promise<void> {
+  const pin = cogsLeversFor(stepId);
+  if (!pin) return;
+  await page.route(pathRe, async (route) => {
+    const req = route.request();
+    if (req.method() !== "POST") return route.continue();
+    try {
+      const type = req.headers()["content-type"] ?? "";
+      if (type.includes("application/json")) {
+        const body = {
+          ...(JSON.parse(req.postData() ?? "{}") as Record<string, unknown>),
+          cogsLevers: pin,
+        };
+        return route.continue({ postData: JSON.stringify(body) });
+      }
+      const body = `${req.postData() ?? ""}&cogsLevers=${encodeURIComponent(JSON.stringify(pin))}`;
+      return route.continue({ postData: body });
+    } catch {
+      return route.continue();
+    }
+  });
+}
+
 /** N6 (RED→green under RES.1; paid) — the planted-error Quick/Base Review end-to-end through the
  *  real surfaces on the funded test tenant (jrn-a): paste the essay → run sheet (rigor=quick,
  *  this-run autorun) → deliver → the dossier shows ≥1 fetched-✓ claim AND the planted error row
@@ -1012,6 +1045,10 @@ export async function createDraftProject(
 const N6: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("N6ESSAY"), PLANTED_ESSAY);
+  // R5ECON.2 (REQ-ECON-11) — the registry pins this leg `testCheapRoute:false`: the planted-error
+  // verdict is the model-judgment assert, so the cheap-route arm must never reach the launch even
+  // when COGS_LEVERS_TEST defaults it ON for the test tenant.
+  await pinCogsLevers(page, "N6", /\/p\/[^/]+\/run(?:\?|$)/);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
   // the ticket's cell is Quick/Base — select the rigor radio explicitly (the query arg pre-selects
   // it; checking makes the intent load-bearing rather than ambient).
@@ -1163,6 +1200,10 @@ const R1: StepFn = async (ctx) => {
 const R4: StepFn = async (ctx) => {
   const { page, context } = await ctx.returningUser("a");
   await page.setViewportSize({ width: 1440, height: 900 });
+  // R5ECON.2 (REQ-ECON-11) — the registry pins this leg `testCheapRoute:false` (the answer's
+  // quality IS the assert): the turn's chat/turns POST carries the opt-out even when
+  // COGS_LEVERS_TEST defaults the arm ON.
+  await pinCogsLevers(page, "R4", /\/p\/[^/]+\/chat\/turns(?:\?|$)/);
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   await followProjectLink(page, ctx);
   // RUN.1 — the Desk renders closed unless a run is live (data-desk="closed"); ⌘J opens it (the

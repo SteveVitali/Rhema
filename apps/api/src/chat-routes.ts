@@ -61,6 +61,7 @@ import {
 import type { OrchestratorDeps, SqlClient, RunState } from "@rhema/orchestrator";
 import { estimatorSpec, estimateCredits } from "@rhema/protocols";
 import { recordAnalyticsEvent } from "@rhema/ledger";
+import { resolveRunCogsLevers } from "./cogs-levers.js";
 import type { Principal } from "./run-routes.js";
 import { showcaseReadOnlyGuard } from "./showcase.js";
 import type { Converter } from "./import.js";
@@ -460,6 +461,9 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
       modelTier?: unknown;
       urlPolicy?: unknown;
       idempotencyKey?: unknown;
+      /** R5ECON.2 — a per-leg COGS-lever arm (`{testCheapRoute:false}` is REQ-ECON-11's opt-out);
+       *  honored only on `is_test` workspaces — sanitized off everywhere else. */
+      cogsLevers?: unknown;
     } | null;
     const message = typeof body?.message === "string" ? body.message.trim() : "";
     if (!message) return c.json({ error: "message required" }, 422);
@@ -504,6 +508,11 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     };
     const urlPolicy = parseUrlPolicy(body?.urlPolicy);
     if (urlPolicy) inputs.urlPolicy = urlPolicy;
+    // R5ECON.2 — the UI-launched-leg path (R4): a chat turn creates a run too, so the SAME
+    // lever resolution + freeze applies — `COGS_LEVERS_TEST` defaults the cheap arm on is_test,
+    // a posted `cogsLevers` is the per-leg opt-out (stripped off-test).
+    const cogsLevers = await resolveRunCogsLevers(deps, principal.workspaceId, body?.cogsLevers);
+    inputs.cogsLevers = cogsLevers;
 
     const res = await createRun(deps, {
       idempotencyKey:
@@ -524,7 +533,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
       rateTableVersion: CURRENT_RATE_TABLE_VERSION,
       phaseClassesUsed: phaseClassesForWorkflow("chat_turn"),
       inputs,
-      inputSnapshot: { threadId, turnId, modelTier: tier },
+      inputSnapshot: { threadId, turnId, modelTier: tier, cogsLevers },
       sheetLaunched: true, // the plan card is the consent — a sent turn is consented
       lockSetSpec: { projectId },
     });

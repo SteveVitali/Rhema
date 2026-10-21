@@ -109,3 +109,24 @@ describe("readApiEnv — PRB.16 auth binding (D-P0.01-3)", () => {
     expect(readApiEnv().identityHeaders).toBe(true);
   });
 });
+
+describe("readApiEnv — ECON.2/R5ECON.2 COGS lever envs", () => {
+  it("COGS_LEVERS parses a JSON lever set; malformed/empty ⇒ undefined (all-off default)", () => {
+    expect(readApiEnv().cogsLevers).toBeUndefined();
+    process.env.COGS_LEVERS = '{"l1PerPhaseWindow":true,"l3PhaseRouting":true,"junk":1}';
+    const env = readApiEnv();
+    expect(env.cogsLevers).toMatchObject({ l1PerPhaseWindow: true, l3PhaseRouting: true });
+    process.env.COGS_LEVERS = "not json";
+    expect(readApiEnv().cogsLevers).toBeUndefined();
+  });
+
+  it("R5ECON.2 — COGS_LEVERS_TEST parses the is_test overlay; unknown-only/malformed ⇒ undefined", () => {
+    process.env.COGS_LEVERS_TEST = '{"testCheapRoute":true}';
+    // the overlay keeps ONLY the named keys — never a full set that would strip the main env's arms.
+    expect(readApiEnv().cogsLeversTest).toEqual({ testCheapRoute: true });
+    for (const bad of ["", "  ", "not json", "{}", '{"bogus":true}', "[true]"]) {
+      process.env.COGS_LEVERS_TEST = bad;
+      expect(readApiEnv().cogsLeversTest, `for ${JSON.stringify(bad)}`).toBeUndefined();
+    }
+  });
+});

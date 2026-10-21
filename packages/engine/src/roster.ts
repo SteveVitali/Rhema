@@ -39,6 +39,16 @@ const RESEARCH_SUB_MODEL: Record<Tier, string> = {
   frontier: "claude-opus-5",
 };
 
+/**
+ * R5ECON.2 (REQ-ECON-1/12) — the `testCheapRoute` arm's model: every phase class's main context
+ * resolves THIS id when the frozen lever is ON. It sits on every tier's `MODELS_BY_TIER` allowlist
+ * and is priceable in the frozen rate table ($1/$5 — the ~3× cache-read cut the arm exists for);
+ * the roster-allowlist alignment test asserts both under the `cheapRoute` roster variant. It is
+ * ALSO the id a routed `usage_records.model` row truthfully carries while `model_tier` keeps the
+ * run's frozen user-facing tier (REQ-ECON-4/5).
+ */
+export const TEST_CHEAP_ROUTE_MODEL = "claude-haiku-4-5" as const;
+
 /** The main-context model for a tier (§12.3). The engine sets it as the top-level `model` (F4) so the CLI does
  *  not fall back to a default that may be off the run's allowlist. */
 export function mainModelForTier(tier: Tier): string {
@@ -96,11 +106,18 @@ export function rosterModelIds(tier: Tier): string[] {
 
 export interface RosterInput {
   readonly tier: Tier;
+  /**
+   * R5ECON.2 — the `testCheapRoute` arm reroutes the judge cells to `TEST_CHEAP_ROUTE_MODEL`
+   * (they are judge-class work; leaving them on the tier main would keep a test run's most
+   * expensive subagents priced at the old route). `researcher` keeps its per-tier model — on
+   * base that is already Haiku, and its bounded-batch contract is costed separately.
+   */
+  readonly cheapRoute?: boolean;
 }
 
 /** Build the five-subagent roster for a tier (§12.2). */
 export function buildAgentRoster(input: RosterInput): Record<string, AgentDef> {
-  const judge = MAIN_MODEL[input.tier];
+  const judge = input.cheapRoute === true ? TEST_CHEAP_ROUTE_MODEL : MAIN_MODEL[input.tier];
   const research = RESEARCH_SUB_MODEL[input.tier];
   return {
     "second-reader": {

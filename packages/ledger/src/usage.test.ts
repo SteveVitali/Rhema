@@ -188,6 +188,37 @@ describe("usageLevel4 — the Advanced drill-down", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]!.credits).toBe(632); // the meter of record — never 632+553+440+631
   });
+
+  it("R5ECON.2 (REQ-ECON-4/5): mixed Sonnet/Haiku rows keep BOTH truths — served model + frozen tier", async () => {
+    // Under the testCheapRoute arm a `base`-tier run lawfully meters `claude-haiku-4-5` rows beside
+    // `claude-sonnet-5` ones while `model_tier` stays 'base' on both. The L4 read carries the row's
+    // own `model` verbatim — consumers group on it for routing truth, never re-derive it from tier.
+    await seedRun(db, { runId: "run_l4mix", workspaceId: WS, projectId: PRJ, workflow: "review" });
+    await inTx(async (tx) => {
+      await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_l4mix','run_l4mix','verification',2,'done',120,1,now(),now())`,
+      );
+      for (const [id, model, credits] of [
+        ["u_mix_haiku", "claude-haiku-4-5", 40],
+        ["u_mix_sonnet", "claude-sonnet-5", 80],
+      ] as const) {
+        await tx.query(
+          `insert into usage_records
+             (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+              model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, 'run_l4mix', 1, 'st_l4mix', 'verifier', 'anthropic', $4, 'base', 1,
+                   100, 50, 0.1, $5, 'proxy')`,
+          [id, WS, BA, model, credits],
+        );
+      }
+    });
+    const rows = await usageLevel4(db.client, WS, "run_l4mix");
+    expect(rows).toHaveLength(2); // the served models stay distinct — never one 'base' row
+    const byModel = new Map(rows.map((r) => [r.model, r]));
+    expect(byModel.get("claude-haiku-4-5")).toMatchObject({ modelTier: "base", credits: 40 });
+    expect(byModel.get("claude-sonnet-5")).toMatchObject({ modelTier: "base", credits: 80 });
+  });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

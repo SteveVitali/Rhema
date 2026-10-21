@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { STEP_REGISTRY, stepById } from "./registry.js";
+import { STEP_REGISTRY, stepById, cogsLeversFor } from "./registry.js";
 import { ALL_IMPLS } from "./impls.js";
 
 // JOURNEY.1 — the registry is THE deliverable-2 artifact: every planning-ledger step, an owner,
@@ -103,6 +103,24 @@ describe("the journey step registry", () => {
   it("stepById resolves", () => {
     expect(stepById("N7")?.owner).toBe("HOT.1");
     expect(stepById("nope")).toBeUndefined();
+  });
+
+  // R5ECON.2 (REQ-ECON-11) — the model-judgment opt-out pins: B19C (mandatory — the assert object
+  // IS the full tier's judgment) + N6/R4 (the planted-error verdict / the turn's answer quality IS
+  // the assert) pin `testCheapRoute:false` so COGS_LEVERS_TEST's default-ON arm never reaches them.
+  it("the model-judgment legs pin testCheapRoute:false (REQ-ECON-11)", () => {
+    for (const id of ["N6", "R4", "B19C"]) {
+      expect(cogsLeversFor(id), id).toEqual({ testCheapRoute: false });
+    }
+    // …and no OTHER leg silently pins — the pin list is the audited opt-out set verbatim.
+    const pinned = STEP_REGISTRY.filter((s) => s.cogsLevers !== undefined).map((s) => s.id).sort();
+    expect(pinned).toEqual(["B19C", "N6", "R4"]);
+    // pins are boolean lever maps — a non-boolean or a pin of an unknown key fails here.
+    for (const s of STEP_REGISTRY) {
+      for (const [k, v] of Object.entries(s.cogsLevers ?? {})) {
+        expect(typeof v, `${s.id}.${k}`).toBe("boolean");
+      }
+    }
   });
 
   // Deliverable 2: "a test asserts every planning-ledger step id exists here with the same owner

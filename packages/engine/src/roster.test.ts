@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass, PHASE_CLASS_MODELS } from "./roster.js";
+import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass, PHASE_CLASS_MODELS, TEST_CHEAP_ROUTE_MODEL } from "./roster.js";
 
 // The subagent roster from the model profile (§12.2, §12.3). Input-scoped roles carry tools:["Read"] and are
 // launched by the orchestrator; only `researcher` fans out in-query with search/fetch.
@@ -43,6 +43,20 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
   it("lifts models by tier (Balanced → Opus judges)", () => {
     const r = buildAgentRoster({ tier: "balanced" });
     expect(r["second-reader"].model).toBe("claude-opus-5");
+  });
+
+  // R5ECON.2 (REQ-ECON-1) — the testCheapRoute arm: judge cells reroute to Haiku, the researcher
+  // keeps its per-tier model (already Haiku at base; its bounded-batch contract is costed apart).
+  it("cheapRoute reroutes the four judge cells to TEST_CHEAP_ROUTE_MODEL, researcher unchanged", () => {
+    const r = buildAgentRoster({ tier: "balanced", cheapRoute: true });
+    for (const role of ["second-reader", "fidelity-auditor", "gap-analyst", "holdout-calibrator"]) {
+      expect(r[role].model).toBe(TEST_CHEAP_ROUTE_MODEL);
+    }
+    expect(r.researcher.model).toBe("claude-sonnet-5");
+    // off ⇒ the tier's judge cell is untouched (the arm is strictly additive).
+    expect(buildAgentRoster({ tier: "balanced", cheapRoute: false })["second-reader"].model)
+      .toBe("claude-opus-5");
+    expect(TEST_CHEAP_ROUTE_MODEL).toBe("claude-haiku-4-5");
   });
 });
 

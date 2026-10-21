@@ -268,6 +268,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("button", "every document", "asserted via getByRole + implicit <button>"),
     u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
     u("saved", "conditional", "server.ts redirects"),
+    u(
+      "cogsLevers",
+      "conditional",
+      "server.ts launch POSTs (run / chat turn / voice build)",
+      "R5ECON.2 (REQ-ECON-11) — the journey-pin field the BFF forwards; the api resolves it is_test-only",
+    ),
     a(
       "data-spa-native",
       "conditional",

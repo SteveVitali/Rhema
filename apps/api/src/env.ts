@@ -4,6 +4,7 @@
 
 import {
   parseCogsLeversEnv,
+  parseCogsLeversTestEnv,
   parseDebitMode,
   parsePurchaseMode,
   parseRefundWindowMode,
@@ -188,11 +189,20 @@ export interface ApiEnv {
   readonly buildGitSha?: string;
   /**
    * ECON.2 (REQ-SPEC-32(c); ADR-087) — the server DEFAULT COGS lever set (`COGS_LEVERS`, a JSON
-   * object of the five lever keys → booleans). Unset/malformed ⇒ all-off (the pre-ECON.2 pipeline);
+   * object of the six lever keys → booleans). Unset/malformed ⇒ all-off (the pre-ECON.2 pipeline);
    * the operator flips a key here once the Stage-B measurement adopts its lever. A client's
    * `inputs.cogsLevers` overrides only on `is_test` workspaces (the measurement arms).
    */
   readonly cogsLevers?: CogsLevers;
+  /**
+   * R5ECON.2 (REQ-ECON-10; ratified Q-ECON.e) — `COGS_LEVERS_TEST`, the is_test-scoped OVERLAY on
+   * `COGS_LEVERS` (same JSON grammar, but only the named keys layer — unset keys inherit the main
+   * env). Deploy posture: `{"testCheapRoute":true}` makes the Haiku-for-Sonnet arm the default on
+   * every test-tenant run — UI-launched legs included — while a per-leg `testCheapRoute:false`
+   * client arm still opts out. Never consulted off-test, and `testCheapRoute` can never freeze ON
+   * there even if the main env names it.
+   */
+  readonly cogsLeversTest?: Partial<CogsLevers>;
 }
 
 function required(name: string): string {
@@ -292,6 +302,12 @@ export function readApiEnv(): ApiEnv {
     // ECON.2 — the COGS lever defaults; malformed JSON fails closed to undefined ⇒ all-off.
     ...(parseCogsLeversEnv(process.env.COGS_LEVERS)
       ? { cogsLevers: parseCogsLeversEnv(process.env.COGS_LEVERS) }
+      : {}),
+    // R5ECON.2 — the is_test-scoped overlay; malformed/absent ⇒ no overlay (test tenants then get
+    // the main default + client arms only). The key-preserving parse is what keeps the overlay an
+    // overlay: `{"testCheapRoute":true}` never silently zeroes the adopted COGS_LEVERS arms.
+    ...(parseCogsLeversTestEnv(process.env.COGS_LEVERS_TEST)
+      ? { cogsLeversTest: parseCogsLeversTestEnv(process.env.COGS_LEVERS_TEST) }
       : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;

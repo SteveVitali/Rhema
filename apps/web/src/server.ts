@@ -1668,6 +1668,9 @@ export function createWebApp(deps: WebDeps): Hono {
         message,
         ...(typeof body.modelTier === "string" ? { modelTier: body.modelTier } : {}),
         ...(typeof body.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
+        // R5ECON.2 — the R4 leg's registry pin rides the same post (`{testCheapRoute:false}`;
+        // is_test-only at the api). A form post carries it as a JSON string; the island as an object.
+        ...(cogsLeversField(body.cogsLevers) ? { cogsLevers: cogsLeversField(body.cogsLevers) } : {}),
       }),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -4450,7 +4453,11 @@ export function createWebApp(deps: WebDeps): Hono {
         estimateCredits: Number(str("estimateCredits")) || 0,
         capCredits: Number(str("capCredits")) || 0,
         rateTableVersion: Number(str("rateTableVersion")) || 1,
-        inputs: {},
+        // R5ECON.2 — a posted `cogsLevers` field (JSON string) is the N6 leg's registry pin; the api
+        // resolves it into `inputs.cogsLevers` on is_test only (REQ-ECON-11's opt-out channel).
+        inputs: {
+          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+        },
         // the sheet's resolved Advanced toggle set — the api freezes it into the run inputs as
         // manifest opt-out flags AND re-derives the estimate from it (PRB.23).
         toggles,
@@ -5941,10 +5948,15 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const personaId = typeof form.voice_persona === "string" ? form.voice_persona : "";
     if (personaId) {
       await deps.dataSource
-        .buildVoice(session, personaId, { tier: "quick", projectId: row.id })
+        .buildVoice(session, personaId, {
+          tier: "quick",
+          projectId: row.id,
+          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+        })
         .catch(() => undefined);
     }
     return mutationOutcome(c, { redirect: `/p/${slug}/run${new URL(c.req.url).search}` });
@@ -6043,7 +6055,10 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     if (intent === "build") {
       const built = await deps.dataSource
-        .buildVoice(session, created.personaId, { tier })
+        .buildVoice(session, created.personaId, {
+          tier,
+          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+        })
         .then(() => true)
         .catch(() => false);
       // The api's gate rejected the build (e.g. Full needs ≥4 samples — the sheet carries at most
@@ -6314,8 +6329,16 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const tier = form.tier === "full" ? "full" : "quick";
-    await deps.dataSource.buildVoice(session, personaId, { tier }).catch(() => undefined);
+    // R5ECON.2 — the B19C pin path: `cogsLevers={testCheapRoute:false}` rides the same post the
+    // Build click makes (the api resolves it is_test-only; REQ-ECON-11's mandatory opt-out).
+    await deps.dataSource
+      .buildVoice(session, personaId, {
+        tier,
+        ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+      })
+      .catch(() => undefined);
     return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
 
@@ -6562,6 +6585,26 @@ function parseUserSourcesField(raw: string): { name: string; url?: string; text?
     else out.push({ name });
   }
   return out.slice(0, 8);
+}
+
+/**
+ * R5ECON.2 (REQ-ECON-10/11) — a posted `cogsLevers` field is the per-leg COGS-lever pin the api
+ * resolves ONLY on `is_test` workspaces (the N6/R4/B19C model-judgment opt-outs). It arrives as a
+ * JSON object on a JSON post or as its JSON-string form on a form post; either way forward the
+ * parsed OBJECT verbatim — malformed ⇒ dropped (the api's sanitize is the authority anyway).
+ */
+function cogsLeversField(raw: unknown): Readonly<Record<string, unknown>> | undefined {
+  let v = raw;
+  if (typeof v === "string") {
+    try {
+      v = JSON.parse(v) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+  return v != null && typeof v === "object" && !Array.isArray(v)
+    ? (v as Readonly<Record<string, unknown>>)
+    : undefined;
 }
 
 /** Build the RunSheetView from the query (beta launcher). Word count is query-driven; the live per-draft

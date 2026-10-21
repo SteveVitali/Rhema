@@ -56,7 +56,10 @@ export interface UsageLevel2 {
   readonly runs: readonly UsageRunLine[];
 }
 
-/** Level 4 row — the phase × seat × model-tier drill-down behind Advanced disclosure (REQ-DATA-42). */
+/** Level 4 row — the phase × seat × model-tier drill-down behind Advanced disclosure (REQ-DATA-42).
+ *  R5ECON.2 (REQ-ECON-4/5): `model` is the SERVED model the proxy priced (under the `testCheapRoute`
+ *  arm a `base` row can read `claude-haiku-4-5`); `modelTier` is the run's frozen user-facing tier.
+ *  A consumer groups on `model` for routing truth — never derives one field from the other. */
 export interface UsageLevel4Row {
   readonly runId: string;
   readonly phase: string;

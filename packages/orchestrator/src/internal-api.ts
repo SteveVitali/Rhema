@@ -9,6 +9,7 @@ import {
   platformCredits,
   PLATFORM_FAULT_RESEARCH_PREFLIGHT,
   type AgentTypeKey,
+  type CogsLevers,
   type GateKind,
   type GateOnExpiry,
   type WorkflowKey,
@@ -137,6 +138,19 @@ export interface OrchestratorDeps {
    * caps + operator flip gate land.
    */
   readonly debitMode?: DebitMode;
+  /**
+   * ECON.2 (REQ-SPEC-32(c); ADR-087) — the server's DEFAULT COGS lever set, env-bound at deploy
+   * (`COGS_LEVERS` JSON; a lever's adopted arm once the Stage-B measurement lands). Unset ⇒ all-off,
+   * the pre-ECON.2 shape. A client's `inputs.cogsLevers` may override only on `is_test` workspaces.
+   */
+  readonly cogsLevers?: Partial<CogsLevers>;
+  /**
+   * R5ECON.2 (REQ-ECON-10; ratified Q-ECON.e) — the deploy's `COGS_LEVERS_TEST` overlay: the
+   * is_test-SCOPED default set layered over `cogsLevers` on flagged workspaces only — this is how a
+   * UI-launched test leg picks up the `testCheapRoute` arm without carrying it. Never consulted on
+   * a non-test workspace. A per-leg `testCheapRoute:false` client arm still wins on is_test.
+   */
+  readonly cogsLeversTest?: Partial<CogsLevers>;
 }
 
 /** The settlement parameters for one Unverified delivery (RES.2) — passed to `deps.settleUnverified`. */
