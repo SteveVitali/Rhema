@@ -62,7 +62,7 @@ unresolved-possible: 1. **Materiality: every involved account is operator/staff-
 
 ## Evidence log
 
-- **`ci: pass #203@d4fb949`** — code head full green (run 39648055347, all seven legs + `ci-pass` anchor; boundary JSON `docs/build/logs/ci-R6FOR.2.json`, head-bound to `d4fb949`).
+- **`ci: pass #203@d4fb949`** — code head full green (run 39648055347, all seven legs + `ci-pass` anchor; boundary JSON `docs/build/logs/ci-R6FOR.2.json`, head-bound to `d4fb949`); closeout head `1a74994` all-seven green (run 39656453334; boundary JSON `docs/build/logs/ci-R6FOR.2-closeout.json`).
 - `pnpm turbo build lint typecheck` → **135/135 tasks OK** (all cached).
 - `pnpm test` → **508 files, 5,978 tests passed** (4 skipped) — incl. `scripts/live/rls-exposure-forensics.test.mjs` (12 tests).
 - `pnpm check:licenses` OK (822 pkgs) · `check:protocol-markers` OK (251 files) · `check:no-cookies` OK (257 files) · `check:spa-budget` OK · `check:spa-env` OK (115 srcs/146 artifacts) · `check:dom-contract` OK.

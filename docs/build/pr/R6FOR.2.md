@@ -68,7 +68,7 @@ signup funnel count as real.
 - Script unit tests — 12/12; live run over prod system-role DSN (IAP tunnel, SELECT-only)
 - Six `check:*` gates green; gitleaks clean; manual PII sweep over the diff recorded
 - `check-build-memory.sh` 0 violations · `check-append-only.mjs --base 5b09e35` OK
-- CI: recorded in `runs/R6FOR.2.md` + `docs/build/logs/ci-R6FOR.2.json`
+- CI: **`ci: pass #203@d4fb949`** code head (run 39648055347, all seven legs + `ci-pass` anchor); closeout head `1a74994` all-seven green (run 39656453334) — boundary JSONs under `docs/build/logs/`
 
 ## Out of scope honored
 
