@@ -132,7 +132,19 @@ export function isEndpointAllowed(
   return allowlist.endpoints.some((e) => e.host.toLowerCase() === h && path.startsWith(e.pathPrefix));
 }
 
-/** True when `model` is on the run's allowlist. An empty/absent model is NOT allowed (must be explicit). */
+/**
+ * True when `model` is on the run's allowlist. An empty/absent model is NOT allowed (must be
+ * explicit). R6FOR.1: allowlist entries are family names (`MODELS_BY_TIER` carries
+ * `claude-haiku-4-5`) while seats may send the dated API id (`claude-haiku-4-5-20251001`) —
+ * exact `includes` denied those requests live (`model ... is not on the run allowlist` on
+ * three review runs). Match the entry verbatim OR the family + `-` prefix boundary; a suffix
+ * without the dash (`claude-haiku-4-5x`) still denies.
+ */
 export function isModelAllowed(allowlist: { models: readonly string[] }, model: string | undefined): boolean {
-  return typeof model === "string" && model.length > 0 && allowlist.models.includes(model);
+  if (typeof model !== "string" || model.length === 0) return false;
+  const m = model.toLowerCase();
+  return allowlist.models.some((entry) => {
+    const e = entry.toLowerCase();
+    return m === e || m.startsWith(`${e}-`);
+  });
 }

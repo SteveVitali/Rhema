@@ -180,7 +180,14 @@ pointers; substance unchanged.)_
   `objectViewer` only to `rhema-prod-convert@`). **(c) a NEW alert kind pages the catcher:**
   `balance_divergence` (`nightly-assertion`, 2026-10-15T03:15:33Z) — six included-bucket billing
   accounts read `expectedHeld=-3860`/`actual=0` (test-tenant soak accounts are the likely class;
-  classification owed, scope-bound to a BL-07-family follow-up).
+  classification owed, scope-bound to a BL-07-family follow-up). **2026-10-21 (R6FOR.1):**
+  classified — REAL ledger-side defect, not soak noise: all six are `is_test` accounts carrying
+  the SPA.22 `journey-report-seed` `grant+debit` pair with no `hold`; `balanceEffect('debit')`
+  consumes `held` only, so the fold reads avail=+3860/held=−3860 vs the untouched 0/0 balance.
+  Fixed in-branch — `seedDeliveredRunReport` now writes grant→hold→debit + the fold invariant
+  is pinned in `showcase.test.ts`; the six prod rows are fixture contamination on test tenants
+  (no user funds) and clear on the next reconcile after a corrected deploy — no prod write was
+  made. Report: `docs/build/reports/2026-10-21_R6FOR.1/prod-forensics.md`.
 
 ## GATE DECISIONS
 

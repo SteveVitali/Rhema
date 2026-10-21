@@ -231,8 +231,8 @@ describe("the Showcase dossier seed (§15.4)", () => {
   });
 
   // SPA.22 (REQ-VFY-10) — the seeded DELIVERED run report the journeys' R6F free render leg
-  // walks: the dossier fixture plus the ledger/metered facts the report reads — a grant+debit
-  // credit_ledger pair (net 0), `step:<phase>`-keyed proxy usage_records (the metered total —
+  // walks: the dossier fixture plus the ledger/metered facts the report reads — a
+  // grant+hold+debit credit_ledger chain (Σ nets 0), `step:<phase>`-keyed proxy usage_records (the metered total —
   // 4110 cr > the 3860 cr charged so the differences block reasons), and `usage.tick` run
   // events. Slug-idempotent; the workspace's Showcase stays untouched.
   it("the delivered run report seeds metered+ledger facts at $0 and is slug-idempotent", async () => {
@@ -258,8 +258,13 @@ describe("the Showcase dossier seed (§15.4)", () => {
     expect(run.spent_credits).toBe(3860);
     expect(run.cap_credits).toBeGreaterThanOrEqual(3860); // the cap trigger admits the seeded debit
 
-    // the ledger pair: one grant (the seeded top-up the journey user never actually paid) + one
-    // run-scoped debit for 3860 cr — `kind` carries the sign, `credits` stays positive, Σ nets 0.
+    // the ledger chain: one grant (the seeded top-up the journey user never actually paid) +
+    // the run-scoped hold and debit for 3860 cr — `kind` carries the sign, `credits` stays
+    // positive. R6FOR.1: the old grant+debit pair folded to avail=+3860/held=−3860 vs the
+    // untouched 0/0 balance row — prod's six `balance_divergence` accounts. The regression
+    // guard is the fold itself (the same `balanceEffect` deltas packages/ledger folds):
+    // grant +avail; hold −avail/+held; debit −held; release +avail/−held; refund +avail;
+    // expire −avail — and Σ must equal the zeroed `credit_balances` the seed leaves.
     const ledger = (
       await db.query(
         `select kind, credits, run_id, source from credit_ledger order by kind`,
@@ -268,7 +273,22 @@ describe("the Showcase dossier seed (§15.4)", () => {
     expect(ledger).toEqual([
       { kind: "debit", credits: 3860, run_id: r.reviewRunId, source: "run" },
       { kind: "grant", credits: 3860, run_id: null, source: "seed" },
+      { kind: "hold", credits: 3860, run_id: r.reviewRunId, source: "hold" },
     ]);
+    const fold = (
+      await db.query(
+        `select coalesce(sum(case
+            when kind in ('grant','release','refund') then credits
+            when kind in ('hold','expire') then -credits
+            else 0 end),0)::int as available,
+          coalesce(sum(case
+            when kind='hold' then credits
+            when kind in ('debit','release') then -credits
+            else 0 end),0)::int as held
+         from credit_ledger`,
+      )
+    ).rows[0] as { available: number; held: number };
+    expect(fold).toEqual({ available: 0, held: 0 });
 
     // the metered facts: 5 `step:<phase>`-keyed proxy rows (verification dominates →
     // fact_check_dominated fires; second_read rides `balanced` vs the run's `frontier` tier →
@@ -321,7 +341,7 @@ describe("the Showcase dossier seed (§15.4)", () => {
         [workspaceId],
       )
     ).rows[0] as { p: number; u: number; l: number };
-    expect(rows).toEqual({ p: 1, u: 5, l: 2 });
+    expect(rows).toEqual({ p: 1, u: 5, l: 3 });
     // …and the Showcase stays exactly one row — the report seed never touches it.
     const sxN = (
       await db.query(`select count(*)::int n from projects where workspace_id = $1 and showcase`, [

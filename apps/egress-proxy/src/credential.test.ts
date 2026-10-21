@@ -102,4 +102,16 @@ describe("allowlist checks (AC1)", () => {
     expect(isModelAllowed(allowlist, undefined)).toBe(false);
     expect(isModelAllowed(allowlist, "")).toBe(false);
   });
+
+  // R6FOR.1 — prod regression: seats send dated API ids while MODELS_BY_TIER allowlists
+  // carry family names; exact includes denied `claude-haiku-4-5-20251001` on live runs.
+  it("admits a dated id inside an allowlisted family, still refuses family-suffix spoofs", () => {
+    const family = { ...allowlist, models: ["claude-sonnet-5", "claude-haiku-4-5"] };
+    expect(isModelAllowed(family, "claude-haiku-4-5-20251001")).toBe(true);
+    expect(isModelAllowed(family, "claude-sonnet-5-20250929")).toBe(true);
+    expect(isModelAllowed(family, "claude-haiku-4-5")).toBe(true);
+    expect(isModelAllowed(family, "claude-haiku-4-5x")).toBe(false); // no dash boundary
+    expect(isModelAllowed(family, "claude-opus-5-20251101")).toBe(false); // unlisted family
+    expect(isModelAllowed(family, "CLAUDE-HAIKU-4-5-20251001")).toBe(true); // case-insensitive
+  });
 });
