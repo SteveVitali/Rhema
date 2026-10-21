@@ -14,7 +14,8 @@
   **no paid verification leg may run before this lands**, REQ-FND-7 prerequisite)
 - **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-21
-- **Closed:** —
+- **Closed:** 2026-10-21 — **PR #198** (`9f1240d` code head; ci: pass — run 39539400068,
+  all seven legs + `ci-pass` anchor); unmerged, OPERATOR merges bottom-up
 
 ## Deferrals read
 
@@ -214,11 +215,14 @@ classes stay isolated off the bound exactly as the proxy's tracker accounts them
 - [x] `check-build-memory.sh` — 0 violations (7 pre-existing warnings)
 - [x] `check-append-only.mjs --base c9be2f2` — OK (first pass caught a DEFERRALS reorder —
   fixed to a pure append before commit)
-- [ ] PR boundary read verbatim (`ci-boundary.sh --pr <n>`) — recorded at closeout below
+- [x] PR boundary read verbatim — **`ci: pass #198@9f1240d`** (run 39539400068 — all seven
+  legs: typecheck/lint/unit · integration · images+scan+pin · contracts · public-safe
+  (gitleaks/markers/licence) · fast-path · `ci-pass` anchor). First read outlasted the 2700 s
+  bound mid-unit; re-read at 5400 s → pass. Record: `ci-boundary.ULwaHw`.
 
 ## Closeout
 
-- **Branch** `stevevitali/r6eng-3-res3-verification-checkpointing` · PR against
+- **Branch** `stevevitali/r6eng-3-res3-verification-checkpointing` · **PR #198** against
   `stevevitali/r6eng-2-sse-finalize-wakeup` (OPERATOR merges bottom-up — never this run).
 - **Deferrals:** `D-RES.3-1` appended (stays OPEN — paid live half rides the funded wave,
   verbatim recipe preserved); no new rows opened.
