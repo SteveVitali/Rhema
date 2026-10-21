@@ -92,9 +92,16 @@ the delta reading permits. Recorded in ADR-115 + the run ledger.
    and `75e9faf` (run 39515554971 — the `--maxWorkers` revert + the two dispatch-leg
    fixes). Anchors `ci-pass-f8d415d7…` and `ci-pass-a2cfd72d…` live (`expired=false`).
    Boundary: `ci: pass #196@75e9faf`.
-2. **Docs-only head → fast path.** The ledger closeout push: jobs conclude `success`
-   with `CI-FAST-PATH` notices; guards + subset ran; minutes-scale duration; no anchor
-   written. *(recorded verbatim in `docs/build/runs/R6CI.1.md` once the head lands)*
+2. **Docs-only head → fast path — VERIFIED.** Run **39527121424** @ `86256c3`,
+   ~3 min: `decide: mode=fast reason=same-tree anchor ci-pass-67f4c9e8f421… (run
+   39521815554) — 94d560e ancestor, delta all-eligible`; scoped dep build 35/35
+   cache-hit; subset **5 files / 45 tests** green; gitleaks + `check:no-cookies` ran;
+   `CI-FAST-PATH` notices + step-summary lines on every job; `ci-anchor` printed
+   `no anchor written (fast runs never produce anchors)` — artifact set unchanged;
+   all seven jobs conclude `success`. Boundary `ci: pass #196@86256c3`. (The first
+   fast head caught a real gap — the subset's workspace imports need `dist/` — fixed
+   by the fast-gated scoped `turbo build`; details + the honest failure log are in the
+   run ledger.)
 3. **`workflow_dispatch` pre-flight → GREEN.** First attempt (run 39508572358 @
    `9871f9f`) triggered fine (no 422 → `D-R6CI.1-2` unwritten) but surfaced **two
    pre-existing latent legs** a PR-only graph never exercised: gitleaks scans full

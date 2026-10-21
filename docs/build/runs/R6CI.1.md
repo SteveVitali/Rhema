@@ -10,9 +10,14 @@
 - **Requirement ids stamped:** none (operator insert — the Authority block D1–D9 stands in)
 - **Live stage:** CI/Actions surface only · **Production mutations:** none · **Gate status:** none
 - **Started:** 2026-10-20T22:15:47Z
-- **Closed:** (open — docs-only closeout head; final fast-path read pending)
-- **ci:** pass #196@`75e9faf` (run 39515554971, all seven jobs + `ci-pass` anchor) ·
-  dispatch run 39515615073 @ `75e9faf` green · docs-only closeout head in flight
+- **Closed:** 2026-10-21T01:32Z — this commit's own head (`docs/` only) rides the fast
+  path again; its run is read at hand-off, never presumed
+- **ci:** pass #196@`86256c3` — **fast path verified end-to-end hosted** (run
+  39527121424, ~3 min: `mode=fast` same-tree anchor `ci-pass-67f4c9e8…`/94d560e
+  ancestor/delta all-eligible · scoped build 35/35 cache-hit · subset 45/45 · gitleaks
+  + no-cookies ran · all seven jobs success · no anchor written). Full runs:
+  39508570350 @`9871f9f`, 39515554971 + dispatch 39515615073 @`75e9faf`,
+  39521815554 @`94d560e` — all green, anchors live
 
 ## Deferrals read
 
@@ -68,14 +73,17 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   audit pinned by test; hosted-verified on the full heads; fast-head read appended below)*
 - [x] `scripts/ci/neutral-readers.txt` committed with the recorded audit grep *(deterministic —
   45/45 subset tests)*
-- [ ] Hosted proofs: full run + anchor artifact → docs head fast-path → dispatch attempt
-  (or `D-R6CI.1-2` with 422 verbatim) *(engineered, hosted — full+dispatch green, anchors live;
-  fast-head read pending)*
-- [ ] `ci-boundary.sh` green at the PR's final head *(deterministic — green @`75e9faf`; re-read
-  at the closeout head pending)*
+- [x] Hosted proofs: full run + anchor artifact → docs head fast-path → dispatch attempt
+  *(hosted-verified: three green full heads + anchors `f8d415d7`/`a2cfd72d`/`67f4c9e8`;
+  dispatch green run 39515615073; fast head `86256c3` ~3 min with all seven jobs
+  success + no anchor)*
+- [x] `ci-boundary.sh` green at the PR's final head *(deterministic —
+  `ci: pass #196@86256c3`, all seven legs @ run 39527121424)*
 - [x] ADR-115 + `docs/development.md` + `D-R6CI.1-1` landed; concurrency + `permissions:`
   pinned; journeys paused with dated marker *(deterministic)*
-- [ ] Universal phase-gate AC *(agentic — validators run at closeout)*
+- [x] Universal phase-gate AC *(agentic — `date -u` timestamps throughout; exact-head CI
+  reads; layer labels; append-only growth; no secrets; harness
+  devin-desktop/swe-2-high/subagent stamped in the header; validators below)*
 
 ## Plan
 
@@ -223,3 +231,12 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   `scripts/ci/neutral-readers.txt` (non-eligible) → forced full, correct. Docs head
   #2 (this commit: ledger/ADR/PR-record updates only — every path under eligible
   `docs/`) is the fast-path re-demonstration.
+- 2026-10-21T01:32Z — **FAST PATH VERIFIED END-TO-END (run 39527121424 @ `86256c3`,
+  ~3 min):** `decide: mode=fast reason=same-tree anchor ci-pass-67f4c9e8f421… (run
+  39521815554) — 94d560e ancestor, delta all-eligible`; scoped build 35/35 cache-hit;
+  docs-reader subset 5 files/45 tests green; `public-safe` ran gitleaks (`no leaks
+  found`) + `check:no-cookies` unconditionally; `CI-FAST-PATH` notices + step-summary
+  lines on every job; `ci-anchor` printed `no anchor written (fast runs never produce
+  anchors)` — artifact list unchanged (4 `ci-pass-*`, none from this run); all seven
+  jobs conclude `success`. Boundary: `ci: pass #196@86256c3`. This commit's own head
+  is docs-only again — a second consecutive fast-path read is taken at hand-off.
