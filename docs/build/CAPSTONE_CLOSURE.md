@@ -200,3 +200,138 @@ keeps `PARTIAL` (honest: the live leg is owed), now carrying its named covering 
 - ADRs: ADR-108 (the twin-flagged handoff — the only owned decision this run).
 - **Build state: IN_PROGRESS.** `nextTicket` → `GATE-ACCEPT.SPA`. Nothing is merged; nothing
   is claimed DONE.
+
+---
+
+# R5CAP.3 — Capstone closure, round 5 (post-SPA disposition) — 2026-10-17
+
+> **R5CAP.3 deliverable** (`docs/tickets/169_R5CAP.3__capstone-closure.md`). The round-5
+> closure: every gap R5CAP.1 routed (`docs/build/reports/CAPSTONE_GAP_ANALYSIS_R5.md` §
+> "Routings summary") is dispositioned here — fixed, deferred-with-compensating-control,
+> or proposed as a signed-deviation candidate for `170_GATE-ACCEPT.R5`. Companion records:
+> `docs/build/COVERAGE_MATRIX.csv` (752 ids; unchanged except the REQ-G1-1 evidence cite);
+> `docs/build/runs/R5CAP.3.md`; the named DEFERRALS carriers in §R5.2/§R5.3.
+>
+> **Run mode: offline-only, $0.** No deploy, no prod contact, no prod mutations,
+> mergePolicy OPERATOR. R5CAP.1 routed **nothing an offline ticket can fix** — every
+> routed item binds an operator ruling/execution, a clock, an empty cohort, or a named
+> in-chain ticket. Nothing below claims live verification that wasn't observed. The build
+> is **NOT DONE** — the next chain row is the operator-signed `GATE-ACCEPT.R5` (row 170).
+
+## R5.0 What landed this run — and the honest scope statement
+
+Unlike SPACAP.3 (which carried one real code fix, G2), round 5's routed set contains **no
+in-tree fixable item**:
+
+- The three MISSING rows (REQ-MEM-6/7/8 — the `frontend-spa-spec.md` §7/§14 +
+  `rhema-design-spec.md` supersession-banner fold-back) are assigned by the manifest's own
+  decomposition to **R5REC.2** (row 172, the spec-reconciliation ticket). Landing them here
+  would be scope creep against the decomposition, not a fix.
+- The five PARTIAL rows each bind a live stage (merge/deploy, a preview posture class,
+  prod IAM), an operator ruling, or an unspent budget — dispositions, not defects.
+- The carried funded wave is an operator-ruled disposition (GD-FUNDED.1-1 CARRY), not
+  unmet engineering.
+- The small honest fixes the round produced already landed *inside* their owning tickets
+  (NAVC.1's `/voices/`→`/v/` dead-link; FIX.1's leg repairs; VERIF.1's `randomUUID`→ULID
+  seed fix; VERIF.2's F-VERIF.2-3 phone-dossier `[data-apply]` leak + F-VERIF.2-7 fetcher
+  clock flake). Nothing was saved for the closure.
+
+So this run is disposition-only by construction: **zero DEFERRALS flips, zero test
+relaxations, zero fabricated closes** — and a drafted, unsigned deviations register.
+
+## R5.1 Routed-gap dispositions (every R5CAP.1 routing, 1:1)
+
+| routed item | R5CAP.1 verdict | disposition | evidence / carrier |
+|---|---|---|---|
+| REQ-OPS-3 CDN-signed usercontent delivery | PARTIAL → `deferral:D-R5OPS.1-2` | **deferred → deviation row 7** | `reports/2026-10-15_R5OPS.1/usercontent-cdn-verify.json` — signed/unsigned/corrupted probes all GCS `AccessDenied` 403; config verified (`enableCdn`+`USE_ORIGIN_HEADERS`+`signedUrlKeyNames=[rhema-tools-key]`); repair = a delivery-contract ruling + origin-read grant (out-of-band, owner-bound) |
+| REQ-OPS-6 first scheduled nightly green | PARTIAL → BL-01/H8 merge sweep + D-SPA.28-1/D-OBS.1-3 | **deferred → deviation row 9** | `journeys.yml` cron `5 6 * * *` exists; scheduled `github.sha` = `main` HEAD ≠ the chain tip — cannot read green on unmerged code; named owner = the operator's merge sweep |
+| REQ-OPS-7 nightly golden | PARTIAL → **GD-R5OPS.1-1 AWAITING** + D-P0.15-4 | **deferred → deviation row 8** | `scripts/live/nightly-golden-driver.mjs` landed fail-closed (`--execute` refuses without `GOLDEN_BUDGET_RULING=approved` + a measured `--scores`); absent-manifest exit-0 marked NON-EVIDENCE. **The ~$150–300/night ruling stays an open operator item — flagged, never answered here.** |
+| REQ-COST-5 + the paused lever set | PARTIAL → `deferral:D-COST.1-3` | **deferred → deviation row 10** | `reports/2026-10-16_COST.1/` — class-A executed ($285.80→$198.32 list-price); the out-of-class set (worker right-size+soak, GKE spot/0, SQL micro, Redis, proxy MIG, HA) needs per-lever rulings; `docs/ops/redis-degradation-analysis.md` bounds the dangerous one |
+| REQ-G1-5 operator bundle remainder | PARTIAL → H8 checklist (named owner) | **deferred → deviation row 11** | `docs/tickets/150_HUMAN-H8__operator-session-bundle.md` — one item discharged (`rhema-nonprod-resend-api-key` seeded 2026-10-16, delegated); ~12 items stay operator-owed, every row named-owned |
+| REQ-MEM-6/7/8 spec fold-back | MISSING → **R5REC.2** (row 172) | **deferred to named in-chain ticket → deviation row 13** | manifest row 172 owns the §7 mechanism amendment + §14 dated defect block + supersession-banner clause; lands immediately after this gate |
+| §5.6 funded wave + F-row executions | dispositioned-carried → **D-CAP.2-1** | **carried → deviation row 6** | `reports/2026-10-16_funded-env/` — attempted at bind, pinned-scope cumulative $80.86/2,430 rows ≥ ~$60, refusal recorded, $0 spent; GD-FUNDED.1-1 ruled CARRY; REQ-FND-7 drivers committed for every non-registry item |
+| REQ-NAVT-5 keepalive leg | MET-ENGINEERED(D-SPA.24-1) | **deferred → deviation row 5** | marker minted (`page-mount.tsx`); R10.keepalive committed `paid:false` `expected:"red"` — needs a domains-bearing stage (collab wire is domains-only) |
+| the 10 other MET-ENGINEERED carriers | NAVC-18/ECON-4 landed substance | **deferred → deviation rows 5/12** | REQ-OPS-4→D-R5OPS.1-1, REQ-COST-1→D-COST.1-1, REQ-COST-6→D-COST.1-2, REQ-FIX-T8→D-FIX.1-1, REQ-FIX-T15/T16→D-FIX.1-2+D-CAP.2-1, REQ-FIX-BL22-T7DEST→D-FIX.1-4, REQ-FIX-BL78-5B4/5B5/M31→D-FIX.1-3 — §R5.2 |
+
+**Result: zero R5CAP.1 routings left undecided** — every row reads fixed (none required),
+deferred-with-compensating-control, or a named deviation row.
+
+## R5.2 The honestly-owed carrier census (re-owed, verbatim)
+
+Every OPEN row the contract names was re-read this run and is re-owed with a dated note on
+its DEFERRALS cell. None was closeable by an offline ticket; none was fabricated.
+
+| carrier | what it still owes | its unblock |
+|---|---|---|
+| D-CAP.2-1 | all 21 `paid:true` legs + §5.6 census items | a fresh operator envelope ruling (re-epoch / raise / carry — GD-FUNDED.1-1) |
+| D-SPA.24-1 | N8 + R10.keepalive collab-wire preview legs | a domains-bearing stage |
+| D-SPA.16-1 / D-SPA.20-1 | N9's billing/run-sheet legs | a Stripe-bearing stage (`stripe_unconfigured` on previews) |
+| D-FIX.1-1 | T8's 410 expired-token arm | operator runs `mint-t8-export.mjs` + binds `JOURNEY_T8_EXPORT_TOKEN` |
+| D-FIX.1-2 | T15/T16 live halves (`paid:true`) | the carried funded wave |
+| D-FIX.1-3 | BL-78 substrate executions + probes | operator `--execute` (prod writes) + the B19B-riding ~$1 probe |
+| D-FIX.1-4 | T16's digest-claim half | the weekly Monday cron — clock-bound |
+| D-OPS.1-1 | signed-in preview legs (session/paid) | deployed tip or test-tenant sessions on non-prod |
+| D-SPA.6-1 | the prod SSR `--expect-renderer` arm | the merge/deploy of the marker-bearing tip |
+| D-COST.1-1 | billed-actuals before/after | D-OPS.2-1 console flip + ~24 h populate |
+| D-COST.1-2 | `import_preview_p95_s` re-probe | real preview-import samples (cohort empty) |
+| D-COST.1-3 | the six paused lever classes | an explicit ruling per lever/class (+ worker soak) |
+| D-SLO.1-5..8 | the four named-red SLOs | real-traffic remediations; targets never re-based |
+| D-BL38.1-1 | the `prod:d5a74cc` short-sha stamp | operator fix-shape ruling (rewrite / re-stamp / accept) |
+| D-BL38.1-2 | `01M3SK38…` purge verify | ~2026-10-30 tombstone+30d — clock-bound |
+| D-R5OPS.1-1 | first-finding ≤4-min query | organic (non-test) signups — cohort empty |
+| D-R5OPS.1-2 | the CDN origin-read repair | delivery-contract ruling + the IAM/deploy arm |
+| D-SPA.28-1 | cleanup-wave entry gate | all flips merged + ≥1 nightly green |
+| D-OBS.1-3 | first scheduled nightly green on the deployed SHA | the merge sweep — `github.sha` = `main` HEAD post-merge |
+| D-OPS.2-1 | the BigQuery billed-actuals export | operator console flip + ~24 h populate (H8-bundle item) |
+| D-P0.15-4 | live nightly golden + manifest | GD-R5OPS.1-1 ruling + a live engine + cohort |
+
+## R5.3 ACCEPTED-deviations list — proposed for operator signature at GATE-ACCEPT.R5
+
+> R5CAP.3 does not sign these. Each row is a deviation the closure **proposes** the
+> operator accept; signature happens at `170_GATE-ACCEPT.R5` (readout
+> `docs/build/readouts/GATE-ACCEPT.R5.md` + a GATE DECISIONS row — both operator-written).
+
+| # | Deviation | What deviates | Why it is sound | Compensating control | Covering row | Sign-off |
+|---|---|---|---|---|---|---|
+| 1 | Intent-preload ships **none** | REQ-NAVM-7's delegated `pointerover`/`focusin` preload + `PRELOAD_SAFE` allowlist is deferred, unscheduled | The spec itself defers it (§2.6): blanket intent-preload is unsafe — fuzzy `**` non-document GETs can side-effect (A5-F3); doc-nav parity keeps clicks correct without it | `defaultPreload:"intent"` removed + the deferral documented at `spa/main.tsx:58`; a named follow-up owns pin-verified `preloadRoute` coverage | follow-up ticket (unnamed; deviation records the deferral) | ☐ operator |
+| 2 | Phone contract boundary **ratified**: dossier stays SPA at phone width | A naive reading of "phone → SSR" would force-SSR the dossier; the contract is narrower — REQ-ED-12 forces SSR only on the five Page-family GETs | Live-verified on `ffbb8ad` (VERIF.1): `/p/:p/review/:runId` is sole-renderer SPA (SPA.27); `spa` + `data-device="phone"` IS the correct verdict; the leg was corrected to reject SSR there | `data-ssr-cause`/`data-device` markers asserted live — phone `/p/showcase/v/working` still serves `ssr`+`ssr-cause="phone"` (`reports/2026-10-15_VERIF.1-thin-legs/`) | D-SPA.28-1 thin-leg evidence; `runs/VERIF.1.md` | ☐ operator |
+| 3 | Paid-leg caps computed **levered-expected** | §5.3 caps assume the post-§5.2 `testCheapRoute` arm (Haiku), with unlevered-measured as the fallback bound where a leg opts out | Q-ECON.e ratified the is_test server-default posture + explicit opt-outs; every opt-out leg (N6/R4/B19C — `testCheapRoute:false`, the model judgment IS the assert) carries its own full-tier cap | `JourneyStep.capUsd` on all 21 paid rows; `finishLeg` enforces `meteredUsd ≤ capUsd` — overrun = run-failing `cap_overrun` + window pause; uncapped legs refuse dispatch (exit 2/3) | `registry.ts` cap column; `runner.ts` enforcement | ☐ operator |
+| 4 | NAVC-18 freshness **asymmetry** by design | `projectPageQuery` gains `staleTime: PAGE_SESSION_IDLE_TTL_MS` while dossier/run-report/run-sheet twins deliberately keep `staleTime: 0` | The mark-read/view twins' GETs ARE the read receipt — a nonzero staleTime would silently skip a mark-read per open; the spec records the trade-off per surface (REQ-NAVT-4 ordering honored) | `queries.ts:1270` vs `:860/:965/:1062`; per-twin census in `runs/NAVC.3.md`; warm-return zero-twin-GET pinned by R10 on pr-186 | `runs/NAVC.3.md`; `journey:R10` | ☐ operator |
+| 5 | Posture-bound preview residuals **honestly re-owed** | 5 of VERIF.2's 44 `paid:false` legs cannot run on a preview: N8/R10.keepalive (collab wire is domains-only), N9 (`stripe_unconfigured`), T8 (operator mint), D-OPS.1-1/D-SPA.6-1 residuals | Preview posture genuinely cannot carry them; VERIF.2 re-owed rather than fabricate — 39/44 green, zero posture violations, every residual named | `expected:"red"` owed-reporting can never silently pass; each row carries its verbatim recipe + named stage prerequisite | D-SPA.24-1; D-SPA.16-1; D-SPA.20-1; D-FIX.1-1; D-OPS.1-1; D-SPA.6-1 | ☐ operator |
+| 6 | The funded wave stays **carried** — $0 spent | The 21-leg `paid:true` wave + §5.6 census items did not execute: the PASSED window refused at bind ($80.86 cumulative ≥ ~$60); operator ruled CARRY (GD-FUNDED.1-1) | The regime is mechanically fail-closed and was exercised end-to-end — dsn/cumulative/headroom/caps/ordering/tenant/exclusions all measured; refusal is the system working, not a gap | `reports/2026-10-16_funded-env/`; REQ-FND-7 drivers committed for every non-registry item; unblock = a fresh envelope ruling | D-CAP.2-1 + constituent carriers (D-FIX.1-2/-3 paid halves; stream-F rows) | ☐ operator |
+| 7 | CDN-signed usercontent delivery is **configured but nonfunctional** | Q-CDN's "verify leg only" arm assumed the signed path worked; the leg found it does not — `AccessDenied` 403 signed/unsigned/corrupted alike | Config verified (`enableCdn`+`USE_ORIGIN_HEADERS`+`signedUrlKeyNames`); the defect is LB→private-bucket origin read denied — out-of-band IAM/contract work, honestly surfaced | `usercontent-cdn-verify.mjs` re-run recipe committed; the named ruling chooses the delivery contract (edge-signed vs api-minted) + the origin-read grant | D-R5OPS.1-2; `usercontent-cdn-verify.json` | ☐ operator |
+| 8 | Golden-run budget ruling stays **AWAITING** | The ~$150–300/night nightly-golden spend (⚑ Q-GOLDEN) was never ruled; the live golden + manifest stay deferred | The driver landed fail-closed — `--execute` refuses without `GOLDEN_BUDGET_RULING=approved` + measured `--scores`; the absent-manifest exit-0 is marked NON-EVIDENCE, so nothing can fabricate a green | `nightly-golden-driver.mjs` + pin; GD-R5OPS.1-1 sits in GATE DECISIONS as an open operator item — flagged here, not answered | D-P0.15-4; GATE DECISIONS 2026-10-15 | ☐ operator |
+| 9 | First nightly green + the prod layer owe to the **merge sweep** | The scheduled nightly can't read green on unmerged code (`github.sha` = `main` HEAD ≠ chain tip); prod still serves pre-chain `ffbb8ad` — every round-5 verdict rests on staging-verified (pr-186) or committed-tree evidence | Merge order is operator-owned (BL-01/H8); no round-5 REQ required prod deployment — the spec's live legs were explicitly preview/prod-arm routed where owed | VERIF.1's `ffbb8ad` SHA-exact pass + VERIF.2's preview wave are the recorded proxies; D-SPA.28-1's nightly clause + D-OBS.1-3 carry the first green | D-SPA.28-1; D-OBS.1-3; BL-01/H8 | ☐ operator |
+| 10 | The ~$50/mo target is **unmet** — $198.32 stands | H9's class authorization covered only scale-to-zero/consolidation; the remaining ~$145 needs the paused redesign classes | Honestly reported, never smoothed: class-A executed inside the ruling ($285.80→$198.32 list-price, before/after committed); every paused lever is a stage-fact flip + `pulumi up` behind its own ruling | `docs/ops/redis-degradation-analysis.md` bounds the Redis design change; the `rhema-prod-budget-50` alert still fires on actuals; billed-actuals reconciliation waits D-OPS.2-1 | D-COST.1-1/-2/-3; `reports/2026-10-16_COST.1/` | ☐ operator |
+| 11 | The H8 operator bundle is **partial** | ~12 items stay operator-owed: merge sweep, invite mint, Stripe live verify, admin key, pen test, exposure review, BL-13/68, BL-30/75, BL-50/51, BL-41/42, D-OPS.2-1, D-MAINT.4-1, cite1-cap-recon | Only the Resend seed discharged (delegated, seeded 2026-10-16 — `rhema-nonprod-resend-api-key` v1); the rest are human/operator acts no worker can perform | `projectStatus` stays IN_PROGRESS; every row is named-owned (the H8 checklist + the census table — none unowned, none floating) | `150_HUMAN-H8` checklist; REQ-G1-5 census row | ☐ operator |
+| 12 | Clock-, cohort-, and ruling-bound residuals | T7 destruction (~30 d clock), D-BL38.1-2 purge verify (~2026-10-30), T16 digest claim (weekly cron), first-finding ≤4-min (no organic signups), `import_preview_p95_s` (zero samples), billed actuals (D-OPS.2-1 console flip), `prod:d5a74cc` fix-shape ruling, the four named-red SLOs | Each is owed on a clock, an empty cohort, or a ruling — not on engineering; every row carries its proxy + verbatim verify recipe | Fire dates ledgered; queries/scripts committed read-only or guarded; D-SLO.1-5..8 targets never re-based — the reds stand | D-FIX.1-4; D-BL38.1-1/-2; D-R5OPS.1-1; D-COST.1-2; D-COST.1-1; D-SLO.1-5..8 | ☐ operator |
+| 13 | Spec fold-back lands **after** this gate | REQ-MEM-6/7/8 (the `frontend-spa-spec.md` §7/§14 + `rhema-design-spec.md` banner amendments) are MISSING at signature time | The manifest assigns them to R5REC.2 (row 172 — the next-but-one chain row); the signed deviations do not conceal the gap, they schedule it | Named owner + decomposed contract; the round-5 ADR lands with it | manifest row 172 (`172_R5REC.2__spec-reconciliation.md`) | ☐ operator |
+| 14 | The whole honestly-owed tail stays OPEN as tracking | Every carrier in §R5.2 + the wider DEFERRALS corpus (D-OPS.2-1, D-MAINT.4-1, historical rows) | Per the GATE-ACCEPT.SPA precedent: scoped OPEN rows are dispositioned by the signatures — tracking items carrying unblock conditions, not gate-blocking | Every row is ledgered in DEFERRALS.md with proxy + unblock + verify recipe; dated re-owal notes appended this run | §R5.2 census; `docs/tickets/DEFERRALS.md` | ☐ operator |
+
+## R5.4 Note items for the signature (not deviations — open operator facts)
+
+- **GD-R5OPS.1-1 is still AWAITING.** The ~$150–300/night golden-run budget ruling
+  (⚑ Q-GOLDEN) is an open operator item carried into this register as deviation row 8 —
+  R5CAP.3 records it; the operator answers it.
+- **GD-FUNDED.1-1 was ruled CARRY** — the funded legs' unblock is a *future* envelope
+  ruling (re-epoch `FUNDED_ROUND_SINCE`, raise `FUNDED_WINDOW_CAP_USD`, or continue
+  carrying). Not a fix, not a defect — a named unblock.
+- **`projectStatus` stays IN_PROGRESS.** REQ-G1-5 is PARTIAL (the H8 bundle remainder) and
+  the carried/open rows of §R5.2 remain ledgered on BACKLOG.csv — the CURRENT STATE close
+  rule ("DONE only when every open row has a landed disposition") is met only in the
+  weaker sense R5CAP.1 recorded: every row has a *landed disposition* (named deferral,
+  named ticket, or named owner). DONE requires the operator's own closure pass.
+
+## R5.5 Verdict & verification record
+
+- Deterministic: `pnpm turbo build lint typecheck` + `pnpm test` green (docs-only diff —
+  counts recorded in `runs/R5CAP.3.md`); `check-build-memory.sh .` 0 violations;
+  `check-append-only.mjs --base ddbd2e7` clean; `check-coverage-matrix` green.
+- Deferral ledger: **zero flips** — 21 contract-named rows re-owed with dated notes
+  (carriers verbatim); no row was closeable offline; none fabricated.
+- Coverage matrix: the REQ-G1-1 row's evidence/owning tickets now cite this closure
+  (`R5CAP.3`); the 752-id union otherwise unchanged.
+- ADRs: none — no owned decision this run (the deviations register drafts; the operator
+  decides at row 170).
+- **Build state: IN_PROGRESS.** `nextTicket` → `GATE-ACCEPT.R5` (row 170 — an operator
+  gate). Nothing is merged; nothing is claimed DONE.
