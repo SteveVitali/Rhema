@@ -1,0 +1,43 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-10-21T21:59:43.096Z",
+  "items": [
+    {
+      "key": "draft",
+      "name": "stale draft 01M3D7E119PP2HA9GP6XT2DG87 (v7, human_upload)",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    },
+    {
+      "key": "deployment",
+      "name": "stray deployments row prod:82179e1",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    },
+    {
+      "key": "account",
+      "name": "review account 14stevevitali+rhema-review@gmail.com (+ seeded Showcase copy)",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    },
+    {
+      "key": "lad",
+      "name": "Library-After-Dark projects (\"The Library After Dark\" + \"The Library After Dark (review test)\")",
+      "status": "absent",
+      "guards": [],
+      "counts": {}
+    }
+  ],
+  "observations": [
+    "LAD-titled project 01M3SK380GQX41RKMD4KVFB34Q \"The Library After Dark (review test)\" on workspace 01M2V3PM11XSF05VJ9G01PM5ZB (tombstoned 2026-09-30T21:41:10.945Z) — out-of-scope, untouched",
+    "additional human_upload draft 01M34Z3C51V3W4G69G454PCHG0 (v1) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M353A7K5GEQSTQR46DX9N163 (v2) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M354HF9HAYF09SVZ9SYDPQZR (v3) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M359SMBXQERPSQH2ZG5G433N (v4) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M35FPR721WH35ZGSQXSQ9CTX (v5) on my-first-project — out-of-scope",
+    "additional human_upload draft 01M35KC9K6N6R2P6EJD19T30E9 (v6) on my-first-project — out-of-scope"
+  ]
+}
