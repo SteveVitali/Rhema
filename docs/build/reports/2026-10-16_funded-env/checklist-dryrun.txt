@@ -1,0 +1,20 @@
+[funded-checklist] §5.5 window-opening checklist (dry-run — no dispatch)
+  PASS dsn         system-role DSN bound + pg_roles probe (rolsuper|rolbypassrls)
+                   ↳ the bound role bypasses RLS — the meter reads real spend
+  FAIL cumulative  cumulative < ~$60 re-authorized round cap (pinned-scope since 2026-10-01)
+                   ↳ $80.86 metered over 2430 flagged-tenant proxy rows vs $60
+  PASS headroom    --headroom <legCapUsd> required (covers the selected legs' summed caps)
+                   ↳ $54.5 declared vs $54.50 required (21 paid leg(s))
+  PASS caps        per-leg cap presence (every selected paid leg declares capUsd) + leg-close enforcement live
+                   ↳ all selected paid legs declare capUsd; the synthetic CapOverrunError probe fires
+  PASS ordering    ordering T9 → launchers → riders → B19C last-and-conditional
+                   ↳ N1 → N2 → N2.invite → N3 → N4 → N7 → N8 → N9 → N10 → R1 → R5 → R6F → R7 → R8.showcase → R8.prefs → R8.inbox → R10 → R10.keepalive → T12F → T13F → T17 → P1.public → P1.project → P1.pill → P1.runsheet → P1.outline → P1.figures → P1.dossier → P1.app-new → C1 → X1.voices → X1.usage → X1.home → X1.inbox → X1.detail → T1 → T2.badge → T2.matrix → T3 → T4 → T5 → T6 → T7 → T8 → T9 → N5 → N6 → N11 → R4 → R6 → B16 → B17 → B18A → B18B → B19A → B19B → R9 → T10 → T11 → T12 → T13 → T14 → T15 → T16 → B19C
+  FAIL tenant      JOURNEY_FUNDED_STABLE_TAG tenant exists, is_test-flagged, purge-fresh
+                   ↳ no workspace for the stable tag — seed it (scripts/live/funded-tenant.mjs) before the gate
+  PASS exclusions  REQ-ECON-6 seed exclusions live (req_jrn_ marker filtered from every guard query)
+                   ↳ FLAGGED_PROXY_SPEND_SCOPE carries the provider_request_id exclusion
+  PASS optouts     testCheapRoute arm live with per-leg opt-outs pinned (B19C/N6/R4 → false)
+                   ↳ B19C/N6/R4 pin cogsLevers.testCheapRoute=false — the model-judgment legs opt out
+  PASS unpaused    funded window unpaused (no cap_overrun sentinel)
+                   ↳ no funded-pause.json sentinel
+[funded-checklist] 7/9 rows pass — cumulative,tenant fail closed

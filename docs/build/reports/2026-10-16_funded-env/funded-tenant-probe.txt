@@ -1,0 +1,9 @@
+[funded-tenant] stable identity test+jrn-a@rhema.tools (JOURNEY_FUNDED_STABLE_TAG=a)
+  user     ABSENT — provision it by signing the identity in through the real magic link (the journeys' JourneySessions.signIn on test+jrn-a@rhema.tools); the tenant's is_test flag lands at provisioning (the TEST_MAILBOX base+tag rule)
+  tenant   ABSENT — no workspace for the identity yet (see the sign-in note above)
+
+[funded-tenant] intended operations:
+  1. purge exemption (freshness arm) — UPDATE workspaces SET created_at = now() WHERE id = '<tenant>' (dry-run — pass --execute to run it)
+  2. the house grant — on the api stage checkout: node dist/admin-cli.js house-grant --billing-account <acct> --credits 10000 --expires 2027-01-14 --note "funded window R5F (≈$60 list-COGS envelope)" (the admin-cli seam owns the ledger rows + audit trail — this script never writes credits)
+
+[funded-tenant] dry-run — no writes. --execute performs only the created_at refresh.
