@@ -62,6 +62,9 @@ function stripComments(src: string): string {
 /** The shipped-surface source files the sweep reads verbatim. */
 const SURFACE_FILES = [
   "apps/web/src/copy.ts",
+  // R6LGL.1 — the legal/trust pages' renderer (its strings live in copy.ts — already scanned —
+  // but the component's own literals count as shipped surface too).
+  "apps/web/src/legal.tsx",
   "apps/web/src/server.ts",
   "packages/contracts/src/notifications.ts",
   "apps/api/src/server.ts",

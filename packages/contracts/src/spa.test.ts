@@ -117,8 +117,20 @@ describe("spaRouteFor — the route → surface map (SPA.3; REQ-BND-4/11)", () =
     }
   });
 
-  it("marks the public documents null-surface — never SPA space (REQ-BND-5)", () => {
-    for (const path of ["/", "/invite", "/pricing", "/signup", "/login", "/showcase"]) {
+  it("marks the public documents null-surface — never SPA space (REQ-BND-5; R6LGL.1 legal docs)", () => {
+    for (const path of [
+      "/",
+      "/invite",
+      "/pricing",
+      "/signup",
+      "/login",
+      "/showcase",
+      "/terms",
+      "/privacy",
+      "/refunds",
+      "/acceptable-use",
+      "/contact",
+    ]) {
       const m = spaRouteFor(path);
       expect(m.surfaces, path).toBeNull();
       expect(m.routeId, path).toBe(path);

@@ -212,6 +212,32 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     n("method", "required", "pages.tsx sign-in form", "google|magic_link channel field"),
     n("code", "conditional", "pages.tsx invite form"),
     n("intent", "conditional", "signup flow fields"),
+    // ---- R6LGL.1 (REQ-LCH-1) — the legal/trust documents (/terms, /privacy, /refunds,
+    // /acceptable-use, /contact): SSR-only like the rest of the public bucket ----
+    a(
+      "data-legal-nav",
+      "required",
+      "legal.tsx publicFooter",
+      "the legal link group every SSR footer carries (brand + the LEGAL_PAGES enumeration)",
+    ),
+    a(
+      "data-legal-page",
+      "conditional",
+      "legal.tsx LegalPage",
+      "the document's routeId on its <article> root (/terms …)",
+    ),
+    a(
+      "data-legal-draft",
+      "conditional",
+      "legal.tsx LegalPage",
+      "the draft banner — emitted while the page's approved flag (LEGAL_PAGES) is false",
+    ),
+    a(
+      "data-legal-placeholder",
+      "conditional",
+      "legal.tsx renderLegalText",
+      "an unfilled ⟦KEY⟧ operator slot (value = the LEGAL_DETAILS key) — retires when filled",
+    ),
   ],
   // ---- hooks that must hold on every surface that emits them ----
   shared: [

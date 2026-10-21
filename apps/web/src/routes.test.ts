@@ -15,9 +15,21 @@ describe("route manifest (§4.2 / REQ-BETA-19)", () => {
     expect(routes.find((r) => r.path === "/signup")!.public).toBe(true);
   });
 
-  it("only /, /invite, /pricing, /signup, /login and /showcase are public; everything else is auth-gated", () => {
+  it("only the funnel + the R6LGL.1 legal documents are public; everything else is auth-gated", () => {
     const publicPaths = routes.filter((r) => r.public).map((r) => r.path).sort();
-    expect(publicPaths).toEqual(["/", "/invite", "/login", "/pricing", "/showcase", "/signup"]);
+    expect(publicPaths).toEqual([
+      "/",
+      "/acceptable-use",
+      "/contact",
+      "/invite",
+      "/login",
+      "/pricing",
+      "/privacy",
+      "/refunds",
+      "/showcase",
+      "/signup",
+      "/terms",
+    ]);
     // the project surfaces are gated
     expect(routes.find((r) => r.path === "/app")!.public).toBe(false);
     expect(routes.find((r) => r.path === "/p/:project")!.public).toBe(false);
@@ -35,6 +47,9 @@ describe("route manifest (§4.2 / REQ-BETA-19)", () => {
     expect(matchAppRoute("/pricing")?.route.path).toBe("/pricing");
     expect(matchAppRoute("/signup")?.route.path).toBe("/signup");
     expect(matchAppRoute("/showcase")?.route.path).toBe("/showcase"); // UX.1 — the public worked-example page
+    for (const p of ["/terms", "/privacy", "/refunds", "/acceptable-use", "/contact"]) {
+      expect(matchAppRoute(p)?.route.path).toBe(p); // R6LGL.1 — the legal documents resolve
+    }
     expect(matchAppRoute("/definitely-not-a-page")).toBeUndefined();
   });
 

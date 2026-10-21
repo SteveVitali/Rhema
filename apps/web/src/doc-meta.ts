@@ -7,6 +7,16 @@
 // caller passes the full PageData, the SPA passes its boot/loader fields.
 
 import { COPY } from "./copy.js";
+import { legalPageFor, type LegalRouteId } from "@rhema/contracts";
+
+/** R6LGL.1 — the legal documents' meta descriptions, keyed by census routeId. */
+const LEGAL_META: Record<LegalRouteId, string> = {
+  "/terms": COPY.meta.terms,
+  "/privacy": COPY.meta.privacy,
+  "/refunds": COPY.meta.refunds,
+  "/acceptable-use": COPY.meta.acceptableUse,
+  "/contact": COPY.meta.contact,
+};
 
 /** The slice of the page read the title table consults — `PageData` satisfies it structurally. */
 export interface DocMetaData {
@@ -49,6 +59,10 @@ export function docMetaFor(pathname: string, data: DocMetaData = {}): {
   if (p === "/signup") return { title: pageTitle("Create your account"), description: COPY.meta.signup };
   if (p === "/login") return { title: pageTitle("Sign in"), description: COPY.meta.signIn };
   if (p === "/showcase") return { title: pageTitle("Showcase"), description: COPY.meta.showcase };
+  // R6LGL.1 (REQ-LCH-1) — the legal/trust documents (public SSR; the title is the census row's
+  // verbatim so `<title>`, the footer label, and the page <h1> can never drift).
+  const legal = legalPageFor(p);
+  if (legal) return { title: pageTitle(legal.title), description: LEGAL_META[legal.routeId] };
   // ---- authenticated app routes ----
   if (p === "/app") return { title: pageTitle("Projects") };
   if (p === "/app/new") return { title: pageTitle("New project") };

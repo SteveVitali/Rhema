@@ -17,6 +17,12 @@ export const COPY = {
     signIn: "Sign in to Rhēma — Google or a magic link, no password.",
     showcase:
       "The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings.",
+    // R6LGL.1 (REQ-LCH-1) — the legal/trust documents' meta descriptions.
+    terms: "The Rhēma Terms of Service — the rules for using the writing-review service.",
+    privacy: "The Rhēma Privacy Policy — what we collect, what happens to your words, and the controls you hold.",
+    refunds: "The Rhēma Refund Policy — how a run's credits move and when they come back.",
+    acceptableUse: "The Rhēma Acceptable Use Policy — what you may upload and what you may do on the service.",
+    contact: "How to reach Rhēma — support, privacy, and legal contact details.",
   },
 
   invite: {
@@ -2322,6 +2328,206 @@ export const COPY = {
     heading: "Something didn't load",
     body: "The page hit an error — try reloading, or open the server-rendered version.",
     retry: "Reload",
+  },
+
+  // ---- R6LGL.1 (REQ-LCH-1; GD-LEGAL.R6 "Agent drafts, you approve" + GD-LEGAL-DETAILS.R6
+  // "Placeholders now"; ADR-118) — the five legal/trust documents' drafted text.
+  // `⟦KEY⟧` marks an operator-fill LEGAL_DETAILS slot (contracts/legal.ts) — legal.tsx renders
+  // each as a visibly-marked placeholder until the operator records the value (HUMAN-H11) and
+  // R6CNT.2 fills the slot; the page's `approved` flag stays false until then. Every statement
+  // below claims only what the code does — the run ledger's review appendix cites the source
+  // (spec section, requirement id, or shipped copy) for each.
+  legal: {
+    /** The footer link-group's accessible label. */
+    footerLabel: "Legal",
+    /**
+     * Shown atop every legal document while its `approved` flag (contracts `LEGAL_PAGES`) is
+     * false — the honesty marker GATE-LAUNCH's `approved: true` retires.
+     */
+    draftBanner:
+      "Draft — the operator has not yet approved this page's text. Slots marked ⟦KEY⟧ are filled before approval.",
+    terms: {
+      lede:
+        "These terms govern your use of Rhēma — the writing-review service operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
+      sections: [
+        {
+          heading: "The service",
+          paragraphs: [
+            "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on.",
+            "The board reviews and proposes; you decide. Every suggested change waits for your approval — the pen stays with you.",
+          ],
+        },
+        {
+          heading: "Your account",
+          paragraphs: [
+            "You sign in with Google or a magic link — there is no password to lose. Keep your sign-in method current and your session yours; you are responsible for activity under your account. Settings lists your active sessions and lets you revoke any of them.",
+          ],
+        },
+        {
+          heading: "Credits and payment",
+          paragraphs: [
+            "Runs draw on credits you add yourself — no card is required to start. Stripe processes payments; Rhēma does not store card numbers.",
+            "Every run shows an estimate and a cap before it starts — the cap is what the run may cost you. The Refund Policy states the full accounting.",
+          ],
+        },
+        {
+          heading: "Your content",
+          paragraphs: [
+            "Your drafts, samples, projects, and voices stay yours. Rhēma does not train models on your content — the Privacy Policy states what happens to your words.",
+            "Settings › Data exports everything you hold in the service and deletes your account when you ask.",
+          ],
+        },
+        {
+          heading: "Acceptable use",
+          paragraphs: [
+            "The Acceptable Use Policy is part of these terms — it covers what you may upload and what you may do with the service.",
+          ],
+        },
+        {
+          heading: "Changes and ending",
+          paragraphs: [
+            "⟦OPERATING_ENTITY⟧ may update these terms; material changes appear on this page before they take effect. You may stop using Rhēma and delete your account at any time; an account that breaks the Acceptable Use Policy may be suspended.",
+          ],
+        },
+        {
+          heading: "Governing law",
+          paragraphs: [
+            "These terms are governed by the laws of ⟦GOVERNING_LAW⟧, without regard to conflict-of-laws rules, and disputes go to the courts of ⟦GOVERNING_LAW⟧ unless applicable law requires otherwise.",
+          ],
+        },
+      ],
+    },
+    privacy: {
+      lede:
+        "This policy states what ⟦OPERATING_ENTITY⟧ collects through Rhēma, what happens to it, and the controls you hold. Write to ⟦CONTACT_EMAIL⟧ or post to ⟦CONTACT_ADDRESS⟧ with questions.",
+      sections: [
+        {
+          heading: "What we collect",
+          paragraphs: [
+            "Account details — your name, email, byline, avatar, and sign-in methods.",
+            "Content — the manuscripts, outlines, and samples you upload or paste, and the projects, drafts, and voices you build.",
+            "Usage and billing — the records a paid service must keep: run costs, credit movements, and invoices.",
+          ],
+        },
+        {
+          heading: "What an integration exposes",
+          paragraphs: [
+            "Substack reads your public archive or an export zip — never your cookies, and a paywalled item is never fetched with a credential. Medium reads your public stories or an export zip. Google Drive reads only the files you pick, under the drive.file scope, for export only.",
+            "Disconnecting an integration removes its credential immediately; imported samples stay unless you remove them on the voice's Samples tab.",
+          ],
+        },
+        {
+          heading: "What happens to your words",
+          paragraphs: [
+            // §14.7 verbatim — pinned identical to `settings.trainingPosture` by legal-pages.test.ts.
+            "Rhema does not train models on your content. Model providers process it under their commercial API terms: Anthropic. During a review the Editor searches the web to check your claims; Rhema limits and monitors what those searches can carry, but a search query is text that leaves Rhema.",
+          ],
+        },
+        {
+          heading: "Sharing",
+          paragraphs: [
+            "We do not sell your information. Stripe processes payments; Anthropic processes content under its commercial API terms. Rhēma staff can view your projects only when you grant access — the Settings › Data toggle, per request, 72 hours, with every grant, access, and revocation logged.",
+          ],
+        },
+        {
+          heading: "Your controls",
+          paragraphs: [
+            "Settings › Data exports everything — every project, voice, draft, and figure as one zip whose download link arrives by email and lives for 7 days.",
+            "The same page carries the privacy toggles — “Exclude my usage from product analytics” and “Allow Rhema staff to view my projects for support (per request, 72 h)” — both off by default, and the delete-account control described below.",
+          ],
+        },
+        {
+          heading: "Retention and deletion",
+          paragraphs: [
+            "Deleting your account starts a 14-day grace period — cancel any time before it ends. After that, Rhēma hard-deletes your content and personal information; anonymized ledger rows and the Stripe customer record are retained as tax law requires — nothing else.",
+            "A deleted project tombstones for 30 days before it is purged. Platform records keep to a fixed schedule — run transcripts 30 days, internal events 30 days, audit records 90 days, usage records and the credit ledger 7 years — and database backups age out on the platform's backup window.",
+          ],
+        },
+        {
+          heading: "Cookies and tracking",
+          paragraphs: [
+            "Rhēma sets the session cookie your sign-in needs and no tracking cookies. Ingestion never asks for or accepts a cookie or any other credential — public endpoints and export zips only.",
+          ],
+        },
+      ],
+    },
+    refunds: {
+      lede:
+        "How a run's credits move and when money comes back — the accounting every run follows. ⟦OPERATING_ENTITY⟧ answers questions at ⟦CONTACT_EMAIL⟧.",
+      sections: [
+        {
+          heading: "How a run is charged",
+          paragraphs: [
+            "Every run shows an estimate and a cap before it starts — the cap is the consent. Starting a run holds the cap amount; as each phase completes, its actual cost is debited against the hold. Finish under the cap and the remainder is released.",
+          ],
+        },
+        {
+          heading: "When credits come back",
+          paragraphs: [
+            "If a run exceeds its cap because of our error, debits stop at the cap — you are not charged for the excess.",
+            "If a run fails, is refused, or is cancelled by us, the debited credits are refunded and the hold releases; the partial results stay with you.",
+            "If you stop a run yourself, you pay for the completed phases and the rest of the hold is released.",
+          ],
+        },
+        {
+          heading: "Asking for a refund",
+          paragraphs: [
+            "For a completed run, ask within 7 days — one refund per quarter is processed without review, and anything beyond that is looked at individually. Write to ⟦CONTACT_EMAIL⟧.",
+            "Refunds restore credits to your Rhēma balance. If you believe a card charge itself is incorrect, write to ⟦CONTACT_EMAIL⟧.",
+          ],
+        },
+      ],
+    },
+    acceptableUse: {
+      lede:
+        "What you may and may not do on Rhēma, operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
+      sections: [
+        {
+          heading: "Your content",
+          paragraphs: [
+            "Upload only material you have the right to work on — your own drafts, or material you are licensed to use. Manuscripts import as .md, .txt, .html, .docx, or .pdf, up to 25 MB per file.",
+          ],
+        },
+        {
+          heading: "Fair use of the service",
+          paragraphs: [
+            "Do not break or probe the service, scrape it, share your sign-in, or use it to break the law or someone else's rights. A magic link is for you alone.",
+          ],
+        },
+        {
+          heading: "Sources and integrations",
+          paragraphs: [
+            "A voice's samples come from your public archive or an export zip — never a paywalled item fetched with a credential, never your cookies. Google Drive contributes only files you pick, for export only. Rhēma never posts to your Substack or Medium.",
+          ],
+        },
+        {
+          heading: "Enforcement",
+          paragraphs: [
+            "Breaking this policy can suspend or close the account. If you think something was refused incorrectly, write to ⟦CONTACT_EMAIL⟧.",
+          ],
+        },
+      ],
+    },
+    contact: {
+      lede:
+        "How to reach ⟦OPERATING_ENTITY⟧ — the operator of Rhēma.",
+      sections: [
+        {
+          heading: "Support",
+          paragraphs: [
+            "Email ⟦CONTACT_EMAIL⟧ for help with your account, billing, or a run.",
+            "Staff can view your projects only when you grant access — the Settings › Data toggle, per request, 72 hours — and every grant, access, and revocation is logged on the same page.",
+          ],
+        },
+        {
+          heading: "Privacy and legal",
+          paragraphs: [
+            "Export, deletion, and privacy questions go to ⟦CONTACT_EMAIL⟧; postal mail goes to ⟦CONTACT_ADDRESS⟧.",
+            "Enterprise? Ask us about a DPA.",
+          ],
+        },
+      ],
+    },
   },
 
   footer: "Rhēma",
