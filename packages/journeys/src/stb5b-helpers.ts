@@ -4,6 +4,7 @@
 // DB/API evidence is folded through. Kept out of stb5b.ts so each piece is unit-testable without
 // a browser or a live stage (the "test fails if the behaviour is removed" rule).
 
+import { STEP_REGISTRY } from "./registry.js";
 import { CapOverrunError } from "./spend-guard.js";
 
 export interface Stb5bAssert {
@@ -12,18 +13,17 @@ export interface Stb5bAssert {
   readonly evidence: string;
 }
 
-/** Per-leg metered USD caps, declared in advance (ticket §In-scope 5 — "its cap stated in
- *  advance"). Cheapest-first; B19C is pre-registered as the first drop — a full-tier
- *  profile_voice build alone is 60% of the ticket's $25 cap and pushes the plan past the ≈$12 aim. */
-export const STB5B_CAPS: Readonly<Record<string, number>> = {
-  B16: 1.0, // pinned review phase:"4" (craft only — intake skipped by the pin)
-  B17: 1.5, // a second pinned review phase:"4" riding the two SSE subscriber legs
-  B18A: 3.0, // full_board review pinned phase:"1" (verification — the fetch-heavy phase)
-  B18B: 4.0, // memo review pinned phase:"1" with the baited user_sources[]
-  B19A: 4.0, // Quick non-preview draft: intake→voice→plan→GATE→edit→draft→consolidation→delivery
-  B19B: 5.0, // a chat_turn seed + the 4-phase outline promotion run to approve_outline + finalize
-  B19C: 15.0, // full-tier profile_voice (pre-registered drop — see the B19C step comment)
-} as const;
+/** Per-leg metered USD caps — R5ECON.3 (REQ-ECON-9): the REGISTRY is the cap authority (the
+ *  §5.3 table verbatim lives on each paid row's `capUsd`); this derived view keeps the old
+ *  spelling so the legs' unit tests read the same figures the dispatch enforces. Declared in
+ *  advance, never raised at leg close. */
+export const STB5B_CAPS: Readonly<Record<string, number>> = Object.freeze(
+  Object.fromEntries(
+    STEP_REGISTRY.filter(
+      (s): s is typeof s & { capUsd: number } => s.id.startsWith("B") && s.capUsd != null,
+    ).map((s) => [s.id, s.capUsd]),
+  ),
+);
 
 /** The ticket's combined Stage B cap — the runner's spend accounting, never raised. */
 export const STB5B_TOTAL_CAP_USD = 25;

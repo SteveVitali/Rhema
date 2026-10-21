@@ -34,6 +34,7 @@ import { ALL_IMPLS } from "./impls.js";
 import { createGmailClient } from "./mailbox.js";
 import { fetchDeployedSha, provenanceMatch } from "./provenance.js";
 import { checkWeeklySpendCap } from "./spend-guard.js";
+import { LEG_CAP_FLOOR_USD } from "./window-plan.js";
 import { journeyNonce } from "./nonce.js";
 import { runJourneys, type JourneyReport } from "./runner.js";
 
@@ -137,6 +138,23 @@ const steps = STEP_REGISTRY.filter(
 if (steps.length === 0) {
   console.error("no steps selected");
   process.exit(2);
+}
+
+// R5ECON.3 (REQ-ECON-9) — cap PRESENCE on the dispatch set: the registry is the cap authority
+// (the §5.3 table on each paid row's `capUsd`); a paid step carrying no declared cap — or one
+// under the $0.50 floor — is a registry error the dispatch refuses BEFORE any network work
+// (exit 2 — a misuse, never a leg outcome).
+if (paid) {
+  const uncapped = steps.filter(
+    (s) => s.paid && !(Number.isFinite(s.capUsd) && (s.capUsd ?? 0) >= LEG_CAP_FLOOR_USD),
+  );
+  if (uncapped.length > 0) {
+    console.error(
+      `paid dispatch refused: ${uncapped.map((s) => s.id).join(",")} declare no capUsd ≥ $${LEG_CAP_FLOOR_USD} — ` +
+        `REQ-ECON-9 requires every paid leg's cap stated in advance on its registry row`,
+    );
+    process.exit(2);
+  }
 }
 
 // R5ECON.1 (REQ-ECON-8/9) — the paid-dispatch posture, decided in cli-flags (the refusal table

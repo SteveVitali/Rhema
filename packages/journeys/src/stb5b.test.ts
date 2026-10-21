@@ -4,7 +4,7 @@
 // evaluator (happy path + each assert's negative — the "fails if the behaviour is removed" rule).
 
 import { describe, expect, it } from "vitest";
-import { STEP_REGISTRY } from "./registry.js";
+import { legCapUsdFor, STEP_REGISTRY } from "./registry.js";
 import { CapOverrunError } from "./spend-guard.js";
 import { STB5B_IMPLS } from "./stb5b.js";
 import {
@@ -32,13 +32,22 @@ import {
 
 // ---------------------------------------------------------------- caps
 
-describe("per-leg caps", () => {
-  it("every leg has a cap declared in advance and the runnable set stays inside the $25 combined cap", () => {
-    for (const id of ["B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C"]) {
-      expect(STB5B_CAPS[id], id).toBeGreaterThan(0);
+describe("per-leg caps (REQ-ECON-9 — the §5.3 table verbatim on the registry)", () => {
+  // §5.3 verbatim (basis levered-expected; unlevered-measured is the opt-out fallback).
+  const FIVE_THREE: Readonly<Record<string, number>> = {
+    B16: 0.5, B17: 1.0, B18A: 1.0, B18B: 1.0, B19A: 3.5, B19B: 1.5, B19C: 15.0,
+  };
+  it("every STB.5b leg's registry row carries the §5.3 capUsd verbatim", () => {
+    for (const [id, cap] of Object.entries(FIVE_THREE)) {
+      expect(legCapUsdFor(id), id).toBe(cap);
+    }
+  });
+  it("the derived STB5B_CAPS view reads the same registry figures and the runnable set stays inside the legacy $25 combined cap", () => {
+    for (const id of Object.keys(FIVE_THREE)) {
+      expect(STB5B_CAPS[id], id).toBe(FIVE_THREE[id]);
     }
     // B19C is the pre-registered drop — the remaining legs must fit the ticket cap.
-    const runnable = Object.entries(STB5B_CAPS)
+    const runnable = Object.entries(FIVE_THREE)
       .filter(([id]) => id !== "B19C")
       .reduce((a, [, v]) => a + v, 0);
     expect(runnable).toBeLessThanOrEqual(STB5B_TOTAL_CAP_USD);
@@ -399,10 +408,9 @@ describe("STB.5b step wiring", () => {
       expect(STB5B_IMPLS[id]).toBeTypeOf("function");
     }
   });
-  it("cheapest-first: registry order places the legs cheapest→dearest by declared cap", () => {
+  it("§5.3 row order: registry order matches the cap table's row order with B19C last-and-conditional", () => {
     const order = STEP_REGISTRY.map((s) => s.id).filter((id) => id.startsWith("B"));
     expect(order).toEqual(["B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C"]);
-    const caps = order.map((id) => STB5B_CAPS[id]!);
-    expect([...caps].sort((a, b) => a - b)).toEqual(caps); // non-decreasing cap order
+    expect(order.at(-1)).toBe("B19C"); // the $15 conditional is always the last launcher
   });
 });

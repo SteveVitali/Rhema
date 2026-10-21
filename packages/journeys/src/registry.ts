@@ -19,6 +19,16 @@ export interface JourneyStep {
   /** a paid step needs the funded weekly leg (run creation / a chat turn) — nightly runs exclude it. */
   readonly paid: boolean;
   /**
+   * R5ECON.3 (REQ-ECON-9; §5.3 verbatim) — the declared per-leg metered-USD cap, stated in
+   * advance on every paid step. Launching legs carry the §5.3 table's figures (basis
+   * O2-F19: levered-expected; unlevered-measured is the fallback bound where a leg opts
+   * out). The no-own-spend riders (T9, T10–T16 — they ride the window's own deliveries)
+   * declare the $0.50 floor. A paid step WITHOUT a cap is a registry error the dispatch
+   * refuses (cli.ts + funded-window.mjs); the leg-close assert `assertLegCapUsd` throws
+   * `CapOverrunError` when the metered figure exceeds the declared cap (REQ-ECON-7).
+   */
+  readonly capUsd?: number;
+  /**
    * R5ECON.2 (REQ-ECON-11) — the per-leg COGS-lever pin every run this step launches MUST carry,
    * posted as `cogsLevers` in the launch body (JSON) or the same-named field (form posts). Set for
    * the model-judgment legs — the step's assert object IS the model's judgment, so the
@@ -85,6 +95,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "N5",
@@ -93,6 +104,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "ACT.1",
     expected: "green",
     paid: true,
+    capUsd: 9.0,
   },
   {
     id: "N6",
@@ -102,6 +114,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "RES.1",
     expected: "red",
     paid: true,
+    capUsd: 6.0,
     // R5ECON.2 (REQ-ECON-11) — a model-judgment leg: the planted-error verdict IS the assert, so the
     // cheap-route arm is pinned OFF for its launch regardless of the COGS_LEVERS_TEST default.
     cogsLevers: { testCheapRoute: false },
@@ -155,6 +168,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     // runs/FUNDED-2026-10-06-A.md §C.
     expected: "green",
     paid: true,
+    capUsd: 6.5,
   },
   // ---- returning-user journey ---------------------------------------------
   {
@@ -172,6 +186,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "RUN.1",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
     // R5ECON.2 (REQ-ECON-11) — a model-judgment leg: the answer's quality IS the assert; the
     // cheap-route arm is pinned OFF for the turn's launch regardless of the COGS_LEVERS_TEST default.
     cogsLevers: { testCheapRoute: false },
@@ -191,6 +206,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "RPT.1",
     expected: "green",
     paid: true,
+    capUsd: 4.5,
   },
   {
     // SPA.22 (REQ-VFY-10) — R6's render half as a FREE step on the seeded delivered run report
@@ -255,6 +271,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     // stranded sweep). Evidence: docs/build/reports/2026-10-06_funded-b/ + runs/FUNDED-2026-10-06-A.md §B.6.
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "R10",
@@ -287,6 +304,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T11",
@@ -296,6 +314,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T12",
@@ -305,6 +324,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T13",
@@ -314,6 +334,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     // SPA.21 (REQ-VFY-10) — T12's write legs as a FREE step on the seeded writable dossier
@@ -352,6 +373,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T15",
@@ -361,6 +383,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "red",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T16",
@@ -370,6 +393,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5a",
     expected: "red",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "T17",
@@ -608,7 +632,8 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   },
   // ---- STB.5b bounded paid live legs (BL-16–19; cheapest-first order) -------------------------
   // All start `red`: a leg that lands its live asserts flips green with evidence in its own PR;
-  // a leg refused/blocked/unexercised reports owed. Per-leg caps: stb5b-helpers.STB5B_CAPS.
+  // a leg refused/blocked/unexercised reports owed. Per-leg caps are declared on the rows below
+  // (REQ-ECON-9 — the registry is the cap authority; `capUsd` is the §5.3 table verbatim).
   {
     id: "B16",
     journey: "both",
@@ -617,6 +642,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "green",
     paid: true,
+    capUsd: 0.5,
   },
   {
     id: "B17",
@@ -626,6 +652,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 1.0,
   },
   {
     id: "B18A",
@@ -635,6 +662,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 1.0,
   },
   {
     id: "B18B",
@@ -644,6 +672,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 1.0,
   },
   {
     id: "B19A",
@@ -653,6 +682,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 3.5,
   },
   {
     id: "B19B",
@@ -662,6 +692,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 1.5,
   },
   {
     id: "B19C",
@@ -671,6 +702,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     owner: "STB.5b",
     expected: "red",
     paid: true,
+    capUsd: 15.0,
     // R5ECON.2 (REQ-ECON-11) — the MANDATORY opt-out: the leg's assert object is the FULL tier's
     // model judgment, so `testCheapRoute` is pinned OFF. The pin is declared now so the driver the
     // funded window eventually runs MUST post it (`cogsLeversFor` is the read seam).
@@ -691,4 +723,14 @@ export function stepById(id: string): JourneyStep | undefined {
  */
 export function cogsLeversFor(stepId: string): Readonly<Record<string, boolean>> | undefined {
   return stepById(stepId)?.cogsLevers;
+}
+
+/**
+ * R5ECON.3 (REQ-ECON-9) — the step's declared per-leg metered-USD cap (the §5.3 table verbatim —
+ * levered-expected basis, unlevered-measured fallback, $0.50 floor on the no-own-spend riders).
+ * `undefined` ⇒ the step declares no cap — a registry error on any paid step (the funded-window
+ * dispatch and the `--paid` CLI both refuse to run an uncapped paid leg).
+ */
+export function legCapUsdFor(stepId: string): number | undefined {
+  return stepById(stepId)?.capUsd;
 }

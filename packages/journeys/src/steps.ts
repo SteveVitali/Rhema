@@ -6,6 +6,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
 import type { Locator, Page } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
@@ -27,7 +28,13 @@ import { freshIdentity, assertTestIdentity } from "./session.js";
 import { cogsLeversFor } from "./registry.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
-import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
+import {
+  PRICING,
+  PUBLIC_CLAIM_COPY,
+  REFUND_WINDOW_DAYS,
+  USER_REFUNDABLE_RUN_STATES,
+  trialIncludedNote,
+} from "@rhema/contracts";
 // UX.2 (ADR-068) — axe-core as the WCAG 2.2 AA checker: the prebuilt script source injects into the
 // page (never bundled into shipped artifacts; journeys is dev tooling, MPL-2.0 exception checked in).
 import axeCore from "axe-core";
@@ -2515,11 +2522,90 @@ async function readSpendable(page: Page, ctx: StepCtx): Promise<number> {
   return Number(m[1].replace(/,/g, ""));
 }
 
+/**
+ * R5ECON.3 (REQ-FND-6) — the funded-window ride arm: on the window's own deliveries. Probe the
+ * leg's tenant for runs ALREADY satisfying the §14.4 eligibility predicate (a refundable
+ * terminal state, non-entitlement, inside `REFUND_WINDOW_DAYS` of `ended_at`, net committed
+ * debits outstanding, no prior request row) — the earlier launchers' deliveries ARE the refund
+ * legs' substrate, so R9 launches a fresh pair only for whatever the window did not leave
+ * behind. The probe is advisory: `JOURNEY_DATABASE_URL` unset, an unprovisioned tenant, or a
+ * blind read all return [] and the launch pair below covers the shortfall. `pg` rides the
+ * journeys package's own dependency (steps.ts carries no `db()` — the stb5a import edge runs
+ * the other way and must not cycle).
+ */
+async function ridingRefundTargets(
+  email: string,
+  needed: number,
+): Promise<{ slug: string; runId: string }[]> {
+  const dsn = process.env.JOURNEY_DATABASE_URL;
+  if (!dsn || needed <= 0) return [];
+  const pool = new pg.Pool({ connectionString: dsn, max: 1 });
+  try {
+    const ident = await pool.query(
+      `select wm.workspace_id as tenant
+         from workspace_members wm join "user" u on u.id = wm.user_id
+        where u.email = $1 order by wm.workspace_id limit 1`,
+      [email],
+    );
+    const tenant = (ident.rows[0] as { tenant: string } | undefined)?.tenant;
+    if (!tenant) return [];
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      // tenant-scoped like the api's txRunner (no-op under a BYPASSRLS system DSN).
+      await c.query("select set_config('app.tenant_id', $1, true)", [tenant]);
+      const rows = (
+        await c.query(
+          `select r.id as run_id, p.slug
+             from runs r join projects p on p.id = r.project_id
+            where r.state = any($1::text[])
+              and r.entitlement_id is null
+              and r.ended_at is not null
+              and r.ended_at > now() - make_interval(days => $2)
+              and p.slug is not null
+              and not exists (select 1 from user_refund_requests urr where urr.run_id = r.id)
+              and (select coalesce(sum(case cl.kind
+                                         when 'debit' then cl.credits
+                                         when 'refund' then -cl.credits else 0 end), 0)
+                     from credit_ledger cl
+                    where cl.run_id = r.id and cl.kind in ('debit','refund')) > 0
+            order by case when r.state in ('completed','completed_partial') then 0 else 1 end,
+                     r.ended_at desc
+            limit $3`,
+          [[...USER_REFUNDABLE_RUN_STATES], REFUND_WINDOW_DAYS, needed],
+        )
+      ).rows as { run_id: string; slug: string }[];
+      await c.query("commit");
+      return rows.map((r) => ({ slug: r.slug, runId: r.run_id }));
+    } finally {
+      c.release();
+    }
+  } catch {
+    return []; // an unprovisioned tenant or a blind read — the launch pair covers the shortfall
+  } finally {
+    await pool.end().catch(() => undefined);
+  }
+}
+
 const R9: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
+  const { page, email } = await ctx.returningUser("a");
+
+  // R5ECON.3 (REQ-FND-6) — ride the window's own delivered runs first (the launchers' terminals
+  // already satisfy §14.4 eligibility); launch a fresh run only for each leg the window did not
+  // leave behind — R9 is a rider, never a launcher, on the funded dispatch.
+  const ridden = await ridingRefundTargets(email, 2);
+  const legRuns: { slug: string; runId: string }[] = [...ridden];
+  while (legRuns.length < 2) {
+    const launched = await launchQuickReviewToDelivery(
+      page,
+      ctx,
+      legRuns.length === 0 ? "R9A" : "R9B",
+    );
+    legRuns.push({ slug: launched.slug, runId: launched.runId });
+  }
+  const [runA, runB] = legRuns as [{ slug: string; runId: string }, { slug: string; runId: string }];
 
   // ---- leg 1: the first eligible request — control → refunded → exact balance movement. ----
-  const runA = await launchQuickReviewToDelivery(page, ctx, "R9A");
   const spendableBefore = await readSpendable(page, ctx);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${runA.slug}/r/${runA.runId}`);
   const cta = page.locator("[data-refund-cta]").first();
@@ -2548,7 +2634,6 @@ const R9: StepFn = async (ctx) => {
   }
 
   // ---- leg 2: the quarter's allowance is spent — the second request goes to review, not money. ----
-  const runB = await launchQuickReviewToDelivery(page, ctx, "R9B");
   await gotoOk(page, `${ctx.webBaseUrl}/p/${runB.slug}/r/${runB.runId}`);
   const cta2 = page.locator("[data-refund-cta]").first();
   await cta2.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {
