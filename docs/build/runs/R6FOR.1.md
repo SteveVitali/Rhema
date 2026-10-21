@@ -77,7 +77,7 @@
 ## Evidence log
 
 - `pnpm turbo build lint typecheck` → **135/135 tasks OK** (96 cached).
-- **`ci: pass #202@1fd587b`** (run 39627128194 — all seven legs + `ci-pass` anchor; boundary JSON `docs/build/logs/ci-R6FOR.1.json`).
+- **`ci: pass #202@1fd587b`** — code head full green (run 39627128194, all seven legs + `ci-pass` anchor; boundary JSON `docs/build/logs/ci-R6FOR.1.json`); closeout head `400fc35` all-seven green (run 39633286652, fast-path leg).
 - `check-build-memory.sh .` → **0 violations** (8 legacy warnings) · `check-append-only.mjs --base 7c9dc5e` → **OK**.
 - `pnpm test` → **507 files, 5,966 tests passed** (4 skipped) — incl. new `credential.test.ts` family-prefix cases + `showcase.test.ts` fold-invariant.
 - `pnpm check:licenses` OK (822 pkgs) · `check:protocol-markers` OK · `check:no-cookies` OK · `check:spa-budget` OK · `check:spa-env` OK · `check:dom-contract` OK.
