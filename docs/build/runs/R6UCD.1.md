@@ -165,6 +165,16 @@ Design (recorded before code; ADR-113 lands with it):
 - `node docs/build/tools/check-append-only.mjs --base 39f0e11` — append-only OK.
 - `bash …/check-build-memory.sh .` — 0 violations (7 pre-existing warnings).
 
+## CI pass log
+
+- **2026-10-21** — first head `d1b67cc`: `public-safe` **failed** — gitleaks `generic-api-key` on
+  the test literal `key: "quarantine/ws1/img"` (`upload.test.ts`; same fixture class as the already-
+  allowlisted `quarantine/ws1/up1`). Fix: the test now uses the allowlisted literal; the history was
+  amended (`d1b67cc` → **`c13e37a`**, force-pushed on the unmerged branch — a fix-on-top commit could
+  not help because gitleaks scans every commit in the PR range). `fast-path` re-passed on the new head;
+  full `typecheck / lint / unit` + `public-safe` + `integration` + `images` re-running under CI run
+  `39551122784`.
+
 ## Evidence report
 
 (filled at Phase 6)
