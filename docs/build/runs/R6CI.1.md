@@ -216,3 +216,10 @@ Opened this run: `D-R6CI.1-2` only if the `workflow_dispatch` pre-flight 422s.
   `ci.yml` (non-eligible) → next head forced full → then a second docs head re-proves
   fast. Fail-closed held end-to-end: a classification error never occurred; a *subset
   environment* error did, and only on the path the proof exists to exercise.
+- 2026-10-21T01:25Z — **full run green on the fix head:** `ci: pass #196@94d560e`
+  (run 39521815554 — all seven jobs; the fast-gated `turbo build --filter=` step was
+  correctly skipped on the full path) + anchor `ci-pass-67f4c9e8…` live
+  (`expired=false`). This head's delta vs `75e9faf` carried `ci.yml` +
+  `scripts/ci/neutral-readers.txt` (non-eligible) → forced full, correct. Docs head
+  #2 (this commit: ledger/ADR/PR-record updates only — every path under eligible
+  `docs/`) is the fast-path re-demonstration.

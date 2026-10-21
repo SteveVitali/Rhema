@@ -90,6 +90,11 @@ notice + step-summary line (required checks stay green — Episteme ADR-0534 pre
 - `scripts/ci/neutral-readers.txt` — the committed, build-time-audited list of test files
   whose verdicts read deploy-neutral paths (the recorded grep + hand dispositions live in
   the file header; the mechanical leg is re-run by `scripts/ci/fast-path.test.mjs`).
+  Package-resident entries import workspace code whose exports resolve through `dist/`, so
+  the fast head first builds the subset owners' dep closures
+  (`turbo build --filter=@rhema/security-checks... --filter=@rhema/journeys...`) — a
+  remote-cache hit in seconds because a fast head's non-docs tree is identical to the
+  anchored head's by construction (2026-10-21 addendum, learned on the hosted proof).
 
 ### Cadence, concurrency, dispatch
 
