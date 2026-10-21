@@ -95,3 +95,12 @@ See `docs/build/reports/2026-10-21_R6FOR.1/prod-forensics.md` (committed, aggreg
 **Deviations.** (1) `isModelAllowed` defect was found inside the D-SLO.1-8 forensic scope and fixed — it widens the model allowlist to family-prefix semantics the allowlists were authored for; strictly more permissive within a priced family, never across families. (2) ADR-119 is an agent proposal carrying `approved: no` — the ticket's mid-run pause is unavailable to a subagent, so the ADR + prominent flagging substitute per the task brief. (3) 465 changed lines vs ~350 (docs-heavy: report + ADR + notes; code+tests ≈ 80 lines).
 
 **Spend:** $0 (read-only forensic queries; no `--send`, no paid legs, no inference).
+
+## Orchestrator note — 2026-10-21T17:1xZ: ADR-119 ADOPTED
+
+Post-close boundary: the operator ruled on the conditional semantics gate — verbatim UI
+selection **"Adopt as proposed"**, recorded in LEDGER GATE DECISIONS `GD-ADR119.R6`. The ADR's
+Status/approved lines flipped to Adopted/yes with a dated amendment appended (no landed text
+rewritten); `docs/adr/README.md` regenerated. The implementation (attribution plumbing +
+`slo-review.md` note + excluded-class count) is owed work — **`D-R6FOR.1-1`** opened, placement
+owed. `slo.ts` semantics unchanged; status quo strictly conservative.
