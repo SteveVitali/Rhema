@@ -1,0 +1,4 @@
+[bl78] test+jrn-a@rhema.tools → workspace 01M5HEEZ1BGXXX8JT5852CQ2CH (is_test) → billing account 01M5HEEZ1BBPYS3YRC78QJDQAV
+[bl78] dossier slug=jrn-bl78-mooted run=bl78_d025c50e-5564-487b-a140-fb13a296d501 corr=bl78_f07e00ec-a5fa-4896-8eb3-7ec9367b514f
+[bl78] mooted arm live — probe: POST /projects/<pid>/findings/bl78_047beb10-e10d-46e0-ba70-38019e73cc5b/dispositions {kind:'defer'} → expect 409 obligation_not_routable, zero writes (dossier /p/jrn-bl78-mooted/review/bl78_d025c50e-5564-487b-a140-fb13a296d501; discharged twin bl78_8cfb8c0f-bb0a-4fad-98cd-de510709e1e5)
+[bl78] entitlement arm already live — 01M5HEEZ1H0BJCWEWHF7DEC53C (locked) on 01M5HEEZ1BBPYS3YRC78QJDQAV

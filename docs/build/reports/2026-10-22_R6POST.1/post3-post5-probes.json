@@ -1,0 +1,39 @@
+{
+ "at": "2026-10-22T20:53:43.896Z",
+ "web": "https://rhema.tools",
+ "legs": {
+  "deepLink": {
+   "requested": "/p/jrn-bl78-mooted/f/bl78_047beb10-e10d-46e0-ba70-38019e73cc5b",
+   "landed": "https://rhema.tools/p/jrn-bl78-mooted/review/bl78_d025c50e-5564-487b-a140-fb13a296d501#finding-bl78_047beb10-e10d-46e0-ba70-38019e73cc5b",
+   "firstStatus": 200,
+   "redirectedToDossierAnchor": true,
+   "anchor": "finding-bl78_047beb10-e10d-46e0-ba70-38019e73cc5b",
+   "layout": {
+    "anchoredBy": "id",
+    "findingCardCount": 19,
+    "targetInViewport": true,
+    "hasFindingsPane": true,
+    "title": "Dossier · Rhēma",
+    "bodyLen": 8044
+   },
+   "verdict": "PASS"
+  },
+  "entitlementMatched": {
+   "dataIncluded": "true",
+   "hiddenEntitlementId": "present (value redacted)",
+   "estimateBoxPresent": true,
+   "includedText": "Included\n~28–53 min\nIncluded — your trial run covers up to 2,800 words",
+   "hasFundedEstimate": true,
+   "verdict": "PASS"
+  },
+  "entitlementMismatched": {
+   "dataIncludedPresent": false,
+   "hiddenEntitlementIdPresent": false,
+   "fundedEstimateRendered": true,
+   "estimateExcerpt": "Why this estimate? fixed 240 cr · 377 words × 0.012 cr = 5 · 2 claims × 40 cr = 80 · 5 phases × 100 cr = 500 → 825 · ×1.25 metered coverage · ×0.6 Quick ≈ 619 cr",
+   "includedClaimRendered": false,
+   "verdict": "PASS"
+  }
+ },
+ "consoleErrors": []
+}

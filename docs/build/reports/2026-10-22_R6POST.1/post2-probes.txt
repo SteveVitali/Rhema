@@ -1,0 +1,23 @@
+=== POST-2 probes 2026-10-22T20:36:37Z ===
+
+--- oauth-initiation: POST /api/auth/sign-in/social {provider:google}
+host=accounts.google.com path=/o/oauth2/v2/auth client_id=25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com redirect_uri=https://rhema.tools/api/auth/callback/google scope=email profile openid response_type=code pkce=S256
+
+--- bogus action token: GET /api/action/<bogus>
+400
+<p>This link is not valid. Open Rhema to decide.</p>
+--- bogus magic-link verify: GET /api/auth/magic-link/verify?token=bogus
+302 -> https://rhema.tools/?error=INVALID_TOKEN
+
+--- mailto on legal/contact page
+legal:404
+showcase:200
+=== action-token expiry probes 2026-10-22T20:38:56Z ===
+--- well-formed/forged-sig (bad_signature arm) ---
+400
+--- forged-over-EXPIRED-row (expired_or_consumed arm) ---
+status=400
+<p>This link is not valid. Open Rhema to decide.</p>
+--- action-token expiry arm continuation 2026-10-22T20:40:37Z ---
+forged HMAC over an EXPIRED email_action_tokens row (operator's own account; zero-write consume — expired rows match nothing): GET /api/action/<payload>.<sig> -> 410 'expired_or_consumed' (the 'nl' variant — the deployed secret keeps its trailing newline byte; documented, never stored)
+notes: no /r/:token route exists in the codebase (checked server.ts + api routes + git history); POST-2's token-expiry surface is covered by: action-link malformed->400, bad_signature->400, expired->410 (this probe), magic-link bogus -> 302 ?error=INVALID_TOKEN, export-token expired -> 410 (T8 leg, minted fixture).

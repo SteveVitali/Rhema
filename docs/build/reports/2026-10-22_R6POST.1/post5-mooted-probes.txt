@@ -1,0 +1,9 @@
+=== POST-5a mooted-defer 409 probe 2026-10-22T20:52:09Z ===
+--- defer on mooted-obligation finding bl78_047beb10 (expect 409 obligation_not_routable) ---
+{"error":"obligation_not_routable","detail":"no obligation transition mooted → deferred via 'defer' (closed-world; REQ-OBJ-3)"}
+status=409
+
+--- defer on discharged-obligation finding bl78_8cfb8c0f (expect 409) ---
+{"error":"obligation_not_routable","detail":"no obligation transition discharged → deferred via 'defer' (closed-world; REQ-OBJ-3)"}
+status=409
+{"disp":[{"dispositions":0}],"trans":[{"transitions":1}],"at":"2026-10-22T20:52:15.202Z"}

@@ -1,0 +1,33 @@
+{
+ "req": "REQ-POST-7",
+ "adr": "ADR-113",
+ "at": "2026-10-22T20:51:46.364Z",
+ "bucket": "rhema-prod-user-content",
+ "object": "quarantine/01M5JNMFR8G74ZQXC2NQNPPV1F/01M5JNMV1VTWCPBGX7FA2BF0HZ",
+ "minted_via": "api-route",
+ "probes": {
+  "api_mint_unauthenticated": {
+   "status": 401
+  },
+  "unsigned": {
+   "status": 403,
+   "server": "UploadServer"
+  },
+  "api_mint_authenticated": {
+   "status": 200
+  },
+  "signed": {
+   "status": 200,
+   "content_type": "application/octet-stream",
+   "content_disposition": "attachment",
+   "set_cookie": false
+  },
+  "tampered_signature": {
+   "status": 403
+  },
+  "expired_lifetime": {
+   "status": 400
+  }
+ },
+ "verdict": "PASS — API-minted v4 usercontent verified: unsigned→403, unauth mint→401, signed→2xx with attachment+octet-stream+no-cookie, tampered+expired→denied"
+}

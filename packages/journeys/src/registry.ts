@@ -628,9 +628,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T8",
     journey: "both",
     asserts:
-      "the export token gate answers 404 to a bogus token, and — when JOURNEY_T8_EXPORT_TOKEN binds a backdated mint (scripts/live/mint-t8-export.mjs, operator-run) — a real 410 export_link_expired (FIX.1's un-owed arm; the mint itself stays operator-gated)",
+      "the export token gate answers 404 to a bogus token, and — when JOURNEY_T8_EXPORT_TOKEN binds a backdated mint (scripts/live/mint-t8-export.mjs, operator-run) — a real 410 export_link_expired (FIX.1's un-owed arm; the mint itself stays operator-gated). Flipped green 2026-10-22 on the deployed tip dc7fb15a (R6POST.1, nonce dac7c118bf38): mint-t8-export.mjs --execute wrote t8exp_1f9832c4b64d445498f4 on the flagged jrn-a tenant (GD-PREAUTH-ACTS.R6); the leg answered 404 to the bogus token and 410 export_link_expired to the minted one — reports/2026-10-22_R6POST.1/journeys-full",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   // ---- STB.5b bounded paid live legs (BL-16–19; cheapest-first order) -------------------------

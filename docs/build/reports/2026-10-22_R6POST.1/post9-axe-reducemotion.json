@@ -1,0 +1,23 @@
+{
+ "at": "2026-10-22T20:43:20.794Z",
+ "url": "https://rhema.tools/",
+ "axe": {
+  "violations": [],
+  "passes": 26,
+  "incomplete": [
+   "color-contrast"
+  ],
+  "consoleErrors": []
+ },
+ "reducedMotion": {
+  "mediaReduced": true,
+  "animatedElements": [],
+  "revealElements": [],
+  "heroVisible": true
+ },
+ "vitals": {
+  "lcp": 248,
+  "cls": 0.005699060962818287
+ },
+ "verdict": "PASS"
+}

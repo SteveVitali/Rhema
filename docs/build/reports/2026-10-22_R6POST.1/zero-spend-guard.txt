@@ -1,0 +1,6 @@
+iso-week ALL scope: [{"rows_n":5,"list_usd":"12.330000","credits_n":"4110","mn":"2026-10-22 20:37:36.864+00","mx":"2026-10-22 20:37:36.864+00"}]
+iso-week is_test scope: [{"rows_n":5,"list_usd":"12.330000","credits_n":"4110"}]
+today ALL scope: [{"rows_n":5,"usd":"12.330000"}]
+iso-week metered (excl req_jrn_): [{"rows_n":0,"list_usd":"0","credits_n":"0"}]
+seeded-excluded rows: [{"seeded_n":5}]
+today real-metered rows: [{"n":0}]
