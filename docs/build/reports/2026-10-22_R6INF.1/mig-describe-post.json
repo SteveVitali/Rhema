@@ -1,0 +1,107 @@
+{
+  "autoHealingPolicies": [
+    {
+      "healthCheck": "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/healthChecks/rhema-prod-proxy-health-51165b8",
+      "initialDelaySec": 60
+    }
+  ],
+  "baseInstanceName": "rhema-prod-proxy",
+  "creationTimestamp": "2026-09-16T22:26:40.527-07:00",
+  "currentActions": {
+    "abandoning": 0,
+    "creating": 0,
+    "creatingWithoutRetries": 0,
+    "deleting": 0,
+    "none": 1,
+    "recreating": 0,
+    "refreshing": 0,
+    "restarting": 0,
+    "resuming": 0,
+    "starting": 0,
+    "stopping": 0,
+    "suspending": 0,
+    "verifying": 0
+  },
+  "distributionPolicy": {
+    "targetShape": "EVEN",
+    "zones": [
+      {
+        "zone": "https://www.googleapis.com/compute/v1/projects/rhema-507501/zones/us-central1-b"
+      },
+      {
+        "zone": "https://www.googleapis.com/compute/v1/projects/rhema-507501/zones/us-central1-c"
+      },
+      {
+        "zone": "https://www.googleapis.com/compute/v1/projects/rhema-507501/zones/us-central1-f"
+      }
+    ]
+  },
+  "fingerprint": "LX8rLBqwteM=",
+  "id": "5869164974412580095",
+  "instanceGroup": "https://www.googleapis.com/compute/v1/projects/rhema-507501/regions/us-central1/instanceGroups/rhema-prod-proxy-mig-34ea26a",
+  "instanceLifecyclePolicy": {
+    "defaultActionOnFailure": "REPAIR",
+    "forceUpdateOnRepair": "NO",
+    "onFailedHealthCheck": "DEFAULT_ACTION"
+  },
+  "instanceTemplate": "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/instanceTemplates/rhema-prod-proxy-tmpl-9f75916",
+  "kind": "compute#instanceGroupManager",
+  "listManagedInstancesResults": "PAGELESS",
+  "name": "rhema-prod-proxy-mig-34ea26a",
+  "namedPorts": [
+    {
+      "name": "https",
+      "port": 8443
+    }
+  ],
+  "region": "https://www.googleapis.com/compute/v1/projects/rhema-507501/regions/us-central1",
+  "satisfiesPzi": true,
+  "satisfiesPzs": true,
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/rhema-507501/regions/us-central1/instanceGroupManagers/rhema-prod-proxy-mig-34ea26a",
+  "standbyPolicy": {
+    "mode": "MANUAL"
+  },
+  "status": {
+    "allInstancesConfig": {
+      "effective": true
+    },
+    "isStable": true,
+    "stateful": {
+      "hasStatefulConfig": false,
+      "perInstanceConfigs": {
+        "allEffective": true
+      }
+    },
+    "versionTarget": {
+      "isReached": true
+    }
+  },
+  "targetSize": 1,
+  "targetSizePolicy": {
+    "mode": "INDIVIDUAL"
+  },
+  "targetStoppedSize": 0,
+  "targetSuspendedSize": 0,
+  "updatePolicy": {
+    "instanceRedistributionType": "PROACTIVE",
+    "maxSurge": {
+      "calculated": 3,
+      "fixed": 3
+    },
+    "maxUnavailable": {
+      "calculated": 3,
+      "fixed": 3
+    },
+    "minimalAction": "REPLACE",
+    "replacementMethod": "SUBSTITUTE",
+    "type": "PROACTIVE"
+  },
+  "versions": [
+    {
+      "instanceTemplate": "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/instanceTemplates/rhema-prod-proxy-tmpl-9f75916",
+      "targetSize": {
+        "calculated": 1
+      }
+    }
+  ]
+}

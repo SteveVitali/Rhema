@@ -1,0 +1,11 @@
+# Worker log receipts around the SQL REGIONAL restart (read ~19:4xZ)
+# Window: pg-boss connection timeouts / ECONNREFUSED 10.46.0.3:5432 ~19:05–19:12Z (expected restart), then self-recovery.
+# Post-restart consumption (newest first):
+2026-10-22T19:20:51.616547Z	[worker] run.walkthrough 01M5JGXZQAT7VE0PKHST0Q8XCA → {"ok":true,"status":"failed","attempts":1}
+2026-10-22T19:20:09.387839Z	[worker] billing.auto-reload → {"attempted":0,"charged":0,"skipped":0,"failed":0}
+#
+# Tail of the restart-window transient (context):
+2026-10-22T19:11:18.709907Z		[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T19:11:13.751418Z		}
+2026-10-22T19:11:13.751416Z		  worker: '41d28c69-d371-428d-9bde-ac416f95908a'
+2026-10-22T19:11:13.751413Z		  queue: 'run.resume',

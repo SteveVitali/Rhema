@@ -1,0 +1,4 @@
+/ 200
+/pricing 200
+/login 200
+/showcase 200

@@ -1,0 +1,16 @@
+Previewing update (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/5866c081-85dc-4745-8c7e-76baa460c7f7
+
+  pulumi:pulumi:Stack: (same)
+    [urn=urn:pulumi:prod::rhema::pulumi:pulumi:Stack::rhema-prod]
+    ~ gcp:sql/databaseInstance:DatabaseInstance: (update)
+        [id=rhema-prod-postgres]
+        [urn=urn:pulumi:prod::rhema::gcp:sql/databaseInstance:DatabaseInstance::rhema-prod-postgres]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ settings: {
+          ~ availabilityType: "ZONAL" => "REGIONAL"
+        }
+Resources:
+    ~ 1 to update
+    171 unchanged
