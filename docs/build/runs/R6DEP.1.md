@@ -291,3 +291,11 @@ scope re-verified (2 recipients, same classes): 2 emails + 2 inbox rows, effecti
 
 **Rollback.** `git revert` + redeploy of `ffbb8ad3f2dedd690a5b9d8a86528128fd25fa23` —
 concrete commands in `rollback-recipe.md`.
+
+## Orchestrator note — 2026-10-21T19:5xZ: HUMAN-H10 discharged
+
+Post-close boundary: the chain reached row 185a's HUMAN-H10 marker (operator session 1, acts
+only) — the operator attested **"All done"** (verbatim UI selection) to all six checklist
+items. Readout `docs/build/readouts/HUMAN-H10.md` written (`provided: yes` per item, values
+never recorded). Downstream unblocks: R6OPS.1(d) alert delivery runs, R6POST.1 invite leg,
+R6POST.2 Stripe stage, R6CLK.1 billing-actuals + admin-key reconcile.
