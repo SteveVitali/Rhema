@@ -1,0 +1,144 @@
+{
+ "ticket": "187_R6OPS.1",
+ "req": "REQ-DEP-2(c)",
+ "timeline": [
+  {
+   "leg": "pre_state",
+   "at": "2026-10-22T13:59:24.467Z"
+  },
+  {
+   "leg": "planted",
+   "at": "2026-10-22T13:59:24.763Z"
+  },
+  {
+   "leg": "detected",
+   "at": "2026-10-22T13:59:27.123Z"
+  },
+  {
+   "leg": "diagnosed",
+   "at": "2026-10-22T13:59:27.218Z"
+  },
+  {
+   "leg": "probe_read",
+   "at": "2026-10-22T13:59:27.263Z"
+  },
+  {
+   "leg": "contained_verified",
+   "at": "2026-10-22T13:59:27.316Z"
+  },
+  {
+   "leg": "rolled_back",
+   "at": "2026-10-22T13:59:27.705Z"
+  }
+ ],
+ "playbook": {
+  "detect": {
+   "paused": true,
+   "refusal_gate": true,
+   "events": [
+    "run.state_changed",
+    "gate.opened"
+   ]
+  },
+  "diagnose": {
+   "distribution": [
+    {
+     "run_id": "01M2R8HJXXFHRAHAA9KD4TYHST",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 26
+    },
+    {
+     "run_id": "01M2SH38T3299FAZREP0E49FJ5",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 17
+    },
+    {
+     "run_id": "01M3E8F8Z2TG2Q8FR62C7V1QJP",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 16
+    },
+    {
+     "run_id": "01M2T65W5PZ3174FPVFNQRVKZS",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 12
+    },
+    {
+     "run_id": "01M2T6D3B32AVXHCQH73ZGJGBD",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 12
+    },
+    {
+     "run_id": "01M2R8HJXXFHRAHAA9KD4TYHST",
+     "status": 402,
+     "deny_reason": "cap",
+     "n": 12
+    },
+    {
+     "run_id": "01M3DKQR0TY6ADGV2D1RTJBVG5",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 11
+    },
+    {
+     "run_id": "01M2VDHN2ZFDV1SVDX2XN257NN",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 11
+    },
+    {
+     "run_id": "01M2R5J05VCN7GJHEZN6GJ3FWW",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 8
+    },
+    {
+     "run_id": "01M2RGNK9PWKN5M34343GXZC16",
+     "status": 403,
+     "deny_reason": "endpoint api.anthropic.com/api/hello is not on the run allowlist",
+     "n": 6
+    }
+   ],
+   "canary_deny_rows": 4
+  },
+  "negative_control": {
+   "probe": "egress_denied_10m (NOT_FROM_TEST_RUN verbatim from slo.ts)",
+   "pre": 0,
+   "post": 0,
+   "excluded": true
+  },
+  "contain": {
+   "parked": true
+  }
+ },
+ "verdict": "PASS — playbook ran end-to-end on the canary; spike parked the run; is_test exclusion held",
+ "workspace_id": "01M5HEF7W11W8V4TY1P4JA23TX",
+ "pre_state": {
+  "pending_signals": 0,
+  "denies_10m_all": 0,
+  "egress_probe": 0
+ },
+ "canary": {
+  "run_id": "r6ops1-egress-1792677564468",
+  "signal_id": "2",
+  "deny_rows": 4
+ },
+ "rollback": {
+  "deleted": [
+   "fetch_log",
+   "pause_signals",
+   "runs (cascade)"
+  ],
+  "residue": {
+   "runs": 0,
+   "signals": 0,
+   "gates": 0,
+   "events": 0,
+   "fetch_log": 0
+  }
+ }
+}

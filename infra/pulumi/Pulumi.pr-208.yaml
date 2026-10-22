@@ -1,0 +1,18 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:gitSha: dc7fb15a0aa7caa5d47734656d06514d5b75b127
+  rhema:protocolsVersion: 0.4.0+ec61156725a895ab
+  rhema:deployProxyMig: "true"
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  rhema:emailFrom: hello@rhema.tools
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:8159bc11989404909833b67343d569e8382b49033fee495a8d48bbf9beafacd5","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:1d4b5fec613b0bb221313461b5f88e64660ba6dab95b6b688b452f0c3153f4e8","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:860b4444855f6faf5de4a2d6c13531be7b594e3300607432744b2ea24d13c92e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ba73dde905c810c9fe560a5343be34b087043d918df0fad5fd652c839e3541c3","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:17beb3e4071ebd36b0b09fe44746e4928884ef7b9256c47e5e8045dba3e426d5","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:fd11658106382d1ab1cfd518015948c5e686dc05b3c19547e9771781b28d3649","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:0e706c9f6d58280405361aa75d9c4fe417442b67b905f84920f07293110903f0","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:db2ffb2d8b5c9d3c63908d42fb16e9bc5775fdf52f22c8b9b281ca7d56fefd8b"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:edd2fc7884782c12dda0cf392a5e44eb3b66fcfcfaba800ce342b9d81889ba29
+  rhema:resendApiKey:
+    secure: AAABALsXdN0pyLRXu4BBsqi/af2I9/FqaGDTgDxp8z/zSNXpX80gdiEqkWZIqw+ywo6ty4z1dw8GJBEnAz32mg+RMMQ=
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:17f8273ac3fe50ddb76c675fd7c5fe74c1be5ff2e9adc94a1869955ebe67c04b
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
+  rhema:appBaseUrl: https://rhema-pr-208-web-aae661d-tkbl73n3tq-uc.a.run.app
+  rhema:apiPublicUrl: https://rhema-pr-208-api-775be80-tkbl73n3tq-uc.a.run.app

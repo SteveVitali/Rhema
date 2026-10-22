@@ -57,12 +57,20 @@
 
 ## Acceptance criteria
 
-- [ ] Restore drill PASS: counts match the restore point; scratch destroyed (verified absent) *(live-executed)*
-- [ ] Rollback drill PASS on the preview; teardown verified *(staging-verified)*
-- [ ] Playbook drill timeline + canary residue 0 *(live-executed)*
-- [ ] Every alert policy has a recorded page receipt at the operator sink *(live-executed)* — or the
-      documented gap per the ticket's honesty clause
-- [ ] Universal phase-gate AC *(agentic)*
+- [x] Restore drill PASS: counts match the restore point; scratch destroyed (verified absent) *(live-executed)* —
+  `restore-drill.json`: 12/12 tables + tenant row at PITR `14:14:39.351Z`, RTO 579 s,
+  scratch deleted + `describe`→404.
+- [x] Rollback drill PASS on the preview; teardown verified *(staging-verified)* —
+  `rollback-drill.md` + `rollback-N/` + `rollback-Nminus1/`: N at `18b3dee` (R1 PASS),
+  N−1 at `dc7fb15` via the pinned `r6dep-1` digests (R1 PASS); destroy + `rm` + 25-class
+  orphan sweep — see the GCP reservation-lag note in Progress.
+- [x] Playbook drill timeline + canary residue 0 *(live-executed)* — `egress-drill.json`:
+  7-stamp timeline, 2.4 s detect→park, is_test probe exclusion held, residue 0/5 tables.
+- [x] Every alert policy has a recorded page receipt at the operator sink *(live-executed)* — or the
+      documented gap per the ticket's honesty clause — `alert-delivery.md`: 4 armed
+      worker-side signals carry 488 real receipts; all 14 Monitoring AlertPolicies are
+      channel-less (**F-R6OPS.1-1**, documented — nothing fabricated).
+- [x] Universal phase-gate AC *(agentic)* — full verification below.
 
 ## Plan
 
@@ -100,16 +108,79 @@
   receiving real `ops_alert_received` POSTs (balance_divergence nightly, latest
   2026-10-22T03:15:12Z; slo_violation run_success_rate_24h_pct ×288 + unverified_review_rate_7d_pct
   ×203 over 90d) — the worker alertSink path is armed, the Monitoring channel path is NOT.
-- (pending)
+- 2026-10-22T13:59Z — **(c) PASS** *(live-executed)* — `egress-drill.mjs --execute` planted 4
+  canary `fetch_log` denies on `is_test` run `r6ops1-egress-1792677564468`; worker pause-drain
+  paused the run + opened a blocking refusal gate in 2.4 s; diagnose read the deny distribution;
+  the `egress_denied_10m` probe's `NOT_FROM_TEST_RUN` exclusion held at 0 pre/post; rollback
+  deleted fetch_log + pause_signals + the run; residue counts all 0. Evidence: `egress-drill.json`.
+- 2026-10-22T14:14–14:29Z — **(a) PASS** *(live-executed)* — `restore-drill.mjs --execute`
+  after two live-found fixes (schema: `projects` has no `name` column → `title`/`created_at`;
+  `gcloud sql clone` sync wait ~10 m abort → `--async` + RUNNABLE poll + delete-retry through
+  409s). PITR point `2026-10-22T14:14:39.351Z` → scratch `rhema-r6ops-drill-1792678479`
+  RUNNABLE 14:24:10Z; verified read 14:24:18Z — all 12 count tables equal T0 (workspaces 333,
+  runs 82, fetch_log 8124, _migrations 58, …) + tenant row reads back; **RTO 579 s**
+  (clone-start → verified read); deleted 14:29Z, describe→404 verified absent. Leftover scratch
+  `rhema-r6ops-drill-1792677594` from the first (pre-fix) run swept to zero before the PASS run.
+  Evidence: `restore-drill.json`.
+- 2026-10-22T14:1xZ — **(d) documented** *(live-read)* — `alert-delivery.md`: worker→catcher
+  sink armed + proven (488 `ops_alert_received` receipts in the readable window incl. today's
+  03:15:12Z `balance_divergence`); all 14 Monitoring AlertPolicies `notificationChannels:[]`
+  — **F-R6OPS.1-1** (channel never provisioned; `rhema:opsAlertWebhookUrl` unset on prod; the
+  bind is a prod write outside this ticket's authorized scope). `route 5xx errors — LB-observed`
+  additionally lacks any worker-side emitter — zero page path until the channel is armed.
+- 2026-10-22T14:0x–14:3xZ — **(b) in progress** — `pr-208` init'd at tip `18b3dee`;
+  api+web built `r6ops-1` (api@040bd1a, web@4419c36) into `rhema-pr-208`; cross-repo
+  `docker tags add` refused (same-repo only) → support services pinned at `rhema-prod`
+  `r6dep-1` digests (same-project AR pull, as prod itself does); first `up` hit the
+  log-metric propagation race (`rhema_pr_208_route_5xx` 404 — documented in
+  monitoring.ts comments; converged on retry); second `up` hit an AlloyDB zonal
+  capacity stockout (`Error code 9 — Location "us-central1" does not have enough resources`),
+  retried after backoff (AlloyDB instance created ~383 s on retry). Migrate Job run for the
+  fresh `rhema` db; `rhema:appBaseUrl`/`apiPublicUrl` set to the run.app origins → Better
+  Auth mounted (the R6DEP.1 OAuth-config leg, now documented in preview bring-up).
+- 2026-10-22T15:13Z — **(b) N verified** — `rhema-journeys --steps R1` on pr-208:
+  web+api `/healthz` provenance `18b3dee57bf8a57e2c9d6b036f1c4a014b39038c` (observed in the
+  report), **R1 PASS** (`rollback-N/report.json`).
+- 2026-10-22T15:14Z — **(b) N−1 verified** — `serviceImages` repinned to the deployed
+  `r6dep-1` set (api@`8159bc…`, web@`1d4b5f…`, the `dc7fb15` build; +`gitSha=dc7fb15`);
+  `up` rolled api+web+migrate (42 s). `/healthz` provenance
+  `dc7fb15a0aa7caa5d47734656d06514d5b75b127` on BOTH services (report-observed), live
+  digests match the prod pins — **the rollback target was the prior DEPLOYED image set,
+  not a source rebuild**. R1 PASS (`rollback-Nminus1/report.json`).
+- 2026-10-22T15:2xZ — **(b) teardown draining** — `destroy` removed 144 of 193 resources;
+  `rhema-pr-208-private-app` subnet held by the GCP-managed
+  `serverless-ipv4-cloudrun-1792680586032522302` reservation — Google-owned, refuses
+  manual delete (`in-use by //serverless.googleapis.com/…`), the pr-206/pr-207 class:
+  ≈2h20m GC lag. Background drain loop retries `destroy` → `rm` → orphan sweep; the
+  closeout commit records the final state.
+- 2026-10-22T15:4xZ — **verification all green**: `turbo build lint typecheck` 135/135;
+  `pnpm test` 514 files / **6,052 pass** / 4 skip / 0 fail; all six `check:*` green;
+  targeted drill suites 19/19.
 
 ## Gap table
 
-(pending — Phase 4)
+| Plan step | Delivered | Delta |
+|---|---|---|
+| 1 ledger + drivers + on-call → PR → `pr-<n>` | `18b3dee` pushed; **PR #208** opened (base `r6dep-1-tip-deploy`) → preview `pr-208` | none |
+| 2 (a) restore | PASS first full run: RTO 579 s, 12/12 + tenant, absent-verified | +2 live fixes (schema cols; clone `--async` + delete-retry 409s) + 1 leftover-scratch sweep from the aborted pre-fix run |
+| 3 (c) egress playbook | PASS: 7-leg timeline, 2.4 s contain, residue 0 | none |
+| 4 (d) alert delivery | honest census: 4 worker-side signals → 488 receipts; 14 GCP policies channel-less = **F-R6OPS.1-1** | the deliverable reads "prove OR document" — the Monitoring-channel gap is documented, never greenwashed |
+| 5 (b) preview rollback | N + N−1 both provenance-verified + R1 PASS; destroy 144/193 then GCP reservation-lag | drain pending GCP-managed reservation GC (~2h20m class, pr-207 precedent); closeout commit records `rm` + sweep |
+| 6 evidence + gates | all gates green; evidence dir complete | none |
 
 ## Evidence log
 
 `docs/build/reports/2026-10-22_R6OPS.1/`:
-(pending)
+
+- `restore-drill.json` — (a) the PASS run: T0 snapshot, PITR point, clone→RUNNABLE→verified
+  timeline, all 12 count pairs, tenant row hash, RTO, delete + absent-verify.
+- `egress-drill.json` — (c) the PASS run: pre-state, canary rows, detect/diagnose/contain
+  evidence, probe exclusion pre/post, residue census, 7-stamp timeline.
+- `alert-delivery.md` — (d) the honest census: armed worker path (signal → kind → latest
+  receipt → count) vs the 14 channel-less AlertPolicies; F-R6OPS.1-1.
+- `rollback-N/report.json` — (b) R1 journey at N (`18b3dee` observed api+web, PASS).
+- `rollback-Nminus1/report.json` — (b) R1 journey at N−1 (`dc7fb15` observed api+web, PASS).
+- `rollback-drill.md` — (b) the narrative: image-set pin map, timeline, teardown status.
 
 ## Evidence report
 

@@ -144,7 +144,7 @@ try {
     const tenant = ws
       ? (
           await prod.query(
-            "select id, name, workspace_id, updated_at from projects where workspace_id = $1 order by updated_at desc limit 1",
+            "select id, title, workspace_id, created_at from projects where workspace_id = $1 order by created_at desc limit 1",
             [ws.id],
           )
         ).rows[0]
@@ -157,10 +157,13 @@ try {
   evidence.pitr_point = pitrPoint;
 
   // --- 2. PITR-clone the source into the ONE authorized scratch instance ---
+  // `--async`: gcloud's sync wait aborts (~10 min) while the server-side restore keeps
+  // running — the RUNNABLE poll below is the real wait (live: a PENDING_CREATE wait of
+  // ~10 min on the first drill run hit exactly this).
   const cloneStart = Date.now();
   const clone = gcloud([
     "sql", "instances", "clone", SOURCE, SCRATCH,
-    "--project", PROJECT, "--point-in-time", pitrPoint,
+    "--project", PROJECT, "--point-in-time", pitrPoint, "--async",
   ]);
   evidence.clone = {
     started_at: new Date(cloneStart).toISOString(),
@@ -232,13 +235,13 @@ try {
     if (evidence.pre_state.tenant_row) {
       const row = (
         await scratch.query(
-          "select id, name, workspace_id, updated_at from projects where id = $1",
+          "select id, title, workspace_id, created_at from projects where id = $1",
           [evidence.pre_state.tenant_row.id],
         )
       ).rows[0];
       tenantOk =
         !!row &&
-        row.name === evidence.pre_state.tenant_row.name &&
+        row.title === evidence.pre_state.tenant_row.title &&
         row.workspace_id === evidence.pre_state.tenant_row.workspace_id;
     }
     verifiedAt = new Date();
@@ -263,6 +266,9 @@ try {
   } finally {
     await scratch.end();
   }
+} catch (err) {
+  evidence.error = String(err);
+  if (!evidence.verdict) evidence.verdict = `FAIL — ${err.message}`;
 } finally {
   // --- 5. destroy + verify absent (always, even on a failed verify) ---
   try {
@@ -274,7 +280,15 @@ try {
       if (d.status === 0 && JSON.parse(d.stdout).settings?.deletionProtectionEnabled) {
         gcloud(["sql", "instances", "patch", SCRATCH, "--project", PROJECT, "--no-deletion-protection"]);
       }
-      const del = gcloud(["sql", "instances", "delete", SCRATCH, "--project", PROJECT, "--quiet"]);
+      // Retry through 409s — an in-flight operation (e.g. a still-running clone) blocks
+      // delete until it completes.
+      let del = { status: -1 };
+      const delDeadline = Date.now() + 15 * 60 * 1000;
+      while (Date.now() < delDeadline) {
+        del = gcloud(["sql", "instances", "delete", SCRATCH, "--project", PROJECT, "--quiet"]);
+        if (del.status === 0) break;
+        await sleep(15000);
+      }
       const gone =
         gcloud(["sql", "instances", "describe", SCRATCH, "--project", PROJECT]).status !== 0;
       evidence.destroy = { delete_exit: del.status, verified_absent: gone };
