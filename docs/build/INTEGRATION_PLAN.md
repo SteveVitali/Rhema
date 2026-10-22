@@ -690,3 +690,205 @@ once) — inherent to the chain, mitigated by the bake cadence on every later su
 prod drifts ahead of `main` during the whole window (deployed SHAs are chain commits
 until #118 lands — §9's reconciliation applies); the cleanup wave is the point of no
 return — verify the editor bake record exists before opening segment 15's merges.
+
+---
+
+# Round 5 — the post-SPA stack: merge + deploy plan (R5REC.3, 2026-10-18)
+
+**Read at:** 2026-10-18T01:38Z (merge dry-run + CI) / 2026-10-18T01:40Z (prod
+provenance) · **mergePolicy:** OPERATOR — this section merges nothing; every command
+is for the operator.
+**Scope:** the open stack as it exists today — **22 open PRs, #170 → #191** — plus
+**#192** (this ticket's own PR, `stevevitali/r5rec-3-integration-plan` stacked on
+`stevevitali/r5rec-2-spec-reconciliation`) and the two R5DOC tail rows still to be
+authored (expected #193/#194 — docs-only, deploy-neutral). The round-4 body above
+(§R4.*) describes a world where the round-4 chain was unmerged and prod carried
+pre-chain ancestors; **that world is gone** — see §R5.1's re-read.
+
+## R5.1 · External state (re-read this run)
+
+| Fact | Value | How verified |
+|---|---|---|
+| `main` head | `a2cdb75` — "Merge pull request #169 … spadoc-2-agent-docs-refresh" | `git log -1 origin/main` |
+| Round-4 chain merged through | **PR #169 (SPADOC.2)** — the entire round-4 stack incl. all 14 SPAF flips, the cleanup wave, and both docs tails is on `main` | `gh pr list --state merged` |
+| Merge method | **merge commits** — unchanged through #169 | `git log --merges origin/main` |
+| Open stack | **#170–#191 contiguous, 22 PRs** — every open PR is a chain row | `gh pr list --state open` |
+| #170's declared base | **`stevevitali/spadoc-2-agent-docs-refresh` — a MERGED branch** → retarget to `main` as step 0 | `gh pr view 170`, `git merge-base --is-ancestor` |
+| #172's declared base | **`stevevitali/r5-synthesis` — an un-PR'd planning branch** (22 commits: post-spa-disposition-spec + research wave + the 27-row decompose). It has no PR; its commits land on `main` inside #172's merge. Retarget #172 to `main` after #171 lands | `git log origin/stevevitali/r5-synthesis`, `gh pr view 172` |
+| Stack-vs-`main` mergeability | **22/22 clean** — `merge-dryrun.sh` pairwise onto `origin/main`, 0 conflict hunks (evidence: `docs/build/reports/R5REC.3/merge-dryrun.{txt,json}`). The one repeat-change (the SEC.3 privsep skip exists as `dddd2e1` on #171's tip and `625d28a` inside the r5-synthesis line — identical patch, different SHA) resolves itself: same content on both sides | `git merge-tree` via merge-dryrun this run |
+| Prod deployed provenance | **`ffbb8ad01b…`** on web + api `/healthz` (read 2026-10-18T01:40Z) — the Arm-B tip deploy (ARMB.2 head), inside open PR **#171**'s history (ancestor of `dddd2e1`; also ancestor of #172 → #191) | live `curl …/healthz` + `git merge-base --is-ancestor` |
+| Deploy series | update 148 `b35473d` → 149 `d5a74cc` → 150 `ffbb8ad` → 151 COST.1 lever apply ($285.80→$198.32/mo list recomputed) — all branch SHAs, none on `main` yet | `runs/ARMB-2026-10-14.md`, `reports/2026-10-16_COST.1/` |
+| Arm B election | **elected + executed** (GATE DECISIONS `ARMB-1`, 2026-10-14): the 15-segment cadence of §R4.7 was compressed into the single tip deploy; the `D-SPAF.*-3/-4` pacing/rollback arms are DROP-mooted (G1 census); `git revert` + redeploy is the surviving rollback | LEDGER GATE DECISIONS; `r5_g1_dispositions.md` |
+| CI at read | **21/22 pass** — #191 pending at read time (docs-only closeout head `c09c4b5`; every earlier head on #191 boundary-confirmed green) | merge-dryrun `--ci` (one read per PR) |
+
+**Provenance consequence.** Merging #170–#171 makes `b35473d`, `d5a74cc`, and
+`ffbb8ad` literal ancestors of `main` — the round-3/4-style §9 reconciliation then
+holds verbatim for the Arm-B deploys: every `deployments` row and `/healthz` sha
+names a real object in `main`'s history. Merge commits only (§R5.3) — squash or
+rebase would break exactly this.
+
+## R5.2 · The open stack + segment map (#170 → tip)
+
+| PR | branch | ticket | seg |
+|---|---|---|---|
+| #170 | armb-1-spa-asset-base | ARMB.1 (corrective — asset base + `data-ssr-cause`) | 0 |
+| #171 | armb-2-put-drain-harness-settle | ARMB.2 (corrective — PUT drains + harness settles) | 0 |
+| #172 | hygiene-1-memory-hygiene | HYGIENE.1 (+ `r5-synthesis`' 22 planning commits inside) | 1 |
+| #173 | fix-1-journey-fixture-repairs | FIX.1 | 1 |
+| #174 | verif-1-composed-ffbb8ad | VERIF.1 (+ CIREP.1 ancestor repairs) | 1 |
+| #175 | navc-1-delegated-interceptor | NAVC.1 | 2 |
+| #176 | navc-5-ssrhandoff-replace-seam | NAVC.5 | 2 |
+| #177 | navc-2-settle-contract | NAVC.2 | 2 |
+| #178 | navc-3-session-invariants | NAVC.3 | 2 |
+| #179 | navc-4-nav-acceptance-legs | NAVC.4 | 2 |
+| #180 | r5econ-1-spend-guard-repairs | R5ECON.1 | 3 |
+| #181 | r5econ-2-testcheaproute-arm | R5ECON.2 | 3 |
+| #182 | r5econ-3-funded-window-regime | R5ECON.3 | 3 |
+| #183 | r5ops-1-ops-residuals | R5OPS.1 | 4 |
+| #184 | bl38-1-prod-residue-cleanup | BL38.1 | 4 |
+| #185 | cost-1-prod-cost-posture | COST.1 | 4 |
+| #186 | verif-2-preview-legs | VERIF.2 | 4 |
+| #187 | funded-1-funded-window-wave | FUNDED.1 (wave refused at bind — CARRY) | 5 |
+| #188 | r5cap-1-capstone-gap-analysis | R5CAP.1 | 5 |
+| #189 | r5cap-3-capstone-closure | R5CAP.3 | 5 |
+| #190 | r5rec-1-backlog-readiness | R5REC.1 | 5 |
+| #191 | r5rec-2-spec-reconciliation | R5REC.2 | 5 |
+| #192 | r5rec-3-integration-plan | R5REC.3 (this plan) | 5 |
+| #193/#194 | (R5DOC.1 / R5DOC.2 — authored after this PR) | docs tail, deploy-neutral | 5 |
+
+## R5.3 · Merge order — bottom-up, strictly; merge commits
+
+Mechanics unchanged from §R4.4 — restated so this section is self-contained:
+
+- **Strictly ascending PR number: #170, #171, …, tip.** Never out of order; each
+  head contains its ancestors' history.
+- **Merge commit only** (`gh pr merge $PR --merge`) — preserves the deployed SHAs
+  (`b35473d`/`d5a74cc`/`ffbb8ad`) as literal ancestors of `main` (§R5.1). Never
+  `--squash`, never `--rebase`.
+- **Retargeting:** step 0 is `gh pr edit 170 --base main` (its declared base is a
+  merged branch). Then the usual flow: merge → delete the head branch → GitHub
+  auto-retargets the child to `main`. For #172 the retarget is manual and required
+  (`gh pr edit 172 --base main` after #171 lands) — its base `r5-synthesis` has no
+  PR to merge first; the 22 synthesis commits land inside #172.
+- **Per-PR read before merge (§R4.4 verbatim):** `gh pr view $PR --json
+  mergeable,mergeStateStatus` + `gh pr checks $PR`. The GD-MAINT.4-1 privsep waiver
+  class is now code-fixed (the capability-skip skip legs exist on both lines —
+  `dddd2e1`/`625d28a`); expect `integration` green throughout, and treat **any**
+  non-privsep red as a stop, not a waiver candidate.
+- **Merge pause = none in round 5.** Unlike §R4, no merge here gates a flip — the
+  boundaries below are **deploy** boundaries. Merges may run straight through
+  #170 → tip in one or more sittings; what they may NOT do is trigger a deploy at
+  a forbidden SHA (§R5.4).
+
+## R5.4 · Deploy boundaries — the three hard rules, then the segment table
+
+1. **NAVC deploy freeze (carried from `154_NAVC.1`, contract M5).** Between the
+   first NAVC merge (#175) and the last (#179) `main` is **not deployable**: the
+   delegated interceptor activates client navs that exercise the page-session
+   registry, and NAVC.3's destroy-identity fix must ship with it. **NAVC.1 must
+   never deploy ahead of NAVC.3** — one segment covers NAVC.1→NAVC.4; the earliest
+   legal deploy SHA is #179's merge commit. A deploy at #182's boundary (which
+   contains the whole nav stream) also satisfies it; a deploy at #175/#176/#177's
+   boundary NEVER does.
+2. **The econ regime deploys before any funded-window re-attempt.** Segment 3
+   (#180–#182 — spend-guard repairs, `testCheapRoute` arm, the funded regime) must
+   be merged AND deployed to prod before a future GATE-R5F re-read / FUNDED retry.
+   GD-FUNDED.1-1 ruled CARRY: a later attempt needs **both** (a) a fresh operator
+   envelope ruling (re-epoch `FUNDED_ROUND_SINCE` / raise `FUNDED_WINDOW_CAP_USD` /
+   continue carrying — never assumed, never scheduled here) and (b) this segment
+   live on prod. The mechanical guard fails closed regardless — $80.86 ≥ ~$60
+   already proved that at FUNDED.1's bind.
+3. **The nightly-green unlock is merge+deploy-bound (BL-74).** The scheduled
+   `journeys.yml` nightly asserts provenance = `github.sha` = `main` HEAD — it can
+   only read green after the sweep is complete AND a deploy carries the `main` tip
+   to prod (§R5.5). No mid-sweep deploy satisfies it; `workflow_dispatch` never does.
+
+| # | merge PRs (bottom-up) | deploy activates | per-boundary evidence recipe |
+|---|---|---|---|
+| 0 | **#170–#171** (ARMB tail; retarget #170 → `main` first) | none — prod already runs `ffbb8ad` (inside #171); the only product-side delta past it is `dddd2e1`'s CI-test skip. Merging anchors the deployed SHAs in `main` history | merge mechanics only — §R5.3 per-PR read. **Optional** no-op deploy at #171's merge for a `main`-SHA `deployments` row; not required |
+| 1 | #172–#174 (synthesis + hygiene + fixtures + VERIF.1) | none required — run-task privsep-check probe + journeys/harness + a tsconfig edge; prod-inert | optional deploy; **last free deploy point before the NAVC freeze** — any deploy after #175's merge must wait for #179's |
+| 2 | #175–#179 (NAVC.1→NAVC.4) | **one deploy, at ≥#179's merge commit** — the delegated interceptor, SsrHandoff replace, settle contract, registry destroy-identity fix | hard boundary per rule 1. Post-deploy ($0): `curl` an authed doc → `data-nav-count` present; click-nav leaves `data-mounted` cycling; `rhema-journeys --stage prod --expect-sha <sha> --steps R10` (NAVC.4's acceptance leg; R10.keepalive stays `expected:red` — collab wire is domains-only → D-SPA.24-1); console/`failedRequests` empty |
+| 3 | #180–#182 (R5ECON.1–3) | **deploy REQUIRED before any funded re-attempt** — `testCheapRoute` orchestrator arm + spend-guard scope repairs + the funded regime (registry caps, `funded-window.mjs`) | post-deploy, $0: `funded-window.mjs --stage prod --dry-run` prints all nine §5.5 rows and refuses closed without the ruling envs (dsn/cumulative/tenant rows honest); REQ-ECON-6 `req_jrn_` exclusions live; per-leg `capUsd` enforced. **Then, and only then**, a fresh GATE-R5F read may be scheduled — never before |
+| 4 | #183–#186 (R5OPS.1, BL38.1, COST.1, VERIF.2) | deploy carries the VERIF.2 product fixes — dossier `compact` Apply-gate, fetcher `HostRateLimiter` clock fix, `/healthz/` alias, server auth-origin reads; COST.1's stage facts are already live (update 151 — the merge lands the code behind the applied config) | post-deploy ($0): `/p/:p/review/:runId` phone arm withholds `[data-apply]`; `GET /healthz/` (trailing slash) 200s on web+api; a first-hit SSRF target on fetcher returns 403 not 429; `pulumi preview` on prod shows **no drift** on the COST.1 levers (already applied) |
+| 5 | #187 → tip (#192 + expected #193/#194) | deploy-neutral — docs, evidence, drivers, reports | merge mechanics only. After the tip lands, the **tip deploy** (any boundary SHA ≥ the tip merge) is what unlocks §R5.5 |
+
+Deploys may fold forward (a single tip deploy satisfies every segment boundary —
+the Arm-B precedent exists), but they may **never** collapse backward into a
+forbidden SHA: no deploy inside segment 2's range, and no funded re-attempt before
+segment 3's deploy. Deploy procedure is §R4.8 verbatim (boundary SHA → image set →
+`pulumi preview` zero-stateful → `pulumi up` → `check-deploy-provenance --expect`
+→ `deployments` row).
+
+## R5.5 · The nightly-green sequencing — BL-74 / REQ-OPS-6 / D-OBS.1-3 / D-SPA.28-1
+
+The scheduled nightly (`.github/workflows/journeys.yml` cron `5 6 * * *` — 06:05
+UTC) checks out `github.sha` = **`main` HEAD** on scheduled events, and
+`JOURNEY_EXPECT_SHA` pins provenance to that same sha. Consequences:
+
+- **Unlock sequence:** merge sweep complete through the tip → deploy the `main`
+  tip → the next **scheduled** run (not `workflow_dispatch` — a dispatch pins the
+  dispatched ref, not `main` HEAD) reads `github.sha == deployments.sha == prod
+  /healthz`. That run's green satisfies REQ-OPS-6 (first scheduled nightly green),
+  D-OBS.1-3's residual arm, BL-74's nightly leg, and D-SPA.28-1's "≥1 nightly
+  green" clause (its flip-merge half lands with the sweep).
+- A **red** nightly is a finding, not a blocker to fabricate around: record it,
+  the rows stay open, and a new failure class pauses the deploy cadence per §R5.7.
+- Deploying mid-sweep does **not** help: any SHA below the eventual tip fails the
+  `github.sha` equality once later merges land.
+
+## R5.6 · Funded + preview ordering constraints
+
+**Funded (never scheduled spend):** a future funded attempt requires, in order —
+(a) segment 3 deployed on prod; (b) a fresh operator envelope ruling
+(GD-FUNDED.1-1 = CARRY stands; `FUNDED_ROUND_SINCE` re-epoch or a raised
+`FUNDED_WINDOW_CAP_USD` — the worker never sets either); (c) the env arms inside
+the ticket (system-role `JOURNEY_DATABASE_URL` over the IAP tunnel;
+`funded-tenant.mjs --execute` re-provisioning the reaped `test+jrn-a` tenant +
+house grant). The §5.5 checklist re-binds at every dispatch and fails closed —
+$0 spent is always an acceptable outcome. Carried legs stay on D-CAP.2-1 +
+constituents meanwhile.
+
+**Preview:** VERIF.2's `pr-186` stack was destroyed at closeout (zero
+`rhema-pr-186*` orphans; ~$2.9 vs ≤$8) — a future preview wave stands a fresh
+`pr-<n>` via `preview-stack.mjs` and is **off the merge/deploy critical path**.
+The non-prod Resend secret is seeded (D-MAINT.6-1 DONE 2026-10-16); the
+posture-bound residuals stay stage-bound, not merge-bound: D-SPA.24-1 (collab wire
+is domains-only), D-SPA.16-1/-20-1 (`stripe_unconfigured` on previews), D-OPS.1-1
+(signed-in preview legs) — each names its stage prerequisite on its row.
+
+**Golden (AWAITING):** GD-R5OPS.1-1 — the ~$150–300/night nightly-golden ruling
+(⚑ Q-GOLDEN) is an **open operator precondition, recorded, never answered**. The
+driver (`scripts/live/nightly-golden-driver.mjs`) refuses `--execute` without
+`GOLDEN_BUDGET_RULING=approved`; D-P0.15-4 stays open behind it.
+
+## R5.7 · Stop conditions + rollback, per segment
+
+**STOP — pause and report, never push through:**
+- Any PR check fails (the privsep class is code-fixed now — there is no live
+  waiver to cite; a red is a red).
+- A merge-tree sanity shows a real conflict (all 22 read 0 this run — the repeat
+  privsep-skip patch is content-identical; anything else means the drift model is
+  wrong).
+- `pulumi preview` shows any replace/delete or a stateful-resource diff.
+- `check-deploy-provenance` returns anything but all-PASS after a deploy.
+- A request to deploy at a SHA inside segment 2's range (contains NAVC.1, lacks
+  NAVC.3) — hard refusal; the boundary is recorded, not negotiable.
+- A request to open a funded window / GATE-R5F re-read before segment 3's deploy —
+  hard refusal; and even after it, only behind a fresh envelope ruling.
+- Post-NAVC-deploy: an authed document missing `data-nav-count`, `data-mounted`
+  stuck absent through a client nav, or R10 failing on a non-owed arm.
+- A scheduled nightly going red, or a `github.sha ≠ deployments.sha` provenance
+  mismatch on any journey run.
+
+**Rollback:**
+- Merge layer: §10 verbatim — `git revert -m 1 <merge-sha>`, top-down for ranges;
+  never force-push `main`.
+- Deploy layer, any segment: `git revert` the offending commits + rebuild/redeploy
+  — no config arm exists (post-SPA.28). A NAVC-segment revert restores the
+  pre-interceptor document-nav posture (MPA-mode) cleanly; the interceptor is
+  client-side additive.
+- COST.1's lever config is already applied (update 151): rolling its IaC back is a
+  stage-fact revert + `pulumi up`, not a merge-layer act — and it re-raises cost.
+- BL38.1's executed prod-data deletes are irreversible — recorded, not rollable.
+- A bad segment-2/3 deploy is reverted, never flag-flipped; the funded guard stays
+  fail-closed the entire time (a rollback cannot open the window).
