@@ -5,6 +5,7 @@ import type { PredicateFacts } from "@rhema/orchestrator";
 import { emptyUsage } from "@rhema/engine";
 import {
   runCommitLoop,
+  type CheckpointCall,
   type CommitCall,
   type FailCall,
   type HarnessApiClient,
@@ -12,6 +13,7 @@ import {
   type PhaseRunOutputs,
   type WorkDeliveryContent,
 } from "./harness-loop.js";
+import type { ResearchBudgetConsult } from "@rhema/orchestrator";
 import type { DeliveryArgs } from "@rhema/mirror";
 
 const review = WORKFLOW_MANIFESTS.review!;
@@ -704,3 +706,198 @@ const DELIVERY_FACTS = {
   correspondenceKind: "review" as const,
   draftPromotedVersionId: "av_draft_head",
 };
+
+// RES.3 (REQ-ENG-3) — the verification checkpoint + budget-aware retry gate. The live sequence
+// (run 01M48VNKY6F263TCQRVBJ8JRQA / D-RES.3-1): a research exec consumed 12 searches + 12 fetches
+// and wrote ZERO files; the guided retry and two stranded re-drives re-ran verification with fresh
+// sessions against the SAME claim-scaled bound until it hit exactly 17/48 — only the last tool-less
+// exec wrote the honest 9/9-unverifiable ledger. These tests pin the fix: produced work checkpoints
+// durably, every re-execution consults the bound first, and a dead bound resolves honestly —
+// checkpoint-commit when the checkpointed artifacts satisfy the phase contract, else the terminal
+// `research_budget_exhausted` — never a silent re-drain.
+describe("RES.3 — research-phase checkpointing + the budget retry gate", () => {
+  const verification = { ...byKey("verification"), index: 2 };
+  const CKPT_PATH = "agents/editor/correspondence/v1-review/01-claim-ledger.md";
+  const ckptVersion = {
+    path: CKPT_PATH,
+    root: "project" as const,
+    kind: "claim_ledger",
+    namespace: "agent:editor",
+    sha256: "s_ck",
+    bytes: Buffer.from("# ledger\n"),
+    wordCount: 2,
+  };
+  const DEAD: ResearchBudgetConsult = {
+    searchesUsed: 17, fetchesUsed: 48, searchBudget: 17, fetchBudget: 48,
+    searchesRemaining: 0, fetchesRemaining: 0, exhausted: true,
+  };
+  const ALIVE: ResearchBudgetConsult = {
+    searchesUsed: 12, fetchesUsed: 12, searchBudget: 17, fetchBudget: 48,
+    searchesRemaining: 5, fetchesRemaining: 36, exhausted: false,
+  };
+  /** facts that satisfy verification's claim_rows_gte_inventory + sidecar_validates predicates. */
+  const PASSING_FACTS: PredicateFacts = {
+    claimRowCount: 9,
+    inventoryCount: 9,
+    sidecarValidates: { "01-claim-ledger.json": true },
+  };
+
+  it("the D-RES.3-1 drain sequence — a dead bound refuses the guided retry (NO second runPhase)", async () => {
+    // exec 1: researched (the proxy now reads 17/48) but the verdict is artifact_missing — the
+    // pre-RES.3 loop would have re-run the phase whole. Now: checkpoint → consult → gate.
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs({ claimRowCount: 0, inventoryCount: 9 }, { versions: [ckptVersion] }),
+    );
+    const checkpoints: CheckpointCall[] = [];
+    client.checkpoint = (args) => {
+      checkpoints.push(args);
+      return Promise.resolve({ producedVersionIds: ["av_ck1"], byPath: { [CKPT_PATH]: "av_ck1" } });
+    };
+    client.researchBudget = () => Promise.resolve(DEAD);
+    // the checkpointed ledger is still under inventory — the contract is NOT satisfied → terminal.
+    const inspectWork = () =>
+      Promise.resolve(completeOutputs({ claimRowCount: 4, inventoryCount: 9, sidecarValidates: { "01-claim-ledger.json": true } }));
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1", inspectWork });
+
+    expect(res).toMatchObject({ kind: "failed", errorClass: "research_budget_exhausted" });
+    expect(checkpoints).toHaveLength(1); // the exec's produced work persisted BEFORE the retry decision
+    expect(checkpoints[0]!.versions).toHaveLength(1);
+    // THE drain killer: exactly ONE exec — the guided retry never spawned.
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(1);
+    expect(rec.fails).toHaveLength(1);
+    expect(rec.fails[0]!.errorClass).toBe("research_budget_exhausted");
+    expect(rec.fails[0]!.reason).toContain("17/17 searches");
+    expect(rec.commits).toHaveLength(0);
+  });
+
+  it("stranded re-drive (gate 1) — a spec-stamped dead bound never spawns an exec; the checkpoint commits", async () => {
+    // A fresh pod on a run whose bound is already dead: the consult rides the spec; the remounted
+    // checkpoint satisfies the phase contract → the step COMMITS (the REQ-SPEC-31 Unverified path —
+    // a dead-boundary fact_check rides this into delivery; review commits + advances).
+    const spec = makeSpec(verification, {
+      stopAfterPhase: true,
+      researchBudget: DEAD,
+      checkpoint: { producedVersionIds: ["av_ck1"], byPath: { [CKPT_PATH]: "av_ck1" } },
+    });
+    const { rec, client, runPhase } = makeHarness([spec], () => {
+      throw new Error("runPhase must never run on a dead bound");
+    });
+    const inspectWork = () => Promise.resolve(completeOutputs(PASSING_FACTS));
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1", inspectWork });
+
+    expect(res).toEqual({ kind: "stopped", phasesCommitted: 1 });
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(0);
+    expect(rec.commits).toHaveLength(1);
+    expect(rec.commits[0]!.result.sdkSubtype).toBe("research_budget_exhausted"); // honest marker
+    expect(rec.commits[0]!.producedVersionIds).toEqual(["av_ck1"]);
+  });
+
+  it("gate 1 terminal — a dead bound with NO usable checkpoint fails honestly (never re-executes)", async () => {
+    const spec = makeSpec(verification, { stopAfterPhase: true, researchBudget: DEAD });
+    const { rec, client, runPhase } = makeHarness([spec], () => {
+      throw new Error("runPhase must never run on a dead bound");
+    });
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res).toMatchObject({ kind: "failed", errorClass: "research_budget_exhausted" });
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(0);
+    expect(rec.fails[0]!.errorClass).toBe("research_budget_exhausted");
+  });
+
+  it("gate 2 checkpoint-commit — the exec's own checkpointed work satisfies the contract", async () => {
+    // exec 1 wrote the full ledger (all 9/9 rows) but the oracle still reports artifact_missing
+    // (e.g. a sidecar path quirk) while the bound is now dead: checkpoint → consult → the SAME
+    // artifacts satisfy the predicates on inspect → honest commit instead of a re-drain.
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs({ nonempty: { "01-claim-ledger.md": false } }, { versions: [ckptVersion] }),
+    );
+    client.checkpoint = () =>
+      Promise.resolve({ producedVersionIds: ["av_ck1"], byPath: { [CKPT_PATH]: "av_ck1" } });
+    client.researchBudget = () => Promise.resolve(DEAD);
+    const inspectWork = () => Promise.resolve(completeOutputs(PASSING_FACTS));
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1", inspectWork });
+
+    expect(res).toEqual({ kind: "stopped", phasesCommitted: 1 });
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(1); // exec 1 only
+    expect(rec.commits[0]!.result.sdkSubtype).toBe("research_budget_exhausted");
+    expect(rec.commits[0]!.producedVersionIds).toEqual(["av_ck1"]);
+    expect(rec.fails).toHaveLength(0);
+  });
+
+  it("a live bound still permits the guided retry (regression: the gate only fires on dead)", async () => {
+    let attempt = 0;
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () => {
+      attempt++;
+      return attempt === 1
+        ? completeOutputs({ nonempty: { "01-claim-ledger.md": false } }, { versions: [ckptVersion] })
+        : completeOutputs(PASSING_FACTS);
+    });
+    const checkpoints: CheckpointCall[] = [];
+    client.checkpoint = (args) => {
+      checkpoints.push(args);
+      return Promise.resolve({ producedVersionIds: ["av_ck1"], byPath: { [CKPT_PATH]: "av_ck1" } });
+    };
+    client.researchBudget = () => Promise.resolve(ALIVE);
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+
+    expect(attempt).toBe(2);
+    expect(res.kind).toBe("stopped");
+    expect(checkpoints).toHaveLength(1);
+    expect(rec.runPhaseGuidance[1]).toMatch(/incomplete/i);
+    // the committed produced set is the UNION (checkpoint ids + the retry's harvested ids).
+    expect(rec.commits[0]!.producedVersionIds).toEqual(expect.arrayContaining(["av_ck1"]));
+  });
+
+  it("a live retry that also fails checkpoints its produced work too (the resume point survives)", async () => {
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs({ nonempty: { "01-claim-ledger.md": false } }, { versions: [ckptVersion] }),
+    );
+    const checkpoints: CheckpointCall[] = [];
+    client.checkpoint = (args) => {
+      checkpoints.push(args);
+      return Promise.resolve({ producedVersionIds: [`av_ck${checkpoints.length}`], byPath: {} });
+    };
+    client.researchBudget = () => Promise.resolve(ALIVE);
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+
+    expect(res.kind).toBe("failed");
+    expect(checkpoints).toHaveLength(2); // exec 1's checkpoint + the retry's checkpoint
+    expect(rec.fails[0]!.errorClass).toBe("artifact_missing");
+  });
+
+  it("a non-research phase never checkpoints (the gate is research-scoped)", async () => {
+    const spec = makeSpec({ ...byKey("craft"), index: 5 });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs({ nonempty: { "04-craft-notes.md": false } }, { versions: [ckptVersion] }),
+    );
+    const checkpoints: CheckpointCall[] = [];
+    client.checkpoint = (args) => {
+      checkpoints.push(args);
+      return Promise.resolve({ producedVersionIds: [], byPath: {} });
+    };
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    expect(checkpoints).toHaveLength(0);
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(2); // old retry path intact
+  });
+
+  it("an UNBOUND consult seam falls back to the spec-stamped figure — never an unbounded retry", async () => {
+    // researchBudget() route down (null) but the spec says dead → the gate still fires.
+    const spec = makeSpec(verification, { stopAfterPhase: true, researchBudget: DEAD });
+    const { rec, client, runPhase } = makeHarness([spec], () => {
+      throw new Error("runPhase must never run on a dead bound");
+    });
+    client.researchBudget = () => Promise.resolve(null);
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res).toMatchObject({ kind: "failed", errorClass: "research_budget_exhausted" });
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(0);
+  });
+});

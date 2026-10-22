@@ -213,6 +213,7 @@ async function postAudit(args: {
     // where the hook expects to find it (the draft read is ALLOWed, not denied) and where the SDK cwd points.
     const roots = resolveSeatRoots({ roots: spec.hookPolicyInput.roots, personaId: spec.hookPolicyInput.personaId });
     await materializeWork({ roots, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
+    materialized = true;
 
     const cwd = spec.request.cwd;
     await mkdir(cwd, { recursive: true });
@@ -389,6 +390,27 @@ async function postAudit(args: {
     return outputs;
   };
 
+  // RES.3 (REQ-ENG-3) — the retry gate's checkpoint inspector: read the mounted `/work` WITHOUT
+  // spawning the agent. On a fresh pod (a stranded re-drive whose bound is dead — the pre-exec gate)
+  // `/work` is empty, so materialize first (the checkpointed heads remount readwrite — the same view a
+  // retry would edit). After an exec ran, `/work` IS the checkpoint state — read it live (the
+  // hydration manifest predates the just-checkpointed heads; re-materializing would only rewrite
+  // manifest-entry paths to older content). The facts the gate's predicate check needs come from the
+  // same `buildPhaseOutputs` reader the exec path uses.
+  let materialized = false;
+  const inspectWorkInPod = async (spec: HarnessRunSpec): Promise<PhaseRunOutputs> => {
+    const roots = resolveSeatRoots({ roots: spec.hookPolicyInput.roots, personaId: spec.hookPolicyInput.personaId });
+    if (!materialized) {
+      const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
+      await materializeWork({ roots, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
+      materialized = true;
+    }
+    const files = await readWorkRoots(spec.request.cwd, roots.persona);
+    const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+    console.log(`[harness] phase ${spec.request.phase.key} checkpoint inspect: versions=${outputs.versions.length} facts=${JSON.stringify(outputs.facts)}`);
+    return outputs;
+  };
+
   // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8); always tear the injector down after.
   // RES.1 — the preflight seam probes the run's OWN egress-proxy (not the injector loopback: the injector
   // is the agent's path; the harness's probe rides the real upstream with the credential it holds).
@@ -401,6 +423,7 @@ async function postAudit(args: {
       workspaceId,
       preflight: (spec) =>
         runResearchPreflight({ baseUrl: egressProxyBaseUrl, credential: proxyCredential, spec }),
+      inspectWork: inspectWorkInPod,
     });
   } finally {
     await injector.close();

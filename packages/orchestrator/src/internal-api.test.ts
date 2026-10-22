@@ -6,6 +6,7 @@ import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
   audit,
   beginStep,
+  checkpointStep,
   commitStep,
   failRun,
   failStep,
@@ -1316,5 +1317,173 @@ describe("RPT.1 — beginStep + the live intra-phase meter (REQ-IDE-11; §12.7; 
       "select extract(epoch from (ended_at - started_at)) * 1000 as ms from steps where run_id = 'run1' and ordinal = 0",
     )).rows[0] as { ms: number };
     expect(Math.round(row.ms)).toBe(90_000); // started_at back-derived → a real span, not equal stamps
+  });
+});
+
+// RES.3 (REQ-ENG-3) — the phase checkpoint: persist a research phase's produced versions on a
+// non-complete outcome so a retry/re-drive resumes mounted work (heads move; the run's own
+// produced set escapes the BL-66 cross-run exclusion). Plus the research_budget_exhausted
+// terminal: the gate's honest outcome — `running → failed` + settle, never a re-enqueue.
+describe("checkpointStep — the phase<N> checkpoint (RES.3)", () => {
+  const CKPT_VERSIONS: readonly NewVersion[] = [
+    {
+      path: "agents/editor/correspondence/v1-review/01-claim-ledger.md",
+      root: "project",
+      kind: "claim_ledger",
+      namespace: "agent:editor",
+      sha256: sha256Hex(Buffer.from("# Claim Ledger\npartial\n", "utf8")),
+      bytes: Buffer.from("# Claim Ledger\npartial\n", "utf8"),
+      wordCount: 3,
+    },
+  ];
+  const ckpt = (args: { attempt?: number; versions?: readonly NewVersion[] }) =>
+    checkpointStep(
+      { ...deps, store: new InMemoryContentStore(), eventWriter: new SqlEventWriter() },
+      {
+        runId: "run1",
+        attempt: args.attempt ?? 1,
+        workspaceId: seed.workspaceId,
+        stepKey: "verification",
+        ordinal: 2,
+        seat: "editor",
+        versions: args.versions ?? CKPT_VERSIONS,
+      },
+    );
+  const headSha = async (path: string) =>
+    (
+      await db.client.query(
+        `select av.content_sha256 from artifacts a join artifact_versions av on av.id = a.head_version_id
+          where a.mirror_path = $1`,
+        [path],
+      )
+    ).rows[0] as { content_sha256: string } | undefined;
+  const producedIds = async () =>
+    (
+      (
+        await db.client.query(
+          "select produced_version_ids from steps where run_id = 'run1' and ordinal = 2",
+        )
+      ).rows[0] as { produced_version_ids: string[] } | undefined
+    )?.produced_version_ids;
+
+  beforeEach(async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+  });
+
+  it("persists the produced versions as artifact heads + attributes them to the step row", async () => {
+    await beginStep(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "verification", ordinal: 2, of: 7 });
+    const res = await ckpt({});
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.producedVersionIds).toHaveLength(1);
+    expect(res.byPath["agents/editor/correspondence/v1-review/01-claim-ledger.md"]).toBe(res.producedVersionIds[0]);
+    // the head moved to the checkpointed content — the resume remounts exactly this.
+    expect((await headSha("agents/editor/correspondence/v1-review/01-claim-ledger.md"))?.content_sha256).toBe(
+      CKPT_VERSIONS[0]!.sha256,
+    );
+    expect(await producedIds()).toEqual(res.producedVersionIds);
+  });
+
+  it("emits phase.checkpointed (internal telemetry: paths + version ids, no content)", async () => {
+    await beginStep(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "verification", ordinal: 2, of: 7 });
+    await ckpt({});
+    const ev = (await db.client.query(
+      "select payload from run_events_internal where run_id = 'run1' and type = 'phase.checkpointed'",
+    )).rows[0] as { payload: { phase: string; ordinal: number; paths: string[]; versionIds: string[] } };
+    expect(ev.payload.phase).toBe("verification");
+    expect(ev.payload.ordinal).toBe(2);
+    expect(ev.payload.paths).toEqual(["agents/editor/correspondence/v1-review/01-claim-ledger.md"]);
+    expect(ev.payload.versionIds).toHaveLength(1);
+  });
+
+  it("unions produced_version_ids across calls; an unchanged checkpoint mints no duplicate-head version", async () => {
+    await beginStep(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "verification", ordinal: 2, of: 7 });
+    const first = await ckpt({});
+    const second = await ckpt({}); // same bytes — dedup against the head, no new version
+    expect(first.ok && second.ok).toBe(true);
+    if (!(first.ok && second.ok)) return;
+    expect(second.producedVersionIds).toEqual(first.producedVersionIds); // union, not duplication
+    expect(
+      (await db.client.query(
+        "select count(*)::int n from artifact_versions av join artifacts a on a.id=av.artifact_id where a.mirror_path like 'agents/editor/%'",
+      )).rows[0] as { n: number },
+    ).toEqual({ n: 1 }); // exactly one version — the second call deduped
+    // a CHANGED checkpoint adds a second version + unions the ids.
+    const changed: NewVersion[] = [
+      { ...CKPT_VERSIONS[0]!, bytes: Buffer.from("# Claim Ledger\nmore rows\n", "utf8") },
+    ];
+    changed[0] = { ...changed[0]!, sha256: sha256Hex(changed[0]!.bytes) };
+    const third = await ckpt({ versions: changed });
+    expect(third.ok).toBe(true);
+    if (!third.ok) return;
+    expect(third.producedVersionIds).toHaveLength(2);
+    expect((await headSha("agents/editor/correspondence/v1-review/01-claim-ledger.md"))?.content_sha256).toBe(
+      changed[0]!.sha256,
+    );
+  });
+
+  it("a checkpoint on a NON-existent step row inserts it 'running' (before beginStep lands)", async () => {
+    const res = await ckpt({});
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query(
+      "select state, phase from steps where run_id = 'run1' and ordinal = 2",
+    )).rows[0] as { state: string; phase: string };
+    expect(row).toMatchObject({ state: "running", phase: "verification" });
+  });
+
+  it("a superseded attempt's checkpoint is refused stale_task and persists NOTHING (late-arrival fence)", async () => {
+    await db.client.query("update runs set current_attempt = 2 where id = 'run1'");
+    const res = await ckpt({ attempt: 1 });
+    expect(res).toMatchObject({ ok: false, code: "stale_task", currentAttempt: 2 });
+    expect(
+      (await db.client.query("select count(*)::int n from artifacts where mirror_path like 'agents/editor/%'"))
+        .rows[0],
+    ).toEqual({ n: 0 });
+  });
+
+  it("a committed 'done' step row is never re-attributed by a late checkpoint", async () => {
+    await commitStep(deps, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "verification", ordinal: 2, of: 7,
+      credits: 5, producedVersionIds: ["v_committed"],
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+    const res = await ckpt({});
+    expect(res.ok).toBe(true); // the version lands, but the committed produced set is untouched
+    expect(await producedIds()).toEqual(["v_committed"]);
+  });
+
+  it("failStep preserves the checkpointed produced set (the resume point survives the fail row)", async () => {
+    await beginStep(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "verification", ordinal: 2, of: 7 });
+    const res = await ckpt({});
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    await failStep(deps, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId,
+      stepKey: "verification", ordinal: 2, errorClass: "artifact_missing", reason: "no ledger",
+    });
+    expect(await producedIds()).toEqual(res.producedVersionIds);
+  });
+});
+
+describe("failStep — research_budget_exhausted terminalizes (RES.3)", () => {
+  beforeEach(async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+  });
+
+  it("the gate's honest outcome: running → failed with failure.code=research_budget_exhausted", async () => {
+    const res = await failStep(deps, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId,
+      stepKey: "verification", ordinal: 2,
+      errorClass: "research_budget_exhausted",
+      reason: "research budget exhausted — 17/17 searches, 48/48 fetches consumed across all attempts; no usable checkpoint",
+    });
+    expect(res).toMatchObject({ ok: true });
+    expect(await stateOf("run1")).toBe("failed");
+    const row = (await db.client.query("select failure from runs where id = 'run1'")).rows[0] as {
+      failure: { code: string; retryable: boolean };
+    };
+    expect(row.failure.code).toBe("research_budget_exhausted");
+    expect(row.failure.retryable).toBe(false);
   });
 });

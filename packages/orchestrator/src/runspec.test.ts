@@ -152,6 +152,94 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     });
   });
 
+  // RES.3 (REQ-ENG-3) — the retry gate's server-authored facts on the spec. A research-class phase
+  // stamps `researchBudget` (bound − spend across all attempts) + `checkpoint` (the run's own failed
+  // step's produced set → ids + path map) + the resume/contract input lines — so a stranded re-drive
+  // consults the bound BEFORE executing and the seat sees the remounted checkpoint, never re-researching.
+  describe("researchBudget + checkpoint on the spec (RES.3)", () => {
+    const CKPT_PATH = "agents/editor/correspondence/v1-review/01-claim-ledger.md";
+    async function seedCheckpointedVerification(runId: string): Promise<string> {
+      // pin verification (skillPhase "1" → the research-class phase at ordinal 2).
+      await db.pg.query(`update runs set inputs = '{"phase":"1"}'::jsonb where id = $1`, [runId]);
+      await db.pg.query(
+        `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, created_at)
+           values ('art_ckpt', $1, $2, 'claim_ledger', 'agent:editor', $3, now())`,
+        [seed.workspaceId, seed.projectId, CKPT_PATH],
+      );
+      await db.pg.query(
+        `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type,
+           created_by, created_at, immutable)
+           values ('av_ckpt', 'art_ckpt', 1, 'sha_ckpt', 'key_ckpt', 42, 'text/markdown', '{"kind":"agent"}', now(), false)`,
+      );
+      await db.pg.query(`update artifacts set head_version_id = 'av_ckpt' where id = 'art_ckpt'`);
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids)
+           values ('st_ckpt', $1, 'verification', 2, 'failed', 1, '{av_ckpt}')`,
+        [runId],
+      );
+      return "av_ckpt";
+    }
+
+    it("a checkpointed failed verification stamps the consult + checkpoint + resume inputs", async () => {
+      const runId = await seedWorkflowRun("run_ckpt", "review");
+      const versionId = await seedCheckpointedVerification(runId);
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 2, workspaceId: seed.workspaceId });
+      expect(spec.request.phase.key).toBe("verification");
+
+      // the consult: no authored policy (no credential) ⇒ proxy defaults; no spend ⇒ full bound.
+      expect(spec.researchBudget).toBeDefined();
+      expect(spec.researchBudget!.searchBudget).toBe(24);
+      expect(spec.researchBudget!.exhausted).toBe(false);
+
+      // the checkpoint: the failed step's produced set → ids + a path→version map (byPath parity
+      // with harvest — the checkpoint-commit's deliveredVersionIds come from it).
+      expect(spec.checkpoint?.producedVersionIds).toEqual([versionId]);
+      expect(spec.checkpoint?.byPath).toEqual({ [CKPT_PATH]: versionId });
+
+      // the sanctioned input lines (REQ-ARCH-5: steering via inputs, never skill text).
+      expect(spec.request.inputs.checkpoint_contract).toContain("Checkpoint contract");
+      expect(spec.request.inputs.research_budget).toContain("24");
+      expect(spec.request.inputs.checkpoint).toContain(CKPT_PATH);
+    });
+
+    it("a checkpointed artifact head appears in the hydration manifest (the resume remount)", async () => {
+      const runId = await seedWorkflowRun("run_ckpt2", "review");
+      await seedCheckpointedVerification(runId);
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 2, workspaceId: seed.workspaceId });
+      const entry = spec.manifest.entries.find((e) => e.path === CKPT_PATH);
+      expect(entry).toBeDefined();
+      expect(entry!.artifactVersionId).toBe("av_ckpt");
+      expect(entry!.mode).toBe("readwrite"); // seat namespace — editable resume
+    });
+
+    it("proxy-metered spend across ALL attempts drains the stamped figure (D-RES.3-1 isolation)", async () => {
+      const runId = await seedWorkflowRun("run_drain", "review");
+      await db.pg.query(`update runs set inputs = '{"phase":"1"}'::jsonb where id = $1`, [runId]);
+      for (const [attempt, searches, fetches] of [[1, 12, 12], [2, 5, 36]] as const) {
+        await db.pg.query(
+          `insert into usage_records(id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider,
+             model, model_tier, rate_table_version, searches, fetches, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, $4, $5, 'editor', 'anthropic', 'm', 'balanced', 1, $6, $7, 0, 1, 'proxy')`,
+          [`usg_d${attempt}`, seed.workspaceId, seed.billingAccountId, runId, attempt, searches, fetches],
+        );
+      }
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 3, workspaceId: seed.workspaceId });
+      expect(spec.researchBudget!.searchesUsed).toBe(17);
+      expect(spec.researchBudget!.fetchesUsed).toBe(48);
+      // defaults: 24/48 — searches dead, fetches alive ⇒ NOT exhausted (either-axis rule).
+      expect(spec.researchBudget!.exhausted).toBe(false);
+    });
+
+    it("a non-research phase stamps neither researchBudget nor checkpoint", async () => {
+      const runId = await seedWorkflowRun("run_intake", "review");
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+      expect(spec.request.phase.key).not.toBe("verification");
+      expect(spec.researchBudget).toBeUndefined();
+      expect(spec.checkpoint).toBeUndefined();
+      expect(spec.request.inputs.checkpoint_contract).toBeUndefined();
+    });
+  });
+
   // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
   // frontmatter); the spec must pin them, with personas_dir the ABSOLUTE mount base the harness
   // materializes into — the conventions file that documents the layout is not shipped in the pod's

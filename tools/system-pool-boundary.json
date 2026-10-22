@@ -23,6 +23,7 @@
     "integration/src/harness.ts": "integration harness binds the system seam over the test DB",
     "integration/src/run-live-exit.ts": "live-exit runner binds a systemExec-shaped adapter",
     "packages/orchestrator/src/internal-api.ts": "OrchestratorDeps declares the systemTxRunner field",
+    "packages/orchestrator/src/research-budget.ts": "RES.3 (REQ-ENG-3) — reads the run-scoped usage_records proxy meter (the consult) + the active proxy_credentials webTools policy (the bound); internal seam only, consumed by internal-api + runspec — never a user-serving path",
     "packages/orchestrator/src/provision.ts": "proxy_* mint + __system__ revocation ride systemTxRunner",
     "packages/orchestrator/src/runspec.ts": "RES.1 — reads the live proxy_credentials context->'webTools' so researchPreflight mirrors the policy the proxy enforces",
     "packages/orchestrator/src/stranded-sweep.ts": "cross-tenant stranded-run scans via systemExec",

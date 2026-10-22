@@ -19,6 +19,11 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
 import { authorResearchPreflight, type ResearchPreflightSpec } from "./allowlist.js";
 import type { WebToolPolicyData } from "./resolver.js";
+import {
+  readRunWebToolsPolicy,
+  researchBudgetConsult,
+  type ResearchBudgetConsult,
+} from "./research-budget.js";
 import { consumeGuidance } from "./guidance.js";
 import { loadGatePolicyFacts, type GatePolicyFacts } from "./gate-policy.js";
 import { userSourceMounts } from "./user-sources.js";
@@ -115,6 +120,25 @@ export interface HarnessRunSpec {
    * the run `research_preflight_failed` (zero user debit; the probe burn absorbs as platform cost).
    */
   readonly researchPreflight?: ResearchPreflightSpec;
+  /**
+   * RES.3 (REQ-ENG-3) — the run's research-budget consult, stamped for research-class phases only:
+   * remaining = claim-scaled bound − proxy-metered spend across EVERY attempt. The pod's retry gate
+   * consults it BEFORE executing: `exhausted` means a re-run can produce nothing a checkpoint cannot
+   * (the honest `research_budget_exhausted` path — checkpoint-commit or terminal fail, never a
+   * silent re-drain of the RES.3 kind).
+   */
+  readonly researchBudget?: ResearchBudgetConsult;
+  /**
+   * RES.3 — the phase's live checkpoint: produced version ids (and a path→version-id map) this run's
+   * non-done step row already checkpointed. Their heads remounted at hydration — the spec names them
+   * so the loop's retry gate can checkpoint-commit when the budget is dead (the `byPath` map feeds
+   * the delivery's deliveredVersionIds, same as a harvest's), and the resume guidance can steer the
+   * seat onto the mounted work instead of re-researching.
+   */
+  readonly checkpoint?: {
+    readonly producedVersionIds: readonly string[];
+    readonly byPath: Readonly<Record<string, string>>;
+  };
 }
 
 /**
@@ -322,23 +346,48 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   // kinds the run's `webTools` policy enables (read from the live credential context — the SAME policy the
   // proxy enforces — via the system pool, like the other proxy_* reads; absent ⇒ the proxy's default
   // both-on policy). The harness probes these pairs before any paid phase runs, and again on resume.
-  const webToolsPolicy: WebToolPolicyData | null | undefined = deps.systemTxRunner
-    ? await deps.systemTxRunner.run(args.workspaceId, async (tx) => {
-        const row = (
-          await tx.query(
-            `select context->'webTools' as webtools from proxy_credentials
-              where run_id = $1 and revoked_at is null order by attempt desc limit 1`,
-            [args.runId],
-          )
-        ).rows[0] as { webtools: WebToolPolicyData | null } | undefined;
-        return row?.webtools ?? null;
-      })
+  const webToolsPolicy: WebToolPolicyData | null = deps.systemTxRunner
+    ? await readRunWebToolsPolicy(deps, { runId: args.runId, workspaceId: args.workspaceId })
     : null;
   // …but only a RESEARCH-bearing run carries it: the manifest's active phases decide (a chat_turn or
   // figure run has no research-class phase, so probing its pair set would cost for no contract).
   const researchBearing = activePhases.some((p) => p.phaseClass === "research");
   const researchPreflight =
     tier && researchBearing ? authorResearchPreflight({ modelTier: tier, webTools: webToolsPolicy }) : undefined;
+
+  // RES.3 (REQ-ENG-3) — for a research-class phase, stamp the retry gate's facts on the spec:
+  //   (a) `researchBudget` — the claim-scaled bound minus the run's proxy-metered spend across ALL
+  //       attempts (a stranded re-drive consults it before any model traffic; exhausted ⇒ the gate);
+  //   (b) `checkpoint` — the run's own non-done step row's produced set, already remounted at these
+  //       paths (the checkpoint a retry resumes/commits instead of re-researching).
+  const researchPhase = phase.phaseClass === "research";
+  const researchBudget = researchPhase
+    ? await researchBudgetConsult(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        webTools: webToolsPolicy,
+      })
+    : undefined;
+  const checkpointRow = researchPhase
+    ? ((
+        await deps.txRunner.run(args.workspaceId, (tx) =>
+          tx.query(
+            `select s.produced_version_ids,
+                    coalesce((select jsonb_object_agg(a.mirror_path, av.id)
+                                from unnest(s.produced_version_ids) v
+                                join artifact_versions av on av.id = v
+                                join artifacts a on a.id = av.artifact_id), '{}'::jsonb) as by_path
+               from steps s
+              where s.run_id = $1 and s.ordinal = $2 and s.state <> 'done'`,
+            [args.runId, phase.index],
+          ),
+        )
+      ).rows[0] as { produced_version_ids: string[]; by_path: Record<string, string> } | undefined)
+    : undefined;
+  const checkpoint =
+    checkpointRow && checkpointRow.produced_version_ids.length > 0
+      ? { producedVersionIds: checkpointRow.produced_version_ids, byPath: checkpointRow.by_path }
+      : undefined;
 
   const maxUsdPerRun = args.maxUsdPerRun ?? DEFAULT_MAX_USD_PER_RUN;
   const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
@@ -517,6 +566,29 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
           research_fanout: `Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to \`researcher\` subagents in bounded batches of at most ${levers.l2FanoutShape ? COGS_FANOUT_TUNED.batchSize : COGS_FANOUT_BASELINE.batchSize} items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.`,
         }
       : {}),
+    // RES.3 (REQ-ENG-3) — the research-phase checkpoint contract. An execution that never writes
+    // leaves nothing to resume (the live RES.3 burn: exec 1 researched 12 searches + 12 fetches and
+    // wrote ZERO files, so every retry re-researched against the same claim-scaled bound). The
+    // sanctioned-input lines pin the discipline WITHOUT touching skill text (REQ-ARCH-5):
+    //   · checkpoint_contract — skeleton-first: write every inventoried row early, verdict
+    //     "unverifiable" until researched, then update rows incrementally as each item's research
+    //     lands — a terminated attempt's last write IS the checkpoint the next attempt resumes;
+    //   · research_budget — the run-level remaining figure so the seat paces itself (the gate
+    //     consults the same server figure — the proxy stays the meter of record);
+    //   · checkpoint — names the remounted prior-attempt paths when a checkpoint exists, with the
+    //     resume rule (verify only what is still unverifiable; never re-research covered rows).
+    ...(researchPhase
+      ? {
+          checkpoint_contract:
+            `Checkpoint contract (RES.3): write the phase's ledger/dossier EARLY — a skeleton covering every inventoried claim/topic (rows that are not yet researched carry verdict "unverifiable") — then update each row incrementally as its research lands. Your last written state is what an interrupted attempt resumes from; research you never persisted cannot be resumed.`,
+          research_budget: `Research budget (RES.3): ${researchBudget!.searchesRemaining} of ${researchBudget!.searchBudget} searches and ${researchBudget!.fetchesRemaining} of ${researchBudget!.fetchBudget} fetches remain for the whole run — spend them only on claims the checkpoint still leaves unverified/unverifiable.`,
+          ...(checkpoint
+            ? {
+                checkpoint: `Checkpoint resume (RES.3): your earlier attempt's work is remounted at ${Object.keys(checkpoint.byPath).sort().join(", ")} — resume from it: verify only rows still "unverifiable" or absent; do NOT re-research rows that already carry a verdict.`,
+              }
+            : {}),
+        }
+      : {}),
     // DEF.1 Stage-B (live rerun 01M3E8F8…, draft attempts 1–5): the ported skill names the ledger's
     // canonical layout in `references/draft-ledger.md`, but that file lived at `/app/skills/…` —
     // outside every §12.6 mount root — so the model's Read escape-denied and it improvised a prose
@@ -678,5 +750,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     ...(gatePolicy ? { gatePolicy } : {}),
     ...(scopedLaunch ? { scopedLaunch } : {}),
     ...(researchPreflight ? { researchPreflight } : {}),
+    ...(researchBudget ? { researchBudget } : {}),
+    ...(checkpoint ? { checkpoint } : {}),
   };
 }
