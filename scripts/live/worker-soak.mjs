@@ -356,9 +356,11 @@ export async function soak(args, io = {}) {
       });
       iter.sentAt = sentAt.toISOString();
       // Watch: job_launch sample = the launch loop returned; failed/terminal = launch gave up.
+      // ALWAYS take at least one observation — a window already spent by the send path must
+      // still record a reading rather than silently classifying on empty fields.
       const deadline = t0 + args.watchTimeoutMs;
       let state = null;
-      while (Date.now() < deadline) {
+      for (;;) {
         const s = await readRunState(pool, iter.runId);
         state = s?.state ?? state;
         const { jobLaunchMs, admitMintMs } = await readLaunchSample(pool, iter.runId);
@@ -366,6 +368,7 @@ export async function soak(args, io = {}) {
         iter.jobLaunchMs = jobLaunchMs;
         iter.admitMintMs = admitMintMs;
         if (jobLaunchMs != null || state === "failed") break;
+        if (Date.now() >= deadline) break;
         await sleep(2_000);
       }
       iter.observedMs = Date.now() - t0;
