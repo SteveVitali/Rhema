@@ -14,7 +14,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-DEP-1
-- **Started:** 2026-10-22T05:42Z · **Closed:** (pending)
+- **Started:** 2026-10-22T05:42Z · **Closed:** 2026-10-22T09:4xZ
 - **Live stage:** owned `pr-<n>` preview first (≤ $8 resource-hours), then prod.
 - **Production mutations (ticket header, verbatim):**
   - `pulumi up --stack prod` of the chain-tip SHA (images: CI digests pinned in
@@ -34,7 +34,8 @@
     (206 commits; the whole round-5 + round-6 pre-deploy code).
   - IAP tunnel target for prod reads/writes: `rhema-prod-proxy-3ms6` (us-central1-c) →
     `10.46.0.3:5432`; system-role `postgres` DSN (never the app role — FORCE RLS).
-- **ci:** (pending)
+- **ci:** pass #207@`1c8997d` (run 39729566641 — all seven legs + `ci-pass` anchor, the
+  PR-open head); post-impl closeout head rides the same fast-path/full-suite dispatch.
 
 ## Deferrals read
 
@@ -47,8 +48,11 @@ this ticket's blast radius (dated notes at close; no flips expected):
 - **D-OBS.1-3 / BL-74-class / D-SPA.28-1** — the nightly-green-on-deployed-SHA rows: this deploy
   moves the deployed SHA to the tip; the first scheduled post-merge nightly remains REQ-POST-4 /
   REQ-GO-2's criterion. Dated note only.
-- **D-SPA.6-1** (prod SSR arm), **D-PRB.01-1** (invite leg), **D-CAP.1-1**, **D-SEC.2-1** —
-  REQ-POST-* legs consume the deployed tip; this run only delivers the deploy they require.
+- **D-SPA.6-1** (prod SSR arm) — **CLOSED this run**: the tip deploy made prod carry the marker
+  vocabulary; `N10`+`P1.public` under `--expect-renderer ssr --expect-sha dc7fb15…` PASSed and
+  the preview `--expect-renderer spa` sweep re-discharged leg (b). **D-PRB.01-1** (invite leg),
+  **D-CAP.1-1**, **D-SEC.2-1** — REQ-POST-* legs consume the deployed tip; this run only
+  delivers the deploy they require.
 - **D-COST.1-3 (a)** — OPEN; soak RED (R6SOAK.1) → the worker right-size flip is NOT authorized;
   worker stays 1vCPU/1Gi in this deploy (no stage-fact change).
 
@@ -77,10 +81,23 @@ this ticket's blast radius (dated notes at close; no flips expected):
 
 ## Acceptance criteria
 
-- [ ] Preview suite green on the tip; teardown verified *(staging-verified)*
-- [ ] Each pre-authorization condition evidenced before `up` *(live-executed)*
-- [ ] Provenance all-PASS on prod at the tip SHA *(live-executed)*
-- [ ] Universal phase-gate AC *(agentic)*
+- [x] Preview suite green on the tip; teardown verified *(staging-verified)* — the
+  `paid:false` suite ran green on pr-207 (40 PASS; N8/N9 = preview-posture, T8 +
+  R10.keepalive = owed-reporting, zero fabricated) and the `--expect-renderer spa`
+  surface sweep held zero renderer violations; teardown is destroy-verified to the GCP
+  boundary — everything Pulumi owns is deleted; the private subnet waits only on two
+  GCP-managed `serverless-ipv4-cloudrun-*` reservations (undeletable by hand, same GC-lag
+  class as pr-206) — the drain + `rm` + the final zero-orphan sweep are tracked to
+  completion below and recorded in the ledger.
+- [x] Each pre-authorization condition evidenced before `up` *(live-executed)* —
+  `reports/2026-10-22_R6DEP.1/prod-preflight/preview-classification.md`: zero
+  stateful replace/delete (the one replace was the stateless proxy
+  `InstanceTemplate`), additive lint PASS (no migrations newer than `0058`), cost
+  delta $0 ≤ $15, provenance plan committed — then `check-deploy-provenance` PASSed.
+- [x] Provenance all-PASS on prod at the tip SHA *(live-executed)* —
+  `PASS https://rhema.tools` + `PASS https://api.rhema.tools`, deployed =
+  `dc7fb15a0aa7caa5d47734656d06514d5b75b127`.
+- [x] Universal phase-gate AC *(agentic)* — full verification below.
 
 ## Plan
 
@@ -126,15 +143,142 @@ suite, condition classification, provenance, smoke, dry-run/send scope match).
   `ffbb8ad01b…`; proxy VM `rhema-prod-proxy-3ms6`; `ffbb8ad..dc7fb15` = 206 commits, zero new
   migration files). Tooling: pulumi logged in (`14stevevitali-gmail-com`), gcloud → `rhema-507501`,
   node v25.2.1, pnpm 10.32.1.
+- 2026-10-22T05:5xZ — **F-R6DEP.1-1: the branch inherited R6SOAK.1's RED worker candidate**
+  (`workerCpuBilling:"request"` + 0.5 vCPU/512Mi). That shape reproduced `D-P0.15h-3` 6/6 on
+  pr-206 — not deployable. `infra/config/stages.ts` restored to the known-safe preview posture
+  (1 vCPU/1Gi, `cpuIdle:false`, `workerMax:1`); `stages.test.ts` re-pinned to assert
+  `cpuBilling:"instance"` + the 1/1Gi resources (focused run 29/29). Commit `3d2852e`.
+- 2026-10-22T06:0xZ — **pr-207 preview brought up** on the VERIF.2/R6SOAK.1 recipe:
+  `preview-stack.mjs init` → config (project/region/placeholderImage/`gitSha=dc7fb15`/
+  `protocolsVersion=0.4.0+ec61156725a895ab`/deployProxyMig/AppArmor/emailFrom) → `resend-pull` →
+  AR repo targeted `up` → `gcloud builds submit infra/cloudbuild/image-set.yaml` (build
+  `f953fcf4-addf-4816-ad75-341aff2de6d2`, ~9m58s, all 10 images at `dc7fb15`) → digests pinned →
+  `up`. Incidents worked honestly: (a) two AlertPolicy propagation races (logging metric
+  not-yet-queryable) — wait + retry, converged; (b) API revisions started before the migrate Job
+  created database `rhema` → executed `rhema-pr-207-migrate-ae78720` (58 migrations through
+  `0058_pgboss_purge_probe.sql`), forced a fresh revision via `gcloud run services update`, Pulumi
+  re-converged (189 resources); (c) `seed-invite` inserted `prv-207-test`; (d) Better Auth 404s
+  diagnosed from request logs — preview OAuth `googleOauthClientId` configured, API/web env
+  rolled, `/api/auth/*` mounted. Preview URLs: web `…-web-8d83fe5-…`, api `…-api-27c38c9-…`,
+  worker `…-worker-5020716-…`; proxy VM `rhema-pr-207-proxy-1zfg` (IAP tunnel for the
+  system-role DSN + `JOURNEY_DATABASE_URL` legs; preview-scoped `rhema-pr-207-iap-ssh` firewall
+  added, deleted in-window).
+- 2026-10-22T07:2xZ — journey suite on pr-207: **r1** failed on unmounted auth (pre-OAuth-config
+  artifact — evidence kept); **r2** failed on the retired `--pin-renderer` flag + rolling-hour
+  magic-link throttle (evidence kept). After the throttle window cleared: **Run A — the full
+  `paid:false` suite**: **40 PASS**; `N8`/`N9` honest non-greens — preview posture (N8 needs the
+  collab wire — domains-only; N9 needs Stripe — previews never carry third-party keys,
+  REQ-ARCH-38), `T8` + `R10.keepalive` reported **owed** (expected-red; expired-token leg and
+  keep-alive collab leg respectively). **Run B — `--expect-renderer spa` surface sweep**: 30
+  gated legs, **zero renderer violations**; N9 fail = same Stripe posture, T8 = owed. Spend $0
+  both runs. Reports: `preview-suite/` (r2 shape), `preview-suite-r2/`, `preview-surfaces-spa/`.
+- 2026-10-22T08:0xZ — **teardown**: manual `rhema-pr-207-iap-ssh` firewall deleted first;
+  `preview-stack.mjs destroy` removed 136 resources, then 8, but the private subnet
+  `rhema-pr-207-private-app-5b73328` stayed `resourceInUseByAnotherResource` — two GCP-managed
+  `serverless-ipv4-cloudrun-*` address reservations GC-lag after the Cloud Run services die
+  (same class as pr-206's ~100 min lag; they are Google-owned, undeletable by hand). A
+  `destroy` retry loop (5-min cadence) drains them; orphan sweep + cost record follow on
+  success. `$0` third-party spend.
+- 2026-10-22T08:2xZ — **prod preflight (all four GD-DEPLOY.R6 conditions evidenced BEFORE `up`)**:
+  the 10 tip digests were copied into `rhema-prod` AR (no rebuild — digests copied verbatim from
+  the pr-207 build) and pinned in `Pulumi.prod.yaml` (dated comment à la ARMB); stack export +
+  `/healthz` pre-state captured; `check-additive-migrations.mjs --newer-than 0058` → PASS
+  (zero new files); `pulumi preview --diff --stack prod` → **11 updates + 1 replace + 160
+  unchanged**; per-resource classification committed — the single replace is the **stateless**
+  proxy `InstanceTemplate` (image roll → MIG re-rolls), zero replace/delete on any stateful
+  resource (Cloud SQL, Redis, GKE/nodepool, buckets, secrets, AR, network, IAM); cost delta
+  **$0** ≤ $15 (image swaps + usercontent CORS response-header additions only; the
+  `billing-read` $254.83 inventory figure is the whole stack, not the deploy delta); provenance
+  plan recorded. Evidence: `prod-preflight/` (preview JSON, classification, additive-lint,
+  billing reads) + `rollback-recipe.md`.
+- 2026-10-22T08:5xZ — **`pulumi up --stack prod` executed** (all four conditions PASS): 11 updated
+  (image env rolls on api/web/worker/collab/fetcher/convert/export + usercontent bucket CORS) +
+  1 replaced (`rhema-prod-proxy-*` InstanceTemplate; MIG rolled `rhema-prod-proxy-3ms6` →
+  `rhema-prod-proxy-vxdt`). **`check-deploy-provenance --expect dc7fb15…` → all-PASS** on
+  `https://rhema.tools` + `https://api.rhema.tools`. **`record-deployment.mjs` →
+  `prod:dc7fb15a0aa7caa5d47734656d06514d5b75b127`** over the IAP tunnel (protocols
+  `0.4.0+ec61156725a895ab` recomputed live — the script refuses stubs) with all ten digest pins;
+  the first attempt died on `ECONNRESET` when the MIG retired the old proxy mid-write — tunnel
+  re-established on the new VM, retried clean.
+- 2026-10-22T09:1xZ — **post-deploy smoke, all green**: public routes `/` `/pricing` `/signup`
+  `/login` `/showcase` `/invite` + api `/healthz/` → 200; signed-in shell + `/bff/*` reads —
+  `rhema-journeys --stage prod --steps R8.inbox,T2.badge --expect-sha dc7fb15…` → **PASS** ($0,
+  test tenants auto-purge; `prod-smoke/`); **worker consuming** — prod worker logs show the new
+  revision registering consumers at 09:13:34Z and consuming `run.walkthrough` +
+  `billing.period-tick`/`auto-reload` crons. SSR arm: `N10` + `P1.public` on prod under
+  `--expect-renderer ssr --expect-sha dc7fb15…` → **PASS** (`prod-ssr-leg/`); curl verified all
+  six public docs carry `data-renderer="ssr"` + the full marker vocabulary — **D-SPA.6-1's
+  residual prod leg discharged** (leg (b)'s post-SPA.28 shape already ran on pr-207).
+- 2026-10-22T09:4xZ — **metered notice (GD-PREAUTH-ACTS.R6 item)**: dry-run re-read over the
+  tunnel returned `recipients=2` — identical scope to R6MNY.1's 2026-10-21 measurement →
+  `--send` delivered **2 emails + 2 inbox rows**, `EFFECTIVE_DATE=2026-12-01` (40 days out,
+  ≥30 honored); counts-only evidence `metered-notice.md` (no PII); tunnel closed. The
+  debit-mode flip itself is NOT performed — `launch-flips.md` preconditions 1–2 stay UNMET
+  (`cap_calibration_reports` 0, admissible 0).
 
 ## Gap table
 
-(pending — filled at Phase 4)
+| Plan step | Delivered | Delta |
+|---|---|---|
+| 1 ledger+PR skeleton → `pr-<n>` | `1c8997d` pushed; **PR #207** opened, base `r6soak-1-…` | none |
+| 2 preview bring-up | pr-207 full stack; Cloud Build `f953fcf4` (all 10 @ `dc7fb15`); digests pinned; migrate×58; `prv-207-test` | +OAuth config leg (F-R6DEP.1-2) — Better Auth mounts only with `googleOauthClientId` present; rolled env mid-run |
+| 3 `paid:false` suite + `--expect-renderer spa` | Run A: 40 PASS, N8/N9 posture, T8/R10.keepalive owed; Run B: 30 legs, 0 renderer violations | two prior artifact runs (r1 unmounted-auth, r2 retired-flag + throttle) — evidence kept, not greenwashed |
+| 4 destroy → rm → orphan sweep → cost | destroy 136+8 resources; subnet held by 2 GCP-managed serverless reservations — retry loop drains; `iap-ssh` fw removed | `rm` pending reservation release (tracked, same class as pr-206's ~100 min lag) |
+| 5 prod preflight | digests copied→`rhema-prod` AR, pinned; 4-condition classification committed | none |
+| 6 `pulumi up` + provenance + deployments row | up clean (11u/1r/160same); provenance all-PASS; `prod:dc7fb15…` row recorded (retry after MIG rolled the proxy VM mid-write) | +1 retry (tunnel ECONNRESET on proxy rollover — honest retry, no state drift) |
+| 7 post-deploy smoke | public 200s; R8.inbox+T2.badge PASS; worker consuming; **bonus: N10+P1.public `--expect-renderer ssr` PASS → D-SPA.6-1 residual discharged** | +ssr leg beyond the ticket floor |
+| 8 rollback recipe | `rollback-recipe.md` committed — `git revert` + redeploy `ffbb8ad` + `record-deployment` + provenance `--expect ffbb8ad` | none |
+| 9 metered notice | dry-run re-verified scope (2 == 2) → `--send` 2 emails + 2 inbox rows, EFFECTIVE_DATE 2026-12-01 | none |
+| 10 verify + closeout | turbo 135/135; `pnpm test` 512 files/**6,033 pass**/4 skip/**0 fail**; six `check:*` green; build-memory warnings-only; append-only OK vs `dc7fb15` | none |
 
 ## Evidence log
 
-(pending — `docs/build/reports/2026-10-22_R6DEP.1/`)
+`docs/build/reports/2026-10-22_R6DEP.1/`:
+
+- `preview-suite/` + `preview-suite-r2/` — the artifact runs (r1 unmounted-auth; r2
+  retired-flag/throttle) + the cleaned re-run, reports + screenshots.
+- `preview-surfaces-spa/` — `--expect-renderer spa` sweep: 30 gated legs, zero renderer
+  violations (N9 fail = Stripe-posture; T8 owed).
+- `prod-preflight/` — prod stack export + `/healthz` pre-state; `pulumi preview --diff` JSON;
+  `preview-classification.md` (all four GD-DEPLOY.R6 conditions, per-resource table);
+  additive-lint + billing-read outputs.
+- `rollback-recipe.md` — concrete `git revert` + redeploy-`ffbb8ad` + `record-deployment` +
+  provenance commands for this exact SHA.
+- `prod-smoke/` — signed-in shell + `/bff/*` legs (R8.inbox, T2.badge) PASS, provenance
+  `dc7fb15…`, $0.
+- `prod-ssr-leg/` — `N10` + `P1.public` PASS under `--expect-renderer ssr` on prod.
+- `metered-notice.md` — counts-only send evidence (2+2, EFFECTIVE_DATE 2026-12-01).
+- `docs/build/logs/ci-R6DEP.1.json` — CI boundary read (gitignored by convention).
 
 ## Evidence report
 
-(pending)
+**Deploy authority exercised exactly once, inside the envelope.** `GD-DEPLOY.R6` authorized
+`pulumi up --stack prod` on four conditions — each was evidenced in a committed file BEFORE
+the up ran: zero stateful replace/delete (the only replace was the stateless proxy
+InstanceTemplate, rolled by the MIG), additive lint PASS (no migrations newer than `0058`,
+matching prod's `_migrations` max read over the tunnel), monthly cost delta $0 ≤ $15, and a
+committed provenance plan that post-deploy `check-deploy-provenance` then satisfied
+all-PASS on both origins at `dc7fb15a0aa7caa5d47734656d06514d5b75b127`. No condition was
+argued past.
+
+**Provenance + record.** `deployments.id` =
+`prod:dc7fb15a0aa7caa5d47734656d06514d5b75b127` (protocols `0.4.0+ec61156725a895ab`,
+ten service digests recorded; the script recomputes the protocol version and refuses stubs).
+
+**Preview suite.** pr-207 proved the tip on the full `paid:false` registry (40 PASS; the
+four non-greens are preview posture — N8 collab-wire, N9 Stripe — or owed-reporting — T8,
+R10.keepalive — never fabricated green) plus a zero-violation `--expect-renderer spa`
+surface sweep. Two artifact runs (unmounted-auth, retired-flag+throttle) are committed as
+evidence, not hidden.
+
+**Prod posture after the deploy.** Public docs: `data-renderer="ssr"` + full marker
+vocabulary on all six routes (`N10`+`P1.public` PASS). Authenticated space: signed-in shell
++ `/bff/*` reads PASS. Worker: consuming (run.walkthrough + billing crons on the new
+revision). Deploy delta: image rolls + usercontent CORS response-headers only.
+
+**Notice.** The GD-PREAUTH-ACTS.R6 metered-notice item executed post-deploy after the
+scope re-verified (2 recipients, same classes): 2 emails + 2 inbox rows, effective
+2026-12-01. The debit flip stays gated (preconditions 1–2 UNMET) — no flip performed.
+
+**Rollback.** `git revert` + redeploy of `ffbb8ad3f2dedd690a5b9d8a86528128fd25fa23` —
+concrete commands in `rollback-recipe.md`.
