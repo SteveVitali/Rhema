@@ -65,12 +65,14 @@ export function parseArgs(argv) {
     out: undefined,
     dryRun: false,
     fixturePrefix: "r6soak",
+    from: 1,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
     if (a === "--stack") args.stack = next();
     else if (a === "--iterations") args.iterations = Number(next());
+    else if (a === "--from") args.from = Number(next());
     else if (a === "--project") args.project = next();
     else if (a === "--region") args.region = next();
     else if (a === "--launch-budget-ms") args.launchBudgetMs = Number(next());
@@ -85,6 +87,9 @@ export function parseArgs(argv) {
   }
   if (!(args.iterations >= 1 && args.iterations <= 20)) {
     throw new Error(`worker-soak: --iterations must be 1..20 (got ${args.iterations})`);
+  }
+  if (!(args.from >= 1 && args.from <= args.iterations)) {
+    throw new Error(`worker-soak: --from must be 1..${args.iterations} (got ${args.from})`);
   }
   return args;
 }
@@ -114,11 +119,12 @@ export function classifyIteration(rec, launchBudgetMs = LAUNCH_BUDGET_MS) {
   return "clean";
 }
 
-/** GREEN iff every iteration is clean — a degraded launch is the throttled signature surviving. */
+/** GREEN iff every iteration is clean — a degraded launch is the throttled signature surviving.
+ *  ZERO records is RED (fail-closed — a soak that recorded nothing attests nothing). */
 export function verdictFor(records, launchBudgetMs = LAUNCH_BUDGET_MS) {
   const classes = records.map((r) => classifyIteration(r, launchBudgetMs));
   return {
-    verdict: classes.every((c) => c === "clean") ? "green" : "red",
+    verdict: records.length > 0 && classes.every((c) => c === "clean") ? "green" : "red",
     classes,
   };
 }
@@ -135,11 +141,39 @@ function gcloud(gargs, { capture = false } = {}) {
 
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Resolve the worker's Pulumi-AUTONAMED Cloud Run service (`rhema-<stack>-worker-<6hex>` —
+ * the literal prefix NOT_FOUNDs, the F-VERIF.2-1 lesson; monitoring.ts pins the same fact).
+ * Exactly one match or the soak refuses (fail-closed: never aim at an ambiguous service).
+ */
+export function workerServiceName(listJson, stack) {
+  let rows = [];
+  try {
+    rows = JSON.parse(listJson);
+  } catch {
+    return null;
+  }
+  const names = rows
+    .map((r) => r?.metadata?.name ?? "")
+    .filter((n) => new RegExp(`^rhema-${stack}-worker(-[0-9a-f]+)?$`).test(n));
+  return names.length === 1 ? names[0] : null;
+}
+
+function resolveWorkerService(args, g = gcloud) {
+  const r = g(
+    ["run", "services", "list", "--project", args.project, "--region", args.region,
+     "--filter", `metadata.name~^rhema-${args.stack}-worker`, "--format", "json"],
+    { capture: true },
+  );
+  if (r.status !== 0) return null;
+  return workerServiceName(r.stdout, args.stack);
+}
+
 /** The worker service's live revision state (latestReady + the 100%-traffic revision). */
-function workerRevisionState(args, g = gcloud) {
+function workerRevisionState(args, svc, g = gcloud) {
   const r = g(
     [
-      "run", "services", "describe", `rhema-${args.stack}-worker`,
+      "run", "services", "describe", svc,
       "--project", args.project, "--region", args.region, "--format", "json",
     ],
     { capture: true },
@@ -160,10 +194,10 @@ function workerRevisionState(args, g = gcloud) {
   }
 }
 
-async function waitForRevision(args, previous, g, sleep) {
+async function waitForRevision(args, svc, previous, g, sleep) {
   const deadline = Date.now() + args.revisionWaitMs;
   while (Date.now() < deadline) {
-    const s = workerRevisionState(args, g);
+    const s = workerRevisionState(args, svc, g);
     if (s?.latestReady && s.latestReady === s.serving && s.latestReady !== previous) return s;
     await sleep(5_000);
   }
@@ -171,9 +205,9 @@ async function waitForRevision(args, previous, g, sleep) {
 }
 
 /** The worker log lines carrying the failure-mode markers inside [fromIso, now]. */
-function workerLogMarkers(args, fromIso, g = gcloud) {
+function workerLogMarkers(args, svc, fromIso, g = gcloud) {
   const filter =
-    `resource.type="cloud_run_revision" AND resource.labels.service_name="rhema-${args.stack}-worker" ` +
+    `resource.type="cloud_run_revision" AND resource.labels.service_name="${svc}" ` +
     `AND timestamp>="${fromIso}"`;
   const r = g(
     ["logging", "read", filter, "--project", args.project, "--format", "json", "--limit", "500"],
@@ -221,7 +255,8 @@ async function seedQueuedRun(db, ids) {
        current_attempt, inputs, input_snapshot, model_profile, model_tier, rigor, estimate_credits,
        cap_credits, spent_credits, rate_table_version, hold_ledger_id, lock_set, created_at)
      values ($1,$2,$3,null,'review',null,'queued',now(),1,'{}'::jsonb,'{}'::jsonb,
-             'balanced','base','quick',25,25,0,1,null,'{}',now())`,
+             'balanced','base','quick',25,25,0,1,null,'{}',now())
+     on conflict (id) do nothing`,
     [ids.runId, ids.workspaceId, ids.projectId],
   );
 }
@@ -249,7 +284,12 @@ async function readLaunchSample(db, runId) {
 
 async function cleanupFixture(db, args, runIds) {
   const ids = fixtureIds(args, 0);
-  for (const runId of runIds) {
+  // workspace-scoped sweep — covers runs seeded by an earlier crashed driver pass too
+  const extra = await db
+    .query(`select id from runs where workspace_id = $1`, [ids.workspaceId])
+    .then((r) => r.rows.map((x) => x.id))
+    .catch(() => []);
+  for (const runId of new Set([...runIds, ...extra])) {
     await db.query(`delete from slo_samples where run_id = $1`, [runId]).catch(() => {});
     await db.query(`delete from run_events where run_id = $1`, [runId]).catch(() => {});
     await db.query(`delete from usage_records where run_id = $1`, [runId]).catch(() => {});
@@ -274,29 +314,37 @@ export async function soak(args, io = {}) {
     io.boss ??
     new PgBoss({ connectionString: dsn, migrate: false, supervise: false, schedule: false });
   const ownBoss = !io.boss;
+  // Transient client drops (IAP tunnel blips, the throttle-side mass timeouts the soak itself
+  // induces) surface as 'error' EVENTS on the boss/pool — never let one kill the driver; the
+  // supervised clients reconnect on their next tick. A genuinely dead client still fails the
+  // awaited calls it actually needs.
+  boss.on?.("error", (e) => log(`[soak] boss transient error (supervisor retries): ${e?.message ?? e}`));
+  pool.on?.("error", (e) => log(`[soak] pg pool idle-client error: ${e?.message ?? e}`));
   const runIds = [];
   const records = [];
   try {
     if (ownBoss) await boss.start();
     if (io.db == null) await pool.query("select 1");
-    const base = workerRevisionState(args, g);
-    if (!base) throw new Error(`worker-soak: rhema-${args.stack}-worker not found/ready — is the stack up?`);
-    log(`[soak] worker ${`rhema-${args.stack}-worker`} @ ${base.latestReady} cpu=${base.cpu} mem=${base.memory}`);
+    const svc = io.workerService ?? resolveWorkerService(args, g);
+    if (!svc) throw new Error(`worker-soak: could not resolve exactly one rhema-${args.stack}-worker* service — is the stack up?`);
+    const base = workerRevisionState(args, svc, g);
+    if (!base) throw new Error(`worker-soak: ${svc} not found/ready — is the stack up?`);
+    log(`[soak] worker ${svc} @ ${base.latestReady} cpu=${base.cpu} mem=${base.memory}`);
     if (args.dryRun) {
       log("[soak] dry-run — preconditions green (service reachable, db connected, boss started); no iterations sent");
       return { verdict: "dry-run", records: [] };
     }
     const ids = await seedFixture(pool, args);
-    for (let i = 1; i <= args.iterations; i++) {
+    for (let i = args.from ?? 1; i <= args.iterations; i++) {
       const iter = { iteration: i, runId: fixtureIds(args, i).runId };
-      const prev = workerRevisionState(args, g)?.latestReady ?? null;
+      const prev = workerRevisionState(args, svc, g)?.latestReady ?? null;
       const upd = g(
-        ["run", "services", "update", `rhema-${args.stack}-worker`, "--project", args.project,
+        ["run", "services", "update", svc, "--project", args.project,
          "--region", args.region, "--update-env-vars", `RHEMA_SOAK_ITER=${i}`],
         { capture: true },
       );
       if (upd.status !== 0) throw new Error(`worker-soak: revision bump failed for iteration ${i}`);
-      const rolled = await waitForRevision(args, prev, g, sleep);
+      const rolled = await waitForRevision(args, svc, prev, g, sleep);
       iter.revision = rolled.latestReady;
       log(`[soak] iter ${i}: cold instance on ${iter.revision}`);
       await seedQueuedRun(pool, { ...ids, runId: iter.runId });
@@ -325,7 +373,7 @@ export async function soak(args, io = {}) {
       await boss
         .send(RUN_CANCEL_QUEUE, { runId: iter.runId, workspaceId: ids.workspaceId }, { singletonKey: `cancel:${iter.runId}` })
         .catch(() => {});
-      iter.logMarkers = workerLogMarkers(args, iter.sentAt, g);
+      iter.logMarkers = workerLogMarkers(args, svc, iter.sentAt, g);
       iter.classification = classifyIteration(iter, args.launchBudgetMs);
       log(
         `[soak] iter ${i}: ${iter.classification} state=${iter.state} jobLaunch=${iter.jobLaunchMs ?? "—"}ms ` +

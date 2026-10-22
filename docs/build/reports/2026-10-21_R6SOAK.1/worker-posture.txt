@@ -1,0 +1,7 @@
+# worker live posture — 2026-10-22T01:28:45Z
+service: rhema-pr-206-worker-43139c6
+image: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-206/worker@sha256:77fee0f5d03d44aa2cedb77fabb7661c73c3f5ac6f0ea5b5cdc718f970676298
+limits: {"cpu":"0.5","memory":"512Mi"}
+cpu-throttling: true
+startup-cpu-boost: true
+min/max: 1 1

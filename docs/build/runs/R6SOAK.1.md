@@ -15,7 +15,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-ENG-7
-- **Started:** 2026-10-21T23:21Z · **Closed:** —
+- **Started:** 2026-10-21T23:21Z · **Closed:** 2026-10-22T04:0xZ
 - **Live stage:** owned `pr-<n>` preview, worker pinned 0.5 vCPU/512Mi via the preview stage fact;
   ≤ $8 resource-hours; destroyed at closeout.
 - **Production mutations:** none.
@@ -79,8 +79,11 @@ the verdict rule are unchanged.
 
 ## Acceptance criteria
 
-- [ ] Soak runs the pre-registered N iterations; verdict evidenced *(staging-verified)*
-- [ ] Preview destroyed; orphan sweep clean; resource cost recorded *(staging-verified)*
+- [x] Soak runs the pre-registered N iterations; verdict evidenced — **RED, 6/6 failed**
+      *(staging-verified: `reports/2026-10-21_R6SOAK.1/`)*
+- [x] Preview destroyed; orphan sweep clean; resource cost recorded *(staging-verified)* —
+      `destroy` ×N via the guard (final pass `--continue-on-error` around a GC-pinned subnet),
+      `rm` executed; **zero `rhema-pr-206*` across a 22-class sweep**; ≈$2–4 of $8
 - [ ] Universal gate AC (verify green; tests; REQ ids stamped; DEFERRALS row for anything not
       automatically verifiable; ADRs for deviations; BUILD_INDEX + LEDGER advanced; operating
       clauses) *(agentic)*
@@ -130,15 +133,101 @@ the verdict rule are unchanged.
   deployProxyMig/emailFrom); `pulumi preview` clean (192+1 import). Targeted `up` created
   `rhema-pr-206-images` AR + carryovers. Cloud Build `6a6fcc85` building all 10 images
   (tag `r6soak-1`, sha `e0ac2bc`) into the preview's own repo.
+- 2026-10-22T00:4xZ — Cloud Build `6a6fcc85` green (~11m); digests pinned. First `up` REFUSED:
+  cpu<1 incompatible with instance billing → **F-R6SOAK.1-1** amendment above (request-billed is
+  the only realizable 0.5 shape; worker rescaled request-billed + startupCpuBoost, soak proceeds
+  on the throttled posture verbatim). Second `up` retried metric-propagation + AlloyDB
+  `us-central1` capacity failures; ZONAL preview posture eventually converged. Migrate job ran;
+  minimal k8s apply (namespace/ksa/netpol/launcher RBAC); driver fix: service-name resolution by
+  prefix (`rhema-pr-206-worker-43139c6`) + 2nd Cloud Build `d68e5ea3` (~10.6m, digest
+  `77fee0f5…`) re-pinned.
+- 2026-10-22T01:04Z–02:08Z — **soak executed, VERDICT: RED.** All six iterations failed on fresh
+  cold revisions (`00002-fbj`…`00006-wbz`, `00008-fc5`): iters 1/2/5 reached
+  `building GKE launcher` then hung (pg-boss retries exhausted → `failed`); iters 3/4/6 never
+  fetched `run.start` inside 600 s; rev `00004-k7j` crashed at cold start (`pg-boss connect
+  timeout → exit(1)`). ZERO `run_start_stage_ms` samples landed across all six — the launch path
+  never reached its first SLO write. Driver-side incident mid-iter-6 (IAP-tunnel pg-boss error
+  event crashed the driver pre-send) → hardened (transient-error listeners, `--from`, idempotent
+  seed, fail-closed empty verdict) and iter 6 re-measured on `00008-fc5`: failed identically.
+  Full reconstruction in `reports/2026-10-21_R6SOAK.1/` (`worker-soak.json`, `soak-report.md`,
+  three log windows, pg-boss ledger).
+- 2026-10-22T02:2x–04:0xZ — **teardown.** `destroy` deleted 130 resources; the Google-managed
+  `serverless-ipv4-cloudrun-*` reservation (created for the preview's direct-VPC egress) pinned
+  the private subnet until async GC (~100 min post-service-deletion). A `--continue-on-error`
+  pass cleared the other 46/49 while waiting; the preview-scoped hand-added `rhema-pr-206-iap-ssh`
+  firewall deleted; final pass deleted subnet+network. `preview-stack.mjs rm pr-206` removed the
+  stack. **Orphan sweep: ZERO `rhema-pr-206*` across 22 classes** (run services/jobs, GKE,
+  AlloyDB, Redis, GCE, secrets, SAs, buckets, AR, LB parts, nets/subnets/firewalls/routes/
+  addresses/routers/proxies/urlmaps/certs/health-checks/templates/MIGs, DNS zones, alert
+  policies). **Cost:** ≈3.0–3.5 h live window; est **$2–4 of the $8 budget** (ZONAL AlloyDB +
+  min-instance Cloud Run + 2 Cloud Builds). **Verification:** turbo 135/135 · vitest 511 files /
+  6,033 pass / 4 skip / 0 fail (privsep.docker flaked once on a registry.npmjs.org 503 mid-outage;
+  green on retry) · all six check:* green · check-build-memory 0 violations · append-only vs
+  `3c93544` OK · **ci: pass #206@`3fa7d4d`** (run 39701347407 — all seven legs + `ci-pass` anchor).
 
 ## Gap table
 
-_(filled at Phase 4)_
+| # | Claim | Evidence | Status |
+|---|-------|----------|--------|
+| 1 | Preview worker runs 0.5 vCPU/512Mi ONLY; dev+prod untouched | `stages.ts` preview `workerResources`+`workerCpuBilling` pins; `stages.test.ts` shape pins; live `run.services.describe` → `worker-posture.txt`/`worker-describe.json` (`cpu=0.5`, `512Mi`, `cpu-throttling=true`, `startup-cpu-boost=true`, min=max=1) | MET |
+| 2 | Soak drives the real D-P0.15h-3 cold-import path, N pre-registered | N=6 pre-registered above before any live run; driver sends the api-verbatim `run.start` job; `worker-soak.json` records all 6 | MET |
+| 3 | Green/red verdict + committed evidence | **RED** — `reports/2026-10-21_R6SOAK.1/` (7 files incl. `soak-report.md`, `worker-soak.json`, 3 log windows) | MET (red) |
+| 4 | Preview destroyed; zero `rhema-pr-206*` orphans; cost ≤ $8 | `destroy` ×3 + `--continue-on-error` + `rm`; 20-class orphan sweep; ≈$2–4 est. | MET |
+| 5 | Boundaries: zero prod writes, no secrets committed, no merge | Only `pr-206` (owner-tagged) mutated; DSNs never printed (fetched→env→sed-rewritten); PR #206 unmerged | MET |
+| 6 | D-COST.1-3 honestly dispositioned | dated note appended — soak condition FAILED, row stays OPEN, flip NOT authorized | MET |
+
+### Honest gaps / deviations
+
+- **F-R6SOAK.1-1** (amendment above): the 0.5 vCPU shape exists only request-billed — the soak
+  measured the throttled posture, which is the faithful reproduction anyway.
+- **Driver crash mid-iter-6 (first pass):** unhandled pg-boss `error` event on a tunnel blip
+  killed the driver before its iter-6 send; iter-6's run row was seeded but no `run.start`
+  landed from that pass. Disclosed in `worker-soak.json.driverIncident` + `soak-report.md`;
+  driver hardened (`boss/pool 'error'` listeners, `--from`, idempotent seed, fail-closed empty
+  verdict) and iter 6 re-measured on a fresh revision — failed identically. The crash is a
+  harness event; the worker-under-test outcome is unaffected (and 1–5 alone already forced red).
+- **Iteration 1–5 `sentAt` reconstruction:** the crashed pass never wrote its JSON, so those
+  fields come from `pgboss.job.created_on` + the driver log — flagged in the JSON. States,
+  revisions, markers, and the 600 s watch are direct observations, not reconstructions.
+- **Implementation size:** implementation diff (excl. ledgers/evidence) ≈ stages.ts(+32) +
+  stages.test.ts(+31) + worker-soak.mjs(+361→~380 post-fix) + test(+195) ≈ **+620 vs the ~200
+  budget** — the driver is the bulk (the 485-line BL38.1 live-driver precedent); recorded as a
+  deviation, evidence files tracked separately.
 
 ## Evidence log
 
-_(filled during live legs)_
+- `docs/build/reports/2026-10-21_R6SOAK.1/`:
+  - `soak-report.md` — verdict, per-iteration table, signature analysis, incident disclosure.
+  - `worker-soak.json` — machine record: 6 iterations, all `failed`; zero `job_launch` /
+    `run_start_stage_ms` samples.
+  - `worker-posture.txt` + `worker-describe.json` — live `gcloud run services describe` proof.
+  - `image-provenance.txt` — Cloud Build ids `6a6fcc85` + `d68e5ea3`, pinned digests.
+  - `stack-config.txt` — Pulumi stack config dump (no secrets).
+  - `worker-logs-{partial,mid,final}.txt` — log windows over revisions 00001→00008: the
+    `building GKE launcher` cold-import entries (01:08:11 / 01:22:28 / 01:53:34), the
+    `00004-k7j` cold-start `exit(1)` at 01:31:17, a second `exit(1)` at 02:08:29, and 82
+    `timeout exceeded when trying to connect` lines in the final window.
+- `docs/build/logs/ci-R6SOAK.1.json` — CI boundary read (gitignored by convention): all seven
+  legs pass on `3fa7d4d`, run 39701347407.
+- `pgboss.job` ledger (verbatim rows folded into `worker-soak.json` `pgboss` fields):
+  pickup latencies 16–26 min; final job states `failed`/`active`/`created`; `retry_count=2`
+  exhaustion; `run.cancel` failures on iters 2/3/4.
 
 ## Evidence report
 
-_(filled at closeout)_
+**Verdict: RED.** The 0.5 vCPU/512Mi preview worker reproduces `D-P0.15h-3` completely and
+repeatedly — 6/6 pre-registered iterations failed. Two failure sub-shapes observed: (a) the
+handler fetches `run.start`, enters the cold `import("@kubernetes/client-node")`, and hangs
+past the 900 s job expiry (iters 1, 2, 5 — pg-boss ends them `failed` at `retry_limit`); (b)
+the starved instance never fetches the job at all — consumers die on DB connect timeouts and,
+on rev `00004-k7j`, the whole worker exits(1) at startup (iters 3, 4, 6). `startupCpuBoost`
+covers instance startup only — it does not protect the steady-state throttled import. Zero
+`run_start_stage_ms` SLO samples landed in any iteration.
+
+**Disposition:** `D-COST.1-3` (a) stays OPEN — the conditional authorization requires GREEN and
+this is RED. `R6INF.1` (manifest row 188: "worker flip iff soak green") must not flip prod.
+Re-attempt requires a redesign first (eager import, throttle-aware pool sizing, or a different
+size) plus a fresh soak. Prod + dev/shared stages were never mutated; the preview was destroyed.
+
+**Cost:** preview lifetime ≈ 3.0–3.5 h (up ~23:5xZ → destroy ~02:5xZ); dominant spend = ZONAL
+AlloyDB + min-instance Cloud Run + 2 Cloud Builds ≈ **$2–4 of the $8 budget**.

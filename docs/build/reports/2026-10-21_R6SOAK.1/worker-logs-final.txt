@@ -1,0 +1,600 @@
+2026-10-22T01:51:49.164373Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: voice.purge, Worker: c73f4f82-eb1b-4066-8a12-279c53823248)',
+2026-10-22T01:51:49.164399Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: voice.purge, Worker: c73f4f82-eb1b-4066-8a12-279c53823248)\n' +
+2026-10-22T01:51:49.164405Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:49.164412Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:49.164417Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:49.164422Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:49.164427Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:49.164432Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:49.164437Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:49.164442Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'voice.purge',
+2026-10-22T01:51:49.164447Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'c73f4f82-eb1b-4066-8a12-279c53823248'
+2026-10-22T01:51:49.164451Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:49.165053Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:49.165058Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 0f2f819a-8f0e-45aa-bab7-10b2e74612e1)',
+2026-10-22T01:51:49.165068Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 0f2f819a-8f0e-45aa-bab7-10b2e74612e1)\n' +
+2026-10-22T01:51:49.165072Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:49.165076Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:49.165079Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:49.165083Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:49.165087Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:49.165091Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:49.165095Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:49.165098Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'ingest.sync.sweep',
+2026-10-22T01:51:49.165102Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: '0f2f819a-8f0e-45aa-bab7-10b2e74612e1'
+2026-10-22T01:51:49.165105Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:49.964002Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:49.964016Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 9cac72a6-b25f-44b6-ae35-46bb6acbbaff)',
+2026-10-22T01:51:49.964040Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 9cac72a6-b25f-44b6-ae35-46bb6acbbaff)\n' +
+2026-10-22T01:51:49.964044Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:49.964049Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:49.964053Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:49.964056Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:49.964060Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:49.964063Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:49.964068Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:49.964071Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'run_events.retention',
+2026-10-22T01:51:49.964074Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: '9cac72a6-b25f-44b6-ae35-46bb6acbbaff'
+2026-10-22T01:51:49.964078Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:50.163875Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:50.163891Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: run_events.partition, Worker: ca1323c8-b3e7-4b6e-a3db-cc8f47e98283)',
+2026-10-22T01:51:50.163914Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.partition, Worker: ca1323c8-b3e7-4b6e-a3db-cc8f47e98283)\n' +
+2026-10-22T01:51:50.163918Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:50.163923Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:50.163927Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:50.163933Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:50.163936Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:50.163939Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:50.163943Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:50.163946Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'run_events.partition',
+2026-10-22T01:51:50.163949Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'ca1323c8-b3e7-4b6e-a3db-cc8f47e98283'
+2026-10-22T01:51:50.163953Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:50.564047Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:50.564058Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: notify, Worker: 50a40424-25b4-41a7-bbf2-a20dcbd6eefa)',
+2026-10-22T01:51:50.564078Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify, Worker: 50a40424-25b4-41a7-bbf2-a20dcbd6eefa)\n' +
+2026-10-22T01:51:50.564083Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:50.564087Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:50.564091Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:50.564095Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:50.564098Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:50.564102Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:50.564105Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:50.564109Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'notify',
+2026-10-22T01:51:50.564112Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: '50a40424-25b4-41a7-bbf2-a20dcbd6eefa'
+2026-10-22T01:51:50.564115Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:50.763890Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:50.763900Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: mail.send, Worker: 4ea1f98c-58fd-4e7e-b055-9ede40895def)',
+2026-10-22T01:51:50.763919Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: mail.send, Worker: 4ea1f98c-58fd-4e7e-b055-9ede40895def)\n' +
+2026-10-22T01:51:50.763923Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:50.763926Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:50.763930Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:50.763933Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:50.763936Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:50.763939Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:50.763942Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:50.763945Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'mail.send',
+2026-10-22T01:51:50.763949Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: '4ea1f98c-58fd-4e7e-b055-9ede40895def'
+2026-10-22T01:51:50.763952Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:50.864350Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:50.864364Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: de786db4-e101-4283-a511-d2c13aa74a68)',
+2026-10-22T01:51:50.864384Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: de786db4-e101-4283-a511-d2c13aa74a68)\n' +
+2026-10-22T01:51:50.864388Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:50.864393Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:50.864396Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:50.864399Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:50.864403Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:50.864406Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:50.864408Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:50.864411Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'notify.sweep.weekly',
+2026-10-22T01:51:50.864415Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'de786db4-e101-4283-a511-d2c13aa74a68'
+2026-10-22T01:51:50.864418Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:50.864634Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:50.864638Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: f8c7460e-8063-4af4-af03-e4ae4e0cab1a)',
+2026-10-22T01:51:50.864647Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: f8c7460e-8063-4af4-af03-e4ae4e0cab1a)\n' +
+2026-10-22T01:51:50.864650Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:50.864655Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:50.864658Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T01:51:50.864661Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:50.864665Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:50.864668Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:50.864671Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'notify.sweep.daily',
+2026-10-22T01:51:50.864674Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'f8c7460e-8063-4af4-af03-e4ae4e0cab1a'
+2026-10-22T01:51:50.864677Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:51.064200Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): Error: LISTEN/NOTIFY heartbeat timed out
+2026-10-22T01:51:51.064215Z	rhema-pr-206-worker-43139c6-00006-wbz	    at Timeout.<anonymous> (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:121:59)
+2026-10-22T01:51:51.064218Z	rhema-pr-206-worker-43139c6-00006-wbz	    at listOnTimeout (node:internal/timers:585:17)
+2026-10-22T01:51:51.064221Z	rhema-pr-206-worker-43139c6-00006-wbz	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T01:51:52.665107Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:52.665131Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: run.resume, Worker: 43e63d80-88e4-41b2-8560-9bad8c7e92c3)',
+2026-10-22T01:51:52.665159Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.resume, Worker: 43e63d80-88e4-41b2-8560-9bad8c7e92c3)\n' +
+2026-10-22T01:51:52.665166Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:52.665172Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:52.665178Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:52.665183Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:52.665188Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:52.665194Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:52.665200Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:52.665205Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'run.resume',
+2026-10-22T01:51:52.665209Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: '43e63d80-88e4-41b2-8560-9bad8c7e92c3'
+2026-10-22T01:51:52.665214Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:52.764137Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:52.764154Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: slo.review.weekly, Worker: fa49bead-6122-4b30-8462-96d384cbd12d)',
+2026-10-22T01:51:52.764178Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: slo.review.weekly, Worker: fa49bead-6122-4b30-8462-96d384cbd12d)\n' +
+2026-10-22T01:51:52.764184Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:52.764190Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:52.764197Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:51:52.764203Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:51:52.764208Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:52.764216Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:52.764221Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:52.764226Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'slo.review.weekly',
+2026-10-22T01:51:52.764231Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'fa49bead-6122-4b30-8462-96d384cbd12d'
+2026-10-22T01:51:52.764236Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:51:52.963618Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:51:52.963635Z	rhema-pr-206-worker-43139c6-00006-wbz	  message: 'timeout exceeded when trying to connect (Queue: run.finalize, Worker: e1ffe5a2-26db-4efc-99b4-222104bc68e3)',
+2026-10-22T01:51:52.963660Z	rhema-pr-206-worker-43139c6-00006-wbz	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.finalize, Worker: e1ffe5a2-26db-4efc-99b4-222104bc68e3)\n' +
+2026-10-22T01:51:52.963666Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:51:52.963671Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:51:52.963676Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T01:51:52.963680Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:51:52.963685Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:51:52.963692Z	rhema-pr-206-worker-43139c6-00006-wbz	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:51:52.963698Z	rhema-pr-206-worker-43139c6-00006-wbz	  queue: 'run.finalize',
+2026-10-22T01:51:52.963702Z	rhema-pr-206-worker-43139c6-00006-wbz	  worker: 'e1ffe5a2-26db-4efc-99b4-222104bc68e3'
+2026-10-22T01:51:52.963707Z	rhema-pr-206-worker-43139c6-00006-wbz	}
+2026-10-22T01:52:12.163983Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T01:52:12.164014Z	rhema-pr-206-worker-43139c6-00006-wbz	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T01:52:12.164019Z	rhema-pr-206-worker-43139c6-00006-wbz	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T01:52:12.164023Z	rhema-pr-206-worker-43139c6-00006-wbz	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T01:52:12.164026Z	rhema-pr-206-worker-43139c6-00006-wbz	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T01:52:12.164030Z	rhema-pr-206-worker-43139c6-00006-wbz	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T01:52:13.964111Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"run_start_latency_p95_s","status":"error","value":null,"target":"run start latency (queued → running) p95 ≤ 45 s — alert p95 > 90 s for 10 min","threshold":90}
+2026-10-22T01:52:13.964159Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"run_success_rate_24h_pct","status":"error","value":null,"target":"run success rate (excl. user cancels + Unverified deliveries), weekly ≥ 97% — alert < 95% daily window","threshold":95}
+2026-10-22T01:52:14.063641Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"unverified_review_rate_7d_pct","status":"error","value":null,"target":"Review Unverified rate ≤ 1% weekly — alert above","threshold":1}
+2026-10-22T01:52:14.063812Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"gate_resume_latency_p95_s","status":"error","value":null,"target":"gate resume latency p95 ≤ 60 s — alert > 120 s","threshold":120}
+2026-10-22T01:52:14.063854Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"orphaned_runs","status":"error","value":null,"target":"orphaned runs = 0 — alert > 0 for 10 min (a lingering orphan means the reaper didn't clear it)","threshold":0}
+2026-10-22T01:52:14.063889Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"mirror_errors_10m","status":"ok","value":0,"target":"mirror/delivery errors = 0 — alert > 0 (delivery-validation failures + boundary.violation events)","threshold":0}
+2026-10-22T01:52:14.063923Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"egress_denied_10m","status":"ok","value":0,"target":"egress denied ≈ 0 — alert on a spike (any denial in the window)","threshold":0}
+2026-10-22T01:52:14.063955Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"provider_429_5xx_pct_5m","status":"empty","value":null,"target":"provider 429/5xx < 1% — alert > 5% for 5 min (outage banner; launches paused ≤ 2 h)","threshold":5}
+2026-10-22T01:52:14.063987Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"proxy_vs_sdk_cost_runs_over5pct_1h","status":"ok","value":0,"target":"proxy-metered vs SDK-reported cost per run ± 2% — alert on any run > 5%","threshold":0}
+2026-10-22T01:52:14.064022Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"absorbed_adjustments_pct_24h","status":"empty","value":null,"target":"absorbed cap adjustments < 5% of gross usage over 24 h — alert above (circuit-breaker floor)","threshold":5}
+2026-10-22T01:52:14.064066Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"cost_drift_pct_nightly","status":"unmeasured","value":null,"target":"cost drift vs provider report < 2% — alert > 2% nightly","threshold":2}
+2026-10-22T01:52:14.064085Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"event_delivery_latency_p95_s","status":"empty","value":null,"target":"event delivery latency p95 ≤ 2 s — alert > 5 s","threshold":5}
+2026-10-22T01:52:14.064119Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"autosave_roundtrip_p95_ms","status":"empty","value":null,"target":"autosave round-trip p95 ≤ 500 ms — alert > 1 s","threshold":1}
+2026-10-22T01:52:14.064145Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"import_preview_p95_s","status":"empty","value":null,"target":"import preview latency (presign → preview-ready) p95 ≤ 20 s — alert p95 > 40 s for 30 min","threshold":40}
+2026-10-22T01:52:14.064177Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly {"signal":"api_availability_monthly_pct","status":"unmeasured","value":null,"target":"API availability 99.9% monthly — alert on error-budget burn > 2×","threshold":99.9}
+2026-10-22T01:52:14.163776Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] weekly-summary {"ok":3,"breach":0,"empty":5,"unmeasured":2,"error":5}
+2026-10-22T01:52:20.063786Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] run-lifecycle consumers + crons registered
+2026-10-22T01:52:26.864646Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] unmeasured cost_drift_pct_nightly: measured_elsewhere: usage.reconcile (nightly) already computes the drift and pages through the worker alertSink on >2% — a second probe here would double-page
+2026-10-22T01:52:26.864679Z	rhema-pr-206-worker-43139c6-00006-wbz	[slo] unmeasured api_availability_monthly_pct: measured by Cloud Monitoring's request-based SLI on the api Cloud Run service — the IaC Slo/AlertPolicy (infra/pulumi/monitoring.ts) is the record, not a DB probe
+2026-10-22T01:53:34.668794Z	rhema-pr-206-worker-43139c6-00006-wbz	[worker] building GKE launcher (import @kubernetes/client-node + KubeConfig)
+2026-10-22T01:56:08.013555Z		
+2026-10-22T01:56:10.387717Z	rhema-pr-206-worker-43139c6-00007-hmp	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T01:56:18.928062Z	rhema-pr-206-worker-43139c6-00007-hmp	[worker] startup: health server listening; constructing deps
+2026-10-22T01:56:18.934041Z	rhema-pr-206-worker-43139c6-00007-hmp	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T01:56:18.940705Z	rhema-pr-206-worker-43139c6-00007-hmp	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T01:56:24.720976Z	rhema-pr-206-worker-43139c6-00007-hmp	
+2026-10-22T01:56:26.094456Z		
+2026-10-22T01:57:42.289582Z		
+2026-10-22T01:57:44.385561Z	rhema-pr-206-worker-43139c6-00008-fc5	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T01:57:52.941844Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: health server listening; constructing deps
+2026-10-22T01:57:52.948441Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T01:57:52.948881Z	rhema-pr-206-worker-43139c6-00008-fc5	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T01:57:57.630065Z	rhema-pr-206-worker-43139c6-00008-fc5	
+2026-10-22T01:57:58.969059Z		
+2026-10-22T01:59:38.133984Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)
+2026-10-22T02:00:58.833756Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: launcher built; starting pg-boss
+2026-10-22T02:01:06.134283Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: pg-boss started; creating queues
+2026-10-22T02:01:18.935894Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: queues created; registering consumers
+2026-10-22T02:01:41.333802Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: Connection terminated due to connection timeout
+2026-10-22T02:01:41.333820Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:01:41.333824Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2026-10-22T02:01:41.333828Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21) {
+2026-10-22T02:01:41.333834Z	rhema-pr-206-worker-43139c6-00008-fc5	  [cause]: Error: Connection terminated unexpectedly
+2026-10-22T02:01:41.333837Z	rhema-pr-206-worker-43139c6-00008-fc5	      at Connection.<anonymous> (/app/node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:204:73)
+2026-10-22T02:01:41.333840Z	rhema-pr-206-worker-43139c6-00008-fc5	      at Object.onceWrapper (node:events:633:28)
+2026-10-22T02:01:41.333843Z	rhema-pr-206-worker-43139c6-00008-fc5	      at Connection.emit (node:events:519:28)
+2026-10-22T02:01:41.333846Z	rhema-pr-206-worker-43139c6-00008-fc5	      at Socket.<anonymous> (/app/node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/connection.js:64:12)
+2026-10-22T02:01:41.333850Z	rhema-pr-206-worker-43139c6-00008-fc5	      at Socket.emit (node:events:531:35)
+2026-10-22T02:01:41.333853Z	rhema-pr-206-worker-43139c6-00008-fc5	      at TCP.<anonymous> (node:net:347:12)
+2026-10-22T02:01:41.333856Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:01:46.934322Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:01:46.934332Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:01:46.934336Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:01:46.934339Z	rhema-pr-206-worker-43139c6-00008-fc5	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T02:01:46.934342Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T02:01:46.934347Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:01:47.033934Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] cite completeness failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:01:47.033945Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:01:47.033948Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:01:47.033952Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:01:47.033957Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async citationCompletenessAggregate (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/citation-completeness.js:38:17)
+2026-10-22T02:01:47.033961Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async recordCitationCompletenessDaily (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/citation-completeness.js:58:17)
+2026-10-22T02:01:47.033964Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async citeTick (file:///app/dist/main.js:515:21)
+2026-10-22T02:01:52.135799Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:01:52.135811Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:01:52.135816Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:01:52.135820Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:01:52.135825Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:01:58.233785Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:01:58.233796Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:01:58.233800Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:01:58.233803Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:01:58.233808Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:02:04.233980Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:02:04.233991Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:02:04.233996Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:02:04.233999Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:02:04.234004Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:02:09.033809Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:02:09.033819Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:02:09.033824Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:02:36.734217Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:36.734234Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: run.reap, Worker: c34e4a29-55d4-4f23-994c-d22aa31592da)',
+2026-10-22T02:02:36.734252Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.reap, Worker: c34e4a29-55d4-4f23-994c-d22aa31592da)\n' +
+2026-10-22T02:02:36.734257Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:36.734262Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:36.734266Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:36.734271Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:36.734274Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:36.734279Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:36.734283Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:36.734287Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'run.reap',
+2026-10-22T02:02:36.734290Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'c34e4a29-55d4-4f23-994c-d22aa31592da'
+2026-10-22T02:02:36.734294Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:37.534237Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:37.534247Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 7112c875-fbf7-4f6d-8f96-fb2535551ef2)',
+2026-10-22T02:02:37.534262Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 7112c875-fbf7-4f6d-8f96-fb2535551ef2)\n' +
+2026-10-22T02:02:37.534266Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:37.534270Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:37.534273Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:37.534277Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:37.534281Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:37.534284Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:37.534287Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:37.534291Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'usage.reconcile',
+2026-10-22T02:02:37.534294Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '7112c875-fbf7-4f6d-8f96-fb2535551ef2'
+2026-10-22T02:02:37.534298Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:37.734428Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:37.734438Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: billing.period-tick, Worker: b3fc63eb-fcfe-4288-b42b-4d2a5cb7327c)',
+2026-10-22T02:02:37.734454Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: billing.period-tick, Worker: b3fc63eb-fcfe-4288-b42b-4d2a5cb7327c)\n' +
+2026-10-22T02:02:37.734457Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:37.734460Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:37.734463Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T02:02:37.734466Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:37.734469Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:37.734472Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:37.734475Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'billing.period-tick',
+2026-10-22T02:02:37.734479Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'b3fc63eb-fcfe-4288-b42b-4d2a5cb7327c'
+2026-10-22T02:02:37.734481Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:38.333823Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): Error: LISTEN/NOTIFY heartbeat timed out
+2026-10-22T02:02:38.333833Z	rhema-pr-206-worker-43139c6-00008-fc5	    at Timeout.<anonymous> (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:121:59)
+2026-10-22T02:02:38.333836Z	rhema-pr-206-worker-43139c6-00008-fc5	    at listOnTimeout (node:internal/timers:585:17)
+2026-10-22T02:02:38.333839Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T02:02:44.134359Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.134368Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync, Worker: 9f49565c-5b9a-4baf-9d42-2804581127bb)',
+2026-10-22T02:02:44.134385Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync, Worker: 9f49565c-5b9a-4baf-9d42-2804581127bb)\n' +
+2026-10-22T02:02:44.134389Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.134393Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.134396Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.134399Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.134402Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.134405Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.134408Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.134411Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'ingest.sync',
+2026-10-22T02:02:44.134414Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '9f49565c-5b9a-4baf-9d42-2804581127bb'
+2026-10-22T02:02:44.134417Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.234034Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.234045Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: cd23230b-bd11-4a5d-b864-9f17529f9fdb)',
+2026-10-22T02:02:44.234063Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: cd23230b-bd11-4a5d-b864-9f17529f9fdb)\n' +
+2026-10-22T02:02:44.234067Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.234071Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.234074Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.234077Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.234080Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.234083Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.234088Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.234093Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'ingest.reconstruct',
+2026-10-22T02:02:44.234097Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'cd23230b-bd11-4a5d-b864-9f17529f9fdb'
+2026-10-22T02:02:44.234100Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.334089Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.334101Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: __pgboss__send-it, Worker: 2ae2b1b7-0a0c-43f6-bda2-309f873a0455)',
+2026-10-22T02:02:44.334118Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: __pgboss__send-it, Worker: 2ae2b1b7-0a0c-43f6-bda2-309f873a0455)\n' +
+2026-10-22T02:02:44.334122Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.334126Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.334129Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.334132Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.334136Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.334139Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.334143Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.334145Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: '__pgboss__send-it',
+2026-10-22T02:02:44.334149Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '2ae2b1b7-0a0c-43f6-bda2-309f873a0455'
+2026-10-22T02:02:44.334151Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.434131Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.434140Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: voice.purge, Worker: 5d84081f-204a-4c7f-91b8-00001a3b512e)',
+2026-10-22T02:02:44.434158Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: voice.purge, Worker: 5d84081f-204a-4c7f-91b8-00001a3b512e)\n' +
+2026-10-22T02:02:44.434162Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.434165Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.434168Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.434173Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.434176Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.434179Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.434183Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.434186Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'voice.purge',
+2026-10-22T02:02:44.434190Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '5d84081f-204a-4c7f-91b8-00001a3b512e'
+2026-10-22T02:02:44.434193Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.534177Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.534189Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 0965f30a-3154-4064-ac89-b8610532f0cd)',
+2026-10-22T02:02:44.534207Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 0965f30a-3154-4064-ac89-b8610532f0cd)\n' +
+2026-10-22T02:02:44.534211Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.534215Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.534218Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.534222Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.534225Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.534229Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.534231Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.534234Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'ingest.sync.sweep',
+2026-10-22T02:02:44.534237Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '0965f30a-3154-4064-ac89-b8610532f0cd'
+2026-10-22T02:02:44.534241Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.634233Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.634242Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 037f9eb1-4c1e-423b-9066-0cc6f9a36c46)',
+2026-10-22T02:02:44.634263Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 037f9eb1-4c1e-423b-9066-0cc6f9a36c46)\n' +
+2026-10-22T02:02:44.634269Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.634275Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.634282Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.634287Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.634294Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.634299Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.634305Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.634310Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'run_events.retention',
+2026-10-22T02:02:44.634315Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '037f9eb1-4c1e-423b-9066-0cc6f9a36c46'
+2026-10-22T02:02:44.634319Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.834283Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.834294Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: run_events.partition, Worker: fc74ab15-035a-4bcc-b3e2-24d7dc26b828)',
+2026-10-22T02:02:44.834312Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.partition, Worker: fc74ab15-035a-4bcc-b3e2-24d7dc26b828)\n' +
+2026-10-22T02:02:44.834316Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.834320Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.834323Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.834327Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.834331Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.834334Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.834338Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.834341Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'run_events.partition',
+2026-10-22T02:02:44.834344Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'fc74ab15-035a-4bcc-b3e2-24d7dc26b828'
+2026-10-22T02:02:44.834347Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:44.934360Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:44.934371Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify, Worker: 13143ced-c7b0-46e3-8c54-789b78daa741)',
+2026-10-22T02:02:44.934387Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify, Worker: 13143ced-c7b0-46e3-8c54-789b78daa741)\n' +
+2026-10-22T02:02:44.934391Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:44.934395Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:44.934398Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:44.934401Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:44.934403Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:44.934407Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:44.934410Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:44.934413Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify',
+2026-10-22T02:02:44.934415Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '13143ced-c7b0-46e3-8c54-789b78daa741'
+2026-10-22T02:02:44.934418Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:45.034383Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:45.034394Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: mail.send, Worker: 697246d2-3c61-4461-9640-0a0f293264a2)',
+2026-10-22T02:02:45.034411Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: mail.send, Worker: 697246d2-3c61-4461-9640-0a0f293264a2)\n' +
+2026-10-22T02:02:45.034415Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:45.034418Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:45.034421Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:45.034424Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:45.034428Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:45.034432Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:45.034435Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:45.034437Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'mail.send',
+2026-10-22T02:02:45.034440Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '697246d2-3c61-4461-9640-0a0f293264a2'
+2026-10-22T02:02:45.034443Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:45.334024Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:45.334033Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: 3c8ca460-7259-4c45-9336-bfa0405aad11)',
+2026-10-22T02:02:45.334052Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: 3c8ca460-7259-4c45-9336-bfa0405aad11)\n' +
+2026-10-22T02:02:45.334055Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:45.334061Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:45.334064Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:45.334067Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:45.334071Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:45.334074Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:45.334077Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:45.334080Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify.sweep.weekly',
+2026-10-22T02:02:45.334086Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '3c8ca460-7259-4c45-9336-bfa0405aad11'
+2026-10-22T02:02:45.334091Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:45.434095Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:45.434107Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: 52405486-bc9b-49ec-a59f-df36398c4994)',
+2026-10-22T02:02:45.434124Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: 52405486-bc9b-49ec-a59f-df36398c4994)\n' +
+2026-10-22T02:02:45.434128Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:45.434131Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:45.434134Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:45.434138Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:45.434141Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:45.434144Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:45.434148Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:45.434151Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify.sweep.daily',
+2026-10-22T02:02:45.434154Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '52405486-bc9b-49ec-a59f-df36398c4994'
+2026-10-22T02:02:45.434157Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:45.733996Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:02:45.734007Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: test-tenant.purge, Worker: 90adefb9-7102-4b5d-a01a-f38628fd567b)',
+2026-10-22T02:02:45.734025Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: test-tenant.purge, Worker: 90adefb9-7102-4b5d-a01a-f38628fd567b)\n' +
+2026-10-22T02:02:45.734029Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:02:45.734032Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:02:45.734035Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:02:45.734038Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:02:45.734041Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:02:45.734044Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:02:45.734047Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:02:45.734051Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'test-tenant.purge',
+2026-10-22T02:02:45.734054Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '90adefb9-7102-4b5d-a01a-f38628fd567b'
+2026-10-22T02:02:45.734061Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:02:45.933788Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] failed to start: Error: timeout exceeded when trying to connect
+2026-10-22T02:02:45.933800Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:02:45.933804Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:02:45.933807Z	rhema-pr-206-worker-43139c6-00008-fc5	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T02:02:45.933811Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T02:02:45.933814Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)
+2026-10-22T02:02:45.933818Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Manager.createJob (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:798:32)
+2026-10-22T02:02:45.933821Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Manager.send (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:737:16)
+2026-10-22T02:02:45.933824Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async PgBoss.send (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/index.js:228:16)
+2026-10-22T02:02:45.933827Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async startWorker (file:///app/dist/main.js:662:5)
+2026-10-22T02:02:47.095367270Z	rhema-pr-206-worker-43139c6-00008-fc5	Container called exit(1).
+2026-10-22T02:02:54.524256Z	rhema-pr-206-worker-43139c6-00008-fc5	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T02:03:25.558257Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: health server listening; constructing deps
+2026-10-22T02:03:25.561989Z	rhema-pr-206-worker-43139c6-00008-fc5	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T02:03:25.564496Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T02:05:15.747701Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)
+2026-10-22T02:06:38.847929Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: launcher built; starting pg-boss
+2026-10-22T02:06:44.847410Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: pg-boss started; creating queues
+2026-10-22T02:06:55.947352Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: queues created; registering consumers
+2026-10-22T02:07:26.948269Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] cite completeness failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:07:26.948298Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:07:26.948304Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:07:26.948309Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:07:26.948314Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async citationCompletenessAggregate (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/citation-completeness.js:38:17)
+2026-10-22T02:07:26.948319Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async recordCitationCompletenessDaily (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/citation-completeness.js:58:17)
+2026-10-22T02:07:26.948325Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async citeTick (file:///app/dist/main.js:515:21)
+2026-10-22T02:07:29.147475Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:07:29.147492Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:07:29.147497Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:07:29.147501Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:07:29.147507Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:07:44.547028Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] stranded-sweep: {"kind":"queued_reenqueued","runId":"run_r6soak_pr-206_3","workspaceId":"ws_r6soak","attempt":1}
+2026-10-22T02:07:44.547126Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] stranded-sweep: {"kind":"queued_reenqueued","runId":"run_r6soak_pr-206_6","workspaceId":"ws_r6soak","attempt":1}
+2026-10-22T02:08:11.447367Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pause-drain failed: Error: timeout exceeded when trying to connect
+2026-10-22T02:08:11.447393Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:08:11.447401Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async drainPauseSignals (file:///app/node_modules/.pnpm/@rhema+orchestrator@file+packages+orchestrator_@electric-sql+pglite@0.2.17_@opentelemet_ef76694c2c821264204474e4af14d130/node_modules/@rhema/orchestrator/dist/pause-signals.js:30:21)
+2026-10-22T02:08:23.847203Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:23.847230Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 94f129f4-63ee-4582-9e15-f3faae7ee3ad)',
+2026-10-22T02:08:23.847250Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 94f129f4-63ee-4582-9e15-f3faae7ee3ad)\n' +
+2026-10-22T02:08:23.847257Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:23.847263Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:23.847267Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:23.847272Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:23.847277Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:23.847280Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:23.847285Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:23.847289Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'ingest.sync.sweep',
+2026-10-22T02:08:23.847294Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '94f129f4-63ee-4582-9e15-f3faae7ee3ad'
+2026-10-22T02:08:23.847297Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:23.947391Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): Error: timeout exceeded when trying to connect
+2026-10-22T02:08:23.947406Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:08:23.947411Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:08:23.947416Z	rhema-pr-206-worker-43139c6-00008-fc5	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T02:08:23.947420Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T02:08:23.947424Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)
+2026-10-22T02:08:23.947428Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async #executeQuery (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/boss.js:158:40)
+2026-10-22T02:08:23.947432Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async #maintain (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/boss.js:329:26)
+2026-10-22T02:08:23.947474Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Boss.supervise (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/boss.js:241:17)
+2026-10-22T02:08:23.947479Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async #onSupervise (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/boss.js:180:32)
+2026-10-22T02:08:24.347401Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): Error: timeout exceeded when trying to connect
+2026-10-22T02:08:24.347416Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:08:24.347420Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:08:24.347423Z	rhema-pr-206-worker-43139c6-00008-fc5	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T02:08:24.347427Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T02:08:24.347432Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)
+2026-10-22T02:08:24.347435Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Manager.insert (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:975:26)
+2026-10-22T02:08:24.347457Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Timekeeper.cron (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/timekeeper.js:196:13)
+2026-10-22T02:08:24.347461Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Timekeeper.onCron (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/timekeeper.js:156:21)
+2026-10-22T02:08:24.347464Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Timeout._onTimeout (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/timekeeper.js:96:60)
+2026-10-22T02:08:24.447381Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:24.447397Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: run_events.retention, Worker: b1648491-f346-4abe-a92c-5eeef4b4b525)',
+2026-10-22T02:08:24.447415Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.retention, Worker: b1648491-f346-4abe-a92c-5eeef4b4b525)\n' +
+2026-10-22T02:08:24.447419Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:24.447424Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:24.447430Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:24.447434Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:24.447457Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:24.447461Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:24.447465Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:24.447468Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'run_events.retention',
+2026-10-22T02:08:24.447471Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'b1648491-f346-4abe-a92c-5eeef4b4b525'
+2026-10-22T02:08:24.447474Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:24.647282Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:24.647297Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: run_events.partition, Worker: b52252d8-38b1-4639-bf03-c55a2861a940)',
+2026-10-22T02:08:24.647318Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.partition, Worker: b52252d8-38b1-4639-bf03-c55a2861a940)\n' +
+2026-10-22T02:08:24.647323Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:24.647328Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:24.647333Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:24.647337Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:24.647342Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:24.647346Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:24.647350Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:24.647353Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'run_events.partition',
+2026-10-22T02:08:24.647357Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'b52252d8-38b1-4639-bf03-c55a2861a940'
+2026-10-22T02:08:24.647360Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:27.247486Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:27.247502Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify, Worker: 8732bf4e-fd4e-46df-b0e2-9f465ee0b13c)',
+2026-10-22T02:08:27.247520Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify, Worker: 8732bf4e-fd4e-46df-b0e2-9f465ee0b13c)\n' +
+2026-10-22T02:08:27.247524Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:27.247529Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:27.247533Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:27.247537Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:27.247540Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:27.247544Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:27.247548Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:27.247551Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify',
+2026-10-22T02:08:27.247555Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '8732bf4e-fd4e-46df-b0e2-9f465ee0b13c'
+2026-10-22T02:08:27.247558Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:27.447212Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:27.447229Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: mail.send, Worker: 9d82b35f-60e0-486a-ba45-c0eb38385fba)',
+2026-10-22T02:08:27.447248Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: mail.send, Worker: 9d82b35f-60e0-486a-ba45-c0eb38385fba)\n' +
+2026-10-22T02:08:27.447253Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:27.447259Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:27.447264Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:27.447269Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:27.447273Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:27.447277Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:27.447281Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:27.447284Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'mail.send',
+2026-10-22T02:08:27.447289Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '9d82b35f-60e0-486a-ba45-c0eb38385fba'
+2026-10-22T02:08:27.447293Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:28.847168Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:28.847184Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: b1dd17b7-d315-43c0-9dd9-f86d4d068149)',
+2026-10-22T02:08:28.847207Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: b1dd17b7-d315-43c0-9dd9-f86d4d068149)\n' +
+2026-10-22T02:08:28.847212Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:28.847217Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:28.847222Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:28.847226Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:28.847230Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:28.847234Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:28.847239Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:28.847242Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify.sweep.weekly',
+2026-10-22T02:08:28.847246Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: 'b1dd17b7-d315-43c0-9dd9-f86d4d068149'
+2026-10-22T02:08:28.847250Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:29.346877Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:29.346892Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: 57681ddd-4c70-4b84-a187-0a59b9165075)',
+2026-10-22T02:08:29.346912Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: 57681ddd-4c70-4b84-a187-0a59b9165075)\n' +
+2026-10-22T02:08:29.346917Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:29.346923Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:29.346927Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:29.346931Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:29.346935Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:29.346939Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:29.346943Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:29.346946Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify.sweep.daily',
+2026-10-22T02:08:29.346950Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '57681ddd-4c70-4b84-a187-0a59b9165075'
+2026-10-22T02:08:29.346953Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:29.647002Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T02:08:29.647017Z	rhema-pr-206-worker-43139c6-00008-fc5	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.hourly, Worker: 05ea1d2a-0e70-4c2b-94e4-0658fcc34d95)',
+2026-10-22T02:08:29.647036Z	rhema-pr-206-worker-43139c6-00008-fc5	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.hourly, Worker: 05ea1d2a-0e70-4c2b-94e4-0658fcc34d95)\n' +
+2026-10-22T02:08:29.647042Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T02:08:29.647047Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T02:08:29.647051Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T02:08:29.647056Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T02:08:29.647060Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T02:08:29.647064Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T02:08:29.647067Z	rhema-pr-206-worker-43139c6-00008-fc5	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T02:08:29.647071Z	rhema-pr-206-worker-43139c6-00008-fc5	  queue: 'notify.sweep.hourly',
+2026-10-22T02:08:29.647075Z	rhema-pr-206-worker-43139c6-00008-fc5	  worker: '05ea1d2a-0e70-4c2b-94e4-0658fcc34d95'
+2026-10-22T02:08:29.647078Z	rhema-pr-206-worker-43139c6-00008-fc5	}
+2026-10-22T02:08:29.747097Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] failed to start: Error: timeout exceeded when trying to connect
+2026-10-22T02:08:29.747114Z	rhema-pr-206-worker-43139c6-00008-fc5	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T02:08:29.747122Z	rhema-pr-206-worker-43139c6-00008-fc5	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T02:08:29.747128Z	rhema-pr-206-worker-43139c6-00008-fc5	    at process.processTimers (node:internal/timers:518:9)
+2026-10-22T02:08:29.747132Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)
+2026-10-22T02:08:29.747137Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async Timekeeper.schedule (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/timekeeper.js:241:13)
+2026-10-22T02:08:29.747142Z	rhema-pr-206-worker-43139c6-00008-fc5	    at async startWorker (file:///app/dist/main.js:649:5)
+2026-10-22T02:08:31.305938922Z	rhema-pr-206-worker-43139c6-00008-fc5	Container called exit(1).
+2026-10-22T02:08:38.527699Z	rhema-pr-206-worker-43139c6-00008-fc5	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T02:08:47.243228Z	rhema-pr-206-worker-43139c6-00008-fc5	[worker] startup: health server listening; constructing deps
+2026-10-22T02:08:47.243239Z	rhema-pr-206-worker-43139c6-00008-fc5	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.

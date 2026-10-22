@@ -33,20 +33,40 @@ mutations; the prod flip is R6INF.1's and only on soak-green.**
 - `docs/build/reports/<date>_R6SOAK.1/` — committed soak evidence (config, image provenance,
   per-iteration ledger, signature analysis, teardown + orphan sweep, resource cost).
 
-## Live leg (executed on the owned `pr-<n>` preview)
+## Live leg (executed on the owned `pr-206` preview) — **VERDICT: RED**
 
-Bring-up per the VERIF.2 runbook: `preview-stack.mjs init` → config → targeted AR repo →
-`gcloud builds submit infra/cloudbuild/image-set.yaml` (all 10 images, this HEAD sha) → digest
-pins → `up` → migrate Job → post-up k8s (`runs` namespace + worker launcher RBAC + KSA/NetPol) →
-non-prod `anthropic-api-key` seeded into the preview's own container → IAP tunnel through the
-preview's egress-proxy VM → driver with `RHEMA_SOAK_DATABASE_URL` (system-role DSN, never
-printed). `destroy` → full `rhema-pr-<n>-*` orphan enumeration → `rm` → cost table vs the $8
-resource-hours budget. Results land in the run ledger + report dir at closeout.
+The soak ran live on stack `pr-206` (worker digest `77fee0f5…`, live-asserted
+`cpu=0.5`/`memory=512Mi`/`cpu-throttling=true`/`startup-cpu-boost=true`/min=max=1). **All six
+pre-registered iterations failed** — this is a clean reproduction of `D-P0.15h-3`, not a
+borderline result:
+
+- **Zero** `run_start_stage_ms` SLO samples landed across all six iterations — the launch path
+  (`handleRunStart → provisionRun → ensureLauncher → import("@kubernetes/client-node")`) never
+  reached its first SLO write.
+- Iters 1/2/5: `run.start` consumed → `provisioning` → `building GKE launcher` logged → handler
+  hung past `expire_seconds=900` → pg-boss retried to `retry_limit` → `failed`.
+- Iters 3/4/6: the `run.start` job sat `created` the whole 600 s window — the pg-boss consumers
+  never fetched it while the starved instance churned.
+- Revision `00004-k7j` **crashed at cold start** — `pg-boss connect timeout → exit(1)` — the
+  mass-DB-connection-starvation signature. Even `run.cancel` jobs exhausted retries (iters
+  2/3/4): the starvation is queue-wide, not launch-path-specific.
+- Iter-6 caveat, honestly disclosed: the first driver pass crashed mid-iteration on a tunnel-side
+  pg-boss `error` event (before its send landed); the driver was hardened
+  (transient-error listeners, `--from` resume, idempotent seed, fail-closed empty verdict) and
+  iter 6 re-measured on a fresh revision — failed identically.
+
+`D-COST.1-3` (a)'s conditional authorization is **not discharged** — R6INF.1 must not flip prod
+to 0.5/512Mi on this evidence; the lever needs a redesign (eager import / pool sizing under
+throttle / different size) and a fresh soak. Evidence: `docs/build/reports/2026-10-21_R6SOAK.1/`
+(`soak-report.md`, `worker-soak.json`, three worker-log windows, posture/provenance dumps).
+Preview destroyed via the guard; orphan sweep + cost in the run ledger. Spend ≈ $2–4 < $8.
 
 ## Verification
 
-`pnpm turbo build lint typecheck` — 135/135 · `pnpm test` — 511 files, 6,030 pass / 6 skip /
-0 fail (new pins 42/42 incl. the 13 driver pins + preview-worker stage pin) ·
+`pnpm turbo build lint typecheck` — 135/135 · `pnpm test` — 511 files, 6,033 pass / 4 skip /
+0 fail (incl. the 15 driver pins + preview-worker stage pin; the `privsep.docker` leg failed
+once mid-outage on a registry.npmjs.org 503 inside the docker `pnpm install` and passes clean
+on retry post-recovery — environmental, unrelated to the diff) ·
 `check:licenses`, `check:protocol-markers`, `check:no-cookies`, `check:spa-budget`,
 `check:spa-env`, `check:dom-contract` — all OK · `check-build-memory.sh` 0 violations ·
 `check-append-only.mjs --base 3c93544` OK.

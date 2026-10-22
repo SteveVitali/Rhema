@@ -1,0 +1,242 @@
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "metadata": {
+    "annotations": {
+      "run.googleapis.com/client-name": "gcloud",
+      "run.googleapis.com/client-version": "583.0.0",
+      "run.googleapis.com/ingress": "internal-and-cloud-load-balancing",
+      "run.googleapis.com/ingress-status": "internal-and-cloud-load-balancing",
+      "run.googleapis.com/maxScale": "20",
+      "run.googleapis.com/operation-id": "d11b6a14-ab1b-4868-9a5b-8be82f7400c7",
+      "run.googleapis.com/urls": "[\"https://rhema-pr-206-worker-43139c6-25012989319.us-central1.run.app\",\"https://rhema-pr-206-worker-43139c6-tkbl73n3tq-uc.a.run.app\"]",
+      "serving.knative.dev/creator": "14SteveVitali@gmail.com",
+      "serving.knative.dev/lastModifier": "14SteveVitali@gmail.com"
+    },
+    "creationTimestamp": "2026-10-22T00:56:57.979826Z",
+    "generation": 4,
+    "labels": {
+      "cloud.googleapis.com/location": "us-central1",
+      "goog-pulumi-provisioned": "true"
+    },
+    "name": "rhema-pr-206-worker-43139c6",
+    "namespace": "25012989319",
+    "resourceVersion": "AAZeY7t0mEk",
+    "selfLink": "/apis/serving.knative.dev/v1/namespaces/25012989319/services/rhema-pr-206-worker-43139c6",
+    "uid": "dc5e8fdb-5bb4-4191-87fe-e0b70786371f"
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "autoscaling.knative.dev/maxScale": "1",
+          "autoscaling.knative.dev/minScale": "1",
+          "run.googleapis.com/client-name": "gcloud",
+          "run.googleapis.com/client-version": "583.0.0",
+          "run.googleapis.com/cpu-throttling": "true",
+          "run.googleapis.com/network-interfaces": "[{\"network\":\"projects/rhema-507501/global/networks/rhema-pr-206-net-cb4f577\",\"subnetwork\":\"projects/rhema-507501/regions/us-central1/subnetworks/rhema-pr-206-private-app-f1ff8ec\"}]",
+          "run.googleapis.com/sessionAffinity": "false",
+          "run.googleapis.com/startup-cpu-boost": "true",
+          "run.googleapis.com/vpc-access-egress": "private-ranges-only"
+        },
+        "labels": {
+          "client.knative.dev/nonce": "sowtrcyxdd",
+          "run.googleapis.com/startupProbeType": "Default"
+        }
+      },
+      "spec": {
+        "containerConcurrency": 1,
+        "containers": [
+          {
+            "env": [
+              {
+                "name": "ANTHROPIC_BASE_URL",
+                "value": "http://10.8.16.2:8443"
+              },
+              {
+                "name": "RUN_TOKEN_PUBLIC_KEY_SECRET",
+                "value": "projects/rhema-507501/secrets/rhema-pr-206-run-token-signing-key/versions/latest"
+              },
+              {
+                "name": "DEBIT_MODE",
+                "value": "committed"
+              },
+              {
+                "name": "RUN_TASK_IMAGE_REPO",
+                "value": "us-central1-docker.pkg.dev/rhema-507501/rhema-pr-206/run-task"
+              },
+              {
+                "name": "K8S_NAMESPACE",
+                "value": "runs"
+              },
+              {
+                "name": "GKE_CA_DATA",
+                "value": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVMVENDQXBXZ0F3SUJBZ0lSQU9lRitISmptTW9XNWZOcW5vK1h0emN3RFFZSktvWklodmNOQVFFTEJRQXcKTHpFdE1Dc0dBMVVFQXhNa01qWTNZbVU0T1RndE5UVmhZeTAwTW1NM0xUZ3pZVGd0TlRJelpEVTFZbU5pTTJReQpNQ0FYRFRJMk1UQXlNVEl5TkRnME5Gb1lEekl3TlRZeE1ERXpNak0wT0RRMFdqQXZNUzB3S3dZRFZRUURFeVF5Ck5qZGlaVGc1T0MwMU5XRmpMVFF5WXpjdE9ETmhPQzAxTWpOa05UVmlZMkl6WkRJd2dnR2lNQTBHQ1NxR1NJYjMKRFFFQkFRVUFBNElCandBd2dnR0tBb0lCZ1FDL2NKSFB5cUhEbFFFY2hodnR3ZEEwV1VpS2JLNmo5cHh0akszRQpYQzhDTUtuNlZ0WG52dHNtTGF2cTY1TWNpOTUyL1UwS3NLZ3E2K1ZySnNIS3d4T0IxTUZtajMzRDRqTlc5UnFoCk85YjRzZ1JiNFd3WjFOa2hYQ0pOS2dUVWVjVnZzT2FJbGtSWXpUYjZHRHVqWGRXcHpKbmJNdGtVSnc1WVBtSzQKbzdxWVk3MWNncjQ5S0Vkc0ZPdFpxSXdFbDMzWms1aU1pb0M3OGt0Z084VXI2dmJmNFY5TkxQRzVRU2tlZTZregp4TmlvbEJqY2xoL2V1SC9pTDN2elI4UWdLKy9FWVp1blNRdCsvR1dyVEJCWEFlRnBJb0U5Y2xxUWNPZlBBMGFKCk8rQno2RG52eHV2QzVEWjRsY2hVdDdRYnhBc0xwalJBeVdnMDEwblBRVHYrZ1FYVFVxQ0daSU1abDlSWnBLdWcKL0xJcnR2ZDI2S2pRSGdzTk1DYTE2bThoaEQ5cTJTYWdzRzF3TnJ1VUsvMUZBNjU2dFVsanp1azRDcEJpaGtVcgpKMzl3WUljVGV2Q0VRS01VK2dITGVXZnlJRHg3aEFSM0c5blJNblBvMFhZMXlDeTdnRlBsUURuaHd1aVN2dmlsCjc2RlBIZ1JCczc5MnEyRjRPKzF2bzNuUWxKY0NBd0VBQWFOQ01FQXdEZ1lEVlIwUEFRSC9CQVFEQWdJRU1BOEcKQTFVZEV3RUIvd1FGTUFNQkFmOHdIUVlEVlIwT0JCWUVGS3Jibk4rS2N0Y1ZRNXZZVGVxZ2p2aUxhZlhvTUEwRwpDU3FHU0liM0RRRUJDd1VBQTRJQmdRQStlei9vUGRaSDNxVElqZEo0dFFnZnhnUjFBYldSTTZDZHRxZU5oZng4CkcvL1V2aXVZWXVyb0xBemsrVU1ibUJleFBjQ2VUcExUUzJjczR3YzFsY3pmOWRENmI3K0dtMWFhb01UalFVOEoKYVRoWXhyRW90MDQ0SkNKQjdEOU1jQnA1bzg5UVRjd1FVMGtjNERJZDZPVUJMMUNXckxYR2FGb1ZvT1UvQjJaMgp0TnB1OVlSd1NPZzNMMktOMVd5S0ZwaFUxV3pxV210MnBpSzh5bW9meGo3Nmh3TzU2MTQ5bWlNWUltRlhucFFLCmxRNnU2YUYzMTdhMVptRyt0cm5MQmh4QkVhNmtGTDJUeU1LVkIxNWtrL3gwcWovelJLMWJBZHBtaVdXNitiRkUKWVU1a3RaRlZzT0U3VUdrR3o1YVFqbTF3cWpnbUtZcXRJZEs1K2tKdXBYV0ViZ3lSRHFuVEFqejZhZjFZblkzagpMK0UrVnh3YWl2djhLQTRJcnNEMWJxdUZTb01IRW5VTUdNUlVHTlpBTERkS1pmLytjNy9RZUVXeWM0S1EyUU5sCnhHYjRtY0ZkMTkzb3lnZHp4a3pwTHhZSzBjenNHamR2K2lVblgvYmpnSldpTDl3TUZXc1dtTGNxUkxUM3ZhQWoKaDRLRlVMcFpFUDFJczRVQ244UWN1QnM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+              },
+              {
+                "name": "REDIS_URL",
+                "value": "redis://10.129.49.51:6379"
+              },
+              {
+                "name": "GKE_ENDPOINT",
+                "value": "34.41.238.101"
+              },
+              {
+                "name": "DATABASE_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "key": "latest",
+                    "name": "rhema-pr-206-app-database-url"
+                  }
+                }
+              },
+              {
+                "name": "OBJECTS_BUCKET",
+                "value": "rhema-pr-206-artifacts"
+              },
+              {
+                "name": "DEFAULT_CONCURRENCY",
+                "value": "25"
+              },
+              {
+                "name": "FETCHER_SERVICE_URL",
+                "value": "https://rhema-pr-206-fetcher-dff920e-tkbl73n3tq-uc.a.run.app"
+              },
+              {
+                "name": "KUBE_SERVICE_ACCOUNT",
+                "value": "run-task-ksa"
+              },
+              {
+                "name": "API_INTERNAL_URL",
+                "value": "https://rhema-pr-206-api-609b523-tkbl73n3tq-uc.a.run.app"
+              },
+              {
+                "name": "CONVERT_JOB_ROOT",
+                "value": "/usercontent"
+              },
+              {
+                "name": "WALKTHROUGH_MODEL_KEY_SECRET",
+                "value": "projects/rhema-507501/secrets/rhema-pr-206-anthropic-api-key/versions/latest"
+              },
+              {
+                "name": "EMAIL_FROM",
+                "value": "hello@rhema.tools"
+              },
+              {
+                "name": "INGEST_MODEL_KEY_SECRET",
+                "value": "projects/rhema-507501/secrets/rhema-pr-206-anthropic-api-key/versions/latest"
+              },
+              {
+                "name": "RUN_TOKEN_PRIVATE_KEY_SECRET",
+                "value": "projects/rhema-507501/secrets/rhema-pr-206-run-token-signing-key/versions/latest"
+              },
+              {
+                "name": "TEST_TENANT_PURGE_HOURS",
+                "value": "26"
+              },
+              {
+                "name": "EMAIL_ACTION_SECRET_NAME",
+                "value": "projects/rhema-507501/secrets/rhema-pr-206-email-action-secret/versions/latest"
+              },
+              {
+                "name": "SYSTEM_DATABASE_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "key": "latest",
+                    "name": "rhema-pr-206-system-database-url"
+                  }
+                }
+              },
+              {
+                "name": "USER_CONTENT_BUCKET",
+                "value": "rhema-pr-206-user-content"
+              },
+              {
+                "name": "RUN_TASK_IMAGE_DIGEST",
+                "value": "us-central1-docker.pkg.dev/rhema-507501/rhema-pr-206/run-task@sha256:20dda52d71367bf068a429609efa91af37b5dd82af9cee1eaa26f67876c77433"
+              },
+              {
+                "name": "SANDBOX_NODE_POOL",
+                "value": "rhema-pr-206-run-task-pool-8614e44"
+              },
+              {
+                "name": "RUN_SERVICE_ACCOUNT",
+                "value": "rhema-pr-206-run-task@rhema-507501.iam.gserviceaccount.com"
+              },
+              {
+                "name": "CONVERT_JOB",
+                "value": "projects/rhema-507501/locations/us-central1/jobs/rhema-pr-206-convert-32d4567"
+              },
+              {
+                "name": "RHEMA_SOAK_ITER",
+                "value": "3"
+              }
+            ],
+            "image": "us-central1-docker.pkg.dev/rhema-507501/rhema-pr-206/worker@sha256:77fee0f5d03d44aa2cedb77fabb7661c73c3f5ac6f0ea5b5cdc718f970676298",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http1"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "0.5",
+                "memory": "512Mi"
+              }
+            },
+            "startupProbe": {
+              "failureThreshold": 1,
+              "periodSeconds": 240,
+              "tcpSocket": {
+                "port": 8080
+              },
+              "timeoutSeconds": 240
+            }
+          }
+        ],
+        "serviceAccountName": "rhema-pr-206-worker@rhema-507501.iam.gserviceaccount.com",
+        "timeoutSeconds": 300
+      }
+    },
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100
+      }
+    ]
+  },
+  "status": {
+    "address": {
+      "url": "https://rhema-pr-206-worker-43139c6-tkbl73n3tq-uc.a.run.app"
+    },
+    "conditions": [
+      {
+        "lastTransitionTime": "2026-10-22T01:25:00.017737Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastTransitionTime": "2026-10-22T01:24:42.926017Z",
+        "status": "True",
+        "type": "ConfigurationsReady"
+      },
+      {
+        "lastTransitionTime": "2026-10-22T01:24:59.974098Z",
+        "status": "True",
+        "type": "RoutesReady"
+      }
+    ],
+    "latestCreatedRevisionName": "rhema-pr-206-worker-43139c6-00004-k7j",
+    "latestReadyRevisionName": "rhema-pr-206-worker-43139c6-00004-k7j",
+    "observedGeneration": 4,
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100,
+        "revisionName": "rhema-pr-206-worker-43139c6-00004-k7j"
+      }
+    ],
+    "url": "https://rhema-pr-206-worker-43139c6-tkbl73n3tq-uc.a.run.app"
+  }
+}

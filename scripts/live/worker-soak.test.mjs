@@ -30,8 +30,14 @@ describe("parseArgs — the soak can only aim at an owned pr-<n> preview", () =>
     expect(() => parseArgs(["--stack", "pr-7", "--iterations", "21"])).toThrow();
     const a = parseArgs(["--stack", "pr-7"]);
     expect(a.iterations).toBe(6);
+    expect(a.from).toBe(1);
     expect(a.launchBudgetMs).toBe(LAUNCH_BUDGET_MS);
     expect(a.project).toBe("rhema-507501");
+  });
+  it("bounds --from to 1..iterations (the resume flag for a driver-side crash)", () => {
+    expect(parseArgs(["--stack", "pr-7", "--iterations", "6", "--from", "6"]).from).toBe(6);
+    expect(() => parseArgs(["--stack", "pr-7", "--iterations", "6", "--from", "0"])).toThrow();
+    expect(() => parseArgs(["--stack", "pr-7", "--iterations", "6", "--from", "7"])).toThrow();
   });
 });
 
@@ -73,6 +79,9 @@ describe("verdictFor — green only when every iteration is clean", () => {
     const recs = [{ jobLaunchMs: null, logMarkers: [] }];
     expect(verdictFor(recs).verdict).toBe("red");
   });
+  it("zero recorded iterations → red (fail-closed — nothing attested)", () => {
+    expect(verdictFor([]).verdict).toBe("red");
+  });
 });
 
 describe("fixtureIds — deterministic and stack-scoped", () => {
@@ -93,6 +102,9 @@ function fakeInfra({ launchMs = 8_000, neverLaunch = false } = {}) {
   const gcloud = (argv) => {
     gcloudCalls.push(argv.join(" "));
     if (argv[1] === "services" && argv[2] === "update") { rev += 1; return { status: 0, stdout: "" }; }
+    if (argv[1] === "services" && argv[2] === "list") {
+      return { status: 0, stdout: JSON.stringify([{ metadata: { name: "rhema-pr-7-worker-abc123" } }]) };
+    }
     if (argv[1] === "services" && argv[2] === "describe") {
       const name = `rhema-pr-7-worker-${String(rev).padStart(5, "0")}-x`;
       return {
