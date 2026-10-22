@@ -352,6 +352,7 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | # | file | phase | scope | gate |
 |---|---|---|---|---|
 | 176 | `176_R6ENG.1__ci-provenance-hygiene.md` | R6 pre-deploy | mount-settle flake + sibling audit, tsconfig refs, BL-02/§5 flags, **nightly provenance tolerance** (REQ-ENG-1/4/5/6/8) | — |
+| 176a | `176a_R6CI.1__ci-cost-phase-1.md` | R6 pre-deploy | CI cost phase 1: fail-closed docs-only/same-tree fast path + `workflow_dispatch` + push concurrency + journeys pause (operator run-time insert; ADR-115) | — |
 | 177 | `177_R6ENG.2__sse-finalize-wakeup.md` | R6 pre-deploy | SSE finalize-path post-commit wakeup (REQ-ENG-2) | — |
 | 178 | `178_R6ENG.3__res3-verification-checkpointing.md` | R6 pre-deploy | RES.3 verification checkpointing + budget-aware retry gate (REQ-ENG-3) | — |
 | 179 | `179_R6UCD.1__api-minted-usercontent-urls.md` | R6 pre-deploy | API-minted signed usercontent URLs + ADR-113 (REQ-POST-7 code) | — |
@@ -532,6 +533,14 @@ Every round-6 ticket's *Operating clauses* section cites these (the gap table ca
 6. No secret value in any artifact (`provided: yes/no`); no PII committed (aggregates only).
 7. The run ledger header names the harness/model/tier (BM-HARNESS-01).
 8. No living-record pins in tests (BM-TEST-01).
+9. No ledger-only push to an open-PR branch after a boundary confirm (operator ruling D8,
+   2026-10-20 — each push is a ~55-min CI run): orchestrator ledger notes commit locally on the
+   tip and carry into the next ticket's first push on its own branch.
+10. Full-CI cadence (operator rulings D4/D5, 2026-10-20; ADR-115 + `docs/development.md`): a
+    green **full** run is owed per round-6 gate and per deploy SHA — never per ticket; a
+    per-ticket boundary read accepts a fast-path pass; `main` never reuses a PR pass, and
+    `workflow_dispatch` (`gh workflow run ci.yml --ref <branch>`) is the forcing function
+    for a full run between pushes.
 
 ## Out of scope (no ticket does this; the capstone verifies none crept in)
 
@@ -1012,3 +1021,13 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   REQ-SPEC-29), then a re-fork of the NAVC.1 branch onto the repaired head preserving the crashed worker's
   WIP. Slots between `153` and `154`; nextTicket → CIREP.1; `blockedOn` stays until the pass read.
   Trigger: operator election (dispatch question) + orchestrate-build §2.3 step 4 exit-3.
+- **2026-10-20 — INSERT** `176a_R6CI.1` (run-time insert, BM-MANIFEST-03; slots between rows 176 and 177,
+  before R6ENG.2 is dispatched): CI cost phase 1 — fail-closed docs-only/same-tree fast path
+  (`scripts/ci/fast-path-paths.txt` = deploy-neutral minus `.gitleaks.toml`/`docs/build/tools/**`/
+  `docs/build/record_policy/**`; gitleaks + `check:no-cookies` always run), `ci-pass-<hash>` anchor
+  artifacts, `workflow_dispatch`, per-SHA `push` concurrency, `contracts` duplicate-vitest removal,
+  `--maxWorkers=2` measurement, journeys `schedule:` pause until R6SWP.1 (D7), full-run cadence per
+  gate + per deploy SHA (D4), no main reuse (D5), phase-2 deferred (D6), no self-hosted runner (D9).
+  Trigger: `/Users/stevenvitali/rhema-ci-handoff/handoff-prompt.md` + the 2026-10-20 CI spend
+  measurement (18,023 billed min/month pace; 44 % docs-only heads). Operator rulings D1–D9 verbatim
+  in LEDGER § GATE DECISIONS; ADR-115. Ledger notes ride this ticket's branch (rule 9).

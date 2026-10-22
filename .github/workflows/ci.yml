@@ -4,15 +4,40 @@ name: CI
 #   typecheck/lint/unit -> contracts -> integration -> images -> public-safe
 # Jobs may start as thin placeholders that later tickets fill; the pipeline, the licence policy, and
 # the public-safe checks are real now (REQ-ARCH-40; REQ-ARCH-37).
+#
+# R6CI.1 (ADR-115; operator insert 176a, rulings D1–D9) — docs-only/same-tree FAST PATH:
+#   the `fast-path` job computes one verdict (`mode`) from the compare API + the repo-wide
+#   `ci-pass-<non_docs_tree>` anchor artifacts — never from fetch-depth. Every pre-existing
+#   step is gated `needs.fast-path.outputs.mode == 'full'`; the only always-run legs are the
+#   gitleaks + check:no-cookies guards (public-safe) and, on fast heads, the committed
+#   docs-reader subset (scripts/ci/neutral-readers.txt). Every job keeps its name and
+#   concludes `success`; a new leg inside a job must carry the `mode == 'full'` gate unless
+#   it reads deploy-neutral content — then it belongs in the always-run set.
+#   A green FULL run (any event) uploads `ci-pass-<h>` via `ci-anchor`; a fast run never
+#   writes one (a `mode != "full"` producer is poison to the verifier). Anything the
+#   classifier cannot prove is `full`.
 
 on:
   push:
     branches: [main]
   pull_request:
+  # R6CI.1 (D4 cadence): on-demand full runs — `gh workflow run ci.yml --ref <branch>`
+  # (no inputs; the ref selects the branch). A dispatch on a PR branch attaches its checks
+  # to that head SHA. A full run is required at each round-6 gate and each deploy SHA
+  # (docs/development.md); a per-ticket boundary read accepts a fast-path pass.
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # R6CI.1: PRs stay grouped on refs/pull/N/merge (cancellation preserved); push and
+  # dispatch group per-SHA so queued main merges stop cancelling each other.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true
+
+# R6CI.1: the fast-path verifier lists repo artifacts and reads runs through the Actions
+# API (`actions: read`); checkout needs `contents: read`.
+permissions:
+  contents: read
+  actions: read
 
 env:
   # Turborepo remote cache is self-hosted on S3 (never Vercel-hosted). CI supplies these from
@@ -22,8 +47,30 @@ env:
   TURBO_TEAM: rhema
 
 jobs:
+  fast-path:
+    name: fast-path
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.decide.outputs.mode }}
+      non_docs_tree: ${{ steps.decide.outputs.non_docs_tree }}
+      head_sha: ${{ steps.decide.outputs.head_sha }}
+      base_sha: ${{ steps.decide.outputs.base_sha }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ci/decide-fast-path.mjs
+
   typecheck-lint-unit:
     name: typecheck / lint / unit
+    needs: fast-path
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,23 +84,63 @@ jobs:
       # resolves to its stub (RHEMA_EVALS_PATH unset).
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build lint typecheck
+        if: needs.fast-path.outputs.mode == 'full'
       # JOURNEY.1 — the journeys package's occlusion test drives a real browser; install the bundled
       # chromium so the unit job's assertions are never vacuous (the test fails hard under CI otherwise).
       - run: pnpm --filter @rhema/journeys exec playwright install chromium
+        if: needs.fast-path.outputs.mode == 'full'
+      # R6CI.1 measured `--minWorkers=1 --maxWorkers=2` on this PR (run 39508570350): the leg
+      # took 40m41s vs the three prior unflagged legs 40m47s/32m45s/27m05s — green but NOT
+      # faster (the suite's long tail is per-file PGlite instances two workers don't split).
+      # Per the contract's keep-iff-green-and-faster rule the flag is dropped; `pnpm test` stays.
       - run: pnpm test
+        if: needs.fast-path.outputs.mode == 'full'
       # SPA.7 (REQ-VFY-2/REQ-TST-2): the emitted-DOM contract gate — journey selector literals ⊆
       # the committed manifest ⊆ emitted+asserted. A pure source scan; no build or browser needed.
       - run: pnpm check:dom-contract
+        if: needs.fast-path.outputs.mode == 'full'
       # Upstream-diff gate (REQ-ARCH-5; AC1): the ported skills equal the vendored pin + only sanctioned
       # edits. Self-contained (reads packages/protocols/upstream-pin) — no external repo needed.
       - run: node scripts/check-upstream-diff.mjs
+        if: needs.fast-path.outputs.mode == 'full'
       # protocols_version is frozen over the trio (REQ-SPEC-22 / P0.04 AC5): a trio edit not re-frozen
       # fails here (the hash mechanism itself is unit-tested in scripts/lib/protocols-version.test.mjs).
       - run: node scripts/compute-protocols-version.mjs
+        if: needs.fast-path.outputs.mode == 'full'
+      # R6CI.1 — on a fast-path head the committed docs-reader audit subset still runs: these are
+      # the only tests whose verdicts can read deploy-neutral content (scripts/ci/neutral-readers.txt).
+      # R6CI.1: the subset's two packages import workspace code (`@rhema/orchestrator`,
+      # `@rhema/live-clients`, `@rhema/run-task`, journeys' impls) that resolves through
+      # `dist/` — vitest cannot resolve workspace exports on an unbuilt tree. Build just
+      # the subset owners' dep closures; on a fast head the non-docs tree is identical to
+      # the anchored head's by construction, so this is a remote-cache hit (seconds). If
+      # neutral-readers.txt ever lists a file under another package, extend this filter.
+      - name: build subset deps (fast-path heads)
+        if: needs.fast-path.outputs.mode == 'fast'
+        run: pnpm turbo build --filter=@rhema/security-checks... --filter=@rhema/journeys...
+      - name: docs-reader subset (fast-path heads)
+        if: needs.fast-path.outputs.mode == 'fast'
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(grep -vE '^\s*(#|$)' scripts/ci/neutral-readers.txt)
+          echo "CI-FAST-PATH docs-reader subset: ${files[*]}"
+          pnpm exec vitest run "${files[@]}"
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::typecheck/lint/unit — $CI_REASON"
+            echo "- **CI-FAST-PATH** — \`typecheck/lint/unit\` ran guards + the docs-reader subset only — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`typecheck/lint/unit\` ran the full leg — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   contracts:
     name: contracts
-    needs: typecheck-lint-unit
+    needs: [fast-path, typecheck-lint-unit]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,24 +153,35 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        if: needs.fast-path.outputs.mode == 'full'
       # HOT.1 (ADR-013): the additive-migration lint — rejects DROP/RENAME/type changes/table
       # rewrites/role changes in migrations newer than the PR base; the prod deploy runbook re-runs
-      # it against the `_migrations` max.
+      # it against the `_migrations` max. R6CI.1: the fetch is unbounded — the three-dot diff needs
+      # the merge base, which a `--depth=1` graft cannot supply on push/dispatch (BASE=main).
       - run: |
           BASE="${{ github.base_ref || 'main' }}"
-          git fetch origin "$BASE" --depth=1 || true
+          git fetch origin "$BASE" || true
           node scripts/check-additive-migrations.mjs --since-git "origin/$BASE"
-      # P0.02: the contract suites — the REQ-SPEC-14 policy≡kind test, the frozen ClaimVerdict golden, the
-      # sidecar/anchor (REQ-OBJ-16/17) and event/notes/analytics schemas, and the @rhema/db deterministic ACs
-      # (migrations, immutability + obligation triggers, two-tenant RLS isolation, real-project seed) run here
-      # in-process on PGlite (a real Postgres build) — no DB service needed. Mapper conformance and the
-      # markdown round-trip corpus land in P0.04–P0.06.
-      - run: pnpm --filter @rhema/contracts --filter @rhema/db build
-      - run: pnpm exec vitest run packages/contracts packages/db
+        if: needs.fast-path.outputs.mode == 'full'
+      # R6CI.1 — the former `pnpm --filter … build` leg and the duplicate contracts/db vitest run
+      # are dropped: root `pnpm test` already covers `packages/**` (vitest.config.ts include),
+      # and the build existed only to serve that duplicate run.
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::contracts — $CI_REASON"
+            echo "- **CI-FAST-PATH** — \`contracts\` fast path — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`contracts\` ran the additive-migration lint — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   integration:
     name: integration
-    needs: contracts
+    needs: [fast-path, contracts]
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -101,14 +199,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        if: needs.fast-path.outputs.mode == 'full'
       # Build the graph so the integration workspace's `@rhema/*` dist imports resolve (api + worker + orchestrator
       # + engine + mirror). Vitest transpiles the tests themselves, but they import the built packages.
       - run: pnpm turbo build
+        if: needs.fast-path.outputs.mode == 'full'
       # G21 (ledger G21; P0.15): the FakeEngine integration suite — api + worker + FakeEngine + PGlite end-to-end:
       # gates, orphan resume, cancel, cap exhaustion, stale task, plus the delivered-run Phase-0 exit assessment.
       # DATABASE_URL points the server-Postgres migrate+seed test (D-P0.02-1) at the postgres:16 service; the rest
       # of the suite runs deterministically on in-process PGlite.
       - name: G21 FakeEngine integration suite + server-Postgres migrate/seed (D-P0.02-1)
+        if: needs.fast-path.outputs.mode == 'full'
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: pnpm exec vitest run integration
@@ -118,13 +219,26 @@ jobs:
       # scoped mount-namespace isolation, and the distroless shape (no shell, no package manager, static
       # applets, uids 10001–10006). It SKIPS where Docker is unavailable; this Linux runner has it.
       - name: two-uid privsep PRODUCTION-image kernel legs (D-P0.06-2, SEC.3)
+        if: needs.fast-path.outputs.mode == 'full'
         env:
           RHEMA_DOCKER_TESTS: "1"
         run: pnpm exec vitest run apps/run-task/src/privsep.docker.test.ts
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::integration — $CI_REASON"
+            echo "- **CI-FAST-PATH** — \`integration\` fast path — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`integration\` ran the full leg — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   images:
     name: images (build + scan, pin digests)
-    needs: contracts
+    needs: [fast-path, contracts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -134,10 +248,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        if: needs.fast-path.outputs.mode == 'full'
       # Build @rhema/infra (the provenance builder) AND @rhema/protocols (so the real protocols_version can
       # be computed over the committed trio — D-P0.04-2).
       - run: pnpm --filter @rhema/infra --filter @rhema/protocols build
+        if: needs.fast-path.outputs.mode == 'full'
       - name: Build + scan service images, pin digests, record provenance (REQ-ARCH-39)
+        if: needs.fast-path.outputs.mode == 'full'
         # Build the FULL production image set (PRB.15): every service the prod stack deploys, so the
         # provenance artifact carries a real digest for each — run-task (GKE Job), the egress-proxy MIG,
         # the six Cloud Run services, and the convert Cloud Run Job. All real images; no sleepers.
@@ -181,6 +298,7 @@ jobs:
           GIT_SHA="${{ github.sha }}" IMAGE_DIGESTS="$json" STAGE="ci" PROTOCOLS_VERSION="$PROTOCOLS_VERSION" \
             node scripts/record-provenance.mjs
       - name: Assert the provenance carries the real PROTOCOLS_VERSION (D-P0.04-2)
+        if: needs.fast-path.outputs.mode == 'full'
         # The committed packages/protocols makes this offline-checkable: the artifact must stamp the computed
         # `0.4.0+<sha>` over the trio — never the stub-0.0.0 fallback (which would mean the hash silently broke).
         run: |
@@ -195,20 +313,35 @@ jobs:
           ! grep -F "stub-0.0.0" "$artifact"
           echo "provenance protocols_version verified: $PV"
       - uses: actions/upload-artifact@v4
+        if: needs.fast-path.outputs.mode == 'full'
         with:
           name: deploy-provenance
           path: provenance-artifacts/
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::images — $CI_REASON"
+            echo "- **CI-FAST-PATH** — \`images\` fast path — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`images\` ran the full leg — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   public-safe:
     name: public-safe (gitleaks / markers / licence policy)
-    needs: typecheck-lint-unit
+    needs: [fast-path, typecheck-lint-unit]
     runs-on: ubuntu-latest
     # gitleaks-action@v2 calls GET /pulls/<n>/commits on pull_request events; without a
     # pull-requests: read scope the default GITHUB_TOKEN gets 403 "Resource not accessible
-    # by integration" and the job dies before the licence/markers steps run.
+    # by integration" and the job dies before the licence/markers steps run. R6CI.1 adds
+    # actions: read so the workflow-level fast-path scope survives the job-level narrowing.
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -218,16 +351,20 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: needs.fast-path.outputs.mode == 'full'
       # Prove the open-source-export fallback builds: `@rhema/protocols-stub` (swapped in for the
       # committed `@rhema/protocols` at export) and the `@rhema/evals` stub (RHEMA_EVALS_PATH unset).
-      - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build --filter=@rhema/protocols-stub --filter=@rhema/evals
+        if: needs.fast-path.outputs.mode == 'full'
       # REQ-SAFE-9 / REQ-TL-3 (SPA.1): build the real @rhema/web bundle — including the Vite SPA
       # output at apps/web/public/spa/ — BEFORE the marker scan and the bundle-budget gate so both
       # read real artifacts, never an absent dir. The `...` pulls workspace deps (api-client dist is
       # a scan target too).
       - name: build @rhema/web (islands + SPA output)
+        if: needs.fast-path.outputs.mode == 'full'
         run: pnpm turbo build --filter=@rhema/web...
+      # R6CI.1 always-run guard: a docs diff can *contain* a secret — gitleaks runs on every head.
       - name: gitleaks (no secrets in the repo — REQ-ARCH-30)
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -237,16 +374,77 @@ jobs:
           # workflow evaluation outright (every job dies at setup with zero steps/logs).
           GITHUB_TOKEN: ${{ github.token }}
       - name: licence policy (allowlist + checked-in exceptions — REQ-ARCH-40)
+        if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:licenses
       - name: no protocol markers in public bundles (REQ-ARCH-33)
+        if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:protocol-markers
+      # R6CI.1 always-run guard: check:no-cookies reads docs/openapi.{yaml,json} — a docs diff
+      # can change the ingestion surface — so it runs on every head.
       - name: never-cookies — no credential field/header/input on the ingestion surface (AC-I-B, REQ-INGEST-5)
         run: pnpm check:no-cookies
       # REQ-SAFE-7 (SPA.1): gzip ceilings over public/spa — runs AFTER the SPA build (fail-closed if
       # the manifest is absent) and after the scan gates, per the REQ-SAFE-9 step order.
       - name: SPA bundle budget (REQ-SAFE-7)
+        if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:spa-budget
       # REQ-SAFE-8 (SPA.8): env-leak tripwire — server env names / process.env reads / secret-shaped
       # VITE_* names must not reach client artifacts; runs last so every emitted artifact exists.
       - name: SPA env-leak tripwire (REQ-SAFE-8)
+        if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:spa-env
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::public-safe — $CI_REASON"
+            echo "- **CI-FAST-PATH** — \`public-safe\` ran gitleaks + check:no-cookies only — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`public-safe\` ran the full leg — $CI_REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  ci-anchor:
+    name: ci-pass anchor
+    # The same-tree anchor (ADR-115): a green FULL run — on any event — records
+    # `ci-pass-<non_docs_tree>` so later PR heads can prove equivalence repo-wide.
+    # Skipped entirely whenever any leg is red (needs: + the default success() gate);
+    # on a fast-path head the upload itself is gated off — a fast run never writes anchors.
+    needs: [fast-path, typecheck-lint-unit, contracts, integration, images, public-safe]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: write ci-pass payload (full runs only)
+        if: needs.fast-path.outputs.mode == 'full'
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ needs.fast-path.outputs.head_sha }}
+          BASE_SHA: ${{ needs.fast-path.outputs.base_sha }}
+          NON_DOCS_TREE: ${{ needs.fast-path.outputs.non_docs_tree }}
+        run: node scripts/ci/write-anchor-payload.mjs
+      - uses: actions/upload-artifact@v4
+        if: needs.fast-path.outputs.mode == 'full'
+        with:
+          name: ci-pass-${{ needs.fast-path.outputs.non_docs_tree }}
+          path: anchor/payload.json
+          retention-days: 90
+          # v4 immutable artifacts: a re-run attempt 409s if attempt 1 already uploaded —
+          # overwrite keeps the anchor idempotent (the verifier re-validates every field).
+          overwrite: true
+      - name: CI path verdict
+        if: always()
+        env:
+          CI_MODE: ${{ needs.fast-path.outputs.mode }}
+          CI_REASON: ${{ needs.fast-path.outputs.reason }}
+        run: |
+          if [ "$CI_MODE" = "fast" ]; then
+            echo "::notice title=CI-FAST-PATH::ci-pass anchor — no anchor written (fast runs never produce anchors)"
+            echo "- **CI-FAST-PATH** — \`ci-pass anchor\` skipped the upload — fast runs never write anchors" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **CI full path** — \`ci-pass anchor\` uploaded \`ci-pass-<non_docs_tree>\`" >> "$GITHUB_STEP_SUMMARY"
+          fi

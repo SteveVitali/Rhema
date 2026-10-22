@@ -1,0 +1,17 @@
+# R6CI.1 (operator insert 176a; ADR-115) — the fast-path-eligible path allowlist.
+#
+# This is `scripts/deploy-neutral-paths.txt` ("can't change the deployed artifact") narrowed
+# to "can't change the product **or a CI verdict**" — a strict subset. `docs/` and
+# `.gitleaks.toml` are deploy-neutral; the fast path keeps `docs/` MINUS the two subtrees
+# that redefine what a CI boundary reads, and drops `.gitleaks.toml` because its edit must
+# be scanned (gitleaks runs on every head), never skipped.
+#
+# Grammar: one rule per line; `#` comments and blank lines ignored. A rule ending in `/`
+# subtree-matches every path under it; any other rule must equal the path exactly; a `!`
+# prefixed rule is an exclusion and exclusions always win over inclusions.
+# Consumers: `scripts/ci/decide-fast-path.mjs` (+ `scripts/ci/lib/fast-path.mjs`) — the
+# `fast-path` job in `.github/workflows/ci.yml`.
+
+docs/
+!docs/build/tools/
+!docs/build/record_policy/
