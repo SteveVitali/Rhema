@@ -32,7 +32,7 @@ import {
 } from "./cli-flags.js";
 import { ALL_IMPLS } from "./impls.js";
 import { createGmailClient } from "./mailbox.js";
-import { fetchDeployedSha, provenanceMatch } from "./provenance.js";
+import { fetchDeployedSha, provenanceMatch, provenanceDriftCheck } from "./provenance.js";
 import { checkWeeklySpendCap } from "./spend-guard.js";
 import { LEG_CAP_FLOOR_USD } from "./window-plan.js";
 import { journeyNonce } from "./nonce.js";
@@ -178,7 +178,21 @@ const observed: Record<string, string | null> = {};
 for (const [label, base] of Object.entries({ web, api })) {
   observed[label] = await fetchDeployedSha(base);
 }
-const provOk = expectSha ? provenanceMatch(expectSha, observed) : false;
+let provOk = expectSha ? provenanceMatch(expectSha, observed) : false;
+let provDrifted: string[] = [];
+if (expectSha && !provOk) {
+  // R6ENG.1 (REQ-ENG-8; ADR-114): a strict mismatch gets ONE second opinion — deployed ⊂
+  // ancestors of HEAD AND the whole diff deploy-neutral (committed allowlist). A docs-only
+  // merge then passes honestly; non-ancestry or any code path keeps the strict FAIL.
+  const drift = provenanceDriftCheck(expectSha, observed);
+  provOk = drift.match;
+  provDrifted = drift.drifted;
+  if (drift.match) {
+    console.log(
+      `provenance deploy-neutral drift accepted for: ${drift.drifted.join(", ")} (deployed ⊂ ancestors of HEAD, allowlisted diff only)`,
+    );
+  }
+}
 
 // The measured spend-guard path needs a DB read — JOURNEY_DATABASE_URL binds a read pool when the
 // runner can reach the stage's Postgres (operator-driven legs; REQUIRED off the cron path per the
@@ -231,7 +245,12 @@ try {
     paid,
     steps,
     impls: ALL_IMPLS,
-    provenance: { expected: expectSha, observed, match: provOk },
+    provenance: {
+      expected: expectSha,
+      observed,
+      match: provOk,
+      ...(provDrifted.length > 0 ? { drift: provDrifted } : {}),
+    },
     spend: {
       weeklyMeteredUsd: spend.weeklyMeteredUsd,
       capUsd: spend.capUsd,

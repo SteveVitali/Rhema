@@ -16,7 +16,9 @@
     { "path": "../packages/benchmark" },
     { "path": "../packages/contracts" },
     { "path": "../infra" },
-    { "path": "../packages/db" }
+    { "path": "../packages/db" },
+    { "path": "../packages/ledger" },
+    { "path": "../packages/live-clients" }
   ],
   "exclude": ["dist", "**/*.test.ts"]
 }

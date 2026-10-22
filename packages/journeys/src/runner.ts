@@ -105,8 +105,15 @@ export interface JourneyReport {
   readonly finishedAt: string;
   readonly webBaseUrl: string;
   readonly apiBaseUrl: string;
-  /** the deploy-provenance assertion result (the report carries what the check saw) */
-  provenance: { expected?: string | undefined; observed: Record<string, string | null>; match: boolean };
+  /** the deploy-provenance assertion result (the report carries what the check saw);
+   *  `drift` names the labels that passed under the REQ-ENG-8 deploy-neutral arm —
+   *  absent means every label strict-matched or the run failed closed */
+  provenance: {
+    expected?: string | undefined;
+    observed: Record<string, string | null>;
+    match: boolean;
+    drift?: string[];
+  };
   /** the spend-guard outcome for paid runs (nightly runs carry zeros) */
   spend: { weeklyMeteredUsd: number | null; capUsd: number; withinCap: boolean };
   /** SPA.6 — the renderer assert the run was invoked with (null when un-pinned). */

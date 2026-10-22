@@ -31,7 +31,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffExportTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -270,6 +270,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, rootEl };
 }
 
@@ -376,7 +382,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
   it("the export form is never fetch-intercepted — a submit issues no /export fetch (REQ-BFF-17)", async () => {
     const f = makeFetch();
     await mountAt("/p/the-piece/export", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("[data-export-form]")!;
+    const form = await settled<HTMLFormElement>("[data-export-form]");
     await submit(form);
     const exportPosts = f.mock.calls.filter(
       ([u, i]) =>
@@ -388,7 +394,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
   it("the addition POST rides the JSON branch — {sentence} in, {ok,redirect} lands ?added=1 + refetches", async () => {
     const f = makeFetch();
     const { router } = await mountAt("/p/the-piece/export", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("[data-ai-use] form")!;
+    const form = await settled<HTMLFormElement>("[data-ai-use] form");
     expect(form.getAttribute("action")).toBe("/p/the-piece/export/addition");
     const input = form.querySelector<HTMLInputElement>('input[name="sentence"]')!;
     input.value = "I rewrote the ending myself.";
@@ -426,7 +432,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
     })();
     const f = makeFetch({ holdAddition: d.promise });
     await mountAt("/p/the-piece/export", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("[data-ai-use] form")!;
+    const form = await settled<HTMLFormElement>("[data-ai-use] form");
     form.querySelector<HTMLInputElement>('input[name="sentence"]')!.value = "x";
     await submit(form);
     expect(form.getAttribute("aria-busy")).toBe("true");
@@ -437,7 +443,7 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
 
   it("component axe — the mounted surface (the chrome's own axe leg lives in ide-chrome.dom.test)", async () => {
     await mountAt("/p/the-piece/export", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 });
 

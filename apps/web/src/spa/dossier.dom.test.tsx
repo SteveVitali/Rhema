@@ -25,7 +25,7 @@ import type { DossierViewData } from "../dossier-view.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffDossierTwin, BffObligationNewTwin } from "./queries.js";
-import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -233,6 +233,13 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     });
     // flush the query settle + the chrome publish
     await act(async () => {});
+    // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+    // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+    // commit — the BL-87 mount-settle flake class. (The awaitLoad:false legs deliberately
+    // stay pending — the gate lives inside this branch.)
+    await vi.waitFor(() => {
+      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+      }, { timeout: SETTLE_TIMEOUT });
   }
   return { router, rootEl };
 }
@@ -370,7 +377,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     const f = makeFetch();
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
     const readsBefore = f.reads();
-    const form = el()!.querySelector<HTMLFormElement>("form[data-findings-filters]")!;
+    const form = await settled<HTMLFormElement>("form[data-findings-filters]");
     const sev = form.querySelector<HTMLSelectElement>('select[name="sev"]')!;
     await act(async () => {
       fireEvent.change(sev, { target: { value: "note" } });
@@ -396,7 +403,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
           : twinFor(),
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/disposition"]`)!;
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/disposition"]`);
     const verb = form.querySelector<HTMLElement>('[data-verb="accept"]')!;
     await submit(form, verb);
     const post = f.posts.find((p) => p.url.endsWith("/disposition"));
@@ -420,7 +427,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const applyForm = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`)!;
+    const applyForm = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`);
     await submit(applyForm);
     expect(f.posts.some((p) => p.url.endsWith("/findings/f_1/apply"))).toBe(true);
     await waitFor(() => expect(router.state.location.search).toMatchObject({ applied: "f_1" }));
@@ -497,7 +504,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}?gate=gate_1`, BOOT, f.impl);
-    const section = el()!.querySelector(`[data-focused-gate="gate_1"]`)!;
+    const section = await settled(`[data-focused-gate="gate_1"]`);
     expect(section.querySelector("[data-gate-card]")).not.toBeNull();
     // No inline presence <script> under React — `useGatePresence` carries the pings (REQ-SPEC-18).
     expect(section.querySelector("script")).toBeNull();
@@ -524,7 +531,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
     });
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_3/disposition"]`)!;
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_3/disposition"]`);
     const verb = form.querySelector<HTMLElement>('[data-verb="rebut"]')!;
     await submit(form, verb);
     let notice: Element | null = null;
@@ -546,7 +553,7 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       mutations: { [`/p/${SLUG}/review/${RUN}/findings/f_1/apply`]: gate },
     });
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`)!;
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`);
     const btn = form.querySelector<HTMLButtonElement>("button")!;
     await act(async () => {
       const ev = new Event("submit", { bubbles: true, cancelable: true });
@@ -640,7 +647,7 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
     const { router } = await mountAt(`/p/${SLUG}/obligations/new`, BOOT, f.impl);
     const root = el()!;
     expect(root.querySelector("h1")?.textContent).toBe(COPY.obligation.heading);
-    const form = root.querySelector<HTMLFormElement>("form[data-obligation-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-obligation-form]");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/obligations`);
     const title = form.querySelector<HTMLInputElement>('input[name="title"]')!;
     await act(async () => {
@@ -662,7 +669,7 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
     expect(
       f.gets.some((u) => u.startsWith(`/bff/p/${SLUG}/obligations/new?back=${encodeURIComponent(back)}`)),
     ).toBe(true);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-obligation-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-obligation-form]");
     expect(form.querySelector<HTMLInputElement>('input[name="next"]')?.value).toBe(back);
   });
 
@@ -673,7 +680,7 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
       },
     });
     await mountAt(`/p/${SLUG}/obligations/new`, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-obligation-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-obligation-form]");
     // happy-dom doesn't enforce `required` — the leaf posts what it has and renders the refusal.
     await submit(form);
     let alert: Element | null = null;

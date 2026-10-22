@@ -31,7 +31,7 @@ import type {
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -443,6 +443,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, el };
 }
 
@@ -520,7 +526,7 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
   it("the fork form posts the JSON branch and navigates the envelope redirect in-router", async () => {
     const f = makeFetch();
     const { router } = await mountAt("/voices", BOOT, f);
-    const form = el()!.querySelector(`form[action="/v/p2/fork"]`)!;
+    const form = (await settled(`form[action="/v/p2/fork"]`));
     await submit(form);
     const post = f.mock.calls.find(([u, i]) => String(u) === "/v/p2/fork" && i != null);
     expect(post).toBeDefined();
@@ -540,7 +546,7 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
 
   it("component axe on the mounted library (REQ-VFY-6)", async () => {
     await mountAt("/voices", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
@@ -561,7 +567,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     await mountAt("/voices/new", BOOT, makeFetch());
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(VC.new.heading);
-    const form = main.querySelector('form[action="/voices/new"]')!;
+    const form = (await settled('form[action="/voices/new"]'));
     for (const field of [
       'name="name"',
       'name="byline"',
@@ -584,7 +590,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
   it("a save submit posts the flat JSON vocabulary with the submitter's intent", async () => {
     const f = makeFetch();
     await mountAt("/voices/new", BOOT, f);
-    const form = el()!.querySelector('form[action="/voices/new"]')!;
+    const form = (await settled('form[action="/voices/new"]'));
     form.querySelector<HTMLInputElement>('[name="name"]')!.value = "Voice Two";
     form.querySelector<HTMLTextAreaElement>('[name="sample_text"]')!.value = "some words";
     const save = form.querySelector('[name="intent"][value="save"]')!;
@@ -604,7 +610,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     const puts: { url: string; init?: RequestInit }[] = [];
     const f = makeFetch({ puts });
     await mountAt("/voices/new", BOOT, f);
-    const form = el()!.querySelector('form[action="/voices/new"]')!;
+    const form = (await settled('form[action="/voices/new"]'));
     form.querySelector<HTMLInputElement>('[name="name"]')!.value = "Upload Voice";
     const fileInput = form.querySelector<HTMLInputElement>('[name="sample_file"]')!;
     setFile(fileInput, new File(["# bytes"], "essay.md", { type: "text/markdown" }));
@@ -635,7 +641,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
   it("a refused create (name_required) renders the SSR's inline role=alert refusal", async () => {
     const f = makeFetch();
     await mountAt("/voices/new", BOOT, f);
-    const form = el()!.querySelector('form[action="/voices/new"]')!;
+    const form = (await settled('form[action="/voices/new"]'));
     // name empty → the server answers 400 {error:"name_required", detail}; simulate that answer.
     f.mockImplementation(async (input, init) => {
       const url = typeof input === "string" ? input : String(input);
@@ -657,7 +663,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     const gate = deferred<Response>();
     const f = makeFetch({ hold: { "/voices/new": gate.promise } });
     await mountAt("/voices/new", BOOT, f);
-    const form = el()!.querySelector('form[action="/voices/new"]')!;
+    const form = (await settled('form[action="/voices/new"]'));
     form.querySelector<HTMLInputElement>('[name="name"]')!.value = "Pending";
     fireEvent.submit(form);
     await vi.waitFor(() => expect(form.getAttribute("aria-busy")).toBe("true"));
@@ -672,7 +678,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
 
   it("component axe on the mounted creation sheet (REQ-VFY-6)", async () => {
     await mountAt("/voices/new", BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });
 
@@ -697,7 +703,7 @@ describe("GET /v/:persona mounted (overview)", () => {
     expect(main.querySelector('[data-fact="seed"]')?.getAttribute("data-changed")).toBe("true");
     expect(main.querySelector("[data-update-route]")?.textContent).toContain("Re-run the changed phases");
     // The gate card + its three decisions.
-    const gateCard = main.querySelector("[data-gate-card]")!;
+    const gateCard = (await settled("[data-gate-card]"));
     expect(gateCard.querySelector("[data-gate-approve]")).not.toBeNull();
     expect(gateCard.querySelector("[data-holdout-line]")).not.toBeNull();
     expect(gateCard.querySelector("[data-calibration-warning]")).not.toBeNull();
@@ -705,7 +711,7 @@ describe("GET /v/:persona mounted (overview)", () => {
     // Hub + projects + delete.
     expect(main.querySelector("[data-hub]")?.textContent).toContain("Profile hub paragraph");
     expect(main.querySelector("[data-projects] a")?.getAttribute("href")).toBe(`/p/${SLUG}`);
-    const del = main.querySelector("[data-voice-delete]")!;
+    const del = (await settled("[data-voice-delete]"));
     expect(del.querySelector('[name="confirm"]')).not.toBeNull();
     expect(del.querySelector("[data-delete-voice]")).not.toBeNull();
     // The composed-from line (members fixture) + the cancel form (active run).
@@ -719,7 +725,7 @@ describe("GET /v/:persona mounted (overview)", () => {
   it("the gate approve submit posts action=approve + the hidden runId", async () => {
     const f = makeFetch();
     await mountAt(`/v/${PID}`, BOOT, f);
-    const form = el()!.querySelector(`form[action="/v/${PID}/gates/g1"]`)!;
+    const form = (await settled(`form[action="/v/${PID}/gates/g1"]`));
     const approve = form.querySelector('[name="action"][value="approve"]')!;
     await submit(form, approve);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/gates/g1` && i != null);
@@ -730,7 +736,7 @@ describe("GET /v/:persona mounted (overview)", () => {
   it("the upgrade verb posts scope=full_from_quick", async () => {
     const f = makeFetch();
     await mountAt(`/v/${PID}`, BOOT, f);
-    const upgrade = el()!.querySelector("[data-upgrade-voice]")!;
+    const upgrade = (await settled("[data-upgrade-voice]"));
     const form = upgrade.closest("form")!;
     await submit(form, upgrade);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/update` && i != null);
@@ -740,7 +746,7 @@ describe("GET /v/:persona mounted (overview)", () => {
   it("the typed delete posts {confirm:'delete'} and lands on /voices?deleted=1", async () => {
     const f = makeFetch();
     const { router } = await mountAt(`/v/${PID}`, BOOT, f);
-    const form = el()!.querySelector(`form[action="/v/${PID}/delete"]`)!;
+    const form = (await settled(`form[action="/v/${PID}/delete"]`));
     form.querySelector<HTMLInputElement>('[name="confirm"]')!.value = "delete";
     await submit(form, form.querySelector("[data-delete-voice]")!);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/delete` && i != null);
@@ -776,7 +782,7 @@ describe("GET /v/:persona mounted (overview)", () => {
 
   it("component axe on the mounted overview tab (REQ-VFY-6)", async () => {
     await mountAt(`/v/${PID}`, BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 
   it("an unrevealed hold-out renders the generic data-holdout-hidden note (§9.5 — never names the piece)", async () => {
@@ -813,7 +819,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // submit: a mutation's redirect envelope drops `?tab`, so the remount lands on overview.
     expect(main.querySelector("[data-corrections]")).not.toBeNull();
     expect(main.querySelector('[data-correction="cr1"]')?.getAttribute("data-consumed")).toBe("false");
-    const corrForm = main.querySelector(`form[action="/v/${PID}/corrections"]`)!;
+    const corrForm = (await settled(`form[action="/v/${PID}/corrections"]`));
     expect(corrForm.querySelector('[name="text"]')).not.toBeNull();
     corrForm.querySelector<HTMLTextAreaElement>('[name="text"]')!.value = "fix this";
     await submit(corrForm);
@@ -826,7 +832,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // Build notes render their rows.
     expect(main2.querySelector("[data-build-notes]")).not.toBeNull();
     expect(main2.querySelector('[data-build-note="bn1"]')).not.toBeNull();
-    const form = main2.querySelector(`form[action="/v/${PID}/seed"]`)!;
+    const form = await settled<HTMLFormElement>(`form[action="/v/${PID}/seed"]`);
     form.querySelector<HTMLInputElement>('[name="byline"]')!.value = "New Byline";
     form.querySelector<HTMLInputElement>('[name="registers"]')!.value = "essay, review";
     form.querySelector<HTMLTextAreaElement>('[name="description"]')!.value = "revised seed";
@@ -845,7 +851,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // The samples section wraps the sources pane + item rows + add forms.
     expect(main.querySelector("[data-samples]")).not.toBeNull();
     // Sources pane — the connection card's hooks + actions.
-    const src = main.querySelector('[data-source="cn1"]')!;
+    const src = (await settled('[data-source="cn1"]'));
     expect(src.getAttribute("data-provider")).toBe("substack");
     expect(src.querySelector("[data-source-error]")).not.toBeNull();
     expect(src.querySelector("[data-discover]")).not.toBeNull();
@@ -860,22 +866,22 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(main.querySelector("[data-link-export]")).not.toBeNull();
     // the link flows' field grammar — `provider` rides every connections POST hidden; `handle`
     // is the substack link's input (the dom-contract's field entries).
-    const substackForm = main.querySelector("[data-link-substack]")!.closest("form")!;
+    const substackForm = (await settled("[data-link-substack]")).closest("form")!;
     expect(substackForm.querySelector('[name="provider"]')).not.toBeNull();
     expect(substackForm.querySelector('[name="handle"]')).not.toBeNull();
-    expect(main.querySelector("[data-link-url]")!.closest("form")!.querySelector('[name="provider"]')).not.toBeNull();
+    expect((await settled("[data-link-url]")).closest("form")!.querySelector('[name="provider"]')).not.toBeNull();
     // the URL-sample add form's submit hook.
     expect(main.querySelector('form[action$="/samples/url"] [data-add-url]')).not.toBeNull();
     // The open drawer — preview + versions + the priced reconstruction (partial ⇒ text; the
     // "scanned" note offers the visual tier too).
-    const drawer = main.querySelector("[data-sample-drawer]")!;
+    const drawer = (await settled("[data-sample-drawer]"));
     expect(drawer.querySelector("[data-sample-preview]")?.textContent).toContain("canonical document");
     expect(drawer.querySelector("[data-quality-notes]")).not.toBeNull();
     expect(drawer.querySelector("[data-sample-versions] [data-version]")).not.toBeNull();
     expect(drawer.querySelector("[data-reconstruct-text]")).not.toBeNull();
     expect(drawer.querySelector("[data-reconstruct-visual]")).not.toBeNull();
     // The item rows — state/paywalled/quality badges + the hold-out badge (revealed fixture).
-    const row = main.querySelector('[data-sample="s2"]')!;
+    const row = (await settled('[data-sample="s2"]'));
     expect(row.querySelector('[data-sample-state="omitted"]')).not.toBeNull();
     expect(row.querySelector("[data-sample-paywalled]")).not.toBeNull();
     expect(row.querySelector('[data-sample-quality="partial"]')).not.toBeNull();
@@ -903,7 +909,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     // (refetched) read; wait for it rather than asserting through the pending shell.
     await vi.waitFor(() => expect(el()!.querySelector("[data-sources]")).not.toBeNull());
     // Include/omit — the submitter's name/value carries the toggle (re-queried post-remount).
-    const toggle = el()!.querySelector('[data-sample="s2"] [name="included"]')!;
+    const toggle = (await settled('[data-sample="s2"] [name="included"]'));
     await submit(toggle.closest("form")!, toggle);
     const tpost = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/samples/s2` && i != null);
     expect(JSON.parse(String((tpost![1] as RequestInit).body))).toEqual({ included: "true" });
@@ -913,7 +919,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     const puts: { url: string; init?: RequestInit }[] = [];
     const f = makeFetch({ puts });
     await mountAt(`/v/${PID}?tab=samples`, BOOT, f);
-    const form = el()!.querySelector(`form[action="/v/${PID}/samples"]`)!;
+    const form = (await settled(`form[action="/v/${PID}/samples"]`));
     form.querySelector<HTMLInputElement>('[name="title"]')!.value = "New sample";
     setFile(form.querySelector<HTMLInputElement>('[name="file"]')!, new File(["body"], "s.md"));
     await submit(form);
@@ -924,7 +930,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(body.file).toBeUndefined();
     expect(puts.length).toBe(1);
     // The URL form — flat fields, no upload leg.
-    const urlForm = el()!.querySelector(`form[action="/v/${PID}/samples/url"]`)!;
+    const urlForm = (await settled(`form[action="/v/${PID}/samples/url"]`));
     urlForm.querySelector<HTMLInputElement>('[name="url"]')!.value = "https://example.test/a";
     await submit(urlForm);
     const upost = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/samples/url` && i != null);
@@ -934,7 +940,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
   it("the substack export link rides presign→PUT→quarantineKey with provider=substack_export", async () => {
     const f = makeFetch();
     await mountAt(`/v/${PID}?tab=samples`, BOOT, f);
-    const exportForm = el()!.querySelector(`form[action="/v/${PID}/connections"][enctype="multipart/form-data"]`)!;
+    const exportForm = (await settled(`form[action="/v/${PID}/connections"][enctype="multipart/form-data"]`));
     setFile(exportForm.querySelector<HTMLInputElement>('[name="file"]')!, new File(["zip"], "export.zip"));
     await submit(exportForm);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/v/${PID}/connections` && i != null && JSON.parse(String(i.body)).provider === "substack_export");
@@ -947,7 +953,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
     const main = el()!;
     expect(main.querySelector("[data-calibration]")).not.toBeNull();
     expect(main.querySelector('[data-calibration-verdict="tested"]')).not.toBeNull();
-    const row = main.querySelector('[data-calibration-row="hedging_rate"]')!;
+    const row = (await settled('[data-calibration-row="hedging_rate"]'));
     expect(row.getAttribute("data-within-band")).toBe("false");
     expect(main.querySelector("[data-profile-sections]")).not.toBeNull();
     expect(main.querySelector('[data-profile-section="voice-core"]')).not.toBeNull();
@@ -970,7 +976,7 @@ describe("GET /v/:persona?tab=… mounted", () => {
 
   it("component axe on the mounted samples tab (REQ-VFY-6)", async () => {
     await mountAt(`/v/${PID}?tab=samples`, BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });
 
@@ -983,11 +989,11 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, f);
     const main = el()!;
-    const diff = main.querySelector("[data-reseed-diff]")!;
+    const diff = (await settled("[data-reseed-diff]"));
     expect(diff.querySelector('[data-diff-kind="added"]')?.textContent).toContain("new guidance");
     expect(diff.querySelector('[data-diff-kind="removed"]')?.textContent).toContain("old guidance");
     expect(main.querySelector('[data-guidance-preserved="true"]')).not.toBeNull();
-    const form = main.querySelector(`form[action="/p/${SLUG}/voice/adopt"]`)!;
+    const form = (await settled(`form[action="/p/${SLUG}/voice/adopt"]`));
     const adoptReseed = form.querySelector('[name="reseed"][value="true"]')!;
     expect(adoptReseed.getAttribute("data-adopt-reseed")).toBe("true");
     await submit(form, adoptReseed);
@@ -998,7 +1004,7 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
   it("the plain adopt button posts reseed=false", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, f);
-    const form = el()!.querySelector(`form[action="/p/${SLUG}/voice/adopt"]`)!;
+    const form = (await settled(`form[action="/p/${SLUG}/voice/adopt"]`));
     await submit(form, form.querySelector('[name="reseed"][value="false"]')!);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/p/${SLUG}/voice/adopt` && i != null);
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ reseed: "false" });
@@ -1012,6 +1018,6 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
 
   it("component axe on the mounted reseed surface (REQ-VFY-6)", async () => {
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, makeFetch());
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck((await settled("[data-spa-surface]")));
   });
 });

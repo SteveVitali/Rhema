@@ -22,7 +22,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffRunSheetTwin } from "./queries.js";
-import { restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 
 declare global {
@@ -90,7 +90,6 @@ interface RecordedPost {
  *  the `{ok,…}` envelope (or the override). Anything unstubbed 500s loudly. */
 function makeFetch(opts: FetchOpts = {}) {
   const posts: RecordedPost[] = [];
-  let runReads = 0;
   const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const path = url.split("?")[0]!;
@@ -103,8 +102,9 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(200, { ok: true, data: { runId: "run_1", state: "running" } });
     }
     if (path === `/bff/p/${SLUG}/run`) {
-      runReads += 1;
-      const twin = runReads > 1 && opts.twinAfter != null ? opts.twinAfter : opts.twin;
+      // REQ-ENG-1 — `twinAfter` is post-mutation truth (gate on a recorded POST): a mount
+      // refetch consuming read #2 could serve the after-arm before the submit it follows.
+      const twin = posts.length > 0 && opts.twinAfter != null ? opts.twinAfter : opts.twin;
       if (twin === null) return jsonResponse(404, { error: "not_found" });
       return jsonResponse(200, twin ?? BASE_TWIN);
     }
@@ -140,6 +140,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, rootEl };
 }
 
@@ -177,7 +183,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.runSheet.heading);
-    const form = main.querySelector("form[data-run-sheet]")!;
+    const form = (await settled("form[data-run-sheet]"));
     expect(form.getAttribute("data-run-sheet")).toBe("review");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/run`);
     expect(form.getAttribute("method")).toBe("post");
@@ -188,7 +194,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     expect(main.querySelector("[data-credits-line]")?.textContent).toContain("credits");
     expect(main.querySelector("[data-time-line]")?.textContent).toContain("~");
     // the Run affordance carries the shown figure + labels (REQ-GROWTH-16).
-    const btn = main.querySelector<HTMLButtonElement>("button[data-run-button]")!;
+    const btn = (await settled<HTMLButtonElement>("button[data-run-button]"));
     expect(btn.disabled).toBe(false);
     expect(btn.getAttribute("data-estimate-credits")).toMatch(/^\d+$/);
     expect(btn.getAttribute("data-run-label")).toBe(COPY.runSheet.runReview);
@@ -215,10 +221,10 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     expect(main.querySelector('input[name="protocol"]')).not.toBeNull();
     expect(main.querySelector('input[name="venue"]')).not.toBeNull();
     expect(main.querySelector('input[name="stage"]')).not.toBeNull();
-    expect(main.querySelector<HTMLInputElement>('input[name="workflow"]')!.value).toBe("review");
-    expect(main.querySelector<HTMLInputElement>('input[name="idempotencyKey"]')!.value).toBe("idem_1");
+    expect((await settled<HTMLInputElement>('input[name="workflow"]')).value).toBe("review");
+    expect((await settled<HTMLInputElement>('input[name="idempotencyKey"]')).value).toBe("idem_1");
     expect(main.querySelectorAll('input[name="rigor"]').length).toBe(3);
-    expect(main.querySelector<HTMLInputElement>('input[name="rigor"]:checked')!.value).toBe("standard");
+    expect((await settled<HTMLInputElement>('input[name="rigor"]:checked')).value).toBe("standard");
     // the collapsed-row fields + Advanced toggles.
     expect(main.querySelector("[data-sheet-fields]")).not.toBeNull();
     expect(main.querySelector("select[data-tier-select]")).not.toBeNull();
@@ -253,7 +259,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const view = BASE_TWIN.runSheet.view;
     const callsBefore = f.impl.mock.calls.length;
-    const fb = el()!.querySelector<HTMLInputElement>('input[name="rigor"][value="full_board"]')!;
+    const fb = (await settled<HTMLInputElement>('input[name="rigor"][value="full_board"]'));
     await act(async () => {
       fireEvent.click(fb);
     });
@@ -269,12 +275,12 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
       .join(",");
     const repainted = view.recompute.cells[`full_board|${view.modelTier}|${onToggles}`] ?? cell;
     expect(repainted, "a recompute cell exists for full_board|tier|toggles").toBeTruthy();
-    const dollars = el()!.querySelector("[data-dollars-line]")!.textContent!;
+    const dollars = (await settled("[data-dollars-line]")).textContent!;
     expect(dollars).toContain(`≈ $${(repainted!.e / 100).toFixed(2)}`);
     expect(dollars).toContain(`never more than $${(repainted!.c / 100).toFixed(2)}`);
-    const btn = el()!.querySelector<HTMLButtonElement>("button[data-run-button]")!;
+    const btn = (await settled<HTMLButtonElement>("button[data-run-button]"));
     expect(btn.getAttribute("data-estimate-credits")).toBe(String(repainted!.e));
-    expect(el()!.querySelector<HTMLInputElement>('input[name="estimateCredits"]')!.value).toBe(
+    expect((await settled<HTMLInputElement>('input[name="estimateCredits"]')).value).toBe(
       String(repainted!.e),
     );
     // no fetch beyond the twin read — the repaint is a pure cells lookup.
@@ -291,12 +297,12 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     const [key] = target!;
     const [rigor, tier] = key.split("|");
     await act(async () => {
-      fireEvent.click(el()!.querySelector(`input[name="rigor"][value="${rigor}"]`)!);
+      fireEvent.click((await settled(`input[name="rigor"][value="${rigor}"]`)));
     });
     await act(async () => {
-      fireEvent.change(el()!.querySelector("select[data-tier-select]")!, { target: { value: tier } });
+      fireEvent.change((await settled("select[data-tier-select]")), { target: { value: tier } });
     });
-    const btn = el()!.querySelector<HTMLButtonElement>("button[data-run-button]")!;
+    const btn = (await settled<HTMLButtonElement>("button[data-run-button]"));
     expect(btn.getAttribute("data-needs-consent")).toBe("true");
     expect(btn.textContent).toBe(COPY.runSheet.confirm);
   });
@@ -304,7 +310,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
   it("posts the flat field map as JSON and lands the started confirmation off {ok,data}", async () => {
     const f = makeFetch({ twinAfter: twinFor(sheetView(), { activeRun: { runId: "run_1", state: "running" } }) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    await submit(el()!.querySelector("form[data-run-sheet]")!);
+    await submit((await settled("form[data-run-sheet]")));
     const post = f.posts.find((p) => p.url === `/p/${SLUG}/run`);
     expect(post, "the run POST fired").toBeTruthy();
     const body = post!.json!;
@@ -326,7 +332,7 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
       mutations: { [`/p/${SLUG}/run`]: { status: 402, body: { error: "insufficient_balance" } } },
       twinAfter: twinFor(sheetView({ spendableCredits: 40 })) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    await submit(el()!.querySelector("form[data-run-sheet]")!);
+    await submit((await settled("form[data-run-sheet]")));
     const alert = el()!.querySelector('p[role="alert"]');
     expect(alert?.textContent).toBe(COPY.runSheet.insufficient);
   });
@@ -347,14 +353,14 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     for (const a of ["turn_off_fact_check", "use_base", "lower_rigor"]) {
       expect(main.querySelector(`a[data-resolution="${a}"]`), `resolution ${a}`).not.toBeNull();
     }
-    const pay = main.querySelector<HTMLButtonElement>("button[data-payment-link]")!;
+    const pay = (await settled<HTMLButtonElement>("button[data-payment-link]"));
     expect(pay.getAttribute("data-payment-link")).toBe("https://buy.stripe.com/test_1");
     expect(pay.getAttribute("formaction")).toBe(`/p/${SLUG}/exhausted`);
     expect(main.querySelector('button[name="action_taken"]')).not.toBeNull();
     expect(pay.getAttribute("name")).toBe("action_taken");
     expect(pay.getAttribute("value")).toBe("open_payment_link");
     // the Run affordance is blocked.
-    expect(main.querySelector<HTMLButtonElement>("button[data-run-button]")!.disabled).toBe(true);
+    expect((await settled<HTMLButtonElement>("button[data-run-button]")).disabled).toBe(true);
   });
 
   it("the Payment-Link click POSTs /exhausted as JSON and document-navigates the {ok,url} hand-off", async () => {
@@ -364,8 +370,8 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
       mutations: {
         [`/p/${SLUG}/exhausted`]: { status: 200, body: { ok: true, url: "https://buy.stripe.com/test_1?client_reference_id=b1" } } } });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
-    const pay = el()!.querySelector<HTMLButtonElement>("button[data-payment-link]")!;
-    const form = el()!.querySelector("form[data-run-sheet]")!;
+    const pay = (await settled<HTMLButtonElement>("button[data-payment-link]"));
+    const form = (await settled("form[data-run-sheet]"));
     // the click records the retarget before the submit lands — fire both halves.
     await act(async () => {
       fireEvent.click(pay);
@@ -396,7 +402,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     const main = el()!;
     expect(main.querySelector('[data-included="true"]')).not.toBeNull();
     expect(main.querySelector("[data-entitlement-line]")).not.toBeNull();
-    expect(main.querySelector<HTMLInputElement>('input[name="entitlementId"]')!.value).toBe("ent_1");
+    expect((await settled<HTMLInputElement>('input[name="entitlementId"]')).value).toBe("ent_1");
     // Included still ships the typed matrix — the journey's figure read.
     expect(main.querySelector("script[data-estimate-matrix]")).not.toBeNull();
   });
@@ -407,7 +413,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
     expect(main.querySelector('[data-suspended="true"]')?.textContent).toBe(COPY.runSheet.suspended);
-    expect(main.querySelector<HTMLButtonElement>("button[data-run-button]")!.disabled).toBe(true);
+    expect((await settled<HTMLButtonElement>("button[data-run-button]")).disabled).toBe(true);
   });
 
   it("renders the unmeasured-inputs arm — '—' + the estimating hint, never a fabricated figure", async () => {
@@ -463,7 +469,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     const main = el()!;
     expect(main.querySelector("[data-command-scope]")).not.toBeNull();
     expect(main.querySelector("[data-scope-pill]")?.textContent).toBe("Section III");
-    expect(main.querySelector<HTMLInputElement>('input[name="scope"]')!.value).toBe("section:III");
+    expect((await settled<HTMLInputElement>('input[name="scope"]')).value).toBe("section:III");
     expect(main.querySelector("[data-whole-line]")).not.toBeNull();
   });
 
@@ -491,9 +497,9 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     expect(main.querySelector("[data-voice-line]")?.textContent).toContain("S. J. Sebastian");
     expect(main.querySelector('[data-voice-mode="linked"]')).not.toBeNull();
     expect(main.querySelector('[data-voice-pill="warn"]')?.textContent).toBe("Stale");
-    const upd = main.querySelector<HTMLButtonElement>("button[data-update-voice]")!;
+    const upd = (await settled<HTMLButtonElement>("button[data-update-voice]"));
     expect(upd.getAttribute("formaction")).toBe(`/p/${SLUG}/update-voice`);
-    expect(main.querySelector<HTMLInputElement>('input[name="voice_persona"]')!.value).toBe("pers_1");
+    expect((await settled<HTMLInputElement>('input[name="voice_persona"]')).value).toBe("pers_1");
   });
 });
 

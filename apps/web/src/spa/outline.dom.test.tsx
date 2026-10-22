@@ -24,7 +24,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffOutlinePromoteTwin, BffOutlineTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -109,7 +109,10 @@ interface FetchOpts {
   mutations?: Record<string, { status?: number; body: unknown }>;
   /** per-path deferred replies — the REQ-UX-16 in-flight leg holds a POST open. */
   hold?: Record<string, Promise<Response>>;
-  /** the second-and-later outline twin (the post-mutation refetch's server truth). */
+  /** the post-mutation outline twin — served once a POST has been recorded (the refetch's
+   *  server truth). REQ-ENG-1: gating on the read COUNT raced StrictMode/staleTime-0 mount
+   *  refetches — the cited truth could land before the delete ever posted and flake the
+   *  settled() wait by legitimately never rendering the delete form. */
   outlineAfter?: BffOutlineTwin;
 }
 
@@ -122,7 +125,6 @@ interface RecordedPost {
  *  answer the `{ok,redirect}` envelope (or the override). Anything unstubbed 500s loudly. */
 function makeFetch(opts: FetchOpts = {}) {
   const posts: RecordedPost[] = [];
-  let outlineReads = 0;
   const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const path = url.split("?")[0]!;
@@ -136,8 +138,7 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(200, { ok: true, redirect: "/p/the-politics-of-visibility" });
     }
     if (path === "/bff/p/the-politics-of-visibility/outline") {
-      outlineReads += 1;
-      const twin = outlineReads > 1 && opts.outlineAfter != null ? opts.outlineAfter : opts.outline;
+      const twin = posts.length > 0 && opts.outlineAfter != null ? opts.outlineAfter : opts.outline;
       return jsonResponse(200, twin ?? OUTLINE_TWIN);
     }
     if (path === "/bff/p/the-politics-of-visibility/outline/promote") {
@@ -177,6 +178,13 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2 — a pending transition carries no stamp). The
+  // bare post-mount selector reads below raced that commit and flaked in CI (BL-87 /
+  // D-R5REC.1-1 — the non-null-asserted delete-form lookup intermittently found null).
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, rootEl };
 }
 
@@ -218,7 +226,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     expect(main.querySelector('a[href="/p/the-politics-of-visibility"]')).not.toBeNull();
     expect(main.querySelector("[data-draft-estimate]")?.textContent).toContain("12");
     expect(main.querySelector("form[data-outline-editor][data-autosave]")).not.toBeNull();
-    const form = main.querySelector("form[data-outline-editor]")!;
+    const form = await settled("form[data-outline-editor]");
     expect(form.getAttribute("data-label-saving")).toBe(COPY.outlinePage.savingNote);
     expect(form.getAttribute("data-label-saved")).toBe(COPY.outlinePage.savedNote);
     expect(form.getAttribute("data-label-failed")).toBe(COPY.outlinePage.saveFailedNote);
@@ -254,7 +262,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
     vi.useFakeTimers();
     try {
-      const input = el()!.querySelector<HTMLInputElement>('input[name="ed.values.thesis"]')!;
+      const input = await settled<HTMLInputElement>('input[name="ed.values.thesis"]');
       await act(async () => {
         fireEvent.input(input, { target: { value: "A tighter thesis." } });
       });
@@ -285,7 +293,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     const f = makeFetch({
       mutations: { "/p/the-politics-of-visibility/outline": { status: 422, body: { error: "save_failed" } } } });
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
-    const form = el()!.querySelector("form[data-outline-editor]")!;
+    const form = await settled("form[data-outline-editor]");
     await submit(form);
     expect(el()!.querySelector("[data-autosave-status]")?.textContent).toBe(
       COPY.outlinePage.saveFailedNote,
@@ -295,7 +303,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
   it("the explicit Save submit posts the field map immediately (the no-JS path's semantic)", async () => {
     const f = makeFetch();
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
-    const form = el()!.querySelector("form[data-outline-editor]")!;
+    const form = await settled("form[data-outline-editor]");
     await submit(form);
     expect(f.posts.length).toBe(1);
     expect(f.posts[0]!.url).toBe("/p/the-politics-of-visibility/outline");
@@ -310,7 +318,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
   it("delete rides the {ok,redirect} envelope in-router; a 409 navigates to the ?notice=cited flash", async () => {
     const f = makeFetch();
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
-    await submit(el()!.querySelector("form[action$='/outline/delete']")!);
+    await submit(await settled("form[action$='/outline/delete']"));
     expect(f.posts[0]!.url).toBe("/p/the-politics-of-visibility/outline/delete");
     // the redirect target is the (unflipped) project leaf → SsrHandoff → the document nav.
     await vi.waitFor(() => {
@@ -325,7 +333,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
       // the invalidation's refetch answers the cited truth — the cited note + hidden delete.
       outlineAfter: { outline: { ...OUTLINE_TWIN.outline!, cited: true } } });
     const { router } = await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
-    await submit(el()!.querySelector("form[action$='/outline/delete']")!);
+    await submit(await settled("form[action$='/outline/delete']"));
     await vi.waitFor(() => {
       expect(router.state.location.pathname).toBe("/p/the-politics-of-visibility/outline");
       expect(router.state.location.searchStr).toContain("notice=cited");
@@ -344,7 +352,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     });
     const f = makeFetch({ hold: { "/p/the-politics-of-visibility/outline/delete": held } });
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
-    const form = el()!.querySelector("form[action$='/outline/delete']")!;
+    const form = await settled("form[action$='/outline/delete']");
     fireEvent.submit(form);
     await vi.waitFor(() => {
       expect(form.getAttribute("aria-busy")).toBe("true");
@@ -383,7 +391,7 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, makeFetch().impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
 
@@ -412,7 +420,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
     expect(main.querySelector("[data-promotion-sources]")?.textContent).toContain("3 source notes");
     expect(main.querySelector("[data-promotion-urls]")?.textContent).toContain("2 URLs");
     expect(main.querySelector("[data-promotion-estimate]")?.textContent).toContain("42");
-    const form = main.querySelector('form[action$="/outline/promote"]')!;
+    const form = await settled<HTMLFormElement>('form[action$="/outline/promote"]');
     expect(form.querySelector('input[name="scope"]')?.getAttribute("value")).toBe("thread");
     expect(form.querySelector('input[name="threadId"]')?.getAttribute("value")).toBe("thr_1");
     expect(form.querySelector('input[name="slug"]')).not.toBeNull();
@@ -429,7 +437,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
         scope: "turn",
         turnId: "turn_9" } };
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=turn&turnId=turn_9", BOOT, makeFetch({ promote: turnTwin }).impl);
-    const form = el()!.querySelector('form[action$="/outline/promote"]')!;
+    const form = await settled<HTMLFormElement>('form[action$="/outline/promote"]');
     expect(form.querySelector('input[name="scope"]')?.getAttribute("value")).toBe("turn");
     expect(form.querySelector('input[name="turnId"]')?.getAttribute("value")).toBe("turn_9");
     expect(form.querySelector('input[name="threadId"]')).toBeNull();
@@ -438,7 +446,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
   it("the Promote click posts the field map JSON and rides {ok,redirect} in-router", async () => {
     const f = makeFetch();
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1", BOOT, f.impl);
-    await submit(el()!.querySelector('form[action$="/outline/promote"]')!);
+    await submit(await settled('form[action$="/outline/promote"]'));
     expect(f.posts.length).toBe(1);
     expect(f.posts[0]!.url).toBe("/p/the-politics-of-visibility/outline/promote");
     expect(f.posts[0]!.json).toEqual({
@@ -456,7 +464,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
       mutations: {
         "/p/the-politics-of-visibility/outline/promote": { status: 404, body: { error: "thread_not_found" } } } });
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_gone", BOOT, f.impl);
-    const form = el()!.querySelector('form[action$="/outline/promote"]')!;
+    const form = await settled<HTMLFormElement>('form[action$="/outline/promote"]');
     await submit(form);
     await vi.waitFor(() => {
       expect(el()!.querySelector("[data-notice]")?.textContent).toBe(COPY.promote.notFound);
@@ -495,7 +503,7 @@ describe("GET /p/:slug/outline/promote mounted (SPA.18)", () => {
 
   it("component axe on the mounted sheet (REQ-VFY-6)", async () => {
     await mountAt("/p/the-politics-of-visibility/outline/promote?scope=thread&threadId=thr_1", BOOT, makeFetch().impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
 

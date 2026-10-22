@@ -30,7 +30,7 @@ import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { billingReturnQuery } from "./queries.js";
 import type { BffBillingReturnTwin, BffBillingSettingsTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -194,6 +194,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, rootEl };
 }
 
@@ -350,7 +356,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       mutations: {
         "/app/settings/billing/subscribe": { ok: true, url: "https://checkout.stripe.com/c/pay/cs_1" } } });
     const { router } = await mountAt("/app/settings/billing", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('[data-subscribe-form="writer"]')!;
+    const form = await settled<HTMLFormElement>('[data-subscribe-form="writer"]');
     expect(form.getAttribute("action")).toBe("/app/settings/billing/subscribe");
     expect(form.getAttribute("method")).toBe("post");
     await submit(form);
@@ -372,13 +378,13 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
         "/app/settings/billing/topup": { ok: true, url: "https://checkout.stripe.com/c/pay/cs_top" },
         "/app/settings/billing/portal": { ok: true, url: "https://billing.stripe.com/session/bps_1" } } });
     await mountAt("/app/settings/billing", BOOT, f);
-    const topup = el()!.querySelector<HTMLFormElement>('[data-topup-form="pack_10"]')!;
+    const topup = await settled<HTMLFormElement>('[data-topup-form="pack_10"]');
     await submit(topup);
     const topupPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/topup" && i != null);
     expect(JSON.parse(String((topupPost![1] as RequestInit).body))).toEqual({ packId: "pack_10" });
     await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_top"));
 
-    const portal = el()!.querySelector<HTMLFormElement>("[data-portal-form]")!;
+    const portal = await settled<HTMLFormElement>("[data-portal-form]");
     await submit(portal);
     const portalPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/portal" && i != null);
     expect(portalPost).toBeDefined();
@@ -390,7 +396,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       billing: { billing: { subscription: PAID_SUB, plans: PLANS }, balance: BALANCE } });
     await mountAt("/app/settings/billing", BOOT, f);
 
-    const autoReload = el()!.querySelector<HTMLFormElement>("[data-auto-reload-form]")!;
+    const autoReload = await settled<HTMLFormElement>("[data-auto-reload-form]");
     const enable = autoReload.querySelector<HTMLInputElement>('[name="enabled"]')!;
     enable.checked = true;
     const threshold = autoReload.querySelector<HTMLInputElement>('[name="thresholdCredits"]')!;
@@ -405,7 +411,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     await vi.waitFor(() => expect(el()!.querySelector("[data-saved]")).not.toBeNull());
     expect(docNavSpy).not.toHaveBeenCalled();
 
-    const waitlist = el()!.querySelector<HTMLFormElement>("[data-waitlist-form]")!;
+    const waitlist = await settled<HTMLFormElement>("[data-waitlist-form]");
     const email = waitlist.querySelector<HTMLInputElement>('[name="email"]')!;
     email.value = "lead@example.com";
     const seats = waitlist.querySelector<HTMLInputElement>('[name="seats"]')!;
@@ -414,7 +420,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     const wlPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/waitlist" && i != null);
     expect(JSON.parse(String((wlPost![1] as RequestInit).body))).toEqual({ email: "lead@example.com", seats: "4" });
 
-    const cancel = el()!.querySelector<HTMLFormElement>("[data-cancel-form]")!;
+    const cancel = await settled<HTMLFormElement>("[data-cancel-form]");
     await submit(cancel);
     const cancelPost = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/billing/cancel" && i != null);
     expect(cancelPost).toBeDefined();
@@ -425,7 +431,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
       mutations: {
         "/app/settings/billing/subscribe": { ok: true, redirect: "/app/settings/billing?notice=plan_waitlisted" } } });
     await mountAt("/app/settings/billing", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>('[data-subscribe-form="writer"]')!;
+    const form = await settled<HTMLFormElement>('[data-subscribe-form="writer"]');
     await submit(form);
     await vi.waitFor(() => expect(el()!.querySelector("[data-notice]")).not.toBeNull());
     expect(el()!.querySelector("[data-notice]")?.textContent).toContain("plan isn");
@@ -441,7 +447,7 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     const f = makeFetch({
       hold: { "/app/settings/billing/auto-reload": d.promise } });
     await mountAt("/app/settings/billing", BOOT, f);
-    const form = el()!.querySelector<HTMLFormElement>("[data-auto-reload-form]")!;
+    const form = await settled<HTMLFormElement>("[data-auto-reload-form]");
     await act(async () => { fireEvent.submit(form); });
     expect(form.getAttribute("aria-busy")).toBe("true");
     expect(form.querySelector<HTMLButtonElement>("button[type='submit']")!.disabled).toBe(true);
@@ -491,14 +497,14 @@ describe("GET /billing/return mounted (SPA.16)", () => {
     const main = el()!;
     expect(main.querySelector('[data-checkout-state="completed"]')).not.toBeNull();
     expect(main.textContent).toContain("Payment confirmed");
-    const link = main.querySelector<HTMLAnchorElement>("[data-checkout-continue]")!;
+    const link = await settled<HTMLAnchorElement>("[data-checkout-continue]");
     expect(link.getAttribute("href")).toBe("/p/new-essay/run");
   });
 
   it("a non-same-origin returnTo degrades to the billing base — never a client-invented target", async () => {
     await mountAt("/billing/return?session_id=cs_1", BOOT, makeFetch({
       billingReturn: { checkoutReturn: { ...CHECKOUT_COMPLETED, returnTo: "https://evil.example" }, cancelled: false } }));
-    const link = el()!.querySelector<HTMLAnchorElement>("[data-checkout-continue]")!;
+    const link = await settled<HTMLAnchorElement>("[data-checkout-continue]");
     expect(link.getAttribute("href")).toBe("/app/settings/billing");
   });
 

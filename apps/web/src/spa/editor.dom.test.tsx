@@ -36,7 +36,7 @@ import { PageMount } from "./page-mount.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffCompareTwin, BffProjectTwin, BffRevisionTwin, BffVersionPageTwin } from "./queries.js";
 import axe from "axe-core";
-import { expectManifestEmission, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { expectManifestEmission, restoreDocumentNav, SETTLE_TIMEOUT, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -287,6 +287,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, rootEl };
 }
 

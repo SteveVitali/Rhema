@@ -24,7 +24,7 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -128,8 +128,6 @@ interface RecordedPost {
  *  answer the `{ok,redirect}` envelope (or the override). Anything unstubbed 500s loudly. */
 function makeFetch(opts: FetchOpts = {}) {
   const posts: RecordedPost[] = [];
-  let cardReads = 0;
-  let figureReads = 0;
   const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const path = url.split("?")[0]!;
@@ -143,12 +141,14 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(200, { ok: true, redirect: `/p/${SLUG}/figures/fig01` });
     }
     if (path === `/bff/p/${SLUG}/figures`) {
-      figureReads += 1;
-      return jsonResponse(200, figureReads > 1 && opts.figuresAfter != null ? opts.figuresAfter : (opts.figures ?? FIGURES_TWIN));
+      return jsonResponse(200, posts.length > 0 && opts.figuresAfter != null ? opts.figuresAfter : (opts.figures ?? FIGURES_TWIN));
     }
     if (path.startsWith(`/bff/p/${SLUG}/figures/`)) {
-      cardReads += 1;
-      return jsonResponse(200, cardReads > 1 && opts.cardAfter != null ? opts.cardAfter : (opts.card ?? CARD_TWIN));
+      // REQ-ENG-1 — `cardAfter` is the POST-MUTATION refetch's truth, gated on a recorded
+      // POST (not read #2): a StrictMode/staleTime-0 mount refetch used to consume the
+      // pending-proposal fixture before the propose POST ever fired, hiding the form the
+      // settled() wait was looking for — the iter-1 flake arm.
+      return jsonResponse(200, posts.length > 0 && opts.cardAfter != null ? opts.cardAfter : (opts.card ?? CARD_TWIN));
     }
     if (path === `/bff/p/${SLUG}/visualize`) {
       return jsonResponse(200, opts.visualize ?? VISUALIZE_TWIN);
@@ -188,6 +188,13 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     );
     await router.load();
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2 — a pending transition carries no stamp). The
+  // bare post-mount selector reads below raced that commit and flaked in CI (BL-87 /
+  // D-R5REC.1-1's sibling arm — the non-null-asserted propose-form lookup ~L435).
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, rootEl };
 }
 
@@ -228,7 +235,7 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
     expect(main.querySelector("h1")?.textContent).toBe(COPY.figuresPage.heading);
     expect(main.querySelector(`a[href="/p/${SLUG}"]`)?.textContent).toBe(COPY.figuresPage.backToProject);
     expect(main.querySelector(`a[href="/p/${SLUG}/visualize"][data-new-figure]`)).not.toBeNull();
-    const row = main.querySelector(`[data-figure-row="fig01"]`)!;
+    const row = await settled(`[data-figure-row="fig01"]`);
     expect(row).not.toBeNull();
     expect(row.querySelector(`a[href="/p/${SLUG}/figures/fig01"]`)?.textContent).toBe("Visibility scores");
     expect(row.textContent).toContain("[unverified data]");
@@ -252,16 +259,16 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
             { ...FIGURE_ITEM, id: "fig02", title: "Pending", insertedInDraftId: null, pendingProposal: true, hasRender: false },
           ] } } });
     await mountAt(`/p/${SLUG}/figures`, BOOT, f.impl);
-    const first = el()!.querySelector('[data-figure-row="fig01"]')!;
+    const first = await settled('[data-figure-row="fig01"]');
     expect(first.textContent).toContain(COPY.figuresPage.insertedChip);
-    const second = el()!.querySelector('[data-figure-row="fig02"]')!;
+    const second = await settled('[data-figure-row="fig02"]');
     expect(second.textContent).toContain(COPY.figuresPage.proposalChip);
     expect(second.textContent).toContain(COPY.figuresPage.renderingChip);
   });
 
   it("component axe on the mounted pane (REQ-VFY-6)", async () => {
     await mountAt(`/p/${SLUG}/figures`, BOOT, makeFetch().impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
 
@@ -303,13 +310,13 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     // the type chips + field map + the propose affordance.
     expect(main.querySelector("[data-type-chips]")).not.toBeNull();
     expect(main.querySelector('[data-chip="bar"]')).not.toBeNull();
-    const fields = main.querySelector<HTMLFormElement>("form[data-figure-fields]")!;
+    const fields = await settled<HTMLFormElement>("form[data-figure-fields]");
     expect(fields.getAttribute("action")).toBe(`/p/${SLUG}/figures/fig01`);
     expect(fields.querySelector('input[name="caption"]')).not.toBeNull();
     expect(fields.querySelector('input[name="alt"]')).not.toBeNull();
     expect(fields.querySelector('input[name="sourceLine"]')).not.toBeNull();
     expect(main.querySelector("[data-insert]")).not.toBeNull();
-    const propose = main.querySelector<HTMLFormElement>("form[data-propose-form]")!;
+    const propose = await settled<HTMLFormElement>("form[data-propose-form]");
     expect(propose.getAttribute("action")).toBe(`/p/${SLUG}/figures/fig01/propose`);
     expect(propose.querySelector('input[name="afterBlockId"]')).not.toBeNull();
     expect(propose.querySelector("[data-propose]")?.textContent).toBe(COPY.figureCard.proposeLabel);
@@ -363,7 +370,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           headDraftId: "d_head",
           card: { ...FIGURE_CARD, caption: "New caption." } } } });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-figure-fields]")!;
+    const form = await settled<HTMLFormElement>("form[data-figure-fields]");
     const caption = form.querySelector<HTMLInputElement>('input[name="caption"]')!;
     await act(async () => {
       caption.value = "New caption.";
@@ -391,7 +398,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
         [`/p/${SLUG}/figures/fig01`]: {
           body: { ok: true, redirect: `/p/${SLUG}/figures/fig01?notice=${encodeURIComponent("alt text is limited to 250 characters")}` } } } });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
-    await submit(el()!.querySelector("form[data-figure-fields]")!);
+    await submit(await settled("form[data-figure-fields]"));
     await vi.waitFor(() => {
       expect((router.state.location.search as Record<string, unknown>).notice).toContain("alt text is limited");
       expect(el()!.querySelector("[data-notice]")?.textContent).toContain("alt text is limited");
@@ -403,7 +410,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/figures/fig01/spec-edit`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
     await mountAt(CARD_URL, BOOT, f.impl);
-    const chipForm = el()!.querySelector('[data-chip="line"]')!.closest("form")!;
+    const chipForm = (await settled('[data-chip="line"]')).closest("form")!;
     await submit(chipForm);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/spec-edit`);
     expect(f.posts[0]!.json).toEqual({ mark: "line" });
@@ -418,7 +425,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/figures/fig01/versions/1/restore`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
     await mountAt(CARD_URL, BOOT, f.impl);
-    await submit(el()!.querySelector('[data-restore="1"]')!.closest("form")!);
+    await submit((await settled('[data-restore="1"]')).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/versions/1/restore`);
   });
 
@@ -432,7 +439,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           body: { ok: true, redirect: `/p/${SLUG}/figures/fig01`, data: { ok: true } } } },
       cardAfter: { figure: { slug: SLUG, card: pendingCard, headDraftId: "d_head" } } });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
-    const form = el()!.querySelector<HTMLFormElement>("form[data-propose-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-propose-form]");
     const anchor = form.querySelector<HTMLInputElement>('input[name="afterBlockId"]')!;
     await act(async () => {
       anchor.value = "b7";
@@ -462,7 +469,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
         [`/p/${SLUG}/figures/fig01/proposals/accept`]: {
           body: { ok: true, redirect: `/p/${SLUG}/v/4`, data: { ok: true, inserted: { draftN: 4 } } } } } });
     await mountAt(CARD_URL, BOOT, f.impl);
-    await submit(el()!.querySelector("[data-accept]")!.closest("form")!);
+    await submit((await settled("[data-accept]")).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/proposals/accept`);
     await vi.waitFor(() => {
       expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/4`);
@@ -481,7 +488,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/figures/fig01/proposals/reject`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
     await mountAt(CARD_URL, BOOT, f.impl);
-    await submit(el()!.querySelector("[data-reject]")!.closest("form")!);
+    await submit((await settled("[data-reject]")).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/proposals/reject`);
   });
 
@@ -528,7 +535,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     });
     const f = makeFetch({ hold: { [`/p/${SLUG}/figures/fig01/spec-edit`]: held } });
     await mountAt(CARD_URL, BOOT, f.impl);
-    const form = el()!.querySelector('[data-chip="line"]')!.closest("form")!;
+    const form = (await settled('[data-chip="line"]')).closest("form")!;
     fireEvent.submit(form);
     await vi.waitFor(() => {
       expect(form.getAttribute("aria-busy")).toBe("true");
@@ -548,7 +555,7 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
 
   it("component axe on the mounted card (REQ-VFY-6)", async () => {
     await mountAt(CARD_URL, BOOT, makeFetch().impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
 
@@ -575,7 +582,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.visualize.heading);
     expect(main.querySelector(`a[href="/p/${SLUG}"]`)?.textContent).toBe(COPY.visualize.backToProject);
-    const form = main.querySelector<HTMLFormElement>("form[data-visualize-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/visualize`);
     expect(form.querySelector<HTMLTextAreaElement>('textarea[name="request"]')!.value).toBe("a chart of the visibility scores");
     expect(form.querySelector<HTMLSelectElement>('select[name="specKind"]')!.value).toBe("vega_lite");
@@ -590,7 +597,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
       visualize: {
         visualize: { ...VISUALIZE_TWIN.visualize, figureId: "fig01", priorVersion: 1, request: "" } } });
     await mountAt(`/p/${SLUG}/visualize?figure=fig_fig01&prior=1`, BOOT, f.impl);
-    const form = el()!.querySelector("form[data-visualize-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     expect(form.querySelector('input[name="figureId"]')?.getAttribute("value")).toBe("fig01");
     expect(form.querySelector('input[name="priorVersion"]')?.getAttribute("value")).toBe("1");
     expect(form.querySelector('input[name="entryPoint"]')?.getAttribute("value")).toBe("chat");
@@ -602,7 +609,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/visualize`]: { body: { ok: true, redirect: `/p/${SLUG}/figures` } } } });
     const { router } = await mountAt(VIZ_URL, BOOT, f.impl);
-    await submit(el()!.querySelector("form[data-visualize-form]")!);
+    await submit(await settled("form[data-visualize-form]"));
     expect(f.posts.length).toBe(1);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/visualize`);
     const body = f.posts[0]!.json as Record<string, unknown>;
@@ -623,7 +630,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/visualize`]: { status: 422, body: { error: "request_required", detail: COPY.visualize.requestRequired } } } });
     const { router } = await mountAt(VIZ_URL, BOOT, f.impl);
-    const form = el()!.querySelector("form[data-visualize-form]")!;
+    const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     await submit(form);
     await vi.waitFor(() => {
       expect(el()!.querySelector("[data-notice]")?.textContent).toBe(COPY.visualize.requestRequired);
@@ -638,7 +645,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
       mutations: {
         [`/p/${SLUG}/visualize`]: { status: 402, body: { error: "insufficient_balance" } } } });
     await mountAt(VIZ_URL, BOOT, f.impl);
-    await submit(el()!.querySelector("form[data-visualize-form]")!);
+    await submit(await settled("form[data-visualize-form]"));
     await vi.waitFor(() => {
       expect(el()!.querySelector("[data-notice]")?.textContent).toBe("insufficient_balance");
     });
@@ -646,7 +653,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
 
   it("component axe on the mounted sheet (REQ-VFY-6)", async () => {
     await mountAt(VIZ_URL, BOOT, makeFetch().impl);
-    await axeCheck(el()!.querySelector("[data-spa-surface]")!);
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
 

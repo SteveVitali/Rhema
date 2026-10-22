@@ -55,6 +55,48 @@ export function restoreDocumentNav(): void {
   spaRuntime.replace = (href) => window.location.replace(href);
 }
 
+/** REQ-ENG-1 — the settle budget. `vi.waitFor`'s 1s default flaked under CI CPU contention
+ *  (the leaf's post-stamp query repaint can legitimately postdate it); 4s is headroom, not a
+ *  semantic — a settle is eventual, not scheduled. */
+export const SETTLE_TIMEOUT = 4000;
+
+/**
+ * REQ-ENG-1 — a mounted/settled lookup: poll until the element exists, then return it. The
+ * replacement for bare `querySelector(...)!` post-mount access — the wait, not the caller,
+ * owns the settle. `data-mounted` marks the router's match RESOLUTION; a leaf's own
+ * query/mutation repaint can postdate it (the BL-87 mount-settle flake class — a bare `!`
+ * lookup between stamp and repaint reads null), so an interaction target waits on itself.
+ * Lookups nested inside an already-settled element stay bare — a settled subtree commits
+ * atomically with its parent. On timeout the error carries a DOM excerpt so a flake capture
+ * is self-describing (which arm rendered is the question, not just that it missed).
+ */
+export async function settled<T extends Element = Element>(
+  selector: string,
+  scope: ParentNode = document,
+  opts: { timeout?: number } = {},
+): Promise<T> {
+  let found: T | null = null;
+  try {
+    await vi.waitFor(
+      () => {
+        found = scope.querySelector<T>(selector);
+        expect(found, `selector ${selector} settles`).not.toBeNull();
+      },
+      { timeout: opts.timeout ?? SETTLE_TIMEOUT },
+    );
+  } catch (err) {
+    const html =
+      scope === document
+        ? document.body.innerHTML
+        : (scope as Element).outerHTML;
+    throw new Error(
+      `settled("${selector}") timed out — live DOM (first 2000 chars):\n${html.slice(0, 2000)}`,
+      { cause: err },
+    );
+  }
+  return found!;
+}
+
 /** Implicit-role element selectors — a bare `<button>` satisfies the `button` role entry. */
 const ROLE_TAGS: Record<string, string> = {
   button: "<button[\\s>]",

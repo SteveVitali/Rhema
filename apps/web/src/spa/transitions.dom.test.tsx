@@ -29,7 +29,7 @@ import { createSpaRouter } from "./main.js";
 import { getSpaBoot, type SpaBoot } from "./boot.js";
 import { pageSessionRegistry } from "./page-sessions.js";
 import type { BffProjectTwin, BffRunReportTwin } from "./queries.js";
-import { restoreDocumentNav, stubDocumentNav } from "./testkit.js";
+import { restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -285,6 +285,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   await act(async () => {
     await new Promise((r) => setTimeout(r, 0));
   });
+  // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
+  // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
+  // commit — the BL-87 mount-settle flake class.
+  await vi.waitFor(() => {
+    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    }, { timeout: SETTLE_TIMEOUT });
   return { router, queryClient, rootEl };
 }
 
@@ -343,7 +349,7 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
     const { router } = await mountAt(`/p/${SLUG_A}`, boot, f.impl);
 
     const pageGets = () => f.gets.filter((u) => u.startsWith(`/bff/p/${SLUG_A}`));
-    const rootEl = main()!.querySelector<HTMLElement>("[data-page-root]")!;
+    const rootEl = await settled<HTMLElement>("[data-page-root]");
     expect(rootEl).not.toBeNull();
     const stamp = rootEl.getAttribute("data-page-session");
     // REQ-NAVT-5 — the `<bootNonce>.<seq>` shape, and it IS the registry entry's identity.
@@ -363,7 +369,7 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
     // Return inside the TTL — re-acquire returns the same entry (same sessionId, same
     // EditorState) and the warm query paints with ZERO new twin GETs (R10 + REQ-NAVC-18).
     await nav(router, `/p/${SLUG_A}`);
-    const root2 = main()!.querySelector<HTMLElement>("[data-page-root]")!;
+    const root2 = await settled<HTMLElement>("[data-page-root]");
     expect(root2.getAttribute("data-page-session")).toBe(stamp);
     expect(pageSessionRegistry.entry("d_a7")).toBe(entry);
     expect(entry?.refs).toBe(1);
@@ -404,12 +410,12 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
     const stampA = entryA!.sessionId;
     const stampB = entryB!.sessionId;
     expect(stampA).not.toBe(stampB);
-    expect(main()!.querySelector("[data-page-root]")!.getAttribute("data-page-session")).toBe(stampB);
+    expect((await settled("[data-page-root]")).getAttribute("data-page-session")).toBe(stampB);
     // return to A — its idle entry re-acquires (same stamp), B's parks.
     await nav(router, `/p/${SLUG_A}`);
     expect(pageSessionRegistry.entry("d_a7")?.refs).toBe(1);
     expect(pageSessionRegistry.entry("d_b3")?.refs).toBe(0);
-    expect(main()!.querySelector("[data-page-root]")!.getAttribute("data-page-session")).toBe(stampA);
+    expect((await settled("[data-page-root]")).getAttribute("data-page-session")).toBe(stampA);
   });
 });
 

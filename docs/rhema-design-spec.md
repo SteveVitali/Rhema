@@ -3015,6 +3015,20 @@ No calendar dates (Q-2): sequence and exit criteria only. Every row of the featu
 > full-IDE ticket bodies (rows 29–50) unblocked on this read. Operator decision — ledger § GATE
 > DECISIONS 2026-09-23; recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments applied and
 > **ADR-105**.
+>
+> **⚑ Amendment — 2026-10-20: the public launch is decoupled from G2; the Phase-1 exit row is
+> amended.** (1) The 2026-09-15 banner's "G2 stays a HARD gate before public launch" and the
+> 2026-09-16 banner's "no public launch moment" are superseded. The public launch of rhema.tools may
+> proceed once round 6's `GATE-LAUNCH` passes. **Unchanged:** no §16.4 efficacy or superiority claim
+> ships on any surface until a pre-registered wave meets REQ-EVAL-15 (the REQ-EVAL-19 lint still
+> enforces it), and REQ-EVAL-16's consequences still apply retroactively. G2/H2 continue as a
+> post-launch research program. (2) The Phase-1 exit row reads, as amended:
+> "nightly golden runs green on all four protocols" → **golden validation green on all four
+> protocols at the launch SHA, re-run on every protocol-affecting deploy**; "a new user reaches a
+> first finding in ≤4 minutes" → **a post-launch target on the organic cohort**, read at
+> launch + 14 d; "benchmark wave 1 … is dispositioned" is satisfied by ADR-111's disposition. The
+> no-superiority-claim clause is unchanged. Operator decision — ledger § GATE DECISIONS ### Round 6
+> (`GD-LAUNCH-G2.R6`, `GD-S17.R6`); recorded in **ADR-111**.
 
 **Engineering scope, honest estimate** (review 13 §10; senior engineers, agent-assisted implementation, the REQ-SPEC-19 editor cut and no working copy; person-months of engineering effort including verification and eval cost; calendar time not implied):
 

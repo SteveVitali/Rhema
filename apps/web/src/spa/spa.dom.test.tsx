@@ -79,6 +79,10 @@ async function mountAt(path: string, boot: SpaBoot | null, fetchImpl = sessionFe
     );
     await router.load();
   });
+  // REQ-ENG-1 note: NO data-mounted settle gate here — this file owns the marker contract
+  // and deliberately mounts unresolved boots (401 → /login document nav, ssr leaves) where
+  // the stamp must never land. Its `!` lookups read `[data-route-announcer]` chrome that
+  // commits with the provider, not the leaf — outside the mount-settle race class.
   return { router, queryClient, el };
 }
 

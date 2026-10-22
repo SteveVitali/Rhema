@@ -5,6 +5,11 @@
     "rootDir": "src"
   },
   "include": ["src"],
-  "references": [{ "path": "../contracts" }, { "path": "../db" }],
+  "references": [
+    { "path": "../contracts" },
+    { "path": "../db" },
+    { "path": "../findings-core" },
+    { "path": "../mirror" }
+  ],
   "exclude": ["dist", "**/*.test.ts"]
 }
