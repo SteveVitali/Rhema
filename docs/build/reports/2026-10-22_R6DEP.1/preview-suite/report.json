@@ -1,8 +1,8 @@
 {
   "tool": "rhema-journeys",
-  "nonce": "3f9051695ad7",
-  "startedAt": "2026-10-22T06:38:41.760Z",
-  "finishedAt": "2026-10-22T07:19:11.807Z",
+  "nonce": "0b4d29cec55c",
+  "startedAt": "2026-10-22T08:20:04.669Z",
+  "finishedAt": "2026-10-22T08:32:35.588Z",
   "webBaseUrl": "https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app",
   "apiBaseUrl": "https://rhema-pr-207-api-27c38c9-tkbl73n3tq-uc.a.run.app",
   "provenance": {
@@ -19,7 +19,7 @@
     "withinCap": true
   },
   "renderer": {
-    "expect": "spa"
+    "expect": null
   },
   "results": [
     {
@@ -28,13 +28,10 @@
       "owner": "ONB.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 46751,
-      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('[role=\"status\"]') to be visible\n",
+      "durationMs": 7386,
       "screenshot": "N1.png"
     },
     {
@@ -43,13 +40,10 @@
       "owner": "JOURNEY.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1309,
-      "error": "signup for test+j3f9051695ad7nv@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 9859,
       "screenshot": "N2.png"
     },
     {
@@ -58,11 +52,10 @@
       "owner": "SEC.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 30241,
-      "error": "settle wait lapsed on https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup: wanted data-mounted + data-renderer=\"spa\" — observed {\"route\":\"/signup\",\"renderer\":\"ssr\",\"mounted\":true,\"ssrCause\":null}",
+      "durationMs": 325,
       "screenshot": "N2.invite.png"
     },
     {
@@ -71,13 +64,10 @@
       "owner": "ONB.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 46206,
-      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('[role=\"status\"]') to be visible\n",
+      "durationMs": 14699,
       "screenshot": "N3.png"
     },
     {
@@ -86,13 +76,10 @@
       "owner": "EST.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1134,
-      "error": "signup for test+j3f9051695ad7n4@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 11496,
       "screenshot": "N4.png"
     },
     {
@@ -137,13 +124,10 @@
       "owner": "HOT.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 980,
-      "error": "signup for test+j3f9051695ad7n7@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 7783,
       "screenshot": "N7.png"
     },
     {
@@ -153,12 +137,10 @@
       "expected": "green",
       "paid": false,
       "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1177,
-      "error": "signup for test+j3f9051695ad7n8@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 102076,
+      "error": "import: the fork banner never flipped to \"Editing vN\" (the fork/rebind loop did not land)",
       "screenshot": "N8.png"
     },
     {
@@ -168,12 +150,10 @@
       "expected": "green",
       "paid": false,
       "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1225,
-      "error": "signup for test+j3f9051695ad7n9@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 51541,
+      "error": "N9 billing Choose Writer: stayed on https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/app/settings/billing?notice=stripe_unconfigured — no Stripe-hosted hand-off",
       "screenshot": "N9.png"
     },
     {
@@ -182,11 +162,10 @@
       "owner": "UX.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 801,
-      "error": "expect-renderer=spa: / served data-renderer=ssr — expected spa; /pricing served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa; /login served data-renderer=ssr — expected spa; /showcase served data-renderer=ssr — expected spa; /showcase served data-renderer=ssr — expected spa",
+      "durationMs": 786,
       "screenshot": "N10.png"
     },
     {
@@ -207,13 +186,10 @@
       "owner": "HOT.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 2069,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 2015,
       "screenshot": "R1.png"
     },
     {
@@ -234,13 +210,12 @@
       "owner": "JOURNEY.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [
+        "POST https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/p/showcase-copy/export net::ERR_ABORTED"
       ],
-      "failedRequests": [],
-      "durationMs": 1464,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 6127,
       "screenshot": "R5.png"
     },
     {
@@ -261,13 +236,10 @@
       "owner": "SPA.22",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 875,
-      "error": "signup for test+j3f9051695ad7r6f@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 13042,
       "screenshot": "R6F.png"
     },
     {
@@ -276,13 +248,10 @@
       "owner": "RUN.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1544,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 3343,
       "screenshot": "R7.png"
     },
     {
@@ -291,13 +260,10 @@
       "owner": "UX.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1506,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 1849,
       "screenshot": "R8.showcase.png"
     },
     {
@@ -306,13 +272,10 @@
       "owner": "UX.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1639,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 1404,
       "screenshot": "R8.prefs.png"
     },
     {
@@ -321,16 +284,10 @@
       "owner": "UX.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227343,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 1422,
       "screenshot": "R8.inbox.png"
     },
     {
@@ -351,13 +308,10 @@
       "owner": "NAVC.4",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1116,
-      "error": "signup for test+j3f9051695ad7r10@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 9370,
       "screenshot": "R10.png"
     },
     {
@@ -367,12 +321,10 @@
       "expected": "red",
       "paid": false,
       "outcome": "owed",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 972,
-      "error": "signup for test+j3f9051695ad7r10k@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 98569,
+      "error": "R10.keepalive — the edit never synced (pill: null · \"synced ✓\")",
       "screenshot": "R10.keepalive.png"
     },
     {
@@ -429,13 +381,10 @@
       "owner": "SPA.21",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1080,
-      "error": "signup for test+j3f9051695ad7t12f@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 15299,
       "screenshot": "T12F.png"
     },
     {
@@ -444,13 +393,10 @@
       "owner": "SPA.21",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 904,
-      "error": "signup for test+j3f9051695ad7t13f@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 16647,
       "screenshot": "T13F.png"
     },
     {
@@ -495,13 +441,10 @@
       "owner": "SPA.25",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 933,
-      "error": "signup for test+j3f9051695ad7t17@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 12002,
       "screenshot": "T17.png"
     },
     {
@@ -510,11 +453,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1258,
-      "error": "expect-renderer=spa: / served data-renderer=ssr — expected spa; /pricing served data-renderer=ssr — expected spa; /login served data-renderer=ssr — expected spa; / served data-renderer=ssr — expected spa; /pricing served data-renderer=ssr — expected spa; /login served data-renderer=ssr — expected spa; /pricing served data-renderer=ssr — expected spa",
+      "durationMs": 1163,
       "screenshot": "P1.public.png"
     },
     {
@@ -523,16 +465,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227569,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 2867,
       "screenshot": "P1.project.png"
     },
     {
@@ -541,16 +477,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227322,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 5325,
       "screenshot": "P1.pill.png"
     },
     {
@@ -559,16 +489,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227482,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 3053,
       "screenshot": "P1.runsheet.png"
     },
     {
@@ -577,16 +501,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227647,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 3167,
       "screenshot": "P1.outline.png"
     },
     {
@@ -595,16 +513,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227348,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 3577,
       "screenshot": "P1.figures.png"
     },
     {
@@ -613,16 +525,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227568,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 2591,
       "screenshot": "P1.dossier.png"
     },
     {
@@ -631,16 +537,10 @@
       "owner": "UX.2",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227491,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 1617,
       "screenshot": "P1.app-new.png"
     },
     {
@@ -649,16 +549,10 @@
       "owner": "ACT.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227590,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 1918,
       "screenshot": "C1.png"
     },
     {
@@ -667,16 +561,10 @@
       "owner": "SEC.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()",
-        "Failed to load resource: the server responded with a status of 429 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 227148,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 3922,
       "screenshot": "X1.voices.png"
     },
     {
@@ -685,11 +573,11 @@
       "owner": "SEC.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 0,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)"
+      "durationMs": 1409,
+      "screenshot": "X1.usage.png"
     },
     {
       "id": "X1.home",
@@ -697,11 +585,11 @@
       "owner": "SEC.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 0,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)"
+      "durationMs": 1451,
+      "screenshot": "X1.home.png"
     },
     {
       "id": "X1.inbox",
@@ -709,11 +597,11 @@
       "owner": "SEC.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
+      "outcome": "pass",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 0,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)"
+      "durationMs": 1425,
+      "screenshot": "X1.inbox.png"
     },
     {
       "id": "X1.detail",
@@ -721,11 +609,13 @@
       "owner": "SEC.1",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [],
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
       "failedRequests": [],
-      "durationMs": 0,
-      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status — page alert: Too many attempts — wait a few minutes and try again. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)"
+      "durationMs": 1327,
+      "screenshot": "X1.detail.png"
     },
     {
       "id": "T1",
@@ -733,13 +623,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1007,
-      "error": "signup for test+j3f9051695ad7t1@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 7081,
       "screenshot": "T1.png"
     },
     {
@@ -748,13 +635,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 850,
-      "error": "signup for test+j3f9051695ad7t2@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 9409,
       "screenshot": "T2.badge.png"
     },
     {
@@ -763,13 +647,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 878,
-      "error": "signup for test+j3f9051695ad7t2m@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 6286,
       "screenshot": "T2.matrix.png"
     },
     {
@@ -778,13 +659,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 891,
-      "error": "signup for test+j3f9051695ad7exa@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 32442,
       "screenshot": "T3.png"
     },
     {
@@ -793,13 +671,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 934,
-      "error": "signup for test+j3f9051695ad7cx@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 16666,
       "screenshot": "T4.png"
     },
     {
@@ -808,13 +683,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 912,
-      "error": "signup for test+j3f9051695ad7ia@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 235648,
       "screenshot": "T5.png"
     },
     {
@@ -823,13 +695,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 1046,
-      "error": "signup for test+j3f9051695ad7t6@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 10677,
       "screenshot": "T6.png"
     },
     {
@@ -838,13 +707,10 @@
       "owner": "STB.5a",
       "expected": "green",
       "paid": false,
-      "outcome": "fail",
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ],
+      "outcome": "pass",
+      "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 998,
-      "error": "signup for test+j3f9051695ad7t7@rhema.tools never showed the \"link sent\" status — page alert: Signup isn't available right now — try again shortly. (https://rhema-pr-207-web-8d83fe5-tkbl73n3tq-uc.a.run.app/signup)",
+      "durationMs": 7589,
       "screenshot": "T7.png"
     },
     {
@@ -856,7 +722,7 @@
       "outcome": "owed",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 260,
+      "durationMs": 325,
       "error": "owed — the 410 half needs a live expired token (7 d), which the 26 h test-tenant purge makes unreachable without a purge exemption or an operator hand-dated row; the mint recipe + fire date are on D-FIX.1-1 (scripts/live/mint-t8-export.mjs → bind JOURNEY_T8_EXPORT_TOKEN)",
       "screenshot": "T8.png"
     },
