@@ -14,7 +14,8 @@ import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp";
 import * as random from "@pulumi/random";
 import * as tls from "@pulumi/tls";
-import { stageConfigFor } from "../config/stages";
+import { stageConfigFor, withPostureOverrides } from "../config/stages";
+import type { StageDomains } from "../config/stages";
 import { createNetwork } from "./network";
 import { createData } from "./data";
 import { createSecrets } from "./secrets";
@@ -28,7 +29,7 @@ import { NONPROD_OPERATOR_PLACEHOLDER_IDS, resendVersionPlan } from "./resend-ke
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
-const cfg = stageConfigFor(stack);
+const stageCfg = stageConfigFor(stack);
 
 const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.get("project") ?? "rhema-507501";
@@ -109,6 +110,43 @@ const protocolsVersion = rhemaConfig.get("protocolsVersion");
 // in state, never in argv/logs/the repo (REQ-ARCH-30). The send-only key on the prod Resend account
 // keeps `rhema.tools` a verified sender while previews stay off prod secrets (REQ-ARCH-38).
 const resendApiKey = rhemaConfig.getSecret("resendApiKey");
+// R6POST.2 (REQ-POST-6) — the Stripe TEST-MODE key for the Stripe-bearing posture stage, set via
+// `preview-stack.mjs stripe-pull` (the shared `rhema-nonprod-stripe-secret`, piped over stdin —
+// the resend-pull shape; never argv/logs/the repo). Same plan semantics as resendApiKey: the
+// config value becomes the stack's `stripe-secret` SecretVersion in place of the OPS.1
+// placeholder; prod refuses the config outright (fail-closed).
+const stripeSecretConfig = rhemaConfig.getSecret("stripeSecret");
+// R6POST.2 — the two ruled posture stages' per-stack overrides (non-prod only; prod refuses
+// inside `withPostureOverrides`):
+//   `rhema:postureDomains`    — {"app","api","userContent"} hosts for a domains-bearing pr-<n>
+//   `rhema:extraRequiredSecrets` — CSV of ALL_SECRET_IDS ids the one stack wires (stripe-secret)
+//   `rhema:postureLbAddress`  — the NAME of a pre-created `gcloud compute addresses` global IPv4
+//                             the LB binds, so the wildcard-DNS names (which embed the IP) are
+//                             minted before `up` — one up, no forwarding-rule replacement. The
+//                             address is NOT Pulumi-managed (deleted out of band at teardown).
+const postureDomains = rhemaConfig.getObject<StageDomains>("postureDomains");
+const extraRequiredSecrets = (rhemaConfig.get("extraRequiredSecrets") ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => s.length > 0);
+const postureLbAddress = rhemaConfig.get("postureLbAddress");
+const cfg = withPostureOverrides(stageCfg, {
+  ...(postureDomains !== undefined ? { domains: postureDomains } : {}),
+  extraRequiredSecrets,
+});
+if (postureLbAddress !== undefined && cfg.kind === "prod") {
+  throw new pulumi.RunError(
+    "rhema:postureLbAddress is refused on prod — prod's LB address is program-reserved",
+  );
+}
+const stripePlan = resendVersionPlan(cfg.kind, stripeSecretConfig !== undefined);
+if (stripePlan === "refused") {
+  throw new pulumi.RunError(
+    "rhema:stripeSecret is refused on prod — prod's stripe-secret version stays operator-seeded " +
+      "out of band (REQ-ARCH-30/REQ-ARCH-38); the config path exists only so a ruled non-prod " +
+      "posture stage can bind the shared nonprod sk_test",
+  );
+}
 
 const isProd = cfg.kind === "prod";
 // MAINT.6 — fail-closed: the config is a non-prod-only path; a prod stack carrying it refuses the
@@ -294,6 +332,8 @@ if (!isProd) {
     // MAINT.6 — when `rhema:resendApiKey` carries the real non-prod key it replaces the
     // `resend-api-key` placeholder version entirely (the worker's mail.send transport goes live).
     if (id === "resend-api-key" && resendPlan === "real") continue;
+    // R6POST.2 — a ruled Stripe stage's real sk_test replaces the stripe-secret placeholder.
+    if (id === "stripe-secret" && stripePlan === "real") continue;
     secretVersions.push(
       new gcp.secretmanager.SecretVersion(`rhema-${stack}-${id}-placeholder-v1`, {
         secret: secrets.byId[id].id,
@@ -309,6 +349,19 @@ if (!isProd) {
       new gcp.secretmanager.SecretVersion(`rhema-${stack}-resend-api-key-v1`, {
         secret: secrets.byId["resend-api-key"].id,
         secretData: resendApiKey,
+      }),
+    );
+  }
+  // R6POST.2 — the shared nonprod sk_test becomes the stack's stripe-secret SecretVersion
+  // (`stripe-pull` pipes it over stdin — the resend-pull shape). Paired with
+  // `extraRequiredSecrets: stripe-secret`, which is what mounts `STRIPE_SECRET_KEY_NAME` on
+  // api + worker (`requires("stripe-secret")`); every unruled preview keeps the placeholder +
+  // absent mount (`stripe_unconfigured` — REQ-ARCH-38).
+  if (stripePlan === "real" && stripeSecretConfig) {
+    secretVersions.push(
+      new gcp.secretmanager.SecretVersion(`rhema-${stack}-stripe-secret-v1`, {
+        secret: secrets.byId["stripe-secret"].id,
+        secretData: stripeSecretConfig,
       }),
     );
   }
@@ -364,6 +417,9 @@ const compute = createCompute({
   ...(appBaseUrl ? { appBaseUrl } : {}),
   ...(apiPublicUrl ? { apiPublicUrl } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
+  // R6POST.2 — a ruled domains-stage adopts its pre-created global address (the wildcard-DNS
+  // names embed the reserved IP); unset = today's shape (program-reserved address).
+  ...(postureLbAddress ? { lbAddressName: postureLbAddress } : {}),
   objectsBucket: data.buckets["artifacts"].name,
   secretVersions,
 });
