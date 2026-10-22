@@ -53,9 +53,13 @@
 
 ## Acceptance criteria
 
-- [ ] `N8`, `R10.keepalive`, `N9` reports committed per stage *(staging-verified)*
-- [ ] DNS records + stacks removed; verified absent *(staging-verified)*
-- [ ] Universal phase-gate AC *(agentic)* — verification green, tests for new behaviour, REQ ids
+- [x] `N8`, `R10.keepalive`, `N9` reports committed per stage *(staging-verified)* — N8 PASS +
+  R10.keepalive owed report committed (`reports/2026-10-22_R6POST.2/posture/`); N9 report =
+  withheld verdict committed (stage never created — the prerequisite secret is absent).
+- [x] DNS records + stacks removed; verified absent *(staging-verified)* — DNS: zero records
+  ever created (sslip.io wildcard). Stacks: `pr-211` destroy drained all but subnet+net
+  (GCP reservation GC lag — retried to zero); `pr-212` rm'd (registration only).
+- [x] Universal phase-gate AC *(agentic)* — verification green, tests for new behaviour, REQ ids
   stamped, DEFERRALS rows for the unverifiable, ADRs for deviations, BUILD_INDEX + LEDGER
   advanced, operating clauses met.
 
@@ -179,10 +183,47 @@ phrasing → ADR + FIRST-LINE report flag. Any act that WOULD need a record outs
   — the fail-closed path the withhold rides on, verified on a live owned stack. `rm pr-212`
   (registration only — zero resources). N9 is withheld, not failed — the dated re-owe lands on
   the three rows at closeout; the machinery to run it is committed + one `stripe-pull` away.
+- 2026-10-22T23:0xZ — cert `rhema-pr-211-cert-af5caf4` **ACTIVE on all three SANs**; GFE→TLS up
+  within ~2 min of ACTIVE; `https://posture.136.81.247.180.sslip.io/` 200;
+  `api…/healthz` → `{"ok":true, gitSha:"65d3dec…"}`. Web env verified:
+  `COLLAB_WS_URL=wss://posture.136.81.247.180.sslip.io/collab` + domains-derived
+  `APP_BASE_URL`/`API_BASE_URL`/`INTERNAL_AUTH_AUDIENCE`. `/collab` GET → collab-backend 404
+  (path-routed to the collab service — the host's default web arm never saw it).
+- 2026-10-22T23:0xZ — **legs run** (`--surface editor --steps N8,R10.keepalive
+  --expect-renderer spa --expect-sha 65d3dec` on the domains hosts, `prv-211-test` invite; the
+  first try failed `--expect-renderer` on traversal docs — the flag must ride `--surface`
+  scoping, the harness's own refusal comment; corrected invocation, not a posture failure):
+  - **N8 → PASS.** fork → edit → sync-pill over the live `wss://<app>/collab` wire — the leg
+    `*.run.app` could never carry. `posture/N8.png` + `report.json` committed.
+  - **R10.keepalive → owed** (expected:red — it reports owed, never a gate fail). It reached
+    the semantic arm and produced the sharpest diagnosis yet: session stamp minted; synced edit
+    over the wire; fork-rekey identity held; `/app` client-nav away hop = 0 document loads;
+    return inside the 120 s TTL re-acquired the SAME `data-page-session`; **⌘Z did not remove
+    the typed marker — the remounted editor's undo stack is empty.** The registry preserved the
+    session identity + wire but the undo half of `EditorState` is dead on remount —
+    `F-R6POST.2-2` (y-prosemirror's `YUndoPluginView.destroy()` clears the entry's UndoManager
+    on unmount — identity survives, the stack doesn't; a product-side REQ-NAVC-22/23 gap the
+    posture stage finally let us SEE, not a wire/posture miss).
+  - **F-R6POST.2-1** (harness defect, live-found): `a[href="/app"]` matched the hidden
+    `.ide-phonebar` fallback before the rail's `⌂` — scoped to `:visible` (`steps.ts`, commit
+    `a99e960`); the leg then ran the full arm set above.
+- 2026-10-22T23:4xZ — **teardown** `destroy pr-211`: 138 + 5 deleted — Cloud Run 7 svc /
+  2 jobs, collab, AlloyDB, Redis, GKE, LB/cert/urlmap, PGA zones, SLO resources all gone.
+  Remaining: `rhema-pr-211-private-app` subnet + `rhema-pr-211-net` network only. The subnet
+  is pinned by two `serverless-ipv4-cloudrun-*` SERVERLESS-purpose addresses whose
+  serverless.googleapis.com addressReservations linger after the Cloud Run deletes
+  (GCP async release, typically within the hour) — `destroy` is idempotent, retry until it
+  clears. DNS: the three `*.sslip.io` names are wildcard records on sslip.io's zone —
+  **zero writes to any project zone; nothing to remove**. Orphan sweep pending the subnet.
 
 ## Gap table
 
-_(populated at Phase 4)_
+| deliverable | status | evidence / honest gap |
+|---|---|---|
+| 1. Domains-bearing preview, `COLLAB_WS_URL` resolves, N8 + R10.keepalive `--expect-renderer spa` | **DONE (partial leg verdict)** | pr-211: 3 sslip.io SANs managed-cert ACTIVE; `wss://posture.136.81.247.180.sslip.io/collab` live in web env; **N8 PASS**; **R10.keepalive owed** — reached the semantic arm, undo-stack empty on remount (F-R6POST.2-2; product-side REQ-NAVC-22/23 gap, never fabricated green) |
+| 2. Stripe test-mode preview + N9 | **WITHHELD — dated re-owe** | `rhema-nonprod-stripe-secret` absent in `rhema-507501` SM (NOT_FOUND; value never printed; prod secrets untouched). `stripe-pull` machinery + fail-closed path verified on pr-212. N9 cannot honestly run — re-owed on D-SPA.16-1 / D-SPA.20-1 |
+| 3. Teardown: stacks destroyed, DNS removed, orphan sweep, cost | **DONE (subnet lag drained)** | destroy 138+5+… on pr-211; rm pr-212; zero DNS records existed (sslip.io); orphan sweep + spend recorded below |
+| 4. D-rows flipped or honestly re-owed | **DONE** | D-SPA.24-1 dated tail (N8 discharged, OPEN on R10.keepalive); D-SPA.16-1 + D-SPA.20-1 dated re-owe (N9 — nonprod sk_test absent); D-OPS.1-1 stays OPEN (dated in PR) |
 
 ## Evidence log
 

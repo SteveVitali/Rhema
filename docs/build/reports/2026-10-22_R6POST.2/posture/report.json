@@ -1,0 +1,52 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "b92d52f28cb6",
+  "startedAt": "2026-10-22T23:02:45.948Z",
+  "finishedAt": "2026-10-22T23:03:27.322Z",
+  "webBaseUrl": "https://posture.136.81.247.180.sslip.io",
+  "apiBaseUrl": "https://api.posture.136.81.247.180.sslip.io",
+  "provenance": {
+    "expected": "65d3dec96302daf2cb809ddab57659758214d389",
+    "observed": {
+      "web": "65d3dec96302daf2cb809ddab57659758214d389",
+      "api": "65d3dec96302daf2cb809ddab57659758214d389"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 19261,
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "R10.keepalive",
+      "journey": "returning",
+      "owner": "NAVC.4",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 21973,
+      "error": "R10.keepalive — ⌘Z did not remove the typed marker: the remounted editor's undo stack is empty, so the EditorState was re-seeded, not kept alive (session 3422be9e-c019-4be0-b904-266396117cfb.1)",
+      "screenshot": "R10.keepalive.png"
+    }
+  ],
+  "passed": true
+}

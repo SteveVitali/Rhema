@@ -1,0 +1,16 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:gitSha: 65d3dec96302daf2cb809ddab57659758214d389
+  rhema:protocolsVersion: 0.4.0+ec61156725a895ab
+  rhema:postureLbAddress: rhema-pr-211-lb
+  rhema:postureDomains: '{"app":"posture.136.81.247.180.sslip.io","api":"api.posture.136.81.247.180.sslip.io","userContent":"uc.posture.136.81.247.180.sslip.io"}'
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
+  rhema:resendApiKey:
+    secure: AAABAKqFe8gosSnLxTW96ohNA+vst6bCjSqD0yViY2IAmcSNP0+aUzEPzkZjJDq5t6vQPIkPvcx4J87+PK2LVUWqFAs=
+  rhema:emailFrom: hello@rhema.tools
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/api@sha256:83d6537ee65883601fd962ac04bde8b0a9821e235d911dfe8e0d4ce5a29aaa32","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/web@sha256:6c65c6be043865571e31b231a0870b9cafb735a7fc494224f159151de01c1a78","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/worker@sha256:32ba5f1a1e0b21db988f4fd094cfb973df8796aadc2cd8d67be380c69c751065","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/fetcher@sha256:8eb3e278d9a542154ade9eb1974bdcad0396ab3c257325bb625e23993f22da0d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/convert@sha256:498db45aa0f45827d85197ff4812b5243549b9a9239ea89afff7eba0e0b7e6c8","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/export@sha256:ee2e359409296819daed33c20d5444a12960fadb8bad18b8c8b877451b068d08","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/collab@sha256:8bf73feb6ddfef4807f3a2b698b22cedb23cebaa9d028cb9fdb06b0949d3a979","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/turbo-cache@sha256:0bfd32f153611e39c0dd5ef37ca8c5b831cf588d60e7656300e2496fc48e8f4f"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/run-task@sha256:bb9bab944b82375b37ac81bc0b1cb6c2031f993518867f73b5a4829af8d20b43
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-211/egress-proxy@sha256:2b9725a3161e7ccef658adcb1a70c6a6ea0723e20e05840eb883d5fbe601b337
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
