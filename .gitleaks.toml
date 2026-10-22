@@ -11,6 +11,8 @@ paths = [
   '''docs/.*''',
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
+  # Better-Auth test fixture (carried from main, 57aaaf5)
+  '''apps/api/src/auth\.test\.ts''',
   # the vendored Agent SDK bridge is upstream code, not secret-bearing source (P1.22 sweep)
   '''vendor/.*''',
 ]
@@ -24,5 +26,10 @@ paths = [
 regexes = [
   '''test-secret-0123456789abcdef0123456789abcdef''',
   '''quarantine/ws1/up1''',
+  # `quarantine/ws<n>/up<n>` is an object-storage KEY (workspace-id/upload-id path), not a
+  # credential — used across the web import/quarantine tests (carried from main, 4b1e31f).
+  '''quarantine/ws[0-9]+/up[0-9]+''',
+  # CITE.1/STB.5a — a CSL-JSON bibliography cite key for the headless journey fixture, not a
+  # secret (gitleaks generic-api-key false positive on packages/journeys/src/stb5a-helpers.ts).
   '''journey2026stb5a''',
 ]
