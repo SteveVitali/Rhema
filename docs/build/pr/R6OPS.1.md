@@ -30,9 +30,8 @@ path. Nothing here had ever been rehearsed live before (critique, 2026-10-20).
    resources in 42 s, `/healthz` = `dc7fb15` api+web, R1 PASS. Teardown: destroy removed
    144/193 resources, then the private subnet sat on a GCP-managed
    `serverless-ipv4-cloudrun-*` reservation (Google-owned — manual delete correctly
-   refused; the pr-206/pr-207 ≈2h20m GC-lag class); a drain loop finished `destroy` →
-   `stack rm` → the 25-class orphan sweep — final state recorded in the closeout commit /
-   `rollback-drill.md`.
+   refused; the pr-206/pr-207 ≈2h20m GC-lag class); a drain loop finished the last 49 at 17:24Z → `stack rm` →
+   **orphan sweep zero across 26 classes** (`rollback-drill.md`).
 3. **(c) Egress-denied playbook drill — PASS** (`egress-drill.mjs --execute`, the ticket's
    one authorized canary write): 4 planted `domain_blocklist` denies + the real
    `egress_denied_spike` pause signal on `is_test` run `r6ops1-egress-1792677564468` →

@@ -16,7 +16,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-DEP-2
-- **Started:** 2026-10-22T13:4xZ · **Closed:** (pending)
+- **Started:** 2026-10-22T13:4xZ · **Closed:** 2026-10-22T17:4xZ
 - **Live stage:** prod (scratch Cloud SQL restore + one canary `is_test` egress-denied spike)
   + an owned `pr-<n>` preview (rollback drill).
 - **Production mutations (ticket header, verbatim):**
@@ -25,7 +25,8 @@
   - one canary `is_test` run with a planted egress-denied spike (R5OPS.1 `canary-pause.mjs`
     precedent; residue-free rollback).
 - **Size budget:** ~300 changed lines (drivers + runbooks + evidence).
-- **ci:** (pending)
+- **ci:** pass #208@`609e469` (run 39807844056 — all seven legs + `ci-pass` anchor);
+  boundary JSON `docs/build/logs/ci-R6OPS.1.json`.
 
 ## Deferrals read
 
@@ -147,15 +148,26 @@
   `dc7fb15a0aa7caa5d47734656d06514d5b75b127` on BOTH services (report-observed), live
   digests match the prod pins — **the rollback target was the prior DEPLOYED image set,
   not a source rebuild**. R1 PASS (`rollback-Nminus1/report.json`).
-- 2026-10-22T15:2xZ — **(b) teardown draining** — `destroy` removed 144 of 193 resources;
-  `rhema-pr-208-private-app` subnet held by the GCP-managed
-  `serverless-ipv4-cloudrun-1792680586032522302` reservation — Google-owned, refuses
-  manual delete (`in-use by //serverless.googleapis.com/…`), the pr-206/pr-207 class:
-  ≈2h20m GC lag. Background drain loop retries `destroy` → `rm` → orphan sweep; the
-  closeout commit records the final state.
+- 2026-10-22T15:2xZ — **(b) teardown drain** — `destroy` removed 144 of 193 resources;
+  `rhema-pr-208-private-app` subnet held by two GCP-managed
+  `serverless-ipv4-cloudrun-*` reservations — Google-owned, refuses manual delete
+  (`in-use by //serverless.googleapis.com/…`), the pr-206/pr-207 class. Drain loop
+  retried `destroy` every ~5 min (20 attempts; one transient api.pulumi.com
+  `connection reset` mid-drain — retried).
+- 2026-10-22T17:24Z — **teardown completed**: reservations GC'd (~2h19m — the pr-207
+  ~2h20m class); the drain's attempt 20 removed the final 49 (subnet, network, 12
+  secrets, 4 buckets, AR repo, health check, cert, logging metrics, IAM role) →
+  `preview-stack.mjs rm pr-208` (stack + `Pulumi.pr-208.yaml` deleted, deletion in the
+  closeout commit — the R6DEP.1 file lifecycle). **Orphan sweep: ZERO `rhema-pr-208*`
+  across 26 classes.**
 - 2026-10-22T15:4xZ — **verification all green**: `turbo build lint typecheck` 135/135;
   `pnpm test` 514 files / **6,052 pass** / 4 skip / 0 fail; all six `check:*` green;
   targeted drill suites 19/19.
+- 2026-10-22T17:4xZ — **closeout**: `ci: pass #208@609e469` (run 39807844056 — all seven
+  legs + `ci-pass` anchor on the pushed head; boundary `logs/ci-R6OPS.1.json`);
+  `check-build-memory.sh` warnings-only; `check-append-only.mjs --base 1905cc4` OK;
+  LEDGER/BUILD_INDEX/PR-body landed; pushed + PR body set. mergePolicy=OPERATOR — never
+  merged by this run.
 
 ## Gap table
 
@@ -165,7 +177,7 @@
 | 2 (a) restore | PASS first full run: RTO 579 s, 12/12 + tenant, absent-verified | +2 live fixes (schema cols; clone `--async` + delete-retry 409s) + 1 leftover-scratch sweep from the aborted pre-fix run |
 | 3 (c) egress playbook | PASS: 7-leg timeline, 2.4 s contain, residue 0 | none |
 | 4 (d) alert delivery | honest census: 4 worker-side signals → 488 receipts; 14 GCP policies channel-less = **F-R6OPS.1-1** | the deliverable reads "prove OR document" — the Monitoring-channel gap is documented, never greenwashed |
-| 5 (b) preview rollback | N + N−1 both provenance-verified + R1 PASS; destroy 144/193 then GCP reservation-lag | drain pending GCP-managed reservation GC (~2h20m class, pr-207 precedent); closeout commit records `rm` + sweep |
+| 5 (b) preview rollback | N + N−1 both provenance-verified + R1 PASS; destroy 144+49/193; `rm` done; orphan sweep **zero (26 classes)** | ~2h19m GCP-managed reservation GC-lag (pr-206/207 class — same class of lag, not residue) |
 | 6 evidence + gates | all gates green; evidence dir complete | none |
 
 ## Evidence log
@@ -184,4 +196,34 @@
 
 ## Evidence report
 
-(pending — Phase 6.4)
+All five REQ-DEP-2 deliverables landed live on 2026-10-22:
+
+- **(a) PASS** — PITR restore to one scratch instance; verified 12/12 count tables + the
+  tenant row at the recorded restore point; RTO 579 s; scratch destroyed and absence
+  verified (`describe` → 404). Live-found driver fixes recorded honestly (schema columns;
+  `--async` + poll; delete-retry through operation-in-progress 409s). The pre-fix aborted
+  clone was swept before the PASS run — zero residue.
+- **(b) PASS** — rollback on owned `pr-208`: N at `18b3dee` provenance-verified + R1 PASS;
+  repinned to the deployed `r6dep-1`/`dc7fb15` image set (prior deployed images, not a
+  rebuild); N−1 at `dc7fb15` provenance-verified + R1 PASS. Teardown: 144/193 destroyed
+  immediately; the subnet sat on GCP-managed `serverless-ipv4-cloudrun-*` reservations
+  (operator-undeletable, ~2h19m GC — pr-206/pr-207 class); the drain loop finished the
+  final 49 at 17:24Z → `rm` → **orphan sweep zero across 26 classes**.
+- **(c) PASS** — egress-denied playbook end-to-end on the canary `is_test` run: planted →
+  detected (worker drain → `waiting_gate` + blocking refusal gate, 2.4 s) → diagnosed
+  (verbatim distribution read) → negative control (`NOT_FROM_TEST_RUN` probe 0 pre/post)
+  → contained → rolled back with residue 0/5 tables. Discharges D-P1.22-2's leg-(e)
+  playbook half.
+- **(d) DOCUMENTED (honest)** — the armed page path (worker `OPS_ALERT_WEBHOOK_URL` →
+  ops-alert-catcher) is proven by 488 real receipts across 4 signals; all 14 Monitoring
+  AlertPolicies are `notificationChannels:[]` — **F-R6OPS.1-1** — the channel was never
+  provisioned (`rhema:opsAlertWebhookUrl` unset; H10's attestation meant the worker env,
+  which IS bound). Provisioning is a one-key prod Pulumi act flagged for the operator —
+  deliberately outside this ticket's mutation scope. `route-5xx` has zero page path
+  (incidents only). No receipt was fabricated.
+- **(e) DONE** — `docs/ops/on-call.md`: operator as responder, armed vs unarmed paths,
+  signal → playbook map, test tenants never page, the channel-provisioning step.
+
+Verification: `pnpm turbo build lint typecheck` 135/135; `pnpm test` 514 files / 6,052
+pass / 4 skip / 0 fail; six `check:*` green; build-memory warnings-only; append-only vs
+`1905cc4` OK; **ci: pass #208@`609e469`** (run 39807844056, all seven legs + anchor).

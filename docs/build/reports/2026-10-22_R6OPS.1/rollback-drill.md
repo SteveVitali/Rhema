@@ -44,7 +44,15 @@ same way); `docker tags add` is same-repo only and could not copy into `rhema-pr
 - 15:14:28Z — **N−1 verified**: `/healthz` = `dc7fb15` (api+web, report-observed in
   `rollback-Nminus1/report.json`); live digests = prod pins (`rhema-prod/api@8159bc…`,
   `rhema-prod/web@1d4b5f…`); **R1 PASS**
-- 15:2xZ — `destroy` → orphan sweep → `rm` (below)
+- 15:2x–15:5xZ — `destroy` pass 1: **144/193 removed**; the private subnet then sat
+  `resourceInUseByAnotherResource` on the GCP-managed
+  `serverless-ipv4-cloudrun-1792680586032522302` (+ `-…1772217786476`) reservation —
+  Google-owned (`//serverless.googleapis.com/…`), manual delete correctly refused; the
+  pr-206/pr-207 GC-lag class. Drain loop `destroy` every ~5 min.
+- 17:24Z — **reservations GC'd (~2h19m)**; drain attempt 20 removed the final **49**
+  (subnet, network, 12 secrets, 4 buckets, AR repo, health check, cert, logging metrics,
+  IAM role) → `preview-stack.mjs rm pr-208` (stack + `Pulumi.pr-208.yaml` deleted,
+  deletion committed)
 
 ## Verdict
 
@@ -65,8 +73,19 @@ rebuild — measured wall time for the repin up ≈ 42 s plus Cloud Run revision
 
 ## Teardown + orphan sweep
 
-- `preview-stack.mjs destroy pr-208`: (result below)
-- Orphan enumeration across the 25-class sweep + `preview-stack.mjs rm pr-208`: (below)
-- Preview spend window: init ~13:5xZ → destroy 15:4xZ ≈ 2 h standing (AlloyDB ~1 h of it) —
-  within the ≤ $8 resource-hours budget (R6DEP.1 measured ~$4–6 for a 4.5 h window incl. a
-  full suite; this window is shorter with fewer journeys)
+- `preview-stack.mjs destroy pr-208`: **193/193** across two passes — 144 in-window, then
+  49 at 17:24Z once the two GCP-managed `serverless-ipv4-cloudrun-*` reservations released
+  (~2h19m GC lag; `resourceInUseByAnotherResource` on the private subnet; a direct
+  `addresses delete` had been correctly refused — they belong to
+  `//serverless.googleapis.com`). 20 drain attempts ~5 min apart; one transient
+  api.pulumi.com `connection reset` mid-drain (attempt 18) — retried cleanly.
+- `preview-stack.mjs rm pr-208`: stack + `Pulumi.pr-208.yaml` removed (deletion committed
+  in the closeout commit — same as R6DEP.1's pr-207 file lifecycle).
+- **Orphan sweep: ZERO `rhema-pr-208*` across 26 enumerated classes** (run services, run
+  jobs, secrets, buckets, GKE, AlloyDB clusters+instances, Redis, VMs, networks, subnets,
+  firewalls, routers, addresses, health checks, certs, instance templates, instance
+  groups, backend services, url-maps, forwarding rules, https-proxies, AR repos, log
+  metrics, alert policies, service accounts) — measured 17:3xZ post-rm.
+- Preview spend window: init ~13:5xZ → rm 17:3xZ ≈ 3.7 h standing (AlloyDB ~1 h of it) —
+  within the ≤ $8 resource-hours budget (R6DEP.1 measured ~$4–6 for a longer window incl.
+  a full journey suite; this window ran 2 R1 legs only).
