@@ -40,9 +40,10 @@ the metered-debit notice send (`GD-PREAUTH-ACTS.R6`, `EFFECTIVE_DATE=2026-12-01`
    R6MNY.1 read) then `--send`: 2 emails + 2 inbox rows, effective 2026-12-01. The debit-mode
    flip itself is **not** performed — preconditions 1–2 (`cap_calibration_reports`,
    admissible cost observations) remain UNMET.
-8. **Teardown** — pr-207 destroy removed 136+8 resources; the private subnet waits on two
-   GCP-managed `serverless-ipv4-cloudrun-*` reservations (same GC-lag class as pr-206) — a
-   retry loop drains, `rm` + orphan sweep recorded at completion; the manual IAP firewall
+8. **Teardown verified** — pr-207 destroy removed 193 resources (136+8 live, then 49 after the
+   two GCP-managed `serverless-ipv4-cloudrun-*` reservations released at ~10:24Z — a ~2h20m
+   GC lag, same class as pr-206; a direct `addresses delete` was correctly refused); `stack rm`
+   done; **orphan sweep is zero across 25 classes**; spend ≈$4–6 ≤ $8; the manual IAP firewall
    was deleted in-window.
 
 ## Also in this PR

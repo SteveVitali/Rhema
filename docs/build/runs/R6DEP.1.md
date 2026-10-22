@@ -84,11 +84,10 @@ this ticket's blast radius (dated notes at close; no flips expected):
 - [x] Preview suite green on the tip; teardown verified *(staging-verified)* — the
   `paid:false` suite ran green on pr-207 (40 PASS; N8/N9 = preview-posture, T8 +
   R10.keepalive = owed-reporting, zero fabricated) and the `--expect-renderer spa`
-  surface sweep held zero renderer violations; teardown is destroy-verified to the GCP
-  boundary — everything Pulumi owns is deleted; the private subnet waits only on two
-  GCP-managed `serverless-ipv4-cloudrun-*` reservations (undeletable by hand, same GC-lag
-  class as pr-206) — the drain + `rm` + the final zero-orphan sweep are tracked to
-  completion below and recorded in the ledger.
+  surface sweep held zero renderer violations; teardown verified — destroy removed all
+  193 resources (the GCP-managed `serverless-ipv4-cloudrun-*` reservations GC-lagged the
+  subnet ~2h20m, released ~10:24Z, and the drain loop finished destroy + `rm`), and the
+  25-class orphan sweep is **zero**.
 - [x] Each pre-authorization condition evidenced before `up` *(live-executed)* —
   `reports/2026-10-22_R6DEP.1/prod-preflight/preview-classification.md`: zero
   stateful replace/delete (the one replace was the stateless proxy
@@ -176,9 +175,18 @@ suite, condition classification, provenance, smoke, dry-run/send scope match).
   `preview-stack.mjs destroy` removed 136 resources, then 8, but the private subnet
   `rhema-pr-207-private-app-5b73328` stayed `resourceInUseByAnotherResource` — two GCP-managed
   `serverless-ipv4-cloudrun-*` address reservations GC-lag after the Cloud Run services die
-  (same class as pr-206's ~100 min lag; they are Google-owned, undeletable by hand). A
-  `destroy` retry loop (5-min cadence) drains them; orphan sweep + cost record follow on
-  success. `$0` third-party spend.
+  (same class as pr-206's ~100 min lag; they are Google-owned, undeletable by hand — a direct
+  `addresses delete` was tried and correctly refused: in-use by
+  `//serverless.googleapis.com/…/addressReservations/…`). `$0` third-party spend.
+- 2026-10-22T10:25Z — **teardown completed**: the reservations released ~10:24Z (≈2h20m GCP
+  lag); the drain loop then ran `destroy` (49 final resources — subnet, network, 12 secrets,
+  4 buckets, AR repo, health check, cert, logging metrics, IAM role) + `stack rm pr-207`
+  (stack + `Pulumi.pr-207.yaml` removed — deletion committed). **Orphan sweep: ZERO
+  `rhema-pr-207*` across 25 classes** (Cloud Run svcs/jobs, secrets, buckets, GKE, AlloyDB,
+  Redis, VMs, networks, subnets, fw, routers, addresses, health checks, certs, instance
+  templates/groups, backend svcs, url-maps, fwd rules, https-proxies, AR repos, logging
+  metrics, alert policies, SAs, IAM). Spend ≈$4–6 ≤ $8 (preview stood ~4.5h + one ~10min
+  image-set build; all journey legs $0).
 - 2026-10-22T08:2xZ — **prod preflight (all four GD-DEPLOY.R6 conditions evidenced BEFORE `up`)**:
   the 10 tip digests were copied into `rhema-prod` AR (no rebuild — digests copied verbatim from
   the pr-207 build) and pinned in `Pulumi.prod.yaml` (dated comment à la ARMB); stack export +
@@ -223,7 +231,7 @@ suite, condition classification, provenance, smoke, dry-run/send scope match).
 | 1 ledger+PR skeleton → `pr-<n>` | `1c8997d` pushed; **PR #207** opened, base `r6soak-1-…` | none |
 | 2 preview bring-up | pr-207 full stack; Cloud Build `f953fcf4` (all 10 @ `dc7fb15`); digests pinned; migrate×58; `prv-207-test` | +OAuth config leg (F-R6DEP.1-2) — Better Auth mounts only with `googleOauthClientId` present; rolled env mid-run |
 | 3 `paid:false` suite + `--expect-renderer spa` | Run A: 40 PASS, N8/N9 posture, T8/R10.keepalive owed; Run B: 30 legs, 0 renderer violations | two prior artifact runs (r1 unmounted-auth, r2 retired-flag + throttle) — evidence kept, not greenwashed |
-| 4 destroy → rm → orphan sweep → cost | destroy 136+8 resources; subnet held by 2 GCP-managed serverless reservations — retry loop drains; `iap-ssh` fw removed | `rm` pending reservation release (tracked, same class as pr-206's ~100 min lag) |
+| 4 destroy → rm → orphan sweep → cost | destroy 136+8+49 = 193 resources; `rm` done; orphan sweep **zero** (25 classes); spend ≈$4–6 ≤ $8 | subnet drain = ~2h20m GCP-managed reservation lag (pr-206 class) |
 | 5 prod preflight | digests copied→`rhema-prod` AR, pinned; 4-condition classification committed | none |
 | 6 `pulumi up` + provenance + deployments row | up clean (11u/1r/160same); provenance all-PASS; `prod:dc7fb15…` row recorded (retry after MIG rolled the proxy VM mid-write) | +1 retry (tunnel ECONNRESET on proxy rollover — honest retry, no state drift) |
 | 7 post-deploy smoke | public 200s; R8.inbox+T2.badge PASS; worker consuming; **bonus: N10+P1.public `--expect-renderer ssr` PASS → D-SPA.6-1 residual discharged** | +ssr leg beyond the ticket floor |
