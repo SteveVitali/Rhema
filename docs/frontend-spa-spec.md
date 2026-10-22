@@ -1,6 +1,6 @@
 # Rhēma — Frontend SPA Migration Specification
 
-- **Status:** v1.1 — **canonical** · 2026-10-08 · **ratified by the operator** (Q-1…Q-7 register + Q-8…Q-14 §12.2 answers resolved). O2 adversarial review applied (Appendix E, 15 findings, no blockers); R20 reversed per operator ruling — Source mode revived as REQ-ED-17. **Amended 2026-10-10 → v1.1 (SPAREC.2, as-built reconciliation):** the round-4 chain landed and the operator signed all eight proposed deviations ACCEPTED at GATE-ACCEPT.SPA (2026-10-10); **§14** records the landed shape — the flag machinery's own sunset executed, forced-SSR re-seated on code (ADR-107/108), and the verification procedures amended to their surviving recipes. The v1.0 body is append-only history: where it describes migration-window machinery in the present tense, **§14 supersedes** — nothing above is rewritten. Hand-off: `docs/decomposition-prompt.md` → `decompose-spec`.
+- **Status:** v1.2 — **canonical** · 2026-10-08 · **ratified by the operator** (Q-1…Q-7 register + Q-8…Q-14 §12.2 answers resolved). O2 adversarial review applied (Appendix E, 15 findings, no blockers); R20 reversed per operator ruling — Source mode revived as REQ-ED-17. **Amended 2026-10-10 → v1.1 (SPAREC.2, as-built reconciliation):** the round-4 chain landed and the operator signed all eight proposed deviations ACCEPTED at GATE-ACCEPT.SPA (2026-10-10); **§14** records the landed shape — the flag machinery's own sunset executed, forced-SSR re-seated on code (ADR-107/108), and the verification procedures amended to their surviving recipes. **Amended 2026-10-17 → v1.2 (R5REC.2, round-5 reconciliation):** the round-5 nav stream completed client-side navigation — §14.18 records the shipped defect (no interception: every in-app click was a document nav — the "MPA-mode" gap, ruled a defect at Q-scope-1) and §14.19 the settled mechanism (ADR-110): the delegated document click interceptor, its ordered guard pipeline + skip-list, `SsrHandoff` replace-mode, and the extended settle contract (`data-nav-count`, mounted-pending `data-mounted`, `data-page-session`). The v1.0 body is append-only history: where it describes migration-window machinery in the present tense, **§14 supersedes** — nothing above is rewritten. Hand-off: `docs/decomposition-prompt.md` → `decompose-spec`.
 - **Synthesized from:** the frontend-SPA research ledger (`docs/research-ledger.md`), the brief (`docs/frontend-spa-brief.md`), four research notes (`docs/research/01`–`04`) and ten design notes (`docs/design/20`–`29`). Binding inputs are the brief's ⚑ operator-fixed constraints and the ledger's §Q register (Q-1…Q-7, all ratified 2026-10-07).
 - **Supersedes:** the nine SPA design notes on any point of disagreement (they are inputs; this spec is canonical). Amends ADR-007 and ADR-012 via **ADR-106** (§3.6); amends no product-spec `REQ-*` — this document adds its own families (§0.2) and references product requirements by id.
 
@@ -75,7 +75,7 @@ The binding operator decisions (Q-1…Q-7) are restated in Appendix B. The synth
 11. Migration sequencing: flags, flips, rollback, chain interplay
 12. Risks, departures, and open questions
 13. Out of scope
-14. Spec amendments — the as-built record (round-4 reconcile)
+14. Spec amendments — the as-built record (round-4 + round-5 reconciles)
 - Appendix A — Requirement index
 - Appendix B — Decision register (operator decisions Q-1…Q-7; synthesis rulings R1–R27)
 - Appendix C — Research index
@@ -645,6 +645,142 @@ behind the ordered 15-segment merge/deploy; the post-tip composed verification
 deployed tip. Prod legs mint sessions through the live `rhema.tools` mailbox — only the
 preview family needs the secret. Signed: GATE-ACCEPT.SPA row 8 (ACCEPTED) — each row is
 ledgered with its verbatim recipe + unblock condition.
+
+### 14.18 Dated defect record — the round-4 chain shipped no client-side interception (the "MPA-mode" gap; Q-scope-1; REQ-NAVC/NAVM/NAVT)
+
+**2026-10-17 (R5REC.2; REQ-MEM-7).** Recorded per the append-only rule: what the spec
+demanded, what actually shipped, and where the repair lives.
+
+- **The spec demanded (§7, REQ-NAV-9 + REQ-BND-9; §8, REQ-UX-1):** "intra-tree → `router.navigate`" —
+  "no document reloads inside the app."
+- **What shipped:** the round-4 SPA carried **zero `<Link>` imports and no interception
+  mechanism at all** — every `<a href>` activation inside the app was a full document
+  navigation, so the app ran in MPA mode on the client router's document set. The journey
+  harness could not see it: `awaitMounted`/`settleNav`/`gotoOk` verified *which* document
+  rendered (`data-renderer`/`data-route`/`data-mounted`), never *how* the browser arrived —
+  the A4-F1 observability gap (`docs/research/r5_a4_nav-verification.md`; closed
+  harness-side by A4-F5's `documentLoads` counter) is why zero-client-routing shipped
+  invisibly.
+- **The ruling (Q-scope-1, operator, 2026-10-15 — `docs/post-spa-disposition-brief.md`):**
+  the "MPA-mode" gap is a **defect, not an accepted posture** — intra-app nav must go
+  client-side per §7's boundary rule.
+- **The repair (round 5, NAVC.1–NAVC.5):** the mechanism lands as §14.19 + ADR-110. The
+  requirement families it discharges, verbatim from `docs/post-spa-disposition-spec.md`:
+  **REQ-NAVM-1..10** (the mechanism — listener, pipeline, stubs, replace-mode, renderer
+  boundary, preload, opt-out, head duties, hash gap); **REQ-NAVT-1..8** (the verification
+  contract — `data-nav-count`, mounted-pending, `settleClientNav`/`settleDocumentNav` +
+  `SettleScope.documentLoads`, the R10/R10.keepalive legs, mechanism pinning both
+  directions, dom-contract rows, the `intercept.dom.test.tsx` suite); **REQ-NAVC-16..23**
+  (the dormant-machinery obligations — scroll contract, registry invariants, per-surface
+  Query freshness, keymap, boot/session lifecycle, head/settle parity, transition-level
+  testing, server-owned boundaries). REQ-NAVC-7..15 and REQ-NAVC-24 do not exist (the
+  disposition spec's own renumbering); NAVC.1's stray `REQ-NAVC-13` stamp is a naming nit
+  on a landed commit message, not a missing requirement (R5CAP.1 reconciliation, no action).
+- **Also fixed en route:** `state-map.ts` emitted `/voices/<personaId>` (no such route);
+  it now emits `/v/<personaId>` — the disposition spec §2.8's pre-existing dead-link defect
+  (NAVC.1, `3a29d31`).
+
+### 14.19 Client-side navigation is the delegated document click interceptor (amends §7's boundary rule + the settle contract; REQ-NAVM-1..10, REQ-NAVT-1..8; REQ-MEM-6)
+
+**v1.0 said (§7):** "intra-tree → `router.navigate`; SSR-owned paths, `/logout`, external
+hand-offs, binaries → document navigations; unflipped strangler targets hand off via
+`SsrHandoff`→`location.assign` driven by the boot flag map" — and (§7, REQ-VFY-3) "every
+route root emits `data-route` + `data-mounted` on first data paint." §14.12 already
+retired the flag-map clause; this amendment supplies the interception mechanism §7 never
+named and extends the settle contract.
+
+**Landed (round 5, NAVC.1–NAVC.5 — the mechanism, verbatim from code):**
+
+- **One delegated listener.** A single bubble-phase `click` listener on `document`,
+  installed by `mountSpa` (`spa/main.tsx:88`) — **never** `createSpaRouter`, so the
+  router-direct dom suites stay un-intercepted (`spa/nav-intercept.ts:124-131`). No
+  component ports; `<a href>` markup is unchanged on both renderers. NavLink and the
+  hybrid port are refuted: ProseMirror `toDOM` anchors have no React element, and
+  `@rhema/ui` renders under `StaticRouter`, where TanStack `<Link>` throws.
+- **The ordered guard pipeline is normative** (`nav-intercept.ts:43-120`, in this order):
+  `closest("a[href]")` → `e.defaultPrevented` → `button!==0` → modifier keys
+  (meta/alt/ctrl/shift — a new browsing context stays native) → `contenteditable`
+  ancestor (PM link marks belong to the editor; `contenteditable="false"` islands keep
+  link behavior) → `target` absent-or-`_self` only / `download` / `data-spa-native` →
+  `new URL` same-origin test (**fail closed** — malformed, foreign, `javascript:`/`data:`/
+  `mailto:`, protocol-relative all stay native) → hash-only same-path+same-search skip
+  (native fragment nav — intercepting would re-fire `beforeLoad`+loaders for a
+  same-document scroll) → `router.getMatchedRoutes(pathname)` in-tree **with the `**`
+  fuzzy predicate** (a fuzzy match leaves the remainder in `rawParams["**"]`, so
+  `/p/:p/export/ai-use/{md,docx}` matches `/p/$project/export` fuzzily and is NOT
+  intercepted — the downloads survive; `foundRoute.path === "/"` is the index-route
+  exception) → `RELOAD_STUB_IDS` membership → `preventDefault` +
+  `router.navigate({href: pathname + search + hash})`.
+- **The skip-list (stays a native/document navigation):** non-primary buttons; modifier
+  chords; editing-surface anchors; `target≠_self`, `download`, `data-spa-native` (the
+  three non-document GETs — `/usage.csv`, `/app/settings/data/export/download`,
+  `/p/:p/export/ai-use/{md,docx}` — carry the hook; inert on SSR); foreign or unparseable
+  origins; hash-only fragment navs; out-of-tree paths (server-owned GETs, public routes,
+  non-document endpoints — the `**` guard keeps fuzzy non-document GETs native); and the
+  three server-owned redirect stubs `RELOAD_STUB_IDS`
+  (`/_authenticated/app/usage/r/$runId`, `/_authenticated/p/$project/edit/$draftId`,
+  `/_authenticated/p/$project/f/$fid` — matched by generated route id, **never**
+  `spaRouteFor`, whose prefix fallback would misclassify the `/settings` and
+  `/app/settings` client redirects into doc-navs) → `navigateDocument`. `/logout`,
+  external hand-offs, and binaries remain document navigations exactly as §7 said.
+- **History + scroll:** clicks always push (document-nav parity); the interceptor never
+  emits `replace`; `resetScroll`/`viewTransition` are never overridden (router defaults +
+  `scrollRestoration` own them — `.ide-page` joins `scrollToTopSelectors`); `e.isTrusted`
+  is never checked (synthesized `.click()`s are ordinary activations).
+- **Renderer verdicts stay with the leaves (REQ-NAVM-6):** the interceptor consults NO
+  boot `surfaces` map, `deviceClass`, `isSpaEnabled`, `twinForcesSsr`, or `spaRouteFor` —
+  interception is unconditional once in-tree, and leaf pipelines own every renderer
+  verdict, so `postProjectHandoff`'s `beforeLoad` POST fires exactly as on document entry.
+  The client never decides a renderer (§14.8 unchanged).
+- **`SsrHandoff` is replace-mode (REQ-NAVM-5):** `spa/dom.ts` gained `spaRuntime.replace` +
+  `replaceDocument(href)`; `SsrHandoff` (`spa/states.tsx:37`) calls it. Under interception
+  the client commit already occupies the history slot — an `assign` of the same URL would
+  push a duplicate transient entry and Back would bounce forward into the handoff again
+  (the round-4 Back-loop defect). `navigateDocument`/`replaceDocument` share the one
+  `spaRuntime` seam so tests assert "document nav happened" without caring which arm.
+  Mid-`beforeLoad` `redirect({reloadDocument:true})` arms (`p.$project.index`,
+  `p.$project.v.$v`) keep firing on intercepted entry; their history-slot behavior is
+  pin-verified (`intercept.dom.test.tsx:427`).
+- **No preload ships (REQ-NAVM-7 — GATE-ACCEPT.R5 row 1, ACCEPTED):**
+  `defaultPreload:"intent"` is deliberately unset (`spa/main.tsx:54-62`) — several
+  `beforeLoad`+loader pipelines side-effect (`postProjectHandoff`, `confirmEmail` token
+  consumption, mark-read twins), so blanket intent-preload is unsafe. A `PRELOAD_SAFE`
+  routeId allowlist + delegated `pointerover`/`focusin` leg is a named follow-up.
+- **Hash gap compensated (REQ-NAVM-10):** native hash-only clicks never reach router
+  state, so `ide/controller.ts:1127` runs the same `consumeFindingHash` consumer on
+  `hashchange`.
+- **Settle contract extended (REQ-NAVT-1/2/3/7 — REQ-MEM-8's settle half):**
+  `data-nav-count="0"` is stamped on **every** served document (SSR `render.tsx:86` + the
+  shell `spa-shell.ts:217` — the reset is the detector, so SSR documents carry it too);
+  HeadManager (`spa/head.tsx:51-59`) increments it once per committed in-document location
+  transition (push/replace/pop — location `state.key` change; hydration is the seed run,
+  never a transition). `data-mounted` is **removed** while `isLoading` and re-stamped on
+  resolution (`head.tsx:79-88`) — `[data-route][data-mounted]` again means "resolved
+  leaf". `data-page-session="<bootNonce>.<seq>"` is minted per `PageSessionRegistry`
+  entry on `[data-page-root]` (editor-conditional; REQ-NAVT-5). The journey harness's
+  `settleClientNav`/`settleDocumentNav` + the now-unconditional `SettleScope.documentLoads`
+  response counter (`runner.ts`) pin the mechanism in both directions — a commit that
+  document-navigates mid-wait fails, and a document nav without a same-origin document
+  response fails.
+- **Verification:** `spa/intercept.dom.test.tsx` — 19 synthetic-click tests over the real
+  `routeTree` (every skip-list row + the stub arm + the mid-`beforeLoad` history-slot pin
+  + `navKey` semantics); `page-sessions.test.ts`, `transitions.dom.test.tsx`,
+  `ide-chrome.dom.test.tsx` for the NAVC-16..23 obligations. Staging-verified on pr-186
+  (VERIF.2): R10 `/app` → `/p/:slug` → `data-edit-source` → `/v/working` → Back with
+  monotone `data-nav-count` and `documentLoads===1`. REQ-NAVT-5's keepalive leg stays
+  `expected:"red"` — owed on `D-SPA.24-1` (a domains-bearing stage).
+- **Signed deviations touching this mechanism (GATE-ACCEPT.R5, 2026-10-17 — all
+  ACCEPTED):** row 1 — intent-preload ships none (above); row 2 — the phone contract
+  boundary ratified: REQ-ED-12 forces SSR only on the five Page-family GETs, so the
+  dossier stays SPA at phone width (`spa` + `data-device="phone"` is the correct
+  verdict); row 4 — the NAVC-18 freshness asymmetry: `projectPageQuery` gains
+  `staleTime: PAGE_SESSION_IDLE_TTL_MS` while the mark-read/view twins deliberately keep
+  `staleTime: 0` (their GET IS the read receipt).
+
+**Authorized by:** the Q-scope-1 operator ruling (§14.18) + ADR-110 (Accepted
+2026-10-17) + GATE-ACCEPT.R5 rows 1/2/4 (ACCEPTED). Matrix: REQ-NAV-9 + REQ-BND-9 +
+REQ-UX-1 satisfied at last under the landed mechanism (the boundary rule's client half
+now exists); REQ-VFY-3's settle contract stands extended, not replaced.
 
 ---
 

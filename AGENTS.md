@@ -95,6 +95,17 @@ describes landed code. Live posture changes only through the operator's ordered 
   one document-navigation seam — `navigateDocument`/`replaceDocument` share the `spaRuntime`
   arms; `/logout`, external hand-offs, binaries are document navigations). The client never
   decides a renderer.
+- **Client-side navigation is one delegated interceptor (round 5, ADR-110).** A single
+  bubble-phase `click` listener on `document` — installed by `mountSpa`, never
+  `createSpaRouter` — routes in-tree `<a href>` clicks to `router.navigate`. The ordered
+  guard pipeline + skip-list are normative in `apps/web/src/spa/nav-intercept.ts`
+  (modifiers/secondary-button/contenteditable/`target`/`download`/`data-spa-native`/
+  foreign-origin/hash-only/out-of-tree/`RELOAD_STUB_IDS` stays native or doc-navs).
+  Interception is unconditional once in-tree — it never consults `surfaces`,
+  `deviceClass`, `twinForcesSsr`, or `spaRouteFor`; renderer verdicts stay in leaf
+  pipelines. Clicks always push; no intent-preload ships. Settle contract:
+  `data-nav-count` (every document stamps `"0"`; HeadManager ticks committed
+  transitions) + `data-mounted` removed while a nav is pending.
 - **Transport.** `bffFetch` (`spa/bff.ts`) is the ONE JSON transport — same-origin `/…` paths
   only, `credentials:"same-origin"`, no client POST retries; non-2xx throws
   `BffError{status,code,detail?,requestId}`; 401 → `/login` document nav. Reads are the typed

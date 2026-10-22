@@ -679,6 +679,18 @@ has exactly one owner.
   2026-10-10). The product spec gains supersession notes only — §12 `web` row + §13.1 stack line
   read through the SPA spec; the REQ-BETA-21 CodeMirror stopgap shipped as designed REQ-ED-17.
   **(ADR-106/107/108; GATE-ACCEPT.SPA)**
+- **2026-10-17 (round-5 fold-back, R5REC.2 — `docs/frontend-spa-spec.md` v1.1 → v1.2 + supersession
+  addenda on `docs/rhema-design-spec.md`):** the settled client-navigation mechanism is folded
+  into the canonical specs — `frontend-spa-spec` **§14.18** records the dated defect (the
+  round-4 chain shipped zero interception — the "MPA-mode" gap, ruled a defect at Q-scope-1)
+  and **§14.19** the mechanism amendment (one delegated `document` click interceptor, the
+  ordered guard pipeline + skip-list, `RELOAD_STUB_IDS` doc-nav arm, `SsrHandoff`
+  replace-mode, unconditional renderer handling, push-only history, no intent-preload, the
+  `hashchange` compensation, and the extended settle contract — `data-nav-count`,
+  mounted-pending `data-mounted`, `data-page-session`, `settleClientNav`/`documentLoads`).
+  The product spec gains dated banner addenda (§12 table + §13.1) pointing at the settled
+  mechanism; the REQ-NAVC/NAVM/NAVT families and GATE-ACCEPT.R5's signed rows 1/2/4 are
+  cross-referenced; COVERAGE_MATRIX REQ-MEM-6/7/8 → MET. **(ADR-110; GATE-ACCEPT.R5)**
 
 ## Decomposition decisions (operator may veto; see the session report)
 
