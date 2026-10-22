@@ -13,7 +13,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-DEP-3
-- **Started:** 2026-10-22T18:56Z · **Closed:** (open)
+- **Started:** 2026-10-22T18:56Z · **Closed:** 2026-10-22T20:2xZ
 - **Live stage:** prod (the ruled acts are prod-only; stage facts are prod-scoped).
 - **Production mutations (ticket header, verbatim):**
   - Cloud SQL `availabilityType` ZONAL → REGIONAL;
@@ -26,7 +26,9 @@
   on `rhema-prod-postgres` (`settings.availabilityType` edit + instance restart), NEVER a
   replace/delete. A replace in the preview → do NOT `up`; record + flag FIRST-LINE.
 - **Size budget:** ~150 changed lines.
-- **ci:** (pending — read at closeout per BM-CI-01)
+- **ci:** **pass #209 @ `c270be9`** — all six legs (fast-path, typecheck/lint/unit 36m28s,
+  integration 4m15s, images, contracts, public-safe), run `39840496318`;
+  `logs/ci-R6INF.1.json`.
 
 ## Deferrals read
 
