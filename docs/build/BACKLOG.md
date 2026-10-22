@@ -8,16 +8,50 @@ source id (DEFERRALS `OPEN`/`PARTIAL` rows, coverage-matrix `PARTIAL`/`MISSING` 
 ADR revisit trigger) appears in exactly one `sources` cell. `check-backlog.sh` result: **465
 expected sources — complete + non-duplicating + verdict-consistent**.
 
-## Matrix sums (recomputed 2026-10-10, 666 rows)
+## Matrix sums (recomputed 2026-10-17 by R5REC.1, 752 rows)
+
+`check-backlog.sh` verdict — **368 expected sources: complete + non-duplicating +
+verdict-consistent** (was 25 issues on entry; all repaired, detail in `readouts/R5REC.1.md`).
 
 | Measure | Count |
 |---|---|
-| Engineering closed (MET + MET-DIFFERENTLY + MET-ENGINEERED) | **513 / 666** |
-| Requirement satisfied (MET + MET-DIFFERENTLY only) | **511 / 666** |
-| PARTIAL | 120 |
-| MISSING | 33 |
-| MET-ENGINEERED | 2 |
-| AT-RISK-INTEGRATION | 0 |
+| Engineering closed (MET + MET-DIFFERENTLY + MET-ENGINEERED) | **591 / 752** |
+| Requirement satisfied (MET + MET-DIFFERENTLY only) | **573 / 752** |
+| MET-ENGINEERED | 8 |
+
+The six `met-with-owed-leg` stale verdicts were re-verdicted `MET-ENGINEERED(D-…)` this pass
+(REQ-FND-5/6/7/8 + REQ-G1-4 → `D-CAP.2-1`; REQ-OPS-5 → the five OPEN preview/post-tip legs);
+`REQ-ED-17` re-verdicted up to `MET` — D-SPA.25-1's T17 leg discharged green on pr-186
+(VERIF.2). Prior round-4 sums (2026-10-10, 666 rows): eng 513, req 511 — superseded.
+
+## Reconcile sweep — 2026-10-17 (R5REC.1)
+
+**Status-cell normalization (REQ-MEM-1, zero-zombie sweep):** twenty DEFERRALS rows whose
+leading token mis-stated the dated tail got a dated prepend preserving the original cell
+verbatim (`Original cell:` convention — append-only). 16 → `DONE` on committed evidence
+(D-OPS.1-2, D-MAINT.6-1, D-CAP.1-2, D-P0.06-3, D-P0.01-4, D-SPA.12-1/-13-1/-14-1/-15-1/
+-17-1/-18-1/-19-1/-21-1/-22-1/-23-1/-25-1 — all ratified by their VERIF.1/VERIF.2/OPS.2/SEC.3
+dated tails); 4 → `PARTIAL` where the tail records code-half-landed + live-leg-owed
+(D-STB.5b-4 → D-FIX.1-3, D-STB.5b-5 → D-FIX.1-3, D-CAP.1-1 → D-CAP.2-2, D-P1.04-2 → the +30d
+clock leg). Nothing was silently dropped; every not-reached obligation stays OPEN/PARTIAL with
+its named carrier. New checker read: **DONE 193 · OPEN 68 · PARTIAL 29 · WONTFIX 41**.
+
+**Backlog rows this pass:** BL-85 (new — BL38.1 residue: `prod:d5a74cc` stamp delete +
+tombstoned-project purge verify at ~2026-10-30), BL-86 (new — REQ-G1-5's H8 operator-session
+bundle, PARTIAL: 1/~12 items done). Sources appended into existing rows: BL-24 (D-R5OPS.1-1
+first-finding cohort measure + D-R5OPS.1-2 CDN signed-URL repair + REQ-OPS-3), BL-29
+(D-COST.1-1/-2/-3 + REQ-COST-5 — COST.1's billed-actuals/p95/out-of-class lever residuals),
+BL-36 (REQ-OPS-7 — the nightly-golden driver, `GD-R5OPS.1-1` AWAITING), BL-74 (REQ-OPS-6 —
+first scheduled-nightly green is merge-dependent), BL-05 (REQ-MEM-6/7/8 — spec amendments
+routed to R5REC.2).
+
+**ADR revisit-trigger sweep 2026-10-17:** ADR-104..109 states unchanged from the 10-10 read
+(quiet); the only newly-fired trigger is **ADR-110's** round-5 economic posture — the executed
+COST.1 levers landed inside the authorized class, the out-of-class set stays parked on BL-29.
+No superseded ADRs.
+
+**Round-4 + upstream rows unchanged:** BL-01..BL-84 preserved; the round-5 additions are
+BL-85/BL-86 only.
 
 **Verdict-consistency repair (this pass, ADR-109):** `check-backlog.sh` flagged two `MET` rows
 citing OPEN legs (`met-with-owed-leg`). The honest BM-VERDICT-01 verdict —
@@ -63,7 +97,7 @@ and no operator secret; every owed row is carried with an unchanged status and a
 |---|---|---|
 | BL-01 | Integrate round-2 + round-3 + round-4 stacked PRs; diff deployed tree vs merged main (prod runs unmerged code — now also pre-chain by 150+ commits) | X-prs-48-80-unmerged; X-prod-tree-vs-main-diff — landing **REC.3**; the round-4 chain folds into the same bottom-up merge (BL-81) |
 | BL-13 | Unit-economics/pricing ruling: ~$7–10 metered per quick review vs $20/mo plan; metered-flip + paid-account notice | D-PRB.21-1, ADR-038, X-unit-economics |
-| BL-29 | Billed-actuals export confirm (D-OPS.2-1) + warm-floor/HA lever execution (D-OPS.2-2); measured $285.80 list vs ~$50 target | ADR-010, ADR-082 |
+| BL-29 | Billed-actuals export confirm (D-OPS.2-1, D-COST.1-1) + import_preview_p95 re-probe (D-COST.1-2) + out-of-class levers: worker right-size + GKE/SQL/proxy/Redis/HA (D-COST.1-3, REQ-COST-5 soak spec) + warm-floor/HA levers (D-OPS.2-2); measured $285.80→$198.32 list (update 151) vs ~$50 target | ADR-010, ADR-082 |
 | BL-30 | Refund-window go-live ruling (D-DEF.4-3) + R9 refund journey leg (D-DEF.4-1) | ADR-024/071/072 |
 | BL-50 | `GD-ACT.1-1` everyone-flip ruling (D-ACT.1-3) + ASN/IP risk-scorer binding (D-ACT.1-1) | ADR-019/042/043, REQ-GROWTH-10/-15 |
 | BL-51 | `GD-BILL.3-1` re-open ruling + real-money/hosted Portal/pending-email legs (D-BILL.3-1/-2) + OBS.1 fixture re-point | ADR-027/028/029, REQ-BILL-14, REQ-BETA-15 |
@@ -98,12 +132,13 @@ and no operator secret; every owed row is carried with an unchanged status and a
 |---|---|
 | BL-20 | Thread-local question-routing product ruling — **H7 ruling + ≤$5** |
 | BL-23 | Real prod invite consumed by a live signup — **H7** |
-| BL-24 | Canary-injection pause smoke, alert-channel page, CDN signed-URL headers — **H7** |
+| BL-24 | Canary-injection pause smoke, alert-channel page, CDN signed-URL headers + the R5OPS.1 residuals (CDN signed-URL repair D-R5OPS.1-2, organic-cohort first-finding measure D-R5OPS.1-1, REQ-OPS-3) — **H7** |
+| BL-86 | **H8 operator-session bundle** — 1/~12 items done (Resend seed DONE); merge sweep + the operator-held rows stay owed (REQ-G1-5) — **H8** |
 | BL-32 | Interactive browser/device legs + Safari/WebKit N8 CSP walk — **H7, $0** |
 | BL-33 | Live-mode Stripe re-verify — **H7, ≤$50 real money** |
 | BL-34 | Real admin/org-scoped key → usage.reconcile — **H7** |
 | BL-35 | External pen-test procurement + triage — **H7, money** |
-| BL-36 | Nightly golden run + score-floor gate — **H7, ~$150–300/night** |
+| BL-36 | Nightly golden run + score-floor gate + the fail-closed driver (REQ-OPS-7) — **H7, ~$150–300/night; `GD-R5OPS.1-1` AWAITING** |
 | BL-37 | Cross-tenant exposure-window review + disclosure — **H7** |
 | BL-39 | H3 partner-program deferred scope — **H7** |
 | BL-40 | H2 corpus — **H2, ~$100 k** |
@@ -123,9 +158,10 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | Row | Landing |
 |---|---|
 | BL-02 | round-4 + upstream `agent-skills` patch — validator-stuck status cells (D-P0.06-3, D-P0.08b-3; D-OBS.1-3's embedded-pipe truncation now joins the class), check-backlog parser, PHASE-LOG rotation |
-| BL-05 | **REC.2** — fold G2/G3/H3 overrides + ADR deviations into the spec |
+| BL-05 | **R5REC.2** — fold G2/G3/H3 overrides + ADR deviations into the spec + land REQ-MEM-6/7/8's spec amendments |
 | BL-06 | **DOC.1 + DOC.2** — repo/agent docs refresh |
-| — | **SPAREC.2** (next in chain) — whatever the ledger's `nextTicket` names after this pass |
+| BL-87 | **CI mount-settle flake** — `outline.dom.test.tsx` "delete's cited refusal" (`submit()`'s non-null-asserted selector races the leaf mount; second occurrence 2026-10-17, run 39064749916 — first was FUNDED.1's 38963033831) → waitFor + sibling audit — **added this pass** |
+| — | **R5REC.2** (next in chain) — whatever the ledger's `nextTicket` names after this pass |
 
 ### Watch rows (per-trigger, evaluated at each sweep)
 
@@ -141,7 +177,8 @@ and no operator secret; every owed row is carried with an unchanged status and a
 | Row | Note |
 |---|---|
 | BL-46 | G3 early read on zero partner data — ACCEPTED 2026-09-23 |
-| BL-74 | OBS.1 evidence windows: 24 h soak + first nightly JOURNEY.1 on deployed SHA (**D-OBS.1-3 — now sole home**; still owed: reseat write + clean N4/N9 sweep) + N4 selector-drift fix + ADR-053 |
+| BL-74 | OBS.1 evidence windows: 24 h soak + first nightly JOURNEY.1 on deployed SHA (**D-OBS.1-3 — now sole home**; still owed: reseat write + clean N4/N9 sweep) + N4 selector-drift fix + ADR-053 + REQ-OPS-6 (first scheduled-nightly green is merge-dependent) |
+| BL-85 | BL38.1 residue — `prod:d5a74cc` short-sha stamp delete (operator write) + tombstoned-project purge verify ~2026-10-30 — **added this pass** |
 | BL-73 | 33 MISSING spec-scheduled 1.x/Later rows + REQ-OBJ-9/-14 — REC.2 confirms the schedule |
 | BL-83 | GATE-ACCEPT.SPA's eight signed deviations → the six PARTIAL matrix rows (status `accepted`) — **added this pass** |
 
