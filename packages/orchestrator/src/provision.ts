@@ -12,6 +12,7 @@ import { applyTransition } from "./transition.js";
 import { firstConflict, isWriterWorkflow, lockKeys, HOLDING_STATES, type LockKey } from "./locks.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend } from "./spend.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { SqlClient } from "./tx.js";
 import type { RunAllowlistData, RunContextData, WebToolPolicyData } from "./resolver.js";
 
@@ -253,6 +254,9 @@ export async function provisionRun(
     });
     await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
   });
+  // REQ-ENG-2 — the launch-failed terminal commit ended the run; republish the committed high-water
+  // so its last batch wakes the SSE tail instead of riding the safety poll.
+  await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
   return { ok: false, reason: "launch_failed", attempts: MAX_LAUNCH_ATTEMPTS };
 }
 

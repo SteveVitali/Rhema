@@ -26,6 +26,7 @@ import {
 } from "@rhema/mirror";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { failRun } from "./internal-api.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import { scheduleRunTerminalNotification } from "./notifications.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
@@ -219,6 +220,11 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         reason: "account suspended — delivery withheld until the balance is non-negative",
       };
     }
+    // REQ-ENG-2 (D-SLO.1-6) — republish the committed high-water seq so the terminal batch
+    // (run.state_changed + cost.final + the workflow consequences) wakes the SSE tail after commit;
+    // without it the batch's only wakeup fired inside the uncommitted tx and the tail rode the
+    // 10 s safety poll (the measured ~2.2 s terminal flushes).
+    await publishCommittedEventHighWater(deps, workspaceId, runId);
     await deps.heartbeats.clear(runId);
     // RES.2 — the delivery path never scheduled the terminal notification (completeRun/failRun/gate-expiry
     // all do): the `run_finished` email + in-app card ride this outbox row, and for an Unverified run the

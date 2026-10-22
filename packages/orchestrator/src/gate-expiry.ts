@@ -13,6 +13,7 @@ import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
 import { NOTIFY_QUEUE, scheduleGateReminders, scheduleRunTerminalNotification } from "./notifications.js";
 import { conditionalResolve, writeDecision, emitGateResolved } from "./gate-resolution.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
 
@@ -150,6 +151,8 @@ export async function handleGateExpiry(
     );
   }
   if (box.terminalOutcome && box.runId) {
+    // REQ-ENG-2 — republish the committed high-water so the terminal batch wakes the SSE tail.
+    await publishCommittedEventHighWater(deps, args.workspaceId, box.runId);
     await scheduleRunTerminalNotification(deps, {
       runId: box.runId,
       workspaceId: args.workspaceId,

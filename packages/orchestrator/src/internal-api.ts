@@ -68,7 +68,7 @@ import {
   settleMeteredDebit,
   type DebitMode,
 } from "./spend.js";
-import { MAX_EVENT_BATCH } from "./event-store.js";
+import { MAX_EVENT_BATCH, publishCommittedEventHighWater, type RunEventPublisher } from "./event-store.js";
 
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
 export interface OrchestratorDeps {
@@ -84,6 +84,15 @@ export interface OrchestratorDeps {
    */
   readonly systemTxRunner?: TxRunner;
   readonly eventWriter: EventWriter;
+  /**
+   * REQ-ENG-2 (D-SLO.1-6) — the post-commit event wakeup. The `eventWriter`'s own publish fires
+   * inside the uncommitted transaction; every run-end terminal path re-publishes the committed
+   * high-water seq through THIS seam after its commit resolves, so a run's terminal batch reaches
+   * an attached SSE tail on a wakeup instead of the 10 s safety poll. Bound to the same fan-out
+   * bus the writer publishes on (Redis live); unset ⇒ no republish (the pre-fix shape — terminal
+   * batches ride the poll, still correct).
+   */
+  readonly eventPublisher?: RunEventPublisher;
   readonly clock: Clock;
   readonly ids: IdFactory;
   readonly heartbeats: HeartbeatStore;
@@ -1471,6 +1480,8 @@ export async function failStep(
     });
     // post-commit side effects for a terminalized run (the heartbeat stops; the failed notice queues).
     if (terminalCode) {
+      // REQ-ENG-2 — republish the committed high-water so the terminal batch wakes the SSE tail.
+      await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
       await deps.heartbeats.clear(args.runId);
       await scheduleRunTerminalNotification(deps, {
         runId: args.runId,
@@ -1854,6 +1865,9 @@ export async function finalizeRun(
       await tx.query(`update personas set active_run_id = null where id = $1`, [runRow.persona_id]);
     }
   });
+  // REQ-ENG-2 — republish the committed high-water so the terminal batch (run.state_changed +
+  // cost.final + the workflow consequences) wakes the SSE tail instead of riding the safety poll.
+  await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
   await deps.heartbeats.clear(args.runId);
   // the run token is revoked implicitly: a terminal state rejects every further internal call (see `fence`).
   await scheduleRunTerminalNotification(deps, { runId: args.runId, workspaceId: args.workspaceId, outcome: "completed" });
@@ -1921,6 +1935,8 @@ export async function failRun(
     await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
   });
+  // REQ-ENG-2 — republish the committed high-water so the failed run's terminal batch wakes the tail.
+  await publishCommittedEventHighWater(deps, args.workspaceId, args.runId);
   await deps.heartbeats.clear(args.runId);
   await scheduleRunTerminalNotification(deps, { runId: args.runId, workspaceId: args.workspaceId, outcome: "failed" });
   return { ok: true, state: "failed" };

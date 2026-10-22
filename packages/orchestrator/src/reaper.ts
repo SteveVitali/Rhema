@@ -12,6 +12,7 @@ import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS } from "./queue.js";
 import { scheduleGateNotifications, scheduleRunTerminalNotification } from "./notifications.js";
 import { HEARTBEAT_STALE_MS } from "./heartbeat.js";
+import { publishCommittedEventHighWater } from "./event-store.js";
 import type { SqlClient } from "./tx.js";
 
 export const MAX_REENQUEUES_PER_STEP = 2; //  ≤2 re-enqueues per step; the third → resume_partial (§12.4)
@@ -119,6 +120,11 @@ export async function reap(
     // side effects outside the tx: stop the stale task, clear its heartbeat, and (on re-enqueue) schedule
     // run.resume after the StopTask grace with a per-run singleton key.
     await deps.heartbeats.clear(hb.runId);
+    if (outcome.action === "cancelled") {
+      // REQ-ENG-2 — the reaper completed a terminal settle; republish the committed high-water so the
+      // run's last batch wakes the SSE tail instead of riding the safety poll.
+      await publishCommittedEventHighWater(deps, hb.workspaceId, hb.runId);
+    }
     if (outcome.action === "reenqueued") {
       await deps.queue.send(
         RUN_JOBS.resume,

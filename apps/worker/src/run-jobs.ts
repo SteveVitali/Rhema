@@ -22,6 +22,7 @@ import {
   sweepStrandedRuns,
   generateWalkthrough,
   finalizeRun,
+  publishCommittedEventHighWater,
   figureRenderJob,
   type FigureRenderOutcome,
   type GenerateWalkthroughResult,
@@ -265,7 +266,11 @@ export async function handleRunCancel(deps: WorkerRunDeps, job: RunJobPayload): 
   if (state === "cancelling") {
     await deps.heartbeats.requestCancel(job.runId); // the next heartbeat returns cancel_requested (§12.4)
   }
-  if (state === "cancelled") await deps.heartbeats.clear(job.runId);
+  if (state === "cancelled") {
+    // REQ-ENG-2 — republish the committed high-water so the terminal batch wakes the SSE tail.
+    await publishCommittedEventHighWater(deps, job.workspaceId, job.runId);
+    await deps.heartbeats.clear(job.runId);
+  }
   return { runId: job.runId, state };
 }
 
@@ -288,7 +293,11 @@ export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPaylo
     await settleTerminal(deps, tx, { runId: job.runId, workspaceId: job.workspaceId, billingAccountId: row.billing_account_id, holdLedgerId: row.hold_ledger_id });
     return "cancelled";
   });
-  if (state === "cancelled") await deps.heartbeats.clear(job.runId);
+  if (state === "cancelled") {
+    // REQ-ENG-2 — republish the committed high-water so the terminal batch wakes the SSE tail.
+    await publishCommittedEventHighWater(deps, job.workspaceId, job.runId);
+    await deps.heartbeats.clear(job.runId);
+  }
   return { runId: job.runId, state };
 }
 

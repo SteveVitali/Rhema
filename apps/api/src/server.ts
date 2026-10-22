@@ -278,6 +278,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const deps: ApiDeps & BetaApiDeps = {
     txRunner,
     eventWriter: runEventWriter, // post-commit user-event fan-out over Redis
+    // REQ-ENG-2 (D-SLO.1-6) — the post-commit republish seam the run-end paths use to wake the SSE
+    // tail with the COMMITTED high-water seq (the writer's own publish fires pre-commit).
+    eventPublisher: bus,
     clock,
     ids,
     heartbeats: new RedisHeartbeatStore(redis),
