@@ -68,7 +68,7 @@ the metered-debit notice send (`GD-PREAUTH-ACTS.R6`, `EFFECTIVE_DATE=2026-12-01`
   spa-env, dom-contract).
 - `check-build-memory.sh` — warnings only (0 violations); `check-append-only.mjs --base
   dc7fb15` OK.
-- CI: `ci: pass #207@1c8997d` (run 39729566641 — all seven legs + `ci-pass` anchor at the
-  PR-open head); the post-impl closeout head re-runs the suite on push.
+- CI: `ci: pass #207@3605335` (run 39763340702 — all seven legs + `ci-pass` anchor on the
+  final closeout head incl. the stage-fact revert); PR-open head `1c8997d` also green.
 - Live: preview suite + ssr/spa renderer legs + provenance + smoke + notice send as above —
   `$0` third-party spend on every leg.

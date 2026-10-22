@@ -34,8 +34,9 @@
     (206 commits; the whole round-5 + round-6 pre-deploy code).
   - IAP tunnel target for prod reads/writes: `rhema-prod-proxy-3ms6` (us-central1-c) →
     `10.46.0.3:5432`; system-role `postgres` DSN (never the app role — FORCE RLS).
-- **ci:** pass #207@`1c8997d` (run 39729566641 — all seven legs + `ci-pass` anchor, the
-  PR-open head); post-impl closeout head rides the same fast-path/full-suite dispatch.
+- **ci:** pass #207@`3605335` (run 39763340702 — all seven legs + `ci-pass` anchor, the
+  final closeout head incl. the `3d2852e` stage revert); PR-open head `1c8997d` also
+  green (run 39729566641); boundary JSON `docs/build/logs/ci-R6DEP.1.json`.
 
 ## Deferrals read
 
