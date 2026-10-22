@@ -25,8 +25,9 @@
   - one canary `is_test` run with a planted egress-denied spike (R5OPS.1 `canary-pause.mjs`
     precedent; residue-free rollback).
 - **Size budget:** ~300 changed lines (drivers + runbooks + evidence).
-- **ci:** pass #208@`609e469` (run 39807844056 — all seven legs + `ci-pass` anchor);
-  boundary JSON `docs/build/logs/ci-R6OPS.1.json`.
+- **ci:** pass #208@`a3a7df0` (run 39824492559 — all seven legs + `ci-pass` anchor on the
+  final closeout head); code head `609e469` also green (run 39807844056); boundary JSON
+  `docs/build/logs/ci-R6OPS.1.json`.
 
 ## Deferrals read
 
@@ -166,8 +167,8 @@
 - 2026-10-22T17:4xZ — **closeout**: `ci: pass #208@609e469` (run 39807844056 — all seven
   legs + `ci-pass` anchor on the pushed head; boundary `logs/ci-R6OPS.1.json`);
   `check-build-memory.sh` warnings-only; `check-append-only.mjs --base 1905cc4` OK;
-  LEDGER/BUILD_INDEX/PR-body landed; pushed + PR body set. mergePolicy=OPERATOR — never
-  merged by this run.
+  LEDGER/BUILD_INDEX/PR-body landed; pushed + PR body set; closeout head `a3a7df0` CI
+  green (run 39824492559). mergePolicy=OPERATOR — never merged by this run.
 
 ## Gap table
 
@@ -226,4 +227,5 @@ All five REQ-DEP-2 deliverables landed live on 2026-10-22:
 
 Verification: `pnpm turbo build lint typecheck` 135/135; `pnpm test` 514 files / 6,052
 pass / 4 skip / 0 fail; six `check:*` green; build-memory warnings-only; append-only vs
-`1905cc4` OK; **ci: pass #208@`609e469`** (run 39807844056, all seven legs + anchor).
+`1905cc4` OK; **ci: pass #208@`a3a7df0`** (run 39824492559, all seven legs + anchor;
+  code head `609e469` green at run 39807844056).
