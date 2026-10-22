@@ -142,6 +142,43 @@ phrasing → ADR + FIRST-LINE report flag. Any act that WOULD need a record outs
   `dev.rhema.tools`/`staging.rhema.tools` resolve nothing (no delegation). The registrar path is
   operator-only → wildcard-DNS arm elected (see DNS scope above); **zero records will be
   created.**
+- 2026-10-22T22:2xZ — code + tests + ADR-120 landed (`65d3dec`, pushed); **PR #211 opened** →
+  stage A stack `pr-211`, stage B stack `pr-212`.
+- 2026-10-22T22:2xZ — **stage A bring-up:** `gcloud compute addresses create rhema-pr-211-lb
+  --global` → RESERVED `136.81.247.180` (out-of-band address the program ADOPTS via
+  `GlobalAddress.get` — not managed; deleted explicitly at teardown).
+  **Live finding — sslip.io name shape:** `pr-211.136.81.247.180.sslip.io` resolves to
+  `211.136.81.247` — the service extracts the first four *numeric* labels (`pr-211` → `211`
+  corrupts the octets). Digit-free-prefix shape verified via `dig` + dns.google:
+  `posture.136.81.247.180.sslip.io`, `api.posture.…`, `uc.posture.…` → `136.81.247.180` ✓.
+  **The three hosts (the "preview subdomain" record set — descriptive only, no registrar act):**
+  `posture.136.81.247.180.sslip.io` (app) · `api.posture.136.81.247.180.sslip.io` (api) ·
+  `uc.posture.136.81.247.180.sslip.io` (userContent). `preview-stack.mjs init pr-211` → config
+  (project/region/gitSha `65d3dec`…/protocolsVersion/postureLbAddress/postureDomains JSON/
+  googleOauthClientId) → `resend-pull` (shared key stdin→`rhema:resendApiKey`, emailFrom set).
+- 2026-10-22T22:3xZ — targeted `up --target <AR repo URN>`: `rhema-pr-211-images` created,
+  `rhema-journeys-sa` imported, `GlobalAddress.get` read clean, `lbIpAddress=136.81.247.180` +
+  `dnsRecords` outputs name the three hosts → the same IP (the adoption is live-verified at the
+  output layer). Image-set build `d56dcb16-eeca-41b5-a825-33ddc405b59d` submitted (all 10 at
+  `65d3dec`, `_TAG=r6post-2`, repo `rhema-pr-211`).
+- 2026-10-22T22:3xZ — build SUCCESS (~11 min); all 10 digests pinned to `rhema:serviceImages` +
+  `runTaskImageDigest` + `proxyImage` (+ AppArmor pair). Incidents worked honestly, all transient:
+  (a) `api-sa` create 429'd on the per-minute SA quota → pass 2 converged; (b) the pr-207 api race
+  recurred (revision 00001 booted before the migrate Job created `rhema` — `pg-boss` `database
+  "rhema" does not exist` ×6 retries → startup TCP probe fail): executed `rhema-pr-211-migrate-
+  c4bec74` (58 migrations), wedged revision 00001 needed a forced 00002
+  (`gcloud run services update --update-labels`, the R6DEP.1 recipe — label drift re-converged by
+  the next `up`), pass 3 landed LB NEGs→backends→urlmap→https-proxy→FR bound to `136.81.247.180`.
+  **Stack converged: 191 resources, `lbIpAddress=136.81.247.180`.**
+- 2026-10-22T22:5xZ — `seed-invite` → `prv-211-test` (execution `…-rp7pm`). Managed cert
+  `rhema-pr-211-cert-af5caf4` PROVISIONING all three SANs against the live FR.
+- 2026-10-22T22:5xZ — **stage B withhold, exercised live:** `rhema-nonprod-stripe-secret`
+  re-probed → still `NOT_FOUND` (project holds only `rhema-prod-stripe-*` + the pr-211 stack's
+  own). `preview-stack.mjs init pr-212` → `config extraRequiredSecrets=stripe-secret` →
+  `stripe-pull pr-212` → **`NOT_FOUND` → the named-prerequisite refusal, "Nothing was changed"**
+  — the fail-closed path the withhold rides on, verified on a live owned stack. `rm pr-212`
+  (registration only — zero resources). N9 is withheld, not failed — the dated re-owe lands on
+  the three rows at closeout; the machinery to run it is committed + one `stripe-pull` away.
 
 ## Gap table
 

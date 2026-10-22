@@ -2994,8 +2994,11 @@ const R10_KEEPALIVE: StepFn = async (ctx) => {
   }
 
   // the away hop — the rail's Home link to /app, a non-Page route: the Page unmounts, the
-  // registry entry goes idle, the 120 s TTL starts.
-  const home = page.locator('a[href="/app"]').first();
+  // registry entry goes idle, the 120 s TTL starts. F-R6POST.2-1 (found live on pr-211): the
+  // shell emits TWO a[href="/app"] — the phonebar fallback (`display:none` ≥768px) precedes the
+  // rail's ⌂ in DOM order, so an unscoped .first() resolves to a hidden node at desktop width
+  // and click() waits for visibility forever. `:visible` picks whichever the viewport shows.
+  const home = page.locator('a[href="/app"]:visible').first();
   if ((await home.count()) === 0) {
     throw new Error("R10.keepalive — the IDE rail carries no a[href=\"/app\"] home link");
   }
