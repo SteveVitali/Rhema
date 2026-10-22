@@ -163,7 +163,7 @@ the verdict rule are unchanged.
   min-instance Cloud Run + 2 Cloud Builds). **Verification:** turbo 135/135 · vitest 511 files /
   6,033 pass / 4 skip / 0 fail (privsep.docker flaked once on a registry.npmjs.org 503 mid-outage;
   green on retry) · all six check:* green · check-build-memory 0 violations · append-only vs
-  `3c93544` OK · **ci: pass #206@`3fa7d4d`** (run 39701347407 — all seven legs + `ci-pass` anchor).
+  `3c93544` OK · **ci: pass #206@`1cc2bae`** (run 39723364615 — all seven legs + `ci-pass` anchor; intermediate closeout head `f31455b` flaked once on the driver 1ms watch-window race — fixed `1cc2bae`, see PHASE LOG).
 
 ## Gap table
 
@@ -208,7 +208,7 @@ the verdict rule are unchanged.
     `00004-k7j` cold-start `exit(1)` at 01:31:17, a second `exit(1)` at 02:08:29, and 82
     `timeout exceeded when trying to connect` lines in the final window.
 - `docs/build/logs/ci-R6SOAK.1.json` — CI boundary read (gitignored by convention): all seven
-  legs pass on `3fa7d4d`, run 39701347407.
+  legs pass on the final head `1cc2bae`, run 39723364615 (the `f31455b` read flaked once on the worker-soak watch-window race — fixed before this read).
 - `pgboss.job` ledger (verbatim rows folded into `worker-soak.json` `pgboss` fields):
   pickup latencies 16–26 min; final job states `failed`/`active`/`created`; `retry_count=2`
   exhaustion; `run.cancel` failures on iters 2/3/4.
