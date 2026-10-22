@@ -13,6 +13,7 @@ import {
 } from "@rhema/orchestrator/testing";
 import { InMemoryContentStore } from "@rhema/mirror";
 import type { ConversionResult } from "@rhema/contracts";
+import { USERCONTENT_URL_TTL_SECONDS } from "@rhema/contracts";
 import type { FetchPort, FetchResult } from "@rhema/ingest";
 import { createApp, type Principal } from "./index.js";
 import type { IngestBlobs } from "./ingest-routes.js";
@@ -200,6 +201,51 @@ describe("discover → confirm → sync → preview (REQ-INGEST-3/4/5)", () => {
     const raw = await app.request(`/voices/${personaId}/samples/${itemId}/raw`);
     expect(raw.status).toBe(200);
     expect(await raw.text()).toContain("readable essay body");
+  });
+
+  // R6UCD.1 (REQ-POST-7, ADR-113) — when the mint seam is bound the original_key leg answers a
+  // 302 to a short-lived v4 signed GET instead of proxying bytes; the row's tenant scope IS the
+  // check. The unbound-seam app above keeps exercising the proxy fallback.
+  it("the /raw original_key leg 302s to a minted signed URL when the mint seam is bound (R6UCD.1)", async () => {
+    const calls: Parameters<import("@rhema/contracts").UserContentSigner["signGet"]>[0][] = [];
+    const signed = createApp({
+      ...deps,
+      principal: () => principal(),
+      db: db.client,
+      contentStore: store,
+      contentStoreFor: () => store,
+      importConverter: { preview: async () => conversion },
+      ingestFetcher: fetcher,
+      ingestBlobs: blobs,
+      inlineSync: true,
+      userContentSigner: {
+        async signGet(a) {
+          calls.push(a);
+          return {
+            url: `https://storage.googleapis.com/rhema-user-content/${a.key}?X-Goog-Signature=x`,
+            expiresAt: Date.now() + a.expiresSeconds * 1_000,
+          };
+        },
+      },
+    });
+    const personaId = await createVoice();
+    const cid = await linkUrl(personaId);
+    const conf = await post(`/voices/${personaId}/connections/${cid}/confirm`, {
+      items: [{ externalId: PAGE, include: true }],
+    });
+    expect(conf.status).toBe(200);
+    const itemId = (
+      (await db.client.query(`select id from discovered_items where connection_id = $1`, [cid]))
+        .rows[0] as { id: string }
+    ).id;
+    const raw = await signed.request(`/voices/${personaId}/samples/${itemId}/raw`);
+    expect(raw.status).toBe(302);
+    const loc = raw.headers.get("location")!;
+    expect(loc).toContain("ingest-originals/");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.expiresSeconds).toBeLessThanOrEqual(USERCONTENT_URL_TTL_SECONDS);
+    expect(calls[0]!.responseType).toBe("application/octet-stream");
+    expect(calls[0]!.responseDisposition).toBe("attachment");
   });
 
   it("the include/omit toggle drops the item from the corpus without deleting bytes", async () => {

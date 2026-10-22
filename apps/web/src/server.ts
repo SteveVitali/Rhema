@@ -315,7 +315,9 @@ export function createWebApp(deps: WebDeps): Hono {
   })();
   const cspFor = (nonce: string) =>
     `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; ` +
-    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'${collabWsSource ? ` ${collabWsSource}` : ""} ${gcsUploadSource}; font-src 'self'; ` +
+    // R6UCD.1 (ADR-113): img-src also admits the GCS origin — an api-minted v4 URL is where an
+    // allowlisted image is actually served from now; the inert usercontent host stays listed.
+    `img-src 'self' https://usercontent.rhema.tools ${gcsUploadSource} data:; connect-src 'self'${collabWsSource ? ` ${collabWsSource}` : ""} ${gcsUploadSource}; font-src 'self'; ` +
     `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; ` +
     // BILL.3 (ADR-027): a form submission whose response redirects to a Stripe-hosted page is checked
     // against `form-action` — the bare `'self'` blocked every purchase hand-off (the run-sheet Add

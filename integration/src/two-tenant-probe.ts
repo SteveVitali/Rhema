@@ -28,6 +28,7 @@ import {
   type OrchestratorTestDb,
 } from "@rhema/orchestrator/testing";
 import { USER_SERVING_ROLE } from "@rhema/db";
+import { quarantineKey, convertedResultKey, USERCONTENT_URL_TTL_SECONDS, type UserContentSigner } from "@rhema/contracts";
 import {
   createApp,
   createScopedDb,
@@ -288,6 +289,9 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
     // One app for both tenants — the prod binding verbatim: the ALS carries the principal per
     // request (`sessionScopedPrincipal`), `deps.db` is the scoped client, `txRunner` pins the role.
     const deps = makeDeps(db);
+    // R6UCD.1 — the mint seam bound to a recording fake (prod binds `createGcsV4UserContentSigner`;
+    // the v4 wire is Stage-B). A foreign-key mint attempt must never even ASK the signer.
+    const mintCalls: Parameters<UserContentSigner["signGet"]>[0][] = [];
     const app = createApp({
       ...deps,
       principal: sessionScopedPrincipal,
@@ -295,6 +299,15 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
       // DEF.4 — the refund write leg runs under the harshest posture (flag OPEN): a foreign id must
       // still 404 and write nothing — the workspace predicate + RLS, not the flag, is the boundary.
       refundWindowMode: "open",
+      userContentSigner: {
+        async signGet(a) {
+          mintCalls.push(a);
+          return {
+            url: `https://storage.googleapis.com/probe-uc/${a.key}?response-content-disposition=${encodeURIComponent(a.responseDisposition)}&response-content-type=${encodeURIComponent(a.responseType)}&X-Goog-Signature=probe`,
+            expiresAt: Date.now() + a.expiresSeconds * 1_000,
+          };
+        },
+      },
     });
     const principalOf = (t: TenantMarkers): Principal => ({
       userId: t.userId,
@@ -429,6 +442,73 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
         ownDataSanity.push(
           `a: own refund-eligible run did not refund under flag-open (status ${own.status})`,
         );
+      }
+    }
+
+    // ---- the mint leg (R6UCD.1; REQ-POST-7; ADR-113; invariant 13): `GET /usercontent/sign`
+    // must never sign a key under a foreign tenant's prefix — foreign `quarantine/<ws>/<id>` +
+    // `converted/<ws>/<id>.json` queries answer 404 with NO url and the signer is never even
+    // asked — while the tenant's own key mints the §13.3-bound short-lived URL. The route is also
+    // in the GET census above (a keyless probe answers the same uniform 404). ----
+    const mintCallsBefore = mintCalls.length;
+    for (const [as, foreign, tag] of [
+      [a, b, "a"],
+      [b, a, "b"],
+    ] as const) {
+      for (const key of [
+        quarantineKey(foreign.workspaceId, "u_probe"),
+        convertedResultKey(quarantineKey(foreign.workspaceId, "u_probe")),
+      ]) {
+        writesProbed++;
+        const res = await requestAs(as, `/usercontent/sign?key=${encodeURIComponent(key)}`);
+        const body = await res.text().catch(() => "");
+        if (res.status !== 404 || /"url"\s*:/.test(body)) {
+          findings.push({
+            route: "GET /usercontent/sign",
+            asTenant: tag,
+            status: res.status,
+            leaked: [`foreign key ${key} did not answer a clean 404 (url in body: ${/"url"\s*:/.test(body)})`],
+          });
+        }
+        // the key itself was caller-supplied — any OTHER foreign marker in the body is a leak.
+        const hits = scanForMarkers(body, foreign.all).filter((m) => m !== foreign.workspaceId);
+        if (hits.length) {
+          findings.push({ route: "GET /usercontent/sign", asTenant: tag, status: res.status, leaked: hits });
+        }
+      }
+    }
+    if (mintCalls.length !== mintCallsBefore) {
+      findings.push({
+        route: "GET /usercontent/sign",
+        asTenant: "census",
+        status: 0,
+        leaked: ["the signer was invoked for a foreign key — signing MUST follow the tenant check"],
+      });
+    }
+    {
+      writesProbed++;
+      const key = quarantineKey(a.workspaceId, "u_probe");
+      const res = await requestAs(a, `/usercontent/sign?key=${encodeURIComponent(key)}`);
+      if (res.status !== 200) {
+        ownDataSanity.push(`a: own quarantine key did not mint (status ${res.status})`);
+      } else {
+        const body = (await res.json()) as { url?: string; expiresAt?: number };
+        const last = mintCalls[mintCalls.length - 1];
+        if (!last || last.key !== key) {
+          ownDataSanity.push("a: the mint did not bind the requested key");
+        } else if (last.expiresSeconds > USERCONTENT_URL_TTL_SECONDS) {
+          ownDataSanity.push(`a: minted TTL ${last.expiresSeconds}s exceeds the ${USERCONTENT_URL_TTL_SECONDS}s bound`);
+        } else if (
+          last.responseType !== "application/octet-stream" ||
+          last.responseDisposition !== "attachment"
+        ) {
+          ownDataSanity.push(
+            "a: the default mint did not bind the §13.3 download policy (octet-stream + attachment)",
+          );
+        }
+        if (!body.url || !body.expiresAt) {
+          ownDataSanity.push("a: the mint body lacked url/expiresAt");
+        }
       }
     }
 

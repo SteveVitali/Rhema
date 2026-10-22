@@ -209,6 +209,9 @@ export function createData(args: DataArgs): Data {
       // and an EXPLICIT origin list (the app origin + operator-added `rhema:uploadCorsOrigins`) —
       // never a wildcard. Landing dark: nothing else reads this block and the CSP admission is
       // likewise inert until a flipped surface calls /bff/import/presign.
+      // R6UCD.1 (ADR-113) — + GET: a browser fetch() of an api-minted v4 URL (e.g. the quality
+      // drawer's pdf.js leg) is a CORS read on storage.googleapis.com — same explicit origins, and
+      // the exposed headers a ranged reader needs. Additive; ships under GD-DEPLOY.R6.
       ...(b === "user-content"
         ? {
             cors: [
@@ -217,8 +220,15 @@ export function createData(args: DataArgs): Data {
                   ...(cfg.domains ? [`https://${cfg.domains.app}`] : [`https://${stack}.rhema.dev`]),
                   ...(args.uploadCorsOrigins ?? []),
                 ],
-                methods: ["PUT"],
-                responseHeaders: ["Content-Type", "x-goog-content-length-range"],
+                methods: ["PUT", "GET"],
+                responseHeaders: [
+                  "Content-Type",
+                  "Content-Disposition",
+                  "Content-Length",
+                  "Accept-Ranges",
+                  "Content-Range",
+                  "x-goog-content-length-range",
+                ],
                 maxAgeSeconds: 3600,
               },
             ],

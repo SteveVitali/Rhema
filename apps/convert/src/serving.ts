@@ -11,8 +11,12 @@
 // all and on every auth cookie being host-only `__Host-` (apps/api/src/auth.ts), which the browser
 // refuses to let any subdomain shadow or receive.
 
-/** Types safe to render inline from the usercontent origin (images only at beta). Everything else downloads. */
-export const RENDERED_ALLOWLIST = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+import { USERCONTENT_RENDERED_TYPES, userContentResponsePolicy } from "@rhema/contracts";
+
+/** Types safe to render inline from the usercontent origin (images only at beta). Everything else
+ *  downloads. Re-derived from the contracts module (ADR-113): the SAME allowlist now governs the
+ *  legacy origin-header path here and the api's minted-URL `response-content-*` params. */
+export const RENDERED_ALLOWLIST: readonly string[] = USERCONTENT_RENDERED_TYPES;
 
 /**
  * The usercontent origin: a distinct host on the app's own zone (amended 2026-09-17 — was a separate
@@ -26,13 +30,15 @@ export const USERCONTENT_ORIGIN = {
   isSubresourceOfApp: false,
 } as const;
 
-/** Response headers for serving an uploaded object of `contentType` from the usercontent origin. */
+/** Response headers for serving an uploaded object of `contentType` from the usercontent origin.
+ *  The type/disposition decision is the shared `userContentResponsePolicy` (ADR-113) — the
+ *  minted-URL path signs the same two values in; this function additionally emits the headers GCS
+ *  cannot (nosniff + CORP + no-store) for the legacy origin-serving shape. */
 export function servingHeadersFor(contentType: string): Record<string, string> {
-  const base = (contentType ?? "").split(";")[0]!.trim().toLowerCase();
-  const rendered = RENDERED_ALLOWLIST.includes(base);
+  const policy = userContentResponsePolicy(contentType);
   return {
-    "Content-Type": rendered ? base : "application/octet-stream",
-    "Content-Disposition": rendered ? "inline" : "attachment",
+    "Content-Type": policy.contentType,
+    "Content-Disposition": policy.contentDisposition,
     "X-Content-Type-Options": "nosniff",
     "Cross-Origin-Resource-Policy": "same-site",
     "Cache-Control": "private, no-store",

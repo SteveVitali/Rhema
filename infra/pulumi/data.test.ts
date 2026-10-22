@@ -20,8 +20,17 @@ describe("SPA.13 — user-content bucket CORS for the browser's direct-PUT uploa
     expect(SRC.match(/cors:/g) ?? []).toHaveLength(1);
   });
 
-  it("admits PUT only — never a broad method list", () => {
-    expect(SRC).toContain('methods: ["PUT"]');
+  it("admits PUT + GET only — never a broad method list", () => {
+    // SPA.13 PUT (presign→direct-PUT) + R6UCD.1 GET (a browser fetch() of an api-minted v4 URL is
+    // a CORS read on storage.googleapis.com — the same explicit origins govern both).
+    expect(SRC).toContain('methods: ["PUT", "GET"]');
+    expect(SRC).not.toMatch(/methods:\s*\[[^\]]*"\*"/);
+  });
+
+  it("R6UCD.1 — the GET leg exposes the headers a ranged browser reader needs", () => {
+    for (const h of ['"Content-Disposition"', '"Content-Length"', '"Accept-Ranges"', '"Content-Range"']) {
+      expect(SRC).toContain(h);
+    }
   });
 
   it("admits the signed-URL extension headers the v4 presigner requires", () => {

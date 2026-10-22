@@ -31,6 +31,7 @@ import { createSheetContextRoutes } from "./sheet-context.js";
 import { createSettingsRoutes } from "./settings-routes.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createIngestRoutes, type IngestApiDeps, type IngestBlobs } from "./ingest-routes.js";
+import { createUserContentRoutes } from "./usercontent-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAccountExportRoutes } from "./account-export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
@@ -125,6 +126,8 @@ export { createVoiceRoutes } from "./voice-routes.js";
 export type { VoiceApiDeps } from "./voice-routes.js";
 export { createIngestRoutes, INGEST_JOBS, RECONSTRUCT_PRICING } from "./ingest-routes.js";
 export type { IngestApiDeps, IngestBlobs } from "./ingest-routes.js";
+export { createUserContentRoutes } from "./usercontent-routes.js";
+export type { UserContentApiDeps } from "./usercontent-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
@@ -289,6 +292,12 @@ export interface BetaApiDeps {
    * session download routes answer 503 `download_unavailable`.
    */
   exportPresign?: (objectKey: string) => Promise<string> | string;
+  /**
+   * R6UCD.1 (REQ-POST-7, ADR-113) — the user-content mint seam (GCS v4 GET presigner over the
+   * user-content bucket). Mounts `GET /usercontent/sign` and re-points `/voices/…/raw`'s
+   * `original_key` leg to a 302. Unset ⇒ the mint route answers 503 `usercontent_unavailable`.
+   */
+  userContentSigner?: import("@rhema/contracts").UserContentSigner;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -462,7 +471,16 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ...(deps.ingestBlobs ? { ingestBlobs: deps.ingestBlobs } : {}),
         ...(deps.importConverter ? { converter: deps.importConverter } : {}),
         ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
+        ...(deps.userContentSigner ? { userContentSigner: deps.userContentSigner } : {}),
         ...(deps.inlineSync ? { inlineSync: true } : {}),
+      }),
+    );
+    // R6UCD.1 — the user-content mint route (`GET /usercontent/sign` — ADR-113, REQ-POST-7).
+    app.route(
+      "/",
+      createUserContentRoutes({
+        principal: deps.principal,
+        ...(deps.userContentSigner ? { userContentSigner: deps.userContentSigner } : {}),
       }),
     );
     // PRB.12 — the analytics client mint (CLIENT_ANALYTICS_EVENTS only — server-owned facts are never
