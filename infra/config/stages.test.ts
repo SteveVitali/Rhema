@@ -140,12 +140,15 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
     expect(c.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
   });
 
-  it("preview: the worker carries the R6SOAK.1 right-size CANDIDATE shape (0.5/512Mi, boost kept)", () => {
+  it("preview: the worker carries the R6SOAK.1 right-size CANDIDATE shape (0.5/512Mi, throttled)", () => {
     // REQ-ENG-7 / D-COST.1-3 (a) — the pr-<n> soak measures exactly this shape; the prod pin
-    // above stays at 1 vCPU/1Gi until the soak-green flip lands (R6INF.1).
+    // above stays at 1 vCPU/1Gi until the soak-green flip lands (R6INF.1). Live finding
+    // (pr-206, 2026-10-22): Cloud Run refuses `limits.cpu < 1` with `cpuIdle:false`, so the
+    // 0.5 vCPU candidate is ONLY provisionable request-billed — i.e., throttled. That IS the
+    // D-P0.15h-3 posture the soak reproduces; the billing flip is load-bearing, not optional.
     const w = STAGES.preview.cloudRun.services.worker;
     expect(w.minInstances).toBe(1);
-    expect(w.cpuBilling).toBe("instance");
+    expect(w.cpuBilling).toBe("request");
     expect(w.maxInstances).toBe(1);
     expect(w.resources).toEqual({ cpu: "0.5", memory: "512Mi", startupCpuBoost: true });
     // dev is NOT the soak target — it keeps the D-P0.15h-3-pinned shape.
@@ -154,14 +157,20 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
       memory: "1Gi",
       startupCpuBoost: true,
     });
+    expect(STAGES.dev.cloudRun.services.worker.cpuBilling).toBe("instance");
   });
 
-  it("every stage: the worker can never be scaled to zero or request-billed", () => {
-    for (const [name, cfg] of Object.entries(STAGES)) {
-      const w = cfg.cloudRun.services.worker;
+  it("non-preview stages: the worker can never be scaled to zero or request-billed", () => {
+    // R6SOAK.1 — `preview` is the DELIBERATE exception: the right-size candidate (0.5 vCPU)
+    // only exists request-billed on Cloud Run, and the soak's entire purpose is reproducing
+    // that throttled posture on a disposable stack. Dev/prod keep the D-P0.15h-3 fix.
+    for (const name of ["dev", "prod"] as const) {
+      const w = STAGES[name].cloudRun.services.worker;
       expect(w.minInstances, name).toBeGreaterThanOrEqual(1);
       expect(w.cpuBilling, name).toBe("instance");
     }
+    // the preview worker still never scales to zero — min=1 survives the candidate shape.
+    expect(STAGES.preview.cloudRun.services.worker.minInstances).toBeGreaterThanOrEqual(1);
   });
 
   it("non-prod stages keep their cold floor + smaller ceilings (shape preserved)", () => {

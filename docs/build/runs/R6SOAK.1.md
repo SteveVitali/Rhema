@@ -53,6 +53,19 @@
   `timeout after 60000ms: createGkeJobLauncher` log lines, `job_launch` samples in the minutes
   range, or a `provisioning` stall — on the 1 vCPU/1Gi shape the import completes in seconds.
 
+### Pre-iteration amendment (2026-10-22T00:4xZ — ZERO iterations run; contract unchanged otherwise)
+
+**F-R6SOAK.1-1 (platform constraint, load-bearing):** the first `up` on pr-206 was REFUSED by
+the Cloud Run API: `template.containers.resources.limits.cpu: Invalid value specified for cpu.
+Total cpu < 1 is not supported with cpu always allocated (unthrottled)` — **the 0.5 vCPU
+candidate exists only request-billed (`cpuIdle:true`)**. A request-billed min-1 worker is the
+exact "default throttled CPU" posture D-P0.15h-3 recorded (~9-min hang at 512Mi). The soak
+therefore measures the only realizable 0.5/512Mi shape: `cpuBilling:"request"` +
+`{cpu:"0.5",memory:"512Mi",startupCpuBoost:true}` — a MORE faithful reproduction of the
+failure-mode condition than an instance-billed half-CPU would have been. The preview stage fact
+and its pins carry this finding; the pre-registered N=6, the success signal, the thresholds, and
+the verdict rule are unchanged.
+
 ## Requirements
 
 1. Owned `pr-<n>` preview at chain-tip images; worker 0.5 vCPU/512Mi via the **preview** stage
@@ -108,6 +121,15 @@
   `main.ts` lazy launcher, `provision.ts` job_launch sample). N=6 + thresholds pre-registered
   above. Tooling checked: node v25.2.1, pnpm 10.32.1, gcloud 583.0.0 (project rhema-507501,
   account 14stevevitali@gmail.com), pulumi v3.261.0.
+- 23:2xZ — implementation landed `e0ac2bc`: `stages.ts` `workerResources` param + preview pin
+  `{cpu:"0.5",memory:"512Mi",startupCpuBoost:true}` (dev/prod untouched); `worker-soak.mjs`
+  driver + 13 pins. Local green: turbo 135/135, vitest 511 files/6030 pass, six public-safe
+  checks, build-memory 0 violations.
+- 23:3xZ — PR **#206** opened (base `r6wrt-1` tip `3c93544`) → stack `pr-206`. `init` + config
+  (project/region/placeholderImage/gitSha=`e0ac2bc`/protocolsVersion=`0.3.0+e0ac2bc0bbc9`/
+  deployProxyMig/emailFrom); `pulumi preview` clean (192+1 import). Targeted `up` created
+  `rhema-pr-206-images` AR + carryovers. Cloud Build `6a6fcc85` building all 10 images
+  (tag `r6soak-1`, sha `e0ac2bc`) into the preview's own repo.
 
 ## Gap table
 

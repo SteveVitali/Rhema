@@ -10,12 +10,16 @@ mutations; the prod flip is R6INF.1's and only on soak-green.**
 
 ## What changed
 
-- `infra/config/stages.ts` — `cloudRunPosture` gains an explicit `workerResources` parameter;
-  the **preview** stage pins `{ cpu: "0.5", memory: "512Mi", startupCpuBoost: true }` (instance
-  billing + min 1 preserved — exactly the candidate shape a green verdict would flip prod to).
-  Dev and prod keep the D-P0.15h-3-pinned `1 vCPU/1Gi` shape — no shared-stage change.
-- `infra/config/stages.test.ts` — pins the preview worker shape (0.5/512Mi + boost + instance +
-  min≥1) and re-pins dev's `1 vCPU/1Gi` inside the same test so the pair can't drift.
+- `infra/config/stages.ts` — `cloudRunPosture` gains explicit `workerResources` +
+  `workerCpuBilling` parameters; the **preview** stage pins `{ cpu: "0.5", memory: "512Mi",
+  startupCpuBoost: true }` + request billing. **Live finding F-R6SOAK.1-1 (load-bearing):**
+  Cloud Run refuses `limits.cpu < 1` under `cpuIdle:false` — the 0.5 vCPU candidate exists
+  ONLY request-billed, which is the D-P0.15h-3 throttled posture itself. The soak measures the
+  only realizable candidate shape. Dev and prod keep the D-P0.15h-3-pinned `1 vCPU/1Gi`
+  instance-billed shape — no shared-stage change.
+- `infra/config/stages.test.ts` — pins the preview worker shape (0.5/512Mi + boost + request
+  billing + min≥1), scopes the "never request-billed" invariant to dev+prod with the soak
+  rationale recorded, and re-pins dev's `1 vCPU/1Gi` so the pair can't drift.
 - `scripts/live/worker-soak.mjs` (+ `.test.mjs`, 13 pins) — the soak driver. Per iteration:
   bump `RHEMA_SOAK_ITER=<i>` on `rhema-pr-<n>-worker` (a new revision ⇒ a guaranteed cold
   process ⇒ the lazy `import("@kubernetes/client-node")` re-exercises), seed a `queued` run
