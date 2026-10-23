@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate reads RED pending F-R6GLD.1-2 ruling (academic 11 majors > band max 10 — re-rule or hold, D-P0.15-4 stays OPEN)
-lastCompleted:   R6GLD.1            # 2026-10-23; PR #214 — golden cohort machinery + live rerun executed @ 80db0d5 (4/4 completed, $33.89 ≤ $100); gate honestly red on the academic major band — F-R6GLD.1-2; unmerged (OPERATOR)
+nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate GREEN post GD-GOLDEN-BAND.R6 (major band max 12; same scores re-gated 4/4 PASS $0 — D-P0.15-4 DONE)
+lastCompleted:   R6GLD.1            # 2026-10-23; PR #214 — golden cohort machinery + live rerun executed @ 80db0d5 (4/4 completed, $33.89 ≤ $100); gate GREEN on the amended major band (GD-GOLDEN-BAND.R6, F-R6GLD.1-2 resolved); unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-23T16:20:00Z         # R6GLD.1 rerun done; PR #214 — 4/4 legs completed post-proxy-fix ($33.89); gate red on academic band (F-R6GLD.1-2, operator ruling); unmerged (OPERATOR)
+updatedAt:       2026-10-23T18:40:00Z         # R6GLD.1 re-gate — GD-GOLDEN-BAND.R6 band amended (major max 10→12); existing measured scores re-gated 4/4 PASS ($0); F-R6GLD.1-2 resolved; D-P0.15-4 DONE; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -286,7 +286,19 @@ pointers; substance unchanged.)_
   run with research can currently succeed on prod. Owner: operator (credential/tool-access
   decision). Blocks: R6GLD.1 golden validation + D-P0.15-4 close + any organic paid run —
   rerun the same committed cohort after the fix (`docs/ops/golden-rerun-rule.md`).
-- **F-R6GLD.1-2 — OPEN (2026-10-23, R6GLD.1 rerun; golden gate red — launch-relevant).**
+- **F-R6GLD.1-2 — RESOLVED 2026-10-23 (GD-GOLDEN-BAND.R6; band amended + re-gate green, $0).**
+  The operator ruled verbatim **"I accept the band"** → `GOLDEN_LIVE_FLOORS
+  .findingCountsBySeverity.major` re-calibrated `{min:0,max:10}` → `{min:0,max:12}` in
+  `packages/protocols/src/eval-fixtures.ts` (headroom +1 over the observed 11, the ruling's
+  recorded consequence; a test line pins the band so it can't drift silently). The existing
+  measured scores re-gated against the amended floor — `golden-scores-reamended.json`
+  (scores/runIds/spend/provenance byte-identical to `golden-scores-remeasured.json`; only
+  the embedded floor snapshot re-stamped from the amended `GOLDEN_LIVE_FLOORS`) →
+  `gate-report-reamended.txt`: **4/4 PASS, `Promotion OK`, `promotionBlocked: false`** —
+  deterministic re-evaluation, no new dispatch, $0. D-P0.15-4 closed DONE (GD-S17.R6
+  closing clause: cohort green on all four at the launch SHA + re-run rule committed).
+  Original finding text:
+- **F-R6GLD.1-2 — (was OPEN; 2026-10-23, R6GLD.1 rerun; golden gate red — launch-relevant).**
   The post-fix rerun (dispatch-tag `rerun1`, prod @ `80db0d5`, workspace
   `01M5M2C6NC3058T528ZX2D44SG`) delivered all four legs `completed` with schema-valid reviews,
   $33.89 list measured ≤ $100 — but `golden-academic` produced **11 major findings vs the
@@ -799,3 +811,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-23T11:55:00Z — **boundary re-confirmed — R6GLD.1 green at final head.** The boundary-evidence commit pushed head `fe3aa85`; `ci-boundary --pr 214` re-reads **pass** (run 39947020706 — all seven legs + `ci-pass` anchor; same-tree reuse; record `logs/ci-boundary-214.json` refreshed). Final: PR #214 head `fe3aa85` green, unmerged (OPERATOR); `nextTicket` = R6GLD.1's live rerun once F-R6GLD.1-1 is fixed (operator). harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T16:20:00Z — **R6GLD.1 rerun done — cohort executed live 4/4 completed @ `80db0d5`; golden gate honestly RED on one floor (F-R6GLD.1-2, operator ruling).** Branch `stevevitali/r6gld-1-golden-validation` · PR #214 · post-F-R6GLD.1-1 (proxy cycled → `rhema-prod-proxy-8g3n` on key v4). **Machinery gaps found + fixed live:** (a) same-SHA rerun silently deduped onto the prior attempt's failed runs — run idempotency keys were `golden-<fixture>-<sha>`; `--dispatch` now requires `--dispatch-tag` (keys = fixture·sha·attempt), pinned by test + `golden-rerun-rule.md`; the dedupe no-op recorded (`golden-scores-dedupe-noop.json`, $0); (b) `schemaValid` demanded `correspondence_items.verdict` — a column the delivery path never writes — re-predicated on the honest schema signal and the four runIds re-measured (`golden-scores-remeasured.json`). **Rerun (`rerun1`):** essay completed $10.65 · academic completed $8.69 · op-ed completed $8.56 · memo completed $5.99 — **$33.89 list ≤ $100 total** (both dispatches $0+$33.89), 8 rubric dims + 13–14 artifacts + 7–11 claims each, cited⇒fetched clean, 0 attestation violations, protocol stamps all `@1`. **Gate: `PROMOTION BLOCKED`** — essay/op-ed/memo PASS, academic FAIL `findingCount:major` 11 > band max 10 (`gate-report.txt`); band a-priori, run not degenerate — **F-R6GLD.1-2 operator ruling** (re-rule + ~$35 `rerun2`, or hold red). **Deferrals:** D-P0.15-4 stays **OPEN** (dated note). **Verify:** vitest 12 driver tests · eslint clean. next → `196a_HUMAN-H12` (precedes 197 R6SWP.1) · unmerged (OPERATOR) · layer: live-executed (red on one floor) · harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T17:20:00Z — **boundary confirmed — R6GLD.1 green at rerun head.** `ci-boundary --pr 214` reads **pass** at head `a7acf73` (run 39985872467 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; first read timed out at 2700s with `images`/`integration` pending → job-polled green → re-read, R6SECR.1 precedent; record `logs/ci-R6GLD.1-rerun.json`). Validators: `check-build-memory.sh .` 0 violations (9 pre-existing-class warnings) · append-only vs `c1f20f5` OK. PR #214 green, unmerged (OPERATOR); golden gate stays RED pending the F-R6GLD.1-2 band ruling. harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-23T18:40:00Z — **R6GLD.1 re-gate done — GD-GOLDEN-BAND.R6 band amended; existing measured scores re-gated GREEN 4/4 ($0).** Operator ruling on F-R6GLD.1-2 recorded verbatim **"I accept the band"** → `GOLDEN_LIVE_FLOORS.findingCountsBySeverity.major` `{max:10 → max:12}` in `packages/protocols/src/eval-fixtures.ts` (headroom +1 over the observed 11; a test line pins the band) · re-gate per `golden-rerun-rule.md` step 3 on `golden-scores-reamended.json` (scores/runIds/spend byte-identical to `golden-scores-remeasured.json` — only the embedded floor snapshot re-stamped) → `gate-report-reamended.txt`: **essay/academic/op-ed/memo all PASS, `Promotion OK`, `promotionBlocked: false`** — deterministic re-evaluation, no new dispatch, $0 · **Deferrals: D-P0.15-4 → DONE** (GD-S17.R6 closing clause holds: cohort green on all four at launch SHA `80db0d5` + re-run rule committed) · **F-R6GLD.1-2 RESOLVED** · GATE-LAUNCH threshold 5 amended by dated note (golden leg now green) · verify: `@rhema/protocols` build green, vitest on `eval-fixtures.test.ts`, check-build-memory + append-only vs `c1f20f5` · `lastCompleted` stays R6GLD.1, `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · layer: live-executed (green) · harness: devin-desktop/swe-2-high/subagent.

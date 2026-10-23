@@ -5,10 +5,13 @@ Manifest row 196 · ADR-111 amended §17 launch criterion · stacks on
 
 **Honest headline: the machinery is landed, the live rerun executed end-to-end — all four
 protocol legs `completed` with delivered, schema-valid reviews at measured $33.89 (≤$100) —
-and the golden gate is honestly RED on one a-priori floor.** `golden-academic` produced 11
-major findings vs the committed band `major: {max: 10}` → `promotionBlocked: true`
-(`F-R6GLD.1-2`, operator ruling owed). The credential block (`F-R6GLD.1-1`, stale proxy key
-cache) is cleared and proven green by this run.
+and the golden gate is GREEN on all four** after the operator ruled verbatim **"I accept the
+band"** on `F-R6GLD.1-2` (GD-GOLDEN-BAND.R6): the a-priori `major` band was re-calibrated
+`{max: 10 → max: 12}` (headroom +1 over the academic leg's measured 11 non-degenerate majors)
+and the **same measured scores re-gated** — `gate-report-reamended.txt`: 4/4 PASS,
+`Promotion OK`, `promotionBlocked: false`. Deterministic re-evaluation, **$0**, no new
+dispatch. The credential block (`F-R6GLD.1-1`, stale proxy key cache) is cleared and proven
+green by this run.
 
 ## Delivered
 
@@ -52,14 +55,18 @@ Every leg: schema-valid review CI (8 rubric dims, 13–14 artifacts, 7–11 clai
 protocol stamp, `citedFetched` clean, zero attestation violations.
 **Measured total across both dispatches: $33.89** (usage_records, meter of record).
 
-**Gate (`gate-report.txt`):** essay / op-ed / memo PASS · academic FAIL
-`findingCount:major` 11 > 10 → `PROMOTION BLOCKED`. The miss is one real finding over an
-a-priori band on a deliberately weak draft — ruling owed (re-calibrate via GD amendment +
-~$35 `rerun2`, or hold red).
+**Gate:** the first gate (`gate-report.txt`) read essay / op-ed / memo PASS · academic FAIL
+`findingCount:major` 11 > 10 → `PROMOTION BLOCKED` — one real finding over an a-priori band
+on a deliberately weak draft. The operator accepted the band (GD-GOLDEN-BAND.R6); the
+re-calibrated floor (`major: {max: 12}`, pinned by a test line) re-gated the same measured
+scores green — `gate-report-reamended.txt`: **4/4 PASS, `Promotion OK`** ($0, no rerun).
 
 ## Deferrals
 
-- **D-P0.15-4 stays OPEN** — dated note; closes when the cohort gates green on all four.
+- **D-P0.15-4 → DONE** (2026-10-23): the GD-S17.R6 closing clause holds — cohort green on
+  all four protocols at the launch SHA `80db0d5` (amended-floor re-gate) + the re-run rule
+  committed as a standing ops rule. The recurring nightly cadence stays declined
+  (GD-R5OPS.1-1). **F-R6GLD.1-2 RESOLVED.**
 
 ## Verification
 

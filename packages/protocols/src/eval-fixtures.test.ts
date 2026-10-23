@@ -82,6 +82,11 @@ describe("§13.5 golden eval registry (ticket 49 AC7)", () => {
       expect(Object.keys(f.findingCountsBySeverity ?? {}).sort()).toEqual([
         "blocking", "major", "minor", "note",
       ]);
+      // GD-GOLDEN-BAND.R6 (2026-10-23, operator "I accept the band" on F-R6GLD.1-2): the
+      // a-priori major band max 10 was re-calibrated to 12 — headroom +1 over the rerun1
+      // academic leg's measured 11 non-degenerate majors. Pinned so the band can't drift
+      // back silently.
+      expect(f.findingCountsBySeverity?.major?.max).toBe(12);
       expect(f).not.toHaveProperty("materialRecallFloor");
       expect(f).not.toHaveProperty("wordBudgetDeltaMax");
       expect(f).not.toHaveProperty("voiceFeatureBands");

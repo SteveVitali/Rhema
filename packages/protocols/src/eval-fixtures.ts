@@ -29,14 +29,21 @@ export interface GoldenFloors {
   readonly schemaValid?: boolean;
 }
 
-/** The committed floors the R6GLD.1 minimal cohort measured green against (GD-GOLDEN-CAP.R6). */
+/**
+ * The committed floors the R6GLD.1 minimal cohort measured green against (GD-GOLDEN-CAP.R6).
+ * `major` band re-calibrated 2026-10-23 per **GD-GOLDEN-BAND.R6** (operator ruling verbatim
+ * "I accept the band" on F-R6GLD.1-2): the a-priori `max: 10` predated any live measurement;
+ * the `rerun1` academic leg measured 11 non-degenerate majors → `max: 12` (headroom +1 over
+ * the observed count). The same measured scores re-gated green against this amended band —
+ * deterministic re-evaluation, $0 (`reports/2026-10-23_R6GLD.1/gate-report-reamended.txt`).
+ */
 export const GOLDEN_LIVE_FLOORS: GoldenFloors = {
   schemaValid: true,
   citedFetched: true,
   attestationViolationsMax: 0,
   findingCountsBySeverity: {
     blocking: { min: 0, max: 4 },
-    major: { min: 0, max: 10 },
+    major: { min: 0, max: 12 },
     minor: { min: 0, max: 14 },
     note: { min: 0, max: 18 },
   },
