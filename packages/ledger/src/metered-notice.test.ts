@@ -126,6 +126,41 @@ describe("meteredNoticeTemplate — D.2 vocabulary; never 'you will be billed'",
     expect(m.text).toContain("https://rhema.app/usage");
     expect(m.html).toContain("/usage");
   });
+
+  // R6MNY.1 (REQ-LCH-5a) — the copy's claims verified against the charge-what-we-meter behaviour
+  // (`packages/orchestrator/src/spend.ts`) and the ONE estimator config: every factual claim in the
+  // rendered notice must name a shipped semantic, not a remembered one.
+  it("every claim in the copy is a shipped semantic — metered charge, cap ceiling, refunds, carry-over", () => {
+    const m = meteredNoticeTemplate({
+      effectiveDate: "2026-11-02",
+      appOrigin: "https://rhema.app",
+    });
+    // the wrapped plain-text lines join before phrase assertions.
+    const t = m.text.replace(/\s+/g, " ");
+    // charge-what-we-meter: metered mode charges exactly min(metered, cap) — the copy asserts the
+    // charge "will follow its measured usage exactly" and "equal what the run actually used".
+    expect(t).toMatch(/charge will follow its measured usage exactly/i);
+    expect(t).toMatch(/what the run actually used/i);
+    // the cap is the consent and the ceiling (Σ debits − refunds ≤ cap — the ledger clamps):
+    // the copy anchors it to the run sheet (the one estimator's cap, capFromEstimate) and to
+    // "never exceed" — never a softer promise.
+    expect(t).toMatch(/capped at the guaranteed cap shown on the run sheet/i);
+    expect(t).toMatch(/can never exceed the cap you consented to/i);
+    // committed→metered truthfulness: under committed a commit debits max(pod claim, metered
+    // catch-up) — the copy describes exactly that ("charged the committed estimate at each phase")
+    // and honestly says metered can be a little higher OR lower (the floor both over- and
+    // under-states metered).
+    expect(t).toMatch(/charged the committed estimate at each phase/i);
+    expect(t).toMatch(/sometimes a little higher, sometimes a little lower/i);
+    // the invariant classes: failed runs refund through the platform classes; caps stop the run.
+    expect(t).toMatch(/[Ff]ailed runs are still refunded/);
+    expect(t).toMatch(/hits its cap still stops there/);
+    // top-up holders keep their balance (no ledger row is touched by the flip).
+    expect(t).toMatch(/top-up balance.*carries over/i);
+    // no figure the copy states can have drifted — it names NO credit counts or prices at all.
+    expect(t).not.toMatch(/\$\d/);
+    expect(t).not.toMatch(/\d+\s*(?:credit|cr)\b/i);
+  });
 });
 
 describe("deliverMeteredNotice — dry-run default; exactly-once sends", () => {

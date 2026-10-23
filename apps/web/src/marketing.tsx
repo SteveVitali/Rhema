@@ -328,6 +328,9 @@ export function PricingPage(): ReactNode {
       <section style={SECTION}>
         <SectionTitle>{COPY.pricing.costCardsHeading}</SectionTitle>
         <p style={MUTED}>{COPY.pricing.costCardsNote}</p>
+        {/* R6MNY.1 (REQ-LCH-5a) — the new-user charge explanation: the same metered claim the
+            paid-account notice carries, ahead of the ruled launch flips. */}
+        <p style={MUTED}>{COPY.pricing.meteredNote}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
           {data.cards.map((card) => (
             <div

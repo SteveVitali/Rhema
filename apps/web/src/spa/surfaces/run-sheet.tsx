@@ -231,6 +231,11 @@ export function RunSheetSurface({ data, notice, compact, contentKey }: RunSheetS
     <div data-spa-surface>
       <PageTitle>{R.heading}</PageTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{R.lede}</p>
+      {/* R6MNY.1 (REQ-LCH-5a) — the metered-charge explanation a new user reads before their first
+          run; the same claim the paid-account notice carries (GD-LAUNCH-MONEY.R6). */}
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", maxWidth: "68ch" }}>
+        {R.meteredNote}
+      </p>
       {pretriage && runSheet.view.workflow === "revise" ? (
         <p
           data-pretriage-line="true"

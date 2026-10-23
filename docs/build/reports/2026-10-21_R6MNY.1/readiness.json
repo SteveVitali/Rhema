@@ -1,0 +1,112 @@
+{
+  "readAt": "2026-10-21T08:46:32.600Z",
+  "estimatorCellsLoaded": [],
+  "calibrations": {
+    "reports": 0,
+    "adopted": 0,
+    "adoptedForPaidSurfaces": [],
+    "adoptedReachPctMax": null,
+    "precondition1_met": false,
+    "precondition2_met": false,
+    "surfaceCaps": {
+      "review": null,
+      "revise": null,
+      "fact_check": null,
+      "draft": null,
+      "profile_voice": null
+    },
+    "minSample": 5,
+    "reachTargetPct": 10,
+    "rows": []
+  },
+  "coverage": [
+    {
+      "tier": "writer",
+      "includedCreditsMonthly": 2000,
+      "printed": "≈0.7 essay Reviews on Base · ≈0.3 on Balanced · ≈0.1 on Frontier",
+      "perTier": [
+        {
+          "modelTier": "base",
+          "printedLoops": 0.7,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "balanced",
+          "printedLoops": 0.3,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "frontier",
+          "printedLoops": 0.1,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        }
+      ],
+      "overPromises": false
+    },
+    {
+      "tier": "studio",
+      "includedCreditsMonthly": 12000,
+      "printed": "≈4.6 essay Reviews on Base · ≈2 on Balanced · ≈1 on Frontier",
+      "perTier": [
+        {
+          "modelTier": "base",
+          "printedLoops": 4.6,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "balanced",
+          "printedLoops": 2,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "frontier",
+          "printedLoops": 1,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        }
+      ],
+      "overPromises": false
+    },
+    {
+      "tier": "studio_max",
+      "includedCreditsMonthly": 26000,
+      "printed": "≈9.9 essay Reviews on Base · ≈4.5 on Balanced · ≈2.2 on Frontier",
+      "perTier": [
+        {
+          "modelTier": "base",
+          "printedLoops": 9.9,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "balanced",
+          "printedLoops": 4.5,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        },
+        {
+          "modelTier": "frontier",
+          "printedLoops": 2.2,
+          "measuredLoopsFloor": null,
+          "cellRuns": 0,
+          "p95Credits": null
+        }
+      ],
+      "overPromises": false
+    }
+  ],
+  "note": "read-only; counts + figures only — no PII; an unmet precondition is a finding, never flipped past"
+}

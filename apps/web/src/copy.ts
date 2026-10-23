@@ -212,6 +212,13 @@ export const COPY = {
   runSheet: {
     heading: "Run the Editor",
     lede: "Choose how thorough the read is. The estimate updates as you change it; you are never charged more than the cap.",
+    // R6MNY.1 (REQ-LCH-5a) — the new-user charge explanation, the SAME claim the paid-account
+    // notice makes (packages/ledger metered-notice.ts): a run is charged for what it actually did,
+    // never the flat estimate, and the cap is the ceiling. The wording is true under BOTH debit
+    // modes — under `committed` each phase's actual cost is debited against the cap hold (the
+    // refunds page's shipped phrasing), under `metered` the final figure is the metered one.
+    meteredNote:
+      "You pay for a run's actual cost as each phase completes — never the flat estimate, and never more than the cap you confirm here.",
     rigorLegend: "Rigor",
     runReview: "Run review",
     runRevise: "Run revise",
@@ -2257,6 +2264,13 @@ export const COPY = {
     coversLabel: "What it covers",
     costCardsHeading: "What a run costs",
     costCardsNote: "Modeled figures at Standard rigor, across model tiers — the live estimate on the run sheet is authoritative for a real run.",
+    // R6MNY.1 (REQ-LCH-5a) — the same charge-what-we-meter sentence the paid-account notice carries
+    // (`meteredNoticeTemplate`), told to a new user BEFORE the flip is their first billing model —
+    // GD-LAUNCH-MONEY.R6 orders metered debit ahead of purchase-open, so this is never a post-hoc
+    // explanation of a charge already taken. The phrasing is the refunds page's shipped "actual
+    // cost debited" register — true under `committed` today and `metered` after the flip.
+    meteredNote:
+      "How a run charges: it shows its estimate and cap before it starts, you pay the run's actual cost as each phase completes, and it can never cost more than the cap you confirm.",
     voiceCardHeading: "Voice profile",
     voiceCardLine: "A profile built from a {words}-word corpus",
     quickLineFmt: "A ≤{cap}-word piece on Base: Quick ≈ {quick} cr · Standard ≈ {standard} cr · Full board ≈ {fb} cr",
