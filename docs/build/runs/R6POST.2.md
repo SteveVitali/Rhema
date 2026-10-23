@@ -13,7 +13,8 @@
   subdomain only (created → removed inside the ticket). Nothing on the prod stack.
 - **Spend posture:** all journey legs `paid:false`; infra-only spend (Cloud Build + a preview
   stack's bounded lifetime), recorded.
-- **Started:** 2026-10-22T22:10Z · **Closed:** (open)
+- **Started:** 2026-10-22T22:10Z · **Closed:** 2026-10-23T01:0xZ (teardown drained; closeout
+  commit follows the final CI read)
 
 ## Deferrals read
 
@@ -215,6 +216,16 @@ phrasing → ADR + FIRST-LINE report flag. Any act that WOULD need a record outs
   (GCP async release, typically within the hour) — `destroy` is idempotent, retry until it
   clears. DNS: the three `*.sslip.io` names are wildcard records on sslip.io's zone —
   **zero writes to any project zone; nothing to remove**. Orphan sweep pending the subnet.
+- 2026-10-23T01:0xZ — reservation GC drained (~2 h after the Cloud Run deletes, the
+  pr-206/207/208 class); direct `gcloud compute addresses delete` on the SERVERLESS
+  addresses was correctly refused (reservation-held). `destroy` retry → **48 deleted**
+  (subnet + net + remaining SAs/secrets/buckets/metrics + retained-marker resources) →
+  `rm pr-211` (stack + `Pulumi.pr-211.yaml`) → `rhema-pr-211-lb` global address deleted →
+  **orphan sweep ZERO `rhema-pr-211*`/`rhema-pr-212*`** across 18 classes (run svc/jobs,
+  networks, subnets, addresses global+regional, forwarding, certs, buckets, secrets,
+  AlloyDB, Redis, GKE, DNS zones, firewalls, routers, SAs, AR repos, pulumi stacks).
+  Spend ≈$4–6 ≤ $8 (≈2.5 h preview lifetime: AlloyDB + Redis + GKE + Cloud Run + LB +
+  Cloud Build minutes); journey legs all `paid:false` = $0 inference.
 
 ## Gap table
 
@@ -227,7 +238,26 @@ phrasing → ADR + FIRST-LINE report flag. Any act that WOULD need a record outs
 
 ## Evidence log
 
-_(populated through Phase 5)_
+- `docs/build/reports/2026-10-22_R6POST.2/posture/` — `report.json` + `N8.png` +
+  `R10.keepalive.png` (the committed per-stage leg reports).
+- `infra/pulumi/Pulumi.pr-211.yaml` — the live posture config at run time (deleted by `rm`,
+  preserved in commit `8f5963e`'s tree).
+- Live facts: cert `rhema-pr-211-cert` ACTIVE ×3 SANs; LB `136.81.247.180`; api `/healthz`
+  `gitSha:65d3dec…`; web env `COLLAB_WS_URL`/`APP_BASE_URL`/`API_BASE_URL`/
+  `INTERNAL_AUTH_AUDIENCE` all domains-derived.
+
+## Verification totals
+
+- `infra/config/stages.test.ts` 37/37 · `scripts/live/preview-stack.test.mjs` 61/61 ·
+  `infra/config/runbook-completeness.test.ts` 3/3 (after the §2 doc fix).
+- `pnpm turbo build lint typecheck` — 135/135 · `pnpm test` — 514 files / 6,068 pass
+  (1 fail = the runbook doc gap, fixed + green on retry).
+- `check:*` ×6 green · `check-build-memory.sh` 0 violations (10 legacy warnings) ·
+  `check-append-only.mjs --base 83f2532` OK.
+- CI boundary: `docs/build/logs/ci-R6POST.2.json` — first read: CI fail on #211
+  (runbook-completeness on `65d3dec`; generic-api-key on the fixture hostname on `8f5963e`
+  — both fixed: PROD-BRINGUP §2 entries + `.gitleaks.toml` pin); final read pending the
+  `e27a7da` run.
 
 ## Evidence report
 
