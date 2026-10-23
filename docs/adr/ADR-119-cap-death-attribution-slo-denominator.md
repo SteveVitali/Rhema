@@ -1,8 +1,10 @@
-# ADR-119: Cap-death and honest-block attribution in the run_success_rate denominator (agent proposal — NOT adopted)
+# ADR-119: Cap-death and honest-block attribution in the run_success_rate denominator
 
-- **Status:** Proposed
-- **approved:** **no** — operator decision owed; nothing below is adopted. `slo.ts` is unchanged and
-  the probe still counts every `state='failed'` terminal run in the failure numerator.
+- **Status:** Adopted — 2026-10-21 (operator ruling `GD-ADR119.R6`, verbatim "Adopt as proposed")
+- **approved:** **yes** — adopted 2026-10-21 by the operator (LEDGER GATE DECISIONS `GD-ADR119.R6`).
+  `slo.ts` is unchanged under this ticket — the attribution change is follow-up work
+  (`D-R6FOR.1-1`); until it lands the probe still counts every `state='failed'` terminal run in
+  the failure numerator (strictly more conservative).
 - **Date:** 2026-10-21
 - **Ticket:** R6FOR.1 (REQ-FOR-1, REQ-FOR-2; the ticket's operator-pause clause — an agent may only
   *propose* a denominator/target semantic change)
@@ -84,3 +86,13 @@ Operator ruling on this proposal (required before any `slo.ts` attribution chang
 R6WATCH.1's weekly reread shows the excluded class hiding real under-delivery, or if
 `phase_blocked` volume becomes material (an over-blocking burst would argue for keeping it in
 the numerator).
+
+## Amendment — 2026-10-21: ADOPTED by operator ruling
+
+Ruling (verbatim UI selection, Devin Desktop orchestrator session): **"Adopt as proposed"** —
+recorded in LEDGER GATE DECISIONS `GD-ADR119.R6`. Both exclusions land; system-derived caps stay
+platform failures; no target change. The implementation (failure-provenance attribution on
+terminal runs, the probe exclusion classes, `docs/ops/slo-review.md`'s "what counts" note, and
+the excluded-class count alongside the rate) is owed work — `D-R6FOR.1-1` in
+`docs/tickets/DEFERRALS.md`. Until it lands, `slo.ts` keeps today's semantics — strictly more
+conservative, since the two named classes still count as failures.
