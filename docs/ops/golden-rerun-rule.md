@@ -56,7 +56,7 @@ curl -s https://api.rhema.tools/healthz   # build.gitSha must equal the deploy u
 # 2 — one-shot dispatch (exactly four paid runs)
 GOLDEN_BUDGET_RULING=approved \
 API_BASE_URL=https://api.rhema.tools \
-SYSTEM_DATABASE_URL=<system dsn over the IAP tunnel> \
+GOLDEN_DATABASE_URL=<system-role dsn over the IAP tunnel> \
 GOLDEN_WORKSPACE_ID=<is_test workspace> \
 GOLDEN_MINT_SESSION=1 \
 node scripts/live/nightly-golden-driver.mjs --cohort minimal --dispatch \

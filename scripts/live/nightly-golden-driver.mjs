@@ -21,7 +21,10 @@
 //     --cohort minimal it also refuses a scores file that does not cover all four protocols.
 //
 // Dispatch env contract (the paid leg):
-//   API_BASE_URL=https://api.rhema.tools   SYSTEM_DATABASE_URL=<system-role DSN over the tunnel>
+//   API_BASE_URL=https://api.rhema.tools   GOLDEN_DATABASE_URL=<system-role DSN over the tunnel>
+//     (the caller maps the privileged system DSN onto this env — the tripwire seam name is
+//     intentionally not used here: live .mjs scripts sit outside the .ts-scoped
+//     tools/system-pool-boundary.json allowlist, and the privileged read is asserted below)
 //   GOLDEN_WORKSPACE_ID=<is_test workspace id>     GOLDEN_BUDGET_RULING=approved
 //   GOLDEN_SESSION_COOKIE="<name>=<token>"   — or GOLDEN_MINT_SESSION=1 to mint a session for
 //   GOLDEN_IDENTITY (default test+jrn-a@rhema.tools) through the real magic link + the pinned
@@ -253,7 +256,7 @@ async function dispatchMinimal() {
   const API = need("API_BASE_URL").replace(/\/+$/, "");
   const WORKSPACE = need("GOLDEN_WORKSPACE_ID");
   const pg = require("pg");
-  const pool = new pg.Pool({ connectionString: need("SYSTEM_DATABASE_URL"), max: 2 });
+  const pool = new pg.Pool({ connectionString: need("GOLDEN_DATABASE_URL"), max: 2 });
   const q = (t, p) => pool.query(t, p).then((r) => r.rows);
   const out = [];
 

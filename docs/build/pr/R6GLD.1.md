@@ -22,8 +22,10 @@ runs were **never retried**; measured spend is **$0** and no manifest was fabric
 - **`docs/ops/golden-rerun-rule.md`** — the standing ops rule: golden validation reruns after
   every protocol-affecting deploy, explicitly including REQ-ENG-3 / REQ-SEC-3 fixes. The
   recurring nightly cadence stays declined (GD-R5OPS.1-1) — not resurrected here.
-- **`tools/system-pool-boundary.json`** — driver added with reason (audited system-DSN
-  provenance/tenant verification only).
+- **DSN seam**: the driver's one privileged read (is_test flag + meter rows for its own four
+  run ids) binds `GOLDEN_DATABASE_URL` — the caller maps the system-DSN at invocation. The
+  literal `SYSTEM_DATABASE_URL` seam name is deliberately not used: the
+  `tools/system-pool-boundary.json` allowlist is `.ts`-scoped and does not cover `scripts/`.
 
 ## Estimate (committed before any paid dispatch)
 
