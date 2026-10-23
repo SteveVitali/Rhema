@@ -3,83 +3,68 @@
 Manifest row 196 · ADR-111 amended §17 launch criterion · stacks on
 `stevevitali/r6secr-1-adversarial-review` · mergePolicy: **OPERATOR** (never self-merges).
 
-**Honest headline: the machinery is landed and the dispatch was executed, but golden
-validation is RED, not green.** All four paid legs failed at research preflight with
-`HTTP 401 authentication_error` on `web_search`/`web_fetch` model calls — a platform-side
-credential/tool problem (`F-R6GLD.1-1`, operator flag). Per the ticket's explicit rule the
-runs were **never retried**; measured spend is **$0** and no manifest was fabricated.
+**Honest headline: the machinery is landed, the live rerun executed end-to-end — all four
+protocol legs `completed` with delivered, schema-valid reviews at measured $33.89 (≤$100) —
+and the golden gate is honestly RED on one a-priori floor.** `golden-academic` produced 11
+major findings vs the committed band `major: {max: 10}` → `promotionBlocked: true`
+(`F-R6GLD.1-2`, operator ruling owed). The credential block (`F-R6GLD.1-1`, stale proxy key
+cache) is cleared and proven green by this run.
 
 ## Delivered
 
-- **Full four-protocol golden coverage** — added `golden-essay` + `golden-academic` protocol
-  fixtures; `GOLDEN_EVAL_FIXTURES` now covers `essay`/`academic`/`op-ed`/`memo`, each with
-  committed score floors, paired with the primary `review` workflow at default `base` /
-  `standard`.
-- **`--cohort minimal`** in `scripts/live/nightly-golden-driver.mjs`: exactly one fixture
-  per protocol, launch-SHA check (`--expect-sha`), `is_test` workspace check, estimate +
-  `GOLDEN_BUDGET_RULING=approved` fail-closed `--execute`, measured `--scores`/`--scores-out`.
-  The driver never fabricates a manifest.
-- **`docs/ops/golden-rerun-rule.md`** — the standing ops rule: golden validation reruns after
-  every protocol-affecting deploy, explicitly including REQ-ENG-3 / REQ-SEC-3 fixes. The
-  recurring nightly cadence stays declined (GD-R5OPS.1-1) — not resurrected here.
-- **DSN seam**: the driver's one privileged read (is_test flag + meter rows for its own four
-  run ids) binds `GOLDEN_DATABASE_URL` — the caller maps the system-DSN at invocation. The
-  literal `SYSTEM_DATABASE_URL` seam name is deliberately not used: the
-  `tools/system-pool-boundary.json` allowlist is `.ts`-scoped and does not cover `scripts/`.
+- **Full four-protocol golden coverage** — `golden-essay` + `golden-academic` fixtures;
+  `GOLDEN_EVAL_FIXTURES` covers `essay`/`academic`/`op-ed`/`memo` with committed floors, each
+  paired with `review`/`base`/`standard`.
+- **`--cohort minimal`** in `scripts/live/nightly-golden-driver.mjs`: one fixture per protocol,
+  launch-SHA check, `is_test` check, estimate + `GOLDEN_BUDGET_RULING=approved` fail-closed
+  `--execute`, measured `--scores`/`--scores-out`. Never fabricates a manifest.
+- **`docs/ops/golden-rerun-rule.md`** — rerun after every protocol-affecting deploy incl.
+  REQ-ENG-3 / REQ-SEC-3 fixes; nightly cadence stays declined (GD-R5OPS.1-1).
+- **DSN seam**: `GOLDEN_DATABASE_URL` binds the one privileged read (`.ts`-scoped boundary
+  allowlist doesn't cover `scripts/`).
 
-## Estimate (committed before any paid dispatch)
+## Landed on resume — two live-found machinery fixes
 
-`docs/build/reports/2026-10-23_R6GLD.1/cohort-estimate.json` — Review/Standard/Base,
-claims ≈ words/60, active manifest phases:
+- **`--dispatch-tag <attempt>` is now required for `--dispatch`.** The first rerun attempt
+  silently deduped onto the prior dispatch's failed runs — the idempotency key was
+  `golden-<fixture>-<sha>`, so `POST /runs` returned the old terminal rows and *zero* new model
+  calls happened (`golden-scores-dedupe-noop.json` is the honest record). Keys are now
+  (fixture · sha · tag): same-tag re-invocation is retry-safe mid-cohort, a rerun names a new
+  attempt. The rerun rule documents it.
+- **`schemaValid` re-predicated.** It demanded `correspondence_items.verdict != null` — a column
+  the real delivery path (`mirror/delivery.ts`) never writes (per-claim verdicts live on
+  `claims`), so all four *successful* legs measured false-red. Now: completed run + review CI +
+  protocol stamp + parseable rubric with non-empty `dimensions[]` + ≥1 artifact + ≥1 claim.
 
-| leg | credits |
-|---|---|
-| golden-essay | 1 721 |
-| golden-academic | 1 721 |
-| golden-op-ed | 1 721 |
-| golden-memo | 1 358 |
-| **total** | **6 572 cr / $46.94 list — withinCap: true (< $100)** |
+## Live evidence (2026-10-23, prod @ `80db0d5`, `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG`)
 
-## Live evidence (2026-10-23, prod @ `80db0d5`)
+Dispatch 1 (pre-fix): 4 runs, all failed `research_preflight_failed` HTTP 401 — **$0**.
+Dispatch 2 (`--dispatch-tag rerun1`, post-proxy-cycle):
 
-Workspace `01M5M2C6NC3058T528ZX2D44SG` (`is_test=true`, `test+jrn-gld@rhema.tools`), funded
-with an audited 8 000 cr house grant. Exactly one run per protocol, four total:
+| leg | run | state | spend (list) | findings b/M/m/n |
+|---|---|---|---|---|
+| golden-essay | `01M5MFYJ3P04SXRBPN26FYEE11` | completed | $10.65 | 0/7/5/5 |
+| golden-academic | `01M5MJ7CGGPF3CMHDFZV80VFE2` | completed | $8.69 | 0/**11**/5/6 |
+| golden-op-ed | `01M5MM5AV1RHC4RJ1NWSA0X07G` | completed | $8.56 | 3/3/3/6 |
+| golden-memo | `01M5MP4XV5CVNP3301DFED7EJP` | completed | $5.99 | 0/7/7/5 |
 
-| leg | run | result |
-|---|---|---|
-| golden-essay | `01M5M2D06JAFZAY55H2HFP8PF1` | failed — `research_preflight_failed` HTTP 401 |
-| golden-academic | `01M5M2EEJ7FPW5YAA9GJZYF9XE` | failed — `research_preflight_failed` HTTP 401 |
-| golden-op-ed | `01M5M2EZF2VNF8KJSTJ1869R98` | failed — `research_preflight_failed` HTTP 401 |
-| golden-memo | `01M5M2FH04NXN6JXMS4382FQ7P` | failed — `research_preflight_failed` HTTP 401 |
+Every leg: schema-valid review CI (8 rubric dims, 13–14 artifacts, 7–11 claims), correct
+protocol stamp, `citedFetched` clean, zero attestation violations.
+**Measured total across both dispatches: $33.89** (usage_records, meter of record).
 
-- **Measured spend: $0** — all four holds fully released (credit-ledger evidence).
-- `golden-scores.json` committed as honest red evidence; `--execute` not run,
-  `evals/fixtures/nightly-manifest.json` not written.
-- Platform context: zero real (non-zero-duration) completed runs in the last 3 days — every
-  `completed` row is a zero-duration showcase seed. `/v1/models` is 200 on secret v4
-  (F-R6CNT.2-1 resolved), but the tool-carrying model call is rejected — likely the per-run
-  `proxy_credential_id` upstream path or missing tool entitlement.
-
-## Finding — ⚑ operator
-
-**F-R6GLD.1-1 (OPEN):** research model calls return HTTP 401 on prod. Blocks the green
-golden validation, the D-P0.15-4 close, and any organic paid run. Remediation is a
-credential/tool-access decision; after the fix the rerun is exactly this committed cohort
-per the rerun rule.
+**Gate (`gate-report.txt`):** essay / op-ed / memo PASS · academic FAIL
+`findingCount:major` 11 > 10 → `PROMOTION BLOCKED`. The miss is one real finding over an
+a-priori band on a deliberately weak draft — ruling owed (re-calibrate via GD amendment +
+~$35 `rerun2`, or hold red).
 
 ## Deferrals
 
-- **D-P0.15-4 — stays OPEN** with a dated note: the bounded validation was executed but is
-  red; closes when the cohort reruns green on all four protocols at the launch SHA.
+- **D-P0.15-4 stays OPEN** — dated note; closes when the cohort gates green on all four.
 
 ## Verification
 
+- `pnpm exec vitest run scripts/live/nightly-golden-driver.test.mjs` — 12 pass (incl. the
+  `--dispatch-tag` pin)
 - `pnpm exec vitest run packages/protocols/src/eval-fixtures.test.ts` — 12 pass
-- `pnpm exec vitest run scripts/live/nightly-golden-driver.test.mjs` — 11 pass
-- `pnpm --filter @rhema/protocols build` + lint + typecheck — green
-- build-memory + append-only + CI boundary: see run ledger `docs/build/runs/R6GLD.1.md`
-
-## Changed surface
-
-fixtures (2 new files) + registry + floors tests · driver + tests · ops rule · boundary file
-· estimate + score evidence · ledgers. No production-code change beyond the live driver.
+- `@rhema/protocols` build + lint + typecheck — green · eslint clean on touched scripts
+- build-memory + append-only + CI boundary: `docs/build/runs/R6GLD.1.md`

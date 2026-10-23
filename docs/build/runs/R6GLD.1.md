@@ -16,7 +16,9 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-DISC-3
-- **Started:** 2026-10-23T09:30Z · **Closed:** 2026-10-23T10:10Z (PR #214, unmerged — OPERATOR)
+- **Started:** 2026-10-23T09:30Z · **Resumed:** 2026-10-23T13:37Z (post F-R6GLD.1-1 fix — proxy
+  cycled to `rhema-prod-proxy-8g3n` booting `anthropic-api-key` v4) · **Closed:**
+  2026-10-23T16:20Z (PR #214, unmerged — OPERATOR)
 - **Live stage:** prod, paid — one validation run (4 paid legs) on the deployed launch-candidate
   SHA `80db0d5` (verified via `api.rhema.tools/healthz` + `rhema.tools/healthz` at dispatch time).
 - **Production mutations (ticket header, verbatim):** 4 paid runs on an `is_test` workspace (one
@@ -56,13 +58,13 @@
 ## Acceptance criteria
 
 - [x] All four protocols in the cohort; the estimate is committed before dispatch *(deterministic)*
-- [ ] Spend ≤ $100 measured; floors green on all four *(live-executed — dispatched, all legs failed at research preflight 401, $0; floors stay unproven → F-R6GLD.1-1)*
+- [ ] Spend ≤ $100 measured; floors green on all four *(live-executed — **$33.89 measured ≤ $100
+  on the rerun (4/4 legs `completed`, reviews delivered); floors green on 3/4 — `golden-academic`
+  produced 11 major findings vs the committed band `max:10` → gate `PROMOTION BLOCKED`
+  → F-R6GLD.1-2, operator ruling owed*)*
 - [x] The re-run rule is committed *(deterministic)*
-- [ ] Universal phase-gate AC *(agentic)*
-
-## Gap analysis
-
-(filled at close — every requirement row → evidence layer)
+- [ ] Universal phase-gate AC *(agentic — mostly held: new driver behaviour carries test pins
+  (12 driver tests), REQ-DISC-3 stamped, ledgers advanced; the live-executed AC stays red)*
 
 ## Live evidence
 
@@ -93,37 +95,100 @@ pairs confirm $0 debited):**
   (`authentication_error` on the model call), not tenant-funding. **Per the ticket: stopped,
   no retry, operator flag.**
 
+## Progress — resume (2026-10-23 PM, honest rerun after F-R6GLD.1-1 cleared)
+
+- **2026-10-23T13:37Z — resume.** F-R6GLD.1-1 root-caused + cleared upstream (LEDGER): the
+  egress-proxy MIG held cached key v3 (`ReloadableAnthropicSecretProvider` refreshes only on
+  SIGHUP — design gap carried); proxy cycled → `rhema-prod-proxy-8g3n` HEALTHY, boots v4,
+  `/v1/models` + `claude-haiku-4-5`+`web_search` direct probes 200.
+- **2026-10-23T13:39Z — machinery gap found live: same-SHA rerun is impossible without an
+  attempt tag.** The first re-dispatch deduped onto the PRIOR attempt — the driver keyed runs
+  `golden-<fixture>-<sha>`, so `POST /runs` returned the four old `failed` rows (identical
+  ULIDs, $0, zero new model calls — `golden-scores-dedupe-noop.json` records the no-op; it also
+  minted four empty fixture projects). **Fixed:** `--dispatch` now requires `--dispatch-tag`
+  (<fixture, sha, tag> = the idempotency key; same-tag re-invocation is retry-safe, a rerun
+  names a new attempt — pinned by test + documented in `golden-rerun-rule.md`).
+- **2026-10-23T13:42Z → 15:55Z — real rerun (`--dispatch-tag rerun1`), all four legs
+  `completed`, reviews delivered.** Research preflight passed on every leg — the 401 is gone.
+- **2026-10-23T16:06Z — schemaValid measurement bug fixed.** The driver's `schemaValid`
+  demanded `correspondence_items.verdict != null`, but the real delivery path
+  (`mirror/delivery.ts`) never writes that column (per-claim verdicts live on `claims`) — every
+  delivered review measured false-red. Re-predicated on the honest schema signal: completed +
+  review CI + protocol stamp + parseable rubric w/ non-empty `dimensions[]` + ≥1 artifact + ≥1
+  claim. Re-measured the same four runIds → `golden-scores-remeasured.json`.
+- **2026-10-23T16:06Z — gate executed (not evaded):** `gateFixtures` → essay/op-ed/memo PASS,
+  **academic FAIL — `findingCountsBySeverity.major` 11 > band max 10 → PROMOTION BLOCKED.**
+  `gate-report.txt` committed. The band was authored a-priori (first live measurement ever);
+  the 11 majors are 11 distinct well-formed findings on a deliberately weak 270-word proposal —
+  a borderline band overage needing an **operator ruling** (re-rule the band via a GD amendment,
+  or treat as a signal). Never widened unilaterally — that is the gate's entire point.
+
+## Live evidence — rerun (2026-10-23, prod @ `80db0d5`, same workspace + grant)
+
+| leg | run | state | duration | spend (list) | credits (metered) | findings b/M/m/n | review CI | stamp |
+|---|---|---|---|---|---|---|---|---|
+| golden-essay | `01M5MFYJ3P04SXRBPN26FYEE11` | completed | 39.5 min | $10.65 | 2 015 | 0/7/5/5 | `01M5MJ7175C42AQSSE0KHWW42G` | essay@1 |
+| golden-academic | `01M5MJ7CGGPF3CMHDFZV80VFE2` | completed | 33.6 min | $8.69 | 1 597 | **0/11/5/6** | `01M5MM53WV5HXA45MRTEQC4CF2` | academic@1 |
+| golden-op-ed | `01M5MM5AV1RHC4RJ1NWSA0X07G` | completed | 34.3 min | $8.56 | 1 566 | 3/3/3/6 | `01M5MP4BGG9MWETVZ2ZH831ZXP` | op-ed@1 |
+| golden-memo | `01M5MP4XV5CVNP3301DFED7EJP` | completed | 25.2 min | $5.99 | 1 160 | 0/7/7/5 | `01M5MQK67WHNYZCNB7BFRHB7RY` | memo@1 |
+
+- Every leg: `citedFetched: true`, `attestationViolations: 0`, rubric `dimensions[]` = 8,
+  13–14 delivered artifacts, 7–11 claims.
+- **Measured spend: $33.89 list** (usage_records, meter of record) ≤ $100 cap; estimate was
+  $46.94. Total across BOTH dispatches: $0 + $33.89 = **$33.89**. Grant consumed:
+  promo bucket 8 000 → 6 227 cr; daily bucket 10 → 0.
+- Gate evidence: `reports/2026-10-23_R6GLD.1/golden-scores-remeasured.json` +
+  `gate-report.txt` (`PROMOTION BLOCKED` — exit 1); `evals/fixtures/nightly-manifest.json`
+  written by `--execute` (gitignored local artifact).
+- Residue on the flagged workspace (inside the ticket's named mutations): 8 more fixture
+  projects + drafts (4 from the dedupe no-op — `01M5MFVV7…`/`01M5MFVXJ…`/`01M5MFW00…`/`01M5MFW24…`
+  — which minted projects but deduped to no runs, 4 from the real rerun), plus the first
+  dispatch's 4. All on `is_test` `01M5M2C6NC3058T528ZX2D44SG`; the 26 h purge reclaims them.
+
 ## Finding
 
-- **F-R6GLD.1-1 (OPEN, operator):** research preflight returns HTTP 401
-  `authentication_error` for both research model tiers on prod @ `80db0d5`, although
-  F-R6CNT.2-1's `/v1/models` probe is 200 — the failing surface is the model call carrying
-  the `web_search`/`web_fetch` server tools (the per-run `proxy_credential_id` path).
-  Golden validation stays **red** until the credential/tool access is fixed; the amended
-  §17 criterion and D-P0.15-4 remain unmet — rerun required after the fix (see
-  `docs/ops/golden-rerun-rule.md`).
+- **F-R6GLD.1-1 (RESOLVED — confirmed green live 2026-10-23):** the proxy cycle cleared it —
+  all four rerun legs passed research preflight and completed with real research (45+ allowed
+  fetches on leg 1 alone). The carried design gap (SIGHUP-only key refresh) stays noted in the
+  LEDGER entry as owed engineering work, not launch-blocking. Original finding text:
+  research preflight returned HTTP 401 `authentication_error` for both research model tiers on
+  prod @ `80db0d5` although F-R6CNT.2-1's `/v1/models` probe was 200 — the failing surface was
+  the model call carrying `web_search`/`web_fetch` server tools (the per-run
+  `proxy_credential_id` path).
+- **F-R6GLD.1-2 (OPEN, operator):** `golden-academic` measured **11 major findings** vs the
+  committed `GOLDEN_LIVE_FLOORS` band `major: {max:10}` → `assertScoreFloors` FAIL →
+  `promotionBlocked: true`. The run is NOT degenerate — the majors are 11 distinct, well-formed
+  findings (zero blocking; cited-fetched clean; zero attestation violations). The band was
+  authored before any live measurement existed. Operator ruling needed: re-calibrate the band
+  with a recorded GD amendment (the amended §17 criterion then needs one more green rerun — the
+  machinery now makes that cheap, ~$35 measured), or hold the criterion red as a genuine signal.
 
 ## Gap analysis
 
 | requirement | evidence | state |
 |---|---|---|
 | 4 protocols, one fixture each, committed floors | `GOLDEN_EVAL_FIXTURES` (essay/academic/op-ed/memo) + `eval-fixtures.test.ts` (12 tests) | DONE (deterministic) |
-| `--cohort minimal` driver, default review/standard/base | `nightly-golden-driver.mjs` + `nightly-golden-driver.test.mjs` (11 tests) | DONE (deterministic) |
+| `--cohort minimal` driver, default review/standard/base | `nightly-golden-driver.mjs` + `nightly-golden-driver.test.mjs` (12 tests — +`--dispatch-tag` pin) | DONE (deterministic) |
 | committed estimate, >$100 → pause | `cohort-estimate.json` — 6 572 cr / $46.94, `withinCap:true` | DONE (committed pre-dispatch) |
-| 1 run per protocol on `80db0d5`, `is_test` | 4 run ids above — dispatched once each, never retried | DONE (dispatch) |
-| measured `--scores`, floors green, `promotionBlocked:false` | runs failed at research preflight 401 — **no green scores exist**; gate correctly not invoked | **BLOCKED (F-R6GLD.1-1)** |
-| `docs/ops/golden-rerun-rule.md` | committed | DONE (deterministic) |
-| D-P0.15-4 closed with live evidence | live evidence exists but shows red — the deferral stays **OPEN** with a dated note | **BLOCKED (F-R6GLD.1-1)** |
+| 1 run per protocol on `80db0d5`, `is_test` | rerun1 tag: 4 fresh run ids, all `completed` (evidence table above) | DONE (live-executed) |
+| measured `--scores`, floors green, `promotionBlocked:false` | `golden-scores-remeasured.json` — measured scores exist; floors green on 3/4, academic red (major 11>10) → `PROMOTION BLOCKED` | **RED (F-R6GLD.1-2, operator ruling)** |
+| `docs/ops/golden-rerun-rule.md` | committed; updated with the `--dispatch-tag` contract | DONE (deterministic) |
+| D-P0.15-4 closed with live evidence | live evidence exists and is honestly **red on one floor** — the deferral stays **OPEN** with a dated note | **OPEN (F-R6GLD.1-2)** |
 
 ## Operator flags
 
-- **⚑ F-R6GLD.1-1 — research model calls return HTTP 401 on prod:** all four cohort runs
-  failed at research preflight (`authentication_error` on `web_search`/`web_fetch` model calls,
-  both tiers, prod @ `80db0d5`). `/v1/models` is 200 but the tool-carrying call path is rejected.
-  **Fix needed before golden validation can go green** — no run will be retried until then;
-  after the fix the rerun is exactly this cohort (rerun rule committed). The granted 8 000 cr
-  remain untouched on the flagged workspace for that rerun (or `house-void` reverses).
+- **⚑ F-R6GLD.1-2 — `golden-academic` floor miss (major findings 11 > band max 10):** the rerun
+  delivered four genuinely green runs (all `completed`, schema-valid reviews, cited⇒fetched
+  clean, zero attestation violations) but the academic leg exceeded the a-priori major band by
+  one finding. **Ruling needed:** re-calibrate `GOLDEN_LIVE_FLOORS.findingCountsBySeverity.major`
+  with a GD amendment + one more `--dispatch-tag rerun2` pass (~$35 measured this time), or hold
+  the amended §17 criterion red. The deferral D-P0.15-4 and GATE-LAUNCH threshold state stay
+  honest-red until ruled.
+- ~~F-R6GLD.1-1~~ — cleared: proxy cycle to `rhema-prod-proxy-8g3n` (v4) fixed the 401s; proven
+  by four green end-to-end runs. The SIGHUP-only key-refresh design gap is carried in the LEDGER
+  OPEN FINDINGS entry as owed (small, non-launch-blocking) engineering work.
 - The four paid legs need funded balance on the flagged workspace: the only documented seam is
   `admin-cli house-grant` (audited `admin_actions` + ordinary ledger rows — never a balance UPDATE).
   Executed under GD-GOLDEN-CAP.R6's cohort authorization, actor `devin-cli:r6gld-1`, sized to the
-  committed estimate + hold headroom. Recorded here for operator awareness — `house-void` reverses.
+  committed estimate + hold headroom. The rerun consumed ~1 773 cr of the 8 000 cr grant
+  (6 227 remain — enough for one ruled rerun). `house-void` reverses the remainder.

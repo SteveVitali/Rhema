@@ -8,13 +8,19 @@
 //     `gateFixtures` consumes, and the gate invocation. Touches nothing.
 //   • --cohort minimal --estimate: prints the cohort estimate JSON (deterministic; no writes).
 //     The estimate MUST be committed before any --dispatch (ticket deliverable 3).
-//   • --cohort minimal --dispatch: the one-time bounded PAID leg (GD-GOLDEN-CAP.R6 — one fixture
-//     per protocol × its primary Review workflow, review/standard/base, hard cap $100 measured).
-//     Requires GOLDEN_BUDGET_RULING=approved (one-shot), an --expect-sha matching the deployed
-//     build's gitSha, a flagged is_test workspace (asserted from the system DSN), and a funded
-//     billing account. Writes the measured --scores-out file. The recurring cadence stays
-//     declined (GD-R5OPS.1-1) — this mode exists for the one-shot validation + the
-//     protocol-affecting-deploy rerun rule, never on a schedule.
+//   • --cohort minimal --dispatch --dispatch-tag <attempt>: the one-time bounded PAID leg
+//     (GD-GOLDEN-CAP.R6 — one fixture per protocol × its primary Review workflow,
+//     review/standard/base, hard cap $100 measured). Requires GOLDEN_BUDGET_RULING=approved
+//     (one-shot), an --expect-sha matching the deployed build's gitSha, a flagged is_test
+//     workspace (asserted from the system DSN), a funded billing account, AND an explicit
+//     --dispatch-tag naming this attempt. The tag joins the run idempotency key
+//     (golden-<fixture>-<sha>-<tag>): a same-tag re-invocation dedupes back to the same
+//     runs (retry-safe mid-cohort), while a NEW attempt (a rerun under the rerun rule after
+//     a fix at the SAME sha) MUST carry a new tag — otherwise the launch dedupes to the prior
+//     attempt's terminal runs and the "rerun" would silently re-measure stale rows. Writes
+//     the measured --scores-out file. The recurring cadence stays declined (GD-R5OPS.1-1) —
+//     this mode exists for the one-shot validation + the protocol-affecting-deploy rerun
+//     rule, never on a schedule.
 //   • --execute --scores <file>: REFUSES unless GOLDEN_BUDGET_RULING=approved is in the env.
 //     Consumes the measured per-fixture scores, writes evals/fixtures/nightly-manifest.json, and
 //     invokes the gate. It NEVER fabricates scores — no --scores file, no manifest. With
@@ -55,6 +61,7 @@ const DISPATCH = args.includes("--dispatch");
 const SCORES_FILE = flag("--scores");
 const SCORES_OUT = flag("--scores-out") ?? SCORES_FILE;
 const EXPECT_SHA = flag("--expect-sha");
+const DISPATCH_TAG = flag("--dispatch-tag");
 const dryRun = !args.includes("--execute") && !DISPATCH;
 
 const require = createRequire(resolve(root, "packages", "journeys", "package.json"));
@@ -274,6 +281,20 @@ async function dispatchMinimal() {
     }
     console.log(`[dispatch] provenance OK — ${API} serves ${gitSha}`);
 
+    // attempt tag — the idempotency key is (fixture, sha, tag). Required so a rerun under the
+    // rerun rule can never silently dedupe onto a prior attempt's terminal runs (the live miss
+    // this closes: a same-key relaunch returned the earlier failed run rows, i.e. NO new model
+    // call was made — stale red or stale green, either way fabricated evidence).
+    if (!DISPATCH_TAG || !/^[a-z0-9][a-z0-9-]{0,30}$/.test(DISPATCH_TAG)) {
+      console.error(
+        "refusing: --dispatch requires --dispatch-tag <attempt-name> ([a-z0-9-], ≤31 chars) — " +
+          "it joins each run's idempotency key so a rerun launches FRESH runs instead of " +
+          "deduping to the prior attempt's rows",
+      );
+      process.exit(2);
+    }
+    console.log(`[dispatch] attempt tag "${DISPATCH_TAG}" — idempotency keys are per-attempt`);
+
     // tenant — the workspace must exist and carry the is_test flag (never a real tenant).
     const ws = (
       await q(`select w.id, w.is_test, w.billing_account_id,
@@ -403,7 +424,7 @@ async function dispatchMinimal() {
       }
 
       const launched = await post(`/projects/${projectId}/runs`, {
-        idempotencyKey: `golden-${leg.fixture.id}-${EXPECT_SHA}`.slice(0, 120),
+        idempotencyKey: `golden-${leg.fixture.id}-${EXPECT_SHA}-${DISPATCH_TAG}`.slice(0, 120),
         workflow: leg.workflow,
         rigor: leg.rigor,
         modelTier: leg.modelTier,
@@ -456,11 +477,27 @@ async function dispatchMinimal() {
       );
       const reviewCi = (
         await q(
-          `select id, verdict, rubric, protocol_id, protocol_version from correspondence_items
+          `select id, rubric, protocol_id, protocol_version, artifact_ids from correspondence_items
              where run_id = $1 and kind = 'review' order by delivered_at desc limit 1`,
           [runId],
         )
       )[0];
+      // schemaValid = the run delivered a schema-valid review CI. NOTE: `correspondence_items.verdict`
+      // is never written by the real delivery path (mirror/delivery.ts omits the column; per-claim
+      // verdicts live on `claims`) — checking it produced false-red on all four live legs. The honest
+      // schema signal: a completed run + a review CI with a protocol stamp, a parseable rubric whose
+      // dimensions[] is non-empty, delivered artifacts, and ≥1 claim row.
+      const reviewRubric = (() => {
+        try {
+          const r = typeof reviewCi?.rubric === "string" ? JSON.parse(reviewCi.rubric) : reviewCi?.rubric;
+          return r && typeof r === "object" ? r : null;
+        } catch {
+          return null;
+        }
+      })();
+      const reviewClaims = reviewCi
+        ? (await q(`select count(*)::int n from claims where correspondence_id = $1`, [reviewCi.id]))[0]
+        : { n: 0 };
       const userSourceDomains = row.inputs?.urlPolicy?.userSourceDomains ?? [];
       const citedUnfetched = (
         await q(
@@ -484,7 +521,14 @@ async function dispatchMinimal() {
         floors: leg.fixture.floors,
         scores: {
           schemaValid:
-            row.state === "completed" && reviewCi != null && reviewCi.verdict != null && reviewCi.rubric != null,
+            row.state === "completed" &&
+            reviewCi != null &&
+            reviewCi.protocol_id != null &&
+            reviewCi.protocol_version != null &&
+            Array.isArray(reviewRubric?.dimensions) &&
+            reviewRubric.dimensions.length > 0 &&
+            (reviewCi.artifact_ids?.length ?? 0) > 0 &&
+            reviewClaims.n > 0,
           citedFetched: citedUnfetched.n === 0,
           attestationViolations: attestations.n,
           findingCountsBySeverity: {
@@ -513,7 +557,13 @@ async function dispatchMinimal() {
     const scoreDoc = {
       generated_at: new Date().toISOString(),
       cohort: "minimal",
-      provenance: { apiBase: API, gitSha, expectSha: EXPECT_SHA, workspaceId: WORKSPACE },
+      provenance: {
+        apiBase: API,
+        gitSha,
+        expectSha: EXPECT_SHA,
+        workspaceId: WORKSPACE,
+        dispatchTag: DISPATCH_TAG,
+      },
       spend: { totalUsdList: spent, capUsd: HARD_CAP_USD, legs: out.length },
       fixtures: out,
     };

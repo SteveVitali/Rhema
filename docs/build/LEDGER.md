@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      R6GLD.1            # row 196 machinery landed 2026-10-23 but validation RED — all 4 legs failed research preflight 401 (F-R6GLD.1-1, operator); rerun the same committed cohort after the credential/tool fix, then close D-P0.15-4
-lastCompleted:   R6SECR.1           # 2026-10-23; PR #213 — adversarial review: F-R6SECR.1-1 CRITICAL cross-tenant fix deployed+re-verified @ 80db0d5 (0 open crit/high); unmerged (OPERATOR)
+nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate reads RED pending F-R6GLD.1-2 ruling (academic 11 majors > band max 10 — re-rule or hold, D-P0.15-4 stays OPEN)
+lastCompleted:   R6GLD.1            # 2026-10-23; PR #214 — golden cohort machinery + live rerun executed @ 80db0d5 (4/4 completed, $33.89 ≤ $100); gate honestly red on the academic major band — F-R6GLD.1-2; unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-23T10:05:00Z         # R6GLD.1 done; PR #214 — golden cohort machinery + estimate $46.94 + rerun rule landed; validation RED (F-R6GLD.1-1 research 401, $0); unmerged (OPERATOR)
+updatedAt:       2026-10-23T16:20:00Z         # R6GLD.1 rerun done; PR #214 — 4/4 legs completed post-proxy-fix ($33.89); gate red on academic band (F-R6GLD.1-2, operator ruling); unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -261,7 +261,8 @@ pointers; substance unchanged.)_
   (store-seam unmasked), deployed to prod `80db0d5` under GD-DEPLOY.R6 (api-only → full-set
   re-pin), live re-probe green 178 legs/0 findings. `D-R6SECR.1-2` (no HSTS, LOW) carried in
   DEFERRALS.
-- **F-R6GLD.1-1 — ROOT-CAUSED + CLEARED 2026-10-23 (stale proxy key cache; design gap recorded).**
+- **F-R6GLD.1-1 — ROOT-CAUSED + CLEARED 2026-10-23 (stale proxy key cache; design gap recorded);
+  CONFIRMED green live by the rerun (4/4 legs completed, research preflight passed on each).**
   Orchestrator investigation: `rhema-prod-anthropic-api-key` v4 verified working on the exact
   failing call shape direct-to-Anthropic (`claude-haiku-4-5` + `web_search` → 200) — the key is
   fine; the 401s came from the egress-proxy MIG instance holding **cached v3** —
@@ -285,6 +286,17 @@ pointers; substance unchanged.)_
   run with research can currently succeed on prod. Owner: operator (credential/tool-access
   decision). Blocks: R6GLD.1 golden validation + D-P0.15-4 close + any organic paid run —
   rerun the same committed cohort after the fix (`docs/ops/golden-rerun-rule.md`).
+- **F-R6GLD.1-2 — OPEN (2026-10-23, R6GLD.1 rerun; golden gate red — launch-relevant).**
+  The post-fix rerun (dispatch-tag `rerun1`, prod @ `80db0d5`, workspace
+  `01M5M2C6NC3058T528ZX2D44SG`) delivered all four legs `completed` with schema-valid reviews,
+  $33.89 list measured ≤ $100 — but `golden-academic` produced **11 major findings vs the
+  committed `GOLDEN_LIVE_FLOORS` band `major:{max:10}`** → `assertScoreFloors` FAIL →
+  `promotionBlocked: true` (`reports/2026-10-23_R6GLD.1/gate-report.txt`). The run is not
+  degenerate (11 distinct well-formed findings; 0 blocking; cited⇒fetched clean); the band was
+  authored a-priori before any live measurement. **Operator ruling needed:** re-calibrate the
+  band via a GD amendment + one more `--dispatch-tag rerun2` pass (~$35 measured this time;
+  6 227 cr grant remains), or hold the amended §17 criterion red. D-P0.15-4 stays OPEN;
+  GATE-LAUNCH's golden threshold reads blocked until ruled.
 
 ## GATE DECISIONS
 
@@ -784,3 +796,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-23T10:05:00Z — **R6GLD.1 Stage A done — machinery landed; live validation RED on F-R6GLD.1-1 (operator flag, no retry).** Branch `stevevitali/r6gld-1-golden-validation` · base `stevevitali/r6secr-1-adversarial-review` · **golden validation $100 minimal four-protocol cohort @ launch SHA (row 196, REQ-DISC-3, ADR-111 amended §17)** · **delivered**: protocol goldens for the two missing protocols (`golden-essay`, `golden-academic`) + registry rows → all four protocols covered (essay/academic/op-ed/memo), committed score floors, `--cohort minimal` in `nightly-golden-driver.mjs` (exactly one fixture per protocol × `review`/`base`/`standard`; launch-SHA + `is_test` workspace + `GOLDEN_BUDGET_RULING=approved` fail-closed), `docs/ops/golden-rerun-rule.md` (rerun after every protocol-affecting deploy incl. REQ-ENG-3/REQ-SEC-3 fixes), driver DSN seam `GOLDEN_DATABASE_URL` (privileged system-DSN read mapped at invocation — `tools/system-pool-boundary.json` is `.ts`-scoped and doesn't cover `scripts/`) · **committed estimate BEFORE dispatch: 6 572 cr / $46.94 list < $100 cap** (`reports/2026-10-23_R6GLD.1/cohort-estimate.json`) · **live**: fresh `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG` minted (`test+jrn-gld@rhema.tools`; older jrn-a tenant had 20 cr + purge horizon), audited 8 000 cr house grant, provenance verified `80db0d5` → **exactly one paid run per protocol, four total, never retried** — all four failed at **research preflight HTTP 401** (`authentication_error`, `web_search`/`web_fetch` calls, both tiers → **F-R6GLD.1-1**, operator flag); measured spend **$0** (holds fully released); zero real completed runs in 3 days — platform-side credential/tool issue, not tenant funding · **no manifest written** (driver never fabricates one); `golden-scores.json` committed as honest red evidence · **D-P0.15-4 stays OPEN** (dated note; closes when the cohort reruns green per the rerun rule) · verify: vitest 12+11 on touched files · `@rhema/protocols` build/lint/typecheck green · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T11:45:00Z — **boundary confirmed — R6GLD.1 green at final head.** `ci-boundary --pr 214` reads **pass** at head `ab10d60` (run 39940647806 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; boundary record `logs/ci-boundary-214.json`). First head `a562f61` read **fail** on `typecheck / lint / unit`: `system-pool-boundary.test.ts` refused the `.mjs` allowlist entry (the boundary is `.ts`-scoped and doesn't cover `scripts/`) — fixed in `ab10d60` by binding the driver's privileged read to `GOLDEN_DATABASE_URL` and reverting `tools/system-pool-boundary.json` to base. Local verify: vitest 12+11+2 boundary pin green · check-build-memory 0 violations · append-only vs `c1f20f5` OK. Final: PR #214 head `ab10d60` green, unmerged (OPERATOR); `nextTicket` holds at R6GLD.1's **live rerun** — F-R6GLD.1-1 (research 401) is the operator flag. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T11:55:00Z — **boundary re-confirmed — R6GLD.1 green at final head.** The boundary-evidence commit pushed head `fe3aa85`; `ci-boundary --pr 214` re-reads **pass** (run 39947020706 — all seven legs + `ci-pass` anchor; same-tree reuse; record `logs/ci-boundary-214.json` refreshed). Final: PR #214 head `fe3aa85` green, unmerged (OPERATOR); `nextTicket` = R6GLD.1's live rerun once F-R6GLD.1-1 is fixed (operator). harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-23T16:20:00Z — **R6GLD.1 rerun done — cohort executed live 4/4 completed @ `80db0d5`; golden gate honestly RED on one floor (F-R6GLD.1-2, operator ruling).** Branch `stevevitali/r6gld-1-golden-validation` · PR #214 · post-F-R6GLD.1-1 (proxy cycled → `rhema-prod-proxy-8g3n` on key v4). **Machinery gaps found + fixed live:** (a) same-SHA rerun silently deduped onto the prior attempt's failed runs — run idempotency keys were `golden-<fixture>-<sha>`; `--dispatch` now requires `--dispatch-tag` (keys = fixture·sha·attempt), pinned by test + `golden-rerun-rule.md`; the dedupe no-op recorded (`golden-scores-dedupe-noop.json`, $0); (b) `schemaValid` demanded `correspondence_items.verdict` — a column the delivery path never writes — re-predicated on the honest schema signal and the four runIds re-measured (`golden-scores-remeasured.json`). **Rerun (`rerun1`):** essay completed $10.65 · academic completed $8.69 · op-ed completed $8.56 · memo completed $5.99 — **$33.89 list ≤ $100 total** (both dispatches $0+$33.89), 8 rubric dims + 13–14 artifacts + 7–11 claims each, cited⇒fetched clean, 0 attestation violations, protocol stamps all `@1`. **Gate: `PROMOTION BLOCKED`** — essay/op-ed/memo PASS, academic FAIL `findingCount:major` 11 > band max 10 (`gate-report.txt`); band a-priori, run not degenerate — **F-R6GLD.1-2 operator ruling** (re-rule + ~$35 `rerun2`, or hold red). **Deferrals:** D-P0.15-4 stays **OPEN** (dated note). **Verify:** vitest 12 driver tests · eslint clean. next → `196a_HUMAN-H12` (precedes 197 R6SWP.1) · unmerged (OPERATOR) · layer: live-executed (red on one floor) · harness: devin-desktop/swe-2-high/subagent.

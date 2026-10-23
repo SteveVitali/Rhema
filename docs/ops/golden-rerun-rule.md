@@ -53,14 +53,18 @@ curl -s https://api.rhema.tools/healthz   # build.gitSha must equal the deploy u
 # 1 — funded is_test workspace + a session for a pinned test identity (admin-cli house-grant is
 #     the audited funding seam; magic-link mint via the pinned test mailbox)
 
-# 2 — one-shot dispatch (exactly four paid runs)
+# 2 — one-shot dispatch (exactly four paid runs). --dispatch-tag names THIS attempt and joins
+#     each run's idempotency key (golden-<fixture>-<sha>-<tag>): re-invoking with the same tag
+#     dedupes mid-cohort retries, but a rerun after a fix MUST use a new tag — otherwise the
+#     launches dedupe onto the prior attempt's terminal runs and no new work happens (this
+#     failure mode was hit live on 2026-10-23).
 GOLDEN_BUDGET_RULING=approved \
 API_BASE_URL=https://api.rhema.tools \
 GOLDEN_DATABASE_URL=<system-role dsn over the IAP tunnel> \
 GOLDEN_WORKSPACE_ID=<is_test workspace> \
 GOLDEN_MINT_SESSION=1 \
 node scripts/live/nightly-golden-driver.mjs --cohort minimal --dispatch \
-  --expect-sha <deploy sha> --scores-out <scores.json>
+  --expect-sha <deploy sha> --dispatch-tag <attempt-name> --scores-out <scores.json>
 
 # 3 — gate on the measured scores
 GOLDEN_BUDGET_RULING=approved \

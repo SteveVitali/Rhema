@@ -46,6 +46,13 @@ describe("nightly-golden-driver — R6GLD.1 the minimal cohort", () => {
     expect(SRC).toMatch(/gitSha\.startsWith\(EXPECT_SHA\)/);
     expect(SRC).toMatch(/launch-candidate SHA/);
   });
+  it("--dispatch-tag is required and joins the run idempotency key (reruns can't dedupe stale)", () => {
+    expect(SRC).toContain('flag("--dispatch-tag")');
+    expect(SRC).toMatch(/!DISPATCH_TAG[\s\S]*?process\.exit\(2\)/);
+    expect(SRC).toContain("golden-${leg.fixture.id}-${EXPECT_SHA}-${DISPATCH_TAG}");
+    // a rerun at the same SHA is the rerun rule's core case — the tag MUST be in the key.
+    expect(SRC).toMatch(/dispatchTag:\s*DISPATCH_TAG/);
+  });
   it("the dispatch refuses a non-test workspace and measures spend from the meter of record", () => {
     expect(SRC).toMatch(/ws\.is_test !== true[\s\S]*?flagged test tenants only/);
     expect(SRC).toContain("sum(list_cost_usd)");
