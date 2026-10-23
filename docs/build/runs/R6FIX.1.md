@@ -24,10 +24,9 @@
 - **Live stage:** none — code+tests only; production deploys OUT OF SCOPE (no `pulumi up`, no prod
   mutations). Keep-alive + HSTS live re-proof is recorded as owed post-deploy.
 - **Production mutations:** none.
-- **ci:** **pass #215@c8c7246** (run 40017357067 — fast-path + typecheck/lint/unit + contracts +
-  public-safe + integration + images + `ci-pass` anchor; first read timed out at 2700s with
-  `images` pending → job-polled green → re-read, established precedent; record
-  `logs/ci-R6FIX.1.json`)
+- **ci:** **pass #215@02f251b** (run 40023653352 — all seven legs + `ci-pass` anchor, final head;
+  earlier read green at `c8c7246` run 40017357067 after job-polling `images` past a 2700 s
+  timeout, established precedent; record `logs/ci-R6FIX.1.json`)
 
 ## Deferrals read
 
