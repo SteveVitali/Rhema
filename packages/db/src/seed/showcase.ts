@@ -695,8 +695,10 @@ export const JOURNEY_SEED_USAGE_REQUEST_PREFIX = "req_jrn_";
  * SPA.22 (REQ-VFY-10) — the delivered-run-report fixture: the same `seedDossierProject` payload
  * (a delivered completed review run on a NORMAL writable project — phases, claims, letter) PLUS
  * the two ledger facts `buildRunReport` reads that the dossier never needed at $0:
- *   • `credit_ledger` — a debit row for the run's charge AND a net-zero grant pair so the
- *     nightly `balances = Σ ledger` invariant survives a fixture charge on a test tenant;
+ *   • `credit_ledger` — a debit row for the run's charge AND a net-zero grant→hold→debit
+ *     chain so the nightly `balances = Σ ledger` invariant survives a fixture charge on a
+ *     test tenant (a bare grant+debit pair folds to held=−charge — R6FOR.1's
+ *     `balance_divergence` defect);
  *   • `usage_records` — proxy rows keyed `step:<phase>` (the meter of record) so the seat
  *     split, the spend drivers, the flags, the metered-vs-charged reconciliation, and the
  *     `?advanced=1` Level-4 `data-usage-row`s all render real content.
@@ -725,12 +727,20 @@ export async function seedDeliveredRunReport(
   }
   const now = deps.clock?.now() ?? new Date();
   const label = deps.seedLabel ?? "journey-report-seed";
-  // The grant+debit pair — Σ ledger nets 0 for the bucket so `credit_balances` stays consistent
-  // without a balance touch (the debit alone would break the nightly Σ invariant).
+  // The grant→hold→debit chain — the real charge path the ledger fold recognizes. R6FOR.1:
+  // a bare grant+debit pair does NOT net to zero — `debit` only consumes `held` (never
+  // `available`), so the fold leaves avail=+charge/held=−charge while `credit_balances` sits
+  // at 0/0 and the nightly Σ invariant reports `balance_divergence` (the six seeded accounts
+  // prod carried, expectedHeld=−3860). The hold row is what a real funded charge writes.
   await db.query(
     `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, source, reason, idempotency_key, at)
      values ($1,$2,$3,'grant',$4,'included','seed',$5,$6,$7)`,
     [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, label, `jrn-report-grant:${res.reviewRunId}`, now.toISOString()],
+  );
+  await db.query(
+    `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
+     values ($1,$2,$3,'hold',$4,'included',$5,'hold',$6,$7,$8)`,
+    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, res.reviewRunId, label, `jrn-report-hold:${res.reviewRunId}`, now.toISOString()],
   );
   await db.query(
     `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
