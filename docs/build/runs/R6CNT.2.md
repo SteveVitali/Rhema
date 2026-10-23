@@ -180,3 +180,13 @@ the redeploy, the fresh-account Showcase leg, the notice send, the GATE-LAUNCH s
   (prod model-path key 401 — launch-relevant; operator key decision owed), the 31
   pre-existing showcase rows' prior-fixture residual (operator call recorded in GATE-LAUNCH
   threshold 4), and the GATE-LAUNCH signature itself (the operator's verbatim go).
+
+## CI boundary
+
+- `gh run list` on the final head `d53c70a`: run **39905403884** — **all jobs PASS**
+  (`typecheck / lint / unit` 25m58s incl. full `pnpm test` + `check:dom-contract` +
+  `check-upstream-diff`; `contracts`; `public-safe` gitleaks/markers/licence/cookies/budget/env;
+  `integration` FakeEngine + privsep kernel legs; `images` build+scan+provenance; `ci-pass`
+  anchor written). Earlier runs on intermediate heads were superseded-cancelled.
+- Stack check: PR #212 is unmerged (OPERATOR policy); the agent's boundary is "CI green at the
+  recorded head" — met.
