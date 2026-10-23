@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate GREEN post GD-GOLDEN-BAND.R6 (major band max 12; same scores re-gated 4/4 PASS $0 — D-P0.15-4 DONE)
-lastCompleted:   R6GLD.1            # 2026-10-23; PR #214 — golden cohort machinery + live rerun executed @ 80db0d5 (4/4 completed, $33.89 ≤ $100); gate GREEN on the amended major band (GD-GOLDEN-BAND.R6, F-R6GLD.1-2 resolved); unmerged (OPERATOR)
+lastCompleted:   R6FIX.1            # 2026-10-23; findings hardening — keep-alive undo (F-R6POST.2-2) + proxy key interval refresh (F-R6GLD.1-1 gap) + HSTS (D-R6SECR.1-2) landed; ILB design proposed (ADR-122, operator ruling owed); unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6gld-1-golden-validation  # R6GLD.1 @ PR #214 (stacks on r6secr-1-adversarial-review); next row forks here — PROD SERVES 80db0d5, SQL REGIONAL
+chainTip:        stevevitali/r6fix-1-findings-hardening  # R6FIX.1 (insert row; stacks on r6gld-1-golden-validation); next row forks here — PROD SERVES 80db0d5, SQL REGIONAL
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-23T18:40:00Z         # R6GLD.1 re-gate — GD-GOLDEN-BAND.R6 band amended (major max 10→12); existing measured scores re-gated 4/4 PASS ($0); F-R6GLD.1-2 resolved; D-P0.15-4 DONE; unmerged (OPERATOR)
+updatedAt:       2026-10-23T20:09:32Z         # R6FIX.1 — findings hardening landed (undo persistence, periodic key refresh, HSTS, ADR-122 ILB design); live re-proofs owed post-deploy; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -214,13 +214,31 @@ pointers; substance unchanged.)_
   silently express the broken flip. **Remediation owed (operator ruling → D-R6INF.1-1):**
   internal passthrough NLB on a new shared VIP + drop `networkIP` from the template +
   repoint `proxyBaseUrl`, then flip the fact — a design + ~$8–18/mo add outside the ruled
-  lever's envelope.
+  lever's envelope. **2026-10-23 (R6FIX.1):** the design landed as **ADR-122**
+  (`docs/adr/ADR-122-egress-proxy-internal-passthrough-nlb-shared-vip.md`) — PROPOSED,
+  operator ruling owed (≈+$18/mo LB standing charge + the already-ruled +$12.2 VM);
+  three-`up` migration, failover drill, and rollback spec'd. The `>1` guard stays armed.
 - **F-R6POST.2-1 — RESOLVED in-run (`a99e960`).** `R10.keepalive` timed out clicking the
   first `a[href="/app"]` — the hidden `.ide-phonebar` fallback link matched before the
   visible rail `⌂` (duplicate hrefs, first match hidden). Scoped the step to
   `a[href="/app"]:visible` (`packages/journeys/src/steps.ts`); the leg then ran the full
   semantic arm. Harness defect, live-found on pr-211.
-- **F-R6POST.2-2 — OPEN (product-side, REQ-NAVC-22/23).** `R10.keepalive` semantic arm on
+- **F-R6POST.2-2 — RESOLVED-IN-CODE 2026-10-23 (R6FIX.1); the live `R10.keepalive`
+  semantic re-proof is owed post-deploy (D-SPA.24-1 tail).** Root cause confirmed
+  deterministically in-repo: `yUndoPlugin`'s view-destroy calls `undoManager.destroy()`,
+  which removes the manager's `afterTransaction` capture handler — pre-leave stack items
+  still pop once post-remount, but every post-remount edit is never captured again (the
+  live "⌘Z does nothing" symptom). Fix: the `Y.UndoManager` is owned by the registry-held
+  `CollabPageWire` (`createPageUndoManager` — the upstream option set verbatim) and bound
+  via `yPersistentUndoPlugin` (same `yUndoPluginKey`; the view attaches only the two
+  per-view selection listeners and detaches them on view teardown — it never kills the
+  shared manager). True teardown (`registry.destroyAll`/idle TTL) destroys the manager
+  through `wire.destroy()`. Deterministic evidence: `page-collab.dom.test.tsx` (17 green —
+  mount→type→unmount→remount same `data-page-session`, ⌘Z drains both the pre-leave marker
+  and a post-remount edit; teardown destroys the manager). The SSR island keeps upstream
+  `yUndoPlugin` semantics (single-mount lifecycle, unchanged). `R10.keepalive` stays
+  `expected:"red"` until the deployed leg re-runs green. Original finding text:
+- **F-R6POST.2-2 — (was OPEN, product-side, REQ-NAVC-22/23).** `R10.keepalive` semantic arm on
   pr-211: `data-page-session` identity survives the `/app` away/return client nav (0
   document loads, same stamp re-acquired inside the 120 s TTL), but ⌘Z does not remove a
   marker typed before leaving — the remounted editor's undo stack is empty.
@@ -270,9 +288,14 @@ pointers; substance unchanged.)_
   (`apps/egress-proxy/src/main.ts:48-52`; REQ-ARCH-30), no interval. The instance predated v4.
   **Cleared:** operator-authorized proxy cycle (`rhema-prod-proxy-253r` deleted → `targetSize`
   restored 1 → `rhema-prod-proxy-8g3n` RUNNING/HEALTHY at the same template — boots with v4).
-  **Design gap (carried):** SIGHUP-only refresh means a dead upstream key cannot propagate
-  without a recycle — a refresh interval or a drain-and-reload path is owed engineering work
-  (small; not launch-blocking since the recycle path is proven). Original finding text:
+  **Design gap (carried → engineered 2026-10-23, R6FIX.1):** SIGHUP-only refresh means a
+  dead upstream key cannot propagate without a recycle. R6FIX.1 closed the gap in code:
+  `ReloadableAnthropicSecretProvider.startPeriodicRefresh` re-reads the same version name
+  on a bounded interval (default 300 s; `ANTHROPIC_KEY_REFRESH_MS` override), wired in
+  `main.ts`, `.unref()`'d, serialized one-in-flight, and a failed fetch keeps serving the
+  last good key with no unhandled rejection (5 deterministic tests). The SIGHUP path is
+  unchanged. **Live effect is owed to the next proxy deploy** — prod's MIG instance runs
+  the pre-fix build until then. Original finding text:
 - **F-R6GLD.1-1 — (was OPEN; prod research model calls 401 — launch-relevant).**
   Live-found during the R6GLD.1 cohort dispatch on `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG`
   @ `80db0d5`: all four paid runs (one per protocol) failed at **research preflight** with
@@ -813,3 +836,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-23T17:20:00Z — **boundary confirmed — R6GLD.1 green at rerun head.** `ci-boundary --pr 214` reads **pass** at head `a7acf73` (run 39985872467 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; first read timed out at 2700s with `images`/`integration` pending → job-polled green → re-read, R6SECR.1 precedent; record `logs/ci-R6GLD.1-rerun.json`). Validators: `check-build-memory.sh .` 0 violations (9 pre-existing-class warnings) · append-only vs `c1f20f5` OK. PR #214 green, unmerged (OPERATOR); golden gate stays RED pending the F-R6GLD.1-2 band ruling. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T18:40:00Z — **R6GLD.1 re-gate done — GD-GOLDEN-BAND.R6 band amended; existing measured scores re-gated GREEN 4/4 ($0).** Operator ruling on F-R6GLD.1-2 recorded verbatim **"I accept the band"** → `GOLDEN_LIVE_FLOORS.findingCountsBySeverity.major` `{max:10 → max:12}` in `packages/protocols/src/eval-fixtures.ts` (headroom +1 over the observed 11; a test line pins the band) · re-gate per `golden-rerun-rule.md` step 3 on `golden-scores-reamended.json` (scores/runIds/spend byte-identical to `golden-scores-remeasured.json` — only the embedded floor snapshot re-stamped) → `gate-report-reamended.txt`: **essay/academic/op-ed/memo all PASS, `Promotion OK`, `promotionBlocked: false`** — deterministic re-evaluation, no new dispatch, $0 · **Deferrals: D-P0.15-4 → DONE** (GD-S17.R6 closing clause holds: cohort green on all four at launch SHA `80db0d5` + re-run rule committed) · **F-R6GLD.1-2 RESOLVED** · GATE-LAUNCH threshold 5 amended by dated note (golden leg now green) · verify: `@rhema/protocols` build green, vitest on `eval-fixtures.test.ts`, check-build-memory + append-only vs `c1f20f5` · `lastCompleted` stays R6GLD.1, `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · layer: live-executed (green) · harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T19:37:00Z — **boundary confirmed — R6GLD.1 green at re-gate head.** `ci-boundary --pr 214` reads **pass** at head `1549434` (run 40005329755 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; first read timed out at 2700s with `typecheck / lint / unit` pending → job-polled green → re-read, established precedent; record `logs/ci-R6GLD.1-regate.json`). PR #214 green, unmerged (OPERATOR); golden gate GREEN post GD-GOLDEN-BAND.R6 — F-R6GLD.1-2 resolved, D-P0.15-4 DONE. harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-23T20:10:00Z — **R6FIX.1 done — launch-readiness findings hardening (insert row; code+tests+design, no prod mutation).** Branch `stevevitali/r6fix-1-findings-hardening` · base `stevevitali/r6gld-1-golden-validation` @ `b3ff232` · four findings from the R6 posture/research validation: **F-R6POST.2-2 RESOLVED-IN-CODE** — the registry-held `CollabPageWire` now owns the `Y.UndoManager` (`createPageUndoManager` upstream-verbatim options + `yPersistentUndoPlugin`: the plugin view detaches only its two per-view selection listeners on `EditorView` teardown, never the shared manager; true session teardown destroys it through `wire.destroy()`) — mount→unmount→remount keeps `data-page-session` + ⌘Z drains both pre-leave and post-remount edits (REQ-NAVC-22/23); `R10.keepalive` live re-proof stays expected-red/owed post-deploy · **F-R6GLD.1-1 design gap closed in code** — `startPeriodicRefresh` on the proxy's `ReloadableAnthropicSecretProvider` (default 300 s, `ANTHROPIC_KEY_REFRESH_MS` override, `.unref()`'d, one-in-flight serialized, failed fetch keeps last good key, no unhandled rejection; SIGHUP path unchanged; `main.ts` wired) — live effect owed to the next proxy deploy · **D-R6SECR.1-2 → DONE (code-landed)** — `Strict-Transport-Security: max-age=31536000; includeSubDomains` (no preload) on both web + api, stamped only when the request arrived over TLS (`x-forwarded-proto`/`https:` URL — http never caches a bogus policy; sslip.io/run.app hosts are HTTPS-only anyway); live-curl re-verify owed post-deploy · **D-R6INF.1-1 stays OPEN — design landed**: **ADR-122** (internal passthrough NLB on a new shared VIP; ephemeral-NIC template; `proxyBaseUrl` repoint; three-`up` migration + failover drill + rollback retaining the `10.8.16.4` reservation; ≈+$18/mo LB delta over the ruled +$12.2) — **PROPOSED, operator ruling owed**; the `>1` fail-closed guard stays armed · **verify:** turbo 36/36 green (web/api/editor/egress-proxy build+lint+typecheck) · vitest web 1315 + api 561 + editor/egress-proxy 243 (new: 2 undo legs, 5 periodic-refresh, 6 HSTS) · check-build-memory 0 violations · append-only vs `c1f20f5` OK · **spend $0, zero prod writes** · layer: engineered+fixture-verified (live re-proofs honestly owed: keep-alive semantic leg, HSTS curl, ILB ruling) · `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
