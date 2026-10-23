@@ -60,6 +60,9 @@ export * from "./domain/cogs-levers.js";
 export * from "./domain/usage.js";
 export * from "./growth-lint.js";
 
+// R6LGL.1 (REQ-LCH-1; ADR-118) — the legal/trust pages' flag + placeholder census of record.
+export * from "./legal.js";
+
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";
 

@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { renderDocument } from "./render.js";
-// SPA.28 — the deletion wave + override removal leave exactly eleven SSR elements: the public
-// funnel (invite / landing / pricing / signup / login / showcase ± signed-in), the Page family's
-// forced-SSR documents (project / page / compare / revision — REQ-ED-12, phone & showcase only;
-// the `?ssr=1` escape is gone), and the not-found document every POST refusal + the catch-all
-// still render. The other thirty flipped-surface elements are deleted with their render paths —
+// SPA.28 — the deletion wave + override removal leave the SSR elements: the public funnel
+// (invite / landing / pricing / signup / login / showcase ± signed-in) + the R6LGL.1 legal/trust
+// documents (terms / privacy / refunds / acceptable-use / contact — REQ-LCH-1), the Page
+// family's forced-SSR documents (project / page / compare / revision — REQ-ED-12, phone &
+// showcase only; the `?ssr=1` escape is gone), and the not-found document every POST refusal +
+// the catch-all still render. The flipped-surface elements are deleted with their render paths —
 // `routes.tsx` keeps their manifest rows at `element: null` so the SPA router owns them.
 import {
   inviteElement,
@@ -21,6 +22,7 @@ import {
   showcaseSignedInElement,
   notFoundElement,
 } from "./routes.js";
+import { legalElements } from "./legal.js";
 import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome, DossierData } from "./data.js";
@@ -76,7 +78,7 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, type GateKind, type PublicClaimsConfig, type FindingView } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, LEGAL_PAGES, type GateKind, type PublicClaimsConfig, type FindingView } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -2481,6 +2483,18 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     return c.html(renderDocument(c.req.path, showcaseElement, {}, { origin: new URL(c.req.url).origin }));
   });
+
+  // R6LGL.1 (REQ-LCH-1) — the legal/trust documents (/terms, /privacy, /refunds,
+  // /acceptable-use, /contact): public SSR like the rest of the funnel (REQ-BND-5), served to
+  // signed-in readers too — a session never redirects away from a legal document. `LEGAL_PAGES`
+  // is the census of record; each row's drafted text ships `approved: false` until HUMAN-H11.
+  for (const legal of LEGAL_PAGES) {
+    app.get(legal.routeId, (c) =>
+      c.html(
+        renderDocument(c.req.path, legalElements[legal.routeId], {}, { origin: new URL(c.req.url).origin }),
+      ),
+    );
+  }
 
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).

@@ -13,6 +13,7 @@ import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
+import { publicFooter } from "./legal.js";
 
 const dossierLabels: DossierLabels = {
   letterHeading: COPY.dossier.letterHeading,
@@ -78,7 +79,7 @@ export function LandingPage(): ReactNode {
           <a href="/signup" style={CTA}>{COPY.landing.hero.ctaPrimary}</a>
         </>
       }
-      footer={<span>{COPY.footer}</span>}
+      footer={publicFooter()}
     >
       {/* 1 — hero (the drop-zone IS the hero's primary affordance; REQ-GROWTH-1) */}
       <section data-section="hero">
@@ -252,7 +253,7 @@ export function PricingPage(): ReactNode {
           <a href="/login" style={{ marginRight: "16px" }}>{COPY.landing.nav.signIn}</a>
         </>
       }
-      footer={<span>{COPY.footer}</span>}
+      footer={publicFooter()}
     >
       <PageTitle>{COPY.pricing.heading}</PageTitle>
       <p style={MUTED}>{COPY.pricing.lede}</p>
@@ -469,7 +470,7 @@ export function SignupPage(): ReactNode {
         ? COPY.signup.intentNoteOutline
         : null;
   return (
-    <Shell brand={COPY.brand} footer={<span>{COPY.footer}</span>}>
+    <Shell brand={COPY.brand} footer={publicFooter()}>
       <div style={{ maxWidth: "380px", margin: "0 auto" }}>
         <PageTitle>{signup?.sent ? COPY.signup.sentHeading : COPY.signup.heading}</PageTitle>
         {signup?.sent ? (
@@ -579,7 +580,7 @@ export function ShowcasePage({ signedIn = false }: { signedIn?: boolean } = {}):
           </a>
         </>
       }
-      footer={<span>{COPY.footer}</span>}
+      footer={publicFooter()}
     >
       <PageTitle>{C.pageHeading}</PageTitle>
       <p style={{ fontSize: "16px", lineHeight: 1.6, color: "var(--shell-fg)", maxWidth: "68ch" }}>{C.pageLede}</p>

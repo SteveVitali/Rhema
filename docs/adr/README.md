@@ -123,3 +123,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-115](ADR-115-ci-fast-path-same-tree-anchor.md) | CI fast path — docs-only/same-tree heads reuse a full green verdict via a repo-wide anchor | R6CI.1 (operator insert 176a; rulings D1–D9) | Accepted |
 | [ADR-116](ADR-116-post-commit-event-republish.md) | Post-commit event republish — run-end paths re-publish the committed high-water seq | R6ENG.2 | Accepted |
 | [ADR-117](ADR-117-res3-verification-checkpointing.md) | Verification checkpointing + the budget-aware retry gate — retries consult the bound, dead bounds resolve honestly | R6ENG.3 | Accepted |
+| [ADR-118](ADR-118-legal-page-flag-shape.md) | The legal/trust pages' flag + placeholder shape — a contracts census of record, not JSX props | R6LGL.1 | Accepted |

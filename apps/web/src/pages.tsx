@@ -31,6 +31,7 @@ import { feedLabelMapsJson } from "./feed-labels.js";
 // AND the onboarding SPA surface render the same composition.
 import { filesLabels } from "./files-labels.js";
 import { usePageData } from "./page-data.js";
+import { publicFooter } from "./legal.js";
 // SPA.21 — the dossier's shared view module: the Timeline/Feed/run-report/dossier label bags and
 // the §5.7 surfaces helper moved to ./dossier-view.js so the SSR page and the SPA leaf emit the
 // same DOM; the chat pane moved to ./chat-pane.js.
@@ -65,8 +66,10 @@ const dossierLabels: DossierLabels = {
   contradictedTierOneLabel: COPY.dossier.contradictedTierOneLabel,
 };
 
+// R6LGL.1 (REQ-LCH-1) — every SSR footer is the shared one: brand + the legal/trust link
+// group (public funnel pages AND the forced-SSR Page family / not-found document).
 function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
+  return publicFooter();
 }
 
 /** P1.19 — §10.1's ✗ column (REQ-SPEC-20; REQ-MOBILE-3 amended): on phone width a suppressed surface

@@ -109,8 +109,24 @@ export interface SpaDocumentRoute {
 /**
  * The public funnel documents — never SPA space (REQ-BND-5), listed so `data-route` resolves a
  * stable id on their SSR documents and the boot map can mark them `"ssr"` explicitly.
+ * R6LGL.1 (REQ-LCH-1) added the legal/trust documents — they are public-SSR forever like the
+ * rest of the funnel and stay OUT of `SPA_DOCUMENT_ROUTES` (that census's `surfaces: null`
+ * rows are server-owned *redirect* GETs registered as `_authenticated` reload stubs; a public
+ * page is neither, and an out-of-tree same-origin anchor already doc-navs natively).
  */
-export const SPA_PUBLIC_ROUTES = ["/", "/invite", "/pricing", "/signup", "/login", "/showcase"] as const;
+export const SPA_PUBLIC_ROUTES = [
+  "/",
+  "/invite",
+  "/pricing",
+  "/signup",
+  "/login",
+  "/showcase",
+  "/terms",
+  "/privacy",
+  "/refunds",
+  "/acceptable-use",
+  "/contact",
+] as const;
 
 /**
  * The authenticated prefix set (design/26 §catch-all): a GET under any of these with no session

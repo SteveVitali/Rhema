@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
 import { InvitePage, LoginPage, ProjectPage, RevisionPage, PagePage, ComparePage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.js";
+import { legalElements } from "./legal.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. P1.17 lands the public funnel: `/` is the §15.1 landing, `/pricing` renders
@@ -12,12 +13,12 @@ import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.
 // SPA.28 (the SSR deletion wave + override removal) — `element` is now null on every flipped
 // surface: the route stays in the manifest (path grammar + `public` remain the census of record,
 // `matchAppRoute` still resolves it) but NO SSR document exists for it — the handler serves the SPA
-// shell and the leaf owns composition off the /bff twins. The eleven surviving elements are exactly
-// the surfaces a server document still answers: the public funnel (forever SSR — REQ-BND-1), the
-// Page family's forced-SSR documents (phone/showcase only — REQ-ED-12; the `?ssr=1` escape is
-// gone), and the not-found document (every POST refusal + the catch-all's non-SPA arm). Anything
-// outside those eleven was retired with its render path; re-adding an element here does NOT restore
-// a render — the handlers no longer render elements at all for flipped routes.
+// shell and the leaf owns composition off the /bff twins. The surviving elements are exactly the
+// surfaces a server document still answers: the public funnel + the R6LGL.1 legal/trust
+// documents (forever SSR — REQ-BND-1/REQ-LCH-1), the Page family's forced-SSR documents
+// (phone/showcase only — REQ-ED-12; the `?ssr=1` escape is gone), and the not-found document
+// (every POST refusal + the catch-all's non-SPA arm). Re-adding an element to a flipped row does
+// NOT restore a render — the handlers no longer render elements at all for flipped routes.
 
 export interface AppRoute {
   readonly path: string;
@@ -56,6 +57,14 @@ export const routes: readonly AppRoute[] = [
   { path: "/signup", public: true, element: signupElement },
   { path: "/login", public: true, element: loginElement },
   { path: "/showcase", public: true, element: showcaseElement },
+  // R6LGL.1 (REQ-LCH-1) — the legal/trust documents: public SSR forever like the rest of the
+  // funnel (REQ-BND-5). Elements come from `legalElements` so the census row + the emitted
+  // element can never drift apart; `approved: false` rides `LEGAL_PAGES` until HUMAN-H11.
+  { path: "/terms", public: true, element: legalElements["/terms"] },
+  { path: "/privacy", public: true, element: legalElements["/privacy"] },
+  { path: "/refunds", public: true, element: legalElements["/refunds"] },
+  { path: "/acceptable-use", public: true, element: legalElements["/acceptable-use"] },
+  { path: "/contact", public: true, element: legalElements["/contact"] },
   { path: "/app", public: false, element: SPA_ONLY },
   // P1.04 — the new-project sheet (§5.3): ?entry=scratch|outline|draft picks the entry.
   { path: "/app/new", public: false, element: SPA_ONLY },
