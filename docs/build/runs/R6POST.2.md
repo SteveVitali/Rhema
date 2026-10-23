@@ -254,10 +254,10 @@ phrasing → ADR + FIRST-LINE report flag. Any act that WOULD need a record outs
   (1 fail = the runbook doc gap, fixed + green on retry).
 - `check:*` ×6 green · `check-build-memory.sh` 0 violations (10 legacy warnings) ·
   `check-append-only.mjs --base 83f2532` OK.
-- CI boundary: `docs/build/logs/ci-R6POST.2.json` — first read: CI fail on #211
-  (runbook-completeness on `65d3dec`; generic-api-key on the fixture hostname on `8f5963e`
-  — both fixed: PROD-BRINGUP §2 entries + `.gitleaks.toml` pin); final read pending the
-  `e27a7da` run.
+- CI boundary: `docs/build/logs/ci-R6POST.2.json` — **`ci: pass #211@bb904df`** (run
+  39881946858, all seven legs + `ci-pass` anchor). Two earlier head fails honestly
+  recorded: runbook-completeness on `65d3dec` → PROD-BRINGUP §2 entries; generic-api-key
+  on the fixture hostname on `8f5963e` → `.gitleaks.toml` pin.
 
 ## Evidence report
 
