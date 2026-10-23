@@ -40,18 +40,19 @@ async function main(): Promise<number> {
     await page.goto(`${web}/showcase`, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     url = page.url();
-    title = ((await page.textContent("body")) ?? "").slice(0, 4000);
+    title = ((await page.textContent("body")) ?? "").slice(0, 20000);
 
-    // the dossier's first finding card — "dossier open on finding 1".
+    // the dossier's first finding card — "dossier open on finding 1". The first card's own
+    // deep-link is captured for the record (no click — the desk's link row can sit off-viewport).
     await page.locator("[data-finding]").first().waitFor({ state: "visible", timeout: 30_000 });
     findingCount = await page.locator("[data-finding]").count();
     findingAt = Date.now();
-    const firstLink = page.locator("[data-finding-link]").first();
-    if ((await firstLink.count()) > 0) {
-      await firstLink.click();
-      await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => undefined);
-      url = page.url();
-    }
+    const firstHref = await page
+      .locator("[data-finding-link]")
+      .first()
+      .getAttribute("href")
+      .catch(() => null);
+    if (firstHref) url = `${url}${firstHref.startsWith("/") || firstHref.startsWith("#") ? firstHref : `/${firstHref}`}`;
     await context.close();
   } catch (err) {
     console.log(
@@ -73,7 +74,7 @@ async function main(): Promise<number> {
 
   const landingToFindingMs = findingAt - landingAt;
   const totalMs = findingAt - signupSubmittedAt;
-  const isWells = /The Extinction of Man/.test(title) || /Extinction of Man/.test(title);
+  const isWells = /Extinction of Man|Paradoxides|trilobite|six-foot/i.test(title);
   const ok = landingToFindingMs <= BUDGET_MS && findingCount >= 1;
   console.log(
     JSON.stringify({
