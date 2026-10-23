@@ -192,3 +192,8 @@ pairs confirm $0 debited):**
   Executed under GD-GOLDEN-CAP.R6's cohort authorization, actor `devin-cli:r6gld-1`, sized to the
   committed estimate + hold headroom. The rerun consumed ~1 773 cr of the 8 000 cr grant
   (6 227 remain — enough for one ruled rerun). `house-void` reverses the remainder.
+
+- **ci: pass #214@a7acf73** (run 39985872467 — all seven legs + `ci-pass` anchor; boundary
+  record `logs/ci-R6GLD.1-rerun.json`; first read timed out at 2700s with images/integration
+  pending → job-polled green → re-read). Validators: check-build-memory 0 violations;
+  append-only vs `c1f20f5` OK.
