@@ -261,7 +261,18 @@ pointers; substance unchanged.)_
   (store-seam unmasked), deployed to prod `80db0d5` under GD-DEPLOY.R6 (api-only → full-set
   re-pin), live re-probe green 178 legs/0 findings. `D-R6SECR.1-2` (no HSTS, LOW) carried in
   DEFERRALS.
-- **F-R6GLD.1-1 — OPEN (2026-10-23, R6GLD.1; prod research model calls 401 — launch-relevant).**
+- **F-R6GLD.1-1 — ROOT-CAUSED + CLEARED 2026-10-23 (stale proxy key cache; design gap recorded).**
+  Orchestrator investigation: `rhema-prod-anthropic-api-key` v4 verified working on the exact
+  failing call shape direct-to-Anthropic (`claude-haiku-4-5` + `web_search` → 200) — the key is
+  fine; the 401s came from the egress-proxy MIG instance holding **cached v3** —
+  `ReloadableAnthropicSecretProvider` re-fetches the provider key **only on SIGHUP/restart**
+  (`apps/egress-proxy/src/main.ts:48-52`; REQ-ARCH-30), no interval. The instance predated v4.
+  **Cleared:** operator-authorized proxy cycle (`rhema-prod-proxy-253r` deleted → `targetSize`
+  restored 1 → `rhema-prod-proxy-8g3n` RUNNING/HEALTHY at the same template — boots with v4).
+  **Design gap (carried):** SIGHUP-only refresh means a dead upstream key cannot propagate
+  without a recycle — a refresh interval or a drain-and-reload path is owed engineering work
+  (small; not launch-blocking since the recycle path is proven). Original finding text:
+- **F-R6GLD.1-1 — (was OPEN; prod research model calls 401 — launch-relevant).**
   Live-found during the R6GLD.1 cohort dispatch on `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG`
   @ `80db0d5`: all four paid runs (one per protocol) failed at **research preflight** with
   `HTTP 401 authentication_error` on every model × tool combination (`claude-sonnet-5` /
