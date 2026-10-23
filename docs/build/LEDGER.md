@@ -21,7 +21,7 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      R6GLD.1            # round 6 row 196 — $100 golden validation @ launch-candidate SHA (REQ-DISC-3); F-R6CNT.2-1 RESOLVED 2026-10-23 (v4 live, latest→200); unblocked — dispatch next
+nextTicket:      R6GLD.1            # row 196 machinery landed 2026-10-23 but validation RED — all 4 legs failed research preflight 401 (F-R6GLD.1-1, operator); rerun the same committed cohort after the credential/tool fix, then close D-P0.15-4
 lastCompleted:   R6SECR.1           # 2026-10-23; PR #213 — adversarial review: F-R6SECR.1-1 CRITICAL cross-tenant fix deployed+re-verified @ 80db0d5 (0 open crit/high); unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
@@ -261,6 +261,19 @@ pointers; substance unchanged.)_
   (store-seam unmasked), deployed to prod `80db0d5` under GD-DEPLOY.R6 (api-only → full-set
   re-pin), live re-probe green 178 legs/0 findings. `D-R6SECR.1-2` (no HSTS, LOW) carried in
   DEFERRALS.
+- **F-R6GLD.1-1 — OPEN (2026-10-23, R6GLD.1; prod research model calls 401 — launch-relevant).**
+  Live-found during the R6GLD.1 cohort dispatch on `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG`
+  @ `80db0d5`: all four paid runs (one per protocol) failed at **research preflight** with
+  `HTTP 401 authentication_error` on every model × tool combination (`claude-sonnet-5` /
+  `claude-haiku-4-5` × `web_search` / `web_fetch`), `retryable:false`, `$0` debited (holds
+  released; per the ticket — no retry, operator flag). Distinct from RESOLVED F-R6CNT.2-1:
+  `/v1/models` on secret v4 answers 200, but the model call carrying the `web_search`/`web_fetch`
+  server tools is rejected — plausibly the per-run `proxy_credential_id` upstream path or
+  missing tool entitlement on the key. Wider check: zero real (non-zero-duration) completed
+  runs in the last 3 days (37 `completed` rows are zero-duration showcase seeds) — no paid
+  run with research can currently succeed on prod. Owner: operator (credential/tool-access
+  decision). Blocks: R6GLD.1 golden validation + D-P0.15-4 close + any organic paid run —
+  rerun the same committed cohort after the fix (`docs/ops/golden-rerun-rule.md`).
 
 ## GATE DECISIONS
 
@@ -757,3 +770,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-23T08:10:13Z — **boundary confirmed — R6SECR.1 green at head.** `ci-boundary --pr 213` reads **pass** at head `3b9093c` (run 39916534218 — all seven legs + `ci-pass` anchor; boundary `logs/ci-R6SECR.1.json`; first read timed out at 2700s with `integration` pending → job-polled green → re-read, R6ENG.1 precedent). Local verify at the closeout head: turbo 135/135 · pnpm test 515 files / 6,073 pass / 4 skip / 0 fail · six `check:*` green · check-build-memory 0 violations (9 pre-existing-class warnings) · append-only vs `cd66194` OK. `nextTicket → R6GLD.1` (row 196) stays **blocked on F-R6CNT.2-1** — golden validation needs the prod model path; operator key rotation owed. Unmerged (OPERATOR). harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T08:16:00Z — **boundary re-confirmed — R6SECR.1 green at final head.** The CI-evidence amendment pushed head `5469813`; `ci-boundary --pr 213` re-reads **pass** (run 39922802786 — all seven legs + `ci-pass` anchor; same-tree reuse: unit 35s; boundary record `logs/ci-R6SECR.1.json` refreshed). Final: PR #213 head `5469813` green, unmerged (OPERATOR); `nextTicket → R6GLD.1` (row 196) held on F-R6CNT.2-1. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-23T09:15:00Z — **F-R6CNT.2-1 RESOLVED — prod model-path key live again (operator-directed credential act).** Operator supplied a working key out of band ("a fresher one in a `.env` file in ~/Episteme or ~/MetaHarness or ~/Eleutheria that you can use instead") → three `.env` candidates probed against `GET /v1/models` (Episteme 401, MetaHarness **200**, Eleutheria none; values never recorded) → `gcloud secrets versions add rhema-prod-anthropic-api-key` created **v4**; `versions/access latest` → **200** verified. Services resolve `versions/latest` lazily via `createSecretAccessor` — no revision roll required; running instances pick it up on the next secret read. OPEN FINDINGS entry flipped RESOLVED; `nextTicket` note updated. R6GLD.1 unblocked. $0. harness: devin-desktop/swe-2-high (orchestrator).
+- 2026-10-23T10:05:00Z — **R6GLD.1 Stage A done — machinery landed; live validation RED on F-R6GLD.1-1 (operator flag, no retry).** Branch `stevevitali/r6gld-1-golden-validation` · base `stevevitali/r6secr-1-adversarial-review` · **golden validation $100 minimal four-protocol cohort @ launch SHA (row 196, REQ-DISC-3, ADR-111 amended §17)** · **delivered**: protocol goldens for the two missing protocols (`golden-essay`, `golden-academic`) + registry rows → all four protocols covered (essay/academic/op-ed/memo), committed score floors, `--cohort minimal` in `nightly-golden-driver.mjs` (exactly one fixture per protocol × `review`/`base`/`standard`; launch-SHA + `is_test` workspace + `GOLDEN_BUDGET_RULING=approved` fail-closed), `docs/ops/golden-rerun-rule.md` (rerun after every protocol-affecting deploy incl. REQ-ENG-3/REQ-SEC-3 fixes), `tools/system-pool-boundary.json` +driver (audited system-DSN provenance/tenant check) · **committed estimate BEFORE dispatch: 6 572 cr / $46.94 list < $100 cap** (`reports/2026-10-23_R6GLD.1/cohort-estimate.json`) · **live**: fresh `is_test` workspace `01M5M2C6NC3058T528ZX2D44SG` minted (`test+jrn-gld@rhema.tools`; older jrn-a tenant had 20 cr + purge horizon), audited 8 000 cr house grant, provenance verified `80db0d5` → **exactly one paid run per protocol, four total, never retried** — all four failed at **research preflight HTTP 401** (`authentication_error`, `web_search`/`web_fetch` calls, both tiers → **F-R6GLD.1-1**, operator flag); measured spend **$0** (holds fully released); zero real completed runs in 3 days — platform-side credential/tool issue, not tenant funding · **no manifest written** (driver never fabricates one); `golden-scores.json` committed as honest red evidence · **D-P0.15-4 stays OPEN** (dated note; closes when the cohort reruns green per the rerun rule) · verify: vitest 12+11 on touched files · `@rhema/protocols` build/lint/typecheck green · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.

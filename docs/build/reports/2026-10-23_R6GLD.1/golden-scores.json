@@ -1,0 +1,193 @@
+{
+  "generated_at": "2026-10-23T09:46:55.630Z",
+  "cohort": "minimal",
+  "provenance": {
+    "apiBase": "https://api.rhema.tools",
+    "gitSha": "80db0d5",
+    "expectSha": "80db0d5",
+    "workspaceId": "01M5M2C6NC3058T528ZX2D44SG"
+  },
+  "spend": {
+    "totalUsdList": 0,
+    "capUsd": 100,
+    "legs": 4
+  },
+  "fixtures": [
+    {
+      "fixtureId": "golden-essay",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 10
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": false,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 0,
+          "minor": 0,
+          "note": 0
+        }
+      },
+      "runId": "01M5M2D06JAFZAY55H2HFP8PF1",
+      "projectId": "01M5M2CZPZ8D194C675EC0QVT5",
+      "state": "failed",
+      "deliveredReview": null,
+      "protocolStamp": null,
+      "usd": 0,
+      "credits": 0
+    },
+    {
+      "fixtureId": "golden-academic",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 10
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": false,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 0,
+          "minor": 0,
+          "note": 0
+        }
+      },
+      "runId": "01M5M2EEJ7FPW5YAA9GJZYF9XE",
+      "projectId": "01M5M2EE2HT26RXQCRP592NX6H",
+      "state": "failed",
+      "deliveredReview": null,
+      "protocolStamp": null,
+      "usd": 0,
+      "credits": 0
+    },
+    {
+      "fixtureId": "golden-op-ed",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 10
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": false,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 0,
+          "minor": 0,
+          "note": 0
+        }
+      },
+      "runId": "01M5M2EZF2VNF8KJSTJ1869R98",
+      "projectId": "01M5M2EYZHVKPFNH7Y61RBYN5T",
+      "state": "failed",
+      "deliveredReview": null,
+      "protocolStamp": null,
+      "usd": 0,
+      "credits": 0
+    },
+    {
+      "fixtureId": "golden-memo",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 10
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": false,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 0,
+          "minor": 0,
+          "note": 0
+        }
+      },
+      "runId": "01M5M2FH04NXN6JXMS4382FQ7P",
+      "projectId": "01M5M2FGH0S1BFZ78EF5978YH7",
+      "state": "failed",
+      "deliveredReview": null,
+      "protocolStamp": null,
+      "usd": 0,
+      "credits": 0
+    }
+  ]
+}

@@ -23,7 +23,8 @@
   per protocol). Supporting rows on the same flagged workspace: one audited test-tenant house
   grant (the documented funding seam — every prior paid leg ran on granted credits; actor
   `devin-cli:r6gld-1`), four fixture projects + their imported drafts, one magic-link session mint
-  for `test+jrn-a@rhema.tools` (the pinned stable test identity). Nothing on a non-flagged tenant.
+  for `test+jrn-gld@rhema.tools` (fresh test identity — the older `test+jrn-a` tenant had 20 cr
+  left and sat near the 26 h purge horizon). Nothing on a non-flagged tenant.
 - **Resolved prerequisite:** F-R6CNT.2-1 (`rhema-prod-anthropic-api-key` v4 live; `/v1/models`
   200 — operator note 2026-10-23). A 401 on any model call = stop + flag first-line, no retry-spend.
 
@@ -54,9 +55,9 @@
 
 ## Acceptance criteria
 
-- [ ] All four protocols in the cohort; the estimate is committed before dispatch *(deterministic)*
-- [ ] Spend ≤ $100 measured; floors green on all four *(live-executed)*
-- [ ] The re-run rule is committed *(deterministic)*
+- [x] All four protocols in the cohort; the estimate is committed before dispatch *(deterministic)*
+- [ ] Spend ≤ $100 measured; floors green on all four *(live-executed — dispatched, all legs failed at research preflight 401, $0; floors stay unproven → F-R6GLD.1-1)*
+- [x] The re-run rule is committed *(deterministic)*
 - [ ] Universal phase-gate AC *(agentic)*
 
 ## Gap analysis
@@ -65,10 +66,63 @@
 
 ## Live evidence
 
-(filled at close — run ids, per-protocol results, measured spend, gate output)
+**Dispatch (2026-10-23, prod @ `80db0d5`, workspace `01M5M2C6NC3058T528ZX2D44SG` `is_test=true`,
+fresh billing account funded with an audited 8 000 cr house grant — ledger `hold`/`release`
+pairs confirm $0 debited):**
+
+- Pre-dispatch checks green: API+web provenance `80db0d5`, tenant `is_test`, balance 8 000 cr,
+  committed estimate 6 572 cr / **$46.94** list < $100 cap → dispatched (never retried).
+- Exactly one run per protocol was launched; all four failed at **research preflight** with
+  `HTTP 401 authentication_error` on every model × tool combination
+  (`claude-sonnet-5` / `claude-haiku-4-5` × `web_search` / `web_fetch`):
+
+| leg | run | state | spend |
+|---|---|---|---|
+| golden-essay | `01M5M2D06JAFZAY55H2HFP8PF1` | failed (`research_preflight_failed`) | $0 |
+| golden-academic | `01M5M2EEJ7FPW5YAA9GJZYF9XE` | failed (`research_preflight_failed`) | $0 |
+| golden-op-ed | `01M5M2EZF2VNF8KJSTJ1869R98` | failed (`research_preflight_failed`) | $0 |
+| golden-memo | `01M5M2FH04NXN6JXMS4382FQ7P` | failed (`research_preflight_failed`) | $0 |
+
+- **Measured cohort spend: $0** (holds 4 566+4 564+4 564+3 318 cr fully released — ledger
+  evidence; showcase seed rows on the workspace never touched the billing ledger).
+- Collected score file: `docs/build/reports/2026-10-23_R6GLD.1/golden-scores.json`
+  (4/4 legs, honest `failed` states — the driver never fabricates a manifest; `--execute`
+  was therefore never run and `evals/fixtures/nightly-manifest.json` was not written).
+- Context check: in the last 3 days the DB shows **zero real (non-zero-duration) completed
+  runs** — all 37 `completed` rows are zero-duration showcase seeds; the 401 is platform-side
+  (`authentication_error` on the model call), not tenant-funding. **Per the ticket: stopped,
+  no retry, operator flag.**
+
+## Finding
+
+- **F-R6GLD.1-1 (OPEN, operator):** research preflight returns HTTP 401
+  `authentication_error` for both research model tiers on prod @ `80db0d5`, although
+  F-R6CNT.2-1's `/v1/models` probe is 200 — the failing surface is the model call carrying
+  the `web_search`/`web_fetch` server tools (the per-run `proxy_credential_id` path).
+  Golden validation stays **red** until the credential/tool access is fixed; the amended
+  §17 criterion and D-P0.15-4 remain unmet — rerun required after the fix (see
+  `docs/ops/golden-rerun-rule.md`).
+
+## Gap analysis
+
+| requirement | evidence | state |
+|---|---|---|
+| 4 protocols, one fixture each, committed floors | `GOLDEN_EVAL_FIXTURES` (essay/academic/op-ed/memo) + `eval-fixtures.test.ts` (12 tests) | DONE (deterministic) |
+| `--cohort minimal` driver, default review/standard/base | `nightly-golden-driver.mjs` + `nightly-golden-driver.test.mjs` (11 tests) | DONE (deterministic) |
+| committed estimate, >$100 → pause | `cohort-estimate.json` — 6 572 cr / $46.94, `withinCap:true` | DONE (committed pre-dispatch) |
+| 1 run per protocol on `80db0d5`, `is_test` | 4 run ids above — dispatched once each, never retried | DONE (dispatch) |
+| measured `--scores`, floors green, `promotionBlocked:false` | runs failed at research preflight 401 — **no green scores exist**; gate correctly not invoked | **BLOCKED (F-R6GLD.1-1)** |
+| `docs/ops/golden-rerun-rule.md` | committed | DONE (deterministic) |
+| D-P0.15-4 closed with live evidence | live evidence exists but shows red — the deferral stays **OPEN** with a dated note | **BLOCKED (F-R6GLD.1-1)** |
 
 ## Operator flags
 
+- **⚑ F-R6GLD.1-1 — research model calls return HTTP 401 on prod:** all four cohort runs
+  failed at research preflight (`authentication_error` on `web_search`/`web_fetch` model calls,
+  both tiers, prod @ `80db0d5`). `/v1/models` is 200 but the tool-carrying call path is rejected.
+  **Fix needed before golden validation can go green** — no run will be retried until then;
+  after the fix the rerun is exactly this cohort (rerun rule committed). The granted 8 000 cr
+  remain untouched on the flagged workspace for that rerun (or `house-void` reverses).
 - The four paid legs need funded balance on the flagged workspace: the only documented seam is
   `admin-cli house-grant` (audited `admin_actions` + ordinary ledger rows — never a balance UPDATE).
   Executed under GD-GOLDEN-CAP.R6's cohort authorization, actor `devin-cli:r6gld-1`, sized to the
