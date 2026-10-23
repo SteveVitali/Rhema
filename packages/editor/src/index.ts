@@ -30,7 +30,14 @@ export {
   parseBibtex, parseCslJson, parseZoteroExport, importBibliography, detectBibliographyFormat,
   citeKeysIn, resolveCites, citeLabel,
 } from "./bibliography.js";
-export { pagePlugins, createPageState, createCollabPageState, humanTr } from "./plugins.js";
+export {
+  pagePlugins,
+  createPageState,
+  createCollabPageState,
+  humanTr,
+  createPageUndoManager,
+  yPersistentUndoPlugin,
+} from "./plugins.js";
 export { PAGE_FRAGMENT, pageFragment, markdownToUpdate, docToCanonicalMarkdown } from "./ydoc.js";
 export type { SourceEditRun } from "./source-mode.js";
 export { SOURCE_EDIT_META, diffTopBlocks, applySourceMarkdown } from "./source-mode.js";

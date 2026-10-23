@@ -2556,3 +2556,34 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     }
   });
 });
+
+// D-R6SECR.1-2 (F-R6SECR.1-2) — HSTS: stamped on served documents (and every response) ONLY when
+// the request arrived over TLS. `x-forwarded-proto` is the prod/GFE signal; a raw https URL is the
+// direct-serving arm; an http request never caches a policy it can't honor (dev + plaintext hops).
+describe("D-R6SECR.1-2 — Strict-Transport-Security", () => {
+  it("an https-forwarded document carries max-age + includeSubDomains (no preload)", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/", { headers: { "x-forwarded-proto": "https" } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=31536000; includeSubDomains",
+    );
+  });
+
+  it("the https-request-URL arm stamps the same policy (direct serving/tests)", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("https://rhema.tools/");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=31536000; includeSubDomains",
+    );
+  });
+
+  it("an http request is never stamped — dev/plaintext hops keep no bogus policy", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("strict-transport-security")).toBeNull();
+  });
+});

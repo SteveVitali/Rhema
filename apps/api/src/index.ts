@@ -344,6 +344,12 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     // mutate in place — auth responses carry Set-Cookie, which a Headers clone could collapse.
     c.res.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
     c.res.headers.set("X-Content-Type-Options", "nosniff");
+    // D-R6SECR.1-2 — the deferral names both origins: HSTS (1y + includeSubDomains, no preload)
+    // only when the request arrived over TLS — `x-forwarded-proto` is the GFE's signal behind the
+    // LB (the container socket is plaintext); the `https://` URL arm covers direct serving/tests.
+    if (c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
+      c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
   });
   // SEC.2 — the serving-instance marker (see ApiDeps.instanceId): a random/opaque id, no topology leak.
   if (deps?.instanceId) {

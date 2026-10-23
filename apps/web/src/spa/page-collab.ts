@@ -15,6 +15,7 @@
 
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type * as Y from "yjs";
+import { createPageUndoManager } from "@rhema/editor";
 import {
   createCollabSession,
   type CollabSession,
@@ -33,10 +34,13 @@ export interface PageCollabChrome {
 }
 
 /** `PageSessionWire` plus the collab internals the mount's chrome legitimately reads — the pill's
- *  queued count (`provider.unsyncedChanges`) and the current `sync` snapshot. */
+ *  queued count (`provider.unsyncedChanges`), the current `sync` snapshot, and the session-owned
+ *  `Y.UndoManager` (R6FIX.1: the wire owns it so ⌘Z survives view teardowns; `destroy()` kills it). */
 export interface CollabPageWire extends PageSessionWire {
   readonly doc: Y.Doc;
   readonly fragment: Y.XmlFragment;
+  /** the session-scoped undo manager — pass to `createCollabPageState`'s third arg. */
+  readonly undoManager: Y.UndoManager;
   readonly provider: HocuspocusProvider;
   readonly sync: CollabSyncEvent;
   /** install/clear the mounted chrome delegate (null on unmount — events degrade to no-ops). */
@@ -71,9 +75,16 @@ export function createCollabWire(opts: {
     onReadOnly: () => chrome.current?.onReadOnly(),
     onRestorePoint: (id) => chrome.current?.onRestorePoint(id),
   });
+  // R6FIX.1 (F-R6POST.2-2) — the UndoManager is session-scoped like the Y.Doc it tracks: the
+  // stock `yUndoPlugin` view-destroy would kill it on every keep-alive unmount (permanently dead
+  // capture — the live ⌘Z-does-nothing symptom). The wire owns it; the mount hands it to
+  // `createCollabPageState`, and `destroy()` runs its teardown on session end (`doc.destroy()`
+  // would run it anyway — explicit here so the ownership reads plainly).
+  const undoManager = createPageUndoManager(session.fragment);
   return {
     doc: session.doc,
     fragment: session.fragment,
+    undoManager,
     get provider(): HocuspocusProvider {
       return session.provider;
     },
@@ -84,7 +95,10 @@ export function createCollabWire(opts: {
     markRestorePoint: () => session.markRestorePoint(),
     flushOnHide: () => session.flushOnHide(),
     rebind: (draftId) => session.rebind(draftId),
-    destroy: () => session.destroy(),
+    destroy: () => {
+      undoManager.destroy();
+      session.destroy();
+    },
     setChrome: (next) => {
       chrome.current = next;
     },

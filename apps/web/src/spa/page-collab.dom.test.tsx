@@ -27,9 +27,10 @@ import * as Y from "yjs";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { PageEditor } from "@rhema/ui";
 import { markdownToDoc } from "@rhema/editor";
+import { undo as yUndo, undoCommand, yUndoPluginKey } from "y-prosemirror";
 import { pageLabels } from "../page-chrome.js";
 import { PageMount } from "./page-mount.js";
-import { pageCollabRuntime } from "./page-collab.js";
+import { pageCollabRuntime, isCollabWire } from "./page-collab.js";
 import { PageSessionRegistry } from "./page-sessions.js";
 import type { CollabSession, CollabSessionOptions } from "../client/collab.js";
 
@@ -503,5 +504,74 @@ describe("SPA.24 — flush + teardown", () => {
     fetches.length = 0;
     await act(async () => document.dispatchEvent(new Event("visibilitychange")));
     expect(fetches.map((f) => f.url)).toContain(`/p/the-piece/edit/${DRAFT}/doc`);
+  });
+});
+
+// ---- the keep-alive undo stack (R6FIX.1 / F-R6POST.2-2; REQ-NAVC-22/23) -------------------------
+//
+// The stock `yUndoPlugin` view's `destroy()` kills the UndoManager on every `EditorView` teardown —
+// on a keep-alive remount the registry session (Y.Doc + EditorState + session id) survives but the
+// manager's capture is dead forever (pre-leave items pop once, nothing new is ever recorded — the
+// live "⌘Z does nothing" symptom). The wire owns the manager; the view only detaches its listeners.
+
+describe("R6FIX.1 — the undo stack survives the keep-alive remount (F-R6POST.2-2)", () => {
+  it("mount → type → unmount → remount: ⌘Z still removes the marker AND new edits are captured", async () => {
+    const registry = new PageSessionRegistry();
+    registries.push(registry);
+    const first = await mountEditor({ registry });
+    const firstSessionId = first.pageRoot().dataset["pageSession"];
+    const wire = first.registry.entry(DRAFT)!.session!;
+    expect(isCollabWire(wire)).toBe(true);
+    const um = isCollabWire(wire) ? wire.undoManager : null;
+    expect(um).not.toBeNull();
+    // the plugin state's manager IS the wire's (the session owns the lifecycle).
+    expect(yUndoPluginKey.getState(first.view.current!.state)?.undoManager).toBe(um);
+
+    // type the marker before leaving.
+    await act(async () => {
+      first.view.current!.dispatch(first.view.current!.state.tr.insertText("MARKER", 1));
+    });
+    expect(first.view.current!.state.doc.textContent).toContain("MARKER");
+    expect(um!.undoStack.length).toBeGreaterThan(0);
+
+    // the keep-alive unmount: the view dies, the session idles inside the TTL.
+    await act(async () => first.root.unmount());
+    mounted.splice(mounted.indexOf(first.root), 1); // already unmounted
+    expect(um!.canUndo()).toBe(true); // the stack survived the view teardown
+
+    // remount — same registry, same entry/session identity.
+    const second = await mountEditor({ registry });
+    expect(second.pageRoot().dataset["pageSession"]).toBe(firstSessionId);
+    expect(undoCommand(second.view.current!.state)).toBe(true);
+
+    // and a POST-remount edit is still captured — the F-R6POST.2-2 regression: a destroyed
+    // manager's capture never resumes, so this edit would be un-undoable forever.
+    await act(async () => {
+      second.view.current!.dispatch(second.view.current!.state.tr.insertText("SECOND", 1));
+    });
+    expect(second.view.current!.state.doc.textContent).toContain("SECOND");
+
+    // ⌘Z until the stack drains removes BOTH edits — capture post-remount + the pre-leave item.
+    await act(async () => {
+      while (yUndo(second.view.current!.state)) {
+        /* drain */
+      }
+    });
+    expect(second.view.current!.state.doc.textContent).not.toContain("SECOND");
+    expect(second.view.current!.state.doc.textContent).not.toContain("MARKER");
+    expect(um!.canUndo()).toBe(false);
+  });
+
+  it("a true teardown destroys the session-owned manager (no orphaned capture)", async () => {
+    const { registry } = await mountEditor();
+    const session = sessions[0]!.session;
+    const wire = registry.entry(DRAFT)!.session!;
+    expect(isCollabWire(wire)).toBe(true);
+    const um = isCollabWire(wire) ? wire.undoManager : null;
+    const umDestroy = vi.spyOn(um!, "destroy");
+    registry.destroyAll();
+    expect(umDestroy).toHaveBeenCalledTimes(1);
+    expect(session.destroy).toHaveBeenCalledTimes(1);
+    expect(registry.entry(DRAFT)).toBeNull();
   });
 });
