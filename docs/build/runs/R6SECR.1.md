@@ -16,7 +16,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-SEC-3
-- **Started:** 2026-10-23T06:17Z · **Closed:** (open)
+- **Started:** 2026-10-23T06:17Z · **Closed:** 2026-10-23T07:1xZ
 - **Live stage:** prod probes with `is_test` tenants only, $0; code review offline.
   **Prod serves `ba66c4b`** (R6CNT.2 redeploy; ancestor of the base tip) — probes exercise the
   deployed code under review.
@@ -113,10 +113,39 @@
   idempotency keys, trial lock/kill-switch, §14.4 window) + refund write leg → 404 no rows.
 - §12.8 (a)–(f) + REQ-ARCH-32: deterministic suite green; live exercise deferred →
   **D-R6SECR.1-1** (needs a running run; F-R6CNT.2-1).
+- 2026-10-23T06:5xZ — commit `80db0d5` (fix + probe extension + report + ledger seed); PR **#213**
+  opened (base `stevevitali/r6cnt-2-showcase-build`); unmerged (OPERATOR).
+- 2026-10-23T07:0xZ — **deploy stage 1 (api-only, GD-DEPLOY.R6):** Cloud Build `40a99cb8`
+  (`api@sha256:e0bf17d2…` @ `80db0d5`); `pulumi up` = 1 update / 171 unchanged; api `/healthz` →
+  `80db0d5`. Former leak → **404 both directions**; live re-probe **green (178 legs / 4 writes /
+  0 findings)**.
+- 2026-10-23T07:0xZ — **deploy stage 2 (full-set provenance):** api-only roll left the fleet
+  mixed (`80db0d5` api / `ba66c4b` rest) → canonical `image-set.yaml` build `5a9a5c8c` rebuilt all
+  10 images @ `80db0d5`; `Pulumi.prod.yaml` re-pinned every digest (api digest differs from
+  stage 1 — builds aren't bit-reproducible; same source SHA); `pulumi up` = 10 updates + the
+  stateless proxy-template replace (161 unchanged, zero stateful replace/delete);
+  `check-deploy-provenance --expect 80db0d5` **all-PASS** on web+api; `record-deployment` wrote
+  `prod:80db0d521b…` (protocols `0.4.0+ec61156725a895ab`, nine digests, over the IAP tunnel to
+  the new proxy `rhema-prod-proxy-253r`).
+- 2026-10-23T07:0xZ — **final live re-probe** on the full-set deploy:
+  `{passed:true, routesProbed:178, writesProbed:4, findings:0}` (`/tmp/probe-live-final.json`).
+  Sessions still valid; `$0` preserved — no runs, no model calls, no durable writes beyond the
+  `deployments` provenance row.
+- Deploy notes: api-only first because the critical was live — smallest possible blast radius to
+  close the hole; the full-set rebuild then restored one-commit-per-image provenance in the same
+  window. Migrations: none in the diff (additive lint trivially satisfied, `0058` max).
 
 ## Gap table
 
-(pending — filled at Phase 4)
+| item | status |
+|---|---|
+| §12.8 (a)–(f) + REQ-ARCH-32 live exercise | **deferred → D-R6SECR.1-1** (needs a running run; F-R6CNT.2-1 dead key + no spend authorization). Deterministic suite green. |
+| Not-independent limitation | **stated verbatim** in the report's first paragraph; the external pen test stays OPEN under ADR-112 (D-P1.22-3, post-launch ≤ 60 d). |
+| Money paths | code + probe covered (no paid runs): refund window + workspace-locked `for update`, Stripe idempotency keys, trial lock/kill-switch, §14.4 net-of-refunds, metered settle ≤ cap; live foreign-refund leg → 404, zero rows. |
+| Usercontent / cookie / CSP | live-verified: foreign mint 404, traversal 404, signer never invoked on foreign keys, own mint signs under caller prefix only, `__Host-` cookie shape, zero `Set-Cookie` on usercontent/api, CSP nonces + `frame-ancestors 'none'`. **F-R6SECR.1-2** (no HSTS, low) → D-R6SECR.1-2. |
+| Export/import legs | probed at the authz boundary (export-token, export list/detail foreign ids → 404); no paid export executed ($0 constraint). |
+| Cross-tenant read coverage | live: 178 legs incl. all user-serving GET families + BFF twins + planted foreign ids of every typed shape; deterministic: 76 routes + store-bound regression. One critical found → fixed → deployed → re-verified. |
+| Open criticals/highs at close | **0** |
 
 ## Evidence log
 
@@ -137,6 +166,13 @@
 - Headers: web CSP `script-src 'self' 'nonce-…'` per-request, `object-src 'none'`,
   `frame-ancestors 'none'`; api `default-src 'none'`; **no `strict-transport-security` anywhere**
   → F-R6SECR.1-2.
+- Deploy `ba66c4b` → `80db0d5` (two-stage): api-only `pulumi up` (1u) on build `40a99cb8`, then
+  full-set `pulumi up` (10u + 1 stateless-tmpl replace, 161 unchanged) on build `5a9a5c8c`;
+  `check-deploy-provenance --expect 80db0d5 --healthz https://rhema.tools --healthz
+  https://api.rhema.tools` → **all-PASS**; `record-deployment` → `prod:80db0d521b…`
+  (protocols `0.4.0+ec61156725a895ab`).
+- Final live re-probe (`/tmp/probe-live-final.json`):
+  `{mode:"live", routesProbed:178, writesProbed:4, findings:[], passed:true}` — prod `80db0d5`.
 
 ## Evidence report
 

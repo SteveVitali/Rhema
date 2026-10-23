@@ -10,8 +10,9 @@ demonstrated live, in source, and in regression.
 
 - **Date:** 2026-10-23 · **Reviewer harness:** devin-desktop/swe-2-high/subagent · **Ticket:** 195
   (manifest row 195, REQ-SEC-3, GATE-LAUNCH threshold 2)
-- **Deployed surface reviewed:** prod serves `ba66c4b` (R6CNT.2 redeploy; ancestor of the review
-  base `cd66194`). All live legs ran against it.
+- **Deployed surface reviewed:** the finding legs ran against prod `ba66c4b` (R6CNT.2 redeploy;
+  ancestor of the review base `cd66194`). The fix was then **deployed and re-verified**: prod now
+  serves `80db0d5` on every service — see §Close.
 - **Spend:** **$0 confirmed** — every live leg is session-authed GET/POST that writes nothing; no
   run was dispatched, no model call attempted (`rhema-prod-anthropic-api-key` 401s — F-R6CNT.2-1).
 - **Tenants:** two provisioned `is_test` workspaces (journey tenants A/B; `isTest:true` verified on
@@ -29,9 +30,8 @@ demonstrated live, in source, and in regression.
 | F-R6SECR.1-2 | low | web+api response headers | HSTS absent → DEFERRALS D-R6SECR.1-2 |
 | D-R6SECR.1-1 | n/a (coverage obligation) | egress proxy / run-task / fetcher live legs | deferred — needs a live run (F-R6CNT.2-1) + spend authorization |
 
-**Open criticals/highs at close: 0.** One critical found → fixed in-ticket with regression tests;
-prod exposure persists only until merge+deploy (deploy attempted under GD-DEPLOY.R6 this run — see
-§Close).
+**Open criticals/highs at close: 0.** One critical found → fixed in-ticket with regression tests
+→ **deployed to prod (`80db0d5`) and re-probed green live** (see §Close).
 
 ### F-R6SECR.1-1 — CRITICAL: `revision-routes.ts` serves foreign drafts and writes foreign guidance (cross-tenant read + write)
 
@@ -84,10 +84,13 @@ fixture would have caught this had the store been bound. On the **fixed** build:
 routes probed, 0 findings. The live probe extension adds planted-foreign-id legs across every
 user-serving family (below); on prod it flags exactly this finding and nothing else.
 
-**Prod exposure.** The vulnerability is live on `ba66c4b` until a deploy carrying this branch's
-fix. The only prod tenants today are operator/staff `is_test` workspaces (pre-launch), but the
-defect class is the exact one that shipped once already (R6FOR.2's 252 reads) — a GD-DEPLOY.R6
-redeploy of this chain tip is attempted at close.
+**Prod exposure — CLOSED 2026-10-23.** The vulnerability was live on `ba66c4b`; a deploy carrying
+this branch's fix was executed this run under GD-DEPLOY.R6 (api-only `40a99cb8` → `pulumi up` 1u,
+then full-set `5a9a5c8c` → `pulumi up` 10u/1r to restore one-commit-per-image provenance). The
+formerly leaking route now 404s in both directions on prod; the full 178-leg live re-probe is
+green (§Close). The only prod tenants today are operator/staff `is_test` workspaces (pre-launch),
+but the defect class is the exact one that shipped once already (R6FOR.2's 252 reads) — shipping
+the fix same-day was warranted.
 
 ### F-R6SECR.1-2 — LOW: no `Strict-Transport-Security` header on `rhema.tools` / `api.rhema.tools`
 
@@ -175,11 +178,30 @@ design** — the deferred engagement's job is to size it.
 
 - **Probe budget vs. size:** the ~400-changed-line target is met — the diff is ~400 lines and all
   of it is probe/fix, no production-code sprawl.
-- **AC "probe extensions green on prod after fixes":** the live probe is red on prod by exactly
-  the finding it was built to catch — green requires the deploy carrying the fix. The
-  deterministic probe is green on the fixed build and red on the buggy build (verified both ways).
-  Prod deploy attempted under GD-DEPLOY.R6; if it completes, a live re-probe must go green before
-  close — recorded in the run ledger either way.
+- **AC "probe extensions green on prod after fixes": SATISFIED.** The live probe was red on prod
+  by exactly the finding it was built to catch; the fix deployed (two-stage roll below) and the
+  live re-probe went **green**: `{passed:true, routesProbed:178, writesProbed:4, findings:0}` on
+  `api.rhema.tools`+`rhema.tools` at `80db0d5` (`/tmp/probe-live-final.json`).
+
+## Close — deploy + re-verify (2026-10-23)
+
+- **Stage 1 (api-only):** Cloud Build `40a99cb8` built `api@sha256:e0bf17d2…` at `80db0d5`;
+  `pulumi up` applied it (1 update, 171 unchanged). API `/healthz` → `80db0d5`; the former leak
+  `GET /projects/<foreign>/v/2/diff/1` → **404 both directions**; full live probe **green
+  (178/4/0)**.
+- **Stage 2 (full-set provenance):** an api-only roll leaves web/worker/etc. at `ba66c4b` and
+  breaks the repo's one-commit-per-image convention — so the canonical `image-set.yaml` build
+  `5a9a5c8c` rebuilt all 10 images at `80db0d5`, `Pulumi.prod.yaml` re-pinned every digest
+  (digests differ from the api-only build — image builds are not bit-reproducible; same source
+  SHA), `pulumi up` applied 10 updates + the expected stateless proxy-template replace
+  (161 unchanged, zero stateful replace/delete). `check-deploy-provenance --expect 80db0d5`
+  **all-PASS** on `rhema.tools` + `api.rhema.tools`; `record-deployment` wrote
+  `prod:80db0d521b…` (protocols `0.4.0+ec61156725a895ab`, nine digests) over the IAP tunnel.
+- **Re-probe on the final set:** live two-tenant probe re-run post-full-deploy →
+  `{passed:true, routesProbed:178, writesProbed:4, findings:0}`.
+- **Migrations:** none in this diff — additive lint trivially satisfied (no new files > `0058`).
+- **Cost:** image builds + Cloud Run rollouts only; billing delta $0 (no new resources, no
+  dispatched runs, no model calls).
 
 ## Artifacts
 
