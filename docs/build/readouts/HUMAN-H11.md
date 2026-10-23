@@ -15,10 +15,13 @@
 > An operator or authorized human record supplies the decision; an agent must not sign or
 > assume silence is approval.
 
-## Disposition — **OPEN** (session presented 2026-10-23)
+## Disposition — **OPEN — approvals complete** (session presented 2026-10-23)
 
 The session was presented at the R6POST.2 → GATE-R6B boundary. Items tick as the operator
 reports them; verbatim approval words are appended verbatim below. Nothing here is inferred.
+**2026-10-23:** all four approval items (A1–A4) discharged by the operator's verbatim words
+(quoted per row below) — R6CNT.2's content gate is unblocked. Browser/money legs (B1–B12)
+and the X-items remain pending — they withhold the legs the marker names, nothing else.
 
 ## Checklist — browser / money legs (flagged `is_test` accounts)
 
@@ -41,10 +44,10 @@ reports them; verbatim approval words are appended verbatim below. Nothing here 
 
 | # | Item | Status |
 |---|---|---|
-| A1 | Legal pages (R6LGL.1): placeholders filled — **entity, jurisdiction, contact values owed by the operator** (`LEGAL_DETAILS.CONTACT_EMAIL=null` as of 2026-10-22) — and text approved verbatim → `approved: true` set by R6CNT.2 | pending — values + words owed |
-| A2 | H4 venue stamps (R6CNT.1 (a)) approved — evidence `docs/build/reports/2026-10-21_R6CNT.1/h4-venue-evidence.md` | pending |
-| A3 | Sample-dossier content (R6CNT.1 (c)) approved — proposal `docs/build/reports/2026-10-21_R6CNT.1/sample-dossier-proposal.md` | pending |
-| A4 | One public-domain Showcase essay picked — shortlist `docs/build/reports/2026-10-21_R6CNT.1/h5-showcase-shortlist.md` (recommended: Wells "The Extinction of Man"; alternates Poe, Lamb, Swift, Twain) | pending — pick owed |
+| A1 | Legal pages (R6LGL.1): placeholders filled — values supplied by the operator 2026-10-23: entity **"Rhema Labs"** (operator caveat recorded verbatim: *"We don't have a legal entity yet. But we can perhaps just use 'Rhema Labs' or something"* — the pages name an unregistered trade name as the contracting entity; operator decision, on record), jurisdiction **NY, NY**, contact **contact@rhema.tools** — text approval verbatim: *"I pre-approve whatever text you generate now"* → `approved: true` set by R6CNT.2 on the generated pages | **done** (2026-10-23, values + pre-approval recorded) |
+| A2 | H4 venue stamps (R6CNT.1 (a)) approved — evidence `docs/build/reports/2026-10-21_R6CNT.1/h4-venue-evidence.md`; operator verbatim: *"I also approve A2, A3, and A4"* | **done** (2026-10-23) |
+| A3 | Sample-dossier content (R6CNT.1 (c)) approved — proposal `docs/build/reports/2026-10-21_R6CNT.1/sample-dossier-proposal.md`; same verbatim words as A2 | **done** (2026-10-23) |
+| A4 | Showcase essay picked — the recommended pick **H.G. Wells, "The Extinction of Man"** (the shortlist's recommendation; operator approved A4 with the same verbatim words as A2 — recorded as the recommended pick absent a different named choice; a different pick can be ruled before R6CNT.2's run dispatches) | **done** (2026-10-23, recommended pick) |
 | A5 | Exposure notice text — **DISCHARGED 2026-10-21** under `GD-EXPOSURE-NOTICE.R6` ("Approve as drafted"); verdict YES recorded; the send stays a named R6CNT.2 mutation | **done** (2026-10-21) |
 
 ## Items added by downstream verification (2026-10-22/23)
