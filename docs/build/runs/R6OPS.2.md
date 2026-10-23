@@ -20,7 +20,7 @@
 - **Branch:** `stevevitali/r6ops-2-alert-channels` (mergePolicy=OPERATOR — never merge)
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-10-23T21:28Z · **Closed:** (pending)
+- **Started:** 2026-10-23T21:28Z · **Closed:** 2026-10-23T21:54Z
 - **Live stage:** prod deploy authorized (GD-DEPLOY.R6 — `pulumi up --stack prod`, additive-only:
   +1 `NotificationChannel`, 14 `AlertPolicy` channel-reference updates).
 - **Production mutations:** `pulumi config set --secret rhema:opsAlertWebhookUrl` on stack `prod`
@@ -28,7 +28,8 @@
   URL value is never committed/readable) → `pulumi up --stack prod` → live verification reads
   (`gcloud monitoring channels`, policy describes, catcher log receipt). No stateful resource
   touched; no image roll (no `serviceImages`/`gitSha` change).
-- **ci:** (pending)
+- **ci:** `pending` — boundary read in flight at close (`logs/ci-R6OPS.2.json`; resolved read
+  recorded in the LEDGER's boundary-confirmed PHASE LOG note)
 
 ## Deferrals read
 
@@ -118,6 +119,19 @@
   wiring inspected — channel code already exists gated on the unset config; SM payload shape
   verified: bare `https://*.run.app`, no token material beyond the URL ⇒ `webhook_tokenauth`
   correct, `labels.url`-only).
+- 2026-10-23T21:30Z — baseline green (infra surface 99 tests); `monitoring.test.ts` +3
+  channel-contract pins written and green (16/16); one self-caught test-authoring fix
+  (`const apiService` prefix-matched `const apiServiceName` — tightened to `const apiService =`).
+- 2026-10-23T21:32Z — config bound (`config set --secret`, gcloud→stdin, `secure:` ciphertext
+  only) → `preview --diff` (+1/~14/158unchanged, `labels.url:[secret]`, zero replace/delete) →
+  `pulumi up` update 157 in 26 s.
+- 2026-10-23T21:4xZ — live verify: channel exists (21:32:35Z, tokenauth, enabled), `labels.url`
+  byte-equal to SM latest; 14/14 policies reference it; `sendVerificationCode` →
+  FAILED_PRECONDITION recorded; no synthetic breach fabricated (out of scope).
+- 2026-10-23T21:5xZ — records: LEDGER finding resolved + CURRENT STATE/PHASE LOG, BUILD_INDEX
+  222, DEFERRALS tail, GATE-LAUNCH row-7 note, `pr/R6OPS.2.md`; gates: turbo 135/135, full
+  vitest suite 515 files green (1 docker-build env flake, unrelated, skips on retry),
+  `infra/pulumi` tsc clean; change commit `59e9dfe` pushed → PR #216; ci-boundary read in flight.
 
 ## Gap table
 
@@ -161,4 +175,40 @@
 
 ## Evidence report
 
-_(filled Phase 6)_
+**PR:** https://github.com/SteveVitali/Rhema/pull/216 · base `stevevitali/r6fix-1-findings-hardening`
+· head `stevevitali/r6ops-2-alert-channels` · change commit `59e9dfe` + closeout commit.
+
+**AC table** — see `## Gap table` above (every row `met` with file/log evidence; the
+test-notification row is `met` at the armed layer with the owed-by-nature residual named).
+
+**Gap-analysis summary:** the spec diff surfaced no missed requirement — the codebase already
+carried the channel resource + policy wiring (P1.22 W9); the finding was purely the unbound
+`rhema:opsAlertWebhookUrl` key, bound exactly per the finding's own remediation. Two
+spec-judgment calls: (a) channel type `webhook_tokenauth` confirmed against the live descriptor
+list + the SM payload shape (bare URL, no token material beyond itself); (b) stack-config secret
+chosen over an SM plan-time read — the repo's only secret pattern is `rhemaConfig.getSecret`
+(ciphertext in the committed stack file); no invoke-reads-SM pattern exists, and an invoke would
+place the plaintext in state unmarked-secret.
+
+**Verification summary:**
+- Unit: `monitoring.test.ts` 16/16 (3 new channel-contract tests); infra surface 99 green at
+  baseline; `infra/pulumi` `tsc -p` clean.
+- Integration: n/a at the unit seam — the integration surface IS the live deploy (the Pulumi
+  program's output against prod).
+- Interactive/live: `preview --diff` (+1/~14/158, `[secret]`-masked) → `pulumi up` update 157 →
+  `channels list`/`describe` (byte-equal URL, sha256-checked) + `policies list` (14/14) +
+  sink-liveness receipts → `verify-flow.md`.
+- Deploy gates: GD-DEPLOY.R6 classification in `preview-classification.md` (all four conditions
+  PASS; `record-deployment` honestly not owed — no SHA/services change).
+- Suite: `pnpm test` 515 files / 6,097 pass — one docker-build env flake
+  (`privsep.docker.test.ts`, daemon stream EOF mid-`pnpm install`; unrelated to the diff — the
+  same leg is CI-waived under GD-MAINT.4-1 and skips cleanly on retry); `pnpm turbo build lint
+  typecheck` 135/135.
+- Not run: no synthetic incident fabricated (out of authorized mutation scope); no preview-stack
+  deploy (prod-only config key by design — previews never bind prod secrets, REQ-ARCH-38).
+
+**Deviations/deferrals:** none opened. Honest residual (not a deferral — an owned observation):
+first natural-incident receipt at the catcher rides D-P1.22-2's tail and the on-call runbook.
+
+**CI:** `ci: pending — boundary read in flight (logs/ci-R6OPS.2.json)` at close; the
+boundary-confirmed PHASE LOG note records the resolved read.
