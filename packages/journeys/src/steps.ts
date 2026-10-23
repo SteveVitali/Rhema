@@ -2424,7 +2424,7 @@ const N10: StepFn = async (ctx) => {
   // /showcase's signed-out leg IS the sample dossier — its letter text is on the page.
   await gotoOk(page, `${ctx.webBaseUrl}/showcase`);
   const sc = (await page.textContent("body")) ?? "";
-  if (!sc.includes("The Politics of Visibility") || !sc.includes("tested")) {
+  if (!sc.includes("The Extinction of Man") || !sc.includes("Contradicted")) {
     throw new Error("/showcase did not render the sample dossier to a signed-out visitor");
   }
 };
@@ -2438,7 +2438,7 @@ const R8_SHOWCASE: StepFn = async (ctx) => {
   const scBody = (await page.textContent("body")) ?? "";
   const onShowcase = /\/showcase$/.test(page.url()) || /\/p\/[^/]+/.test(page.url());
   if (!onShowcase) throw new Error(`signed-in /showcase landed somewhere unexpected (${page.url()})`);
-  if (!/The Politics of Visibility|Showcase/i.test(scBody)) {
+  if (!/The Extinction of Man|Showcase/i.test(scBody)) {
     throw new Error("signed-in /showcase renders neither the workspace Showcase nor the sample");
   }
   assertBundleParity(ctx);

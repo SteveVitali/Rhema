@@ -1,7 +1,8 @@
 // R6LGL.1 (REQ-LCH-1) — the legal/trust flag + placeholder census's invariants (ADR-118):
-// the shipped set carries `approved: false` + `null` details (GD-LEGAL.R6 / -DETAILS.R6),
-// `legalApprovalViolations` is the live "approved ⇒ no placeholder remains" gate predicate,
-// and the page table stays coherent with the route enumeration it feeds.
+// R6CNT.2 flipped the shipped set to `approved: true` + filled details under HUMAN-H11's
+// recorded A1 pre-approval, `legalApprovalViolations` is the live "approved ⇒ no placeholder
+// remains" gate predicate, and the page table stays coherent with the route enumeration it
+// feeds.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -18,7 +19,7 @@ import {
 } from "./legal.js";
 
 describe("LEGAL_PAGES census (REQ-LCH-1)", () => {
-  it("enumerates the five documents, each approved: false with a real title + navLabel", () => {
+  it("enumerates the five documents, each approved: true under the recorded pre-approval", () => {
     expect(LEGAL_ROUTE_IDS).toEqual([
       "/terms",
       "/privacy",
@@ -27,7 +28,9 @@ describe("LEGAL_PAGES census (REQ-LCH-1)", () => {
       "/contact",
     ]);
     for (const p of LEGAL_PAGES) {
-      expect(p.approved, `${p.routeId} must ship approved: false (GD-LEGAL.R6)`).toBe(false);
+      // HUMAN-H11 A1 (2026-10-23): "I pre-approve whatever text you generate now" — the
+      // generated text IS the approved text; GATE-LAUNCH reads `approved` on every row.
+      expect(p.approved, `${p.routeId} must ship approved: true (H11 A1)`).toBe(true);
       expect(p.title.length).toBeGreaterThan(0);
       expect(p.navLabel.length).toBeGreaterThan(0);
       // every declared detail key is a real slot — a typo'd reference must fail loudly
@@ -38,9 +41,20 @@ describe("LEGAL_PAGES census (REQ-LCH-1)", () => {
     }
   });
 
-  it("ships every operator-fill detail null (GD-LEGAL-DETAILS.R6 'Placeholders now')", () => {
+  it("ships the HUMAN-H11-recorded operator-fill values verbatim (A1)", () => {
+    // The recorded A1 values — an approved page can only render filled details.
+    expect(LEGAL_DETAILS.OPERATING_ENTITY).toBe("Rhema Labs");
+    expect(LEGAL_DETAILS.GOVERNING_LAW).toBe("NY, NY");
+    expect(LEGAL_DETAILS.CONTACT_EMAIL).toBe("contact@rhema.tools");
+    // The unrecorded slot: no page may reference it while it is null (the copy's
+    // postal-mail clause was dropped with the value — never a fabricated address).
+    expect(LEGAL_DETAILS.CONTACT_ADDRESS).toBeNull();
+    for (const p of LEGAL_PAGES) {
+      expect(p.details, `${p.routeId} references an unfilled slot`).not.toContain(
+        "CONTACT_ADDRESS",
+      );
+    }
     for (const k of LEGAL_DETAIL_KEYS) {
-      expect(LEGAL_DETAILS[k], `${k} must be null until HUMAN-H11 + R6CNT.2`).toBeNull();
       expect(LEGAL_DETAIL_LABELS[k].length).toBeGreaterThan(0);
     }
   });
@@ -61,15 +75,19 @@ describe("LEGAL_PAGES census (REQ-LCH-1)", () => {
 });
 
 describe("legalPlaceholdersFor / legalApprovalViolations (the flag invariant)", () => {
-  it("reports every page's referenced details while the slots are null", () => {
-    for (const p of LEGAL_PAGES) expect(legalPlaceholdersFor(p)).toEqual(p.details);
+  it("no approved page carries an unfilled referenced detail", () => {
+    for (const p of LEGAL_PAGES) expect(legalPlaceholdersFor(p), p.routeId).toEqual([]);
   });
 
   it("flags an approved page that still carries unfilled details — the test that must fail " +
     "the build if a placeholder is ever approved over", () => {
-    const dirty: LegalPageRow = { ...LEGAL_PAGES[0], approved: true };
+    const dirty: LegalPageRow = {
+      ...LEGAL_PAGES[0],
+      approved: true,
+      details: [...LEGAL_PAGES[0].details, "CONTACT_ADDRESS"],
+    };
     const violations = legalApprovalViolations([dirty]);
-    expect(violations).toEqual([{ routeId: "/terms", unfilled: dirty.details }]);
+    expect(violations).toEqual([{ routeId: "/terms", unfilled: ["CONTACT_ADDRESS"] }]);
   });
 
   it("accepts an approved page whose details are all filled", () => {
@@ -83,7 +101,7 @@ describe("legalPlaceholdersFor / legalApprovalViolations (the flag invariant)", 
     expect(legalApprovalViolations([clean])).toEqual([]);
   });
 
-  it("the shipped set carries zero violations today (all approved: false)", () => {
+  it("the shipped set carries zero violations today (all approved, all details filled)", () => {
     expect(legalApprovalViolations()).toEqual([]);
   });
 

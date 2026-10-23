@@ -71,11 +71,17 @@ describe("the five legal/trust routes (REQ-LCH-1)", () => {
     }
   });
 
-  it("every page renders the draft banner + marks while approved:false rides LEGAL_PAGES", async () => {
+  it("every page renders approved — no draft banner, no placeholder marks, filled values shown", async () => {
+    // R6CNT.2 / H11 A1: every row is approved:true with all referenced details filled — the
+    // banner retires and the recorded values render in place of the ⟦KEY⟧ marks.
     for (const page of LEGAL_PAGES) {
       const html = await (await app.request(page.routeId)).text();
       if (page.approved) {
-        expect(html).not.toContain("data-legal-draft");
+        expect(html, page.routeId).not.toContain("data-legal-draft");
+        expect(html, page.routeId).not.toContain("data-legal-placeholder");
+        expect(html, page.routeId).not.toContain("⟦");
+        expect(html, page.routeId).toContain("Rhema Labs");
+        expect(html, page.routeId).toContain("contact@rhema.tools");
       } else {
         expect(html, page.routeId).toContain("data-legal-draft");
         // HTML-escaping: assert the escape-free prefix, not the apostrophe-bearing tail.

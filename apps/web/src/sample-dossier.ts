@@ -1,12 +1,12 @@
 import type { DossierClaim, DossierFinding } from "@rhema/ui";
 
-// The read-only sample dossier for the public invite page (REQ-POS-3; §16.3 #21). Essay protocol; drawn from
-// one of the three real projects ("The Politics of Visibility"). Its claim ledger contains at least one
-// CONTRADICTED Tier-1 claim shown with the source the fact-check fetched — the "this is not chat" proof.
-//
-// NOTE: the final content selection + the operator's REQ-POS-3 sign-off are HUMAN row H3 (deferred). This is a
-// representative stand-in with the required shape; when H3 signs off, the prose/URLs are swapped here (and the
-// dossier regenerated if a cited URL dies). Editorial CONTENT, not product vocabulary — see copy.ts for chrome.
+// The read-only sample dossier for the public invite page (REQ-POS-3; §16.3 #21). Essay protocol;
+// H.G. Wells's "The Extinction of Man" (1894/1897 — public domain, GD-SHOWCASE.R6 "Public-domain
+// essay"), the same essay HUMAN-H11 picked for the Showcase (A4). Content approved verbatim under
+// A3 ("I also approve A2, A3, and A4") — the proposal verbatim:
+// `docs/build/reports/2026-10-21_R6CNT.1/sample-dossier-proposal.md`. Its claim ledger contains the
+// CONTRADICTED Tier-1 claim shown with the deep sources the fact-check fetched — the "this is not
+// chat" proof. Editorial CONTENT, not product vocabulary — see copy.ts for chrome.
 
 export interface SampleDossier {
   readonly projectTitle: string;
@@ -17,53 +17,65 @@ export interface SampleDossier {
 }
 
 export const SAMPLE_DOSSIER: SampleDossier = {
-  projectTitle: "The Politics of Visibility",
-  projectSlug: "the-politics-of-visibility",
+  projectTitle: "The Extinction of Man",
+  projectSlug: "the-extinction-of-man",
   letter: [
-    "This is a real essay with a real argument, and the argument is strong enough to survive being tested. So I tested it. The center holds — the piece has a thesis worth the reader's time — but two things stand between it and the venue you're aiming at.",
-    "The first is evidentiary: the injury the essay is built on is asserted more than it is shown, and the strongest published counterargument goes unanswered. The second is a matter of record: one of your load-bearing citations says the opposite of what you've claimed it says. The ledger below marks it, with the ruling I read.",
+    "This is a real 1897 essay arguing a real thesis — that humanity's tenure is not guaranteed — and it earns the reader's attention. The argument is honest; its evidence is not. The load-bearing natural-history claims are a century stale, and one is wrong by a factor of two on the axis the essay builds the horror on.",
+    "The piece also deserves credit where due: the central wager — dominant taxa fall without warning — survives contact with modern paleontology. The ledger below separates what survives from what does not, with the sources the review actually fetched.",
   ],
   claims: [
     {
-      ordinal: 6,
-      text: "Investigators showed a grand jury a diagram of the surveillance operation.",
-      tier: 1,
-      verdict: "substantially_accurate",
-      verdictLabel: "Substantially accurate",
-      note: "Supported by the local reporting; re-attribute the citation from the wire report to the original.",
-      fetched: [{ url: "https://minnesotareformer.com/", host: "minnesotareformer.com" }],
-    },
-    {
-      ordinal: 12,
-      text: "The appellate court struck down the program as unconstitutional.",
+      ordinal: 9,
+      text: "The evidence of the fossil Paradoxides shows creatures of this kind may attain a length of six feet.",
       tier: 1,
       verdict: "contradicted",
       verdictLabel: "Contradicted",
-      note: "The ruling you cite did the opposite: it UPHELD the program, narrowing it on other grounds. As written, the sentence misstates the record — fix before this reaches an editor who checks.",
-      fetched: [{ url: "https://www.courtlistener.com/", host: "courtlistener.com" }],
+      note: "Paradoxides' largest specimen is 37 cm (15 in); the largest complete trilobite ever found (Isotelus rex) is 72 cm — under 2.5 ft, not six. Paradoxides is also a trilobite, not a crustacean 'of this kind.' Wrong on the scale and the group.",
+      fetched: [
+        { url: "https://en.wikipedia.org/wiki/Paradoxides", host: "wikipedia.org" },
+        { url: "https://en.wikipedia.org/wiki/Isotelus", host: "wikipedia.org" },
+      ],
     },
     {
-      ordinal: 49,
-      text: "The ruling likened the arrangement to leaving the fox in charge of the henhouse.",
+      ordinal: 12,
+      text: "Man has swept away auk, bison, and dodo during the last two hundred years.",
       tier: 1,
-      verdict: "verified",
-      verdictLabel: "Verified",
-      note: "Quotation is accurate; the draft truncates it — restore the full clause.",
-      fetched: [{ url: "https://www.courtlistener.com/", host: "courtlistener.com" }],
+      verdict: "misleading_in_context",
+      verdictLabel: "Misleading in context",
+      note: "The bison was hunted to under 1,000 but never extinguished — today ~11,000 DOI-managed in 19 herds, designated the US national mammal in 2016; the dodo fell ~1681, outside the essay's own 200-year window; only the great auk (1844) fits.",
+      fetched: [{ url: "https://www.nps.gov/subjects/bison", host: "nps.gov" }],
+    },
+    {
+      ordinal: 3,
+      text: "In no case does the record of the fossils show a really dominant species succeeded by its own descendants.",
+      tier: 1,
+      verdict: "substantially_accurate",
+      verdictLabel: "Substantially accurate",
+      note: "The pattern holds in the mass-extinction literature — dominant clades are replaced by previously marginal competitors — though modern reviewers soften 'in no case' (post-extinction radiations do include survivor lineages).",
+      fetched: [],
+    },
+    {
+      ordinal: 31,
+      text: "We may be unwittingly evolving some new and more terrible plague.",
+      tier: 3,
+      verdict: "unverifiable",
+      verdictLabel: "Unverifiable",
+      note: "Speculative thesis claim — argued, not checked.",
+      fetched: [],
     },
   ],
   findings: [
     {
-      title: "The injury is the thesis, and it is the least-evidenced thing in the piece.",
-      body: "The central injury claim (anticipatory chilling) is asserted more than shown, and the strongest published counterargument goes unanswered. An independent second read, given only the draft, reached the same verdict.",
+      title: "The six-foot crab is the essay's hinge — and it is wrong on the fossil record.",
+      body: "The nightmare scenario that sells the thesis is scaled off Paradoxides. The real genus tops out at 37 cm, and no complete trilobite has ever exceeded 72 cm. The essay's scariest object shrinks by half — the correction must be visible, because the fear is built on the number.",
       severity: "blocking",
-      kind: "argument",
+      kind: "claim",
     },
     {
-      title: "The essay doesn't name the conversation it is in.",
-      body: "Its thesis and philosophical center each have famous predecessors it never names; at this venue that reads as rediscovery rather than synthesis. Name the lineage and answer it.",
+      title: "The essay's own timeline contradicts one of its three extinctions.",
+      body: "Within 'the last two hundred years' Wells lists auk, bison, and dodo as swept away. The bison survives (a conservation success, not an extinction) and the dodo predates the window. A second read, given only the draft, flags the same trio — the essay argues harder than its record.",
       severity: "major",
-      kind: "discourse",
+      kind: "claim",
     },
   ],
 };

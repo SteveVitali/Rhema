@@ -366,10 +366,10 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     };
     // the contradicted Tier-1 claim carries its fetched source URL (the REQ-POS-3 surface contract)
     const tier1 = dto.claims.find((cl) => cl.tier === 1 && cl.verdict === "contradicted");
-    expect(tier1?.sources?.some((s) => s.url.includes("nrscotland.gov.uk"))).toBe(true);
+    expect(tier1?.sources?.some((s) => s.url.includes("wikipedia.org/wiki/Paradoxides"))).toBe(true);
     // and the seeded canonical evidence survives row → DTO intact (urls present + stamped accessed)
     const anchorFinding = dto.findings.find((f) => f.evidence?.verdict === "contradicted");
-    expect(anchorFinding?.evidence?.urls.some((u) => u.url.includes("nrscotland.gov.uk"))).toBe(true);
+    expect(anchorFinding?.evidence?.urls.some((u) => u.url.includes("wikipedia.org/wiki/Paradoxides"))).toBe(true);
     // the letter is real content, not an error body
     expect(dto.letterSections.length).toBeGreaterThan(0);
   });

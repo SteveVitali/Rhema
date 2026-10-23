@@ -264,7 +264,7 @@ describe("UX.1 — GET /showcase", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("<title>Showcase · Rhēma</title>");
-    expect(html).toContain("The Politics of Visibility");
+    expect(html).toContain("The Extinction of Man");
     expect(html).toContain('meta name="description"');
     expect(html.match(/<h1[\s>]/g)!.length).toBe(1);
     expect(html).not.toContain("private beta");
@@ -303,6 +303,6 @@ describe("UX.1 — GET /showcase", () => {
     const res = await createWebApp(deps).request("/showcase");
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("The Politics of Visibility");
+    expect(html).toContain("The Extinction of Man");
   });
 });

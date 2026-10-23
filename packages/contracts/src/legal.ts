@@ -28,14 +28,18 @@ export const LEGAL_DETAIL_KEYS = [
 export type LegalDetailKey = (typeof LEGAL_DETAIL_KEYS)[number];
 
 /**
- * The operator-fill values — `null` until HUMAN-H11 records the entity, jurisdiction and
- * contact and R6CNT.2 lands them here verbatim. A `null` detail renders its `⟦KEY⟧`
- * placeholder mark on every page that references it.
+ * The operator-fill values — filled verbatim by R6CNT.2 from HUMAN-H11's recorded A1 values
+ * (entity "Rhema Labs", jurisdiction "NY, NY", contact "contact@rhema.tools"). A `null`
+ * detail renders its `⟦KEY⟧` placeholder mark on every page that references it.
+ * `CONTACT_ADDRESS` stays `null` — the operator recorded no postal address and the generated
+ * copy no longer references the slot (the approval covers the generated text; an unregistered
+ * trade name has no registered-agent address to state). If the operator later supplies a
+ * postal address, fill the slot AND re-add it to a page's `details` + copy in the same diff.
  */
 export const LEGAL_DETAILS: Record<LegalDetailKey, string | null> = {
-  OPERATING_ENTITY: null,
-  GOVERNING_LAW: null,
-  CONTACT_EMAIL: null,
+  OPERATING_ENTITY: "Rhema Labs",
+  GOVERNING_LAW: "NY, NY",
+  CONTACT_EMAIL: "contact@rhema.tools",
   CONTACT_ADDRESS: null,
 };
 
@@ -66,42 +70,44 @@ export interface LegalPageRow {
   readonly details: readonly LegalDetailKey[];
 }
 
-/** The five legal/trust documents (REQ-LCH-1) — every row ships `approved: false`. */
+/** The five legal/trust documents (REQ-LCH-1) — every row `approved: true` under HUMAN-H11's
+ *  recorded A1 pre-approval ("I pre-approve whatever text you generate now", 2026-10-23): the
+ *  generated text IS the approved text, and every referenced detail is filled. */
 export const LEGAL_PAGES: readonly LegalPageRow[] = [
   {
     routeId: "/terms",
     title: "Terms of Service",
     navLabel: "Terms",
-    approved: false,
+    approved: true,
     details: ["OPERATING_ENTITY", "GOVERNING_LAW", "CONTACT_EMAIL"],
   },
   {
     routeId: "/privacy",
     title: "Privacy Policy",
     navLabel: "Privacy",
-    approved: false,
-    details: ["OPERATING_ENTITY", "CONTACT_EMAIL", "CONTACT_ADDRESS"],
+    approved: true,
+    details: ["OPERATING_ENTITY", "CONTACT_EMAIL"],
   },
   {
     routeId: "/refunds",
     title: "Refund Policy",
     navLabel: "Refunds",
-    approved: false,
+    approved: true,
     details: ["OPERATING_ENTITY", "CONTACT_EMAIL"],
   },
   {
     routeId: "/acceptable-use",
     title: "Acceptable Use Policy",
     navLabel: "Acceptable use",
-    approved: false,
+    approved: true,
     details: ["OPERATING_ENTITY", "CONTACT_EMAIL"],
   },
   {
     routeId: "/contact",
     title: "Contact & Support",
     navLabel: "Contact",
-    approved: false,
-    details: ["OPERATING_ENTITY", "CONTACT_EMAIL", "CONTACT_ADDRESS"],
+    approved: true,
+    details: ["OPERATING_ENTITY", "CONTACT_EMAIL"],
   },
 ];
 
