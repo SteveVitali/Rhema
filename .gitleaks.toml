@@ -21,8 +21,11 @@ paths = [
 # 2026-10-20 (R6CI.1): + `journey2026stb5a` — the citeproc citation-key literal in
 # packages/journeys/src/stb5a-helpers.ts. Same fixture class; needed because non-PR events
 # (workflow_dispatch/push) make gitleaks-action scan FULL history, where this surfaces.
+# 2026-10-22 (R6POST.2): + the sslip.io fixture hostname in infra/config/stages.test.ts —
+# `api: "<hostname>"` reads as generic-api-key; it is a test domain literal, not a credential.
 regexes = [
   '''test-secret-0123456789abcdef0123456789abcdef''',
   '''quarantine/ws1/up1''',
   '''journey2026stb5a''',
+  '''api\.pr-212\.34\.8\.177\.69\.sslip\.io''',
 ]
