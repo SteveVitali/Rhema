@@ -18,6 +18,12 @@
 // ids as that tenant's marker set, and asserts zero cross-visibility; then fetches the web pages
 // /voices, /app, /app/inbox, /usage and looks for the other tenant's markers in the HTML. Session
 // material goes nowhere but the request headers.
+// R6SECR.1 (REQ-SEC-3) extended it: each tenant's typed ids are harvested from /session + the
+// lists, then `LIVE_FOREIGN_GETS` plants them (or `secr_probe_*` fakes where a family has no
+// harvestable id) into every user-serving api family — voices, projects (chat/outline/timeline/
+// settings/figures/files), runs, billing, the `/usercontent/sign` mint legs, the token routes —
+// plus `LIVE_FOREIGN_BFF_GETS`/`LIVE_BFF_LIST_GETS` on the web twin, and a second write leg
+// (`POST /inbox/<foreign>/read`).
 
 import {
   createOrchestratorTestDb,
@@ -28,6 +34,7 @@ import {
   type OrchestratorTestDb,
 } from "@rhema/orchestrator/testing";
 import { USER_SERVING_ROLE } from "@rhema/db";
+import { InMemoryContentStore } from "@rhema/mirror";
 import { quarantineKey, convertedResultKey, USERCONTENT_URL_TTL_SECONDS, type UserContentSigner } from "@rhema/contracts";
 import {
   createApp,
@@ -56,6 +63,8 @@ export interface TenantMarkers {
   readonly artifactId: string;
   readonly artifactVersionId: string;
   readonly correspondenceId: string;
+  /** F-R6SECR.1-1 — a `response`-kind correspondence the what-changed route can actually resolve. */
+  readonly responseCorrId: string;
   readonly findingId: string;
   readonly figureId: string;
   readonly liveDocId: string;
@@ -96,6 +105,10 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
   const artifactId = `art_probe_${t}`;
   const artifactVersionId = `av_probe_${t}`;
   const correspondenceId = `corr_probe_${t}`;
+  // F-R6SECR.1-1 — a `response` correspondence: `/responses/:cid/what-changed` only resolves when
+  // the cid's row is kind='response' — the review-kind corr above never reaches the projector, so
+  // this row is what makes that route family honest (it must 404 at the guard, not at the kind).
+  const responseCorrId = `corrsp_probe_${t}`;
   const findingId = `fnd_probe_${t}`;
   const figureId = `fig_probe_${t}`;
   const liveDocId = `ldoc_probe_${t}`;
@@ -122,6 +135,8 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
       values ('${artifactVersionId}','${artifactId}',1,'sha_${t}','k_${t}',10,'text/markdown','{}'::jsonb);
     insert into correspondence_items (id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
       values ('${correspondenceId}','${projectId}','review','${draftId}','${runId}',1,now(),'{}');
+    insert into correspondence_items (id, project_id, kind, draft_id, run_id, prior_review_id, ordinal, delivered_at, artifact_ids)
+      values ('${responseCorrId}','${projectId}','response','${draftId}','${runId}','${correspondenceId}',2,now(),'{}');
     insert into findings (id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
       values ('${findingId}','${correspondenceId}','${draftId}',1,'note','minor','agent','${marker("FINDING")}','b');
     insert into figures (id, project_id, spec_kind, caption) values ('${figureId}','${projectId}','table','${marker("FIGURE")}');
@@ -152,6 +167,7 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
   const ids = [
     userId, billingAccountId, workspaceId, projectId, draftId, runId, gateId, personaId,
     connectionId, discoveredItemId, threadId, artifactId, artifactVersionId, correspondenceId,
+    responseCorrId,
     findingId, figureId, liveDocId, restorePointId, decisionRequestId, checkoutSessionId,
     guidanceId, inboxItemId, actionTokenId, refundableRunId,
   ];
@@ -161,6 +177,7 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
   return {
     userId, workspaceId, billingAccountId, projectId, draftId, runId, gateId, personaId,
     connectionId, discoveredItemId, threadId, artifactId, artifactVersionId, correspondenceId,
+    responseCorrId,
     findingId, figureId, liveDocId, restorePointId, decisionRequestId, checkoutSessionId,
     guidanceId, inboxItemId, actionTokenId, refundableRunId,
     textMarkers,
@@ -218,7 +235,13 @@ function fillPath(
       case "figureId": return pick(foreign.figureId);
       case "fid": return pick(foreign.findingId);
       case "cid":
-        return pick(path.startsWith("/voices/") ? foreign.connectionId : foreign.correspondenceId);
+        return pick(
+          path.startsWith("/voices/")
+            ? foreign.connectionId
+            : path.includes("/responses/")
+              ? foreign.responseCorrId
+              : foreign.correspondenceId,
+        );
       case "gid":
         return pick(path.includes("/guidance/") ? foreign.guidanceId : foreign.gateId);
       case "itemId": return pick(foreign.discoveredItemId);
@@ -296,6 +319,12 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
       ...deps,
       principal: sessionScopedPrincipal,
       db: createScopedDb(userPool, { role: USER_SERVING_ROLE }),
+      // F-R6SECR.1-1 — a bound store via the prod seam (server.ts binds `contentStoreFor`):
+      // without it every store-dependent route (`/v/:n/diff/:m`, `/responses/:cid/what-changed`,
+      // `/review/:runId/dossier`) 500s at the "content store unavailable" check BEFORE the tenant
+      // predicate runs — the exact masking that let the revision-routes leak ship. Empty is fine:
+      // the marker scan keys on ids the unscoped SQL returns, not on served bytes.
+      contentStoreFor: async () => new InMemoryContentStore(),
       // DEF.4 — the refund write leg runs under the harshest posture (flag OPEN): a foreign id must
       // still 404 and write nothing — the workspace predicate + RLS, not the flag, is the boundary.
       refundWindowMode: "open",
@@ -540,6 +569,176 @@ function extractMarkers(body: string): Set<string> {
   return out;
 }
 
+// ---- R6SECR.1 (REQ-SEC-3) — planted-foreign-id live legs ----------------------
+//
+// The original live mode probed four list routes + one foreign detail. The launch-blocking
+// review needs the same assertion on EVERY user-serving family the leak classes touched:
+// voices, projects (chat/outline/timeline/settings/figures/files — `loadProject`'s bucket),
+// runs, billing, the R6UCD.1 signed-URL mint, the token routes, and the `/bff/*` twins on
+// web. Each tenant's own ids are harvested from `/session` + the list routes; the templates
+// below fill `{name}` with the FOREIGN tenant's ids (or planted `secr_probe_*` fakes where a
+// family has no harvestable id — a fake asserts the uniform not_found oracle, a harvested id
+// additionally asserts a real foreign row can never resolve).
+
+interface LiveIds {
+  readonly workspaceId?: string;
+  readonly userId?: string;
+  readonly billingAccountId?: string;
+  readonly projectId?: string;
+  readonly projectSlug?: string;
+  readonly runId?: string;
+  readonly draftId?: string;
+  readonly personaId?: string;
+  readonly inboxItemId?: string;
+  /** all of this tenant's project slugs — used to pick a genuinely-foreign slug value. */
+  readonly slugs?: ReadonlySet<string>;
+}
+
+/** api routes — `{x}` params filled from the foreign tenant's harvested ids. */
+const LIVE_FOREIGN_GETS: readonly string[] = [
+  "/voices/{personaId}",
+  "/voices/{personaId}/connections",
+  "/voices/{personaId}/estimate",
+  "/voices/{personaId}/samples/{itemId}",
+  "/voices/{personaId}/update",
+  "/projects/{projectId}/chat",
+  "/projects/{projectId}/chat/sources",
+  "/projects/{projectId}/chat/threads/{threadId}/pins",
+  "/projects/{projectId}/chat/threads/{threadId}/remembers",
+  "/projects/{projectId}/chat/threads/{threadId}/turns/{runId}",
+  "/projects/{projectId}/outline",
+  "/projects/{projectId}/outline/promotion",
+  "/projects/{projectId}/timeline",
+  "/projects/{projectId}/versions",
+  "/projects/{projectId}/settings",
+  "/projects/{projectId}/settings/approvals",
+  "/projects/{projectId}/approval-overrides",
+  "/projects/{projectId}/decisions",
+  "/projects/{projectId}/pretriage",
+  "/projects/{projectId}/figures",
+  "/projects/{projectId}/figures/{figureId}",
+  "/projects/{projectId}/files",
+  "/projects/{projectId}/bibliography",
+  "/projects/{projectId}/ai-use",
+  "/projects/{projectId}/voice",
+  "/projects/{projectId}/export/dialog",
+  "/projects/{projectId}/editor/{draftId}",
+  "/projects/{projectId}/editor/resolve/{v}",
+  "/projects/{projectId}/drafts/{draftId}/restore-points",
+  "/projects/{projectId}/drafts/{draftId}/restore-points/{rp}/preview",
+  "/projects/{projectId}/review/{runId}/dossier",
+  "/projects/{projectId}/responses/{cid}/what-changed",
+  "/projects/{projectId}/v/2/diff/1",
+  "/projects/{projectId}/findings/{fid}/resolve",
+  "/projects/{projectId}/artifacts/{artifactId}/page",
+  "/projects/{projectId}/gates",
+  "/runs/{runId}/report",
+  "/runs/{runId}/events",
+  "/billing/usage/project/{projectId}",
+  "/billing/usage/run/{runId}/advanced",
+  "/billing/checkout-sessions/{checkoutSessionId}",
+  "/usercontent/sign?key=quarantine/{workspaceId}/secr_probe",
+  "/usercontent/sign?key=converted/{workspaceId}/secr_probe.json",
+  "/export/download?token={token}",
+  "/api/action/{token}",
+  // session-scoped (not foreign-id) GETs — the body must still carry no foreign marker.
+  "/settings/account",
+  "/settings/data",
+  "/settings/integrations",
+  "/settings/preferences",
+  "/settings/privacy",
+  "/settings/explainers",
+  "/billing/balance",
+  "/billing/subscription",
+  "/billing/usage/account",
+];
+
+/** api routes DESIGNED to answer 200 with an empty, caller-scoped rollup for any id — the
+ *  response echoes only the supplied id and is byte-identical for a nonexistent project
+ *  (usageLevel2's every query is workspace-predicated), so the 200-substantive heuristic
+ *  exempts them; a foreign marker in the body would still be caught by the scan. */
+const LIVE_FOREIGN_200_OK: ReadonlySet<string> = new Set([
+  "/billing/usage/project/{projectId}",
+]);
+
+/** `/bff/*` twins on the web origin — `{slug}` filled with a slug/id absent from the
+ *  requester's own project set; every answer must be ≥400 and marker-free. */
+const LIVE_FOREIGN_BFF_GETS: readonly string[] = [
+  "/bff/p/{slug}",
+  "/bff/p/{slug}/usage",
+  "/bff/p/{slug}/settings",
+  "/bff/p/{slug}/export",
+  "/bff/p/{slug}/import",
+  "/bff/p/{slug}/outline",
+  "/bff/p/{slug}/outline/promote",
+  "/bff/p/{slug}/run",
+  "/bff/p/{slug}/r/{runId}",
+  "/bff/p/{slug}/review/{runId}",
+  "/bff/p/{slug}/figures",
+  "/bff/p/{slug}/visualize",
+  "/bff/p/{slug}/voice/reseed",
+  "/bff/p/{slug}/obligations/new",
+  "/bff/p/{slug}/v/1",
+  "/bff/p/{slug}/v/2/diff/1",
+  "/bff/p/{slug}/a/{artifactId}",
+  "/bff/p/{slug}/revisions/{cid}",
+  "/bff/voices/{personaId}",
+];
+
+/** `/bff/*` session-scoped twins — no foreign id to plant; the body must carry none. */
+const LIVE_BFF_LIST_GETS: readonly string[] = [
+  "/bff/app",
+  "/bff/app/inbox",
+  "/bff/voices",
+  "/bff/usage",
+  "/bff/settings/account",
+  "/bff/settings/preferences",
+  "/bff/settings/notifications",
+  "/bff/settings/integrations",
+  "/bff/settings/data",
+  "/bff/settings/billing",
+  "/bff/feed-labels",
+  "/bff/app/new",
+];
+
+/** Fill `{name}` placeholders: harvested foreign ids where they exist, planted fakes
+ *  otherwise (they assert the uniform-not-found oracle). `supplied` = markers legitimately
+ *  placed in the URL — excluded from the response scan (echoing a caller-supplied id is not
+ *  a cross-tenant disclosure). */
+function fillLivePath(
+  template: string,
+  foreign: LiveIds,
+): { path: string; supplied: Set<string> } {
+  const supplied = new Set<string>();
+  const pick = (v: string | undefined, fake: string) => {
+    const out = v ?? fake;
+    supplied.add(out);
+    return out;
+  };
+  const path = template.replace(/\{([a-zA-Z]+)\}/g, (_w, name: string) => {
+    switch (name) {
+      case "personaId": return pick(foreign.personaId, "secr_probe_persona");
+      case "projectId": return pick(foreign.projectId, "secr_probe_project");
+      case "runId": return pick(foreign.runId, "secr_probe_run");
+      case "draftId": return pick(foreign.draftId, "secr_probe_draft");
+      case "workspaceId": return pick(foreign.workspaceId, "secr_probe_ws");
+      case "itemId": return pick(foreign.inboxItemId, "secr_probe_item");
+      case "threadId": return pick(undefined, "secr_probe_thread");
+      case "figureId": return pick(undefined, "secr_probe_figure");
+      case "artifactId": return pick(undefined, "secr_probe_artifact");
+      case "cid": return pick(undefined, "secr_probe_corr");
+      case "fid": return pick(undefined, "secr_probe_finding");
+      case "rp": return pick(undefined, "secr_probe_rp");
+      case "checkoutSessionId": return pick(undefined, "secr_probe_checkout");
+      case "token": return pick(undefined, "secr_probe_token");
+      case "slug": return pick(foreign.projectSlug ?? foreign.projectId, "secr_probe_slug");
+      case "v": return "1";
+      default: throw new Error(`unhandled live-path param {${name}} in ${template}`);
+    }
+  });
+  return { path, supplied };
+}
+
 export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<ProbeReport> {
   const sessionA = process.env.PROBE_SESSION_A;
   const sessionB = process.env.PROBE_SESSION_B;
@@ -551,32 +750,91 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
     const res = await fetch(`${baseUrl}${path}`, { headers: { cookie: session } });
     return { status: res.status, body: await res.text() };
   };
+  const getWeb = async (path: string, session: string) => {
+    const res = await fetch(`${webUrl ?? baseUrl}${path}`, {
+      headers: { cookie: session },
+      redirect: "manual",
+    });
+    return { status: res.status, body: await res.text() };
+  };
 
-  // collect each tenant's own marker set from its list routes
+  // collect each tenant's own marker set from its list routes (+ /session for the account ids)
   const markersOf = async (session: string): Promise<Set<string>> => {
     const s = new Set<string>();
-    for (const route of LIVE_LIST_ROUTES) {
+    for (const route of ["/session", ...LIVE_LIST_ROUTES]) {
       const { body } = await getJson(route, session);
       for (const m of extractMarkers(body)) s.add(m);
     }
     return s;
   };
+
+  // R6SECR.1 — the tenant's typed own ids: /session for the account triple, the project row
+  // carrying the most context (prefer one with a run + draft), the first persona, the first
+  // inbox item, the first usage run (a runId fallback for run-less projects).
+  const idsOf = async (session: string): Promise<LiveIds> => {
+    const out: { [k: string]: unknown } = {};
+    const sess = await getJson("/session", session).then((r) => {
+      try { return JSON.parse(r.body) as Record<string, string>; } catch { return {}; }
+    });
+    out.workspaceId = sess.workspaceId;
+    out.userId = sess.userId;
+    out.billingAccountId = sess.billingAccountId;
+    const projects = await getJson("/projects", session).then((r) => {
+      try { return (JSON.parse(r.body) as { projects?: Record<string, string | null>[] }).projects ?? []; }
+      catch { return []; }
+    });
+    const best =
+      projects.find((p) => p.latestReviewRunId && p.headDraftId) ??
+      projects.find((p) => p.latestReviewRunId) ??
+      projects[0];
+    out.projectId = best?.id ?? undefined;
+    out.projectSlug = best?.slug ?? undefined;
+    out.runId = best?.latestReviewRunId ?? undefined;
+    out.draftId = best?.headDraftId ?? undefined;
+    const voices = await getJson("/voices", session).then((r) => {
+      try { return (JSON.parse(r.body) as { voices?: { personaId?: string }[] }).voices ?? []; }
+      catch { return []; }
+    });
+    out.personaId = voices.find((v) => v.personaId)?.personaId;
+    const inbox = await getJson("/inbox", session).then((r) => {
+      try { return (JSON.parse(r.body) as { items?: { id?: string }[] }).items ?? []; }
+      catch { return []; }
+    });
+    out.inboxItemId = inbox.find((i) => i.id)?.id;
+    // every own slug — the BFF foreign-slug leg picks a foreign value NOT in this set (a
+    // same-named foreign slug resolves to the requester's OWN row, which proves nothing).
+    out.slugs = new Set(projects.map((p) => p.slug).filter((s): s is string => typeof s === "string"));
+    if (!out.runId) {
+      const usage = await getJson("/billing/usage", session).then((r) => {
+        try { return (JSON.parse(r.body) as { runs?: { runId?: string; projectId?: string }[] }).runs ?? []; }
+        catch { return []; }
+      });
+      const u = usage.find((x) => x.runId);
+      out.runId = u?.runId;
+      out.projectId = out.projectId ?? u?.projectId;
+    }
+    return out as LiveIds;
+  };
+
   const aMarkers = await markersOf(sessionA);
   const bMarkers = await markersOf(sessionB);
+  const aIds = await idsOf(sessionA);
+  const bIds = await idsOf(sessionB);
   let writesProbed = 0;
 
   // api JSON: every list route as each tenant must contain none of the other's markers
-  for (const [session, foreign, tag] of [
-    [sessionA, bMarkers, "a"],
-    [sessionB, aMarkers, "b"],
+  let routesProbed = 0;
+  for (const [session, foreign, foreignIds, ownIds, tag] of [
+    [sessionA, bMarkers, bIds, aIds, "a"],
+    [sessionB, aMarkers, aIds, bIds, "b"],
   ] as const) {
     for (const route of LIVE_LIST_ROUTES) {
       const { status, body } = await getJson(route, session);
       const hits = [...foreign].filter((m) => body.includes(m));
       if (hits.length) findings.push({ route: `GET ${route}`, asTenant: tag, status, leaked: hits.slice(0, 10) });
     }
-    // and a foreign id in a detail route must not resolve — take one from the other tenant's set
-    const foreignId = [...foreign][0];
+    // and a foreign id in a detail route must not resolve — prefer the real foreign persona id
+    const foreignId = foreignIds.personaId ?? [...foreign][0];
     if (foreignId) {
       const { status, body } = await getJson(`/voices/${foreignId}`, session);
       const hits = [...foreign].filter((m) => body.includes(m) && m !== foreignId);
@@ -585,13 +843,13 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
       }
       // DEF.4 — the refund WRITE leg: POSTing the foreign id must never refund (2xx) nor echo
       // foreign markers beyond the supplied id — 403 (flag) / 404 (scope) are the only honest answers.
-      const wr = await fetch(`${baseUrl}/runs/${encodeURIComponent(foreignId)}/refund`, {
+      const wr = await fetch(`${baseUrl}/runs/${encodeURIComponent(foreignIds.runId ?? foreignId)}/refund`, {
         method: "POST",
         headers: { cookie: session },
       });
       writesProbed++;
       const wrBody = await wr.text().catch(() => "");
-      const wrHits = [...foreign].filter((m) => wrBody.includes(m) && m !== foreignId);
+      const wrHits = [...foreign].filter((m) => wrBody.includes(m) && m !== (foreignIds.runId ?? foreignId));
       if (wr.status < 300 || wr.status >= 500 || wrHits.length) {
         findings.push({
           route: "POST /runs/<foreign>/refund",
@@ -599,6 +857,110 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
           status: wr.status,
           leaked: wrHits.slice(0, 10).concat(wr.status < 300 || wr.status >= 500 ? [`status ${wr.status}`] : []),
         });
+      }
+      // R6SECR.1 — the inbox WRITE leg (idempotent mark-read; a foreign item id must never
+      // resolve): POST /inbox/<foreign-or-planted item>/read answers ≥400 and echoes nothing.
+      const wrInbox = await fetch(
+        `${baseUrl}/inbox/${encodeURIComponent(foreignIds.inboxItemId ?? "secr_probe_item")}/read`,
+        { method: "POST", headers: { cookie: session } },
+      );
+      writesProbed++;
+      const wiBody = await wrInbox.text().catch(() => "");
+      const wiHits = [...foreign].filter(
+        (m) => wiBody.includes(m) && m !== foreignIds.inboxItemId,
+      );
+      if (wrInbox.status < 300 || wrInbox.status >= 500 || wiHits.length) {
+        findings.push({
+          route: "POST /inbox/<foreign>/read",
+          asTenant: tag,
+          status: wrInbox.status,
+          leaked: wiHits.slice(0, 10).concat(
+            wrInbox.status < 300 || wrInbox.status >= 500 ? [`status ${wrInbox.status}`] : [],
+          ),
+        });
+      }
+    }
+
+    // R6SECR.1 — planted-foreign-id GETs across every user-serving api family. A foreign id in
+    // the path must never resolve the foreign row's data into this tenant's response; the mint
+    // legs additionally must answer a uniform 404 with no `url` field (no key oracle).
+    for (const template of LIVE_FOREIGN_GETS) {
+      const { path, supplied } = fillLivePath(template, foreignIds);
+      routesProbed++;
+      const { status, body } = await getJson(path, session);
+      const hits = [...foreign].filter((m) => body.includes(m) && !supplied.has(m));
+      if (hits.length) {
+        findings.push({ route: `GET ${template}`, asTenant: tag, status, leaked: hits.slice(0, 10) });
+      }
+      if (template.startsWith("/usercontent/sign") && (status !== 404 || /"url"\s*:/.test(body))) {
+        findings.push({
+          route: `GET ${template}`,
+          asTenant: tag,
+          status,
+          leaked: [`foreign mint key did not answer a clean 404 (url in body: ${/"url"\s*:/.test(body)})`],
+        });
+      }
+      // a harvested (real) foreign id that resolves 200 with a body full of the requester's own
+      // markers is fine (e.g. an id that collides is impossible — ULIDs); a 200 carrying ANY
+      // non-supplied foreign marker was already caught by the scan above. A 200 with a
+      // substantive payload on a foreign id is itself suspect — flag it for the report (the
+      // routes here all scope by workspace, so an honest answer is 404/403/422, never 200-data).
+      // `LIVE_FOREIGN_200_OK` whitelists the routes DESIGNED to answer an empty rollup for any id
+      // (usageLevel2 scopes every query by workspace and echoes the supplied id — the response is
+      // byte-identical for a nonexistent id, so it is not even an existence oracle).
+      if (
+        status === 200 &&
+        supplied.size > 0 &&
+        body.length > 64 &&
+        !hits.length &&
+        !LIVE_FOREIGN_200_OK.has(template)
+      ) {
+        const hasRealForeignId = [...supplied].some((s) => foreign.has(s));
+        if (hasRealForeignId) {
+          findings.push({
+            route: `GET ${template}`,
+            asTenant: tag,
+            status,
+            leaked: [`200 with a substantive body (${body.length}b) on a real foreign id — review the response`],
+          });
+        }
+      }
+    }
+
+    // the `/bff/*` twins — list reads must carry no foreign marker; foreign-slug legs must
+    // answer ≥400 AND carry no foreign marker. The slug value is picked OUTSIDE the requester's
+    // own slug set (a same-named foreign slug would resolve to the requester's own row and
+    // prove nothing); absent one, the foreign project id stands in (never a valid slug).
+    if (webUrl) {
+      // the foreign-slug value: prefer a REAL foreign slug absent from the requester's own set
+      // (a same-named slug resolves to the requester's own row and proves nothing); absent one,
+      // the foreign project id stands in (it is never a valid slug).
+      const foreignSlugValue =
+        [...(foreignIds.slugs ?? [])].find((s) => !(ownIds.slugs ?? new Set()).has(s)) ??
+        foreignIds.projectId ??
+        "secr_probe_slug";
+      const bffIds: LiveIds = { ...foreignIds, projectSlug: foreignSlugValue };
+      for (const template of LIVE_BFF_LIST_GETS) {
+        routesProbed++;
+        const { status, body } = await getWeb(template, session);
+        const hits = [...foreign].filter((m) => body.includes(m));
+        if (hits.length) {
+          findings.push({ route: `GET ${template} (bff)`, asTenant: tag, status, leaked: hits.slice(0, 10) });
+        }
+      }
+      for (const template of LIVE_FOREIGN_BFF_GETS) {
+        const { path, supplied } = fillLivePath(template, bffIds);
+        routesProbed++;
+        const { status, body } = await getWeb(path, session);
+        const hits = [...foreign].filter((m) => body.includes(m) && !supplied.has(m));
+        if (status < 400 || hits.length) {
+          findings.push({
+            route: `GET ${template} (bff)`,
+            asTenant: tag,
+            status,
+            leaked: hits.slice(0, 10).concat(status < 400 ? [`status ${status} on a foreign slug`] : []),
+          });
+        }
       }
     }
   }
@@ -620,7 +982,7 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
 
   return {
     mode: "live",
-    routesProbed: LIVE_LIST_ROUTES.length + (webUrl ? LIVE_PAGES.length : 0),
+    routesProbed: LIVE_LIST_ROUTES.length + routesProbed + (webUrl ? LIVE_PAGES.length : 0),
     writesProbed,
     routesExempt: [],
     findings,
