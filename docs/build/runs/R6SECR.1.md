@@ -173,6 +173,12 @@
   (protocols `0.4.0+ec61156725a895ab`).
 - Final live re-probe (`/tmp/probe-live-final.json`):
   `{mode:"live", routesProbed:178, writesProbed:4, findings:[], passed:true}` — prod `80db0d5`.
+- Verify at closeout head `3b9093c`: `pnpm turbo build lint typecheck` 135/135 · `pnpm test` 515
+  files / 6,073 pass / 4 skip / 0 fail · all six `check:*` green · `check-build-memory.sh` 0
+  violations (9 warnings — pre-existing classes) · `check-append-only.mjs --base cd66194` OK.
+- **`ci: pass #213@3b9093c`** — run 39916534218, all seven legs + `ci-pass` anchor; boundary
+  record `docs/build/logs/ci-R6SECR.1.json` (first read timed out at 2700s with `integration`
+  pending; job-polled to green then re-read — R6ENG.1 precedent).
 
 ## Evidence report
 
