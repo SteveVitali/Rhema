@@ -109,6 +109,12 @@ runbook is exactly how `collabDatabaseUrl` drifted):
 - `rhema:opsAlertWebhookUrl` — Pulumi secret config for the ops-alert sink; the worker mounts the
   SM `ops-alert-webhook-url` version instead (webhook catcher, PRB.17 gate answer). Setting the
   config is optional; the SM version is what serves.
+  **Amended 2026-10-23 (R6OPS.2 / F-R6OPS.1-1):** the config is BOUND on prod — same value as the
+  SM `latest` version (moved via the gcloud→pulumi stdin pipe, ciphertext in `Pulumi.prod.yaml`
+  only). It is what materializes the Monitoring `webhook_tokenauth` NotificationChannel the 14
+  AlertPolicies page through (`monitoring.ts`); unset on a stage ⇒ policies still record
+  incidents unnotified. Keep it equal to the SM version — if the sink URL ever rotates, rotate
+  both.
 - `rhema:ciRepository` — JOURNEY.1's GitHub `owner/repo` for the WIF token-creator condition
   (default `SteveVitali/Rhema`).
 - `rhema:gitSha` / `rhema:protocolsVersion` — OPS.1 deploy-provenance inputs for the NON-PROD

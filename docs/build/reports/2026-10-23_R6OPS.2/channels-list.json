@@ -1,0 +1,19 @@
+[
+  {
+    "creationRecord": {
+      "mutateTime": "2026-10-23T21:32:35.873475915Z"
+    },
+    "displayName": "rhema-prod ops alert webhook",
+    "enabled": true,
+    "labels": {
+      "url": "[redacted \u2014 equals SM rhema-prod-ops-alert-webhook-url latest]"
+    },
+    "mutationRecords": [
+      {
+        "mutateTime": "2026-10-23T21:32:35.873475915Z"
+      }
+    ],
+    "name": "projects/rhema-507501/notificationChannels/11368222885303875371",
+    "type": "webhook_tokenauth"
+  }
+]

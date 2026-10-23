@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 // the low-cardinality label set (no requestId), and the count>0 alert.
 
 const SRC = readFileSync(fileURLToPath(new URL("./monitoring.ts", import.meta.url)), "utf8");
+const INDEX_SRC = readFileSync(fileURLToPath(new URL("./index.ts", import.meta.url)), "utf8");
 
 const lbBlock = SRC.slice(SRC.indexOf('new gcp.logging.Metric(`rhema-${stack}-lb-5xx`'), SRC.indexOf("const route5xxMetric"));
 const appBlock = SRC.slice(SRC.indexOf('new gcp.logging.Metric(`rhema-${stack}-route-5xx`'), SRC.indexOf("const route5xxPolicy"));
@@ -98,6 +99,62 @@ describe("OBS.1 dashboard tiles", () => {
     expect(SRC).toContain('"metric.label.service"');
     expect(SRC).toContain('"metric.label.route"');
     expect(SRC).toContain('plotType: "STACKED_BAR"');
+  });
+});
+
+describe("R6OPS.2 ops-alert NotificationChannel (F-R6OPS.1-1)", () => {
+  // The finding: all 14 prod AlertPolicies carried `notificationChannels: []` because
+  // `rhema:opsAlertWebhookUrl` was never bound on the prod stack — the channel resource only
+  // materializes when that Pulumi SECRET config is set. These pins assert the contract the
+  // prod bind relies on: ONE webhook_tokenauth channel to the configured sink URL, referenced
+  // by EVERY AlertPolicy construction site.
+  const channelBlock = SRC.slice(
+    SRC.indexOf("let notificationChannel"),
+    SRC.indexOf("const channels"),
+  );
+  const sloPolicyBlock = SRC.slice(
+    SRC.indexOf("SLO_ALERT_SIGNALS.map"),
+    // `const apiService =` (the ` =` guard matters — `const apiServiceName` shares the prefix).
+    SRC.indexOf("const apiService ="),
+  );
+
+  it("creates ONE webhook_tokenauth channel to the configured sink URL, enabled", () => {
+    expect(channelBlock).toContain(
+      "new gcp.monitoring.NotificationChannel(`rhema-${stack}-ops-webhook`",
+    );
+    // webhook_tokenauth is the right descriptor — the sink URL is a bare unguessable
+    // https://*.run.app (the shared secret travels AS the URL, per the descriptor's
+    // "token as a query string parameter" contract; `url` is its only label). The worker
+    // already POSTs to the same URL unauthenticated, so no basic-auth leg exists.
+    expect(channelBlock).toContain('type: "webhook_tokenauth"');
+    expect(channelBlock).toContain("labels: { url: args.opsAlertWebhookUrl }");
+    expect(channelBlock).toContain("enabled: true");
+    // no second channel construction may appear — policies share the one channel resource.
+    expect(SRC.match(/new gcp\.monitoring\.NotificationChannel/g)).toHaveLength(1);
+  });
+
+  it("materializes only when the rhema:opsAlertWebhookUrl secret config is bound", () => {
+    expect(channelBlock).toContain("if (args.opsAlertWebhookUrl)");
+    // The reference list is derived, never a literal: unset ⇒ [] (incident-only policies,
+    // clean preview); set ⇒ the one channel's resource name.
+    expect(SRC).toContain(
+      "const channels = notificationChannel ? [notificationChannel.name] : [];",
+    );
+    // The URL rides a Pulumi SECRET config — getSecret, never get/getObject (it must stay
+    // encrypted in stack state; the plaintext URL lives only in SM + the operator's env).
+    expect(INDEX_SRC).toContain('rhemaConfig.getSecret("opsAlertWebhookUrl")');
+    expect(INDEX_SRC).toContain("...(opsAlertWebhookUrl ? { opsAlertWebhookUrl } : {})");
+  });
+
+  it("is referenced by every AlertPolicy — route-5xx and every per-signal SLO policy", () => {
+    // Exactly two AlertPolicy construction sites exist (route-5xx + the SLO_ALERT_SIGNALS map);
+    // both must carry the derived `channels` binding verbatim.
+    expect(SRC.match(/new gcp\.monitoring\.AlertPolicy/g)).toHaveLength(2);
+    expect(policyBlock).toContain("notificationChannels: channels");
+    expect(sloPolicyBlock).toContain("notificationChannels: channels");
+    // No policy site may bind an empty literal or a hand-rolled channel list.
+    expect(SRC).not.toContain("notificationChannels: []");
+    expect(SRC.match(/notificationChannels: channels/g)).toHaveLength(2);
   });
 });
 

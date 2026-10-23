@@ -188,7 +188,15 @@ pointers; substance unchanged.)_
   is pinned in `showcase.test.ts`; the six prod rows are fixture contamination on test tenants
   (no user funds) and clear on the next reconcile after a corrected deploy — no prod write was
   made. Report: `docs/build/reports/2026-10-21_R6FOR.1/prod-forensics.md`.
-- **F-R6OPS.1-1 — no Monitoring NotificationChannel exists on prod (2026-10-22, R6OPS.1 live
+- **F-R6OPS.1-1 — RESOLVED 2026-10-23 (R6OPS.2, prod stack update 157 — `runs/R6OPS.2.md` +
+  `reports/2026-10-23_R6OPS.2/`).** `rhema:opsAlertWebhookUrl` bound on prod (stdin pipe, SM
+  `latest` → `secure:` ciphertext only) → `pulumi up` created `webhook_tokenauth` channel
+  `…/notificationChannels/11368222885303875371` (enabled; `labels.url` byte-equal to the SM
+  payload — sha256-checked, never printed) and updated **all 14 AlertPolicies** to reference it
+  (live `policies list`: 14/14 non-empty, 0 empty). Sink leg stays proven (488+ worker receipts);
+  `sendVerificationCode` is `FAILED_PRECONDITION` for webhook types (no test verb exists) — first
+  natural-incident receipt owed-by-nature, no synthetic breach fabricated. Original finding text:
+- **F-R6OPS.1-1 — (was OPEN) no Monitoring NotificationChannel exists on prod (2026-10-22, R6OPS.1 live
   census — `runs/R6OPS.1.md` + `reports/2026-10-22_R6OPS.1/alert-delivery.md`).** All 14
   production AlertPolicies (13 SLO + route-5xx) are enabled and evaluate, but
   `notificationChannels: []` on every one; `gcloud alpha monitoring channels list` returns `[]`;

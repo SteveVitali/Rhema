@@ -1,0 +1,119 @@
+Previewing update (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/0242b67e-72be-4827-9c07-db5bf747c7a8
+
+  pulumi:pulumi:Stack: (same)
+    [urn=urn:pulumi:prod::rhema::pulumi:pulumi:Stack::rhema-prod]
+    + gcp:monitoring/notificationChannel:NotificationChannel: (create)
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/notificationChannel:NotificationChannel::rhema-prod-ops-webhook]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+        displayName: "rhema-prod ops alert webhook"
+        enabled    : true
+        forceDelete: false
+        labels     : {
+            url: [secret]
+        }
+        project    : "rhema-507501"
+        type       : "webhook_tokenauth"
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/1858034758162102112]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-route-5xx]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/2581048761410009747]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-import-preview-p95-s]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/10655015408914706533]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-mirror-errors-10m]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/6965983321025129561]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-egress-denied-10m]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/2503312112938798190]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-run-start-latency-p95-s]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/5338273559296571734]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-autosave-roundtrip-p95-ms]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/2503312112938798321]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-absorbed-adjustments-pct-24h]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/13243927646050625475]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-unverified-review-rate-7d-pct]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/5338273559296572827]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-event-delivery-latency-p95-s]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/10993780061181957380]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-proxy-vs-sdk-cost-runs-over5pct-1h]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/13024197816091155944]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-run-success-rate-24h-pct]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/16731420466446556265]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-gate-resume-latency-p95-s]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/9814718786012465609]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-provider-429-5xx-pct-5m]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+    ~ gcp:monitoring/alertPolicy:AlertPolicy: (update)
+        [id=projects/rhema-507501/alertPolicies/10655015408914709517]
+        [urn=urn:pulumi:prod::rhema::gcp:monitoring/alertPolicy:AlertPolicy::rhema-prod-slo-orphaned-runs]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      + notificationChannels: [
+      +     [0]: [unknown]
+        ]
+Resources:
+    + 1 to create
+    ~ 14 to update
+    15 changes. 158 unchanged
