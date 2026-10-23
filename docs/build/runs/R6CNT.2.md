@@ -190,3 +190,6 @@ the redeploy, the fresh-account Showcase leg, the notice send, the GATE-LAUNCH s
   anchor written). Earlier runs on intermediate heads were superseded-cancelled.
 - Stack check: PR #212 is unmerged (OPERATOR policy); the agent's boundary is "CI green at the
   recorded head" — met.
+- Head `eef50c1` (boundary-amend commits): run **39909299224 — PASS** via the same-tree
+  fast-path reusing the `d53c70a` anchor (`delta all-eligible`, docs-only). Every PR head
+  carries a green verdict; the anchor run at `d53c70a` is the full-suite pass.
