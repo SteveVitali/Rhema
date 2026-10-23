@@ -6,9 +6,41 @@
 // fixture's own protocol pairing (the golden row). Adding a protocol + its golden fixture is
 // registry rows and one draft file; no schema change (REQ-GENRE-7).
 
-import type { Rigor } from "@rhema/contracts";
+import type { Rigor, Severity } from "@rhema/contracts";
 import type { Protocol } from "./protocols.js";
 import { PROTOCOL_SEEDS } from "./protocols.js";
+
+/**
+ * The §13.5 deterministic floor subset a fixture pins — a structural mirror of
+ * `@rhema/benchmark`'s `FixtureFloors` (this package cannot depend on benchmark; the gate
+ * consumes the same field names). Only the fields the minimal cohort's live measurement can
+ * honestly produce are declared: `schemaValid` (the run delivered valid sidecars),
+ * `citedFetched` (every URL-backed cited claim was fetched — memo user-source domains excepted,
+ * which the URL policy forbids by design), `attestationViolationsMax` (out-of-boundary egress
+ * attempts the proxy refused), and `findingCountsBySeverity` bands (a degenerate run that spews
+ * findings breaks the band). The corpus-gated fields (materialRecall, wordBudgetDelta, voice
+ * bands, round-trip) stay undeclared — an unrun deterministic check never passes, so a floor is
+ * only pinned where a live score exists.
+ */
+export interface GoldenFloors {
+  readonly findingCountsBySeverity?: Partial<Record<Severity, { min?: number; max?: number }>>;
+  readonly citedFetched?: boolean;
+  readonly attestationViolationsMax?: number;
+  readonly schemaValid?: boolean;
+}
+
+/** The committed floors the R6GLD.1 minimal cohort measured green against (GD-GOLDEN-CAP.R6). */
+export const GOLDEN_LIVE_FLOORS: GoldenFloors = {
+  schemaValid: true,
+  citedFetched: true,
+  attestationViolationsMax: 0,
+  findingCountsBySeverity: {
+    blocking: { min: 0, max: 4 },
+    major: { min: 0, max: 10 },
+    minor: { min: 0, max: 14 },
+    note: { min: 0, max: 18 },
+  },
+};
 
 /** A pinned golden eval input: a draft on disk plus the run shape the golden was recorded under. */
 export interface GoldenEvalFixture {
@@ -31,6 +63,10 @@ export interface GoldenEvalFixture {
   /** Extra run facts: venue pins an outlet-table row; userSources is the memo `user_sources[]` body
       shape the api validates (`{name, text?|url?}`). */
   inputs: { venue?: string; userSources?: { name: string; text?: string; url?: string }[] };
+  /** Committed deterministic floors the run's measured scores must clear (§13.5; REQ-ARCH-36 /
+      REQ-EVAL-17). Only protocol goldens that dispatch live carry them — the benchmark projects'
+      corpus floors live with the corpus. */
+  floors?: GoldenFloors;
   /** Golden assertions for this fixture's own protocol pairing. */
   expected: {
     /** Subset of the seed's phase_defaults the run must honor (`undefined` = all on). */
@@ -93,6 +129,43 @@ export const GOLDEN_EVAL_FIXTURES: readonly GoldenEvalFixture[] = [
     expected: { phaseDefaults: {}, verdicts: ["accept", "minor", "major", "reject"] },
   },
   {
+    // R6GLD.1 — the minimal cohort's Essay leg: the three benchmark projects carry dossier
+    // sidecars but no committed draft body, so the live leg needs its own golden draft.
+    id: "golden-essay",
+    kind: "protocol",
+    protocol: "essay",
+    title: "The last phone booth",
+    rigor: "standard",
+    draft: { path: "_evals/golden-essay.md", approxWords: 328 },
+    files: ["_evals/golden-essay.md"],
+    inputs: {},
+    floors: GOLDEN_LIVE_FLOORS,
+    expected: {
+      // §6.7 essay row: every phase on, infer stage, full line depth, publish/revise/rethink.
+      phaseDefaults: {},
+      verdicts: ["publish", "revise", "rethink"],
+      webFetchOfUserData: "allowed",
+    },
+  },
+  {
+    // R6GLD.1 — the minimal cohort's Academic leg (P1.21 protocol 2 — the registry's missing row).
+    id: "golden-academic",
+    kind: "protocol",
+    protocol: "academic",
+    title: "Retrieval practice improves retention of procedural skills: a registered report proposal",
+    rigor: "standard",
+    draft: { path: "_evals/golden-academic.md", approxWords: 270 },
+    files: ["_evals/golden-academic.md"],
+    inputs: {},
+    floors: GOLDEN_LIVE_FLOORS,
+    expected: {
+      // §6.7 academic row: every phase on, infer stage, referee verdict vocabulary.
+      phaseDefaults: {},
+      verdicts: ["accept", "minor", "major", "reject", "reject premise"],
+      webFetchOfUserData: "allowed",
+    },
+  },
+  {
     id: "golden-op-ed",
     kind: "protocol",
     protocol: "op-ed",
@@ -101,6 +174,7 @@ export const GOLDEN_EVAL_FIXTURES: readonly GoldenEvalFixture[] = [
     draft: { path: "_evals/golden-op-ed.md", approxWords: 290 },
     files: ["_evals/golden-op-ed.md"],
     inputs: { venue: "WaPo" },
+    floors: GOLDEN_LIVE_FLOORS,
     expected: {
       // §6.7 op-ed row: every phase on, near-final read, full line depth, run/pass verdicts.
       phaseDefaults: {},
@@ -129,6 +203,7 @@ export const GOLDEN_EVAL_FIXTURES: readonly GoldenEvalFixture[] = [
         },
       ],
     },
+    floors: GOLDEN_LIVE_FLOORS,
     expected: {
       // §6.7 memo row: discourse off; web fetch of user data forbidden.
       phaseDefaults: { discourse: false },
@@ -137,6 +212,26 @@ export const GOLDEN_EVAL_FIXTURES: readonly GoldenEvalFixture[] = [
     },
   },
 ];
+
+/**
+ * R6GLD.1 (GD-GOLDEN-CAP.R6) — the minimal cohort: exactly one protocol golden per seeded
+ * protocol, paired with its primary Review workflow at default tier (`base`) and the fixture's
+ * pinned rigor (`standard`). Deterministic order = PROTOCOL_SEEDS order (essay, academic, op-ed,
+ * memo). A protocol with no protocol-golden row fails loudly here — never trimmed silently.
+ */
+export function minimalCohort(
+  fixtures: readonly GoldenEvalFixture[] = GOLDEN_EVAL_FIXTURES,
+  protocols = PROTOCOL_SEEDS,
+): { fixture: GoldenEvalFixture; workflow: "review"; modelTier: "base"; rigor: Rigor }[] {
+  return protocols.map((p) => {
+    const fixture = fixtures.find((f) => f.kind === "protocol" && f.protocol === p.id);
+    if (!fixture)
+      throw new Error(`minimal cohort: no protocol golden fixture for protocol "${p.id}" — never trim silently`);
+    if (!fixture.draft) throw new Error(`minimal cohort: fixture "${fixture.id}" has no committed draft`);
+    if (!fixture.floors) throw new Error(`minimal cohort: fixture "${fixture.id}" has no committed floors`);
+    return { fixture, workflow: "review", modelTier: "base", rigor: fixture.rigor };
+  });
+}
 
 export function evalFixtureById(id: string): GoldenEvalFixture | undefined {
   return GOLDEN_EVAL_FIXTURES.find((f) => f.id === id);

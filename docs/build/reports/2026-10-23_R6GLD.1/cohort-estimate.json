@@ -1,0 +1,77 @@
+{
+ "ruling": "GD-GOLDEN-CAP.R6",
+ "hardCapUsd": 100,
+ "withinCap": true,
+ "basis": "committed review estimator @ review/standard/base; claims≈words/60; phases = manifest minus fixture phase-default opt-outs; credits→list-USD at 140 cr/$1 (provisional estimator — the measured --scores file is the spend of record)",
+ "totalCredits": 6572,
+ "totalUsdList": 46.94,
+ "legs": [
+  {
+   "fixtureId": "golden-essay",
+   "protocol": "essay",
+   "workflow": "review",
+   "modelTier": "base",
+   "rigor": "standard",
+   "words": 328,
+   "assumedClaims": 6,
+   "phases": 7,
+   "enabledAddends": [
+    "verification",
+    "discourse",
+    "second_read"
+   ],
+   "estimateCredits": 1772,
+   "estimateUsdList": 12.66
+  },
+  {
+   "fixtureId": "golden-academic",
+   "protocol": "academic",
+   "workflow": "review",
+   "modelTier": "base",
+   "rigor": "standard",
+   "words": 270,
+   "assumedClaims": 5,
+   "phases": 7,
+   "enabledAddends": [
+    "verification",
+    "discourse",
+    "second_read"
+   ],
+   "estimateCredits": 1721,
+   "estimateUsdList": 12.29
+  },
+  {
+   "fixtureId": "golden-op-ed",
+   "protocol": "op-ed",
+   "workflow": "review",
+   "modelTier": "base",
+   "rigor": "standard",
+   "words": 290,
+   "assumedClaims": 5,
+   "phases": 7,
+   "enabledAddends": [
+    "verification",
+    "discourse",
+    "second_read"
+   ],
+   "estimateCredits": 1721,
+   "estimateUsdList": 12.29
+  },
+  {
+   "fixtureId": "golden-memo",
+   "protocol": "memo",
+   "workflow": "review",
+   "modelTier": "base",
+   "rigor": "standard",
+   "words": 330,
+   "assumedClaims": 6,
+   "phases": 6,
+   "enabledAddends": [
+    "verification",
+    "second_read"
+   ],
+   "estimateCredits": 1358,
+   "estimateUsdList": 9.7
+  }
+ ]
+}

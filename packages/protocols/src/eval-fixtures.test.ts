@@ -11,7 +11,13 @@ import {
   venueRowAsOf,
   venueRowStale,
 } from "./protocols.js";
-import { evalFixtureById, evalMatrix, GOLDEN_EVAL_FIXTURES } from "./eval-fixtures.js";
+import {
+  evalFixtureById,
+  evalMatrix,
+  GOLDEN_EVAL_FIXTURES,
+  GOLDEN_LIVE_FLOORS,
+  minimalCohort,
+} from "./eval-fixtures.js";
 
 const wordsOf = (path: string) =>
   readFileSync(join(FIXTURES_ROOT, path), "utf8").split(/\s+/).filter(Boolean).length;
@@ -23,10 +29,64 @@ describe("§13.5 golden eval registry (ticket 49 AC7)", () => {
       "structure-of-political-difference",
       "the-politics-of-visibility",
     ]);
-    // AC7 requires the op-ed + memo golden rows; academic's golden is registered when it lands.
+    // R6GLD.1 (REQ-DISC-3) — every seeded protocol carries a golden row: essay + academic landed
+    // here; op-ed + memo were P1.21's.
     const protocolFixtures = GOLDEN_EVAL_FIXTURES.filter((f) => f.kind === "protocol");
-    expect(protocolFixtures.map((f) => f.protocol)).toContain("op-ed");
-    expect(protocolFixtures.map((f) => f.protocol)).toContain("memo");
+    expect(protocolFixtures.map((f) => f.protocol).sort()).toEqual(PROTOCOL_SEEDS.map((p) => p.id).sort());
+  });
+
+  it("the R6GLD.1 minimal cohort is exactly one fixture per protocol × review/base (GD-GOLDEN-CAP.R6)", () => {
+    const cohort = minimalCohort();
+    expect(cohort).toHaveLength(PROTOCOL_SEEDS.length);
+    expect(cohort.map((l) => l.fixture.protocol)).toEqual(PROTOCOL_SEEDS.map((p) => p.id));
+    for (const leg of cohort) {
+      expect(leg.workflow).toBe("review");
+      expect(leg.modelTier).toBe("base");
+      expect(leg.rigor).toBe("standard");
+      expect(leg.fixture.draft?.path).toBeTruthy();
+      expect(leg.fixture.floors).toBe(GOLDEN_LIVE_FLOORS);
+    }
+  });
+
+  it("minimalCohort fails loudly when a protocol has no golden — never trims silently", () => {
+    const dropped = GOLDEN_EVAL_FIXTURES.filter((f) => f.protocol !== "memo");
+    expect(() => minimalCohort(dropped)).toThrow(/no protocol golden fixture for protocol "memo"/);
+    const noFloors = GOLDEN_EVAL_FIXTURES.map((f) =>
+      f.id === "golden-essay" ? { ...f, floors: undefined } : f,
+    );
+    expect(() => minimalCohort(noFloors)).toThrow(/has no committed floors/);
+  });
+
+  it("every minimal-cohort fixture's expected verdicts match its protocol seed", () => {
+    const seeds = new Map(PROTOCOL_SEEDS.map((p) => [p.id, p]));
+    for (const leg of minimalCohort()) {
+      expect(leg.fixture.expected.verdicts, leg.fixture.id).toEqual(
+        seeds.get(leg.fixture.protocol)!.calibration_language.verdicts,
+      );
+      // every declared phase-default opt-out matches the seed verbatim (memo: discourse off).
+      for (const [k, v] of Object.entries(leg.fixture.expected.phaseDefaults ?? {})) {
+        const seed = seeds.get(leg.fixture.protocol)!;
+        expect(seed.phase_defaults[k as keyof typeof seed.phase_defaults], `${leg.fixture.id}.${k}`).toBe(v);
+      }
+    }
+  });
+
+  it("the committed floors only declare checks a live run can measure", () => {
+    // corpus-gated floors (recall/word-delta/voice/round-trip) need the benchmark corpus — a live
+    // protocol golden never declares them, because an unmeasured score fails the gate.
+    for (const leg of minimalCohort()) {
+      const f = leg.fixture.floors!;
+      expect(f.schemaValid).toBe(true);
+      expect(f.citedFetched).toBe(true);
+      expect(f.attestationViolationsMax).toBe(0);
+      expect(Object.keys(f.findingCountsBySeverity ?? {}).sort()).toEqual([
+        "blocking", "major", "minor", "note",
+      ]);
+      expect(f).not.toHaveProperty("materialRecallFloor");
+      expect(f).not.toHaveProperty("wordBudgetDeltaMax");
+      expect(f).not.toHaveProperty("voiceFeatureBands");
+      expect(f).not.toHaveProperty("markdownRoundTrip");
+    }
   });
 
   it("every fixture's protocol is a seeded Protocol id and its files exist on disk", () => {

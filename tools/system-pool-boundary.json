@@ -28,6 +28,7 @@
     "packages/orchestrator/src/runspec.ts": "RES.1 — reads the live proxy_credentials context->'webTools' so researchPreflight mirrors the policy the proxy enforces",
     "packages/orchestrator/src/stranded-sweep.ts": "cross-tenant stranded-run scans via systemExec",
     "packages/orchestrator/src/testing/deps.ts": "test deps bind the harness systemTxRunner",
-    "packages/orchestrator/src/testing/pg.ts": "the test harness defines both runners"
+    "packages/orchestrator/src/testing/pg.ts": "the test harness defines both runners",
+    "scripts/live/nightly-golden-driver.mjs": "R6GLD.1 (REQ-DISC-3) — the golden dispatch measures metered usage/findings/claims/fetch_log on its own four run ids and asserts the workspace is_test flag; cross-tenant reads are impossible by construction (the meter of record is read for the leg ids it just launched on a flagged test tenant)"
   }
 }
