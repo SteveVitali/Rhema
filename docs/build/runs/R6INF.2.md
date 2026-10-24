@@ -34,7 +34,7 @@
   replace/delete on a STATEFUL resource (SQL, disks, the retained `proxy-ip` Address, DNS)
   → PAUSE + report. Anything observed contradicting the ADR's no-disruption claim before
   up C (unhealthy backends, in-flight runs detected) → PAUSE before up C.
-- **ci:** **pass #218@`c302af2`** (run 40057428135 — all seven legs + `ci-pass` anchor, same-tree reuse; earlier runs 40053438908/40057200889 green @`8641d8f`/`1d2f911`; record `logs/ci-R6INF.2.json`)
+- **ci:** **pass #218@`6f0517f`** (run 40057695404 — all seven legs + `ci-pass` anchor at the code-bearing head incl. the `portName`/`CONNECTION` fix commit; earlier doc-head runs 40053438908/40057200889/40057428135 green; record `logs/ci-R6INF.2.json`)
 
 ## Deferrals read
 
