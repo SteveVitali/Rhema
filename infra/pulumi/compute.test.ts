@@ -78,9 +78,13 @@ describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R
     );
     expect(be).toContain('loadBalancingScheme: "INTERNAL"');
     expect(be).toContain('protocol: "TCP"');
-    expect(be).toContain('portName: "https"'); // rides the MIG's namedPorts → 8443
+    // NO `portName` — the INTERNAL scheme rejects it (live API 400; passthrough delivers to
+    // the incoming destination port). The MIG still declares `namedPorts https:8443`.
+    expect(be).not.toContain("portName:");
+    expect(SRC).toContain('namedPorts: [{ name: "https", port: Number(proxyPort) }]');
     expect(be).toContain("healthChecks: proxyHealth.id"); // the same probe autoheal runs
     expect(be).toContain("group: proxyGroup.instanceGroup");
+    expect(be).toContain('balancingMode: "CONNECTION"'); // INTERNAL requires CONNECTION (API 400 on UTILIZATION)
     expect(be).toContain('sessionAffinity: "NONE"'); // stateless CONNECT-style forwarder
     const fr = SRC.slice(SRC.indexOf('new gcp.compute.ForwardingRule(name("proxy-fr")'));
     expect(fr).toContain('loadBalancingScheme: "INTERNAL"');

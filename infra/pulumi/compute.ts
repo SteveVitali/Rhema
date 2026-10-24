@@ -375,15 +375,17 @@ export function createCompute(args: ComputeArgs): Compute {
       // (the TCP:8443 check the MIG's autoheal policy already runs — a global health check is
       // valid for internal passthrough NLBs) so the LB's health verdict and autoheal's are the
       // same probe. Session affinity NONE — the proxy is a stateless forwarder; connection
-      // draining kept small so a rolling instance drops off the VIP quickly.
+      // draining kept small so a rolling instance drops off the VIP quickly. NO `portName`:
+      // the INTERNAL scheme forbids it (live API 400 — passthrough delivers to the incoming
+      // destination port, so the MIG's `namedPorts` entry stays advisory-only).
       const proxyBe = new gcp.compute.RegionBackendService(name("proxy-be"), {
         region,
         loadBalancingScheme: "INTERNAL",
         protocol: "TCP",
-        // `portName` resolves through the MIG's `namedPorts: [{ name: "https", port: 8443 }]`.
-        portName: "https",
         healthChecks: proxyHealth.id,
-        backends: [{ group: proxyGroup.instanceGroup }],
+        // `balancingMode` must be CONNECTION for an INTERNAL backend service (live API 400
+        // — UTILIZATION is the external-only mode); passthrough spreads connections, not load.
+        backends: [{ group: proxyGroup.instanceGroup, balancingMode: "CONNECTION" }],
         connectionDrainingTimeoutSec: 30,
         sessionAffinity: "NONE",
       });
