@@ -388,7 +388,9 @@ config:
   # 2026-10-22 — R6DEP.1: egress-proxy re-pinned to the dc7fb15 tip build (f953fcf4).
   # 2026-10-23 — R6SECR.1: egress-proxy re-pinned to the 80db0d5 tip build (5a9a5c8c).
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:86d0655feb2e727e585be85a24f90950a72c0bf53adba50f181c00b54ac98c03
-  rhema:proxyBaseUrl: http://10.8.16.4:8443
+  # 2026-10-24 — R6INF.2 (ADR-122) up B: repoint consumers to the ILB VIP (proxyVipAddress output);
+  # the direct 10.8.16.4 path stays live for in-flight pods until the post-soak cleanup update.
+  rhema:proxyBaseUrl: http://10.8.16.7:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
   rhema:collabDatabaseUrl:

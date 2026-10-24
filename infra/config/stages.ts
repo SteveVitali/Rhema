@@ -557,16 +557,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // (forbidden to zero); convert-svc keeps ONLY its min=1 SLO floor, request-billed — the
     // codified revert of the live `cpu-throttling:"false"` drift (−$42.12/mo, REQ-COST-2).
     cloudRun: cloudRunPosture({ max: 10, workerMax: 3, convertMin: 1, convertMax: 4 }),
-    // R6INF.2 (ADR-122 / GD-REMAINING.R6): the ILB migration's TRANSITIONAL prod shape —
-    // the `up` A/B window. The frontend (`"ilb"`) is created while the template still
-    // pins `networkIp` (`egressProxyIpPin: true`), so the single instance stays reachable
-    // on BOTH the old direct `10.8.16.4` path and the new VIP until `rhema:proxyBaseUrl`
-    // repoints; `targetSize` stays 1. The cutover edit drops the pin + flips 1→2 in the
-    // ruled maintenance window (the `up` C the ADR orders last). F-R6INF.1-1's guard is
-    // preserved: `>1` still cannot converge while this pin holds.
-    egressProxyTargetSize: 1,
+    // R6INF.2 (ADR-122 / GD-REMAINING.R6): the cutover shape — `up` C, the ruled maintenance
+    // window the ADR orders last. The `up` A/B window (frontend live + `egressProxyIpPin:true`
+    // + size 1) completed: consumers repointed to the VIP via `rhema:proxyBaseUrl`, so this
+    // drops the transitional `networkIp` pin (ephemeral NICs — the VIP, never a NIC, is the
+    // stable endpoint) and grows the regional MIG to TWO instances for the HA posture
+    // (GD-HA.R6). F-R6INF.1-1's guard stays: `>1` remains illegal under a pin or no frontend.
+    egressProxyTargetSize: 2,
     egressProxyFrontend: "ilb",
-    egressProxyIpPin: true,
+    egressProxyIpPin: false,
   },
 };
 

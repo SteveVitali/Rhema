@@ -210,15 +210,14 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
 });
 
 describe("egress-proxy MIG + the ILB frontend (R6INF.1/R6INF.2; REQ-DEP-3; GD-HA.R6; ADR-122)", () => {
-  it("prod is in the ADR-122 `up` A/B window — frontend live, direct-IP pin + size 1 held", () => {
-    // GD-REMAINING.R6 approved the ADR-122 implementation. The prod facts commit to the
-    // transitional shape FIRST (`egressProxyFrontend:"ilb"` + `egressProxyIpPin:true` +
-    // size 1): `up` A creates the VIP/backend/forwarding-rule while the MIG is untouched
-    // and still bound to 10.8.16.4 — the direct path in-flight pods dial. The cutover
-    // edit (drop the pin, flip 1→2) is the ruled `up` C and lands with its own commit.
+  it("prod is at the ADR-122 cutover shape — ephemeral NICs + size 2 behind the VIP", () => {
+    // GD-REMAINING.R6 approved the ADR-122 implementation. The `up` A/B window (frontend
+    // live + `egressProxyIpPin:true` + size 1) completed with consumers repointed to the
+    // VIP; the cutover (`up` C) drops the pin and grows to ×2 — the HA posture GD-HA.R6
+    // approved. The reserved 10.8.16.4 Address survives as a retained rollback resource.
     expect(STAGES.prod.egressProxyFrontend).toBe("ilb");
-    expect(STAGES.prod.egressProxyIpPin).toBe(true);
-    expect(STAGES.prod.egressProxyTargetSize).toBe(1);
+    expect(STAGES.prod.egressProxyIpPin).toBe(false);
+    expect(STAGES.prod.egressProxyTargetSize).toBe(2);
   });
 
   it("non-prod runs the final ILB posture at size 1 — self-wired to the VIP", () => {
