@@ -76,9 +76,10 @@ phase-completion defect the run surfaced.
 
 ## Verification
 
-- `pnpm --filter @rhema/db test` — 7/7 green (seed unchanged in behavior).
+- `pnpm vitest run packages/db/src/seed/showcase.test.ts` — 7/7 green (seed unchanged in behavior).
 - `pnpm vitest run scripts/live/showcase-regen.test.mjs` — 13/13 green.
-- `pnpm turbo build lint typecheck` — packages/db clean.
+- `pnpm test` — full suite **517 files / 6,111 pass** (4 skipped).
+- `pnpm turbo build lint typecheck` — **135/135** clean.
 - `check-build-memory.sh` — 0 violations; `check-append-only.mjs --base c1f20f5` — OK.
 - Live: run `completed`; `/showcase` 200 serving the authored dossier; `regen-scores.json`,
   `showcase-bundle.json`, `live-exercise.md`, pod spec/logs committed.

@@ -13,7 +13,7 @@
 - **Branch:** `stevevitali/r6cnt-3-showcase-regen` (mergePolicy=OPERATOR — never merge)
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-10-23T23:08Z · **Closed:** 2026-10-24T00:1xZ
+- **Started:** 2026-10-23T23:08Z · **Closed:** 2026-10-24T00:04Z
 - **Live stage:** prod — the brief's named mutations only.
 - **Production mutations:**
   - ONE paid Full-board Review run of the Wells essay on the flagged `is_test` workspace
@@ -43,7 +43,7 @@ the R6CNT.2 record (Wells `words:1640`, density-derived claims 7, 7 active phase
 | review · `full_board` · frontier (§6.5 default tier) | 10,043 cr | 15,065 cr | **$150.65** | > $40 |
 | review · `full_board` · **base** (the cheapest legal tier) | 2,232 cr | 3,348 cr | **$33.48** | **≤ $40 → DISPATCH at base** |
 
-Recomputed 2026-10-23T23:1xZ — identical to the R6CNT.2 floor (the estimator is deterministic and
+Recomputed 2026-10-23T23:08Z — identical to the R6CNT.2 floor (the estimator is deterministic and
 `estimator_cells` remains empty). The authorization is **≤ $40 measured** (`usage_records` list-USD,
 the meter of record); the declared cap 3,348 cr bounds metered burn far below it (a clamped cap
 cannot overrun). Workspace balance 6,227 cr ≥ 3,348 cr ⇒ no new grant.
@@ -115,34 +115,34 @@ cannot overrun). Workspace balance 6,227 cr ≥ 3,348 cr ⇒ no new grant.
 
 ## Progress
 
-- 2026-10-23T23:0xZ — branch cut @ `be4c12d`; prod `/healthz` gitSha **80db0d5** on
+- 2026-10-23T23:04Z — branch cut @ `be4c12d`; prod `/healthz` gitSha **80db0d5** on
   api+web (R6OPS.2's channel-only deploy did not roll images — confirmed at dispatch time).
-- 2026-10-23T23:1xZ — estimate re-check: base 2,232 cr / cap 3,348 cr = **$33.48 ≤ $40** →
+- 2026-10-23T23:08Z — estimate re-check: base 2,232 cr / cap 3,348 cr = **$33.48 ≤ $40** →
   dispatch authorized. Workspace `01M5M2C6NC3058T528ZX2D44SG` confirmed live (is_test, member
   `test+jrn-gld@rhema.tools`, 6,227 cr promo available, inside the 26 h purge horizon).
-- 2026-10-23T23:1xZ — real-run findings shape probed on prod (R6GLD.1 `01M5MFYJ3…`): findings DO
+- 2026-10-23T23:10Z — real-run findings shape probed on prod (R6GLD.1 `01M5MFYJ3…`): findings DO
   carry `anchor`/`suggestion`/`evidence`/`rubric_dims`/`letter_section`; claims carry
   tier/verdict/kind/note/source_check + `claim_sources`; the letter renders from GCS via
   `artifact_versions.s3_key` — the export reads both stores.
-- 2026-10-23T23:2xZ — `scripts/live/showcase-regen.mjs` + source-scan test landed; estimate
+- 2026-10-23T23:11Z — `scripts/live/showcase-regen.mjs` + source-scan test landed; estimate
   committed to `reports/2026-10-23_R6CNT.3/regen-estimate.json`.
-- 2026-10-23T23:2xZ — **dispatch 1 → refused at $0.** `POST /runs` → `402 insufficient_balance,
+- 2026-10-23T23:13Z — **dispatch 1 → refused at $0.** `POST /runs` → `402 insufficient_balance,
   required: 6696`: the platform **circuit breaker is TRIPPED** (absorbed 643 / gross 3,069 = 20.9%
   > 5% over the trailing 24 h — REQ-SPEC-24.5), so the new-run hold sizes cap ×2 = 6,696 cr >
   6,227 available. A pre-dispatch refusal, not a run — the creation rolled back (no run row, no
   hold, $0). Honest note: the doubled hold does NOT change the estimator's declared figure
   ($33.48) — the bound stays ≤$40 measured; metered spend is clamped at the cap regardless.
-- 2026-10-23T23:2xZ — **house-grant top-up** (the documented funding seam; balance was the only
+- 2026-10-23T23:14Z — **house-grant top-up** (the documented funding seam; balance was the only
   shortfall): `admin-cli house-grant --billing-account 01M5M2C6NC8AF1VJNJBGQ9SW4F --workspace
   01M5M2C6NC3058T528ZX2D44SG --credits 1000 --expires 2026-10-25`, actor `devin-cli:r6cnt-3` —
   audited (`admin_actions` `01M5NGSCMSH6KZG9WQ6360M8J3`, ledger `01M5NGSCAXQHHVCGZETQ8V2EP5`).
   Balance → 7,227 ≥ 6,696.
-- 2026-10-23T23:3xZ — **dispatch (same tag `r6cnt3`, idempotent — never a second run):**
+- 2026-10-23T23:16Z — **dispatch (same tag `r6cnt3`, idempotent — never a second run):**
   provenance `80db0d5` both origins; magic-link session minted for `test+jrn-gld@rhema.tools`;
   project `01M5NGSSXW576BQZQHE8CZXH7M` (essay, 1,651 w — the verbatim Gutenberg v1 the fixture
   carries); refined estimate 2,232 cr / cap 3,348 cr; **run `01M5NGSTDRVN42JHTAA9C2SDDW`
   launched** review/full_board/base.
-- 2026-10-23T23:3xZ — **§12.8(f) live in-pod evidence** (pod `run-01m5ngstdrvn42jhtaa9c2sddw-a1-cxf7c`,
+- 2026-10-23T23:45Z — **§12.8(f) live in-pod evidence** (pod `run-01m5ngstdrvn42jhtaa9c2sddw-a1-cxf7c`,
   ns `runs`, GKE `rhema-prod-run-task-gke-c13cb80`): harness uid 10001 (capEff
   setuid/setgid/sys_admin/sys_chroot) vs agent uid 10002 (capEff **none**); the credential
   injector listens 127.0.0.1:37799 → proxy 10.8.16.4:8443 — the agent uid holds no run token /
@@ -169,12 +169,12 @@ cannot overrun). Workspace balance 6,227 cr ≥ 3,348 cr ⇒ no new grant.
   the brief's "replace only if appropriate," **no swap** — `SHOWCASE_FIXTURE` stays the authored
   H11-approved bundle (ADR-121 stands). The emit path was still proven (`--emit` → a valid
   generated module whose record independently confirms 0 contradicted tier-1 / 0 sourced claims).
-- 2026-10-23T23:5xZ — **F-R6CNT.3-1 opened** (LEDGER OPEN FINDINGS): the phase `done` gate accepted
+- 2026-10-23T23:56Z — **F-R6CNT.3-1 opened** (LEDGER OPEN FINDINGS): the phase `done` gate accepted
   a schema-valid but *unclosed* claim ledger — verification exited 0 with `claimRowCount:14`,
   `inventoryCount:0` after spending its research budget on 185 searches / 41 fetches; the harness
   fact was visible at phase end but did not fail the phase. Downstream honesty worked (blocking
   findings + entailment-capped rubric + auto-refunds); the completion gate is the defect.
-- 2026-10-23T23:5xZ — **D-R6SECR.1-1 live-exercise evidence** collected:
+- 2026-10-23T23:58Z — **D-R6SECR.1-1 live-exercise evidence** collected:
   `reports/2026-10-23_R6CNT.3/live-exercise.md` — (a) full-board fetch through `fetcher` live
   (41 fetches + 185 searches through the credential-injecting proxy), (e) second-read isolation
   proven by `subagent_launches` (`second-reader`, `explicit_files`, `["drafts/v1.md"]` only),
