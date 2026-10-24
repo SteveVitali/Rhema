@@ -136,7 +136,11 @@ export const SHOWCASE_FIXTURE_CLAIMS = [
     note: "Paradoxides' largest specimen is 37 cm (≈15 in); the largest complete trilobite ever found (Isotelus rex) is 72 cm — under 2.5 ft, not six. Paradoxides is also a trilobite, not a crustacean 'of this kind.' Wrong on the scale and the group.",
     sources: [
       { url: PARADOXIDES_URL, stance: "contradicts", note: "Largest specimen ≈37 cm." },
-      { url: ISOTELUS_URL, stance: "contradicts", note: "Isotelus rex, 72 cm — the record complete trilobite." },
+      {
+        url: ISOTELUS_URL,
+        stance: "contradicts",
+        note: "Isotelus rex, 72 cm — the record complete trilobite.",
+      },
     ],
   },
   {
@@ -145,7 +149,13 @@ export const SHOWCASE_FIXTURE_CLAIMS = [
     verdict: "misleading_in_context",
     kind: "factual",
     note: "The bison was hunted to under 1,000 but never extinguished — ~11,000 DOI-managed in 19 herds today, designated the US national mammal in 2016; the dodo fell ~1681, outside the essay's own 200-year window; only the great auk (1844) fits.",
-    sources: [{ url: BISON_URL, stance: "contradicts", note: "Bison survive — a conservation recovery, not an extinction." }],
+    sources: [
+      {
+        url: BISON_URL,
+        stance: "contradicts",
+        note: "Bison survive — a conservation recovery, not an extinction.",
+      },
+    ],
   },
   {
     text: "In no case does the record of the fossils show a really dominant species succeeded by its own descendants.",
@@ -168,7 +178,13 @@ export const SHOWCASE_FIXTURE_CLAIMS = [
     verdict: "substantially_accurate",
     kind: "factual",
     note: "Driver-ant (Dorylus) columns do overrun prey en masse; 'no man can stand' is period travel-literature, but the column raids are real.",
-    sources: [{ url: ARMYANT_URL, stance: "contextualizes", note: "The swarm-raid phenomenon; the superlative is period color." }],
+    sources: [
+      {
+        url: ARMYANT_URL,
+        stance: "contextualizes",
+        note: "The swarm-raid phenomenon; the superlative is period color.",
+      },
+    ],
   },
   {
     text: "For all we know even now we may be quite unwittingly evolving some new and more terrible plague.",
@@ -263,12 +279,114 @@ export const SHOWCASE_FIXTURE_RUBRIC = {
   dimensions: [
     { dimension: "thesis_contribution", score: 4 },
     { dimension: "argument_rigor", score: 3 },
-    { dimension: "evidence_accuracy", score: 2, cap: { dimension: "evidence_accuracy", score: 2, reason: "A contradicted tier-1 claim caps the dimension." } },
+    {
+      dimension: "evidence_accuracy",
+      score: 2,
+      cap: {
+        dimension: "evidence_accuracy",
+        score: 2,
+        reason: "A contradicted tier-1 claim caps the dimension.",
+      },
+    },
     { dimension: "originality_situatedness", score: 4 },
     { dimension: "structure", score: 4 },
     { dimension: "prose", score: 5 },
     { dimension: "voice_audience_fit", score: 4 },
     { dimension: "intellectual_honesty", score: 4 },
+  ],
+};
+
+// ---- the dossier's RUN CARD — what `runs`/`steps`/`fetch_log`/`access_log` carry -----------------
+// R6CNT.3 (D-R6CNT.2-1) landed the SWAP machinery, not the swap: `DossierSeedTarget.runCard` lets a
+// target carry the pipeline-produced card — the real prod run's own tier, declared estimate/cap,
+// metered spend, per-phase credits, and its actual egress rows — which
+// `scripts/live/showcase-regen.mjs --emit` writes into `showcase-run-fixture.ts` at discharge.
+// Today's binding stays AUTHORED everywhere: run `01M5NGSTDRVN42JHTAA9C2SDDW` was
+// contract-ineligible for the swap (0 contradicted tier-1 claims / 0 claim_sources — its fetch rows
+// could never satisfy the cited⇒fetched audit the authored claims' sources pin), and the card is
+// only coherent as part of the whole-bundle swap — mixing authored claims with a foreign run's
+// fetch_log would fabricate provenance. The writable journey dossiers (seedWritableDossier /
+// seedDeliveredRunReport) keep this card permanently: their run rows are synthetic by design and
+// the report fixture's charged=spent=3,860 ledger fold is pinned on it.
+
+export interface DossierRunFetch {
+  readonly agentLabel: string;
+  readonly kind: string;
+  readonly query?: string | null;
+  readonly url: string | null;
+  readonly normalizedUrl?: string | null;
+  readonly status?: number | null;
+  readonly bytes?: number | null;
+  readonly decision: string;
+  readonly denyReason?: string | null;
+}
+
+export interface DossierRunAccess {
+  readonly agentLabel: string;
+  readonly tool: string;
+  readonly path: string;
+  readonly namespace?: string | null;
+  readonly decision: string;
+}
+
+export interface DossierRunCard {
+  readonly modelTier: string;
+  readonly protocolId: string;
+  readonly protocolVersion: number;
+  readonly verdict: string;
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly spentCredits: number;
+  /** credits per review phase, in `phases` order (intake…letter) — the run card's step rows. */
+  readonly phaseCredits: readonly number[];
+  readonly fetches: readonly DossierRunFetch[];
+  readonly accessLog: readonly DossierRunAccess[];
+}
+
+const FIXTURE_PHASES = [
+  "intake",
+  "craft",
+  "verification",
+  "discourse",
+  "second_read",
+  "argument",
+  "letter",
+] as const;
+
+/** The authored card — the writable journey dossiers' synthetic run rows (unchanged from R6CNT.2). */
+export const AUTHORED_DOSSIER_RUN_CARD: DossierRunCard = {
+  modelTier: "frontier",
+  protocolId: "essay",
+  protocolVersion: 1,
+  verdict: "revise",
+  estimateCredits: 3900,
+  capCredits: 5850,
+  spentCredits: 3860,
+  phaseCredits: [120, 310, 1720, 480, 390, 420, 320],
+  fetches: [PARADOXIDES_URL, ISOTELUS_URL, BISON_URL, KPG_URL, ARMYANT_URL].map((url) => ({
+    agentLabel: "editor",
+    kind: "fetch",
+    url,
+    normalizedUrl: url,
+    status: 200,
+    bytes: 8192,
+    decision: "allow",
+  })),
+  accessLog: [
+    {
+      agentLabel: "editor",
+      tool: "read",
+      path: "drafts/v1.md",
+      namespace: "author",
+      decision: "allow",
+    },
+    {
+      agentLabel: "editor",
+      tool: "read",
+      path: "agents/author/outline/showcase.md",
+      namespace: "author",
+      decision: "allow",
+    },
   ],
 };
 
@@ -321,14 +439,28 @@ async function writeArtifact(
   await db.query(
     `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
      values ($1,$2,$3,$4,$5,$6,$7)`,
-    [artifactId, deps.workspaceId, projectId, spec.kind, spec.namespace, spec.mirrorPath, versionId],
+    [
+      artifactId,
+      deps.workspaceId,
+      projectId,
+      spec.kind,
+      spec.namespace,
+      spec.mirrorPath,
+      versionId,
+    ],
   );
   await db.query(
     `insert into artifact_versions (id, artifact_id, ordinal, content_sha256, s3_key, bytes, word_count,
                                     media_type, created_by, immutable, parse_status)
      values ($1,$2,$3,$4,$5,$6,$7,'text/markdown',$8,true,'ok')`,
     [
-      versionId, artifactId, spec.ordinal ?? 1, sha, s3Key, bytes.byteLength, words,
+      versionId,
+      artifactId,
+      spec.ordinal ?? 1,
+      sha,
+      s3Key,
+      bytes.byteLength,
+      words,
       JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" }),
     ],
   );
@@ -345,6 +477,10 @@ export interface DossierSeedTarget {
   /** the workspace-unique slug base — deconflicted with `-2`, `-3`… like the Showcase's. */
   readonly slugBase: string;
   readonly title: string;
+  /** the dossier run card this seed writes — default `AUTHORED_DOSSIER_RUN_CARD`; the Showcase
+   *  binds the pipeline-produced card (`SHOWCASE_RUN_FIXTURE.runCard`) only when the D-R6CNT.2-1
+   *  swap lands a showcase-grade export. */
+  readonly runCard?: DossierRunCard;
 }
 
 async function seedDossierProject(
@@ -370,7 +506,13 @@ async function seedDossierProject(
       [deps.workspaceId, target.showcase, target.slugBase],
     )
   ).rows[0] as
-    | { id: string; slug: string; review_run_id: string | null; first_finding_id: string | null; review_corr_id: string | null }
+    | {
+        id: string;
+        slug: string;
+        review_run_id: string | null;
+        first_finding_id: string | null;
+        review_corr_id: string | null;
+      }
     | undefined;
   if (existing && existing.review_run_id && existing.first_finding_id && existing.review_corr_id) {
     return {
@@ -418,29 +560,47 @@ async function seedDossierProject(
 
   // artifacts: outline + the two draft versions + the letter + the response letter.
   const outline = await writeArtifact(db, deps, projectId, {
-    kind: "outline", namespace: "agents/author",
-    mirrorPath: "agents/author/outline/showcase.md", markdown: SHOWCASE_FIXTURE_OUTLINE_MD,
+    kind: "outline",
+    namespace: "agents/author",
+    mirrorPath: "agents/author/outline/showcase.md",
+    markdown: SHOWCASE_FIXTURE_OUTLINE_MD,
   });
   const v1 = await writeArtifact(db, deps, projectId, {
-    kind: "draft", namespace: "drafts", mirrorPath: "drafts/v1.md", markdown: SHOWCASE_FIXTURE_V1_MD,
+    kind: "draft",
+    namespace: "drafts",
+    mirrorPath: "drafts/v1.md",
+    markdown: SHOWCASE_FIXTURE_V1_MD,
   });
   const v2 = await writeArtifact(db, deps, projectId, {
-    kind: "draft", namespace: "drafts", mirrorPath: "drafts/v2.md", markdown: SHOWCASE_FIXTURE_V2_MD,
+    kind: "draft",
+    namespace: "drafts",
+    mirrorPath: "drafts/v2.md",
+    markdown: SHOWCASE_FIXTURE_V2_MD,
   });
   const letter = await writeArtifact(db, deps, projectId, {
-    kind: "editors_letter", namespace: "correspondence",
-    mirrorPath: "correspondence/review-1-letter.md", markdown: SHOWCASE_FIXTURE_LETTER_MD,
+    kind: "editors_letter",
+    namespace: "correspondence",
+    mirrorPath: "correspondence/review-1-letter.md",
+    markdown: SHOWCASE_FIXTURE_LETTER_MD,
   });
   const response = await writeArtifact(db, deps, projectId, {
-    kind: "response_letter", namespace: "correspondence",
-    mirrorPath: "correspondence/response-1-letter.md", markdown: SHOWCASE_FIXTURE_RESPONSE_MD,
+    kind: "response_letter",
+    namespace: "correspondence",
+    mirrorPath: "correspondence/response-1-letter.md",
+    markdown: SHOWCASE_FIXTURE_RESPONSE_MD,
   });
 
   // drafts v1 (the reviewed import) + v2 (the revised head — 'working' so the project has a live head).
   await db.query(
     `insert into drafts (id, project_id, n, origin, state, promoted_version_id, frozen_at, frozen_by)
      values ($1,$2,1,'imported','frozen',$3,$4,$5)`,
-    [v1Id, projectId, v1.versionId, now.toISOString(), JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" })],
+    [
+      v1Id,
+      projectId,
+      v1.versionId,
+      now.toISOString(),
+      JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" }),
+    ],
   );
   await db.query(
     `insert into drafts (id, project_id, n, origin, state, promoted_version_id, base_draft_id)
@@ -449,50 +609,92 @@ async function seedDossierProject(
   );
 
   // the delivered full-board review run (fixture: precomputed, $0 — spent/estimate are the card's
-  // derived figures so the dossier's run card shows a believable actual-vs-estimate).
+  // figures so the dossier's run card shows a real actual-vs-estimate).
+  const card = target.runCard ?? AUTHORED_DOSSIER_RUN_CARD;
   await db.query(
     `insert into runs (id, workspace_id, project_id, workflow, state, inputs, input_snapshot,
                        model_profile, model_tier, rigor, estimate_credits, cap_credits, spent_credits,
                        rate_table_version, requested_by, started_at, ended_at)
-     values ($1,$2,$3,'review','completed',$4,$5,'full_board','frontier','full_board',3900,5850,3860,1,$6,$7,$8)`,
+     values ($1,$2,$3,'review','completed',$4,$5,'full_board',$6,'full_board',$7,$8,$9,1,$10,$11,$12)`,
     [
-      runId, deps.workspaceId, projectId,
+      runId,
+      deps.workspaceId,
+      projectId,
       JSON.stringify({ draftId: v1Id }),
       JSON.stringify({ wordCount: 1651, claimCount: SHOWCASE_FIXTURE_CLAIMS.length }),
-      deps.ownerId, now.toISOString(), now.toISOString(),
+      card.modelTier,
+      card.estimateCredits,
+      card.capCredits,
+      card.spentCredits,
+      deps.ownerId,
+      now.toISOString(),
+      now.toISOString(),
     ],
   );
   // all seven review phases committed (the dossier's run card derives its step row from these).
-  const phases = ["intake", "craft", "verification", "discourse", "second_read", "argument", "letter"];
-  for (let i = 0; i < phases.length; i++) {
+  for (let i = 0; i < FIXTURE_PHASES.length; i++) {
     await db.query(
       `insert into steps (id, run_id, phase, ordinal, state, started_at, ended_at, credits)
        values ($1,$2,$3,$4,'done',$5,$6,$7)`,
-      [deps.ids(), runId, phases[i], i + 1, now.toISOString(), now.toISOString(), [120, 310, 1720, 480, 390, 420, 320][i] ?? 0],
+      [
+        deps.ids(),
+        runId,
+        FIXTURE_PHASES[i],
+        i + 1,
+        now.toISOString(),
+        now.toISOString(),
+        card.phaseCredits[i] ?? 0,
+      ],
     );
   }
-  // the cited⇒fetched audit: every fixture source URL reads as an allowed fetch.
-  for (const url of [PARADOXIDES_URL, ISOTELUS_URL, BISON_URL, KPG_URL, ARMYANT_URL]) {
+  // the cited⇒fetched audit: every source URL the claims cite reads as an egress row. The authored
+  // card carries the five fetch-verified fixture URLs the authored claims cite; at the D-R6CNT.2-1
+  // swap the pipeline card's real-run `fetch_log` rows take over verbatim — the swap MUST move
+  // claims+sources+fetches as one provenance unit or this join fabricates evidence.
+  for (const f of card.fetches) {
     await db.query(
-      `insert into fetch_log (run_id, ts, agent_label, kind, url, normalized_url, status, bytes, decision)
-       values ($1,$2,'editor','fetch',$3,$3,200,8192,'allow')`,
-      [runId, now.toISOString(), url],
+      `insert into fetch_log (run_id, ts, agent_label, kind, query, url, normalized_url, status, bytes, decision, deny_reason)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        runId,
+        now.toISOString(),
+        f.agentLabel,
+        f.kind,
+        f.query ?? null,
+        f.url,
+        f.normalizedUrl ?? f.url,
+        f.status ?? null,
+        f.bytes ?? null,
+        f.decision,
+        f.denyReason ?? null,
+      ],
     );
   }
-  await db.query(
-    `insert into access_log (run_id, ts, agent_label, tool, path, namespace, decision)
-     values ($1,$2,'editor','read','drafts/v1.md','author','allow'),
-            ($1,$2,'editor','read','agents/author/outline/showcase.md','author','allow')`,
-    [runId, now.toISOString()],
-  );
+  for (const a of card.accessLog) {
+    await db.query(
+      `insert into access_log (run_id, ts, agent_label, tool, path, namespace, decision)
+       values ($1,$2,$3,$4,$5,$6,$7)`,
+      [runId, now.toISOString(), a.agentLabel, a.tool, a.path, a.namespace ?? null, a.decision],
+    );
+  }
 
   // the review correspondence (the dossier's anchor) + the author's response on v2.
   await db.query(
     `insert into correspondence_items (id, project_id, kind, draft_id, run_id, ordinal, delivered_at,
                                        artifact_ids, rubric, verdict, protocol_id, protocol_version)
-     values ($1,$2,'review',$3,$4,1,$5,$6,$7,'revise','essay',1)`,
-    [corrId, projectId, v1Id, runId, now.toISOString(), [letter.versionId],
-     JSON.stringify(SHOWCASE_FIXTURE_RUBRIC)],
+     values ($1,$2,'review',$3,$4,1,$5,$6,$7,$8,$9,$10)`,
+    [
+      corrId,
+      projectId,
+      v1Id,
+      runId,
+      now.toISOString(),
+      [letter.versionId],
+      JSON.stringify(SHOWCASE_FIXTURE_RUBRIC),
+      card.verdict,
+      card.protocolId,
+      card.protocolVersion,
+    ],
   );
   await db.query(
     `insert into correspondence_items (id, project_id, kind, draft_id, run_id, ordinal, delivered_at,
@@ -506,23 +708,41 @@ async function seedDossierProject(
   for (let i = 0; i < SHOWCASE_FIXTURE_CLAIMS.length; i++) {
     const c = SHOWCASE_FIXTURE_CLAIMS[i]!;
     const claimId = deps.ids();
-    const claimSources = "sources" in c ? c.sources : undefined;
+    const claimSources = "sources" in c && c.sources != null ? c.sources : undefined;
     await db.query(
       `insert into claims (id, correspondence_id, draft_id, ordinal, text, tier, verdict, kind, note,
-                           source_check, accessed_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+                           source_check, accessed_at, url, normalized_url)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [
-        claimId, corrId, v1Id, i, c.text, c.tier, c.verdict, c.kind,
+        claimId,
+        corrId,
+        v1Id,
+        i,
+        c.text,
+        c.tier,
+        c.verdict,
+        c.kind,
         "note" in c ? c.note : null,
-        "sourceCheck" in c ? c.sourceCheck : null, now.toISOString(),
+        "sourceCheck" in c ? c.sourceCheck : null,
+        now.toISOString(),
+        "url" in c ? c.url : null,
+        "normalizedUrl" in c ? c.normalizedUrl : null,
       ],
     );
     for (let j = 0; j < (claimSources?.length ?? 0); j++) {
       const s = claimSources![j]!;
       await db.query(
         `insert into claim_sources (claim_id, ordinal, url, normalized_url, accessed_at, stance, note)
-         values ($1,$2,$3,$3,$4,$5,$6)`,
-        [claimId, j, s.url, now.toISOString(), s.stance, "note" in s ? s.note : null],
+         values ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          claimId,
+          j,
+          s.url,
+          "normalizedUrl" in s && s.normalizedUrl != null ? s.normalizedUrl : s.url,
+          now.toISOString(),
+          s.stance,
+          "note" in s ? s.note : null,
+        ],
       );
     }
   }
@@ -538,18 +758,31 @@ async function seedDossierProject(
                              letter_section, anchor)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [
-        findingId, corrId, v1Id, i, f.kind, f.severity, f.origin,
+        findingId,
+        corrId,
+        v1Id,
+        i,
+        f.kind,
+        f.severity,
+        f.origin,
         "reconciliation" in f ? f.reconciliation : null,
-        f.title, f.body,
-        "evidence" in f
+        f.title,
+        f.body,
+        "evidence" in f && f.evidence != null
           ? JSON.stringify({
               ...f.evidence,
-              urls: f.evidence.urls.map((u) => ({ url: u.url, accessed: now.toISOString() })),
+              // HOT.1 — canonical evidence shape; the seed stamps `accessed` the way the run's
+              // own rows carry it (a pipeline-produced evidence blob may arrive url-less).
+              urls: (f.evidence.urls ?? []).map((u) => ({
+                url: u.url,
+                accessed: now.toISOString(),
+              })),
             })
           : null,
-        "suggestion" in f ? JSON.stringify(f.suggestion) : null,
-        [...f.rubricDims], f.letterSection,
-        "anchor" in f ? JSON.stringify(f.anchor) : null,
+        "suggestion" in f && f.suggestion != null ? JSON.stringify(f.suggestion) : null,
+        [...("rubricDims" in f && f.rubricDims != null ? f.rubricDims : [])],
+        "letterSection" in f ? f.letterSection : null,
+        "anchor" in f && f.anchor != null ? JSON.stringify(f.anchor) : null,
       ],
     );
     // the triage ledger: blocking/major findings open obligations (the two the response resolved are
@@ -561,11 +794,20 @@ async function seedDossierProject(
                                            state, state_since, opened_on_draft_id, created_by, closed_at, discharged_by)
          values ($1,$2,'finding',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
-          deps.ids(), projectId, findingId, f.severity, f.kind, f.title,
-          discharged ? "discharged" : "open", now.toISOString(), v1Id,
+          deps.ids(),
+          projectId,
+          findingId,
+          f.severity,
+          f.kind,
+          f.title,
+          discharged ? "discharged" : "open",
+          now.toISOString(),
+          v1Id,
           JSON.stringify({ kind: "system", label: deps.seedLabel ?? "showcase-seed" }),
           discharged ? now.toISOString() : null,
-          discharged ? JSON.stringify({ kind: "disposition", at: now.toISOString(), via: "response" }) : null,
+          discharged
+            ? JSON.stringify({ kind: "disposition", at: now.toISOString(), via: "response" })
+            : null,
         ],
       );
     }
@@ -635,11 +877,61 @@ const RUN_REPORT_SEED_USAGE: readonly {
   // verification carries the metered majority → `fact_check_dominated` fires; two seats split
   // the spend; the second read rides `balanced` against the run's `frontier` default →
   // `second_read_model` fires (the flags + suggested-guidance arms exercise for real).
-  { phase: "verification", seat: "verifier", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 2200, searches: 40, fetches: 60, inputTokens: 38_000, outputTokens: 7_200 },
-  { phase: "craft", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 800, searches: 2, fetches: 4, inputTokens: 14_000, outputTokens: 2_600 },
-  { phase: "discourse", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 500, searches: 0, fetches: 0, inputTokens: 9_500, outputTokens: 1_800 },
-  { phase: "second_read", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 410, searches: 0, fetches: 0, inputTokens: 8_100, outputTokens: 1_500 },
-  { phase: "letter", seat: "editor", model: "claude-sonnet-4-6", modelTier: "balanced", credits: 200, searches: 0, fetches: 0, inputTokens: 4_200, outputTokens: 900 },
+  {
+    phase: "verification",
+    seat: "verifier",
+    model: "claude-sonnet-4-6",
+    modelTier: "balanced",
+    credits: 2200,
+    searches: 40,
+    fetches: 60,
+    inputTokens: 38_000,
+    outputTokens: 7_200,
+  },
+  {
+    phase: "craft",
+    seat: "editor",
+    model: "claude-sonnet-4-6",
+    modelTier: "balanced",
+    credits: 800,
+    searches: 2,
+    fetches: 4,
+    inputTokens: 14_000,
+    outputTokens: 2_600,
+  },
+  {
+    phase: "discourse",
+    seat: "editor",
+    model: "claude-sonnet-4-6",
+    modelTier: "balanced",
+    credits: 500,
+    searches: 0,
+    fetches: 0,
+    inputTokens: 9_500,
+    outputTokens: 1_800,
+  },
+  {
+    phase: "second_read",
+    seat: "editor",
+    model: "claude-sonnet-4-6",
+    modelTier: "balanced",
+    credits: 410,
+    searches: 0,
+    fetches: 0,
+    inputTokens: 8_100,
+    outputTokens: 1_500,
+  },
+  {
+    phase: "letter",
+    seat: "editor",
+    model: "claude-sonnet-4-6",
+    modelTier: "balanced",
+    credits: 200,
+    searches: 0,
+    fetches: 0,
+    inputTokens: 4_200,
+    outputTokens: 900,
+  },
 ];
 
 /** The seeded run's charge (the ledger debit — the report's "charged" figure is Σ debits, never
@@ -683,7 +975,9 @@ export async function seedDeliveredRunReport(
     title: deps.title,
   });
   const existing = (
-    await db.query(`select count(*)::int as n from usage_records where run_id = $1`, [res.reviewRunId])
+    await db.query(`select count(*)::int as n from usage_records where run_id = $1`, [
+      res.reviewRunId,
+    ])
   ).rows[0] as { n: number } | undefined;
   if (existing != null && existing.n > 0) return res;
   const billingAccountId = (
@@ -703,17 +997,43 @@ export async function seedDeliveredRunReport(
   await db.query(
     `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, source, reason, idempotency_key, at)
      values ($1,$2,$3,'grant',$4,'included','seed',$5,$6,$7)`,
-    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, label, `jrn-report-grant:${res.reviewRunId}`, now.toISOString()],
+    [
+      deps.ids(),
+      deps.workspaceId,
+      billingAccountId,
+      RUN_REPORT_SEED_CHARGED,
+      label,
+      `jrn-report-grant:${res.reviewRunId}`,
+      now.toISOString(),
+    ],
   );
   await db.query(
     `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
      values ($1,$2,$3,'hold',$4,'included',$5,'hold',$6,$7,$8)`,
-    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, res.reviewRunId, label, `jrn-report-hold:${res.reviewRunId}`, now.toISOString()],
+    [
+      deps.ids(),
+      deps.workspaceId,
+      billingAccountId,
+      RUN_REPORT_SEED_CHARGED,
+      res.reviewRunId,
+      label,
+      `jrn-report-hold:${res.reviewRunId}`,
+      now.toISOString(),
+    ],
   );
   await db.query(
     `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
      values ($1,$2,$3,'debit',$4,'included',$5,'run',$6,$7,$8)`,
-    [deps.ids(), deps.workspaceId, billingAccountId, RUN_REPORT_SEED_CHARGED, res.reviewRunId, label, `jrn-report-debit:${res.reviewRunId}`, now.toISOString()],
+    [
+      deps.ids(),
+      deps.workspaceId,
+      billingAccountId,
+      RUN_REPORT_SEED_CHARGED,
+      res.reviewRunId,
+      label,
+      `jrn-report-debit:${res.reviewRunId}`,
+      now.toISOString(),
+    ],
   );
   for (const [i, u] of RUN_REPORT_SEED_USAGE.entries()) {
     await db.query(
@@ -723,12 +1043,26 @@ export async function seedDeliveredRunReport(
           searches, fetches, list_cost_usd, credits, source, provider_request_id)
        values ($1,$2,$3,$4,$5,$6,$7,1,$8,$9,'anthropic',$10,$11,1,$12,$13,$14,$15,$16,$17,'proxy',$18)`,
       [
-        deps.ids(), now.toISOString(), deps.workspaceId, billingAccountId, deps.ownerId,
-        res.projectId, res.reviewRunId, `step:${u.phase}`, u.seat, u.model, u.modelTier,
-        u.inputTokens, u.outputTokens, u.searches, u.fetches,
+        deps.ids(),
+        now.toISOString(),
+        deps.workspaceId,
+        billingAccountId,
+        deps.ownerId,
+        res.projectId,
+        res.reviewRunId,
+        `step:${u.phase}`,
+        u.seat,
+        u.model,
+        u.modelTier,
+        u.inputTokens,
+        u.outputTokens,
+        u.searches,
+        u.fetches,
         // list_cost_usd is a display-free figure — a plausible rate-table scalar the spend
         // guards never sum: REQ-ECON-6's `req_jrn_` marker excludes the row from every guard SQL.
-        (u.credits / 1000) * 3.0, u.credits, `${JOURNEY_SEED_USAGE_REQUEST_PREFIX}report_${i + 1}`,
+        (u.credits / 1000) * 3.0,
+        u.credits,
+        `${JOURNEY_SEED_USAGE_REQUEST_PREFIX}report_${i + 1}`,
       ],
     );
   }
