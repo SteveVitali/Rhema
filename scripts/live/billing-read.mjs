@@ -97,18 +97,24 @@ const nats = g(`compute routers nats list --router=rhema-prod-router-2d3edc8 --r
 const secretsCount = g(`secrets list`).length;
 const runSvc = g(`run services list --region=${REGION}`);
 
-const disk = (mt) => (mt.includes("standard") ? "storage pd capacity" : "ssd backed pd capacity");
 const shared = (mt) => (mt === "e2-medium" ? { c: 1, r: 4 } : mt === "e2-small" ? { c: 0.5, r: 2 } : { c: 2, r: 8 });
 
 // ---- line items ---------------------------------------------------------------
 const lines = [];
 const X = ["committed", "discount", "spot", "custom", "sole", "premium", "cud", "free tier"];
 
-const sqlCore = priceOf(sqlSkus, { label: `Cloud SQL ${sqlTier}`, needles: ["postgresql", "zonal", "small instance in americas"] });
-const sqlDiskP = priceOf(sqlSkus, { label: `Cloud SQL SSD ${sqlDisk}GB`, needles: ["postgresql", "zonal", "standard storage in americas"], excludes: ["enterprise", "fdc", "sql server", "mysql"] });
+// R6INF.1 — the SKU needle follows the LIVE availability type: ZONAL prices
+// `Zonal - Small instance` ($0.035/h) + `Zonal - Standard storage` ($0.17/GiBy·mo);
+// REGIONAL (HA standby, GD-HA.R6) prices `Regional - Small instance` ($0.070/h) +
+// `Regional - Standard storage` ($0.34/GiBy·mo) — both at 2× (catalog audited
+// 2026-10-22). Backups price the same on either posture.
+const sqlAvail = String(sql.settings.availabilityType ?? "ZONAL").toUpperCase();
+const sqlAvailNeedle = sqlAvail === "REGIONAL" ? "regional" : "zonal";
+const sqlCore = priceOf(sqlSkus, { label: `Cloud SQL ${sqlTier} (${sqlAvail})`, needles: ["postgresql", sqlAvailNeedle, "small instance in americas"], excludes: ["fdc"] });
+const sqlDiskP = priceOf(sqlSkus, { label: `Cloud SQL SSD ${sqlDisk}GB (${sqlAvail})`, needles: ["postgresql", sqlAvailNeedle, "standard storage in americas"], excludes: ["enterprise", "fdc", "sql server", "mysql"] });
 const sqlBak = priceOf(sqlSkus, { label: "Cloud SQL backups", needles: ["backups in americas"] });
 lines.push({
-  service: `Cloud SQL ${sqlTier} + ${sqlDisk}GB SSD + backups`,
+  service: `Cloud SQL ${sqlTier} ${sqlAvail} + ${sqlDisk}GB SSD + backups`,
   usdMonth: (sqlCore.usd ?? 0) * HOURS + (sqlDiskP.usd ?? 0) * sqlDisk + (sqlBak.usd ?? 0) * sqlDisk,
   src: [sqlCore.sku, sqlDiskP.sku, `${sqlBak.sku} (×${sqlDisk}GB kept ≤ instance size)`],
 });

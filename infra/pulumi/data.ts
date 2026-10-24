@@ -114,7 +114,8 @@ export function createData(args: DataArgs): Data {
   } else {
     // --- Cloud SQL for PostgreSQL (prod — the ~$50/mo budget can't carry AlloyDB's ~$270/mo minimum).
     // db-g1-small = the minimal prod-ready shared-core tier (db-f1-micro's ~0.6 GiB is too thin to call
-    // prod-ready); ZONAL availability (REGIONAL is ~2x — the lever if prod outgrows the budget);
+    // prod-ready); availability is the stage fact (prod REGIONAL since R6INF.1 / GD-HA.R6 —
+    // the ZONAL→REGIONAL flip is an in-place patch with a restart, never a replace);
     // 35 daily automated backups + PITR capped at Cloud SQL's 7-day transaction-log window; ALWAYS
     // activation — prod's database is never paused (the F32 cold-start concern is moot: it stays up). ---
     cloudSqlInstance = new gcp.sql.DatabaseInstance(name("postgres"), {
@@ -127,7 +128,8 @@ export function createData(args: DataArgs): Data {
         // defaults new instances to ENTERPRISE_PLUS (Stage B live, 2026-09-17: 400 "Invalid Tier
         // (db-g1-small) for (ENTERPRISE_PLUS) Edition"). ENTERPRISE is also the budget-right edition.
         edition: "ENTERPRISE",
-        availabilityType: "ZONAL",
+        // The stage fact drives availability (ZONAL default; prod REGIONAL per GD-HA.R6).
+        availabilityType: cfg.database.cloudSqlAvailabilityType ?? "ZONAL",
         diskSize: 10, // smallest SSD Cloud SQL provisions; autoresize covers growth
         diskType: "PD_SSD",
         diskAutoresize: true,

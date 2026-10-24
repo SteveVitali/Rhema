@@ -73,6 +73,15 @@ describe("managed Postgres engine + preview guards (AC2 — GCP; prod→Cloud SQ
     expect(d.backupRetentionDays).toBe(35); // daily automated backups; PITR caps at 7d (Cloud SQL)
   });
 
+  it("prod Cloud SQL is REGIONAL — the GD-HA.R6 ruled HA posture (R6INF.1 / REQ-DEP-3)", () => {
+    // The paid-launch HA ruling (LEDGER GD-HA.R6, 2026-10-20): Cloud SQL ZONAL→REGIONAL is
+    // authorized (+$25.55/mo core, ADR-082; the ruling excepts the HA delta from the $15
+    // deploy rule). The flip is an in-place `settings.availabilityType` patch with an
+    // instance restart — never a resource replace. Pinning the fact: a revert to "ZONAL"
+    // is itself a posture change requiring its own ruling.
+    expect(STAGES.prod.database.cloudSqlAvailabilityType).toBe("REGIONAL");
+  });
+
   it("dev + preview stay on AlloyDB (dev is the already-live substrate; preview is small/paused)", () => {
     expect(STAGES.dev.database.engine).toBe("alloydb");
     expect(STAGES.dev.database.paused).toBe(false);
@@ -85,12 +94,15 @@ describe("managed Postgres engine + preview guards (AC2 — GCP; prod→Cloud SQ
     expect(p.allowsProductionSecrets).toBe(false); // never production secrets in previews
   });
 
-  it("the engine descriptor is internally consistent (tier only on cloudsql, vCPU only on alloydb)", () => {
+  it("the engine descriptor is internally consistent (tier + availability only on cloudsql, vCPU only on alloydb)", () => {
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (cfg.database.engine === "cloudsql") {
         expect(cfg.database.cloudSqlTier, name).toMatch(/^db-/);
       } else {
         expect(cfg.database.primaryCpuCount, name).toBeGreaterThanOrEqual(1);
+        // The Cloud-SQL-only availability fact must not be set on an AlloyDB stage — a
+        // stranded fact would silently do nothing while looking like a posture decision.
+        expect(cfg.database.cloudSqlAvailabilityType, name).toBeUndefined();
       }
     }
   });
@@ -192,6 +204,28 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
     for (const cfg of Object.values(STAGES)) {
       expect(Object.keys(cfg.cloudRun.services).sort()).toEqual([...ALL_SERVICES].sort());
       expect(cfg.cloudRun.convertSvc).toBeDefined();
+    }
+  });
+});
+
+describe("egress-proxy MIG target size (R6INF.1; REQ-DEP-3; GD-HA.R6)", () => {
+  it("prod stays ONE — the ruled ×2 is WITHHELD (F-R6INF.1-1: the pinned-IP template can't scale out)", () => {
+    // GD-HA.R6 authorized MIG ×2 (+$12.2/mo), but the InstanceTemplate pins the single
+    // reserved networkIp (10.8.16.4 — proxyBaseUrl's stability anchor) and exactly one
+    // resource may hold a static internal IP: a second instance can never be created, so
+    // the bare flip is non-converging AND delivers no failover for the single-URL
+    // consumers. Real ×2 needs an internal passthrough NLB frontend — an unruled cost add.
+    // Prod pins 1; compute.ts throws on >1 so the trap fails at preview, never at prod.
+    expect(STAGES.prod.egressProxyTargetSize).toBe(1);
+  });
+
+  it("every stage keeps the single-VM proxy floor — previews never carry prod spend", () => {
+    expect(STAGES.dev.egressProxyTargetSize).toBe(1);
+    expect(STAGES.preview.egressProxyTargetSize).toBe(1);
+    // The fact is always a positive integer the MIG can take verbatim.
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(Number.isInteger(cfg.egressProxyTargetSize), name).toBe(true);
+      expect(cfg.egressProxyTargetSize, name).toBeGreaterThanOrEqual(1);
     }
   });
 });

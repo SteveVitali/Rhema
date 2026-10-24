@@ -160,6 +160,15 @@ export interface DatabaseConfig {
    */
   cloudSqlTier?: string;
   /**
+   * Cloud SQL only: `settings.availabilityType`. `ZONAL` = single-zone (no standby); `REGIONAL`
+   * = HA with a synchronous standby in a second zone (the GD-HA.R6 ruling landed prod on
+   * REGIONAL 2026-10-22 — R6INF.1; ~2× the instance+storage price, +$25.55 core per ADR-082).
+   * The ZONAL→REGIONAL transition is an in-place settings patch with an instance restart —
+   * never a replace; a `pulumi preview` showing `+-` on `rhema-prod-postgres` aborts the
+   * deploy. Ignored on AlloyDB (its instance has its own `availabilityType`).
+   */
+  cloudSqlAvailabilityType?: "ZONAL" | "REGIONAL";
+  /**
    * Whether the database is stopped/paused when idle (previews only, to avoid idle spend). Dev and
    * prod keep the primary warm; a preview's database is the small/paused stand-in (REQ-ARCH-38).
    */
@@ -325,6 +334,16 @@ export interface StageConfig {
    * numbers that deploy — a lever is a fact flip + `pulumi up`, never a program edit.
    */
   readonly cloudRun: CloudRunPosture;
+  /**
+   * R6INF.1 (REQ-DEP-3; GD-HA.R6) — the egress-proxy regional MIG's `targetSize` (instance
+   * count). GD-HA.R6 authorized prod ×2 (+$12.2/mo, ADR-082), but the bare flip CANNOT
+   * converge: the MIG template pins the one reserved `networkIp` (`10.8.16.4` on prod) so
+   * `proxyBaseUrl`/`ANTHROPIC_BASE_URL` never dangles — and exactly one resource may hold a
+   * static internal IP, so a second instance's create fails permanently (F-R6INF.1-1).
+   * Real ×2 needs a shared frontend first (internal passthrough NLB holding the VIP) — an
+   * unruled cost/design add. Prod stays 1; `compute.ts` throws on `>1` until then.
+   */
+  readonly egressProxyTargetSize: number;
 }
 
 /**
@@ -435,6 +454,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPA.10…23 all landed and the field no longer wires to anything.
     requiredSecrets: DEV_REQUIRED_SECRETS,
     cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
+    egressProxyTargetSize: 1, // non-prod keeps the single-VM proxy floor (GD-HA.R6 is prod-only)
   },
   preview: {
     kind: "preview",
@@ -463,14 +483,24 @@ export const STAGES: Record<StageKind, StageConfig> = {
       convertMin: 0,
       convertMax: 2,
     }),
+    egressProxyTargetSize: 1, // non-prod keeps the single-VM proxy floor (GD-HA.R6 is prod-only)
   },
   prod: {
     kind: "prod",
     // Cloud SQL on prod (amended 2026-09-17): db-g1-small is the minimal prod-ready shared-core tier —
-    // warm/ALWAYS (never paused; the F32 cold-start concern is moot at this size — it stays up), zonal
-    // (REGIONAL HA roughly doubles cost — the lever if prod outgrows the budget), 35 daily backups +
-    // 7-day PITR (Cloud SQL's cap).
-    database: { engine: "cloudsql", cloudSqlTier: "db-g1-small", paused: false, backupRetentionDays: 35 },
+    // warm/ALWAYS (never paused; the F32 cold-start concern is moot at this size — it stays up).
+    // 2026-10-22 (R6INF.1, REQ-DEP-3 / GD-HA.R6): REGIONAL — the ruled HA posture for a paid
+    // public launch (synchronous standby in a second zone; +$25.55/mo core per ADR-082,
+    // excepted from the $15 deploy rule). The ZONAL→REGIONAL transition is an in-place
+    // `availabilityType` patch with an instance restart — backups + the 7-day PITR window are
+    // preserved (PROD-BRINGUP §12c). 35 daily backups retained.
+    database: {
+      engine: "cloudsql",
+      cloudSqlTier: "db-g1-small",
+      cloudSqlAvailabilityType: "REGIONAL",
+      paused: false,
+      backupRetentionDays: 35,
+    },
     vpc: baseVpc(),
     isolatedBuckets: true,
     gcsVersioning: true,
@@ -497,6 +527,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // (forbidden to zero); convert-svc keeps ONLY its min=1 SLO floor, request-billed — the
     // codified revert of the live `cpu-throttling:"false"` drift (−$42.12/mo, REQ-COST-2).
     cloudRun: cloudRunPosture({ max: 10, workerMax: 3, convertMin: 1, convertMax: 4 }),
+    // R6INF.1 (REQ-DEP-3 / GD-HA.R6): the ruled ×2 (+$12.2/mo) is WITHHELD — the MIG template
+    // pins the single reserved `networkIp`, so a second instance can never be created and a
+    // single-URL consumer set gets no failover anyway. Withheld pending the ruled-design fix
+    // (internal passthrough NLB holding the VIP — an unruled cost add) — F-R6INF.1-1. The
+    // compute.ts guard makes any `>1` preview fail loudly, never a stuck MIG.
+    egressProxyTargetSize: 1,
   },
 };
 

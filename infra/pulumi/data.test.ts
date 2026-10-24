@@ -55,3 +55,18 @@ describe("SPA.13 — user-content bucket CORS for the browser's direct-PUT uploa
     expect(INDEX_SRC).toContain("/^https:\\/\\//.test(o)");
   });
 });
+
+describe("R6INF.1 — Cloud SQL availabilityType is a stage fact (REQ-DEP-3; GD-HA.R6)", () => {
+  it("the DatabaseInstance reads cfg.database.cloudSqlAvailabilityType — never a bare literal", () => {
+    // The HA posture moved from a program literal to the stage fact (prod pins REGIONAL —
+    // the ruled paid-launch posture; the ZONAL→REGIONAL transition is an in-place patch).
+    // A reintroduced `availabilityType: "ZONAL"`/`"REGIONAL"` literal in the Cloud SQL block
+    // would silently decouple the deployed shape from the asserted fact — this pin fails.
+    expect(SRC).toContain('availabilityType: cfg.database.cloudSqlAvailabilityType ?? "ZONAL"');
+    const sqlBlock = SRC.slice(
+      SRC.indexOf('new gcp.sql.DatabaseInstance(name("postgres")'),
+      SRC.indexOf('new gcp.sql.Database(name("db")'),
+    );
+    expect(sqlBlock).not.toMatch(/availabilityType:\s*"ZONAL"|availabilityType:\s*"REGIONAL"/);
+  });
+});

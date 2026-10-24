@@ -1,0 +1,115 @@
+{
+  "availableMaintenanceVersions": [
+    "POSTGRES_16_15.R20260712.01_44"
+  ],
+  "backendType": "SECOND_GEN",
+  "connectionName": "rhema-507501:us-central1:rhema-prod-postgres",
+  "createTime": "2026-09-17T05:37:23.099Z",
+  "databaseInstalledVersion": "POSTGRES_16_15",
+  "databaseVersion": "POSTGRES_16",
+  "etag": "b438ee16830ccc84ee2ecc29f609f3e7243881e3de81c84df73c0b144fea4f8d",
+  "gceZone": "us-central1-a",
+  "geminiConfig": {
+    "activeQueryEnabled": true,
+    "entitled": false,
+    "googleVacuumMgmtEnabled": false,
+    "indexAdvisorEnabled": false,
+    "oomSessionCancelEnabled": true
+  },
+  "includeReplicasForMajorVersionUpgrade": false,
+  "instanceType": "CLOUD_SQL_INSTANCE",
+  "ipAddresses": [
+    {
+      "ipAddress": "10.46.0.3",
+      "type": "PRIVATE"
+    }
+  ],
+  "kind": "sql#instance",
+  "maintenanceVersion": "POSTGRES_16_15.R20260712.01_10",
+  "name": "rhema-prod-postgres",
+  "project": "rhema-507501",
+  "region": "us-central1",
+  "satisfiesPzi": true,
+  "selfLink": "https://sqladmin.googleapis.com/sql/v1beta4/projects/rhema-507501/instances/rhema-prod-postgres",
+  "serverCaCert": {
+    "cert": "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIBADANBgkqhkiG9w0BAQsFADBwMS0wKwYDVQQuEyQ2NDFl\nZWVmNy1jYWI1LTRmYjUtOTBlNi0zOTc4Y2ZhYTRkMTcxHDAaBgNVBAMTE0Nsb3Vk\nIFNRTCBTZXJ2ZXIgQ0ExFDASBgNVBAoTC0dvb2dsZSwgSW5jMQswCQYDVQQGEwJV\nUzAeFw0yNjA5MTcwNTQwMzdaFw0zNjA5MTQwNTQxMzdaMHAxLTArBgNVBC4TJDY0\nMWVlZWY3LWNhYjUtNGZiNS05MGU2LTM5NzhjZmFhNGQxNzEcMBoGA1UEAxMTQ2xv\ndWQgU1FMIFNlcnZlciBDQTEUMBIGA1UEChMLR29vZ2xlLCBJbmMxCzAJBgNVBAYT\nAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApjWyxvgSBHP6pIaO\nAnFqsYLe2yq5BMDWYq7xF1uRYZhNqVAYymxC5TaorpmzyHjCh1v/tj3eB/HSfDyh\n0u2HS0CBGG6faOgxIVjzqOKVcKvSAzRozfZfUB0kg1iuy/afI1ipkRSHWI5GJDUo\nMWe+bJsRf06ayO8zhafx9roP8G2v01wHkWSlOEDx7bIWlfGzSxyLgj6f9k4wmm90\nkCfAh+s8M09/HWzBI9oCcqJu6v4J1l8SPaM1WoeRGjskvqtIw9w9jTFDTwKSgJVM\n6QKDrsd7SKuI7gr2orpUx73aG77IrH6ULNSn9n215CfHgLBfbUwnUGKmFl3O7Lvm\nxFUmnwIDAQABoxYwFDASBgNVHRMBAf8ECDAGAQH/AgEAMA0GCSqGSIb3DQEBCwUA\nA4IBAQB8tfPkCNvS5S1hiDwj5DdPYsU5mod8ckkjgNtrVROLklpoW6qmU7JELRtb\ncxVB5Gqfwf4L6ZBwkw6OpxfL5xaPr410ylRkHKectO/CGctgjsA3XJzQcjZzJ0mL\nf0TyxnghtOhDFRy3/6nnHRw8c/72/FPJdWPyUHJ+HujXICmQePXqNIj8dFX1S6nk\nlYNXUWFZMjnze3Q4XM6jgXppOqilO8E7HaXEdfAAYVNOrAwBjRShSYWoL0oRR3zk\nU5akr4atLbgaopc3lwcsEqoGD5c7slMnG1ifJveLKnTv7FQAEK1r63xpzqBpGgx7\nKq+VbgL6F5OF3cV0KJ/MTI4D9oh1\n-----END CERTIFICATE-----",
+    "certSerialNumber": "0",
+    "commonName": "C=US,O=Google\\, Inc,CN=Cloud SQL Server CA,dnQualifier=641eeef7-cab5-4fb5-90e6-3978cfaa4d17",
+    "createTime": "2026-09-17T05:40:37.938Z",
+    "expirationTime": "2036-09-14T05:41:37.938Z",
+    "instance": "rhema-prod-postgres",
+    "kind": "sql#sslCert",
+    "sha1Fingerprint": "7091178c493a9f1d4614f5f9921edc075a629ee5"
+  },
+  "serviceAccountEmailAddress": "p25012989319-9s9mgn@gcp-sa-cloud-sql.iam.gserviceaccount.com",
+  "settings": {
+    "activationPolicy": "ALWAYS",
+    "availabilityType": "ZONAL",
+    "backupConfiguration": {
+      "backupRetentionSettings": {
+        "retainedBackups": 35,
+        "retentionUnit": "COUNT"
+      },
+      "backupTier": "STANDARD",
+      "enabled": true,
+      "kind": "sql#backupConfiguration",
+      "pointInTimeRecoveryEnabled": true,
+      "replicationLogArchivingEnabled": true,
+      "startTime": "04:00",
+      "transactionLogRetentionDays": 7,
+      "transactionalLogStorageState": "CLOUD_STORAGE"
+    },
+    "connectorEnforcement": "NOT_REQUIRED",
+    "dataDiskSizeGb": "10",
+    "dataDiskType": "PD_SSD",
+    "deletionProtectionEnabled": false,
+    "edition": "ENTERPRISE",
+    "enableDataplexIntegration": false,
+    "enableGoogleMlIntegration": false,
+    "insightsConfig": {
+      "queryInsightsEnabled": true,
+      "queryStringLength": 1024
+    },
+    "ipConfiguration": {
+      "enablePrivatePathForGoogleCloudServices": false,
+      "ipv4Enabled": false,
+      "privateNetwork": "projects/rhema-507501/global/networks/rhema-prod-net-ae9fc54",
+      "requireSsl": false,
+      "serverCaMode": "GOOGLE_MANAGED_INTERNAL_CA",
+      "serverCertificateRotationMode": "SERVER_CERTIFICATE_ROTATION_MODE_UNSPECIFIED",
+      "sslMode": "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
+    },
+    "kind": "sql#settings",
+    "locationPreference": {
+      "kind": "sql#locationPreference",
+      "zone": "us-central1-a"
+    },
+    "maintenanceWindow": {
+      "day": 7,
+      "hour": 4,
+      "kind": "sql#maintenanceWindow"
+    },
+    "pricingPlan": "PER_USE",
+    "replicationLagMaxSeconds": 31536000,
+    "replicationType": "SYNCHRONOUS",
+    "retainBackupsOnDelete": false,
+    "settingsVersion": "68",
+    "storageAutoResize": true,
+    "storageAutoResizeLimit": "0",
+    "tier": "db-g1-small"
+  },
+  "sqlNetworkArchitecture": "NEW_NETWORK_ARCHITECTURE",
+  "state": "RUNNABLE",
+  "upgradableDatabaseVersions": [
+    {
+      "displayName": "PostgreSQL 17",
+      "majorVersion": "POSTGRES_17",
+      "name": "POSTGRES_17"
+    },
+    {
+      "displayName": "PostgreSQL 18",
+      "majorVersion": "POSTGRES_18",
+      "name": "POSTGRES_18"
+    }
+  ]
+}

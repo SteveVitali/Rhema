@@ -299,15 +299,31 @@ export function createCompute(args: ComputeArgs): Compute {
       checkIntervalSec: 10,
       timeoutSec: 5,
     });
+    // F-R6INF.1-1 (R6INF.1, 2026-10-22 — the GD-HA.R6 ×2 lever is WITHHELD by this block):
+    // the template above pins the ONE reserved `networkIp` (prod `10.8.16.4`) so
+    // `rhema:proxyBaseUrl` never dangles across template rolls — but exactly one resource may
+    // hold a static internal IP, so a targetSize>1 MIG can never create its second instance
+    // (permanent IP-in-use create failure), and the single-URL consumers would get no failover
+    // anyway. Real ×2 requires a shared frontend first — an internal passthrough NLB holding
+    // the VIP with this MIG as backend — an unruled +$8–18/mo add beyond GD-HA.R6's +$12.2.
+    // Refuse the non-converging shape at eval time, before any preview/up, so a future
+    // stage-fact flip can never strand prod in an error-looping MIG.
+    if (cfg.egressProxyTargetSize > 1) {
+      throw new Error(
+        `egressProxyTargetSize=${cfg.egressProxyTargetSize} cannot converge: the proxy ` +
+          `template pins the single reserved networkIp and one resource may hold a static ` +
+          `internal IP (F-R6INF.1-1). Land the internal-LB frontend first, or keep size 1.`,
+      );
+    }
     proxyGroup = new gcp.compute.RegionInstanceGroupManager(name("proxy-mig"), {
       region,
       baseInstanceName: name("proxy"),
       versions: [{ instanceTemplate: proxyTemplate.id }],
-      // Prod floor: ONE proxy instance (amended 2026-09-17 — budget; two e2-smalls alone would be
-      // ~$25/mo). Fail-CLOSED, not fail-open: if the instance dies, run pods lose egress (runs error,
-      // they never leak) — so the HA cost of a single instance is availability-only. Auto-healing
-      // still replaces it. targetSize 2 is the lever if prod hardens.
-      targetSize: 1,
+      // The stage fact drives the size (R6INF.1 / GD-HA.R6): prod stays ONE until the
+      // internal-LB frontend lands (the guard above refuses the non-converging ×2).
+      // Fail-CLOSED posture: if the instance dies, run pods lose egress (runs error, they
+      // never leak) — the single-instance cost is availability-only. Auto-healing replaces it.
+      targetSize: cfg.egressProxyTargetSize,
       namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
       // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance

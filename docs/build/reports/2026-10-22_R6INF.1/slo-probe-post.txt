@@ -1,0 +1,22 @@
+§13.5 SLO-probe sweep — post-change (read 2026-10-22T19:4xZ, window: last 3h covering the
+19:0xZ SQL REGIONAL flip + restart)
+
+Query A — worker-side `[slo]` emissions (violations/unmeasured would appear here):
+  gcloud logging read 'resource.labels.service_name="rhema-prod-worker-cbdaf0f"
+    AND (textPayload:"[slo]" OR jsonPayload.message:"[slo]")'
+    --freshness=3h --limit=50
+  RESULT: 0 lines — zero [slo] violation / unmeasured emissions post-change.
+
+Query B — worker ERROR-severity sweep since the instance returned RUNNABLE (19:12Z):
+  gcloud logging read 'resource.labels.service_name="rhema-prod-worker-cbdaf0f"
+    AND severity>=ERROR AND timestamp>"2026-10-22T19:12:00Z"'
+    --freshness=3h --limit=50
+  RESULT: 0 lines — no post-restart ERROR entries; the 19:05–19:12Z ECONNREFUSED window
+  was the expected restart transient (pg-boss retried through it; billing.auto-reload
+  ticked clean at 19:20:09Z, run.walkthrough consumed 19:20:51Z).
+
+Interpretation: the §13.5 probes emit only on breach ("[slo] violation" / "[slo]
+unmeasured"); silence through the restart + recovery is the PASS state. The raw log-read
+commands above are the receipts — re-run them to reproduce. Monitoring-side alert state is
+unchanged by this ticket (the F-R6OPS.1-1 channel-less posture is documented separately;
+no SLO policy was touched).

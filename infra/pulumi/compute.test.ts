@@ -58,6 +58,31 @@ describe("COST.1 — the Cloud Run posture is consumed from stage facts (REQ-COS
   });
 });
 
+describe("R6INF.1 — the proxy MIG resize is stage-fact driven + fail-closed on the IP pin (F-R6INF.1-1)", () => {
+  it("the MIG targetSize reads the stage fact — never a program ternary", () => {
+    expect(SRC).toContain("targetSize: cfg.egressProxyTargetSize");
+    // The old hardcoded floor is gone.
+    expect(SRC).not.toContain("targetSize: 1,");
+  });
+
+  it("the program REFUSES egressProxyTargetSize > 1 while the template pins the single networkIp", () => {
+    // F-R6INF.1-1: the template pins `networkIp` to the one reserved proxy address (so
+    // `proxyBaseUrl` never dangles across template rolls); exactly one resource may hold a
+    // static internal IP, so a ×2 MIG's second instance can never be created — a permanent
+    // error loop on prod. The eval-time throw must sit inside the deployProxyMig block
+    // BEFORE the RegionInstanceGroupManager is declared; if it is ever removed or
+    // re-ordered, this pin fails.
+    expect(SRC).toContain("if (cfg.egressProxyTargetSize > 1)");
+    const guard = SRC.indexOf("if (cfg.egressProxyTargetSize > 1)");
+    const mig = SRC.indexOf('new gcp.compute.RegionInstanceGroupManager(name("proxy-mig")');
+    const templatePin = SRC.indexOf("networkIp: proxyIp.address");
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(mig);
+    expect(templatePin).toBeGreaterThan(-1);
+    expect(templatePin).toBeLessThan(mig);
+  });
+});
+
 describe("BILL.3 — the purchase switch is deploy config on the api", () => {
   it("injects PURCHASE_MODE from the stage fact (a mode string, never a secret)", () => {
     expect(SRC).toContain('{ name: "PURCHASE_MODE", value: cfg.purchaseMode }');
