@@ -209,22 +209,42 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
   });
 });
 
-describe("egress-proxy MIG target size (R6INF.1; REQ-DEP-3; GD-HA.R6)", () => {
-  it("prod stays ONE — the ruled ×2 is WITHHELD (F-R6INF.1-1: the pinned-IP template can't scale out)", () => {
-    // GD-HA.R6 authorized MIG ×2 (+$12.2/mo), but the InstanceTemplate pins the single
-    // reserved networkIp (10.8.16.4 — proxyBaseUrl's stability anchor) and exactly one
-    // resource may hold a static internal IP: a second instance can never be created, so
-    // the bare flip is non-converging AND delivers no failover for the single-URL
-    // consumers. Real ×2 needs an internal passthrough NLB frontend — an unruled cost add.
-    // Prod pins 1; compute.ts throws on >1 so the trap fails at preview, never at prod.
+describe("egress-proxy MIG + the ILB frontend (R6INF.1/R6INF.2; REQ-DEP-3; GD-HA.R6; ADR-122)", () => {
+  it("prod is in the ADR-122 `up` A/B window — frontend live, direct-IP pin + size 1 held", () => {
+    // GD-REMAINING.R6 approved the ADR-122 implementation. The prod facts commit to the
+    // transitional shape FIRST (`egressProxyFrontend:"ilb"` + `egressProxyIpPin:true` +
+    // size 1): `up` A creates the VIP/backend/forwarding-rule while the MIG is untouched
+    // and still bound to 10.8.16.4 — the direct path in-flight pods dial. The cutover
+    // edit (drop the pin, flip 1→2) is the ruled `up` C and lands with its own commit.
+    expect(STAGES.prod.egressProxyFrontend).toBe("ilb");
+    expect(STAGES.prod.egressProxyIpPin).toBe(true);
     expect(STAGES.prod.egressProxyTargetSize).toBe(1);
   });
 
-  it("every stage keeps the single-VM proxy floor — previews never carry prod spend", () => {
-    expect(STAGES.dev.egressProxyTargetSize).toBe(1);
-    expect(STAGES.preview.egressProxyTargetSize).toBe(1);
-    // The fact is always a positive integer the MIG can take verbatim.
+  it("non-prod runs the final ILB posture at size 1 — self-wired to the VIP", () => {
+    // Non-prod self-wires `proxyBaseUrl`, so its cutover needs no config repoint: the ILB
+    // frontend + ephemeral NICs land in one `up`. GD-HA.R6's ×2 stays prod-only.
+    for (const kind of ["dev", "preview"] as const) {
+      expect(STAGES[kind].egressProxyFrontend, kind).toBe("ilb");
+      expect(STAGES[kind].egressProxyIpPin, kind).toBe(false);
+      expect(STAGES[kind].egressProxyTargetSize, kind).toBe(1);
+    }
+  });
+
+  it("INVARIANT: targetSize > 1 only when frontend === 'ilb' AND ipPin === false (F-R6INF.1-1)", () => {
+    // The cross-stage form of compute.ts's eval-time guard — a stage whose facts express
+    // the non-converging shape (×2 while a static IP is pinned, or ×2 with no frontend)
+    // fails here even before preview. This is the assertion F-R6INF.1-1 owes forever.
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (cfg.egressProxyTargetSize > 1) {
+        expect(cfg.egressProxyFrontend, name).toBe("ilb");
+        expect(cfg.egressProxyIpPin, name).toBe(false);
+      }
+      // The transitional pin is legal only WITH the frontend standing up in the same
+      // shape — `pin && !frontend` would bind a reserved IP the consumers can't fail over.
+      if (cfg.egressProxyIpPin) {
+        expect(cfg.egressProxyFrontend, name).toBe("ilb");
+      }
       expect(Number.isInteger(cfg.egressProxyTargetSize), name).toBe(true);
       expect(cfg.egressProxyTargetSize, name).toBeGreaterThanOrEqual(1);
     }
