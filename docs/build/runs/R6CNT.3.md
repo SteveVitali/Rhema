@@ -248,4 +248,4 @@ the run produced a real dossier but not a showcase-grade one; whether the regene
 at a stronger tier (fresh estimate then — likely >$40, new ruling needed) or waits on the
 F-R6CNT.3-1 fix is the operator's call, recorded in the PR body's carries.
 
-**CI:** `ci-boundary` reads **pass** at head `6e813fe` (run 40044496261 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; the first read timed out at 2700 s on the 39 m unit leg → job-polled green → re-read, the R6OPS.2 precedent); record `docs/build/logs/ci-R6CNT.3.json`.
+**CI:** `ci-boundary` reads **pass** at final head `9e0e463` (run 40048851950; first head `6e813fe` pass at run 40044496261 — fast-path + typecheck/lint/unit + contracts + public-safe + integration + images + `ci-pass` anchor; the first read timed out at 2700 s on the 39 m unit leg → job-polled green → re-read, the R6OPS.2 precedent); record `docs/build/logs/ci-R6CNT.3.json`.
