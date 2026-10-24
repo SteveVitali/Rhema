@@ -1,0 +1,214 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2026-10-23T23:16:11Z"
+  finalizers:
+  - batch.kubernetes.io/job-tracking
+  generateName: run-01m5ngstdrvn42jhtaa9c2sddw-a1-
+  generation: 1
+  labels:
+    app.kubernetes.io/name: run-task
+    batch.kubernetes.io/controller-uid: a4e761f4-a18e-4e91-a527-f9689f52638f
+    batch.kubernetes.io/job-name: run-01m5ngstdrvn42jhtaa9c2sddw-a1
+    controller-uid: a4e761f4-a18e-4e91-a527-f9689f52638f
+    job-name: run-01m5ngstdrvn42jhtaa9c2sddw-a1
+    rhema.dev/attempt: "1"
+    rhema.dev/project-id: 01m5ngssxw576bqzqhe8czxh7m
+    rhema.dev/run-id: 01m5ngstdrvn42jhtaa9c2sddw
+    rhema.dev/workspace-id: 01m5m2c6nc3058t528zx2d44sg
+    topology.kubernetes.io/region: us-central1
+    topology.kubernetes.io/zone: us-central1-a
+  name: run-01m5ngstdrvn42jhtaa9c2sddw-a1-cxf7c
+  namespace: runs
+  ownerReferences:
+  - apiVersion: batch/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Job
+    name: run-01m5ngstdrvn42jhtaa9c2sddw-a1
+    uid: a4e761f4-a18e-4e91-a527-f9689f52638f
+  resourceVersion: "1792797373889007020"
+  uid: c9b08fef-6b67-4e2e-bf8a-53e04a729e99
+spec:
+  containers:
+  - env:
+    - name: RUN_ID
+      value: 01M5NGSTDRVN42JHTAA9C2SDDW
+    - name: RUN_ATTEMPT
+      value: "1"
+    - name: WORKSPACE_ID
+      value: 01M5M2C6NC3058T528ZX2D44SG
+    - name: API_INTERNAL_URL
+      value: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
+    - name: ANTHROPIC_BASE_URL
+      value: http://10.8.16.4:8443
+    - name: OBJECTS_BUCKET
+      value: rhema-prod-artifacts
+    - name: CLAUDE_CONFIG_DIR
+      value: /config
+    - name: RUN_TOKEN_FILE
+      value: /var/run/rhema/harness/run-token
+    - name: PROXY_CREDENTIAL_FILE
+      value: /var/run/rhema/harness/proxy-credential
+    - name: PROJECT_ID
+      value: 01M5NGSSXW576BQZQHE8CZXH7M
+    image: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:b90023479a0d027090b990c3471966c998b5359c45413c216fabbd98b9a4cd3c
+    imagePullPolicy: IfNotPresent
+    name: run-task
+    resources: {}
+    securityContext:
+      allowPrivilegeEscalation: true
+      appArmorProfile:
+        localhostProfile: rhema-run-task
+        type: Localhost
+      capabilities:
+        add:
+        - SETUID
+        - SETGID
+        - SYS_ADMIN
+        - SYS_CHROOT
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/rhema/harness
+      name: harness-secrets
+      readOnly: true
+    - mountPath: /work
+      name: work
+    - mountPath: /config
+      name: config
+    - mountPath: /tmp
+      name: tmp
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-dkhxq
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: gke-rhema-prod-run-t-rhema-prod-run-t-73a6c509-m1br
+  nodeSelector:
+    cloud.google.com/gke-nodepool: rhema-prod-run-task-pool-647f9f4
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 10001
+  serviceAccount: run-task-ksa
+  serviceAccountName: run-task-ksa
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: harness-secrets
+    secret:
+      defaultMode: 288
+      secretName: run-01m5ngstdrvn42jhtaa9c2sddw-a1-secrets
+  - emptyDir:
+      medium: Memory
+    name: work
+  - emptyDir:
+      medium: Memory
+    name: config
+  - emptyDir:
+      medium: Memory
+    name: tmp
+  - name: kube-api-access-dkhxq
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-23T23:16:13Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodReadyToStartContainers
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-23T23:16:11Z"
+    observedGeneration: 1
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-23T23:16:13Z"
+    observedGeneration: 1
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-23T23:16:13Z"
+    observedGeneration: 1
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-23T23:16:11Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://08da0ceb469c93bb53e7601abc8646664340e1d8395fe07209dd83ca0ee950a2
+    image: sha256:bd5db247aaa94f7c1e6f07524b77792ec3dd2d98f0151e87907a797fe98b80cd
+    imageID: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:b90023479a0d027090b990c3471966c998b5359c45413c216fabbd98b9a4cd3c
+    lastState: {}
+    name: run-task
+    ready: true
+    resources: {}
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2026-10-23T23:16:12Z"
+    user:
+      linux:
+        gid: 0
+        supplementalGroups:
+        - 0
+        - 10001
+        uid: 0
+    volumeMounts:
+    - mountPath: /var/run/rhema/harness
+      name: harness-secrets
+      readOnly: true
+      recursiveReadOnly: Disabled
+    - mountPath: /work
+      name: work
+    - mountPath: /config
+      name: config
+    - mountPath: /tmp
+      name: tmp
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-dkhxq
+      readOnly: true
+      recursiveReadOnly: Disabled
+  hostIP: 10.8.240.6
+  hostIPs:
+  - ip: 10.8.240.6
+  observedGeneration: 1
+  phase: Running
+  podIP: 10.120.1.25
+  podIPs:
+  - ip: 10.120.1.25
+  qosClass: BestEffort
+  startTime: "2026-10-23T23:16:11Z"

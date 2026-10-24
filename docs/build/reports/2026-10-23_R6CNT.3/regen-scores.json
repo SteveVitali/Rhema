@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-10-23T23:52:55.367Z",
+  "ticket": "R6CNT.3",
+  "provenance": {
+    "apiBase": "https://api.rhema.tools",
+    "gitSha": "80db0d5",
+    "expectSha": "80db0d5",
+    "workspaceId": "01M5M2C6NC3058T528ZX2D44SG",
+    "dispatchTag": "r6cnt3"
+  },
+  "run": {
+    "runId": "01M5NGSTDRVN42JHTAA9C2SDDW",
+    "projectId": "01M5NGSSXW576BQZQHE8CZXH7M",
+    "state": "completed",
+    "estimateCredits": 2232,
+    "capCredits": 6696,
+    "spentCredits": 697,
+    "startedAt": "2026-10-23T23:16:17.452Z",
+    "endedAt": "2026-10-23T23:52:48.163Z",
+    "steps": [
+      {
+        "phase": "intake",
+        "state": "done",
+        "credits": 43
+      },
+      {
+        "phase": "craft",
+        "state": "done",
+        "credits": 53
+      },
+      {
+        "phase": "verification",
+        "state": "done",
+        "credits": 137
+      },
+      {
+        "phase": "discourse",
+        "state": "done",
+        "credits": 51
+      },
+      {
+        "phase": "second_read",
+        "state": "done",
+        "credits": 25
+      },
+      {
+        "phase": "argument",
+        "state": "done",
+        "credits": 82
+      },
+      {
+        "phase": "letter",
+        "state": "done",
+        "credits": 107
+      }
+    ]
+  },
+  "delivered": {
+    "correspondenceId": "01M5NJWVS5SQ0P2R5E4K3KKX7E",
+    "verdict": null,
+    "protocolStamp": "essay@1",
+    "artifacts": 14,
+    "claims": 14,
+    "findings": 15,
+    "contradictedTier1": 0
+  },
+  "secrEvidence": {
+    "fetchLogByDecision": [
+      {
+        "agent_label": "editor",
+        "kind": "inference",
+        "status": 200,
+        "decision": "allow",
+        "n": 115
+      },
+      {
+        "agent_label": "editor",
+        "kind": "fetch",
+        "status": null,
+        "decision": "allow",
+        "n": 41
+      },
+      {
+        "agent_label": "editor",
+        "kind": "search",
+        "status": null,
+        "decision": "allow",
+        "n": 185
+      }
+    ],
+    "nonCapDenies": 0,
+    "citedButUnfetched": 0,
+    "note": "fetch_log = the live egress channel's own rows; cited⇒fetched = the attestation path"
+  },
+  "spend": {
+    "totalUsdList": 10.68,
+    "credits": 1991,
+    "usageRows": 117,
+    "boundUsd": 40,
+    "withinBound": true
+  }
+}

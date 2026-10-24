@@ -1,0 +1,33 @@
+[harness] identity uid=10001 euid=10001 gid=10001 egid=10001 capEff=setgid,setuid,sys_chroot,sys_admin
+[harness] credential injector listening at http://127.0.0.1:37799 → http://10.8.16.4:8443 for run 01M5NGSTDRVN42JHTAA9C2SDDW
+[agent-entry] identity uid=10002 euid=10002 gid=10002 egid=10002 capEff=none
+[hook] Bash deny / — path escapes the sandbox root
+[hook] Bash deny /dev/null — path escapes the sandbox root
+[hook] Bash deny / — path escapes the sandbox root
+[hook] Bash deny /dev/null — path escapes the sandbox root
+[hook] Bash deny / — path escapes the sandbox root
+[hook] Bash deny /dev/null — path escapes the sandbox root
+[hook] Bash allow /app/skills/editorial-review — path escapes the sandbox root
+[hook] Bash deny /dev/null — path escapes the sandbox root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob allow /work/project/drafts
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Read allow /work/project/manifest.md
+[hook] Read allow /work/project/drafts/v1.md
+[hook] Read allow /app/skills/editorial-review/references/verification-protocol.md
+[hook] Write allow /work/project/agents/editor/00-piece-brief.md
+[hook] Write allow /work/project/agents/editor/.rhema/phase-result.json
+[agent-entry] phase intake → success (19 events)
+[harness] phase intake agent exited 0 for run 01M5NGSTDRVN42JHTAA9C2SDDW
+[harness] phase intake /work files: .rhema/agent-result.json, agents/editor/.rhema/phase-result.json, agents/editor/00-piece-brief.md, drafts/v1.md, manifest.md
+[harness] phase intake outputs: subtype=success versions=1 facts={"thesisPresent":true,"inventoryPresent":true,"present":{},"nonempty":{},"sidecarValidates":{},"sidecarIssues":{}} phaseResult={"status":"done"}
+[agent-entry] identity uid=10002 euid=10002 gid=10002 egid=10002 capEff=none
+[hook] Bash deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
+[hook] Glob deny /work/project — recursive operation over the root
