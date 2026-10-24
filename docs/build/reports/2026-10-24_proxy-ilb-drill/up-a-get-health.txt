@@ -1,0 +1,4 @@
+---
+backend: https://www.googleapis.com/compute/v1/projects/rhema-507501/regions/us-central1/instanceGroups/rhema-prod-proxy-mig-34ea26a
+status:
+  kind: compute#backendServiceGroupHealth

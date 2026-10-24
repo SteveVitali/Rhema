@@ -16,7 +16,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills`
 - **Requirement ids stamped:** REQ-ARCH-2, REQ-ARCH-30, REQ-DEP-3
-- **Started:** 2026-10-24T01:2xZ · **Closed:** (pending)
+- **Started:** 2026-10-24T01:2xZ · **Closed:** 2026-10-24T02:0xZ
 - **Live stage:** prod (the three ups + the failover drill are prod acts).
 - **Production mutations (from the ADR — verbatim scope):**
   - `pulumi up` ×3 on `--stack prod`: (A) `proxy-vip` Address + `proxy-be`
@@ -80,19 +80,29 @@
 
 ## Acceptance criteria
 
-- [ ] All resources per ADR items 1–6 landed + pinned in tests *(engineered)*
-- [ ] up A: preview classified **additive only** (3 creates) → `up` → `get-health`
-      HEALTHY → bounded egress probe through the VIP *(live-executed)*
-- [ ] up B: `proxyBaseUrl` → VIP literal from outputs → `up` → worker/api roll →
-      provenance PASS + old direct path still answers *(live-executed)*
-- [ ] up C: `networkIp` dropped + size 1→2 → `up` → 2 instances HEALTHY; `proxy-ip`
-      retained *(live-executed)*
-- [ ] Drill: kill → UNHEALTHY → probe green via sibling → autoheal 2×HEALTHY; receipts
-      committed *(live-executed)*
-- [ ] `billing-read.mjs` measured delta documented *(live-executed)*
-- [ ] D-R6INF.1-1 closed + F-R6INF.1-1 resolved + GATE-LAUNCH t8 note + ADR-122 ACCEPTED
-- [ ] Zero stateful replace/delete across all previews (hard pause honored)
-- [ ] `pnpm turbo build lint typecheck` touched packages + `pnpm test` touched +
+- [x] All resources per ADR items 1–6 landed + pinned in tests *(engineered)* — one
+      ADR-vs-live deviation: `portName` is INVALID on an internal backend service (live
+      API 400) and `balancingMode` must be `CONNECTION`; code + tests match the API.
+- [x] up A: preview classified **additive only** (3 creates) → `up` → `get-health`
+      HEALTHY → bounded egress probe through the VIP *(live-executed — updates 158/160;
+      unauth 403 + credentialed 200 `msg_011CgLD3ZdQzTmbJxUgsBb8S` + metered row)*
+- [x] up B: `proxyBaseUrl` → VIP literal from outputs → `up` → worker/api roll →
+      provenance PASS + old direct path still answers *(live-executed — update 161;
+      worker `-00079-jx6` + api `-00095-hhl` at 100% traffic with `…16.7` envs; BOTH
+      `10.8.16.4` and `10.8.16.7` answered the proxy 403)*
+- [x] up C: `networkIp` dropped + size 1→2 → `up` → 2 instances HEALTHY; `proxy-ip`
+      retained *(live-executed — update 162; `fdr3`@.9-b + `v9qf`@.8-f 2×HEALTHY;
+      `10.8.16.4` still RESERVED)*
+- [x] Drill: kill → UNHEALTHY → probe green via sibling → autoheal 2×HEALTHY; receipts
+      committed *(live-executed — 1 failed probe of 126, ≤13s recovery; autoheal to
+      2×HEALTHY 232s; `reports/2026-10-24_proxy-ilb-drill/`; note: a deleted backend
+      EXITS the health set rather than reporting UNHEALTHY — documented)*
+- [x] `billing-read.mjs` measured delta documented *(live-executed — +$30.96/mo:
+      $18.33 ILB line + $12.63 second VM; TOTAL ≈ $256.59/mo vs the ~$30 envelope)*
+- [x] D-R6INF.1-1 closed + F-R6INF.1-1 resolved + GATE-LAUNCH t8 note + ADR-122 ACCEPTED
+- [x] Zero stateful replace/delete across all previews (hard pause honored — the only
+      replace was the stateless InstanceTemplate; `proxy-ip`/SQL/disks/DNS untouched)
+- [x] `pnpm turbo build lint typecheck` touched packages + `pnpm test` touched +
       `check-build-memory.sh .` 0 violations + `check-append-only.mjs --base c1f20f5` OK
 
 ## Plan
@@ -145,10 +155,76 @@
   probe runs from a `runs`-ns pod on the digest-pinned proxy image (NetworkPolicy
   already admits private-app/20:8443 — no policy/firewall change needed), deny-probe
   403 + credentialed probe minted exactly like `claim-prepass` (`meterOnly`, bounded).
+- 2026-10-24T01:3xZ — **up A (update 158→160).** `preview --diff` classified additive:
+  +3 creates (vip/be/fr), 0 replace/delete → proceeded. Update 158 created `proxy-vip`
+  then **400'd on `portName:"https"`** — internal backend services forbid it (the ADR's
+  spec called for it; passthrough delivers to the incoming port, so the MIG's
+  `namedPorts` stays advisory-only). Removed → update 159 preview clean → **400'd on
+  `balancingMode` default `UTILIZATION`** — internal services require `CONNECTION`.
+  Fixed → update 160 created `proxy-be`+`proxy-fr`. VIP = **`10.8.16.7`**
+  (`proxyVipAddress` output). `get-health` (physical name `…be-d4327f7`) →
+  `rhema-prod-proxy-8g3n`@`10.8.16.4` HEALTHY. In-VPC probes: unauth → expected
+  `403 egress.denied missing proxy credential`; credentialed (`ilbp_upa`, minted exactly
+  like `claim-prepass` — is_test workspace, cap 25, 20min TTL, meterOnly) → **real
+  Anthropic 200 `msg_011CgLD3ZdQzTmbJxUgsBb8S`** + `usage_records` row `source:proxy`.
+  Credential revoked, pod deleted.
+- 2026-10-24T01:4xZ — **up B (update 161).** `Pulumi.prod.yaml` `proxyBaseUrl` →
+  `http://10.8.16.7:8443` (the actual output literal). Preview: `~` worker+api env-only,
+  174 unchanged → up → both rolled to new revisions at 100% traffic:
+  worker `…-00079-jx6` `ANTHROPIC_BASE_URL=http://10.8.16.7:8443`, api `…-00095-hhl`
+  `EGRESS_PROXY_URL=http://10.8.16.7:8443` (live-described envs = provenance).
+  In-flight safety probe: `10.8.16.4` AND `10.8.16.7` both answered the proxy 403.
+- 2026-10-24T01:4xZ — **up C (update 162).** Facts → `egressProxyIpPin:false` +
+  `egressProxyTargetSize:2`. Preview: `+-` InstanceTemplate replace (stateless, drops
+  `networkIp 10.8.16.4`) + `~` MIG targetSize/versions — `proxy-ip` absent from diff →
+  up → MIG rolled: `fdr3` (us-central1-b, ephemeral `.9`) + `v9qf` (us-central1-f, `.8`)
+  2×RUNNING on new template `…tmpl-e707c0f`; `8g3n` deleted by the roll; get-health
+  **2×HEALTHY behind `10.8.16.7`**. `proxy-ip` still RESERVED.
+- 2026-10-24T01:5xZ — **Failover drill** (`reports/2026-10-24_proxy-ilb-drill/`):
+  baseline real-egress 200 `msg_011CgLDjWnsCigCVDLDXVMMH`; T0 `instances delete fdr3`;
+  continuous post-auth probes at 2s cadence — **1 failure of 126** (T+11s, recovered
+  T+13s — true outage window bounded inside ~8s); deleted backend exits the health set
+  (it does not report UNHEALTHY — the observed flip is its removal); autoheal recreated
+  `fdr3` at NEW ephemeral `.10` → RUNNING T+183s → **2×HEALTHY T+232s**; post-heal
+  real-egress 200 `msg_011CgLE3PaneU8bejBUCJerv`. Credential `pcr_ilbp_drill` revoked.
+- 2026-10-24T02:0xZ — **Billing**: `billing-read.mjs` recomputation $256.59/mo total —
+  proxy MIG line $25.26 (×2, was $12.63) + NEW explicit ILB line **$18.33**
+  ($0.025/h generic Americas forwarding-rule minimum + $0.008/GiBy internal passthrough
+  inbound, est. 10GB). **Measured delta +$30.96/mo** vs the ruled ~$30 envelope. The
+  script now prices internal rules as their own line (they were previously miscounted
+  inside the external HTTPS-LB label).
+- 2026-10-24T02:0xZ — records: `D-R6INF.1-1` → DONE; `D-OPS.2-2`/`D-COST.1-3` dated
+  notes; `F-R6INF.1-1` → RESOLVED; ADR-122 → ACCEPTED w/ the live-API `portName`/
+  `CONNECTION` note; GATE-LAUNCH threshold-8 → MET; `docs/ops/proxy-ha.md` runbook.
 
 ## Gap table
 
-_(populated in Phase 4)_
+| Gap | Resolution |
+|---|---|
+| ADR spec'd `portName:"https"` on `proxy-be` — the live API 400s: internal passthrough forbids `portName` (incoming port delivered directly) | Field dropped; the MIG's `namedPorts` entry stays as harmless metadata. Deviation recorded in ADR-122's implemented-on note + runbook. |
+| Internal backend service defaults `balancingMode:"UTILIZATION"` → API 400 — internal requires `CONNECTION` | Set explicitly + pinned by `compute.test.ts`. |
+| `get-health` echoes `port: 80` despite TCP:8443 check | Verified display artifact — nothing listens on :80 on COS+proxy container; HEALTHY can only come from the 8443 probe. Documented in DRILL.md + runbook. |
+| Drill ADR says "observe backend flips UNHEALTHY" | A DELETED instance exits `healthStatus` entirely (doesn't linger as UNHEALTHY); the flip observed as removal + surviving-backend continuity. Documented. |
+| The reserved `10.8.16.4` is free but the repoint-rollback needs a pin-holder | Runbook written: repoint rollback alone works only pre-C; post-C rollback = `egressProxyIpPin:true` restore or full git-revert. |
+
+## Evidence log
+
+- `pulumi up` updates **160** (vip+be+fr; 158 partially applied vip first), **161**
+  (worker+api env repoint), **162** (template unpin replace + MIG 1→2). Previews:
+  A `+3 create` additive; B `~2` env-only; C `+-1` stateless template + `~1` MIG.
+- Health: `get-health …be-d4327f7` — `8g3n`.4 HEALTHY (up A); `fdr3`.9+`v9qf`.8 2×HEALTHY
+  (up C); post-drill `fdr3`.10+`v9qf`.8 2×HEALTHY.
+- Probes (in-VPC `runs`-ns pods): unauth VIP → `403 egress.denied missing proxy
+  credential` ×2 (up A + up-B direct-path leg); credentialed `ilbp_upa`/`ilbp_drill`
+  (claim-prepass-identical mint, is_test ws, cap, TTL, meterOnly, revoked) → Anthropic
+  200s `msg_011CgLD3…`/`msg_011CgLDj…`/`msg_011CgLE3…` + `usage_records` `source:proxy`.
+- Roll provenance: worker `rhema-prod-worker-cbdaf0f-00079-jx6` 100% +
+  api `rhema-prod-api-e745ce0-00095-hhl` 100%, envs live-described `…16.7`.
+- Drill: `reports/2026-10-24_proxy-ilb-drill/{DRILL.md,probe-log.txt}` — T0=1792806491,
+  126 probes / 1 fail (T+11→T+13s), heal 232s.
+- Billing: `billing-read.mjs` post $256.59/mo (ILB line now explicit).
+- Records: DEFERRALS D-R6INF.1-1 DONE + D-OPS.2-2/D-COST.1-3 notes; LEDGER F-R6INF.1-1
+  RESOLVED + PHASE LOG; ADR-122 ACCEPTED; GATE-LAUNCH t8 MET; `ops/proxy-ha.md`.
 
 ## Evidence log
 

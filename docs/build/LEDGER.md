@@ -226,6 +226,17 @@ pointers; substance unchanged.)_
   (`docs/adr/ADR-122-egress-proxy-internal-passthrough-nlb-shared-vip.md`) — PROPOSED,
   operator ruling owed (≈+$18/mo LB standing charge + the already-ruled +$12.2 VM);
   three-`up` migration, failover drill, and rollback spec'd. The `>1` guard stays armed.
+  **RESOLVED — 2026-10-24 (R6INF.2, GD-REMAINING.R6 ruled ADR-122).** All three ordered
+  prod updates landed: `up` A created `proxy-vip` (`10.8.16.7`) + `RegionBackendService`
+  (TCP, CONNECTION, `proxyHealth` reused) + INTERNAL forwarding rule; `up` B repointed
+  `rhema:proxyBaseUrl` → `http://10.8.16.7:8443` (worker `ANTHROPIC_BASE_URL` + api
+  `EGRESS_PROXY_URL` rolled, old direct `10.8.16.4` path still answering for in-flight
+  pods); `up` C dropped `networkIP` (ephemeral NICs) + grew the MIG to 2. Credentialed
+  egress proven through the VIP (real Anthropic 200s + metered `usage_records` rows),
+  failover drill passed (1 failed probe of 126 — ≤13s recovery window; autoheal to
+  2×HEALTHY in 232s; receipts `reports/2026-10-24_proxy-ilb-drill/`). Measured delta
+  +$30.96/mo vs the ~$30 ruled envelope ($18.33 ILB + $12.63 second VM). The `>1` guard
+  is now frontend-presence-scoped (still fails closed on a pinned/bare ×2).
 - **F-R6POST.2-1 — RESOLVED in-run (`a99e960`).** `R10.keepalive` timed out clicking the
   first `a[href="/app"]` — the hidden `.ide-phonebar` fallback link matched before the
   visible rail `⌂` (duplicate hrefs, first match hidden). Scoped the step to
