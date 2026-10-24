@@ -1,0 +1,105 @@
+{
+  "verdict": "red",
+  "stack": "pr-206",
+  "service": "rhema-pr-206-worker-43139c6",
+  "posture": { "cpu": "0.5", "memory": "512Mi", "cpuThrottling": true, "startupCpuBoost": true, "minScale": 1, "maxScale": 1 },
+  "imageDigest": "worker@sha256:77fee0f5d03d44aa2cedb77fabb7661c73c3f5ac6f0ea5b5cdc718f970676298",
+  "launchBudgetMs": 60000,
+  "watchMs": 600000,
+  "driverIncident": {
+    "description": "iterations 1-6 pre-registered N=6; the first driver pass completed iterations 1-5, then crashed during iteration 6 on revision rhema-pr-206-worker-43139c6-00007-hmp with an unhandled pg-boss client 'error' event (Connection terminated due to connection timeout, IAP-tunnel blip) before its iteration-6 send landed. The driver was patched (boss/pool transient 'error' listeners, --from resume flag, fail-closed empty verdict, idempotent run seed) and iteration 6 was re-run cleanly from a fresh revision. Iteration 6's recorded send/sentAt/observe window belongs to the resumed pass; the crashed pass contributed only the seed row.",
+    "records1to5": "sentAt values reconstructed from pgboss.job.created_on of each run's first run.start row; observedMs is the driver's fixed 600000 ms watch window; logMarkers reconstructed from the worker log windows (all were 'building GKE launcher' cold-import entry lines)."
+  },
+  "records": [
+    {
+      "iteration": 1,
+      "runId": "run_r6soak_pr-206_1",
+      "revision": "rhema-pr-206-worker-43139c6-00002-fbj",
+      "sentAt": "2026-10-22T01:04:13.825Z",
+      "state": "provisioning",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 600000,
+      "logMarkers": ["building GKE launcher"],
+      "classification": "failed",
+      "pgboss": "run.start fetched ~01:05 (provisioning set), hung past expire_seconds=900 in the cold import, retried to retry_limit=2, final state 'failed' (last fetch 01:30:19, failed 01:30:45). run.cancel completed 01:21:03."
+    },
+    {
+      "iteration": 2,
+      "runId": "run_r6soak_pr-206_2",
+      "revision": "rhema-pr-206-worker-43139c6-00003-w6g",
+      "sentAt": "2026-10-22T01:14:38.311Z",
+      "state": "provisioning",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 600000,
+      "logMarkers": ["building GKE launcher"],
+      "classification": "failed",
+      "pgboss": "run.start entered provisioning (cold-import marker at 01:22:28 on 00003-w6g), expired, retried twice, final state 'failed' (01:40:31/01:57:48). run.cancel itself failed after 2 retries — consumer starvation. Run ended state 'failed'."
+    },
+    {
+      "iteration": 3,
+      "runId": "run_r6soak_pr-206_3",
+      "revision": "rhema-pr-206-worker-43139c6-00004-k7j",
+      "sentAt": "2026-10-22T01:25:02.191Z",
+      "state": "queued",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 600000,
+      "logMarkers": [],
+      "classification": "failed",
+      "pgboss": "revision 00004-k7j crashed at cold start: '[worker] failed to start: Error: timeout exceeded when trying to connect' → Container exit(1) at 01:31:17. run.start first fetched only at 01:51:22 by a later instance, exhausted retries → 'failed'; a retry row was still pending at 02:07. Job never consumed inside the watch window."
+    },
+    {
+      "iteration": 4,
+      "runId": "run_r6soak_pr-206_4",
+      "revision": "rhema-pr-206-worker-43139c6-00005-xjj",
+      "sentAt": "2026-10-22T01:35:29.482Z",
+      "state": "queued",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 600000,
+      "logMarkers": [],
+      "classification": "failed",
+      "pgboss": "run.start sat 'created' through the whole watch window; only fetched 02:08:12 (state 'active', unconsumed at teardown read). run.cancel failed after 2 retries."
+    },
+    {
+      "iteration": 5,
+      "runId": "run_r6soak_pr-206_5",
+      "revision": "rhema-pr-206-worker-43139c6-00006-wbz",
+      "sentAt": "2026-10-22T01:46:01.825Z",
+      "state": "queued",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 600000,
+      "logMarkers": ["building GKE launcher"],
+      "classification": "failed",
+      "pgboss": "cold-import marker at 01:53:34 on 00006-wbz; run.start fetched 02:02:43 (16.7 min after send), still 'active' at teardown read — handler hung in the throttled import past the 600 s watch. run.cancel eventually completed 02:02:17."
+    },
+    {
+      "iteration": 6,
+      "runId": "run_r6soak_pr-206_6",
+      "revision": "rhema-pr-206-worker-43139c6-00008-fc5",
+      "sentAt": "2026-10-22T01:58:01.334Z",
+      "state": "queued",
+      "jobLaunchMs": null,
+      "admitMintMs": null,
+      "observedMs": 601803,
+      "logMarkers": [],
+      "classification": "failed",
+      "pgboss": "run.start stayed 'created' for the entire 601.8 s watch (job row created_on 01:58:01.626Z; a pg-boss retry row appeared 02:07:35). Never consumed. NOTE: this is the resumed driver's record — the first pass crashed driver-side on rev 00007-hmp before its send (see driverIncident)."
+    }
+  ],
+  "sloSamples": {
+    "query": "select signal,detail,value_ms,run_id,at from slo_samples where signal='run_start_stage_ms'",
+    "rows": 0,
+    "note": "ZERO run_start_stage_ms samples of any detail (no 'admit', no 'mint', no 'job_launch') across all six iterations — the launch path never reached its first SLO write."
+  },
+  "fixture": {
+    "userId": "usr_r6soak",
+    "billingAccountId": "ba_r6soak",
+    "workspaceId": "ws_r6soak",
+    "projectId": "prj_r6soak",
+    "runId": "run_r6soak_pr-206_0"
+  }
+}

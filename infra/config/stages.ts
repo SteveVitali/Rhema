@@ -375,6 +375,17 @@ function cloudRunPosture(p: {
   convertMin: number;
   /** convert-svc max (prod 4, non-prod 2). */
   convertMax: number;
+  /**
+   * R6SOAK.1 (REQ-ENG-7; D-COST.1-3 (a)) — an explicit worker posture override for the stage.
+   * Unset ⇒ the D-P0.15h-3-pinned 1 vCPU/1Gi instance-billed shape; the preview stage carries
+   * the right-size candidate (0.5 vCPU/512Mi + request billing — live finding on pr-206: Cloud
+   * Run refuses `cpu < 1` under `cpuIdle:false`, so the candidate exists ONLY throttled, which
+   * IS the D-P0.15h-3 posture under test) so the pr-<n> soak measures exactly the shape a
+   * green verdict authorizes for prod — a stage-fact flip R6INF.1 owns, never a prod change here.
+   */
+  workerResources?: CloudRunServicePosture["resources"];
+  /** R6SOAK.1 — see `workerResources`; the throttled-candidate billing mode rides the same override. */
+  workerCpuBilling?: CpuBillingMode;
 }): CloudRunPosture {
   return {
     services: {
@@ -390,8 +401,8 @@ function cloudRunPosture(p: {
         // keeps CPU alive between requests for the queue loops.
         minInstances: 1,
         maxInstances: p.workerMax,
-        cpuBilling: "instance",
-        resources: { cpu: "1", memory: "1Gi", startupCpuBoost: true },
+        cpuBilling: p.workerCpuBilling ?? "instance",
+        resources: p.workerResources ?? { cpu: "1", memory: "1Gi", startupCpuBoost: true },
       },
     },
     convertSvc: {
@@ -438,7 +449,22 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
-    cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
+    // R6SOAK.1 (REQ-ENG-7) — the preview's worker runs the right-size CANDIDATE shape
+    // (0.5 vCPU/512Mi). LIVE FINDING on pr-206 (2026-10-22): the Cloud Run API refuses
+    // `limits.cpu < 1` under `cpuIdle:false` ("Total cpu < 1 is not supported with cpu always
+    // allocated") — 0.5 vCPU is ONLY provisionable request-billed (cpuIdle:true), which is the
+    // throttled background posture that produced D-P0.15h-3. The candidate the soak measures is
+    // therefore exactly the throttled shape the deferral's conditional authorization meant to
+    // test. Dev stays at the D-P0.15h-3-pinned 1 vCPU/1Gi instance billing; prod's flip is
+    // R6INF.1's, gated on soak-green.
+    cloudRun: cloudRunPosture({
+      max: 2,
+      workerMax: 1,
+      convertMin: 0,
+      convertMax: 2,
+      workerCpuBilling: "request",
+      workerResources: { cpu: "0.5", memory: "512Mi", startupCpuBoost: true },
+    }),
   },
   prod: {
     kind: "prod",

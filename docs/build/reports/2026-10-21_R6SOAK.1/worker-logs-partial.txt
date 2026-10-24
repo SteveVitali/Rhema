@@ -1,0 +1,400 @@
+2026-10-22T01:17:06.809389Z	[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)
+2026-10-22T01:14:38.454930Z	[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)
+2026-10-22T01:14:36.005213Z	
+2026-10-22T01:14:34.556518Z	
+2026-10-22T01:14:27.594945Z	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T01:14:27.593652Z	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T01:14:27.589344Z	[worker] startup: health server listening; constructing deps
+2026-10-22T01:14:20.465603Z	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T01:14:17.920726Z	
+2026-10-22T01:13:28.048473Z	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T01:13:28.043848Z	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T01:13:28.038271Z	[worker] startup: health server listening; constructing deps
+2026-10-22T01:13:20.327376Z	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T01:13:13.759333248Z	Container called exit(1).
+2026-10-22T01:13:11.978778Z	    at async startWorker (file:///app/dist/main.js:662:5)
+2026-10-22T01:13:11.978774Z	    at async PgBoss.send (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/index.js:228:16)
+2026-10-22T01:13:11.978769Z	    at async Manager.send (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:737:16)
+2026-10-22T01:13:11.978764Z	    at async Manager.createJob (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:798:32)
+2026-10-22T01:13:11.978760Z	    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)
+2026-10-22T01:13:11.978755Z	    at process.processTimers (node:internal/timers:521:7)
+2026-10-22T01:13:11.978750Z	    at listOnTimeout (node:internal/timers:547:9)
+2026-10-22T01:13:11.978744Z	    at runNextTicks (node:internal/process/task_queues:64:5)
+2026-10-22T01:13:11.978738Z	    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+2026-10-22T01:13:11.978720Z	[worker] failed to start: Error: timeout exceeded when trying to connect
+2026-10-22T01:13:11.779525Z	}
+2026-10-22T01:13:11.779522Z	  worker: '0af819f1-b08f-458d-b465-3e49c67e9c70'
+2026-10-22T01:13:11.779518Z	  queue: 'test-tenant.purge',
+2026-10-22T01:13:11.779514Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.779510Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.779506Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.779502Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.779498Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.779494Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.779491Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.779486Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: test-tenant.purge, Worker: 0af819f1-b08f-458d-b465-3e49c67e9c70)\n' +
+2026-10-22T01:13:11.779480Z	  message: 'timeout exceeded when trying to connect (Queue: test-tenant.purge, Worker: 0af819f1-b08f-458d-b465-3e49c67e9c70)',
+2026-10-22T01:13:11.779475Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.779297Z	}
+2026-10-22T01:13:11.779294Z	  worker: 'c415c54c-0701-4d3b-9289-0d0539d4ec32'
+2026-10-22T01:13:11.779289Z	  queue: 'run_events.partition',
+2026-10-22T01:13:11.779285Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.779281Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.779276Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.779272Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.779267Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.779263Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.779259Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.779255Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.partition, Worker: c415c54c-0701-4d3b-9289-0d0539d4ec32)\n' +
+2026-10-22T01:13:11.779243Z	  message: 'timeout exceeded when trying to connect (Queue: run_events.partition, Worker: c415c54c-0701-4d3b-9289-0d0539d4ec32)',
+2026-10-22T01:13:11.779238Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.778937Z	}
+2026-10-22T01:13:11.778933Z	  worker: 'd77bacf4-ab08-4e40-b8a9-3f9ce922b3a5'
+2026-10-22T01:13:11.778929Z	  queue: 'notify.sweep.daily',
+2026-10-22T01:13:11.778924Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.778921Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.778913Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.778908Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.778904Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.778899Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.778893Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.778888Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: d77bacf4-ab08-4e40-b8a9-3f9ce922b3a5)\n' +
+2026-10-22T01:13:11.778872Z	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.daily, Worker: d77bacf4-ab08-4e40-b8a9-3f9ce922b3a5)',
+2026-10-22T01:13:11.778855Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.579702Z	}
+2026-10-22T01:13:11.579696Z	  worker: 'e2fe5be2-91a2-4261-8e3a-26b776e36b94'
+2026-10-22T01:13:11.579692Z	  queue: 'notify.sweep.weekly',
+2026-10-22T01:13:11.579688Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.579684Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.579681Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.579676Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.579673Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.579669Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.579666Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.579662Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: e2fe5be2-91a2-4261-8e3a-26b776e36b94)\n' +
+2026-10-22T01:13:11.579655Z	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: e2fe5be2-91a2-4261-8e3a-26b776e36b94)',
+2026-10-22T01:13:11.579650Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.579513Z	}
+2026-10-22T01:13:11.579510Z	  worker: 'bc51bbbc-6e92-4990-8326-baa7f142a2f0'
+2026-10-22T01:13:11.579506Z	  queue: 'mail.send',
+2026-10-22T01:13:11.579502Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.579499Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.579494Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.579490Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.579486Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.579483Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.579478Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.579473Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: mail.send, Worker: bc51bbbc-6e92-4990-8326-baa7f142a2f0)\n' +
+2026-10-22T01:13:11.579465Z	  message: 'timeout exceeded when trying to connect (Queue: mail.send, Worker: bc51bbbc-6e92-4990-8326-baa7f142a2f0)',
+2026-10-22T01:13:11.579458Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.579285Z	}
+2026-10-22T01:13:11.579282Z	  worker: '58c0de8d-79de-4248-9f19-31b40c895d81'
+2026-10-22T01:13:11.579277Z	  queue: 'slo.review.weekly',
+2026-10-22T01:13:11.579273Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.579269Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.579264Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.579260Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.579256Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.579252Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.579246Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.579241Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: slo.review.weekly, Worker: 58c0de8d-79de-4248-9f19-31b40c895d81)\n' +
+2026-10-22T01:13:11.579226Z	  message: 'timeout exceeded when trying to connect (Queue: slo.review.weekly, Worker: 58c0de8d-79de-4248-9f19-31b40c895d81)',
+2026-10-22T01:13:11.579210Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.478850Z	}
+2026-10-22T01:13:11.478846Z	  worker: 'efde1309-5aca-4a8a-a351-6de183339922'
+2026-10-22T01:13:11.478842Z	  queue: 'run.cancel',
+2026-10-22T01:13:11.478838Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.478833Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.478829Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.478825Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.478821Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.478816Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.478810Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.478805Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.cancel, Worker: efde1309-5aca-4a8a-a351-6de183339922)\n' +
+2026-10-22T01:13:11.478788Z	  message: 'timeout exceeded when trying to connect (Queue: run.cancel, Worker: efde1309-5aca-4a8a-a351-6de183339922)',
+2026-10-22T01:13:11.478771Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.379498Z	}
+2026-10-22T01:13:11.379495Z	  worker: '1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8'
+2026-10-22T01:13:11.379491Z	  queue: 'usage.reconcile',
+2026-10-22T01:13:11.379487Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.379482Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.379477Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.379472Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.379467Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.379462Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.379457Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.379451Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8)\n' +
+2026-10-22T01:13:11.379432Z	  message: 'timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8)',
+2026-10-22T01:13:11.379415Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:11.079892Z	}
+2026-10-22T01:13:11.079888Z	  worker: 'ca3b7569-9c6b-4f39-ae49-c56c550e77b0'
+2026-10-22T01:13:11.079883Z	  queue: 'run_events.retention',
+2026-10-22T01:13:11.079879Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:11.079875Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:11.079870Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:11.079865Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:11.079859Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:11.079854Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:11.079848Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:11.079841Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.retention, Worker: ca3b7569-9c6b-4f39-ae49-c56c550e77b0)\n' +
+2026-10-22T01:13:11.079820Z	  message: 'timeout exceeded when trying to connect (Queue: run_events.retention, Worker: ca3b7569-9c6b-4f39-ae49-c56c550e77b0)',
+2026-10-22T01:13:11.079802Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:10.679100Z	}
+2026-10-22T01:13:10.679097Z	  worker: '427915dd-ed60-4111-93ff-dcf736a3565a'
+2026-10-22T01:13:10.679093Z	  queue: '__pgboss__send-it',
+2026-10-22T01:13:10.679090Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:10.679086Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:10.679082Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:10.679078Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:10.679073Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:10.679068Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:10.679063Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:10.679058Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: __pgboss__send-it, Worker: 427915dd-ed60-4111-93ff-dcf736a3565a)\n' +
+2026-10-22T01:13:10.679037Z	  message: 'timeout exceeded when trying to connect (Queue: __pgboss__send-it, Worker: 427915dd-ed60-4111-93ff-dcf736a3565a)',
+2026-10-22T01:13:10.679018Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:10.178859Z	}
+2026-10-22T01:13:10.178851Z	  worker: 'a020bd9c-c851-45c6-9a8f-8234ee7b6d00'
+2026-10-22T01:13:10.178846Z	  queue: 'voice.purge',
+2026-10-22T01:13:10.178841Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:10.178837Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:10.178832Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:10.178828Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:10.178822Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:10.178818Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:10.178812Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:10.178806Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: voice.purge, Worker: a020bd9c-c851-45c6-9a8f-8234ee7b6d00)\n' +
+2026-10-22T01:13:10.178781Z	  message: 'timeout exceeded when trying to connect (Queue: voice.purge, Worker: a020bd9c-c851-45c6-9a8f-8234ee7b6d00)',
+2026-10-22T01:13:10.178763Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:13:09.879760Z	}
+2026-10-22T01:13:09.879756Z	  worker: 'de813f71-3043-40c5-a381-7d76cb98fac0'
+2026-10-22T01:13:09.879752Z	  queue: 'ingest.reconstruct',
+2026-10-22T01:13:09.879749Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:13:09.879744Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:13:09.879740Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:13:09.879735Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:13:09.879729Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:13:09.879724Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:13:09.879718Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:13:09.879711Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: de813f71-3043-40c5-a381-7d76cb98fac0)\n' +
+2026-10-22T01:13:09.879692Z	  message: 'timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: de813f71-3043-40c5-a381-7d76cb98fac0)',
+2026-10-22T01:13:09.879665Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:08:11.479441Z	[worker] building GKE launcher (import @kubernetes/client-node + KubeConfig)
+2026-10-22T01:07:49.179078Z	[slo] weekly-summary {"ok":4,"breach":0,"empty":9,"unmeasured":2,"error":0}
+2026-10-22T01:07:49.179043Z	[slo] weekly {"signal":"api_availability_monthly_pct","status":"unmeasured","value":null,"target":"API availability 99.9% monthly — alert on error-budget burn > 2×","threshold":99.9}
+2026-10-22T01:07:49.179Z	[slo] weekly {"signal":"import_preview_p95_s","status":"empty","value":null,"target":"import preview latency (presign → preview-ready) p95 ≤ 20 s — alert p95 > 40 s for 30 min","threshold":40}
+2026-10-22T01:07:49.178979Z	[slo] weekly {"signal":"autosave_roundtrip_p95_ms","status":"empty","value":null,"target":"autosave round-trip p95 ≤ 500 ms — alert > 1 s","threshold":1}
+2026-10-22T01:07:48.879283Z	[slo] weekly {"signal":"event_delivery_latency_p95_s","status":"empty","value":null,"target":"event delivery latency p95 ≤ 2 s — alert > 5 s","threshold":5}
+2026-10-22T01:07:48.879252Z	[slo] weekly {"signal":"cost_drift_pct_nightly","status":"unmeasured","value":null,"target":"cost drift vs provider report < 2% — alert > 2% nightly","threshold":2}
+2026-10-22T01:07:48.879219Z	[slo] weekly {"signal":"absorbed_adjustments_pct_24h","status":"empty","value":null,"target":"absorbed cap adjustments < 5% of gross usage over 24 h — alert above (circuit-breaker floor)","threshold":5}
+2026-10-22T01:07:48.879180Z	[slo] weekly {"signal":"proxy_vs_sdk_cost_runs_over5pct_1h","status":"ok","value":0,"target":"proxy-metered vs SDK-reported cost per run ± 2% — alert on any run > 5%","threshold":0}
+2026-10-22T01:07:48.879151Z	[slo] weekly {"signal":"provider_429_5xx_pct_5m","status":"empty","value":null,"target":"provider 429/5xx < 1% — alert > 5% for 5 min (outage banner; launches paused ≤ 2 h)","threshold":5}
+2026-10-22T01:07:48.879118Z	[slo] weekly {"signal":"egress_denied_10m","status":"ok","value":0,"target":"egress denied ≈ 0 — alert on a spike (any denial in the window)","threshold":0}
+2026-10-22T01:07:48.879079Z	[slo] weekly {"signal":"mirror_errors_10m","status":"ok","value":0,"target":"mirror/delivery errors = 0 — alert > 0 (delivery-validation failures + boundary.violation events)","threshold":0}
+2026-10-22T01:07:48.879046Z	[slo] weekly {"signal":"orphaned_runs","status":"ok","value":0,"target":"orphaned runs = 0 — alert > 0 for 10 min (a lingering orphan means the reaper didn't clear it)","threshold":0}
+2026-10-22T01:07:48.879006Z	[slo] weekly {"signal":"gate_resume_latency_p95_s","status":"empty","value":null,"target":"gate resume latency p95 ≤ 60 s — alert > 120 s","threshold":120}
+2026-10-22T01:07:48.878968Z	[slo] weekly {"signal":"unverified_review_rate_7d_pct","status":"empty","value":null,"target":"Review Unverified rate ≤ 1% weekly — alert above","threshold":1}
+2026-10-22T01:07:48.878921Z	[slo] weekly {"signal":"run_success_rate_24h_pct","status":"empty","value":null,"target":"run success rate (excl. user cancels + Unverified deliveries), weekly ≥ 97% — alert < 95% daily window","threshold":95}
+2026-10-22T01:07:48.878819Z	[slo] weekly {"signal":"run_start_latency_p95_s","status":"empty","value":null,"target":"run start latency (queued → running) p95 ≤ 45 s — alert p95 > 90 s for 10 min","threshold":90}
+2026-10-22T01:07:47.278891Z	[slo] unmeasured api_availability_monthly_pct: measured by Cloud Monitoring's request-based SLI on the api Cloud Run service — the IaC Slo/AlertPolicy (infra/pulumi/monitoring.ts) is the record, not a DB probe
+2026-10-22T01:07:47.278853Z	[slo] unmeasured cost_drift_pct_nightly: measured_elsewhere: usage.reconcile (nightly) already computes the drift and pages through the worker alertSink on >2% — a second probe here would double-page
+2026-10-22T01:07:45.179854Z	[worker] stranded-sweep: {"kind":"queued_reenqueued","runId":"run_r6soak_pr-206_1","workspaceId":"ws_r6soak","attempt":1}
+2026-10-22T01:07:42.879051Z	}
+2026-10-22T01:07:42.879047Z	  worker: '81fb1d55-35e0-4a44-b939-110df9b636f5'
+2026-10-22T01:07:42.879043Z	  queue: 'run.finalize',
+2026-10-22T01:07:42.879039Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:07:42.879035Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:07:42.879030Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:07:42.879026Z	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T01:07:42.879022Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:07:42.879017Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:07:42.879010Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.finalize, Worker: 81fb1d55-35e0-4a44-b939-110df9b636f5)\n' +
+2026-10-22T01:07:42.878991Z	  message: 'timeout exceeded when trying to connect (Queue: run.finalize, Worker: 81fb1d55-35e0-4a44-b939-110df9b636f5)',
+2026-10-22T01:07:42.878975Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:07:42.780228Z	}
+2026-10-22T01:07:42.780224Z	  worker: '17bc2492-0eb8-4be1-84db-887cb643b9d4'
+2026-10-22T01:07:42.780220Z	  queue: 'gate.expiry',
+2026-10-22T01:07:42.780215Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:07:42.780211Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:07:42.780207Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:07:42.780203Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:07:42.780199Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:07:42.780194Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:07:42.780188Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:07:42.780183Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: gate.expiry, Worker: 17bc2492-0eb8-4be1-84db-887cb643b9d4)\n' +
+2026-10-22T01:07:42.780163Z	  message: 'timeout exceeded when trying to connect (Queue: gate.expiry, Worker: 17bc2492-0eb8-4be1-84db-887cb643b9d4)',
+2026-10-22T01:07:42.780145Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:07:39.078819Z	}
+2026-10-22T01:07:39.078815Z	  worker: '1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8'
+2026-10-22T01:07:39.078810Z	  queue: 'usage.reconcile',
+2026-10-22T01:07:39.078804Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:07:39.078799Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:07:39.078795Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:07:39.078789Z	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T01:07:39.078785Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:07:39.078779Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:07:39.078773Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8)\n' +
+2026-10-22T01:07:39.078751Z	  message: 'timeout exceeded when trying to connect (Queue: usage.reconcile, Worker: 1dbf9e12-7d7b-4d3b-8a77-00d4f4c3e5f8)',
+2026-10-22T01:07:39.078733Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:07:38.878847Z	}
+2026-10-22T01:07:38.878843Z	  worker: '948767fc-b385-4d92-b2cf-ea97343946f2'
+2026-10-22T01:07:38.878838Z	  queue: 'run.sweep_parked',
+2026-10-22T01:07:38.878834Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:07:38.878829Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:07:38.878825Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:07:38.878820Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:07:38.878816Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:07:38.878811Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:07:38.878805Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:07:38.878797Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run.sweep_parked, Worker: 948767fc-b385-4d92-b2cf-ea97343946f2)\n' +
+2026-10-22T01:07:38.878775Z	  message: 'timeout exceeded when trying to connect (Queue: run.sweep_parked, Worker: 948767fc-b385-4d92-b2cf-ea97343946f2)',
+2026-10-22T01:07:38.878747Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:07:18.078716Z	[cite] completeness {"runs":0,"cited":0,"covered":0,"missed":0,"stripped":0,"backfillRanRuns":0,"backfillResolved":0,"searchCovered":0,"rate":null}
+2026-10-22T01:06:59.280907Z	[worker] startup: queues created; registering consumers
+2026-10-22T01:06:50.879066Z	[worker] startup: pg-boss started; creating queues
+2026-10-22T01:06:45.180288Z	[worker] startup: launcher built; starting pg-boss
+2026-10-22T01:05:43.878745Z	[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)
+2026-10-22T01:04:11.560927Z	
+2026-10-22T01:04:10.158871Z	
+2026-10-22T01:04:05.400563Z	[worker] startup: loading run-token keys from Secret Manager
+2026-10-22T01:04:05.394245Z	[worker] startup: health server listening; constructing deps
+2026-10-22T01:04:05.394005Z	Default STARTUP TCP probe succeeded after 1 attempt for container "worker-1" on port 8080.
+2026-10-22T01:03:58.235844Z	[worker] run-lifecycle consumers + crons registered
+2026-10-22T01:03:54.833046Z	Starting new instance. Reason: MANUAL_OR_CUSTOMER_MIN_INSTANCE - Instance started because of customer-configured min-instances or manual scaling.
+2026-10-22T01:03:54.135640Z	}
+2026-10-22T01:03:54.135637Z	  worker: '256eb448-1cef-4339-8523-28eadcdbf880'
+2026-10-22T01:03:54.135633Z	  queue: 'notify.sweep.weekly',
+2026-10-22T01:03:54.135630Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:54.135625Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:54.135622Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:54.135617Z	    '    at process.processTimers (node:internal/timers:518:9)\n' +
+2026-10-22T01:03:54.135614Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:54.135609Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:54.135605Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: 256eb448-1cef-4339-8523-28eadcdbf880)\n' +
+2026-10-22T01:03:54.135599Z	  message: 'timeout exceeded when trying to connect (Queue: notify.sweep.weekly, Worker: 256eb448-1cef-4339-8523-28eadcdbf880)',
+2026-10-22T01:03:54.135595Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:54.135176Z	}
+2026-10-22T01:03:54.135172Z	  worker: '53cd8be1-df88-44ec-bcc8-bbf4a60f552c'
+2026-10-22T01:03:54.135167Z	  queue: 'mail.send',
+2026-10-22T01:03:54.135164Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:54.135160Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:54.135155Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:54.135151Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:54.135147Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:54.135144Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:54.135138Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:54.135133Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: mail.send, Worker: 53cd8be1-df88-44ec-bcc8-bbf4a60f552c)\n' +
+2026-10-22T01:03:54.135113Z	  message: 'timeout exceeded when trying to connect (Queue: mail.send, Worker: 53cd8be1-df88-44ec-bcc8-bbf4a60f552c)',
+2026-10-22T01:03:54.135099Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.836831Z	}
+2026-10-22T01:03:53.836828Z	  worker: '971dab18-9bcb-4158-95d7-587b8b4d27a3'
+2026-10-22T01:03:53.836824Z	  queue: 'notify',
+2026-10-22T01:03:53.836820Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.836816Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.836812Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.836809Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.836805Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.836801Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.836798Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.836794Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: notify, Worker: 971dab18-9bcb-4158-95d7-587b8b4d27a3)\n' +
+2026-10-22T01:03:53.836788Z	  message: 'timeout exceeded when trying to connect (Queue: notify, Worker: 971dab18-9bcb-4158-95d7-587b8b4d27a3)',
+2026-10-22T01:03:53.836779Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.836556Z	}
+2026-10-22T01:03:53.836553Z	  worker: '93d1ddae-50b0-4f84-93ff-2f6a1bea6331'
+2026-10-22T01:03:53.836549Z	  queue: 'run_events.partition',
+2026-10-22T01:03:53.836545Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.836541Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.836537Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.836534Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.836530Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.836526Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.836523Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.836518Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.partition, Worker: 93d1ddae-50b0-4f84-93ff-2f6a1bea6331)\n' +
+2026-10-22T01:03:53.836512Z	  message: 'timeout exceeded when trying to connect (Queue: run_events.partition, Worker: 93d1ddae-50b0-4f84-93ff-2f6a1bea6331)',
+2026-10-22T01:03:53.836507Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.836283Z	}
+2026-10-22T01:03:53.836280Z	  worker: '47a9ec02-ced4-427d-87ba-849f4df4bd17'
+2026-10-22T01:03:53.836276Z	  queue: 'run_events.retention',
+2026-10-22T01:03:53.836272Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.836268Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.836264Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.836261Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.836254Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.836250Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.836247Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.836243Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 47a9ec02-ced4-427d-87ba-849f4df4bd17)\n' +
+2026-10-22T01:03:53.836237Z	  message: 'timeout exceeded when trying to connect (Queue: run_events.retention, Worker: 47a9ec02-ced4-427d-87ba-849f4df4bd17)',
+2026-10-22T01:03:53.836233Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.835991Z	}
+2026-10-22T01:03:53.835988Z	  worker: '65492395-3f5f-4aeb-959c-cd229faa22be'
+2026-10-22T01:03:53.835983Z	  queue: 'ingest.sync.sweep',
+2026-10-22T01:03:53.835980Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.835976Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.835973Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.835970Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.835966Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.835963Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.835959Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.835955Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 65492395-3f5f-4aeb-959c-cd229faa22be)\n' +
+2026-10-22T01:03:53.835949Z	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync.sweep, Worker: 65492395-3f5f-4aeb-959c-cd229faa22be)',
+2026-10-22T01:03:53.835941Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.835638Z	}
+2026-10-22T01:03:53.835635Z	  worker: 'b6fa69c0-8618-4e85-b15a-3fc7d5803afe'
+2026-10-22T01:03:53.835632Z	  queue: 'voice.purge',
+2026-10-22T01:03:53.835628Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.835625Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.835620Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.835616Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.835612Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.835608Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.835603Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.835598Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: voice.purge, Worker: b6fa69c0-8618-4e85-b15a-3fc7d5803afe)\n' +
+2026-10-22T01:03:53.835579Z	  message: 'timeout exceeded when trying to connect (Queue: voice.purge, Worker: b6fa69c0-8618-4e85-b15a-3fc7d5803afe)',
+2026-10-22T01:03:53.835565Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.635636Z	}
+2026-10-22T01:03:53.635633Z	  worker: 'a81d32f1-7c20-465f-991b-589fe732437d'
+2026-10-22T01:03:53.635629Z	  queue: 'ingest.reconstruct',
+2026-10-22T01:03:53.635626Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.635623Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.635619Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.635615Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.635611Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.635607Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.635602Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.635597Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: a81d32f1-7c20-465f-991b-589fe732437d)\n' +
+2026-10-22T01:03:53.635587Z	  message: 'timeout exceeded when trying to connect (Queue: ingest.reconstruct, Worker: a81d32f1-7c20-465f-991b-589fe732437d)',
+2026-10-22T01:03:53.635580Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.634854Z	}
+2026-10-22T01:03:53.634851Z	  worker: 'c6fbb6f9-7321-4537-822b-2bfb28bbfabb'
+2026-10-22T01:03:53.634846Z	  queue: 'ingest.sync',
+2026-10-22T01:03:53.634842Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.634838Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.634833Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.634828Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.634824Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.634819Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.634813Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.634808Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: ingest.sync, Worker: c6fbb6f9-7321-4537-822b-2bfb28bbfabb)\n' +
+2026-10-22T01:03:53.634789Z	  message: 'timeout exceeded when trying to connect (Queue: ingest.sync, Worker: c6fbb6f9-7321-4537-822b-2bfb28bbfabb)',
+2026-10-22T01:03:53.634773Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.045366Z	
+2026-10-22T01:03:53.035506Z	}
+2026-10-22T01:03:53.035502Z	  worker: 'e7774bac-9a66-409d-879d-8f9b5097d493'
+2026-10-22T01:03:53.035497Z	  queue: 'billing.estimator-refit',
+2026-10-22T01:03:53.035494Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.035485Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.035481Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.035478Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.035474Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
+2026-10-22T01:03:53.035470Z	    '    at runNextTicks (node:internal/process/task_queues:64:5)\n' +
+2026-10-22T01:03:53.035466Z	    '    at /app/node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11\n' +
+2026-10-22T01:03:53.035462Z	  stack: 'Error: timeout exceeded when trying to connect (Queue: billing.estimator-refit, Worker: e7774bac-9a66-409d-879d-8f9b5097d493)\n' +
+2026-10-22T01:03:53.035455Z	  message: 'timeout exceeded when trying to connect (Queue: billing.estimator-refit, Worker: e7774bac-9a66-409d-879d-8f9b5097d493)',
+2026-10-22T01:03:53.035450Z	[worker] pg-boss error (non-fatal, will retry): {
+2026-10-22T01:03:53.034999Z	}
+2026-10-22T01:03:53.034995Z	  worker: '0a339733-37ec-4aba-8e86-2564fb242692'
+2026-10-22T01:03:53.034989Z	  queue: 'billing.auto-reload',
+2026-10-22T01:03:53.034985Z	    '    at async Worker.run (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/worker.js:54:30)',
+2026-10-22T01:03:53.034982Z	    '    at async Manager.fetch (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/manager.js:1122:22)\n' +
+2026-10-22T01:03:53.034978Z	    '    at async Db.executeSql (file:///app/node_modules/.pnpm/pg-boss@12.30.0/node_modules/pg-boss/dist/db.js:49:16)\n' +
+2026-10-22T01:03:53.034972Z	    '    at process.processTimers (node:internal/timers:521:7)\n' +
+2026-10-22T01:03:53.034967Z	    '    at listOnTimeout (node:internal/timers:547:9)\n' +
