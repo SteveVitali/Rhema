@@ -1,0 +1,38 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "0ac7f9ec6ed1",
+  "startedAt": "2026-10-22T15:14:28.919Z",
+  "finishedAt": "2026-10-22T15:14:31.810Z",
+  "webBaseUrl": "https://rhema-pr-208-web-aae661d-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-208-api-775be80-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "observed": {
+      "web": "dc7fb15a0aa7caa5d47734656d06514d5b75b127",
+      "api": "dc7fb15a0aa7caa5d47734656d06514d5b75b127"
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R1",
+      "journey": "returning",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2865,
+      "screenshot": "R1.png"
+    }
+  ],
+  "passed": true
+}

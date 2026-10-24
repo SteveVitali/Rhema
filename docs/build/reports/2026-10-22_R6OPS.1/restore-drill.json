@@ -1,0 +1,96 @@
+WARNING: 
+
+To increase the performance of the tunnel, consider installing NumPy. For instructions,
+please see https://cloud.google.com/iap/docs/using-tcp-forwarding#increasing_the_tcp_upload_bandwidth
+
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+ERROR: (gcloud.sql.instances.delete) HTTPError 409: Operation failed because another operation was already in progress. Try your request after the current operation is complete.
+Deleting Cloud SQL instance...
+..........done.
+Deleted [https://sqladmin.googleapis.com/sql/v1beta4/projects/rhema-507501/instances/rhema-r6ops-drill-1792678479].
+ERROR: (gcloud.sql.instances.describe) HTTPError 404: The Cloud SQL instance does not exist. This command is authenticated as 14stevevitali@gmail.com which is the active account specified by the [core/account] property.
+{
+ "ticket": "187_R6OPS.1",
+ "req": "REQ-DEP-2(a)",
+ "at": "2026-10-22T14:14:39.131Z",
+ "scratch": "rhema-r6ops-drill-1792678479",
+ "source": "rhema-prod-postgres",
+ "pre_state": {
+  "t0": "2026-10-22T14:14:39.351Z",
+  "counts": {
+   "workspaces": "333",
+   "\"user\"": "9",
+   "projects": "12",
+   "runs": "82",
+   "run_events": "1573",
+   "gates": "64",
+   "fetch_log": "8124",
+   "pause_signals": "0",
+   "usage_records": "6889",
+   "deployments": "56",
+   "_migrations": "58",
+   "protocols": "4"
+  },
+  "workspace": "01M5FK8TS2CJ5BCTA3XEKSXH3F",
+  "tenant_row": {
+   "id": "01M5FK8TSX2WW05R8Q79K2SY6T",
+   "title": "Showcase — a worked example",
+   "workspace_id": "01M5FK8TS2CJ5BCTA3XEKSXH3F",
+   "created_at": "2026-10-21T16:03:53.268Z"
+  }
+ },
+ "pitr_point": "2026-10-22T14:14:39.351Z",
+ "clone": {
+  "started_at": "2026-10-22T14:14:40.125Z",
+  "exit": 0,
+  "runnable_at": "2026-10-22T14:24:10.256Z",
+  "private_ip": "10.46.0.7",
+  "region": "us-central1",
+  "deletion_protection": false,
+  "tunnel": {
+   "vm": "rhema-prod-proxy-vxdt",
+   "zone": "us-central1-c",
+   "local_port": 15437
+  }
+ },
+ "verify": {
+  "verified_at": "2026-10-22T14:24:18.647Z",
+  "counts_match": true,
+  "mismatches": [],
+  "tenant_read": true,
+  "scratch_counts": {
+   "workspaces": "333",
+   "\"user\"": "9",
+   "projects": "12",
+   "runs": "82",
+   "run_events": "1573",
+   "gates": "64",
+   "fetch_log": "8124",
+   "pause_signals": "0",
+   "usage_records": "6889",
+   "deployments": "56",
+   "_migrations": "58",
+   "protocols": "4"
+  }
+ },
+ "rto": {
+  "clone_started": "2026-10-22T14:14:40.125Z",
+  "runnable_at": "2026-10-22T14:24:10.256Z",
+  "verified_read_at": "2026-10-22T14:24:18.647Z",
+  "rto_seconds": 579
+ },
+ "destroy": {
+  "delete_exit": 0,
+  "verified_absent": true
+ },
+ "verdict": "PASS — PITR restored the T0 state; counts match; tenant read OK"
+}
