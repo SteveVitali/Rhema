@@ -55,5 +55,8 @@ exposed, reply to this message or write to security@rhema.tools. We will answer 
 
 ---
 
-*Approval block — HUMAN-H11: approved by ______ date ______ (send = named mutation, operator
-runs it; recipients = the workspace holders identified in the forensics report).*
+*Approval block — HUMAN-H11: **approved as drafted** — operator verbatim ruling `"Approve as
+drafted"` recorded in LEDGER GATE DECISIONS `GD-EXPOSURE-NOTICE.R6` (2026-10-21; the signature
+convention — the approval lives in the verbatim gate record, no proxy signature here). Send =
+named mutation owned by R6CNT.2; recipients = the workspace holders identified in the forensics
+report.*

@@ -77,3 +77,12 @@ unresolved-possible: 1. **Materiality: every involved account is operator/staff-
 `docs/build/reports/2026-10-21_R6FOR.2/exposure-forensics.md` + `notice-draft.md` (committed, de-identified).
 
 **Spend:** $0 (read-only forensic queries; no sends, no paid legs, no inference).
+
+## Orchestrator note — 2026-10-21T19:35Z: notice approved; H7 verdict words recorded
+
+Post-close boundary: the operator ruled on the conditional notice gate — verbatim UI
+selection **"Approve as drafted"** (GATE DECISIONS `GD-EXPOSURE-NOTICE.R6`); the send is a
+named mutation owned by **R6CNT.2** (row 194 contract already carries it). Companion verdict
+words for the H7 readout slot: **"Confirmed — sign off"** (recorded verbatim in
+`docs/build/readouts/2026-10-21_R6FOR.2-d-sec-1-2.md`). The notice draft's approval block
+cites the gate record — no proxy signature. Nothing sent.
