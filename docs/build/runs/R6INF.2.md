@@ -16,7 +16,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills`
 - **Requirement ids stamped:** REQ-ARCH-2, REQ-ARCH-30, REQ-DEP-3
-- **Started:** 2026-10-24T01:2xZ · **Closed:** 2026-10-24T02:0xZ
+- **Started:** 2026-10-24T01:2xZ · **Closed:** 2026-10-24T02:1xZ
 - **Live stage:** prod (the three ups + the failover drill are prod acts).
 - **Production mutations (from the ADR — verbatim scope):**
   - `pulumi up` ×3 on `--stack prod`: (A) `proxy-vip` Address + `proxy-be`
@@ -34,7 +34,7 @@
   replace/delete on a STATEFUL resource (SQL, disks, the retained `proxy-ip` Address, DNS)
   → PAUSE + report. Anything observed contradicting the ADR's no-disruption claim before
   up C (unhealthy backends, in-flight runs detected) → PAUSE before up C.
-- **ci:** (pending)
+- **ci:** boundary in flight — `logs/ci-R6INF.2.json` (PR #218)
 
 ## Deferrals read
 
