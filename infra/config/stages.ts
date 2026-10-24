@@ -449,21 +449,19 @@ export const STAGES: Record<StageKind, StageConfig> = {
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
-    // R6SOAK.1 (REQ-ENG-7) — the preview's worker runs the right-size CANDIDATE shape
-    // (0.5 vCPU/512Mi). LIVE FINDING on pr-206 (2026-10-22): the Cloud Run API refuses
-    // `limits.cpu < 1` under `cpuIdle:false` ("Total cpu < 1 is not supported with cpu always
-    // allocated") — 0.5 vCPU is ONLY provisionable request-billed (cpuIdle:true), which is the
-    // throttled background posture that produced D-P0.15h-3. The candidate the soak measures is
-    // therefore exactly the throttled shape the deferral's conditional authorization meant to
-    // test. Dev stays at the D-P0.15h-3-pinned 1 vCPU/1Gi instance billing; prod's flip is
-    // R6INF.1's, gated on soak-green.
+    // R6SOAK.1 (REQ-ENG-7) measured the right-size CANDIDATE shape (0.5 vCPU/512Mi,
+    // request-billed — Cloud Run refuses cpu<1 instance-billed) on pr-206: VERDICT RED, 6/6
+    // iterations failed on the throttled cold-import (D-P0.15h-3 reproduced verbatim).
+    // R6DEP.1 (2026-10-22): the candidate is NOT adopted — the preview worker reverts to the
+    // D-P0.15h-3-pinned 1 vCPU/1Gi instance-billed default so every later pr-<n> (this deploy's
+    // verification preview included) runs a worker that can actually consume its queues. The
+    // override params stay in the posture seam; prod's flip remains R6INF.1's, gated on a
+    // redesigned candidate + a fresh green soak.
     cloudRun: cloudRunPosture({
       max: 2,
       workerMax: 1,
       convertMin: 0,
       convertMax: 2,
-      workerCpuBilling: "request",
-      workerResources: { cpu: "0.5", memory: "512Mi", startupCpuBoost: true },
     }),
   },
   prod: {

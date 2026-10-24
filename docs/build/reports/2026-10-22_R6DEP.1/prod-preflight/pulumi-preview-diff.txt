@@ -1,0 +1,150 @@
+Previewing update (prod)
+
+View Live: https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/6bdd0bae-c999-47b6-9705-0d266a11a7e9
+
+  pulumi:pulumi:Stack: (same)
+    [urn=urn:pulumi:prod::rhema::pulumi:pulumi:Stack::rhema-prod]
+    ~ gcp:storage/bucket:Bucket: (update)
+        [id=rhema-prod-user-content]
+        [urn=urn:pulumi:prod::rhema::gcp:storage/bucket:Bucket::rhema-prod-user-content]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ cors: [
+          ~ [0]: {
+                  ~ methods        : [
+                      + [1]: "GET"
+                    ]
+                  ~ responseHeaders: [
+                      + [1]: "Content-Disposition"
+                      + [2]: "Content-Length"
+                      + [3]: "Accept-Ranges"
+                      + [4]: "Content-Range"
+                    ]
+                }
+        ]
+    +-gcp:compute/instanceTemplate:InstanceTemplate: (replace)
+        [id=projects/rhema-507501/global/instanceTemplates/rhema-prod-proxy-tmpl-d825997]
+        [urn=urn:pulumi:prod::rhema::gcp:compute/instanceTemplate:InstanceTemplate::rhema-prod-proxy-tmpl]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ disks   : [
+          ~ [0]: {
+                  + labels             : [unknown]
+                  + resourceManagerTags: [unknown]
+                }
+        ]
+      ~ metadata: {
+          ~ proxy-image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:3542ff89ed8e9a3bbc21a21944ebc5e13677c56f3b57fa0b57667ccce8ef59ee" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:17f8273ac3fe50ddb76c675fd7c5fe74c1be5ff2e9adc94a1869955ebe67c04b"
+        }
+    ~ gcp:compute/regionInstanceGroupManager:RegionInstanceGroupManager: (update)
+        [id=projects/rhema-507501/regions/us-central1/instanceGroupManagers/rhema-prod-proxy-mig-34ea26a]
+        [urn=urn:pulumi:prod::rhema::gcp:compute/regionInstanceGroupManager:RegionInstanceGroupManager::rhema-prod-proxy-mig]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ versions: [
+          ~ [0]: {
+                  ~ instanceTemplate: "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/instanceTemplates/rhema-prod-proxy-tmpl-d825997" => [unknown]
+                }
+        ]
+    ~ gcp:cloudrunv2/job:Job: (update)
+        [id=projects/rhema-507501/locations/us-central1/jobs/rhema-prod-convert-125dbd4]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/job:Job::rhema-prod-convert]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ template: {
+              ~ containers: [
+                  ~ [0]: {
+                          ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:d11cd34c4f78d343b82ae9843984e744bba45ce53aaeae77515bbc77665cce53" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:17beb3e4071ebd36b0b09fe44746e4928884ef7b9256c47e5e8045dba3e426d5"
+                        }
+                ]
+            }
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-turbo-cache-9a75e3a]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-turbo-cache]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:b3e4a5c74ce2ce0f1312ac7c765c1b3228b8ef68946e9cbce9d8317fb6aad6ac" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:db2ffb2d8b5c9d3c63908d42fb16e9bc5775fdf52f22c8b9b281ca7d56fefd8b"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-export-81798eb]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-export]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:6794322353838a9819be97b0ee8c424f6533dd2de58c98dc3683d4dec1909b88" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:fd11658106382d1ab1cfd518015948c5e686dc05b3c19547e9771781b28d3649"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-fetcher-31c9c51]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-fetcher]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:7042f0e4ce19c63a92966ab2b6815b115297463b7ed3e9f4ec04aa8ac378d3b7" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ba73dde905c810c9fe560a5343be34b087043d918df0fad5fd652c839e3541c3"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-collab-0796455]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-collab]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:993bcd25daca23f75db77e655653a558e6aa925d43e029b176535e15dceaf0ac" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:0e706c9f6d58280405361aa75d9c4fe417442b67b905f84920f07293110903f0"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-convert-svc-a3874fc]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-convert-svc]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:d11cd34c4f78d343b82ae9843984e744bba45ce53aaeae77515bbc77665cce53" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:17beb3e4071ebd36b0b09fe44746e4928884ef7b9256c47e5e8045dba3e426d5"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-web-72f1683]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-web]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:18c434865c357ab1cc034966b14eb68fabdd8f73c5793b553edf470335bc2eb9" => "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:1d4b5fec613b0bb221313461b5f88e64660ba6dab95b6b688b452f0c3153f4e8"
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-worker-cbdaf0f]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-worker]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ envs : [
+                          + [22]: [secret]
+                          - [25]: [secret]
+                        ]
+                      ~ image: [secret] => [secret]
+                    }
+            ]
+        }
+    ~ gcp:cloudrunv2/service:Service: (update)
+        [id=projects/rhema-507501/locations/us-central1/services/rhema-prod-api-e745ce0]
+        [urn=urn:pulumi:prod::rhema::gcp:cloudrunv2/service:Service::rhema-prod-api]
+        [provider=urn:pulumi:prod::rhema::pulumi:providers:gcp::default_8_41_1::4cf7e9ea-271d-4442-9b1c-8c4d0b19caa1]
+      ~ template: {
+          ~ containers: [
+              ~ [0]: {
+                      ~ image: [secret] => [secret]
+                    }
+            ]
+        }

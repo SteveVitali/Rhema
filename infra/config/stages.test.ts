@@ -140,17 +140,17 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
     expect(c.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
   });
 
-  it("preview: the worker carries the R6SOAK.1 right-size CANDIDATE shape (0.5/512Mi, throttled)", () => {
-    // REQ-ENG-7 / D-COST.1-3 (a) — the pr-<n> soak measures exactly this shape; the prod pin
-    // above stays at 1 vCPU/1Gi until the soak-green flip lands (R6INF.1). Live finding
-    // (pr-206, 2026-10-22): Cloud Run refuses `limits.cpu < 1` with `cpuIdle:false`, so the
-    // 0.5 vCPU candidate is ONLY provisionable request-billed — i.e., throttled. That IS the
-    // D-P0.15h-3 posture the soak reproduces; the billing flip is load-bearing, not optional.
+  it("preview: the worker runs the D-P0.15h-3-pinned shape — the 0.5/512Mi candidate is NOT adopted (R6SOAK.1 RED)", () => {
+    // REQ-ENG-7's soak on pr-206 (2026-10-22) returned RED — 6/6 cold-import iterations failed
+    // on the 0.5 vCPU/512Mi request-billed candidate. R6DEP.1 reverts the preview pin to the
+    // same 1 vCPU/1Gi instance-billed shape dev/prod carry: a verification preview needs a
+    // worker that consumes its queues (auth.mail, sweeps). A redesigned candidate + fresh
+    // green soak re-opens the question on R6INF.1's terms.
     const w = STAGES.preview.cloudRun.services.worker;
     expect(w.minInstances).toBe(1);
-    expect(w.cpuBilling).toBe("request");
+    expect(w.cpuBilling).toBe("instance");
     expect(w.maxInstances).toBe(1);
-    expect(w.resources).toEqual({ cpu: "0.5", memory: "512Mi", startupCpuBoost: true });
+    expect(w.resources).toEqual({ cpu: "1", memory: "1Gi", startupCpuBoost: true });
     // dev is NOT the soak target — it keeps the D-P0.15h-3-pinned shape.
     expect(STAGES.dev.cloudRun.services.worker.resources).toEqual({
       cpu: "1",
@@ -160,11 +160,10 @@ describe("cloudRun posture stage facts (COST.1; REQ-COST-1/2/3; H9 ruling-(a) cl
     expect(STAGES.dev.cloudRun.services.worker.cpuBilling).toBe("instance");
   });
 
-  it("non-preview stages: the worker can never be scaled to zero or request-billed", () => {
-    // R6SOAK.1 — `preview` is the DELIBERATE exception: the right-size candidate (0.5 vCPU)
-    // only exists request-billed on Cloud Run, and the soak's entire purpose is reproducing
-    // that throttled posture on a disposable stack. Dev/prod keep the D-P0.15h-3 fix.
-    for (const name of ["dev", "prod"] as const) {
+  it("every stage: the worker can never be scaled to zero or request-billed", () => {
+    // R6SOAK.1's `preview` exception (the request-billed 0.5 vCPU soak candidate) is RETIRED
+    // on the RED verdict — all three stages now pin the D-P0.15h-3 instance-billed fix.
+    for (const name of ["dev", "prod", "preview"] as const) {
       const w = STAGES[name].cloudRun.services.worker;
       expect(w.minInstances, name).toBeGreaterThanOrEqual(1);
       expect(w.cpuBilling, name).toBe("instance");
