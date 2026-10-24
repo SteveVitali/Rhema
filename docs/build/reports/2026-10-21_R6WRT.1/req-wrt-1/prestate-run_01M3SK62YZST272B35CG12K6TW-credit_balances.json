@@ -1,0 +1,30 @@
+[
+  {
+    "billing_account_id": "01M2V3PM1133TPH4M8H0T8CSEE",
+    "bucket": "daily",
+    "available": "0",
+    "held": "0",
+    "updated_at": "2026-09-25T23:27:35.105Z"
+  },
+  {
+    "billing_account_id": "01M2V3PM1133TPH4M8H0T8CSEE",
+    "bucket": "included",
+    "available": "2000",
+    "held": "0",
+    "updated_at": "2026-09-26T00:05:21.452Z"
+  },
+  {
+    "billing_account_id": "01M2V3PM1133TPH4M8H0T8CSEE",
+    "bucket": "promo",
+    "available": "9121",
+    "held": "0",
+    "updated_at": "2026-10-21T02:21:36.946Z"
+  },
+  {
+    "billing_account_id": "01M2V3PM1133TPH4M8H0T8CSEE",
+    "bucket": "topup",
+    "available": "1338",
+    "held": "0",
+    "updated_at": "2026-09-26T12:26:05.468Z"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "shortId": 0,
+  "target": [
+    {
+      "id": "prod:d5a74cc1c23047f471b9d32680ebac55fd8d0c4d",
+      "git_sha": "d5a74cc",
+      "protocols_version": "0.4.0+ec61156725a895ab",
+      "deployed_at": "2026-10-14T15:24:36.623Z"
+    }
+  ],
+  "remainingShortSha": 0
+}

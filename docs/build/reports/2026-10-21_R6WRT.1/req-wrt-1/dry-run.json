@@ -1,0 +1,123 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-10-21T21:58:28.737Z",
+  "items": [
+    {
+      "key": "run:01M3EAAZG2AQ289B6ZFEP5XYN2",
+      "name": "refund 56cr + relabel 'unverified' on 01M3EAAZG2AQ289B6ZFEP5XYN2",
+      "status": "applicable",
+      "guards": [
+        {
+          "name": "state",
+          "ok": true,
+          "detail": "state=completed"
+        },
+        {
+          "name": "workflow",
+          "ok": true,
+          "detail": "workflow=review"
+        },
+        {
+          "name": "delivery-null",
+          "ok": true,
+          "detail": "delivery=null"
+        },
+        {
+          "name": "tenant",
+          "ok": true,
+          "detail": "is_test=false"
+        },
+        {
+          "name": "zero-coverage",
+          "ok": true,
+          "detail": "checkable=5 covered=0"
+        },
+        {
+          "name": "ruled-total",
+          "ok": true,
+          "detail": "computed 56cr = ruled 56cr"
+        },
+        {
+          "name": "not-yet-refunded",
+          "ok": true,
+          "detail": "existing platform-fault rows=0"
+        }
+      ],
+      "checkableClaims": 5,
+      "coveredClaims": 0,
+      "refundDraws": [
+        {
+          "stepId": "01M3ECGBN7HJTTK6P5RYN1DA4J",
+          "phase": "verification",
+          "bucket": "promo",
+          "credits": 56
+        }
+      ],
+      "wouldRefund": 56
+    },
+    {
+      "key": "run:01M3SK62YZST272B35CG12K6TW",
+      "name": "refund 340cr + relabel 'unverified' on 01M3SK62YZST272B35CG12K6TW",
+      "status": "applicable",
+      "guards": [
+        {
+          "name": "state",
+          "ok": true,
+          "detail": "state=completed"
+        },
+        {
+          "name": "workflow",
+          "ok": true,
+          "detail": "workflow=review"
+        },
+        {
+          "name": "delivery-null",
+          "ok": true,
+          "detail": "delivery=null"
+        },
+        {
+          "name": "tenant",
+          "ok": true,
+          "detail": "is_test=false"
+        },
+        {
+          "name": "zero-coverage",
+          "ok": true,
+          "detail": "checkable=13 covered=0"
+        },
+        {
+          "name": "ruled-total",
+          "ok": true,
+          "detail": "computed 340cr = ruled 340cr"
+        },
+        {
+          "name": "not-yet-refunded",
+          "ok": true,
+          "detail": "existing platform-fault rows=0"
+        }
+      ],
+      "checkableClaims": 13,
+      "coveredClaims": 0,
+      "refundDraws": [
+        {
+          "stepId": "01M3SMCD5N5X96341FJ71P83MK",
+          "phase": "verification",
+          "bucket": "promo",
+          "credits": 290
+        },
+        {
+          "stepId": "01M3SMHJBTE3W0QQVF533Z066G",
+          "phase": "discourse",
+          "bucket": "promo",
+          "credits": 50
+        }
+      ],
+      "wouldRefund": 340
+    }
+  ],
+  "observations": [
+    "test-tenant probe 01M3VT9R1MAVVKM3Q7RXCRY5RD absent from prod",
+    "test-tenant probe 01M3VYSGV9XZ9RCWNP0CGDXQHD absent from prod"
+  ],
+  "scopeExact": true
+}

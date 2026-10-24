@@ -1,0 +1,47 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-10-21T21:59:22.855Z",
+  "items": [
+    {
+      "key": "tombstone",
+      "name": "arm ONE purge-exempt test tombstone ('r6wrt1-tombstone-probe', deleted_at now()-30d) + its project.purge job",
+      "status": "armable",
+      "guards": [
+        {
+          "name": "pgboss",
+          "ok": true,
+          "detail": "pgboss.job columns=33"
+        },
+        {
+          "name": "workspace",
+          "ok": true,
+          "detail": "no fresh is_test workspace — plan-create r6wrt1-tombstone-probe-tenant (is_test, fresh ⇒ purge-exempt)"
+        },
+        {
+          "name": "owner",
+          "ok": true,
+          "detail": "owner user z1kGv5dqCVHyqH1VO75z7yBLHrWY5cJs (test+hot1b@rhema.tools)"
+        }
+      ],
+      "writes": [],
+      "createWorkspace": {
+        "id": "01M5G7KR7PW06G69ABZKAXRQ28",
+        "billingAccountId": "01M5G7KR7PEA3ES01EDMS11Q97",
+        "name": "r6wrt1-tombstone-probe-tenant"
+      },
+      "existing": null,
+      "projectId": "01M5G7KRCF2927HZET09SBBMCD",
+      "needsTombstone": true,
+      "existingJobs": [],
+      "needsJob": true
+    }
+  ],
+  "observations": [
+    "is_test workspace 01M501P5H4A1TETKTJ15BY09XM (Personal) is 150.9h old — inside/next-to the 26h sweep window, not purge-exempt enough",
+    "is_test workspace 01M501NTXZ0G17KN6PW2MGQ7FK (Personal) is 150.9h old — inside/next-to the 26h sweep window, not purge-exempt enough",
+    "is_test workspace 01M4YGDQ8XQN7DBB0GAJ9MR5B2 (Personal) is 165.2h old — inside/next-to the 26h sweep window, not purge-exempt enough",
+    "is_test workspace 01M4YGDC808WDH8V3ZR5SXVDX3 (Personal) is 165.2h old — inside/next-to the 26h sweep window, not purge-exempt enough",
+    "is_test workspace 01M4YG7E6RBGQEDH71D81DFTY8 (Personal) is 165.3h old — inside/next-to the 26h sweep window, not purge-exempt enough"
+  ],
+  "scopeExact": true
+}

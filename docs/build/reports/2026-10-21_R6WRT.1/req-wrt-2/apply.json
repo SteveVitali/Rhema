@@ -1,0 +1,64 @@
+{
+  "mode": "EXECUTE",
+  "at": "2026-10-21T21:59:32.946Z",
+  "items": [
+    {
+      "key": "deployment",
+      "name": "rewrite deployments id prod:d5a74cc → prod:<40-char git_sha>",
+      "status": "rewritable",
+      "guards": [
+        {
+          "name": "signature",
+          "ok": true,
+          "detail": "stage=prod protocols=0.4.0+ec61156725a895ab rate_table=2026-10-14 deployed_at=2026-10-14T15:24:36.623Z"
+        },
+        {
+          "name": "git-sha",
+          "ok": true,
+          "detail": "git_sha=d5a74cc → d5a74cc1c23047f471b9d32680ebac55fd8d0c4d (source=repo-expansion, commit 2026-10-14T11:00:43-04:00)"
+        },
+        {
+          "name": "sha-before-deploy",
+          "ok": true,
+          "detail": "commit 2026-10-14T11:00:43-04:00 ≤ deployed_at 2026-10-14T15:24:36.623Z"
+        },
+        {
+          "name": "target-free",
+          "ok": true,
+          "detail": "target prod:d5a74cc1c23047f471b9d32680ebac55fd8d0c4d free"
+        }
+      ],
+      "row": {
+        "id": "prod:d5a74cc",
+        "stage": "prod",
+        "git_sha": "d5a74cc",
+        "protocols_version": "0.4.0+ec61156725a895ab",
+        "rate_table_version": "2026-10-14",
+        "deployed_at": "2026-10-14T15:24:36.623Z"
+      },
+      "fullSha": "d5a74cc1c23047f471b9d32680ebac55fd8d0c4d",
+      "shaSource": "repo-expansion",
+      "commitTime": "2026-10-14T11:00:43-04:00",
+      "targetId": "prod:d5a74cc1c23047f471b9d32680ebac55fd8d0c4d"
+    }
+  ],
+  "observations": [],
+  "scopeExact": true,
+  "apply": {
+    "rewritten": 1,
+    "post": {
+      "shortId": 0,
+      "target": [
+        {
+          "id": "prod:d5a74cc1c23047f471b9d32680ebac55fd8d0c4d",
+          "git_sha": "d5a74cc",
+          "protocols_version": "0.4.0+ec61156725a895ab",
+          "deployed_at": "2026-10-14T15:24:36.623Z"
+        }
+      ],
+      "remainingShortSha": 0
+    },
+    "ok": true,
+    "observations": []
+  }
+}

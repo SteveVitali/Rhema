@@ -1,0 +1,33 @@
+{
+  "key": "tombstone",
+  "name": "arm ONE purge-exempt test tombstone ('r6wrt1-tombstone-probe', deleted_at now()-30d) + its project.purge job",
+  "status": "armable",
+  "guards": [
+    {
+      "name": "pgboss",
+      "ok": true,
+      "detail": "pgboss.job columns=33"
+    },
+    {
+      "name": "workspace",
+      "ok": true,
+      "detail": "no fresh is_test workspace — plan-create r6wrt1-tombstone-probe-tenant (is_test, fresh ⇒ purge-exempt)"
+    },
+    {
+      "name": "owner",
+      "ok": true,
+      "detail": "owner user z1kGv5dqCVHyqH1VO75z7yBLHrWY5cJs (test+hot1b@rhema.tools)"
+    }
+  ],
+  "writes": [],
+  "createWorkspace": {
+    "id": "01M5G7M7HC43N87M1Q903SFGQX",
+    "billingAccountId": "01M5G7M7HDNGE1JTWYVERXQJE9",
+    "name": "r6wrt1-tombstone-probe-tenant"
+  },
+  "existing": null,
+  "projectId": "01M5G7M7RHWX8F0DYHGT2869JR",
+  "needsTombstone": true,
+  "existingJobs": [],
+  "needsJob": true
+}

@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-21T21:59:54.766Z",
+  "project": [],
+  "draft": [],
+  "jobs": [
+    {
+      "id": "357a8ba1-5260-4a8e-98a6-f182eaa78c38",
+      "state": "completed",
+      "start_after": "2026-10-21T21:58:38.886Z",
+      "completed_on": "2026-10-21T21:59:40.564Z"
+    }
+  ],
+  "workspace": [
+    {
+      "id": "01M5G7M7HC43N87M1Q903SFGQX",
+      "name": "r6wrt1-tombstone-probe-tenant",
+      "is_test": true,
+      "created_at": "2026-10-21T21:59:38.761Z"
+    }
+  ],
+  "residue": {
+    "runs": 0,
+    "analytics": 0
+  }
+}
