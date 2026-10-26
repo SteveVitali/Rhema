@@ -1,0 +1,8 @@
+nightly-golden-driver: wrote /Users/stevenvitali/Rhēma/evals/fixtures/nightly-manifest.json (4 fixture(s)); invoking the gate
+Nightly golden — 4 fixture(s)
+  PASS  golden-essay  (7 floor check(s))
+  FAIL  golden-academic  (7 floor check(s))
+        ✗ findingCount:major: above the max count (expected {"min":0,"max":10}, got 11)
+  PASS  golden-op-ed  (7 floor check(s))
+  PASS  golden-memo  (7 floor check(s))
+PROMOTION BLOCKED — a fixture scored below its floor (REQ-ARCH-36/REQ-EVAL-17).

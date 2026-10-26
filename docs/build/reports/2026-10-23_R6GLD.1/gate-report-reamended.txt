@@ -1,0 +1,7 @@
+nightly-golden-driver: wrote /Users/stevenvitali/Rhēma/evals/fixtures/nightly-manifest.json (4 fixture(s)); invoking the gate
+Nightly golden — 4 fixture(s)
+  PASS  golden-essay  (7 floor check(s))
+  PASS  golden-academic  (7 floor check(s))
+  PASS  golden-op-ed  (7 floor check(s))
+  PASS  golden-memo  (7 floor check(s))
+Promotion OK — all fixtures green.
