@@ -23,6 +23,10 @@
 #   rhema-prod-ops-alert-webhook-url — the drift/balance alert sink; the alert path stays INERT
 #                                    until a destination exists (seed a version + re-add the id to
 #                                    PROD_REQUIRED_SECRETS to opt back in)
+#   (amended 2026-10-23, R6OPS.2 / F-R6OPS.1-1: the destination now EXISTS — the SM version is
+#    seeded, the id is in PROD_REQUIRED_SECRETS, and the worker POSTs to it. The remaining bind
+#    is the Monitoring channel: `rhema:opsAlertWebhookUrl` SECRET config below — ciphertext-only,
+#    same value as the SM latest version, set via the gcloud→pulumi stdin pipe, never printed.)
 # Operator plain config to set:
 #   rhema:serviceImages            — JSON {"api":"…@sha256:…","web":…,"worker":…,"fetcher":…,
 #                                    "convert":…,"export":…,"collab":…} (images CI publishes it)
@@ -389,3 +393,5 @@ config:
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
   rhema:collabDatabaseUrl:
     secure: AAABAJ1t1HjBSbMzJCZnCQPpD4e0hd6T8+8fIfLvvGjIMoBG/Kxm+aorm0D0aAmdMQBuh8rk5L4a7kzhwXwNI4ABPmiXHJiOd0aT71z2be2GoJPc/uPLC3BYeSS7vBJ8ITkokx86TlS4DOU46n/wkvQ4AuMTUW7+RU8B
+  rhema:opsAlertWebhookUrl:
+    secure: AAABAMmONveVm5n8rBbtmg50NY9ZfH6gTA9Wi9ZRPma6tjw51OY5KP2dFD7au+QSL+cUQkEDpU3mCPDAhHezzS/uRENXjPdHdRNLyKCBbqOyniAmuB0SC9LdqUYro4CGrqEewA==
