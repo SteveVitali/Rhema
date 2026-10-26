@@ -350,6 +350,22 @@ export function createWebApp(deps: WebDeps): Hono {
     c.res = new Response(stamped, { status: res.status, statusText: res.statusText, headers });
   });
 
+  // D-R6SECR.1-2 (F-R6SECR.1-2, LOW) — HSTS on every response so any HTTPS fetch arms the policy:
+  // a one-year `max-age` + `includeSubDomains`, NO `preload` (the browser-list submission is an
+  // operator decision, and the sslip.io posture names could never qualify). Stamped ONLY when the
+  // request actually arrived over TLS: `x-forwarded-proto` is the GFE's signal (the container
+  // socket is plaintext), the raw `https://` URL is the direct-serving/test arm. An http request
+  // never caches a policy it can't honor — dev `http://localhost` stays clean; `*.sslip.io` /
+  // `*.run.app` preview hosts are HTTPS-only anyway, so the per-host stamp they get is truthful.
+  // Registered after the CSP arm so its post-next code runs BEFORE the html rewrite — the cloned
+  // Headers carry the stamp through verbatim.
+  app.use("*", async (c, next) => {
+    await next();
+    if (c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
+      c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+  });
+
   // NAVC.3 (REQ-NAVC-20's bfcache posture; Q-A4-2) — a response computed for an authenticated
   // request is never stored: `no-store` keeps auth'd documents, `/bff/*` twins, `/session`, and
   // redirect answers out of both the HTTP disk cache and the bfcache (a session-carrying page

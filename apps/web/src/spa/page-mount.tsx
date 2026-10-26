@@ -208,11 +208,17 @@ export function PageMount(props: PageMountProps): ReactNode {
       if (wsUrl !== "") {
         // SPA.24 — the four-layer autosave: `createCollabSession` (Y.Doc → y-indexeddb → the
         // cookie-auth WS → server materialization) + `createCollabPageState` binds the view to
-        // the shared `Y.XmlFragment` (ySyncPlugin + yUndoPlugin — a peer's edits never enter the
-        // local undo stack, REQ-ED-10). The session outlives the mount inside the registry entry.
+        // the shared `Y.XmlFragment` (ySyncPlugin + the keep-alive undo plugin — a peer's edits
+        // never enter the local undo stack, REQ-ED-10). The session outlives the mount inside the
+        // registry entry — and R6FIX.1 hands it the session-owned UndoManager so ⌘Z survives the
+        // same keep-alive cycle the session does (REQ-NAVC-22/23, F-R6POST.2-2).
         const wire = createCollabWire({ wsUrl, draftId: props.draftId });
         return {
-          state: createCollabPageState(wire.fragment, initSourcesFor(initRef.current.provenance)),
+          state: createCollabPageState(
+            wire.fragment,
+            initSourcesFor(initRef.current.provenance),
+            wire.undoManager,
+          ),
           session: wire,
         };
       }

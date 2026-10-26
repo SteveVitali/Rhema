@@ -8,7 +8,11 @@
 import pg from "pg";
 import { createProxyServer, undiciStreamForwarder } from "./server.js";
 import { createDbRunContextResolver } from "./resolver.js";
-import { ReloadableAnthropicSecretProvider, createSecretAccessor } from "./secret-manager.js";
+import {
+  ANTHROPIC_KEY_REFRESH_INTERVAL_MS,
+  ReloadableAnthropicSecretProvider,
+  createSecretAccessor,
+} from "./secret-manager.js";
 import { SqlUsageWriter, SqlFetchLogWriter, SqlCapAccountant, type SqlExecutor } from "./sinks.js";
 import { SqlSignalSink } from "./signal-sink.js";
 import { NovelDomainTracker, ResearchUsageTracker } from "./outbound-limits.js";
@@ -51,6 +55,15 @@ export async function startProxy(): Promise<void> {
   process.on("SIGHUP", () => {
     void secrets.refresh().catch((err: unknown) => console.error("[egress-proxy] key refresh failed:", err));
   });
+  // F-R6GLD.1-1 — SIGHUP-only refresh meant a dead upstream key never propagated to running
+  // instances (the 2026-10-23 research-401 outage: the MIG instance held a cached dead version for
+  // hours until an operator recycled the VM). The bounded interval re-reads the same version name;
+  // a failed fetch keeps the last good key; the timer is unref'd. `ANTHROPIC_KEY_REFRESH_MS`
+  // overrides the 5-minute default.
+  secrets.startPeriodicRefresh(
+    Number(process.env.ANTHROPIC_KEY_REFRESH_MS ?? ANTHROPIC_KEY_REFRESH_INTERVAL_MS),
+    { onError: (err) => console.error("[egress-proxy] periodic key refresh failed:", err) },
+  );
 
   const server = createProxyServer({
     providerHost: env.providerHost,
