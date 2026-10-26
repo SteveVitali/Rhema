@@ -43,11 +43,10 @@
     egress research/fetch *policy* change — key refresh is transport hygiene, HSTS is
     browser-facing) → the golden re-run rule does NOT re-arm; the threshold-5 note
     records this dated.
-- **ci:** **pass #219@`6b9baed`** (run `40376522886` — fast-path + typecheck/lint/unit +
-  contracts + public-safe + integration + images + `ci-pass` anchor; first head
-  `51eaa79` read pass at run `40365895145`, second read timed out at 2700s on the
-  unit leg → job-polled green → re-read at final head per the established
-  precedent; boundary record `docs/build/logs/ci-R6DEP.2.json`).
+- **ci:** **pass #219@`1acc6a6`** (run `40384815811` — all seven legs + `ci-pass`
+  anchor; reads also green at `51eaa79`/`40365895145` and `6b9baed`/`40376522886`,
+  the second timing out at 2700s mid-integration → job-polled green → re-read,
+  the established precedent; boundary record `docs/build/logs/ci-R6DEP.2.json`).
 
 ## Deferrals read
 
