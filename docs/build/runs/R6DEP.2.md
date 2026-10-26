@@ -211,6 +211,28 @@ base — the R6FIX.1 anchor used by the recent insert rows).
   (R8.inbox/T2.badge + N10/P1.public ssr + N1/N2.invite — all PASS on the
   deployed SHA). This is dispatch evidence, honestly labelled — never "nightly
   on main".
+- 2026-10-26T16:4xZ — **F-R6DEP.2-1 root-caused + partially repaired live**
+  (three-layer defect): (1) repo vars `JOURNEY_WIF_PROVIDER` /
+  `JOURNEY_CI_SA` never set → **set** via `gh variable set` (identifiers, not
+  secrets — provider `…/github-pool/providers/github-provider`, SA
+  `rhema-journeys@rhema-507501.iam.gserviceaccount.com`); (2) the WIF provider's
+  `attributeCondition` was the **unsubstituted template literal**
+  `assertion.repository=='<GITHUB_ORG_OR_USER>/<REPO_NAME>'` → `unauthorized_client`
+  on run `40361523387` → **repaired** to `assertion.repository=='SteveVitali/Rhema'`
+  (`update-oidc`); (3) run `40363400137` then got past auth — and failed at the
+  suite step: `pnpm --filter @rhema/journeys exec rhema-journeys` →
+  `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL` — pnpm only links a package's `bin` into
+  its **importers'** `node_modules/.bin` and nothing depends on `@rhema/journeys`,
+  so the own-bin invocation was **always broken** (every run ≥2026-10-10 failed
+  this way or at auth). **Fix committed on this branch** (`node
+  packages/journeys/dist/cli.js "${args[@]}"` — cwd stays repo-root so
+  `--out`/`JOURNEY_STATE_DIR` land for upload-artifact). **Why it can't be
+  proven pre-merge:** dispatching on any ref carrying the fix makes
+  `github.sha ≠ e04a8c8`, and `git diff e04a8c8..<fix>` contains
+  `.github/workflows/journeys.yml` — deliberately **non-neutral** under ADR-114's
+  allowlist → the provenance arm fails closed by design. The fix rides this PR;
+  the post-merge dispatch on `main` (== prod) is threshold-6's real arm.
+  $0 — zero legs ran in any of the three dispatches.
 - 2026-10-26T15:3xZ — **pr-219 posture stage** (the keepalive re-arm host):
   owned `pr-219` (`rhema:owner=ops-preview`), LB `136.68.101.101`, three sslip.io
   hosts (`posture.`/`api.`/`uc.` — zero registrar records, wildcard DNS).
@@ -223,14 +245,71 @@ base — the R6FIX.1 anchor used by the recent insert rows).
   recipe verbatim) → serving. `seed-invite` → `prv-219-test`
   (execution `…-xgp6w`). Managed cert `rhema-pr-219-cert-b7883cd` PROVISIONING
   ×3 SANs at ledger time.
+- 2026-10-26T16:4xZ — **cert incident worked honestly:** cert
+  `rhema-pr-219-cert-b7883cd` went `FAILED_NOT_VISIBLE` ×3 — it had provisioned
+  through the ~35 min window when no forwarding rule existed yet (the FR landed
+  only at converge pass 4), and GCP's retry backoff doesn't recover briskly from
+  that state. `pulumi up --replace <cert URN>` minted `rhema-pr-219-cert-8a1822a`
+  → PROVISIONING clean → **ACTIVE on all three SANs**; GFE→TLS live ~2 min later:
+  `https://posture.136.68.101.101.sslip.io/` 200, `api…/healthz` → `gitSha=e04a8c8…`,
+  `uc.` 403 (private bucket — intended). DNS: zero registrar records — the three
+  names are sslip.io wildcard records (same finding as R6POST.2).
+- 2026-10-26T17:0xZ — **keepalive legs GREEN** (`posture/report.json`):
+  `--surface editor --steps N8,R10.keepalive --expect-renderer spa
+  --expect-sha e04a8c8… --invite-code prv-219-test` → **N8 PASS** (fork → synced
+  edit over the live `wss://<app>/collab` wire) and **R10.keepalive
+  `ready-to-flip`** — same `data-page-session` re-acquired inside the 120 s TTL
+  with zero document loads AND ⌘Z removed the synced marker typed before
+  leaving: the session-owned `UndoManager` (F-R6POST.2-2's fix, deployed in this
+  SHA) survives the keep-alive remount live. `registry.ts` flipped
+  `expected:"green"` with this evidence; **the D-SPA.24-1 residual discharges**.
+- 2026-10-26T17:0xZ — **teardown:** `preview-stack.mjs destroy pr-219` — 194
+  deleted over 24 m; the final `private-app` subnetwork is held by GCP's
+  asynchronous `serverless-ipv4-cloudrun-*` reservation release (the documented
+  R6POST.2/R6DEP.1 lag class — ~2 h managed drain; destroy is idempotent under
+  it). Retry loop armed to zero, then `rm` + manual-address delete + orphan
+  sweep + cost record land in the same pass.
+- 2026-10-26T16:2xZ — **secret-hygiene incident (F-R6DEP.2-2):** the seed commit
+  `cbc6ac3` (pushed by the earlier session pass) carried the operator invite
+  code verbatim in this ledger + three evidence JSONs. Caught pre-merge: the
+  branch history was rewritten (`cbc6ac3`/`…` → `0a3e582`/`0c42142`, force-push)
+  with the code scrubbed to `r6-…operator-held-env-redacted`; the private repo
+  still retains the old commit object until GitHub GC → **operator ask:
+  revoke + remint the `r6-*` invite** (9 uses remain; revocation is the clean
+  kill). Recorded as F-R6DEP.2-2, mitigated same-day.
 
 ## Gap table
 
-_(filled at Phase 4)_
+| Ask | Result | Where |
+| --- | --- | --- |
+| Preflight classification (GD-DEPLOY.R6 four conditions) | PASS — zero stateful replace/delete; 1 stateless-proxy InstanceTemplate replace accepted; zero migrations vs `0058`; Δ$0 ≤$15 | `prod-preflight/` |
+| `pulumi up --stack prod` of `e04a8c8` | GREEN — update 163; provenance all-PASS | `prod-preflight/` + `deployments` row |
+| `record-deployment` honest provenance | GREEN — `prod:e04a8c8…` + protocols `0.4.0+ec61156725a895ab` + ten digests | tunnel record |
+| Smoke (public, signed-in, SSR, worker) | GREEN — 6×200 ssr markers; R8.inbox+T2.badge; N10+P1.public; worker consuming | `prod-smoke/`, `prod-ssr-leg/` |
+| HSTS live curl (D-R6SECR.1-2) | DISCHARGED — header on web 200 + api 401 | `prod-smoke/hsts.txt` |
+| Invite consume (D-SEC.2-1) | DISCHARGED — used_count 0→1 + 1 redemption row | `invite-leg/` |
+| R10.keepalive re-arm (D-SPA.24-1) | DISCHARGED — N8 PASS + keepalive ready-to-flip → `expected:"green"` | `posture/` |
+| §12.8 hostile legs (D-R6SECR.1-1) | CARRIED honestly — (b)/(c)/(d)/`egress.denied` need hostile fixtures + bounded spend | DEFERRALS dated note |
+| Threshold-6 dispatch | ATTEMPTED ×3 — F-R6DEP.2-1 root-caused; layers 1-2 repaired live; layer-3 fix committed, unprovable pre-merge (ADR-114) | run entries + `logs/` |
+| Threshold-5 golden | Dated note — payload non-protocol-affecting; re-run NOT re-armed | GATE-LAUNCH readout |
+| Rollback recipe | Committed | `rollback-recipe.md` |
+| F-R6DEP.2-2 invite-code leak | Mitigated — history rewritten + scrubbed; operator revoke+remint outstanding | run entry |
 
 ## Evidence log
 
-`docs/build/reports/2026-10-26_R6DEP.2/` (created).
+`docs/build/reports/2026-10-26_R6DEP.2/`:
+
+- `prod-preflight/` — pre-state healthz, diff census, `pulumi preview --diff`
+  classification, additive-lint, cost delta, provenance plan.
+- `prod-smoke/report.json` — `R8.inbox` + `T2.badge` PASS on the deployed SHA.
+- `prod-ssr-leg/report.json` — `N10` + `P1.public` PASS under `--expect-renderer ssr`.
+- `prod-smoke/hsts.txt` — curl captures of `Strict-Transport-Security` on both origins.
+- `invite-leg/` — N1+N2.invite run + pre/post `invites`/`invite_redemptions`
+  tunnel queries (code redacted — `r6-…operator-held-env-redacted`).
+- `posture/` — pr-219 run: `N8` PASS + `R10.keepalive` `ready-to-flip`
+  (report.json + screenshots).
+- `rollback-recipe.md` — revert → re-pin `80db0d5` digests → up → provenance →
+  record.
 
 ## Evidence report
 

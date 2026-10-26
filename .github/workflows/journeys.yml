@@ -85,7 +85,13 @@ jobs:
           # standing per-leg bound is $3 (the ≤300-word fixture's worst observed leg ×2).
           [ "${JOURNEY_PAID:-false}" = "true" ] && args+=(--paid --headroom 3)
           [ -n "${{ inputs.steps }}" ] && args+=(--steps "${{ inputs.steps }}")
-          pnpm --filter @rhema/journeys exec rhema-journeys "${args[@]}"
+          # F-R6DEP.2-1 (2026-10-26): `pnpm --filter @rhema/journeys exec rhema-journeys` can
+          # never resolve — pnpm links a package's bin only into its importers' node_modules/.bin,
+          # and nothing depends on @rhema/journeys (verified on dispatch run 40363400137:
+          # ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL after the WIF auth fix). Invoke the built CLI
+          # directly from the workspace root so --out / JOURNEY_STATE_DIR relative paths land
+          # where upload-artifact expects them.
+          node packages/journeys/dist/cli.js "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
