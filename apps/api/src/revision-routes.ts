@@ -16,7 +16,8 @@ export interface RevisionApiDeps extends OrchestratorDeps {
   /** the workspace-bound readable store (same seam as the deliver route's `contentStoreFor`). */
   contentStoreFor?(workspaceId: string): Promise<ContentStore>;
   readonly store?: ContentStore;
-  /** P1.17 — the scoped read the Showcase read-only guard uses. Unset ⇒ the guard is inert. */
+  /** P1.17 — the scoped read the Showcase read-only guard uses; F-R6SECR.1-1 — also the
+   *  project-ownership check. Unset ⇒ `ownProject` fails closed (this surface serves nothing). */
   readonly db?: SqlClient;
 }
 
@@ -26,12 +27,29 @@ export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
   if (deps.db) app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
   const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
     (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.store) ?? null;
+  // F-R6SECR.1-1 (R6SECR.1) — every route below reads tenant-by-FK children (drafts,
+  // correspondence_items, artifact_versions) and WRITES guidance rows keyed by the path's
+  // project id; none of those tables carries RLS, so tenancy here is enforced ONLY by this
+  // project-ownership predicate — the same guard version-routes.ts takes. Under the scoped
+  // client a foreign project reads zero rows (RLS hides it) ⇒ not_found; a missing `db` seam
+  // fails closed rather than serving unscoped.
+  const ownProject = async (
+    c: { req: { param(n: string): string } },
+    workspaceId: string,
+  ): Promise<boolean> => {
+    if (!deps.db) return false;
+    const r = (
+      await deps.db.query(`select workspace_id from projects where id = $1`, [c.req.param("id")])
+    ).rows[0] as { workspace_id: string } | undefined;
+    return r != null && r.workspace_id === workspaceId;
+  };
 
   // What-changed (§5.8): the move cards + Inline hunks + obligation discharge lines + the strip, joined
   // server-side from the frozen response ledger + the two frozen/working draft versions.
   app.get("/projects/:id/responses/:cid/what-changed", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
     const res = await deps.txRunner.run(principal.workspaceId, (tx) =>
@@ -50,6 +68,7 @@ export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const body = (await c.req.json().catch(() => ({}))) as { text?: string };
     if (!body.text || !body.text.trim()) return c.json({ error: "text required" }, 400);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
     const res = await deps.txRunner.run(principal.workspaceId, (tx) =>
@@ -92,6 +111,7 @@ export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
   app.get("/projects/:id/v/:n/diff/:m", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
     const res = await deps.txRunner.run(principal.workspaceId, (tx) =>
@@ -113,6 +133,7 @@ export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const body = (await c.req.json().catch(() => ({}))) as { text?: string };
     if (!body.text || !body.text.trim()) return c.json({ error: "text required" }, 400);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
     const res = await deps.txRunner.run(principal.workspaceId, (tx) =>

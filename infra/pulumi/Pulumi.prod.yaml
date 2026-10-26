@@ -343,7 +343,15 @@ config:
   # 2026-10-23 — R6CNT.2 re-pin (Cloud Build b05636b5, deploy SHA ba66c4b): the Wells Showcase
   # seed + H4 venue stamps + legal flags + exposure-notice tool — full set built at the deploy
   # SHA so every image's provenance is one commit.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:6d8933bb9a3c0f8da1c19e57ad1803c23b9a87e3f90eba1577a34453cb5a4e06","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:7b2762173fa96f51197ad2c51c417a73f033afaa7ac06a54d50e99b495c43193","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:240449dc5a6bafedeedf2a2a86659ffbca6eb17d15d84a1ac80947d430782274","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:f880731d65425642fd267d70b181c76fc14d12bde47265d020d2cdd2641f2dd1","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:1091c1ea5fd82e58a0c2d164b19cbc57bf78015a70416bd4eaf66679f3112ab1","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:3489616596b65ef28137d0740a6993b1b2181c4f30a905ad6c82520f427f4cf3","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:da968b782ecb8fc1c01484733f034502e7f05d94546499399d4e10b8f8eac651","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:df9ca67c0a3c53c63592dd25013aed120ebb80745e0bc08669d15d1227c737dd"}'
+  # 2026-10-23 — R6SECR.1 api-only re-pin (Cloud Build 40a99cb8, chain tip 80db0d5): the
+  # F-R6SECR.1-1 revision-routes tenancy fix — api is the only runtime carrying it; web/worker/
+  # fetcher/convert/export/collab/turbo-cache keep their ba66c4b digests. Superseded same-day
+  # by the full-set re-pin below.
+  # 2026-10-23 — R6SECR.1 full-set re-pin (Cloud Build 5a9a5c8c, chain tip 80db0d5): every
+  # image rebuilt at the same commit so every image's provenance is one commit — restores the
+  # one-commit-per-image convention the api-only patch broke. api digest differs from the
+  # api-only build's (image builds are not bit-reproducible); same source SHA.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:627ca4f2c8f19979fba572759c8b8ca669f9ae864c29d7188793e7181f967ab5","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:c202a0d52d6c154cb1517edf750a584fec7e5d70e5a3136c01b3594dfc555b2f","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:15ec4ab0cf19a9503c6139b7ac4da6978af892e7a6bbbf623684461d3e3dc3ae","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:7ef950414595f8e2256cc989905ecfb485ff483a2383611e250b8db2e469c899","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:e7eb248cbde039d044f4a67b3532bd5f9396caf7d046b1160405a774b2801bae","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:292e16e6d1e87bb29f19577a6de157fa9a74aeedb501cca062ef4394853b30e0","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:16ec90359011a1fc79601f1a485220989809c5cd2a20b327eb3de64dd8a949e7","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:37cceed778ee422eb5ce52ed73d4fe9e93742d790fc8917e3f621c3a5e01caef"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -361,7 +369,8 @@ config:
   # 2026-10-14 — ARMB.1 corrective: run-task re-pinned to the d5a74cc build (fca67583).
   # 2026-10-14 — ARMB.2: run-task re-pinned to the ffbb8ad build (d16ff6db).
   # 2026-10-22 — R6DEP.1: run-task re-pinned to the dc7fb15 tip build (f953fcf4).
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:fafc53035e6b49dee65ab407065ff9417d7d07cf1f70221daf163232c44ea43b
+  # 2026-10-23 — R6SECR.1: run-task re-pinned to the 80db0d5 tip build (5a9a5c8c).
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:b90023479a0d027090b990c3471966c998b5359c45413c216fabbd98b9a4cd3c
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
@@ -373,7 +382,8 @@ config:
   # 2026-10-14 — ARMB.1 corrective: egress-proxy re-pinned to the d5a74cc build (fca67583).
   # 2026-10-14 — ARMB.2: egress-proxy re-pinned to the ffbb8ad build (d16ff6db).
   # 2026-10-22 — R6DEP.1: egress-proxy re-pinned to the dc7fb15 tip build (f953fcf4).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:b10b506b8ecbdb9f7d2f6bdb7ad8a06ef700b61f00188a8b74e5d62269715a16
+  # 2026-10-23 — R6SECR.1: egress-proxy re-pinned to the 80db0d5 tip build (5a9a5c8c).
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:86d0655feb2e727e585be85a24f90950a72c0bf53adba50f181c00b54ac98c03
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
