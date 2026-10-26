@@ -47,10 +47,9 @@ classification — zero replace/delete on stateful resources; (2) additive-migra
   `FAILED_NOT_VISIBLE`→`--replace` recovery; `COLLAB_WS_URL` live) → `N8` PASS +
   `R10.keepalive` `ready-to-flip` → `expected:"green"` — same `data-page-session`
   AND pre-leave ⌘Z intact across the remount (F-R6POST.2-2's fix live-proven).
-  Stage destroy: 194/196 resources down at commit time; the trailing subnetwork
-  rides GCP's managed serverless-reservation GC (documented ~2 h class) with the
-  retry loop armed to zero + `rm` + sweep + cost — recorded honestly in the run
-  ledger when it lands.
+  Stage destroyed to zero (196/196 — trailing subnet freed after ~80 min of the
+  managed serverless-reservation GC, retried per R6POST.2) + `rm` + LB-address
+  released + orphan sweep ZERO across 25+ classes; spend ≈$2–4 ≤ $8.
 - **D-OPS.1-1 dated tail** (keepalive arm discharged; N9's funded-tenant substrate
   residual stays) · **D-R6SECR.1-1 dated tail** ((a)/(e)/(f) live-evidenced; hostile
   fixture legs (b)/(c)/(d)/`egress.denied` carried — no bounded-spend authorization).

@@ -16,7 +16,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills`
 - **Requirement ids stamped:** none (operator insert; rides REQ-DEP-1's deploy machinery).
-- **Started:** 2026-10-26T14:41Z · **Closed:** —
+- **Started:** 2026-10-26T14:41Z · **Closed:** 2026-10-26 (see final entry).
 - **Live stage:** prod deploy under GD-DEPLOY.R6 + owned `pr-<n>` posture stage (≤ $8) for the
   keepalive re-arm.
 - **Production mutations (this ticket's named scope):** `pulumi up --stack prod` of the
@@ -43,7 +43,9 @@
     egress research/fetch *policy* change — key refresh is transport hygiene, HSTS is
     browser-facing) → the golden re-run rule does NOT re-arm; the threshold-5 note
     records this dated.
-- **ci:** pending (post-push boundary read → `docs/build/logs/ci-R6DEP.2.json`).
+- **ci:** **pass #219@`51eaa79`** (run `40365895145` — fast-path + typecheck/lint/unit +
+  contracts + public-safe + integration + images + `ci-pass` anchor; boundary record
+  `docs/build/logs/ci-R6DEP.2.json`).
 
 ## Deferrals read
 
@@ -263,12 +265,21 @@ base — the R6FIX.1 anchor used by the recent insert rows).
   leaving: the session-owned `UndoManager` (F-R6POST.2-2's fix, deployed in this
   SHA) survives the keep-alive remount live. `registry.ts` flipped
   `expected:"green"` with this evidence; **the D-SPA.24-1 residual discharges**.
-- 2026-10-26T17:0xZ — **teardown:** `preview-stack.mjs destroy pr-219` — 194
-  deleted over 24 m; the final `private-app` subnetwork is held by GCP's
+- 2026-10-26T17:0xZ — **teardown:** `preview-stack.mjs destroy pr-219` — 146
+  deleted over 24 m; the final `private-app` subnetwork was held by GCP's
   asynchronous `serverless-ipv4-cloudrun-*` reservation release (the documented
-  R6POST.2/R6DEP.1 lag class — ~2 h managed drain; destroy is idempotent under
-  it). Retry loop armed to zero, then `rm` + manual-address delete + orphan
-  sweep + cost record land in the same pass.
+  R6POST.2/R6DEP.1 lag class). Retry loop ran 14 passes (~80 min drain — shorter
+  than the pr-206-class ~2h20m); the reservations freed and the final pass
+  deleted the trailing 48 + subnet + network → **destroy clean (196/196)**.
+  `preview-stack.mjs rm pr-219` removed the stack + `Pulumi.pr-219.yaml`; the
+  manual LB address `rhema-pr-219-lb` (`136.68.101.101`) deleted. **Orphan sweep
+  ZERO across 25+ classes** (run svc/jobs, instances/templates/MIGs, addresses
+  incl. serverless-ipv4 remnants, fwd rules, backends, url-maps, certs, health
+  checks, networks/subnets/routers/firewalls, buckets, secrets, SAs, AlloyDB,
+  Redis, GKE, DNS zones, AR repos, alert policies, dashboards, log metrics,
+  pulumi stacks). Spend ≈ **$2–4 measured-class estimate** (AlloyDB + Redis +
+  GKE + Cloud Run + LB + e2-small proxy over ~2.8 h) ≤ the ≤$8 posture
+  envelope.
 - 2026-10-26T16:2xZ — **secret-hygiene incident (F-R6DEP.2-2):** the seed commit
   `cbc6ac3` (pushed by the earlier session pass) carried the operator invite
   code verbatim in this ledger + three evidence JSONs. Caught pre-merge: the
