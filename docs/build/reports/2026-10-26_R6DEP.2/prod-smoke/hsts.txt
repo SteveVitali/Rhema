@@ -1,0 +1,6 @@
+=== https://rhema.tools/ ===
+HTTP/2 200 
+strict-transport-security: max-age=31536000; includeSubDomains
+=== https://api.rhema.tools/session ===
+HTTP/2 401 
+strict-transport-security: max-age=31536000; includeSubDomains
