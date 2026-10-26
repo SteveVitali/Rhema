@@ -1,0 +1,42 @@
+{
+ "ruling": "GD-REMAINING.R6 item 4 — ≤$40 measured",
+ "boundUsd": 40,
+ "inputs": {
+  "workflow": "review",
+  "rigor": "full_board",
+  "words": 1640,
+  "densityClaims": 7
+ },
+ "legs": [
+  {
+   "modelTier": "frontier",
+   "estimateCredits": 10043,
+   "capCredits": 15065,
+   "capUsdList": 150.65,
+   "claimCount": 7,
+   "provisional": true,
+   "phases": 7,
+   "enabledAddends": [
+    "verification",
+    "discourse",
+    "second_read"
+   ]
+  },
+  {
+   "modelTier": "base",
+   "estimateCredits": 2232,
+   "capCredits": 3348,
+   "capUsdList": 33.48,
+   "claimCount": 7,
+   "provisional": true,
+   "phases": 7,
+   "enabledAddends": [
+    "verification",
+    "discourse",
+    "second_read"
+   ]
+  }
+ ],
+ "withinBound": true,
+ "basis": "committed review estimator @ full_board; words 1640 (Wells, R6CNT.1-measured), claims=words×density(0.004)→7, phases=7 (all full_board phases active); cap USD at $0.01/cr list (the R6CNT.2 record's figure — usage_records list-USD is the spend of record)"
+}
