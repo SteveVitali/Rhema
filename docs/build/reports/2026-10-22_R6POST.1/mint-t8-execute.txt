@@ -1,0 +1,5 @@
+[mint-t8] test+jrn-a@rhema.tools → workspace 01M5HEEZ1BGXXX8JT5852CQ2CH → user 01M5HEEZ146ZDV5D5B06C2CT1A
+[mint-t8] minted t8exp_1f9832c4b64d445498f4 on 01M5HEEZ1BGXXX8JT5852CQ2CH (created_at −9d, ready_at −8d, expires_at −1d)
+[mint-t8] bind the leg: JOURNEY_T8_EXPORT_TOKEN=<redacted-not-committed>
+[mint-t8] expect: GET /export/download?token=<that> → 410 {"error":"export_link_expired"}
+[mint-t8] rollback: delete from account_exports where id='t8exp_1f9832c4b64d445498f4'

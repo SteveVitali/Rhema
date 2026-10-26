@@ -75,8 +75,10 @@ describe("the journey step registry", () => {
         // flipped green 2026-10-06 on the deployed tip fcbbc66 (CAP.3's fixes verified live —
         // nonce 6c268536d58b); T13 flipped green 2026-10-06 (funded window B continuation —
         // Apply + bulk-preview legs landed on the delivered funded dossier, nonce b76029538106-class);
-        // T8/T15/T16 stay red — clock/prerequisite rows.
-        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
+        // T8 flipped red→green 2026-10-22 (R6POST.1 prod `dc7fb15a`, nonce dac7c118bf38): the
+        // mint-t8-export.mjs fixture (GD-PREAUTH-ACTS.R6) answered 404 bogus / 410
+        // `export_link_expired` minted — D-FIX.1-1 DONE. T15/T16 stay red — clock/prerequisite rows.
+        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14",
         "T12F", "T13F", "T17",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —

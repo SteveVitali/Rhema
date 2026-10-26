@@ -1,0 +1,4 @@
+[bl78] test+jrn-a@rhema.tools → workspace 01M5HEEZ1BGXXX8JT5852CQ2CH (is_test) → billing account 01M5HEEZ1BBPYS3YRC78QJDQAV
+[bl78] dossier slug=jrn-bl78-mooted run=bl78_d025c50e-5564-487b-a140-fb13a296d501 corr=bl78_f07e00ec-a5fa-4896-8eb3-7ec9367b514f
+[bl78] DRY-RUN would: insert obligation_findings edges (2) + transition bl78_f15d93b7-efb5-4d00-8d94-0db1ba077a7b open→mooted (cause 'moot') on jrn-bl78-mooted
+[bl78] entitlement arm already live — 01M5HEEZ1H0BJCWEWHF7DEC53C (locked) on 01M5HEEZ1BBPYS3YRC78QJDQAV

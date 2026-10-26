@@ -1,0 +1,14 @@
+{
+ "dry_run": true,
+ "plan": {
+  "req": "REQ-POST-7",
+  "adr": "ADR-113",
+  "reads": [
+   "curl GET https://api.rhema.tools/usercontent/sign (no session → expect 401)",
+   "curl GET https://storage.googleapis.com/rhema-prod-user-content/quarantine/01M2R2E1WA81E1BQJX94K1SZQ4/prb16-imp-1.md (no signature → expect 403)",
+   "gcloud storage sign-url gs://rhema-prod-user-content/quarantine/01M2R2E1WA81E1BQJX94K1SZQ4/prb16-imp-1.md --impersonate-service-account=rhema-prod-api@rhema-507501.iam.gserviceaccount.com (the same v4/signBlob primitive the api uses)",
+   "curl GETs: signed / tampered-signature / expired-lifetime"
+  ],
+  "asserts": "unauth mint → 401 · unsigned GET → 403 · signed → 2xx + attachment + octet-stream + no Set-Cookie · tampered + expired → denied"
+ }
+}

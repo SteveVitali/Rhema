@@ -1,0 +1,6 @@
+[mint-t8] test+jrn-a@rhema.tools → workspace 01M5HEEZ1BGXXX8JT5852CQ2CH → user 01M5HEEZ146ZDV5D5B06C2CT1A
+[mint-t8] DRY-RUN would INSERT t8exp_8525f9a42fb2471db764 on 01M5HEEZ1BGXXX8JT5852CQ2CH:
+  status='ready'  created_at=now()-9d  ready_at=now()-8d  expires_at=now()-1d (the 410 arm)
+  s3_key=fixtures/t8-expired-export/t8exp_8525f9a42fb2471db764.zip (stub — never dereferenced at 410)
+  token_sha256=sha256(<minted token>) — the raw token prints ONLY under --execute
+[mint-t8] re-run with --execute to write; rollback: delete from account_exports where id='t8exp_8525f9a42fb2471db764'

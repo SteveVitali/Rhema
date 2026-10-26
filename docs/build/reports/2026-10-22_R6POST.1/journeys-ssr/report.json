@@ -1,0 +1,63 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "85a0bf5b1620",
+  "startedAt": "2026-10-22T20:34:45.810Z",
+  "finishedAt": "2026-10-22T20:34:50.048Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "dc7fb15a0aa7caa5d47734656d06514d5b75b127",
+    "observed": {
+      "web": "dc7fb15a0aa7caa5d47734656d06514d5b75b127",
+      "api": "dc7fb15a0aa7caa5d47734656d06514d5b75b127"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "ssr"
+  },
+  "results": [
+    {
+      "id": "N2.invite",
+      "journey": "new-visitor",
+      "owner": "SEC.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 636,
+      "screenshot": "N2.invite.png"
+    },
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1402,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1367,
+      "screenshot": "P1.public.png"
+    }
+  ],
+  "passed": true
+}
