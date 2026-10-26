@@ -15,6 +15,7 @@
 //   node scripts/live/preview-stack.mjs select      pr-<n>
 //   node scripts/live/preview-stack.mjs config      pr-<n> <key> <value> [--secret]
 //   node scripts/live/preview-stack.mjs resend-pull pr-<n>
+//   node scripts/live/preview-stack.mjs stripe-pull pr-<n>
 //   node scripts/live/preview-stack.mjs output      pr-<n> [name] [--json]
 //   node scripts/live/preview-stack.mjs preview     pr-<n>
 //   node scripts/live/preview-stack.mjs up          pr-<n>
@@ -29,6 +30,14 @@
 //   → seed-invite → `rhema-journeys --web https://<web>.run.app --api https://<api>.run.app
 //   --invite-code prv-<n>-test …` (the code is deterministic — `prv-<n>-test`, non-secret,
 //   admits only test+*@rhema.tools identities through the real magic-link path).
+//
+// R6POST.2 runbook (REQ-POST-6) — the ruled posture stages extend that recipe:
+//   domains stage:   …config rhema:postureDomains '<json>' + rhema:postureLbAddress <name>
+//                    (a pre-created `gcloud compute addresses` global IPv4 — the stack ADOPTS
+//                    it so the wildcard-DNS names can embed the known IP before `up`)
+//   stripe stage:    …config rhema:extraRequiredSecrets stripe-secret → stripe-pull
+//                    (pipes the shared `rhema-nonprod-stripe-secret` sk_test into
+//                    `rhema:stripeSecret` SECRET config — stdin, never argv/logs)
 //
 // Every pulumi call runs `-C infra/pulumi` (the program dir) and never touches another
 // stack. The guard is deliberately thin: the refusal logic is pure and unit-tested; the
@@ -51,7 +60,7 @@ export const PREVIEW_STACK_RE = /^pr-\d+$/;
 const READ_ONLY_VERBS = new Set(["select", "output"]);
 /** Verbs that deploy or refresh state — ownership required. `resend-pull`/`seed-invite`
  *  (MAINT.6) mutate stack config / execute the stack's migrate Job — same ownership gate. */
-const DEPLOY_VERBS = new Set(["preview", "up", "refresh", "config", "resend-pull", "seed-invite"]);
+const DEPLOY_VERBS = new Set(["preview", "up", "refresh", "config", "resend-pull", "stripe-pull", "seed-invite"]);
 /** Verbs that destroy state — ownership required, spelled out so a grep finds them. */
 const DESTRUCTIVE_VERBS = new Set(["destroy", "rm"]);
 
@@ -83,7 +92,7 @@ export function classifyVerb(stack, verb) {
   if (READ_ONLY_VERBS.has(verb)) return "read";
   if (DEPLOY_VERBS.has(verb)) return "deploy";
   if (DESTRUCTIVE_VERBS.has(verb)) return "destructive";
-  throw new GuardRefusal(`preview-stack: unknown verb '${verb}' (allowed: init select output config resend-pull seed-invite preview up refresh destroy rm)`);
+  throw new GuardRefusal(`preview-stack: unknown verb '${verb}' (allowed: init select output config resend-pull stripe-pull seed-invite preview up refresh destroy rm)`);
 }
 
 /**
@@ -160,6 +169,13 @@ function stackConfigValue(exec, stack, key) {
 
 /** The shared, operator-seeded Secret Manager name holding the send-only non-prod Resend key. */
 export const NONPROD_RESEND_SECRET = "rhema-nonprod-resend-api-key";
+/**
+ * R6POST.2 — the shared, operator-seeded Secret Manager name holding the Stripe TEST-MODE
+ * `sk_test` every ruled Stripe stage pulls (REQ-ARCH-38 — previews never bind a prod secret;
+ * `rhema-prod-stripe-secret` is never in play). `stripe-pull` refuses loudly when the secret
+ * is absent — the N9 leg then withholds with a dated re-owe rather than fabricate green.
+ */
+export const NONPROD_STRIPE_SECRET = "rhema-nonprod-stripe-secret";
 /** The Resend From address — the verified sender on the shared (prod-account) key, plain config. */
 export const RESEND_FROM = "hello@rhema.tools";
 const DEFAULT_PROJECT = "rhema-507501";
@@ -281,6 +297,34 @@ export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloud
       );
       return 0;
     }
+    case "stripe-pull": {
+      // R6POST.2 — pull the shared non-prod sk_test into `rhema:stripeSecret` SECRET config so
+      // the ruled stack's `stripe-secret` placeholder is replaced by the real test-mode key at
+      // `up` (index.ts's stripePlan — same resendVersionPlan semantics; prod is refused at
+      // classifyVerb before any of this). The gcloud→pulumi stdin pipe keeps the value out of
+      // argv/logs/the repo — the same shape resend-pull proved.
+      const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
+      const access = gcloud(
+        ["secrets", "versions", "access", "latest", "--secret", NONPROD_STRIPE_SECRET, "--project", project],
+        { capture: true },
+      );
+      if (access.status !== 0 || (access.stdout ?? "").trim() === "") {
+        // OPERATOR PREREQUISITE (H10 / ticket 190): the operator seeds `sk_test` here out of
+        // band. Absent ⇒ the N9 leg withholds with a dated re-owe — never a fabricated green.
+        console.error(
+          `preview-stack: stripe-pull could not read '${NONPROD_STRIPE_SECRET}' in project '${project}' — ` +
+            "the operator prerequisite is unmet (a TEST-MODE Stripe key seeded in nonprod Secret " +
+            "Manager; the H10 'provided: yes' attestation names this container). Nothing was changed.",
+        );
+        return 1;
+      }
+      const set = execSecret(["config", "set", "--secret", "--stack", stack, "rhema:stripeSecret"], access.stdout);
+      if (set.status !== 0) return set.status;
+      console.log(
+        `preview-stack: stripe-pull set rhema:stripeSecret (--secret, stdin — never printed) on '${stack}'`,
+      );
+      return 0;
+    }
     case "seed-invite": {
       // MAINT.6 — one code-bound invite row (`email NULL`, max_uses 10000, deterministic
       // `prv-<n>-test`) written by the in-VPC migrate Job over its system-database-url
@@ -375,7 +419,7 @@ export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloud
 
 function usage() {
   console.error(
-    "usage: node scripts/live/preview-stack.mjs <init|select|output|config|resend-pull|seed-invite|preview|up|refresh|destroy|rm> <pr-<n>> [args]\n" +
+    "usage: node scripts/live/preview-stack.mjs <init|select|output|config|resend-pull|stripe-pull|seed-invite|preview|up|refresh|destroy|rm> <pr-<n>> [args]\n" +
       "  the only permitted stack names match ^pr-\\d+$; prod is refused for every verb; " +
       `mutations require ${OWNER_TAG_KEY}=${OWNER_TAG_VALUE}`,
   );

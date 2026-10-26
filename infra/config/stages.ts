@@ -549,6 +549,54 @@ export function stageConfigFor(stageName: string): StageConfig {
   return STAGES[stageKindFor(stageName)];
 }
 
+/**
+ * R6POST.2 (REQ-POST-6; GD-PREAUTH-ACTS.R6 "authorize both") — per-STACK posture overrides for
+ * the two ruled posture stages, applied in `infra/pulumi/index.ts` over `stageConfigFor(stack)`:
+ *
+ *  - `domains`: a domains-bearing `pr-<n>` stage fronted by real DNS (the N8/R10.keepalive
+ *    collab legs — `COLLAB_WS_URL` only exists when `domains` does). The merged block drives
+ *    the same machinery prod's facts drive (cert SANs, URL-map host rules, `wss://<app>/collab`,
+ *    the derived origins + bucket CORS) — the facts themselves stay prod-only.
+ *  - `extraRequiredSecrets`: the Stripe test-mode stage's `stripe-secret` opt-in so
+ *    `requires("stripe-secret")` wires `STRIPE_SECRET_KEY_NAME` on that one stack (every other
+ *    preview keeps the `stripe_unconfigured` posture — REQ-ARCH-38).
+ *
+ * Fail-closed: prod refuses ANY override (its facts are the only authority); unknown secret ids
+ * throw at merge time so a typo can never silently no-op a gate.
+ */
+export interface PostureOverrides {
+  readonly domains?: StageDomains;
+  readonly extraRequiredSecrets?: readonly string[];
+}
+
+export function withPostureOverrides(cfg: StageConfig, o: PostureOverrides): StageConfig {
+  const extra = o.extraRequiredSecrets ?? [];
+  if (cfg.kind === "prod" && (o.domains !== undefined || extra.length > 0)) {
+    throw new Error(
+      "posture overrides are refused on prod — prod's domains + requiredSecrets are stage facts only (REQ-ARCH-38)",
+    );
+  }
+  const unknown = extra.filter((id) => !(ALL_SECRET_IDS as readonly string[]).includes(id));
+  if (unknown.length > 0) {
+    throw new Error(`extraRequiredSecrets names unknown secret ids: ${unknown.join(", ")}`);
+  }
+  if (o.domains !== undefined) {
+    for (const [k, v] of Object.entries(o.domains)) {
+      if (typeof v !== "string" || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(v)) {
+        throw new Error(`postureDomains.${k} is not a hostname: ${JSON.stringify(v)}`);
+      }
+    }
+  }
+  return {
+    ...cfg,
+    ...(o.domains !== undefined ? { domains: o.domains } : {}),
+    requiredSecrets: [
+      ...cfg.requiredSecrets,
+      ...extra.filter((id) => !cfg.requiredSecrets.includes(id)),
+    ],
+  };
+}
+
 /** The sandbox subnet of a stage — the one that must never reach the internet directly. */
 export function sandboxSubnetOf(cfg: StageConfig): VpcSubnet | undefined {
   return cfg.vpc.subnets.find((s) => s.name === "sandbox");

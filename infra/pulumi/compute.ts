@@ -129,6 +129,15 @@ export interface ComputeArgs {
    * revision starting before its version exists fails "secret …/versions/latest was not found".
    */
   secretVersions?: gcp.secretmanager.SecretVersion[];
+  /**
+   * R6POST.2 (REQ-POST-6) — the NAME of a pre-created `gcloud compute addresses` global IPv4 the
+   * LB binds INSTEAD of program-reserving one (non-prod only; index.ts refuses it on prod). The
+   * ruled domains stage needs the IP BEFORE `up` so its wildcard-DNS names (`*.sslip.io` — they
+   * embed the IP) can be minted + configured in the same config pass — otherwise a second `up`
+   * would REPLACE the forwarding rule when the names arrived. The address stays outside Pulumi
+   * state (deleted out of band at teardown; `destroy` can't orphan it).
+   */
+  lbAddressName?: string;
 }
 
 export interface Compute {
@@ -1270,10 +1279,17 @@ export function createCompute(args: ComputeArgs): Compute {
     sslCertificates: [...(selfSignedCert ? [selfSignedCert.id] : []), cert.id],
   });
   // A reserved global IPv4 gives the operator ONE stable anycast address for every prod DNS record —
-  // without it the forwarding rule's ephemeral IP can churn and silently break DNS.
-  const lbAddress = domains
-    ? new gcp.compute.GlobalAddress(name("lb-ip"), { ipVersion: "IPV4" })
-    : undefined;
+  // without it the forwarding rule's ephemeral IP can churn and silently break DNS. R6POST.2 — a
+  // ruled posture stage ADOPTS its pre-created address (`GlobalAddress.get` — not a managed
+  // resource, so `destroy` leaves it for the out-of-band teardown step that owns it).
+  const lbAddress = args.lbAddressName
+    ? gcp.compute.GlobalAddress.get(
+        name("lb-ip"),
+        pulumi.interpolate`projects/${project}/global/addresses/${args.lbAddressName}`,
+      )
+    : domains
+      ? new gcp.compute.GlobalAddress(name("lb-ip"), { ipVersion: "IPV4" })
+      : undefined;
   new gcp.compute.GlobalForwardingRule(name("https-fr"), {
     ...(lbAddress ? { ipAddress: lbAddress.address } : {}),
     target: httpsProxy.id,

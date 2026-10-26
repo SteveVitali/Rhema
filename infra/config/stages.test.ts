@@ -8,6 +8,7 @@ import {
   stageConfigFor,
   stageKindFor,
   sandboxSubnetOf,
+  withPostureOverrides,
 } from "./stages.js";
 import { SPA_SURFACES } from "@rhema/contracts";
 
@@ -366,5 +367,62 @@ describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; RE
     // Prod is untouched: system-database-url never enters prod's provisioned or required set.
     expect(ALL_SECRET_IDS).not.toContain("system-database-url");
     expect(PROD_REQUIRED_SECRETS).not.toContain("system-database-url");
+  });
+});
+
+describe("withPostureOverrides (R6POST.2; REQ-POST-6; GD-PREAUTH-ACTS.R6)", () => {
+  const stageDomains = {
+    app: "pr-212.34.8.177.69.sslip.io",
+    api: "api.pr-212.34.8.177.69.sslip.io",
+    userContent: "uc.pr-212.34.8.177.69.sslip.io",
+  };
+
+  it("a non-prod stage gains domains (the collab wire arm) + extended requiredSecrets", () => {
+    const cfg = withPostureOverrides(STAGES.preview, {
+      domains: stageDomains,
+      extraRequiredSecrets: ["stripe-secret"],
+    });
+    expect(cfg.domains).toEqual(stageDomains);
+    expect(cfg.requiredSecrets).toContain("stripe-secret");
+    // The base facts are untouched — the override is a per-stack merge, never a stage mutation.
+    expect(STAGES.preview.domains).toBeUndefined();
+    expect(STAGES.preview.requiredSecrets).not.toContain("stripe-secret");
+  });
+
+  it("dedups an id the stage already requires", () => {
+    const cfg = withPostureOverrides(STAGES.preview, {
+      extraRequiredSecrets: ["anthropic-api-key"],
+    });
+    expect(cfg.requiredSecrets.filter((id) => id === "anthropic-api-key")).toHaveLength(1);
+  });
+
+  it("unknown secret ids refuse loudly — a typo can never silently no-op a mount gate", () => {
+    expect(() =>
+      withPostureOverrides(STAGES.preview, { extraRequiredSecrets: ["stripe-secre"] }),
+    ).toThrow(/unknown secret ids/);
+  });
+
+  it("prod refuses ANY posture override — its domains/requiredSecrets are stage facts only", () => {
+    expect(() => withPostureOverrides(STAGES.prod, { domains: stageDomains })).toThrow(
+      /refused on prod/,
+    );
+    expect(() =>
+      withPostureOverrides(STAGES.prod, { extraRequiredSecrets: ["stripe-secret"] }),
+    ).toThrow(/refused on prod/);
+    // An EMPTY override is a no-op on prod (a ruled stage config left dangling can't brick it).
+    expect(withPostureOverrides(STAGES.prod, {})).toEqual(STAGES.prod);
+  });
+
+  it("domain hosts must be hostnames — junk can't reach the cert/URL-map machinery", () => {
+    for (const bad of [
+      { ...stageDomains, app: "https://x" },
+      { ...stageDomains, api: "" },
+      { ...stageDomains, userContent: 42 },
+    ]) {
+      // @ts-expect-error — the tests deliberately pass malformed shapes.
+      expect(() => withPostureOverrides(STAGES.preview, { domains: bad })).toThrow(
+        /not a hostname/,
+      );
+    }
   });
 });

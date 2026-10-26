@@ -10,12 +10,12 @@ import { fileURLToPath } from "node:url";
 import {
   run,
   classifyVerb,
-  assertOwned,
   GuardRefusal,
   OWNER_TAG_KEY,
   OWNER_TAG_VALUE,
   PREVIEW_STACK_RE,
   NONPROD_RESEND_SECRET,
+  NONPROD_STRIPE_SECRET,
   RESEND_FROM,
   previewInviteCode,
   latestExecutionFacts,
@@ -25,7 +25,7 @@ import {
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 describe("guard — prod is refused for EVERY verb (no override)", () => {
-  const verbs = ["init", "select", "output", "config", "preview", "up", "refresh", "destroy", "rm", "anything"];
+  const verbs = ["init", "select", "output", "config", "resend-pull", "stripe-pull", "seed-invite", "preview", "up", "refresh", "destroy", "rm", "anything"];
   for (const verb of verbs) {
     it(`refuses prod for '${verb}'`, () => {
       expect(() => classifyVerb("prod", verb)).toThrow(GuardRefusal);
@@ -159,7 +159,7 @@ describe("guard — the new verbs inherit the full refusal contract", () => {
       calls.push(args);
       return { status: 0, stdout: "" };
     };
-    for (const verb of ["resend-pull", "seed-invite"]) {
+    for (const verb of ["resend-pull", "seed-invite", "stripe-pull"]) {
       expect(() => classifyVerb("prod", verb), `prod/${verb}`).toThrow(GuardRefusal);
       expect(() => classifyVerb("dev", verb), `dev/${verb}`).toThrow(GuardRefusal);
       expect(() => classifyVerb("pr-test", verb), `pr-test/${verb}`).toThrow(GuardRefusal);
@@ -167,7 +167,7 @@ describe("guard — the new verbs inherit the full refusal contract", () => {
     }
     expect(calls).toHaveLength(0);
   });
-  it("resend-pull + seed-invite refuse an untagged (unowned) pr-<n> stack", () => {
+  it("resend-pull + stripe-pull + seed-invite refuse an untagged (unowned) pr-<n> stack", () => {
     const calls = [];
     const exec = (args) => {
       calls.push(args);
@@ -176,7 +176,7 @@ describe("guard — the new verbs inherit the full refusal contract", () => {
       }
       return { status: 0, stdout: "" };
     };
-    for (const verb of ["resend-pull", "seed-invite"]) {
+    for (const verb of ["resend-pull", "seed-invite", "stripe-pull"]) {
       expect(() => run("pr-9", verb, [], { exec }), verb).toThrow(GuardRefusal);
     }
   });
@@ -185,7 +185,7 @@ describe("guard — the new verbs inherit the full refusal contract", () => {
 describe("resend-pull — the shared secret pipes into --secret config via stdin", () => {
   const ownedExec = () => {
     const calls = [];
-    const exec = (args, opts) => {
+    const exec = (args) => {
       calls.push(args);
       if (args[0] === "stack" && args[1] === "tag" && args[2] === "get")
         return { status: 0, stdout: `${OWNER_TAG_VALUE}\n` };
@@ -247,6 +247,86 @@ describe("resend-pull — the shared secret pipes into --secret config via stdin
       run("pr-131", "resend-pull", [], {
         exec,
         gcloud: () => ({ status: 0, stdout: "  \n" }),
+        execSecret: (args, value) => {
+          secretPipes.push({ args, value });
+          return { status: 0 };
+        },
+      }),
+    ).toBe(1);
+    expect(secretPipes).toHaveLength(0);
+  });
+});
+
+// R6POST.2 (REQ-POST-6) — the Stripe test-mode pull: the same gcloud→stdin contract, the
+// shared NONPROD container only (a prod secret id never appears), and the absent-secret
+// short-circuit the N9 withhold rides on.
+describe("stripe-pull — the shared nonprod sk_test pipes into --secret config via stdin", () => {
+  const ownedExec = () => {
+    const calls = [];
+    const exec = (args) => {
+      calls.push(args);
+      if (args[0] === "stack" && args[1] === "tag" && args[2] === "get")
+        return { status: 0, stdout: `${OWNER_TAG_VALUE}\n` };
+      if (args[0] === "config" && args[1] === "get") return { status: 1, stdout: "" };
+      return { status: 0, stdout: "" };
+    };
+    return { calls, exec };
+  };
+  const FAKE_KEY = "sk_test_FAKE_KEY_DO_NOT_LOG";
+
+  it("reads rhema-nonprod-stripe-secret and feeds pulumi config set --secret via STDIN", () => {
+    const { calls, exec } = ownedExec();
+    const gcloudCalls = [];
+    const secretPipes = [];
+    const gcloud = (args) => {
+      gcloudCalls.push(args);
+      return { status: 0, stdout: `${FAKE_KEY}\n` };
+    };
+    const execSecret = (args, value) => {
+      secretPipes.push({ args, value });
+      return { status: 0 };
+    };
+    expect(run("pr-213", "stripe-pull", [], { exec, gcloud, execSecret })).toBe(0);
+    const access = gcloudCalls[0].join(" ");
+    expect(access).toContain(`secrets versions access latest --secret ${NONPROD_STRIPE_SECRET}`);
+    // The ONLY stripe container this path may ever name is the shared nonprod one — the prod
+    // secret ids are the REQ-ARCH-38 forbidden names, not the substring "prod".
+    expect(access).not.toContain("rhema-prod-stripe-secret");
+    expect(access).not.toContain("rhema-prod-");
+    expect(secretPipes).toHaveLength(1);
+    expect(secretPipes[0].args.join(" ")).toContain(
+      "config set --secret --stack pr-213 rhema:stripeSecret",
+    );
+    expect(secretPipes[0].value).toBe(FAKE_KEY + "\n");
+    for (const args of [...calls, ...gcloudCalls, ...secretPipes.map((p) => p.args)]) {
+      expect(args.join(" ")).not.toContain(FAKE_KEY);
+    }
+  });
+
+  it("absent operator secret ⇒ nonzero exit + NO pulumi write (the N9 withhold arm)", () => {
+    const { calls, exec } = ownedExec();
+    const secretPipes = [];
+    expect(
+      run("pr-213", "stripe-pull", [], {
+        exec,
+        gcloud: () => ({ status: 1, stdout: "" }),
+        execSecret: (args, value) => {
+          secretPipes.push({ args, value });
+          return { status: 0 };
+        },
+      }),
+    ).toBe(1);
+    expect(secretPipes).toHaveLength(0);
+    expect(calls.every((c) => c[0] === "stack" || (c[0] === "config" && c[1] === "get"))).toBe(true);
+  });
+
+  it("an empty secret body is treated as absent (never writes an empty version)", () => {
+    const { exec } = ownedExec();
+    const secretPipes = [];
+    expect(
+      run("pr-213", "stripe-pull", [], {
+        exec,
+        gcloud: () => ({ status: 0, stdout: " \n" }),
         execSecret: (args, value) => {
           secretPipes.push({ args, value });
           return { status: 0 };

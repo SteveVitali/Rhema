@@ -144,6 +144,29 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   `INTERNAL_AUTH_AUDIENCE` correctly on `*.run.app` previews. Set via
   `preview-stack.mjs config pr-<n> rhema:appBaseUrl "https://<web>.run.app"` (+ `apiPublicUrl`
   likewise); prod ignores them — `domains` always wins there.
+- `rhema:postureDomains` — R6POST.2's NON-PROD-only posture override (plain config, JSON
+  `{"app":"…","api":"…","uc":"…"}`): merged over `stageConfigFor(stack)` so a preview runs the
+  prod domains machinery verbatim — managed-cert SANs, host rules (`<app>` → web with
+  `/collab*` → collab backend, `<api>` → api, `<uc>` → user-content bucket),
+  `COLLAB_WS_URL=wss://<app>/collab`, and every derived origin (`APP_BASE_URL` /
+  `API_PUBLIC_URL` / `INTERNAL_AUTH_AUDIENCE` / bucket CORS). Setting it on prod is refused
+  fail-closed — prod's domains stay a stage fact.
+- `rhema:postureLbAddress` — the posture stage's NON-PROD companion (plain config): the name of
+  a pre-created global `gcloud compute addresses` IP the program adopts via
+  `GlobalAddress.get`, so the LB IP is known BEFORE the hostnames are minted (a wildcard-DNS
+  name like `*.sslip.io` embeds the IP — one `up`, no forwarding-rule replacement). Prod
+  refuses it.
+- `rhema:extraRequiredSecrets` — NON-PROD-only CSV of additional `ALL_SECRET_IDS` entries the
+  stack should require (validated fail-closed against the known id set): the Stripe posture
+  stage's `stripe-secret` opt-in so `requires("stripe-secret")` wires `STRIPE_SECRET_KEY_NAME`
+  on api + worker only on stacks that ask. Prod refuses it.
+- `rhema:stripeSecret` — R6POST.2's NON-PROD-only secret config (Pulumi secret), the
+  resend-pull shape: `preview-stack.mjs stripe-pull` pipes the operator-seeded shared SM
+  `rhema-nonprod-stripe-secret` (a test-mode `sk_test` — never a prod key, REQ-ARCH-38) into it
+  so the stack's `stripe-secret` SM version carries the real test key instead of the OPS.1
+  placeholder and the Stripe-hosted hand-off legs can run on previews. Setting it on prod is
+  refused fail-closed by the program: prod's `stripe-secret` version stays operator-seeded
+  out-of-band.
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
