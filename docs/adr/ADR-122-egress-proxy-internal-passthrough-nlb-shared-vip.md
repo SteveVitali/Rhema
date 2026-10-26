@@ -1,6 +1,12 @@
 # ADR-122: Egress-proxy HA — an internal passthrough NLB on a shared VIP fronts the size-2 MIG
 
-- **Status:** PROPOSED — operator ruling owed
+- **Status:** ACCEPTED — operator ruling `GD-REMAINING.R6` ("approve all remaining tasks,
+  proceed", ~$30/mo envelope incl. the ≈$18/mo ILB delta); **implemented 2026-10-24**
+  (R6INF.2 — three ordered prod `pulumi up`s 160/161/162, failover drill green,
+  `docs/build/reports/2026-10-24_proxy-ilb-drill/`, `runs/R6INF.2.md`). One live-API
+  adjustment during implementation: the internal backend service rejects `portName`
+  (passthrough delivers to the incoming port; the MIG's `namedPorts` entry stays
+  advisory) and requires `backends[].balancingMode:"CONNECTION"` — code matches this.
 - **Date:** 2026-10-23
 - **Ticket:** R6FIX.1 (design half of finding `F-R6INF.1-1` / deferral `D-R6INF.1-1`; extends the
   proxy arm of ruling `GD-HA.R6`)

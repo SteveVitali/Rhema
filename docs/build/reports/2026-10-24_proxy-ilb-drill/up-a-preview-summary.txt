@@ -1,0 +1,8 @@
+        recreateClosedPsc  : false
+        region             : "us-central1"
+        subnetwork         : "projects/rhema-507501/regions/us-central1/subnetworks/rhema-prod-private-app-6c1f352"
+    --outputs:--
+  + proxyVipAddress     : [unknown]
+Resources:
+    + 3 to create
+    173 unchanged

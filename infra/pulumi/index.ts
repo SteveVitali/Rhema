@@ -494,6 +494,8 @@ export const anthropicSecretId = secrets.anthropicApiKey.secretId;
 // operator seeds (the stage facts' requiredSecrets — values never leave the operator's env).
 export const lbIpAddress = compute.lbIpAddress;
 export const dnsRecords = compute.dnsRecords;
+// R6INF.2 (ADR-122) — the proxy ILB frontend VIP; the literal `rhema:proxyBaseUrl` repoints to at `up` B.
+export const proxyVipAddress = compute.proxyVipAddress;
 // OPS.2 — the remote-cache endpoint CI's TURBO_API points at (D-P0.01-4).
 export const turboCacheUrl = turboCache.url;
 export const requiredSecrets = cfg.requiredSecrets;

@@ -91,7 +91,12 @@ const redisGb = Number(redis.memorySizeGb);
 const gkePools = g(`container node-pools list --cluster=rhema-prod-run-task-gke-c13cb80 --zone=us-central1-a`);
 const migTemplate = g(`compute instance-templates list`)[0];
 const migSize = g(`compute instance-groups managed list`)[0]?.size ?? 1;
-const fwdRules = g(`compute forwarding-rules list`).length;
+const fwdRulesAll = g(`compute forwarding-rules list`);
+const fwdRules = fwdRulesAll.length;
+// R6INF.2 (ADR-122) — internal passthrough NLB rules bill under the GENERIC Cloud Load
+// Balancer forwarding-rule minimum ($0.025/h Americas multi-region, covers ≤5) + internal
+// inbound data processing; counting them inside the external "HTTPS LB" line hid the delta.
+const intFwdRules = fwdRulesAll.filter((r) => r.loadBalancingScheme === "INTERNAL").length;
 const extIps = g(`compute addresses list`).filter((a) => a.addressType === "EXTERNAL").length;
 const nats = g(`compute routers nats list --router=rhema-prod-router-2d3edc8 --region=${REGION}`).length;
 const secretsCount = g(`secrets list`).length;
@@ -155,8 +160,18 @@ lines.push({ service: `Cloud NAT ×${nats} (gateway + ~5GB/mo)`, usdMonth: (natU
 
 const lbRule = priceOf(netSkus, { label: "LB rule", needles: ["cloud load balancer forwarding rule minimum global"] });
 const lbData = priceOf(netSkus, { label: "LB inbound", needles: ["global external application load balancer inbound data processing"] });
-lines.push({ service: `HTTPS LB (${fwdRules} rules + ~20GB)`, usdMonth: (lbRule.usd ?? 0) * HOURS + (lbData.usd ?? 0) * 20,
+lines.push({ service: `HTTPS LB (${fwdRules - intFwdRules} rules + ~20GB)`, usdMonth: (lbRule.usd ?? 0) * HOURS + (lbData.usd ?? 0) * 20,
   src: [lbRule.sku, `${lbData.sku} (est. 20GB — web/api traffic)`] });
+
+// R6INF.2 (ADR-122) — the egress-proxy ILB: generic LB forwarding-rule minimum is charged
+// per LB family (external rules already bill under `lbRule` above — the minimum covers
+// ≤5 rules EACH family), plus internal inbound data processing (~10GB/mo proxy traffic).
+if (intFwdRules > 0) {
+  const ilbRule = priceOf(netSkus, { label: "internal LB rule", needles: ["cloud load balancer forwarding rule minimum for americas"] });
+  const ilbData = priceOf(netSkus, { label: "internal LB inbound", needles: ["regional internal passthrough network load balancer inbound data processing", "iowa"] });
+  lines.push({ service: `Internal passthrough NLB (${intFwdRules} rules + ~10GB)`, usdMonth: (ilbRule.usd ?? 0) * HOURS + (ilbData.usd ?? 0) * 10,
+    src: [ilbRule.sku, `${ilbData.sku} (est. 10GB — proxy consumer traffic)`] });
+}
 
 const smVer = priceOf(smSkus, { label: "SM versions", needles: ["secret version replica storage"] });
 lines.push({ service: `Secret Manager (${secretsCount} versions, 6 free)`, usdMonth: (smVer.usd ?? 0) * Math.max(0, secretsCount - 6), src: [smVer.sku] });

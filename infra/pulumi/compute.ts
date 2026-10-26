@@ -144,6 +144,8 @@ export interface Compute {
   gke: gcp.container.Cluster;
   runTaskPool: gcp.container.NodePool;
   proxyGroup?: gcp.compute.RegionInstanceGroupManager;
+  /** R6INF.2 (ADR-122) — the ILB frontend VIP `rhema:proxyBaseUrl` points at (undefined when the MIG or the frontend isn't deployed). */
+  proxyVipAddress?: pulumi.Output<string>;
   services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>>;
   /** §12.1's convert Cloud Run Job (per-batch, no network, no DB) — executed by the caller, never served. */
   convertJob: gcp.cloudrunv2.Job;
@@ -265,15 +267,21 @@ export function createCompute(args: ComputeArgs): Compute {
   // proxy out-of-band. The firewall's allow-to-proxy-tier rule (network.ts) is independent of this MIG.
   const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? true;
   const proxyPort = "8443";
-  // OPS.1 — hoisted so the worker's `ANTHROPIC_BASE_URL` can resolve to the MIG's reserved internal
-  // IP on stacks that don't set `rhema:proxyBaseUrl` (non-prod self-wiring; prod's config still wins).
+  // OPS.1 — hoisted so the worker's `ANTHROPIC_BASE_URL` can resolve to the proxy endpoint on
+  // stacks that don't set `rhema:proxyBaseUrl` (non-prod self-wiring; prod's config still wins).
+  // R6INF.2 (ADR-122): `proxyVip` is the ILB frontend address — the endpoint consumers dial;
+  // `proxyIp` is the old direct-path reservation (retained as the rollback path).
   let proxyIp: gcp.compute.Address | undefined;
+  let proxyVip: gcp.compute.Address | undefined;
   let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
   if (deployProxyMig) {
     // A RESERVED internal IP pinned into the template (surfaced live PRB.15 Stage B, 2026-09-17): the
     // MIG replaces its instance on every template change and a fresh NIC auto-assigns a NEW address —
     // the api/worker's `ANTHROPIC_BASE_URL` (rhema:proxyBaseUrl) would silently dangle at the old IP.
     // High end of the private-app /20 so auto-assigned addresses never collide.
+    // ADR-122: RETAINED across the ILB cutover (reserved-but-unused) as the rollback path —
+    // deleting it in the same `up` would surrender `10.8.16.4` and a re-created Address would get
+    // a NEW literal, dangling the old `proxyBaseUrl`. Cleanup `up` D removes it after soak.
     proxyIp = new gcp.compute.Address(name("proxy-ip"), {
       addressType: "INTERNAL",
       purpose: "GCE_ENDPOINT",
@@ -285,8 +293,15 @@ export function createCompute(args: ComputeArgs): Compute {
       tags: [EGRESS_PROXY_TAG],
       disks: [{ sourceImage: "projects/cos-cloud/global/images/family/cos-stable", boot: true, autoDelete: true }],
       networkInterfaces: [
-        // No external IP: the proxy egresses via Cloud NAT; the sandbox reaches it on its internal IP.
-        { subnetwork: network.subnets["private-app"].id, networkIp: proxyIp.address },
+        // No external IP: the proxy egresses via Cloud NAT; the sandbox reaches it on its internal
+        // IP. ADR-122 §Migration — the reserved `networkIp` survives ONLY through the `up` A/B
+        // window (`egressProxyIpPin`, a stage fact): dropping it before consumers repoint to the
+        // VIP would kill the direct `10.8.16.4` path in-flight pods still dial. Once unpinned the
+        // NICs go ephemeral — the VIP, never a NIC, is the stable endpoint.
+        {
+          subnetwork: network.subnets["private-app"].id,
+          ...(cfg.egressProxyIpPin ? { networkIp: proxyIp.address } : {}),
+        },
       ],
       serviceAccount: {
         email: iam.serviceAccounts["egress-proxy"].email,
@@ -308,37 +323,86 @@ export function createCompute(args: ComputeArgs): Compute {
       checkIntervalSec: 10,
       timeoutSec: 5,
     });
-    // F-R6INF.1-1 (R6INF.1, 2026-10-22 — the GD-HA.R6 ×2 lever is WITHHELD by this block):
-    // the template above pins the ONE reserved `networkIp` (prod `10.8.16.4`) so
-    // `rhema:proxyBaseUrl` never dangles across template rolls — but exactly one resource may
-    // hold a static internal IP, so a targetSize>1 MIG can never create its second instance
-    // (permanent IP-in-use create failure), and the single-URL consumers would get no failover
-    // anyway. Real ×2 requires a shared frontend first — an internal passthrough NLB holding
-    // the VIP with this MIG as backend — an unruled +$8–18/mo add beyond GD-HA.R6's +$12.2.
-    // Refuse the non-converging shape at eval time, before any preview/up, so a future
-    // stage-fact flip can never strand prod in an error-looping MIG.
-    if (cfg.egressProxyTargetSize > 1) {
+    // R6INF.2 (ADR-122 — the frontend-presence guard that replaces F-R6INF.1-1's bare throw):
+    // `targetSize > 1` is legal ONLY when the internal passthrough NLB exists
+    // (`egressProxyFrontend === "ilb"` — the backend service + forwarding rule below are the
+    // same program literal) AND the template no longer pins `networkIp` — a ×2 MIG whose
+    // instances share one static internal IP can never converge (the F-R6INF.1-1 trap), and a
+    // ×2 MIG behind no frontend gives consumers no failover target anyway. Refuse the
+    // non-converging shape at eval time, before any preview/up.
+    const ilbFrontend = cfg.egressProxyFrontend === "ilb";
+    if (cfg.egressProxyTargetSize > 1 && !(ilbFrontend && !cfg.egressProxyIpPin)) {
       throw new Error(
-        `egressProxyTargetSize=${cfg.egressProxyTargetSize} cannot converge: the proxy ` +
-          `template pins the single reserved networkIp and one resource may hold a static ` +
-          `internal IP (F-R6INF.1-1). Land the internal-LB frontend first, or keep size 1.`,
+        `egressProxyTargetSize=${cfg.egressProxyTargetSize} cannot converge: size >1 requires ` +
+          `the ADR-122 ILB frontend (egressProxyFrontend:"ilb") AND the transitional ` +
+          `networkIp pin dropped (egressProxyIpPin:false) — one resource may hold a static ` +
+          `internal IP and the VIP, not a NIC, is the failover target (F-R6INF.1-1).`,
       );
     }
     proxyGroup = new gcp.compute.RegionInstanceGroupManager(name("proxy-mig"), {
       region,
       baseInstanceName: name("proxy"),
       versions: [{ instanceTemplate: proxyTemplate.id }],
-      // The stage fact drives the size (R6INF.1 / GD-HA.R6): prod stays ONE until the
-      // internal-LB frontend lands (the guard above refuses the non-converging ×2).
-      // Fail-CLOSED posture: if the instance dies, run pods lose egress (runs error, they
-      // never leak) — the single-instance cost is availability-only. Auto-healing replaces it.
+      // The stage fact drives the size (R6INF.1 / GD-HA.R6): prod reaches TWO once the ILB
+      // frontend fronts the ephemeral-NIC MIG (the guard above keeps any other shape from
+      // ever expressing the non-converging ×2). Fail-CLOSED posture: if every instance dies,
+      // run pods lose egress (runs error, they never leak). Auto-healing replaces a lost one.
       targetSize: cfg.egressProxyTargetSize,
       namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
       // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance
-      // in P0.15f Stage B). Prod lets the regional MIG place its single instance.
+      // in P0.15f Stage B). Prod lets the regional MIG place its instances.
       ...(cfg.kind !== "prod" ? { distributionPolicyZones: [`${region}-a`, `${region}-c`] } : {}),
     });
+
+    // --- ADR-122: the internal passthrough NLB on a shared VIP (the address consumers dial) ----
+    // An INTERNAL scheme forwards raw TCP to the instance-group backends — no TLS termination,
+    // no protocol parsing — and preserves the client source IP, so NO new firewall rules are
+    // needed: the sandbox + private-app sources `proxy-ingress` already admits keep working,
+    // and the backend health checks ride the same GCP prober ranges that rule opens on 8443.
+    // `up` A creates all three while the template still pins the direct IP: the instance is
+    // simultaneously reachable on `10.8.16.4` and the VIP until `rhema:proxyBaseUrl` repoints.
+    if (ilbFrontend) {
+      // The shared VIP — a NEW reserved internal address, auto-assigned high in the /20 (the
+      // same anti-collision convention as `proxy-ip`). This is `rhema:proxyBaseUrl`'s target.
+      proxyVip = new gcp.compute.Address(name("proxy-vip"), {
+        addressType: "INTERNAL",
+        purpose: "GCE_ENDPOINT",
+        subnetwork: network.subnets["private-app"].id,
+        region,
+      });
+      // The regional backend service: the MIG is its only backend; REUSES `proxyHealth`
+      // (the TCP:8443 check the MIG's autoheal policy already runs — a global health check is
+      // valid for internal passthrough NLBs) so the LB's health verdict and autoheal's are the
+      // same probe. Session affinity NONE — the proxy is a stateless forwarder; connection
+      // draining kept small so a rolling instance drops off the VIP quickly. NO `portName`:
+      // the INTERNAL scheme forbids it (live API 400 — passthrough delivers to the incoming
+      // destination port, so the MIG's `namedPorts` entry stays advisory-only).
+      const proxyBe = new gcp.compute.RegionBackendService(name("proxy-be"), {
+        region,
+        loadBalancingScheme: "INTERNAL",
+        protocol: "TCP",
+        healthChecks: proxyHealth.id,
+        // `balancingMode` must be CONNECTION for an INTERNAL backend service (live API 400
+        // — UTILIZATION is the external-only mode); passthrough spreads connections, not load.
+        backends: [{ group: proxyGroup.instanceGroup, balancingMode: "CONNECTION" }],
+        connectionDrainingTimeoutSec: 30,
+        sessionAffinity: "NONE",
+      });
+      // The forwarding rule binds the VIP to the backend service — same-region consumers only
+      // (`allowGlobalAccess: false`), matching today's same-region posture.
+      new gcp.compute.ForwardingRule(name("proxy-fr"), {
+        region,
+        loadBalancingScheme: "INTERNAL",
+        ipProtocol: "TCP",
+        ipAddress: proxyVip.address,
+        ports: [proxyPort],
+        backendService: proxyBe.id,
+        network: network.network.id,
+        subnetwork: network.subnets["private-app"].id,
+        allowGlobalAccess: false,
+      });
+    }
   }
 
   // --- Artifact Registry: the per-stack docker repo the images CI + `infra/cloudbuild/image-set.yaml` push to and the
@@ -750,13 +814,16 @@ export function createCompute(args: ComputeArgs): Compute {
                           },
                         ]
                       : []),
-                    ...(args.proxyBaseUrl || proxyIp
+                    // R6INF.2 (ADR-122 item 6) — the non-prod self-wire falls back to the
+                    // ILB VIP (the endpoint the MIG sits behind), not the retained
+                    // direct-path reservation; prod's `rhema:proxyBaseUrl` config wins.
+                    ...(args.proxyBaseUrl || proxyVip || proxyIp
                       ? [
                           {
                             name: "ANTHROPIC_BASE_URL",
                             value:
                               args.proxyBaseUrl ??
-                              pulumi.interpolate`http://${proxyIp!.address}:${proxyPort}`,
+                              pulumi.interpolate`http://${(proxyVip ?? proxyIp)!.address}:${proxyPort}`,
                           },
                         ]
                       : []),
@@ -937,15 +1004,15 @@ export function createCompute(args: ComputeArgs): Compute {
                     // DEF.2 (F6) — the estimate claim pre-pass rides the egress proxy (the api holds
                     // no provider key; it presents a purpose-minted credential). Same `rhema:proxyBaseUrl`
                     // the worker hands pods as `ANTHROPIC_BASE_URL`; unset ⇒ estimates stay provisional.
-                    // OPS.1 — on non-prod the proxy URL self-wires to the MIG's reserved internal IP
-                    // (same in-VPC hop as the worker's ANTHROPIC_BASE_URL below).
-                    ...(args.proxyBaseUrl || proxyIp
+                    // OPS.1 — on non-prod the proxy URL self-wires (same in-VPC hop as the worker's
+                    // ANTHROPIC_BASE_URL below); R6INF.2 (ADR-122 item 6) — the fallback is the ILB VIP.
+                    ...(args.proxyBaseUrl || proxyVip || proxyIp
                       ? [
                           {
                             name: "EGRESS_PROXY_URL",
                             value:
                               args.proxyBaseUrl ??
-                              pulumi.interpolate`http://${proxyIp!.address}:${proxyPort}`,
+                              pulumi.interpolate`http://${(proxyVip ?? proxyIp)!.address}:${proxyPort}`,
                           },
                         ]
                       : []),
@@ -1319,6 +1386,7 @@ export function createCompute(args: ComputeArgs): Compute {
     gke,
     runTaskPool,
     proxyGroup,
+    proxyVipAddress: proxyVip?.address,
     services,
     convertJob,
     convertSvc,

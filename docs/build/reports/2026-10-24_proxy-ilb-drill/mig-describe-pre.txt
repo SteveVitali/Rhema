@@ -1,0 +1,6 @@
+autoHealingPolicies:
+- healthCheck: https://www.googleapis.com/compute/v1/projects/rhema-507501/global/healthChecks/rhema-prod-proxy-health-51165b8
+name: rhema-prod-proxy-mig-34ea26a
+targetSize: 1
+versions:
+- instanceTemplate: https://www.googleapis.com/compute/v1/projects/rhema-507501/global/instanceTemplates/rhema-prod-proxy-tmpl-a748171

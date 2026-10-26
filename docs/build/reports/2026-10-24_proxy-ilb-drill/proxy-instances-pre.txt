@@ -1,0 +1,6 @@
+---
+name: rhema-prod-proxy-8g3n
+networkInterfaces:
+- networkIP: 10.8.16.4
+status: RUNNING
+zone: https://www.googleapis.com/compute/v1/projects/rhema-507501/zones/us-central1-f

@@ -58,28 +58,82 @@ describe("COST.1 — the Cloud Run posture is consumed from stage facts (REQ-COS
   });
 });
 
-describe("R6INF.1 — the proxy MIG resize is stage-fact driven + fail-closed on the IP pin (F-R6INF.1-1)", () => {
+describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R6)", () => {
   it("the MIG targetSize reads the stage fact — never a program ternary", () => {
     expect(SRC).toContain("targetSize: cfg.egressProxyTargetSize");
     // The old hardcoded floor is gone.
     expect(SRC).not.toContain("targetSize: 1,");
   });
 
-  it("the program REFUSES egressProxyTargetSize > 1 while the template pins the single networkIp", () => {
-    // F-R6INF.1-1: the template pins `networkIp` to the one reserved proxy address (so
-    // `proxyBaseUrl` never dangles across template rolls); exactly one resource may hold a
-    // static internal IP, so a ×2 MIG's second instance can never be created — a permanent
-    // error loop on prod. The eval-time throw must sit inside the deployProxyMig block
-    // BEFORE the RegionInstanceGroupManager is declared; if it is ever removed or
-    // re-ordered, this pin fails.
-    expect(SRC).toContain("if (cfg.egressProxyTargetSize > 1)");
-    const guard = SRC.indexOf("if (cfg.egressProxyTargetSize > 1)");
+  it("the frontend is a shared VIP + RegionBackendService + INTERNAL ForwardingRule, MIG-backed", () => {
+    // ADR-122 items 1–3, verbatim: a NEW reserved internal `proxy-vip` Address on
+    // private-app; a `proxy-be` RegionBackendService reusing `proxyHealth` with the MIG as
+    // its backend; a `proxy-fr` INTERNAL ForwardingRule binding VIP:8443 to the backend.
+    expect(SRC).toContain('new gcp.compute.Address(name("proxy-vip")');
+    expect(SRC).toContain('new gcp.compute.RegionBackendService(name("proxy-be")');
+    expect(SRC).toContain('new gcp.compute.ForwardingRule(name("proxy-fr")');
+    const be = SRC.slice(
+      SRC.indexOf('new gcp.compute.RegionBackendService(name("proxy-be")'),
+      SRC.indexOf('new gcp.compute.ForwardingRule(name("proxy-fr")'),
+    );
+    expect(be).toContain('loadBalancingScheme: "INTERNAL"');
+    expect(be).toContain('protocol: "TCP"');
+    // NO `portName` — the INTERNAL scheme rejects it (live API 400; passthrough delivers to
+    // the incoming destination port). The MIG still declares `namedPorts https:8443`.
+    expect(be).not.toContain("portName:");
+    expect(SRC).toContain('namedPorts: [{ name: "https", port: Number(proxyPort) }]');
+    expect(be).toContain("healthChecks: proxyHealth.id"); // the same probe autoheal runs
+    expect(be).toContain("group: proxyGroup.instanceGroup");
+    expect(be).toContain('balancingMode: "CONNECTION"'); // INTERNAL requires CONNECTION (API 400 on UTILIZATION)
+    expect(be).toContain('sessionAffinity: "NONE"'); // stateless CONNECT-style forwarder
+    const fr = SRC.slice(SRC.indexOf('new gcp.compute.ForwardingRule(name("proxy-fr")'));
+    expect(fr).toContain('loadBalancingScheme: "INTERNAL"');
+    expect(fr).toContain('ipProtocol: "TCP"');
+    expect(fr).toContain("ipAddress: proxyVip.address");
+    expect(fr).toContain("ports: [proxyPort]");
+    expect(fr).toContain("backendService: proxyBe.id");
+    expect(fr).toContain("allowGlobalAccess: false"); // same-region consumers only
+    // The retained rollback path: `proxy-ip` stays reserved-but-unused (ADR-122 §Rollback).
+    expect(SRC).toContain('new gcp.compute.Address(name("proxy-ip")');
+  });
+
+  it("the template pins networkIp ONLY through the transitional fact — never unconditionally", () => {
+    // ADR-122 item 4: `networkIp` removal is gated behind the frontend presence — the pin
+    // survives the `up` A/B window (`egressProxyIpPin: true`) so the direct 10.8.16.4 path
+    // keeps serving in-flight pods, and is gone in the final posture (ephemeral NICs).
+    // An unconditional `networkIp: proxyIp.address` literal would re-create F-R6INF.1-1's
+    // one-holder trap on every size-2 stage; a missing conditional would kill the direct
+    // path before consumers repoint. Both shapes fail here.
+    expect(SRC).toContain("cfg.egressProxyIpPin ? { networkIp: proxyIp.address }");
+    expect(SRC).not.toMatch(/\{\s*subnetwork: network\.subnets\["private-app"\]\.id, networkIp:/);
+  });
+
+  it("size >1 requires the ILB frontend AND the pin dropped — the frontend-presence guard", () => {
+    // ADR-122 item 5: the `>1` throw becomes a frontend-presence assertion — size may
+    // exceed 1 only when the program creates the backend service + forwarding rule
+    // (`egressProxyFrontend === "ilb"`) AND the template does not pin `networkIp`
+    // (`egressProxyIpPin === false`). The eval-time throw still sits inside the
+    // deployProxyMig block BEFORE the RegionInstanceGroupManager; if it is removed,
+    // weakened, or re-ordered, this pin fails and F-R6INF.1-1's trap re-opens.
+    expect(SRC).toContain('cfg.egressProxyFrontend === "ilb"');
+    const guard = SRC.indexOf(
+      "if (cfg.egressProxyTargetSize > 1 && !(ilbFrontend && !cfg.egressProxyIpPin))",
+    );
     const mig = SRC.indexOf('new gcp.compute.RegionInstanceGroupManager(name("proxy-mig")');
-    const templatePin = SRC.indexOf("networkIp: proxyIp.address");
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(mig);
-    expect(templatePin).toBeGreaterThan(-1);
-    expect(templatePin).toBeLessThan(mig);
+  });
+
+  it("the non-prod self-wire falls back to the VIP, not the reserved direct-path IP", () => {
+    // ADR-122 item 6: `args.proxyBaseUrl ??` resolves to `proxyVip` (the LB frontend)
+    // ahead of `proxyIp` on BOTH consumers — worker ANTHROPIC_BASE_URL + api
+    // EGRESS_PROXY_URL — so previews self-wire the way prod consumes it.
+    const workerBlock = SRC.slice(SRC.indexOf("ANTHROPIC_BASE_URL"));
+    expect(workerBlock).toContain("args.proxyBaseUrl ??");
+    expect(workerBlock).toContain("(proxyVip ?? proxyIp)!.address");
+    const apiBlock = SRC.slice(SRC.indexOf("EGRESS_PROXY_URL"));
+    expect(apiBlock).toContain("args.proxyBaseUrl ??");
+    expect(apiBlock).toContain("(proxyVip ?? proxyIp)!.address");
   });
 });
 

@@ -340,10 +340,33 @@ export interface StageConfig {
    * converge: the MIG template pins the one reserved `networkIp` (`10.8.16.4` on prod) so
    * `proxyBaseUrl`/`ANTHROPIC_BASE_URL` never dangles — and exactly one resource may hold a
    * static internal IP, so a second instance's create fails permanently (F-R6INF.1-1).
-   * Real ×2 needs a shared frontend first (internal passthrough NLB holding the VIP) — an
-   * unruled cost/design add. Prod stays 1; `compute.ts` throws on `>1` until then.
+   * Real ×2 needed a shared frontend first — ADR-122 (ruled by GD-REMAINING.R6,
+   * 2026-10-23) lands it: the internal passthrough NLB below owns the one address
+   * consumers dial, the NICs go ephemeral, and only then may the fact exceed 1 —
+   * `compute.ts` enforces that at eval time.
    */
   readonly egressProxyTargetSize: number;
+  /**
+   * R6INF.2 (ADR-122) — the egress-proxy frontend addressing design:
+   * - `"direct-ip"`: the pre-ILB shape — consumers dial the MIG's one reserved
+   *   `networkInterfaces[].networkIp`; `targetSize` must stay 1 (the single static
+   *   internal IP can have exactly one holder).
+   * - `"ilb"`: an internal passthrough NLB (the `proxy-vip` reserved internal Address +
+   *   `proxy-be` RegionBackendService + `proxy-fr` ForwardingRule) fronts the MIG — the
+   *   VIP, never a NIC, is the address `rhema:proxyBaseUrl` consumers dial.
+   */
+  readonly egressProxyFrontend: "direct-ip" | "ilb";
+  /**
+   * R6INF.2 (ADR-122 §Migration) — the transitional pin. While true the proxy template
+   * keeps `networkInterfaces[].networkIp` bound to the reserved `proxy-ip` address even
+   * when `egressProxyFrontend` is `"ilb"` — the `up` A/B window, where the frontend is
+   * already live and the MIG's instance sits HEALTHY behind the VIP while consumers still
+   * dial the old direct IP. Final posture is false everywhere: the VIP replaces the NIC
+   * pin and the `proxy-ip` reservation stays reserved-but-unused as the rollback path
+   * (ADR-122 §Rollback). `targetSize > 1` is legal only when this is false AND the
+   * frontend is `"ilb"` — the `compute.ts` guard asserts exactly that.
+   */
+  readonly egressProxyIpPin: boolean;
 }
 
 /**
@@ -455,6 +478,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     requiredSecrets: DEV_REQUIRED_SECRETS,
     cloudRun: cloudRunPosture({ max: 2, workerMax: 1, convertMin: 0, convertMax: 2 }),
     egressProxyTargetSize: 1, // non-prod keeps the single-VM proxy floor (GD-HA.R6 is prod-only)
+    // R6INF.2 (ADR-122): non-prod goes straight to the ILB posture — its `proxyBaseUrl`
+    // self-wires to the VIP, so no consumer ever dials the dropped NIC pin.
+    egressProxyFrontend: "ilb",
+    egressProxyIpPin: false,
   },
   preview: {
     kind: "preview",
@@ -484,6 +511,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
       convertMax: 2,
     }),
     egressProxyTargetSize: 1, // non-prod keeps the single-VM proxy floor (GD-HA.R6 is prod-only)
+    // R6INF.2 (ADR-122): same as dev — straight to the ILB posture (self-wire → VIP).
+    egressProxyFrontend: "ilb",
+    egressProxyIpPin: false,
   },
   prod: {
     kind: "prod",
@@ -527,12 +557,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // (forbidden to zero); convert-svc keeps ONLY its min=1 SLO floor, request-billed — the
     // codified revert of the live `cpu-throttling:"false"` drift (−$42.12/mo, REQ-COST-2).
     cloudRun: cloudRunPosture({ max: 10, workerMax: 3, convertMin: 1, convertMax: 4 }),
-    // R6INF.1 (REQ-DEP-3 / GD-HA.R6): the ruled ×2 (+$12.2/mo) is WITHHELD — the MIG template
-    // pins the single reserved `networkIp`, so a second instance can never be created and a
-    // single-URL consumer set gets no failover anyway. Withheld pending the ruled-design fix
-    // (internal passthrough NLB holding the VIP — an unruled cost add) — F-R6INF.1-1. The
-    // compute.ts guard makes any `>1` preview fail loudly, never a stuck MIG.
-    egressProxyTargetSize: 1,
+    // R6INF.2 (ADR-122 / GD-REMAINING.R6): the cutover shape — `up` C, the ruled maintenance
+    // window the ADR orders last. The `up` A/B window (frontend live + `egressProxyIpPin:true`
+    // + size 1) completed: consumers repointed to the VIP via `rhema:proxyBaseUrl`, so this
+    // drops the transitional `networkIp` pin (ephemeral NICs — the VIP, never a NIC, is the
+    // stable endpoint) and grows the regional MIG to TWO instances for the HA posture
+    // (GD-HA.R6). F-R6INF.1-1's guard stays: `>1` remains illegal under a pin or no frontend.
+    egressProxyTargetSize: 2,
+    egressProxyFrontend: "ilb",
+    egressProxyIpPin: false,
   },
 };
 
