@@ -55,11 +55,13 @@ describe("Academic protocol (§6.7 Academic column)", () => {
     expect(ACADEMIC_PROTOCOL.variants[0]!.default).toBe(true);
     // rubric: "the 8 as-is"
     expect(ACADEMIC_PROTOCOL.rubric.dimensions).toEqual([...RUBRIC_DIMENSIONS]);
-    // venue bar: "target journal / committee; seeded table (e.g. PLOS ONE abstract ≤300)"
+    // venue bar: "target journal / committee; seeded table (e.g. PLOS ONE abstract ≤300)" —
+    // H4-verified row (R6CNT.2): `verified_at`, never `as_of`.
     expect(ACADEMIC_PROTOCOL.venue_bar.kind).toBe("outlet-table");
     expect(ACADEMIC_PROTOCOL.venue_bar.table).toEqual([
-      { venue: "PLOS ONE", abstractMaxWords: 300, as_of: expect.any(String) },
+      { venue: "PLOS ONE", abstractMaxWords: 300, verified_at: expect.any(String) },
     ]);
+    expect(ACADEMIC_PROTOCOL.venue_bar.table![0]!.verified_at).toBe("2026-10-21T00:00:00.000Z");
     // phase defaults: "all on; stage: infer"
     expect(ACADEMIC_PROTOCOL.phase_defaults).toEqual({
       verification: true,
@@ -114,16 +116,17 @@ describe("Op-ed protocol (§6.7 Op-ed column)", () => {
     // rubric: "the 8 + Timeliness; Structure anchored to the OpEd Project form"
     expect(OP_ED_PROTOCOL.rubric.dimensions).toEqual([...RUBRIC_DIMENSIONS, "timeliness"]);
     expect(OP_ED_PROTOCOL.rubric.dimensions).toHaveLength(9);
-    // venue bar: the named outlet table (NYT 400–1,200; WaPo ≤750; WSJ 600–1,200; LAT ~750;
-    // USA Today 650–900; Globe ≤700)
+    // venue bar: the named outlet table — R6CNT.2's H4 stamps: NYT/LAT/Globe verified at the
+    // fetch-confirmed live bounds; WaPo/WSJ/USA Today stay stale (the evidence's re-fetch
+    // condition is unmet — 403/402 again on 2026-10-23).
     expect(OP_ED_PROTOCOL.venue_bar.kind).toBe("outlet-table");
     expect(OP_ED_PROTOCOL.venue_bar.table).toEqual([
-      { venue: "NYT", minWords: 400, maxWords: 1200, as_of: expect.any(String) },
+      { venue: "NYT", minWords: 800, maxWords: 1200, verified_at: expect.any(String) },
       { venue: "WaPo", maxWords: 750, as_of: expect.any(String) },
       { venue: "WSJ", minWords: 600, maxWords: 1200, as_of: expect.any(String) },
-      { venue: "LAT", maxWords: 750, as_of: expect.any(String) },
+      { venue: "LAT", minWords: 750, maxWords: 1000, verified_at: expect.any(String) },
       { venue: "USA Today", minWords: 650, maxWords: 900, as_of: expect.any(String) },
-      { venue: "Globe", maxWords: 700, as_of: expect.any(String) },
+      { venue: "Globe", maxWords: 800, verified_at: expect.any(String) },
     ]);
     // phase defaults: "all on; near-final; line depth full"
     expect(OP_ED_PROTOCOL.phase_defaults).toEqual({
@@ -223,8 +226,9 @@ describe("venue-row staleness (§16.4; REQ-GENRE-3; H4 gate)", () => {
   });
 
   it("the seed column `venue_table_verified_at` is null while any table row is stale", () => {
-    // Academic/Op-ed have stale tables (H4 incomplete) → null; Essay's bar carries its own stamp.
-    expect(venueTableVerifiedAt(ACADEMIC_PROTOCOL)).toBeNull();
+    // Academic's one-row table is fully H4-verified (R6CNT.2) → its rows' stamp; Op-ed still has
+    // stale rows → null; Essay's bar carries its own stamp.
+    expect(venueTableVerifiedAt(ACADEMIC_PROTOCOL)).toBe("2026-10-21T00:00:00.000Z");
     expect(venueTableVerifiedAt(OP_ED_PROTOCOL)).toBeNull();
     expect(venueTableVerifiedAt(MEMO_PROTOCOL)).toBeNull(); // no table
     expect(venueTableVerifiedAt(ESSAY_PROTOCOL)).toBeTruthy();
@@ -278,9 +282,10 @@ describe("seeding all four protocols (P1.21; REQ-GENRE-3)", () => {
       expect(sql).toMatch(/insert into protocols/i);
       expect(sql).toMatch(/on conflict \(id, version\) do update/i);
     }
-    // params[3] = venue_table_verified_at: essay verified; academic/op-ed stale ⇒ null; memo no table ⇒ null.
+    // params[3] = venue_table_verified_at: essay verified; academic fully verified (R6CNT.2);
+    // op-ed partially stale ⇒ null; memo no table ⇒ null.
     expect(calls[0]!.params[3]).toBeTruthy();
-    expect(calls[1]!.params[3]).toBeNull();
+    expect(calls[1]!.params[3]).toBe("2026-10-21T00:00:00.000Z");
     expect(calls[2]!.params[3]).toBeNull();
     expect(calls[3]!.params[3]).toBeNull();
     const memoBody = JSON.parse(calls[3]!.params[2] as string) as Protocol;

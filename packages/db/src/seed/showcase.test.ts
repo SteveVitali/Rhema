@@ -20,7 +20,8 @@ import { SHOWCASE_SLUG, SHOWCASE_TITLE, findingEvidenceSchema } from "@rhema/con
 // P1.17 (§15.4; REQ-POS-3; REQ-GROWTH-2) — the deterministic Showcase dossier seed: one read-only
 // worked-example project per workspace, seeded at $0, shaped like a real delivered dossier (outline →
 // frozen v1 → working v2 → letter + response + the claim ledger + findings + obligations + fetch log).
-// The essay content is a labeled fixture (D-P1.17-1 — the real walkthrough essay is an H5 decision).
+// The essay content is the H5/A4 pick (R6CNT.2, HUMAN-H11 2026-10-23): H.G. Wells, "The Extinction
+// of Man" (1894/1897, public domain — Gutenberg #17508). D-P1.17-1 is discharged by this content.
 
 let idCounter = 0;
 const ids = () => () => `id_${(idCounter++).toString().padStart(4, "0")}`; // process-unique: ids span workspaces

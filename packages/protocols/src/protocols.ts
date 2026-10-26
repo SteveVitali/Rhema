@@ -169,9 +169,20 @@ export const ESSAY_PROTOCOL: Protocol = {
 const VENUE_AS_OF = "2026-09-01";
 
 /**
+ * R6CNT.2 (REQ-LCH-4 / D-P1.21-1) — the H4 verification stamp HUMAN-H11 approved via
+ * `docs/build/reports/2026-10-21_R6CNT.1/h4-venue-evidence.md` ("I also approve A2, A3, and A4").
+ * Stamped ONLY on rows whose live bounds the evidence confirms: PLOS ONE (verbatim match) and the
+ * three outlets the run fetched directly (NYT, LAT, Globe — bounds updated to the live values the
+ * evidence recommends). WaPo/WSJ/USA Today stay `as_of` — the evidence conditions their update on
+ * a re-fetch of the 403/402 pages, and the re-fetch attempt on 2026-10-23 failed identically
+ * (WaPo 403 / WSJ 401 / USAToday 402): they render stale, never a fabricated `verified_at`.
+ */
+const VENUE_VERIFIED_AT = "2026-10-21T00:00:00.000Z";
+
+/**
  * Academic — the §6.7 Academic column: journal articles / thesis chapters / grants, held to the target
- * venue's bar. The rubric is the eight as-is; the venue table is seeded (PLOS ONE abstract ≤300) but
- * UNVERIFIED until H4 completes — the row carries `as_of`, not `verified_at`.
+ * venue's bar. The rubric is the eight as-is; the venue table is seeded (PLOS ONE abstract ≤300) —
+ * H4-verified 2026-10-21 (R6CNT.2; the row carries `verified_at`).
  */
 export const ACADEMIC_PROTOCOL: Protocol = {
   id: "academic",
@@ -193,8 +204,8 @@ export const ACADEMIC_PROTOCOL: Protocol = {
   venue_bar: {
     kind: "outlet-table",
     // §6.7: "target journal / committee; seeded table (e.g. PLOS ONE abstract ≤300)" — the row's
-    // bounds are authored but H4 has not verified them: `as_of`, never a fabricated `verified_at`.
-    table: [{ venue: "PLOS ONE", abstractMaxWords: 300, as_of: VENUE_AS_OF }],
+    // bounds matched the live submission guidelines verbatim (H4 evidence row 1: MATCH).
+    table: [{ venue: "PLOS ONE", abstractMaxWords: 300, verified_at: VENUE_VERIFIED_AT }],
     prompt: "The target journal or committee — pick from the table or type a venue.",
   },
   phase_defaults: {
@@ -226,8 +237,10 @@ export const ACADEMIC_PROTOCOL: Protocol = {
 
 /**
  * Op-ed — the §6.7 Op-ed column: short opinion pieces held to the outlet's word cap. The rubric adds
- * Timeliness and anchors Structure to the OpEd Project form; the outlet table's six rows are authored
- * but UNVERIFIED until H4 completes — each carries `as_of`, never a fabricated `verified_at`.
+ * Timeliness and anchors Structure to the OpEd Project form; the outlet table mixes H4-verified rows
+ * (NYT/LAT/Globe — bounds corrected to live guidance, `verified_at` stamped) and still-stale rows
+ * (WaPo/WSJ/USA Today — the evidence's re-fetch condition is unmet: `as_of`, never a fabricated
+ * `verified_at`).
  */
 export const OP_ED_PROTOCOL: Protocol = {
   id: "op-ed",
@@ -249,14 +262,16 @@ export const OP_ED_PROTOCOL: Protocol = {
   },
   venue_bar: {
     kind: "outlet-table",
-    // §6.7's named outlet table, authored but UNVERIFIED until H4 completes (as_of, never verified_at).
+    // §6.7's named outlet table. Three rows verified live (R6CNT.2 — NYT min raised 400→800, LAT
+    // ≤750 cap → the published 750–1,000 band, Globe ≤700→≤800); three stay stale pending the
+    // evidence's re-fetch condition (403/401/402 again on 2026-10-23).
     table: [
-      { venue: "NYT", minWords: 400, maxWords: 1_200, as_of: VENUE_AS_OF },
+      { venue: "NYT", minWords: 800, maxWords: 1_200, verified_at: VENUE_VERIFIED_AT },
       { venue: "WaPo", maxWords: 750, as_of: VENUE_AS_OF },
       { venue: "WSJ", minWords: 600, maxWords: 1_200, as_of: VENUE_AS_OF },
-      { venue: "LAT", maxWords: 750, as_of: VENUE_AS_OF },
+      { venue: "LAT", minWords: 750, maxWords: 1_000, verified_at: VENUE_VERIFIED_AT },
       { venue: "USA Today", minWords: 650, maxWords: 900, as_of: VENUE_AS_OF },
-      { venue: "Globe", maxWords: 700, as_of: VENUE_AS_OF },
+      { venue: "Globe", maxWords: 800, verified_at: VENUE_VERIFIED_AT },
     ],
     prompt: "The outlet this piece is written for — pick from the table or type a venue.",
   },

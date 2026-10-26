@@ -3,10 +3,15 @@
 // findings + run card), the triage ledger, and a revised v2 with the author's response letter — all
 // precomputed fixture content, never generated per user, at $0.
 //
-// CONTENT GATE: this is a deterministic fixture. The real walkthrough essay is an H5 decision
-// (deferred D-P1.17-1) — when H5 signs off on real content, only the SHOWCASE_FIXTURE_* strings
-// change; the machinery below is content-agnostic. REQ-POS-3 is enforced: `assertShowcaseFixture`
-// throws if the claim ledger lacks a contradicted tier-1 claim backed by a fetched URL.
+// CONTENT: R6CNT.2 landed the H5/A4 pick (HUMAN-H11, 2026-10-23 — "I also approve A2, A3, and A4"):
+// H.G. Wells, "The Extinction of Man" (Pall Mall Budget 1894; Certain Personal Matters, Lawrence &
+// Bullen 1897 — Project Gutenberg #17508, public domain US + UK/EU). The v1 text below is the essay
+// verbatim (hard-wraps reflowed, `_x_`→`*x*`, `--`→`—`); the dossier is the approved
+// `docs/build/reports/2026-10-21_R6CNT.1/sample-dossier-proposal.md` content extended to the
+// full-board shape (letter + 6-claim ledger + 6 findings + rubric). Every cited URL was
+// fetch-verified on 2026-10-23 (200 — Paradoxides/Isotelus/Army-ant/K–Pg Wikipedia, NPS bison,
+// Gutenberg). REQ-POS-3 is enforced: `assertShowcaseFixture` throws if the claim ledger lacks a
+// contradicted tier-1 claim backed by a fetched URL.
 
 import { sha256Hex, assertShowcaseFixture, SHOWCASE_SLUG, SHOWCASE_TITLE } from "@rhema/contracts";
 import type { MigrationDb } from "../migrate.js";
@@ -18,196 +23,159 @@ export interface ShowcaseStore {
 
 const ENC = new TextEncoder();
 
-// ---- the fixture essay (stand-in pending H5 — a modest original text on a checkable topic) ----
+// ---- the fixture essay — H.G. Wells, "The Extinction of Man" (1894/1897; public domain) ----
 
-export const SHOWCASE_FIXTURE_OUTLINE_MD = `# Outline — The archive that remembers
+export const SHOWCASE_FIXTURE_OUTLINE_MD = `# Outline — The Extinction of Man
 
-## The promise of a perfect memory
-- Digital archives as a civilizational claim
-- The counter-claim: archives decay by policy, not entropy
+## The wager
+- Extinction as the rule, not the exception
+- Man's exemption is assumed, never argued
 
-## What the ledger shows
-- Three cases: the 1871 census gap, the 1990s web, the present corpus
-- Numbers worth checking before the argument leans on them
+## The evidence geology gives
+- Dominant taxa fall at their zenith
+- No dominant species succeeded by its own descendants
 
-## What the essay should admit
-- Where the metaphor breaks
-- What the reader should verify for themselves
+## The menagerie
+- The sea: crabs, then cephalopods
+- The land: the migratory ants
+- Everywhere: the new plague
+
+## The close
+- Ascendency as the eve of overthrow
+- The reviewer's disbelief as the final beat
 `;
 
-export const SHOWCASE_FIXTURE_V1_MD = `# The archive that remembers
+export const SHOWCASE_FIXTURE_V1_MD = `# The Extinction of Man
 
-Every civilization writes down what it cannot afford to forget, and then forgets what it wrote. The
-claim sounds paradoxical, but the pattern is old: archives promise permanence, and deliver it exactly
-as far as their custodians are funded to deliver it.
+It is part of the excessive egotism of the human animal that the bare idea of its extinction seems incredible to it. "A world without *us*!" it says, as a heady young Cephalaspis might have said it in the old Silurian sea. But since the Cephalaspis and the Coccostëus many a fine animal has increased and multiplied upon the earth, lorded it over land or sea without a rival, and passed at last into the night. Surely it is not so unreasonable to ask why man should be an exception to the rule. From the scientific standpoint at least any reason for such exception is hard to find.
 
-The digital archive was supposed to end this. Storage is cheap, copies are free, and forgetting now
-looks like a choice rather than a fate. That is the promise this essay wants to test — because the
-ledger underneath it is less kind than the metaphor.
+No doubt man is undisputed master at the present time — at least of most of the land surface; but so it has been before with other animals. Let us consider what light geology has to throw upon this. The great land and sea reptiles of the Mesozoic period, for instance, seem to have been as secure as humanity is now in their pre-eminence. But they passed away and left no descendants when the new orders of the mammals emerged from their obscurity. So, too, the huge Titanotheria of the American continent, and all the powerful mammals of Pleistocene South America, the sabre-toothed lion, for instance, and the Machrauchenia suddenly came to a finish when they were still almost at the zenith of their rule. *And in no case does the record of the fossils show a really dominant species succeeded by its own descendants.* What has usually happened in the past appears to be the emergence of some type of animal hitherto rare and unimportant, and the extinction, not simply of the previously ruling species, but of most of the forms that are at all closely related to it. Sometimes, indeed, as in the case of the extinct giants of South America, they vanished without any considerable rivals, victims of pestilence, famine, or, it may be, of that cumulative inefficiency that comes of a too undisputed life. So that the analogy of geology, at anyrate, is against this too acceptable view of man's certain tenure of the earth for the next few million years or so.
 
-## Three shelves
+And, after all, even now man is by no means such a master of the kingdoms of life as he is apt to imagine. The sea, that mysterious nursery of living things, is for all practical purposes beyond his control. The low-water mark is his limit. Beyond that he may do a little with seine and dredge, murder a few million herrings a year as they come in to spawn, butcher his fellow air-breather, the whale, or haul now and then an unlucky king-crab or strange sea-urchin out of the deep water, in the name of science; but the life of the sea as a whole knows him not, plays out its slow drama of change and development unheeding him, and may in the end, in mere idle sport, throw up some new terrestrial denizens, some new competitor for space to live in and food to live upon, that will sweep him and all his little contrivances out of existence, as certainly and inevitably as he has swept away auk, bison, and dodo during the last two hundred years.
 
-Start with the census. The 1871 United Kingdom census, the first to record religion for every
-household, survives in the enumerators' books almost intact — a reminder that paper, kept dry, is a
-very good archive. The same census, however, records population counts that later historians have had
-to reconstruct because the published abstracts were themselves compiled under a budget, and the
-corners that got cut became permanent. The archive remembered what it was paid to remember.
+For instance, there are the Crustacea. As a group the crabs and lobsters are confined below the high-water mark. But experiments in air-breathing are no doubt in progress in this group — we already have tropical land-crabs — and as far as we know there is no reason why in the future these creatures should not increase in size and terrestrial capacity. In the past we have the evidence of the fossil *Paradoxides* that creatures of this kind may at least attain a length of six feet, and, considering their intense pugnacity, a crab of such dimensions would be as formidable a creature as one could well imagine. And their amphibious capacity would give them an advantage against us such as at present is only to be found in the case of the alligator or crocodile. If we imagine a shark that could raid out upon the land, or a tiger that could take refuge in the sea, we should have a fair suggestion of what a terrible monster a large predatory crab might prove. And so far as zoological science goes we must, at least, admit that such a creature is an evolutionary possibility.
 
-Now the 1990s web. The Internet Archive's crawls preserved a slice of it, and the slice is
-impressive — but the slice is a slice. By one widely repeated estimate, more than a quarter of the
-links in papers published in the last two decades now resolve to nothing at all. The dead link is
-the digital archive's missing shelf: not a fire, not a flood, just a hosting bill nobody paid.
+Then, again, the order of the Cephalopods, to which belong the cuttle-fish and the octopus (sacred to Victor Hugo), may be, for all we can say to the contrary, an order with a future. Their kindred, the Gastropods, have, in the case of the snail and slug, learnt the trick of air-breathing. And not improbably there are even now genera of this order that have escaped the naturalist, or even well-known genera whose possibilities in growth and dietary are still unknown. Suppose some day a specimen of a new species is caught off the coast of Kent. It excites remark at a Royal Society soirée, engenders a Science Note or so, "A Huge Octopus!" and in the next year or so three or four other specimens come to hand, and the thing becomes familiar. "Probably a new and larger variety of *Octopus* so-and-so, hitherto supposed to be tropical," says Professor Gargoyle, and thinks he has disposed of it. Then conceive some mysterious boating accidents and deaths while bathing. A large animal of this kind coming into a region of frequent wrecks might so easily acquire a preferential taste for human nutriment, just as the Colorado beetle acquired a new taste for the common potato and gave up its old food-plants some years ago. Then perhaps a school or pack or flock of *Octopus gigas* would be found busy picking the sailors off a stranded ship, and then in the course of a few score years it might begin to stroll up the beaches and batten on excursionists. Soon it would be a common feature of the watering-places — possibly at last commoner than excursionists. Suppose such a creature were to appear — and it is, we repeat, a possibility, if perhaps a remote one — how could it be fought against? Something might be done by torpedoes; but, so far as our past knowledge goes, man has no means of seriously diminishing the numbers of any animal of the most rudimentary intelligence that made its fastness in the sea.
 
-And now the present corpus. The essay leans here on a claim it should not: that "the 1871 census
-recorded 3.1 million households in Scotland," a figure repeated in at least two secondary sources. It
-is wrong — the recorded figure is closer to half a million households, and the error survives because
-citing a confident number is easier than checking one. The archive does not just decay by accident;
-it decays by citation.
+Even on land it is possible to find creatures that with a little modification might become excessively dangerous to the human ascendency. Most people have read of the migratory ants of Central Africa, against which no man can stand. On the march they simply clear out whole villages, drive men and animals before them in headlong rout, and kill and eat every living creature they can capture. One wonders why they have not already spread the area of their devastations. But at present no doubt they have their natural checks, of ant-eating birds, or what not. In the near future it may be that the European immigrant, as he sets the balance of life swinging in his vigorous manner, may kill off these ant-eating animals, or otherwise unwittingly remove the checks that now keep these terrible little pests within limits. And once they begin to spread in real earnest, it is hard to see how their advance could be stopped. A world devoured by ants seems incredible now, simply because it is not within our experience; but a naturalist would have a dull imagination who could not see in the numerous species of ants, and in their already high intelligence, far more possibility of strange developments than we have in the solitary human animal. And no doubt the idea of the small and feeble organism of man, triumphant and omnipresent, would have seemed equally incredible to an intelligent mammoth or a palæolithic cave bear.
 
-## What remembering costs
+And, finally, there is always the prospect of a new disease. As yet science has scarcely touched more than the fringe of the probabilities associated with the minute fungi that constitute our zymotic diseases. But the bacilli have no more settled down into their final quiescence than have men; like ourselves, they are adapting themselves to new conditions and acquiring new powers. The plagues of the Middle Ages, for instance, seem to have been begotten of a strange bacillus engendered under conditions that sanitary science, in spite of its panacea of drainage, still admits are imperfectly understood, and for all we know even now we may be quite unwittingly evolving some new and more terrible plague — a plague that will not take ten or twenty or thirty per cent., as plagues have done in the past, but the entire hundred.
 
-The conclusion is not that digital archives fail. They succeed at exactly the thing paper did — they
-remember what someone keeps paying for. The honest version of the promise is narrower and better: an
-archive that remembers is not a technology but a budget line, renewed every year, with someone's name
-on it. The reader who wants the strongest version of this argument should verify the numbers above —
-the point is that they can.
+No; man's complacent assumption of the future is too confident. We think, because things have been easy for mankind as a whole for a generation or so, we are going on to perfect comfort and security in the future. We think that we shall always go to work at ten and leave off at four, and have dinner at seven for ever and ever. But these four suggestions, out of a host of others, must surely do a little against this complacency. Even now, for all we can tell, the coming terror may be crouching for its spring and the fall of humanity be at hand. In the case of every other predominant animal the world has ever seen, I repeat, the hour of its complete ascendency has been the eve of its entire overthrow. But if some poor story-writing man ventures to figure this sober probability in a tale, not a reviewer in London but will tell him his theme is the utterly impossible. And, when the thing happens, one may doubt if even then one will get the recognition one deserves.
 `;
 
-export const SHOWCASE_FIXTURE_V2_MD = `# The archive that remembers
+export const SHOWCASE_FIXTURE_V2_MD = `# The Extinction of Man
 
-Every civilization writes down what it cannot afford to forget, and then forgets what it wrote. The
-claim sounds paradoxical, but the pattern is old: archives promise permanence, and deliver it exactly
-as far as their custodians are funded to deliver it.
+It is part of the excessive egotism of the human animal that the bare idea of its extinction seems incredible to it. "A world without *us*!" it says, as a heady young Cephalaspis might have said it in the old Silurian sea. But since the Cephalaspis and the Coccostëus many a fine animal has increased and multiplied upon the earth, lorded it over land or sea without a rival, and passed at last into the night. Surely it is not so unreasonable to ask why man should be an exception to the rule. From the scientific standpoint at least any reason for such exception is hard to find.
 
-The digital archive was supposed to end this. Storage is cheap, copies are free, and forgetting now
-looks like a choice rather than a fate. That is the promise this essay wants to test — because the
-ledger underneath it is less kind than the metaphor.
+No doubt man is undisputed master at the present time — at least of most of the land surface; but so it has been before with other animals. Let us consider what light geology has to throw upon this. The great land and sea reptiles of the Mesozoic period, for instance, seem to have been as secure as humanity is now in their pre-eminence. But they passed away and left no descendants when the new orders of the mammals emerged from their obscurity. So, too, the huge Titanotheria of the American continent, and all the powerful mammals of Pleistocene South America, the sabre-toothed lion, for instance, and the Machrauchenia suddenly came to a finish when they were still almost at the zenith of their rule. *And in no case does the record of the fossils show a really dominant species succeeded by its own descendants.* What has usually happened in the past appears to be the emergence of some type of animal hitherto rare and unimportant, and the extinction, not simply of the previously ruling species, but of most of the forms that are at all closely related to it. Sometimes, indeed, as in the case of the extinct giants of South America, they vanished without any considerable rivals, victims of pestilence, famine, or, it may be, of that cumulative inefficiency that comes of a too undisputed life. So that the analogy of geology, at anyrate, is against this too acceptable view of man's certain tenure of the earth for the next few million years or so.
 
-## Three shelves
+And, after all, even now man is by no means such a master of the kingdoms of life as he is apt to imagine. The sea, that mysterious nursery of living things, is for all practical purposes beyond his control. The low-water mark is his limit. Beyond that he may do a little with seine and dredge, murder a few million herrings a year as they come in to spawn, butcher his fellow air-breather, the whale, or haul now and then an unlucky king-crab or strange sea-urchin out of the deep water, in the name of science; but the life of the sea as a whole knows him not, plays out its slow drama of change and development unheeding him, and may in the end, in mere idle sport, throw up some new terrestrial denizens, some new competitor for space to live in and food to live upon, that will sweep him and all his little contrivances out of existence, as certainly and inevitably as he has swept away auk and dodo — and very nearly the bison — during the last two hundred years.
 
-Start with the census. The 1871 United Kingdom census survives in the enumerators' books almost
-intact — a reminder that paper, kept dry, is a very good archive. The same census, however, records
-counts that later historians have had to reconstruct, because the published abstracts were themselves
-compiled under a budget, and the corners that got cut became permanent. The archive remembered what
-it was paid to remember.
+For instance, there are the Crustacea. As a group the crabs and lobsters are confined below the high-water mark. But experiments in air-breathing are no doubt in progress in this group — we already have tropical land-crabs — and as far as we know there is no reason why in the future these creatures should not increase in size and terrestrial capacity.
 
-Now the 1990s web. The Internet Archive's crawls preserved a slice of it, and the slice is
-impressive — but the slice is a slice. Links in papers published in the last two decades now resolve
-to nothing at a rate measured in the tens of percent, depending on the venue. The dead link is the
-digital archive's missing shelf: not a fire, not a flood, just a hosting bill nobody paid.
+And their amphibious capacity would give them an advantage against us such as at present is only to be found in the case of the alligator or crocodile. If we imagine a shark that could raid out upon the land, or a tiger that could take refuge in the sea, we should have a fair suggestion of what a terrible monster a large predatory crab might prove. And so far as zoological science goes we must, at least, admit that such a creature is an evolutionary possibility.
 
-The earlier version of this essay claimed that "the 1871 census recorded 3.1 million households in
-Scotland." It does not — the recorded figure is about 560,000 households, and the error survives
-because citing a confident number is easier than checking one. This version carries the correction
-rather than the claim; the mistake was instructive, but it was still a mistake.
+The earlier version of this essay claimed that the fossil *Paradoxides* showed creatures of this kind attaining a length of six feet. It does not — the largest *Paradoxides* specimen on record is about fifteen inches, and the largest complete trilobite ever found is under two and a half feet. The six-foot crab stays in the argument as a conjecture, not a specimen: the fear was built on the number, so the number has to be right.
 
-## What remembering costs
+Then, again, the order of the Cephalopods, to which belong the cuttle-fish and the octopus (sacred to Victor Hugo), may be, for all we can say to the contrary, an order with a future. Their kindred, the Gastropods, have, in the case of the snail and slug, learnt the trick of air-breathing. And not improbably there are even now genera of this order that have escaped the naturalist, or even well-known genera whose possibilities in growth and dietary are still unknown. Suppose some day a specimen of a new species is caught off the coast of Kent. It excites remark at a Royal Society soirée, engenders a Science Note or so, "A Huge Octopus!" and in the next year or so three or four other specimens come to hand, and the thing becomes familiar. "Probably a new and larger variety of *Octopus* so-and-so, hitherto supposed to be tropical," says Professor Gargoyle, and thinks he has disposed of it. Then conceive some mysterious boating accidents and deaths while bathing. A large animal of this kind coming into a region of frequent wrecks might so easily acquire a preferential taste for human nutriment, just as the Colorado beetle acquired a new taste for the common potato and gave up its old food-plants some years ago. Then perhaps a school or pack or flock of *Octopus gigas* would be found busy picking the sailors off a stranded ship, and then in the course of a few score years it might begin to stroll up the beaches and batten on excursionists. Soon it would be a common feature of the watering-places — possibly at last commoner than excursionists. Suppose such a creature were to appear — and it is, we repeat, a possibility, if perhaps a remote one — how could it be fought against? Something might be done by torpedoes; but, so far as our past knowledge goes, man has no means of seriously diminishing the numbers of any animal of the most rudimentary intelligence that made its fastness in the sea.
 
-The conclusion is not that digital archives fail. They succeed at exactly the thing paper did — they
-remember what someone keeps paying for. The honest version of the promise is narrower and better: an
-archive that remembers is not a technology but a budget line, renewed every year, with someone's name
-on it. The reader who wants the strongest version of this argument should verify the numbers above —
-the point is that they can.
+Even on land it is possible to find creatures that with a little modification might become excessively dangerous to the human ascendency. Most people have read of the migratory ants of Central Africa, against which no man can stand. On the march they simply clear out whole villages, drive men and animals before them in headlong rout, and kill and eat every living creature they can capture. One wonders why they have not already spread the area of their devastations. But at present no doubt they have their natural checks, of ant-eating birds, or what not. In the near future it may be that the European immigrant, as he sets the balance of life swinging in his vigorous manner, may kill off these ant-eating animals, or otherwise unwittingly remove the checks that now keep these terrible little pests within limits. And once they begin to spread in real earnest, it is hard to see how their advance could be stopped. A world devoured by ants seems incredible now, simply because it is not within our experience; but a naturalist would have a dull imagination who could not see in the numerous species of ants, and in their already high intelligence, far more possibility of strange developments than we have in the solitary human animal. And no doubt the idea of the small and feeble organism of man, triumphant and omnipresent, would have seemed equally incredible to an intelligent mammoth or a palæolithic cave bear.
+
+And, finally, there is always the prospect of a new disease. As yet science has scarcely touched more than the fringe of the probabilities associated with the minute fungi that constitute our zymotic diseases. But the bacilli have no more settled down into their final quiescence than have men; like ourselves, they are adapting themselves to new conditions and acquiring new powers. The plagues of the Middle Ages, for instance, seem to have been begotten of a strange bacillus engendered under conditions that sanitary science, in spite of its panacea of drainage, still admits are imperfectly understood, and for all we know even now we may be quite unwittingly evolving some new and more terrible plague — a plague that will not take ten or twenty or thirty per cent., as plagues have done in the past, but the entire hundred.
+
+No; man's complacent assumption of the future is too confident. We think, because things have been easy for mankind as a whole for a generation or so, we are going on to perfect comfort and security in the future. We think that we shall always go to work at ten and leave off at four, and have dinner at seven for ever and ever. But these four suggestions, out of a host of others, must surely do a little against this complacency. Even now, for all we can tell, the coming terror may be crouching for its spring and the fall of humanity be at hand. In the case of every other predominant animal the world has ever seen, I repeat, the hour of its complete ascendency has been the eve of its entire overthrow. But if some poor story-writing man ventures to figure this sober probability in a tale, not a reviewer in London but will tell him his theme is the utterly impossible. And, when the thing happens, one may doubt if even then one will get the recognition one deserves.
 `;
 
-export const SHOWCASE_FIXTURE_LETTER_MD = `# Editor's letter — The archive that remembers (v1)
+export const SHOWCASE_FIXTURE_LETTER_MD = `# Editor's letter — The Extinction of Man (v1)
 
 ## The verdict
 
-Strong essay, one real problem: the essay's central checkable number is wrong, and the argument
-leans on it at the exact moment it claims credibility. Revise before this goes anywhere. See finding
-1.
+A real argument with a real hole: the essay's hinge specimen is wrong on the fossil record by a factor of two, and one of its three extinctions never happened. The thesis — that humanity's tenure is not guaranteed — survives contact with modern paleontology; the evidence propping it does not. Revise before this goes anywhere. See finding 1.
 
 ## Major findings
 
-Beyond the census figure, two structural notes matter. The middle shelf — the link-rot paragraph —
-quotes a widely repeated estimate without naming where it came from; the claim needs a source or a
-softer phrasing. And the ending asks the reader to "verify the numbers" without showing the work;
-that invitation is the essay's best move, but it only lands if the numbers are checkable.
+Beyond the Paradoxides figure, the extinction roll — auk, bison, dodo — contains a survivor and a date outside the essay's own two-hundred-year window. And the speculative menagerie works only because the essay keeps labelling its conjectures as conjectures; the revision must preserve that honesty, not let the six-foot crab harden into a footnote.
 
 ## Strengths
 
-The frame — an archive is a budget line, not a technology — is genuinely earned here, and the
-three-shelf structure gives each version of the claim its own evidence. The census shelf in
-particular does real work: it shows decay-by-budget before the essay ever mentions a server.
+The structure IS the argument: the sea twice, the land once, then everywhere. The geology analogy that opens the piece — dominant taxa fall without warning, and no dominant species is succeeded by its own descendants — is the load-bearing claim, and it holds. The close ("the hour of its complete ascendency has been the eve of its entire overthrow") is the sentence the essay exists for.
 
 ## Revision roadmap
 
-Fix the Scotland figure and carry the correction openly — the essay is about citation decay, and a
-visible correction is the strongest possible evidence for it. Tie the link-rot estimate to its
-primary source or drop it to a qualitative claim. Then let the last paragraph keep the invitation.
+Correct the Paradoxides figure and carry the correction in the open — an essay about unpreparedness can afford to show its own. Fix the extinction roll or drop the bison. Keep the conjecture labels on the menagerie; they are what separates this from prophecy.
 
 ## Considered and rejected
 
-We considered recommending a fourth section on institutional preservation funding; the essay's
-argument does not need it and the scope would dilute the ending. We also considered flagging the
-title as generic — it is not the problem the draft has.
+We considered recommending the Cephalopod section be cut for length; it does the essay's best imaginative work and stays. We also considered flagging the title as dated; it is the period's idiom, and the conceit depends on it.
 `;
 
-export const SHOWCASE_FIXTURE_RESPONSE_MD = `# Response — The archive that remembers (v2)
+export const SHOWCASE_FIXTURE_RESPONSE_MD = `# Response — The Extinction of Man (v2)
 
-Two sentences of accounting for the revision, the way the response letter always works: the Scotland
-figure was wrong and v2 carries the correction in the open; the link-rot estimate is now qualitative
-and no longer leans on an unsourced number. Everything else in the letter's roadmap stands — the
-ending keeps its invitation to verify, and this time the numbers in front of the reader were.
+Accounting for the revision, the way the response letter always works: the six-foot crab is corrected in the open — *Paradoxides* tops out near fifteen inches and no complete trilobite has ever exceeded two and a half feet, so the claim now reads as the conjecture it always was. The extinction roll drops the bison, which survives. The conjecture labels on the menagerie stay, as the letter asked. Everything else in the roadmap stands.
 `;
 
 // ---- the fixture's claim ledger (deterministic; the tier-1 row is REQ-POS-3's proof) ----
-// The contradicted claim's source is a real public URL the review "fetched" (fetch_log rows below
-// carry the same normalized URLs — the cited⇒fetched chip is real data, not decoration).
+// The contradicted claim's sources are real public URLs the review "fetched" (fetch_log rows below
+// carry the same normalized URLs — the cited⇒fetched chip is real data, not decoration). All five
+// cited URLs returned 200 on 2026-10-23.
 
-const SCOTLAND_URL = "https://www.nrscotland.gov.uk/publications/1871-census-population-tables";
-const LINKROT_URL = "https://www.pewresearch.org/decay/";
-const ARCHIVE_URL = "https://archive.org/web/";
+const PARADOXIDES_URL = "https://en.wikipedia.org/wiki/Paradoxides";
+const ISOTELUS_URL = "https://en.wikipedia.org/wiki/Isotelus";
+const BISON_URL = "https://www.nps.gov/subjects/bison";
+const KPG_URL = "https://en.wikipedia.org/wiki/Cretaceous%E2%80%93Paleogene_extinction_event";
+const ARMYANT_URL = "https://en.wikipedia.org/wiki/Army_ant";
 
 export const SHOWCASE_FIXTURE_CLAIMS = [
   {
-    text: "The 1871 census recorded 3.1 million households in Scotland.",
+    text: "In the past we have the evidence of the fossil Paradoxides that creatures of this kind may at least attain a length of six feet.",
     tier: 1,
     verdict: "contradicted",
-    kind: "statistical",
-    sourceCheck: "matches_citation",
-    note: "The recorded figure is ≈560,000 households; the claim repeats a secondary-source error.",
+    kind: "factual",
+    sourceCheck: "from_search",
+    note: "Paradoxides' largest specimen is 37 cm (≈15 in); the largest complete trilobite ever found (Isotelus rex) is 72 cm — under 2.5 ft, not six. Paradoxides is also a trilobite, not a crustacean 'of this kind.' Wrong on the scale and the group.",
     sources: [
-      { url: SCOTLAND_URL, stance: "contradicts", note: "Published tables: ≈0.56M households." },
-      { url: ARCHIVE_URL, stance: "contextualizes" },
+      { url: PARADOXIDES_URL, stance: "contradicts", note: "Largest specimen ≈37 cm." },
+      { url: ISOTELUS_URL, stance: "contradicts", note: "Isotelus rex, 72 cm — the record complete trilobite." },
     ],
   },
   {
-    text: "Paper archives decay by custodial neglect more than by entropy.",
-    tier: 2,
-    verdict: "substantially_accurate",
-    kind: "interpretive",
-    sources: [{ url: ARCHIVE_URL, stance: "supports" }],
-  },
-  {
-    text: "More than a quarter of links in recent papers now resolve to nothing.",
+    text: "He has swept away auk, bison, and dodo during the last two hundred years.",
     tier: 1,
     verdict: "misleading_in_context",
-    kind: "statistical",
-    note: "The estimate is real but venue-dependent; cite the primary study or soften.",
-    sources: [{ url: LINKROT_URL, stance: "supports", note: "Rate varies by venue and year." }],
-  },
-  {
-    text: "The Internet Archive crawled only a slice of the 1990s web.",
-    tier: 2,
-    verdict: "verified",
     kind: "factual",
-    sources: [{ url: ARCHIVE_URL, stance: "supports" }],
+    note: "The bison was hunted to under 1,000 but never extinguished — ~11,000 DOI-managed in 19 herds today, designated the US national mammal in 2016; the dodo fell ~1681, outside the essay's own 200-year window; only the great auk (1844) fits.",
+    sources: [{ url: BISON_URL, stance: "contradicts", note: "Bison survive — a conservation recovery, not an extinction." }],
   },
   {
-    text: "The 1871 UK census survives in the enumerators' books almost intact.",
+    text: "In no case does the record of the fossils show a really dominant species succeeded by its own descendants.",
+    tier: 1,
+    verdict: "substantially_accurate",
+    kind: "interpretive",
+    note: "The pattern holds in the mass-extinction literature — dominant clades are replaced by previously marginal competitors — though modern reviewers soften 'in no case' (post-extinction radiations do include survivor lineages).",
+  },
+  {
+    text: "The great land and sea reptiles of the Mesozoic period passed away and left no descendants when the new orders of the mammals emerged.",
     tier: 2,
-    verdict: "verified",
+    verdict: "substantially_accurate",
     kind: "factual",
-    sources: [{ url: SCOTLAND_URL, stance: "supports" }],
+    note: "True of the ruling Mesozoic reptile clades; the fossil nuance is that birds are theropod descendants — 'left no descendants' holds for the dominant forms the essay names.",
+    sources: [{ url: KPG_URL, stance: "supports", note: "The K–Pg boundary's turnover pattern." }],
   },
   {
-    text: "An archive that remembers is a budget line, renewed every year.",
+    text: "The migratory ants of Central Africa clear out whole villages and kill and eat every living creature they can capture.",
+    tier: 2,
+    verdict: "substantially_accurate",
+    kind: "factual",
+    note: "Driver-ant (Dorylus) columns do overrun prey en masse; 'no man can stand' is period travel-literature, but the column raids are real.",
+    sources: [{ url: ARMYANT_URL, stance: "contextualizes", note: "The swarm-raid phenomenon; the superlative is period color." }],
+  },
+  {
+    text: "For all we know even now we may be quite unwittingly evolving some new and more terrible plague.",
     tier: 3,
     verdict: "unverifiable",
-    kind: "normative",
-    note: "Thesis claim — argued, not checked.",
+    kind: "predictive",
+    note: "Speculative thesis claim — argued, not checked.",
   },
 ] as const;
 
@@ -219,24 +187,24 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     severity: "blocking",
     origin: "editor",
     letterSection: "major",
-    title: "The Scotland figure is wrong — and the argument leans on it",
-    body: "The essay claims the 1871 census recorded 3.1 million households in Scotland. The published tables record roughly 560,000. Because the error is the essay's own example of citation decay, it must be corrected visibly — the correction is the argument's best evidence.",
+    title: "The six-foot crab is the essay's hinge — and it is wrong on the fossil record",
+    body: "The nightmare scenario that sells the thesis is scaled off *Paradoxides*. The real genus tops out near fifteen inches, and no complete trilobite has ever exceeded two and a half feet. The essay's scariest object shrinks by half — the correction must be visible, because the fear is built on the number.",
     // HOT.1 — canonical evidence shape (verdict + urls); `accessed` is stamped at insert with the
     // seed's `now`, the same stamp the claim rows' `accessed_at` gets.
-    evidence: { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] },
+    evidence: { verdict: "contradicted", urls: [{ url: PARADOXIDES_URL }] },
     // FIX.1 (REQ-FIX-T13F) — the canonical Apply substrate the api's route consumes verbatim:
     // `suggestion.replacement` is the literal text spliced into the working head, and `anchor`
     // resolves against the V2 head's block map (`b7` — the correction paragraph;
     // `splitMarkdownBlocks` pins the offsets — the fixture test resolves it end-to-end).
     suggestion: {
       replacement:
-        "the recorded figure is about 560,000 households — the 3.1 million figure was a secondary-source error",
+        "the largest *Paradoxides* specimen on record is about fifteen inches — the six-foot figure was a nineteenth-century overstatement, not a measurement",
     },
     anchor: {
       blockId: "b7",
-      quote: "the recorded figure is about 560,000 households",
-      startOffset: 124,
-      endOffset: 171,
+      quote: "the largest *Paradoxides* specimen on record is about fifteen inches",
+      startOffset: 148,
+      endOffset: 216,
       confidence: 1,
     },
     rubricDims: ["evidence_accuracy", "intellectual_honesty"],
@@ -246,9 +214,9 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     severity: "major",
     origin: "editor",
     letterSection: "major",
-    title: "The link-rot estimate needs its source",
-    body: "The 'more than a quarter' figure is real but venue-dependent and currently unattributed. Cite the primary study or soften the claim to a measured-range statement.",
-    evidence: { verdict: "misleading_in_context", urls: [{ url: LINKROT_URL }] },
+    title: "The essay's own timeline contradicts one of its three extinctions",
+    body: "Within 'the last two hundred years' Wells lists auk, bison, and dodo as swept away. The bison survives (a conservation success, not an extinction) and the dodo fell a decade before the window opens. Of the three, only the great auk honestly belongs.",
+    evidence: { verdict: "misleading_in_context", urls: [{ url: BISON_URL }] },
     rubricDims: ["evidence_accuracy"],
   },
   {
@@ -256,17 +224,17 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     severity: "minor",
     origin: "editor",
     letterSection: "roadmap",
-    title: "The verify-it-yourself invitation needs the numbers checkable",
-    body: "The ending's invitation to verify is the essay's strongest move, but it lands only if every hard number above it is actually checkable. Once finding 1 is corrected, this resolves itself.",
-    rubricDims: ["argument_rigor"],
+    title: "The conjecture labels are what keep the menagerie honest",
+    body: "The essay repeatedly marks its monsters as possibilities ('a possibility, if perhaps a remote one'). That labelling is the difference between argument and prophecy — the revision must keep it, especially now that the crab is explicitly a conjecture.",
+    rubricDims: ["intellectual_honesty"],
   },
   {
     kind: "structure",
     severity: "minor",
     origin: "editor",
     letterSection: "strength",
-    title: "The three-shelf structure earns the frame",
-    body: "Census, links, corpus — each shelf carries one version of the decay claim and its own evidence. Keep the order; it escalates correctly.",
+    title: "The escalation from the sea to everywhere earns the close",
+    body: "Crabs, cephalopods, ants, plague — the threats widen from imaginable to ubiquitous, which is exactly what the closing cadence needs behind it. Keep the order.",
     rubricDims: ["structure"],
   },
   {
@@ -274,8 +242,8 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     severity: "major",
     origin: "second_read",
     letterSection: "major",
-    title: "Second read: the 1871 census is not the first to record religion",
-    body: "The draft calls 1871 the first census to record religion for every household; that distinction belongs to a later enumeration. The sentence works without the superlative.",
+    title: "Second read: Paradoxides is misfiled as well as mis-sized",
+    body: "Given only the draft: the 'of this kind' grouping places the specimen among the Crustacea, but Paradoxides is a trilobite — the essay's scariest object sits in the wrong phylum as well as the wrong size. Agrees with finding 1; the correction paragraph covers the size, and the 'creatures of this kind' phrasing survives as the essay's own.",
     rubricDims: ["evidence_accuracy"],
     reconciliation: "agrees",
   },
@@ -284,8 +252,8 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     severity: "note",
     origin: "both",
     letterSection: "strength",
-    title: "'A budget line, renewed every year' is the sentence to keep",
-    body: "The closing formulation is the essay's quotable core. Both passes flagged it as the keeper.",
+    title: "'the eve of its entire overthrow' is the sentence to keep",
+    body: "The closing cadence — ascendency as the eve of overthrow — is the essay's quotable core. Both passes flagged it as the keeper.",
     rubricDims: ["prose"],
     reconciliation: "agrees",
   },
@@ -294,13 +262,13 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
 export const SHOWCASE_FIXTURE_RUBRIC = {
   dimensions: [
     { dimension: "thesis_contribution", score: 4 },
-    { dimension: "argument_rigor", score: 4 },
+    { dimension: "argument_rigor", score: 3 },
     { dimension: "evidence_accuracy", score: 2, cap: { dimension: "evidence_accuracy", score: 2, reason: "A contradicted tier-1 claim caps the dimension." } },
-    { dimension: "originality_situatedness", score: 3 },
+    { dimension: "originality_situatedness", score: 4 },
     { dimension: "structure", score: 4 },
-    { dimension: "prose", score: 4 },
+    { dimension: "prose", score: 5 },
     { dimension: "voice_audience_fit", score: 4 },
-    { dimension: "intellectual_honesty", score: 3 },
+    { dimension: "intellectual_honesty", score: 4 },
   ],
 };
 
@@ -490,7 +458,7 @@ async function seedDossierProject(
     [
       runId, deps.workspaceId, projectId,
       JSON.stringify({ draftId: v1Id }),
-      JSON.stringify({ wordCount: 540, claimCount: SHOWCASE_FIXTURE_CLAIMS.length }),
+      JSON.stringify({ wordCount: 1651, claimCount: SHOWCASE_FIXTURE_CLAIMS.length }),
       deps.ownerId, now.toISOString(), now.toISOString(),
     ],
   );
@@ -504,7 +472,7 @@ async function seedDossierProject(
     );
   }
   // the cited⇒fetched audit: every fixture source URL reads as an allowed fetch.
-  for (const url of [SCOTLAND_URL, LINKROT_URL, ARCHIVE_URL]) {
+  for (const url of [PARADOXIDES_URL, ISOTELUS_URL, BISON_URL, KPG_URL, ARMYANT_URL]) {
     await db.query(
       `insert into fetch_log (run_id, ts, agent_label, kind, url, normalized_url, status, bytes, decision)
        values ($1,$2,'editor','fetch',$3,$3,200,8192,'allow')`,

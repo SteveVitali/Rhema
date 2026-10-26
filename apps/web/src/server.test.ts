@@ -499,11 +499,11 @@ describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
     const res = await app.request("/");
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("The Politics of Visibility");
+    expect(html).toContain("The Extinction of Man");
     expect(html).toContain("Contradicted · Tier 1");
     expect(html).toContain('data-contradicted-tier1="true"');
     expect(html).toContain('data-fetched="true"');
-    expect(html).toContain("courtlistener.com");
+    expect(html).toContain("wikipedia.org");
     expect(html).toContain('data-readonly="true"');
     // read-only: the sample dossier's article carries no disposition/triage controls. (The page's
     // own drop-zone <form> is the §15.1 hero's — outside the dossier block; P1.17 put it there.)

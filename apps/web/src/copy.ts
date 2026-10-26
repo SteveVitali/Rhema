@@ -2413,7 +2413,7 @@ export const COPY = {
     },
     privacy: {
       lede:
-        "This policy states what ⟦OPERATING_ENTITY⟧ collects through Rhēma, what happens to it, and the controls you hold. Write to ⟦CONTACT_EMAIL⟧ or post to ⟦CONTACT_ADDRESS⟧ with questions.",
+        "This policy states what ⟦OPERATING_ENTITY⟧ collects through Rhēma, what happens to it, and the controls you hold. Write to ⟦CONTACT_EMAIL⟧ with questions.",
       sections: [
         {
           heading: "What we collect",
@@ -2536,7 +2536,7 @@ export const COPY = {
         {
           heading: "Privacy and legal",
           paragraphs: [
-            "Export, deletion, and privacy questions go to ⟦CONTACT_EMAIL⟧; postal mail goes to ⟦CONTACT_ADDRESS⟧.",
+            "Export, deletion, and privacy questions go to ⟦CONTACT_EMAIL⟧.",
             "Enterprise? Ask us about a DPA.",
           ],
         },
