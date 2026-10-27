@@ -1,4 +1,5 @@
 import { mkdtempSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -50,20 +51,24 @@ async function run(
 
 describe("runJourneys — the expected-flag semantics", () => {
   it("a green step passing ⇒ pass; a green step failing ⇒ fail + run failure", async () => {
-    const r = await run(
-      [step("G1", "green"), step("G2", "green")],
-      { G1: async () => undefined, G2: async () => { throw new Error("boom"); } },
-    );
+    const r = await run([step("G1", "green"), step("G2", "green")], {
+      G1: async () => undefined,
+      G2: async () => {
+        throw new Error("boom");
+      },
+    });
     expect(r.results.find((x) => x.id === "G1")?.outcome).toBe("pass");
     expect(r.results.find((x) => x.id === "G2")?.outcome).toBe("fail");
     expect(r.results.find((x) => x.id === "G2")?.error).toBe("boom");
     expect(r.passed).toBe(false);
   });
   it("a red step failing ⇒ owed (never a run failure); a red step passing ⇒ ready-to-flip", async () => {
-    const r = await run(
-      [step("R-1", "red"), step("R-2", "red")],
-      { "R-1": async () => { throw new Error("not yet"); }, "R-2": async () => undefined },
-    );
+    const r = await run([step("R-1", "red"), step("R-2", "red")], {
+      "R-1": async () => {
+        throw new Error("not yet");
+      },
+      "R-2": async () => undefined,
+    });
     expect(r.results.find((x) => x.id === "R-1")?.outcome).toBe("owed");
     expect(r.results.find((x) => x.id === "R-2")?.outcome).toBe("ready-to-flip");
     expect(r.passed).toBe(true);
@@ -80,6 +85,38 @@ describe("runJourneys — the expected-flag semantics", () => {
     expect(res.consoleErrors).toEqual([]);
     expect(res.failedRequests).toEqual([]);
     expect(typeof res.durationMs).toBe("number");
+  });
+
+  // F-R6SWP.1-1 — the per-leg incremental flush: a wall-clock kill mid-run must leave the
+  // completed legs' verdicts on disk. The second step reads report.json DURING the run and
+  // sees the first leg's outcome under `partial: true`; the final write drops the marker.
+  it("flushes a partial report.json after every leg — a mid-run kill keeps leg verdicts", async () => {
+    const seen: { partial?: boolean; resultCount?: number; f1Outcome?: string } = {};
+    let capturedDir = "";
+    const r = await run([step("F1", "green"), step("F2", "green")], {
+      F1: async () => undefined,
+      F2: async (ctx) => {
+        capturedDir = ctx.outDir;
+        const onDisk = JSON.parse(await readFile(path.join(ctx.outDir, "report.json"), "utf8")) as {
+          partial?: boolean;
+          results: { id: string; outcome: string }[];
+        };
+        seen.partial = onDisk.partial;
+        seen.resultCount = onDisk.results.length;
+        seen.f1Outcome = onDisk.results.find((x) => x.id === "F1")?.outcome;
+      },
+    });
+    expect(seen.partial).toBe(true);
+    expect(seen.resultCount).toBe(1);
+    expect(seen.f1Outcome).toBe("pass");
+    // the completed run's report is the full shape — no partial marker, both legs present.
+    expect(r.partial).toBeUndefined();
+    const final = JSON.parse(await readFile(path.join(capturedDir, "report.json"), "utf8")) as {
+      partial?: boolean;
+      results: unknown[];
+    };
+    expect(final.partial).toBeUndefined();
+    expect(final.results).toHaveLength(2);
   });
 });
 
@@ -112,10 +149,11 @@ describe("runJourneys — cap_overrun pauses the funded window (REQ-ECON-7)", ()
     expect(r.passed).toBe(false);
   });
   it("cap_overrun on a green step is still cap_overrun — the verdict ignores expected color", async () => {
-    const r = await run(
-      [step("G-c", "green")],
-      { "G-c": async () => { throw new CapOverrunError("G-c", 9, 5); } },
-    );
+    const r = await run([step("G-c", "green")], {
+      "G-c": async () => {
+        throw new CapOverrunError("G-c", 9, 5);
+      },
+    });
     expect(r.results[0]!.outcome).toBe("cap_overrun");
     expect(r.passed).toBe(false);
   });
@@ -181,7 +219,9 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
   const SPA = '<html data-renderer="spa" data-route="/app" data-mounted>';
 
   it("--expect-renderer fails a green step whose served document reports the wrong renderer", async () => {
-    const { browser } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SPA })]);
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SPA }),
+    ]);
     const r = await run(
       [step("G9", "green")],
       {
@@ -200,7 +240,9 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
   });
 
   it("--expect-renderer passes when the served document reports the pinned renderer", async () => {
-    const { browser } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR }),
+    ]);
     const r = await run(
       [step("G10", "green")],
       {
@@ -239,7 +281,10 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
   });
 
   it("a foreign-origin or non-HTML document never trips the renderer check", async () => {
-    const foreign = fakeCtxPage({ docUrl: "https://checkout.stripe.com/c/pay/cs_1", docHtml: "<html/>" });
+    const foreign = fakeCtxPage({
+      docUrl: "https://checkout.stripe.com/c/pay/cs_1",
+      docHtml: "<html/>",
+    });
     const img = fakeCtxPage({
       docUrl: "https://app.test/favicon.svg",
       docHtml: "<svg/>",
@@ -263,8 +308,19 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
   it("no context carries extraHTTPHeaders — the renderer pin is retired (SPA.28 removal-detecting)", async () => {
     // Every leg runs un-pinned now: a resurrected pinRenderer seam would stamp
     // `x-rhema-renderer` onto every context — the assert refuses that shape outright.
-    const { browser, newContextCalls } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
-    await run([step("G13", "green")], { G13: async (ctx) => { await ctx.anon(); } }, false, { browser });
+    const { browser, newContextCalls } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR }),
+    ]);
+    await run(
+      [step("G13", "green")],
+      {
+        G13: async (ctx) => {
+          await ctx.anon();
+        },
+      },
+      false,
+      { browser },
+    );
     expect(newContextCalls[0]).not.toHaveProperty("extraHTTPHeaders");
     expect(JSON.stringify(newContextCalls[0])).not.toContain("x-rhema-renderer");
   });
@@ -280,7 +336,9 @@ describe("runJourneys — the unconditional documentLoads counter (NAVC.2; REQ-N
   const SSR = '<html data-renderer="ssr" data-route="/app" data-mounted data-nav-count="0">';
 
   it("counts a served document with NO renderer pinned — the un-gating is the point", async () => {
-    const { browser } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
+    const { browser } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR }),
+    ]);
     const r = await run(
       [step("G20", "green")],
       {
@@ -304,7 +362,11 @@ describe("runJourneys — the unconditional documentLoads counter (NAVC.2; REQ-N
       fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR, resourceType: "xhr" }),
       fakeCtxPage({ docUrl: "https://checkout.stripe.com/c/pay/cs_1", docHtml: SSR }),
       fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR, status: 404 }),
-      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: "<svg/>", contentType: "image/svg+xml" }),
+      fakeCtxPage({
+        docUrl: "https://app.test/app",
+        docHtml: "<svg/>",
+        contentType: "image/svg+xml",
+      }),
     ];
     const { browser } = browserWithPages(pages);
     const r = await run(

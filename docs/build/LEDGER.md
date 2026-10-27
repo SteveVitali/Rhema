@@ -21,6 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
+nextTicket:      197a_GATE-LAUNCH   # R6SWP.1 sweep done 2026-10-27 — suite proven end-to-end in CI + F-R6SWP.1-1/-2 repaired (PR #225); F-R6SWP.1-4/-5 + literal nightly arm carried; launch gate reads next
+lastCompleted:   R6SWP.1            # 2026-10-27; first-ever complete journeys CI run (65/65 $0 legs) — 29 free legs proven pass on deployed dc3a8f6, provenance match:true; F-R6SWP.1-4/-5 open; unmerged (OPERATOR)
 nextTicket:      197_R6SWP.1        # merge sweep 1 DONE 2026-10-27 — operator-directed merges #219–#224 → main @ 0039850 (all open PRs landed incl. ancestors #195–#218; zero open); post-merge nightly reads next
 lastCompleted:   R6FIX.5            # 2026-10-27; F-R6H11B-1 + F-R6H11B-2 RESOLVED-IN-CODE (auth-id contract + canonical webhook event list + stripe-redrive); F-R6FIX.5-1 cancel half fixed; unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
@@ -34,12 +36,14 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
+chainTip:        stevevitali/r6swp-1-post-merge-nightly  # R6SWP.1 (forked off main @ 9c90b00 — merge-sweep base); PROD SERVES dc3a8f6 (main ⊋ deployed until R6LCH.1)
 chainTip:        stevevitali/r6fix-5-money-findings  # R6FIX.5; next row forks here — PROD SERVES dc3a8f6 (money fixes unmerged — land with the launch deploy; endpoint update + evt re-drive are runbook steps)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
+updatedAt:       2026-10-27T17:34:10Z         # R6SWP.1 — journeys CI proven end-to-end; 29 free legs green on dc3a8f6 (match:true); F-R6SWP.1-4/-5 open; PR #225; $0; unmerged (OPERATOR)
 updatedAt:       2026-10-27T22:37:00Z         # R6FIX.5 — boundary pass @ 220136f (run 40588477743, all seven legs); gitleaks fixture allowlist + additive audit table resolved CI findings; $0; unmerged (OPERATOR)
 ```
 
@@ -511,6 +515,44 @@ pointers; substance unchanged.)_
   the live meter never rendered, tripping the R6 leg's strict
   `reportSpent > finalSpent` assert ("a charge no meter recorded", REQ-SPEC-32
   shape)._
+- **F-R6SWP.1-1 — RESOLVED-ON-BRANCH 2026-10-27 (R6SWP.1 — `runs/R6SWP.1.md`, PR #225
+  `stevevitali/r6swp-1-post-merge-nightly`).** `journeys.yml`'s `timeout-minutes: 30`
+  < the registry's runtime: the first-ever full-suite execution (dispatch
+  `40523029148` on `main` `9c90b00`) was cancelled mid-registry at 30 m 27 s, and the
+  runner's end-only `report.json` write meant **zero per-leg evidence survived**
+  (19 screenshots only). Fix: timeout→180 (covers the ~61 min $0 suite + weekly paid),
+  a `steps` dispatch input for bounded reruns, and a **per-leg incremental
+  `report.json` flush** (`partial: true` marker; `runner.ts` + `runner.test.ts` leg —
+  a kill now keeps completed-leg verdicts).
+- **F-R6SWP.1-2 — RESOLVED-ON-BRANCH 2026-10-27 (same PR).** The repaired auth chain's
+  caller identity was wrong three ways: (a) `service_account: vars.JOURNEY_CI_SA`
+  impersonated `rhema-journeys@` — the **mailbox SA itself**, which holds no
+  self-signing grant → `iamcredentials signJwt 403` on every session leg (dispatch
+  `40528915892`, 7 fails in 13 s); (b) `auth@v2` refuses `access_token` output
+  without `service_account` (dispatch `40529512751`); (c) a once-minted
+  `JOURNEY_GCP_ACCESS_TOKEN` dies at its 3600 s lifetime mid-suite (`signJwt 401`,
+  T4–T7 on `40532657165` at ~T+57 min). Final shape: **no service_account, no
+  env token** — the mailbox's gcloud-ADC path mints a fresh **federated WIF
+  principalSet** token per signJwt over the exported credentials file — the identity
+  `infra/pulumi/journeys.ts`'s tokenCreator binding actually grants. Proven:
+  canary `40530477715` 4/4 PASS; chunk `40543625818` T4/T5/T6 PASS (T7's fail is the
+  env-gap, not auth).
+- **F-R6SWP.1-4 — OPEN (2026-10-27, R6SWP.1 live-found — `runs/R6SWP.1.md`).**
+  Nightly-blocking env inputs the workflow never provides: `JOURNEY_DATABASE_URL`
+  (green legs R6F, T7, T12F, T13F — a `rhema_app_login` **read** pool suffices) and
+  `JOURNEY_T8_EXPORT_TOKEN` (T8 — an operator-minted ~7 d-expiry token, cannot be a
+  static repo secret). `gh secret list` shows only `TURBO_TOKEN`. Operator
+  dispositions owed: wire `secrets.JOURNEY_DATABASE_URL` (posture decision — a prod
+  DSN in GitHub secrets) + env export; T8 needs an in-workflow mint step or leg
+  reclassification (owner STB.5a).
+- **F-R6SWP.1-5 — OPEN (2026-10-27, R6SWP.1 live-found — `runs/R6SWP.1.md`).**
+  **Structural**: prod's shared magic-link limiter (SEC.2) serves ~4–5 sends per
+  window vs the suite's ~20+ fresh-signup demand — re-drive `40544946473` passed its
+  first 4 signup legs then 429'd the remaining 9 (X1.*, T1, T2.badge, T2.matrix, T3).
+  An isolated nightly hits the same wall: the scheduled run can never close fully
+  green under the current policy. Options recorded (owner/operator call): exempt
+  `test+*@rhema.tools` tenants from the limiter; runner-side signup pacing; or
+  pre-mint session fixtures for the fixture-family legs.
 - **F-R6H11B-1 — RESOLVED-IN-CODE 2026-10-27 (R6FIX.5 — `runs/R6FIX.5.md`,
   branch `stevevitali/r6fix-5-money-findings`; deployed re-proof owed).**
   Live-found in the H11B headed money session on prod `dc3a8f6` (PHASE LOG
@@ -1108,6 +1150,9 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-27T12:1xZ — **boundary final — R6FIX.4 green at final head `0079876`.** The boundary-record + PR-body-refresh commits pushed docs-only heads (`2e8c129` → `0079876`); `ci-boundary --ledger` re-reads **pass** at `0079876` (run 40501911743 — all seven legs + `ci-pass` anchor, cache-fast docs-only run 2m32s; `2e8c129` pass at run 40501558038; record `logs/ci-R6FIX.4.json` refreshed). PR #224 unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T12:2xZ — **boundary re-confirmed — R6FIX.4 green at head `ea42ca8`.** The boundary-final record commit pushed the last docs-only head; `ci-boundary --ledger` re-reads **pass** at it (run 40502409657 — all seven legs + `ci-pass` anchor, cache-fast; record `logs/ci-R6FIX.4.json` refreshed). Final: PR #224 head `ea42ca8` green, **unmerged (OPERATOR)**; `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T1x:xxZ — **HUMAN-H12 discharged — operator-directed merge sweep complete.** Operator verbatim "you can just merge open PR's #219 through #224 into main for me now" → bases retargeted to `main`, merged bottom-up #219→#224; ancestors #195–#218 landed as prerequisite commits + auto-marked MERGED — **zero open PRs**, `main` @ `0039850` (contains chain tip `7413b17`). Two gate rulings recorded verbatim (GD-THRESH6.R6, GD-THRESH13.R6): threshold-6 dispositioned as nightly-on-deployed-SHA with the literal `main`==prod arm now reachable post-launch-deploy + next 06:05Z nightly; threshold-13 gap accepted (flip 1 rides ≥2026-12-01, flips 2–4 proceed). `nextTicket → 197_R6SWP.1`. H11 physical remainder being driven in headed Chrome (operator credentialed hand-offs); `rhema-nonprod-stripe-secret` container created (X1 half) — first version held `pk_test_` (publishable), operator re-seeding `sk_test_` (secret) — N9 stays blocked until then.
+- 2026-10-27T17:5xZ — **R6SWP.1 done — post-merge nightly sweep: the journeys workflow is proven end-to-end in CI for the first time ever (insert row; $0).** Branch `stevevitali/r6swp-1-post-merge-nightly` · PR #225 · base `main` @ `9c90b00` · **dispatch chain:** `40523029148` (main, full registry) → cancelled at the 30-min job ceiling mid-suite, all leg evidence lost (WIF/CLI/build PASS — not the failing layer) → chunk `40528915892` proved **signJwt 403 on every session leg** (the auth step impersonated `JOURNEY_CI_SA` = the mailbox SA itself, no self-signing grant) → `40529512751` proved auth@v2 refuses token output w/o `service_account` → canary `40530477715` **4/4 PASS** on the federated-token fix → **full census `40532657165`** (65/65 $0 legs, ~61 min) + ADC-per-call fix (env token had 401'd mid-suite) → `40543625818` **provenance `match: true` on deployed `dc3a8f6`** (new `expect-sha` input) → re-drive `40544946473` (4 more pass; limiter re-tripped — structural). **Combined census: 29 free legs proven pass · 21 paid-skips · 9 magic-link-429 (F-R6SWP.1-5 — limiter ~4–5 sends/window < ~20+ demand, structural) · 5 env-gap (F-R6SWP.1-4 — `JOURNEY_DATABASE_URL` ×4, `JOURNEY_T8_EXPORT_TOKEN` ×1, operator acts) · 1 N9 fixture.** · **fixes on-branch:** timeout 30→180 + `steps` input + per-leg `report.json` flush (`partial:true`; runner.test.ts leg) + caller = WIF principalSet via gcloud-ADC + schedule restored (both crons verbatim, R6CI.1 marker discharged) + dispatch-only `expect-sha` input · **records:** DEFERRALS dated tails D-OBS.1-3 + D-SPA.28-1 (both stay OPEN — literal arm needs R6LCH.1 deploy + restored cron); GATE-LAUNCH threshold-6 dated note (dispatch-substitute, `main` ⊋ deployed); BL-74/BL-81 dispositions · **deploy-neutral arm:** precondition false (`dc3a8f6..9c90b00` non-neutral) — no deploy fired · **verify:** vitest runner.test.ts 17/17 · typecheck green · check-build-memory 0 violations (14 legacy warnings) · append-only + ci-boundary owed at final head · **spend $0** · `nextTicket → 197a_GATE-LAUNCH` · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-27T18:1xZ — **boundary confirmed — R6SWP.1 green at head `15f759e`.** `ci-boundary --ledger` reads **pass** (run `40551865601` — all seven legs + `ci-pass` anchor: fast-path 38s, contracts 36s, public-safe 55s, integration 4m23s, images 9m27s, typecheck/lint/unit 25m57s; record `logs/ci-R6SWP.1.json`). The closeout-record commits push docs-only heads; re-confirmation owed at the final head. PR #225 unmerged (OPERATOR); `nextTicket → 197a_GATE-LAUNCH`. harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-27T18:2xZ — **boundary final — R6SWP.1 green at final head `8b3ecba`.** The closeout-record commit pushed a docs-only head; `ci-boundary --ledger` re-reads **pass** at it (run `40557923104` — all seven legs + `ci-pass` anchor, cache-fast docs-only run; record `logs/ci-R6SWP.1.json` refreshed). Final: PR #225 head `8b3ecba` green, **unmerged (OPERATOR)**; `nextTicket → 197a_GATE-LAUNCH`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T18:5xZ — **H11 headed-session money legs — live-verified with TWO launch-relevant findings.** Operator drove Stripe in a headed-Chrome session on the is_test jrn-a tenant: subscribe Writer $20 (`checkout.session.completed` → `subscription_activated`, grants `included:writer` 2000 + `trial_upgrade_conversion` 800) + topup_10 $10 (paid via Apple Pay; `/billing/return` observed) + portal cancel-at-period-end (Stripe `canceled_at` set). **F-R6H11B-1 (critical):** topup grant job `stripe.event evt_1UVF7T…` FAILED — `processStripeEvent` rejects non-ULID `user_id` ("26-char Crockford-base32 ULID"); better-auth magic-link users carry nanoid ids (`fX3Qvxf…`) — **every new-signup top-up would fail the same way**; Stripe has the $10, no grant landed, `checkout_sessions.state=open`, job failed after retry_count=2. **F-R6H11B-2:** the prod webhook endpoint subscribes ONLY `checkout.session.completed`+`charge.dispute.*` — `customer.subscription.updated` is not delivered, so portal-side subscription changes (cancel/schedules) never reach the DB; subscriptions row stays `cancel_at_period_end=false`, UI still says "Renews 2026-11-27" though Stripe shows `canceled_at` set. Server-side verify via system DSN over IAP tunnel (evidence `reports/2026-10-27_H11B/`). Google OAuth leg rejected by Google in the automated window (signin/rejected — WebDriver detection, expected) → operator runs it in his own browser; Safari + real-phone legs remain his or ruled.
 - 2026-10-27T22:3xZ — **boundary confirmed — R6FIX.5 green at head `220136f`.** `ci-boundary --ledger` reads **pass** (run 40588477743 — all seven legs + `ci-pass` anchor: fast-path 40s, typecheck/lint/unit 44m56s incl. the privsep docker leg (green inside CI; the local workstation's Docker-Desktop VM DNS is broken — environmental), public-safe 40s, contracts 30s, integration 4m24s, images 10m19s; record `logs/ci-R6FIX.5.json`). Two CI findings this ticket surfaced and resolved en route: (a) `DROP CONSTRAINT` in the first redrive-audit migration draft — replaced by the dedicated additive `stripe_event_redrives` table (contracts leg green); (b) gitleaks `generic-api-key` on the Better-Auth auth-id test literal — the realistic `fX3Qvxf…` fixture stays pinned in `90562fe` history (git-mode scanning covers every commit), so both literals are allowlisted in `.gitleaks.toml` under the standing pinned-test-fixture convention + the tip identifier renamed to the already-green `NANOID_USER` shape (local `gitleaks git --log-opts origin/main..HEAD` → no leaks; public-safe leg green). PR #226 unmerged (OPERATOR); `nextTicket` stays `197_R6SWP.1`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T22:4xZ — **boundary final — R6FIX.5 green at final head `97af666`.** The boundary-record + PR-body-refresh commit pushed a docs-only head; `ci-boundary --ledger` re-reads **pass** at it (run 40596299814 — all seven legs + `ci-pass` anchor, cache-fast docs-only run ~2m; record `logs/ci-R6FIX.5.json` refreshed). Final: PR #226 head `97af666` green, **unmerged (OPERATOR)**; `nextTicket` stays `197_R6SWP.1`. harness: devin-desktop/swe-2-high/subagent.
