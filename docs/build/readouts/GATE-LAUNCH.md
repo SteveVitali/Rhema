@@ -5,7 +5,7 @@
 -->
 # GATE-LAUNCH — Public launch of rhema.tools (round 6) — readout
 
-Status: STAGED   <!-- the ONLY line that may change: → SIGNED | PASSED | SKIPPED-BY-OPERATOR | NOT-PASSABLE -->
+Status: SIGNED   <!-- the ONLY line that may change: → SIGNED | PASSED | SKIPPED-BY-OPERATOR | NOT-PASSABLE -->
 
 - **Criterion (verbatim, `197a_GATE-LAUNCH__public-launch.md`, from `docs/round-6-draft-spec.md` §6):**
   "(1) zero launch-blocking OPEN DEFERRALS rows — the launch-blocking set is every row the §7
@@ -78,6 +78,18 @@ defects, both RESOLVED-IN-CODE, deployed re-proofs ride the launch deploy):
 
 **11 of 13 MET.** Thresholds 1, 6, 13 carry owed operator rulings; signature follows.
 
-## Signature block — OWED
+## Signature block — SIGNED 2026-10-27
 
-The operator's go is recorded verbatim here. _Not yet presented._
+The operator's go, verbatim (Devin session, 2026-10-27): **"please 'go' and run 6. and continue to the end. If you need anything from me, raise it interactively."**
+
+Recorded dispositions for the open `LB` rows under this signature (GD-THRESH1.R6 in `LEDGER.md` GATE DECISIONS):
+
+- **Money rows `D-P1.16-1` / `D-BILL.3-1` / `D-BILL.3-2`** — legs physically executed live ($30 real, is_test tenant): subscribe VERIFIED; topup grant + subscription sync completion sequenced **inside the launch deploy** (R6LCH.1: deploy `#226` → `stripe-redrive evt_1UVF7T…` → webhook `enabled_events` update → sync re-proof → fail-closed abort before flips). Operator: "I guess you can just record it" — recorded as the sequencing ruling.
+- **`D-MAINT.4-1`** — Google OAuth round-trip VERIFIED live today (session `14stevevitali@gmail.com` 23:15:49Z, provider `google`).
+- **`D-EDIT.1-2` (Safari) / `D-P1.19-2` (phone)** — dispositioned PL by operator verbatim "We can skip safari and mobile for now" — carried post-launch, honestly not tested.
+- **`D-SPA.16-1` / `D-SPA.20-1` (N9)** — carried: `rhema-nonprod-stripe-secret` exists but v1 holds `pk_test_` (publishable, wrong key class); nonprod posture legs ride to post-launch unless an `sk_test_` version lands. Flagged to operator twice; carried under the launch directive.
+- **`D-SLO.1-6` (SSE p95)** — physically post-launch-traffic-dependent; carried PL.
+- **`D-OBS.1-3` / `D-SPA.28-1`** — literal arm (`main`==prod + scheduled nightly) lands post-launch-deploy + the 06:05Z nightly; covered by GD-THRESH6.R6.
+- **`D-P1.20-1` (e) destruction fire** — clock-owed by design.
+
+Thresholds 2–5, 7–12 MET with committed evidence; 6 + 13 signed under the recorded rulings (GD-THRESH6.R6, GD-THRESH13.R6). **GATE-LAUNCH is SIGNED — R6LCH.1 may execute: deploy `main` → fail-closed re-proofs → flips 2–4 (purchase open, refund open, trial audience). Flip 1 stays parked to ≥2026-12-01.**
