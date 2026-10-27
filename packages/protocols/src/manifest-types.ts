@@ -33,6 +33,11 @@ export type CompletionPredicate =
   | { kind: "any_artifact_nonempty"; artifacts: string[] }
   /** claim-ledger rows ≥ the Phase-0 claim inventory count (or an explicit "N of N checked" footer). */
   | { kind: "claim_rows_gte_inventory"; artifact: string }
+  /** R6FIX.4 (F-R6CNT.3-1) — every ledger row carries a REAL disposition: a substantive verdict,
+   *  or an `unverifiable` verdict backed by an evidence trail (note/url/normalizedUrl/accessedAt/
+   *  sourceCheck/sources). A bare `unverifiable` row asserts nothing was checked → unclosed → the
+   *  phase cannot go `done` (schema-valid placeholders are not closure). */
+  | { kind: "claim_ledger_closed"; artifact: string }
   /** the editor's letter has every required section. */
   | { kind: "letter_sections_complete"; artifact: string }
   /** the rubric scores all eight dimensions (never an aggregate — REQ-IDE-30). */

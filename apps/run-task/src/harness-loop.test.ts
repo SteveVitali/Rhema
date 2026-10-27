@@ -176,7 +176,7 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
   it("RPT.1 — a beginStep-less client still commits (the seam is optional for old wiring)", async () => {
     const spec = makeSpec({ ...byKey("verification"), index: 2 }, { stopAfterPhase: true });
     const { rec, client, runPhase } = makeHarness([spec], () =>
-      completeOutputs({ claimRowCount: 3, inventoryCount: 2, sidecarValidates: { "01-claim-ledger.json": true } }),
+      completeOutputs({ claimRowCount: 3, inventoryCount: 2, unclosedClaimOrdinals: [], sidecarValidates: { "01-claim-ledger.json": true } }),
     );
     delete client.beginStep; // a client that predates the seam
     const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
@@ -242,7 +242,7 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
   it("a pinned phase:N run commits exactly one phase then stops (no advance, no delivery)", async () => {
     const spec = makeSpec({ ...byKey("verification"), index: 2 }, { stopAfterPhase: true });
     const { rec, client, runPhase } = makeHarness([spec], () =>
-      completeOutputs({ claimRowCount: 3, inventoryCount: 2, sidecarValidates: { "01-claim-ledger.json": true } }),
+      completeOutputs({ claimRowCount: 3, inventoryCount: 2, unclosedClaimOrdinals: [], sidecarValidates: { "01-claim-ledger.json": true } }),
     );
     const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
     expect(res).toEqual({ kind: "stopped", phasesCommitted: 1 });
@@ -735,10 +735,11 @@ describe("RES.3 — research-phase checkpointing + the budget retry gate", () =>
     searchesUsed: 12, fetchesUsed: 12, searchBudget: 17, fetchBudget: 48,
     searchesRemaining: 5, fetchesRemaining: 36, exhausted: false,
   };
-  /** facts that satisfy verification's claim_rows_gte_inventory + sidecar_validates predicates. */
+  /** facts that satisfy verification's coverage + closure + sidecar_validates predicates. */
   const PASSING_FACTS: PredicateFacts = {
     claimRowCount: 9,
     inventoryCount: 9,
+    unclosedClaimOrdinals: [],
     sidecarValidates: { "01-claim-ledger.json": true },
   };
 
@@ -757,7 +758,7 @@ describe("RES.3 — research-phase checkpointing + the budget retry gate", () =>
     client.researchBudget = () => Promise.resolve(DEAD);
     // the checkpointed ledger is still under inventory — the contract is NOT satisfied → terminal.
     const inspectWork = () =>
-      Promise.resolve(completeOutputs({ claimRowCount: 4, inventoryCount: 9, sidecarValidates: { "01-claim-ledger.json": true } }));
+      Promise.resolve(completeOutputs({ claimRowCount: 4, inventoryCount: 9, unclosedClaimOrdinals: [], sidecarValidates: { "01-claim-ledger.json": true } }));
 
     const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1", inspectWork });
 
@@ -899,5 +900,82 @@ describe("RES.3 — research-phase checkpointing + the budget retry gate", () =>
     const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
     expect(res).toMatchObject({ kind: "failed", errorClass: "research_budget_exhausted" });
     expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(0);
+  });
+});
+
+// F-R6CNT.3-1 / R6FIX.4 — the $10.68 Showcase defect: verification marked `done` on a schema-valid
+// but UNCLOSED claim ledger (14 bare-`unverifiable` placeholder rows, 0 sources, research still in
+// flight). The gate must refuse the phase transition — never commit it.
+describe("F-R6CNT.3-1 — an unclosed claim ledger cannot go `done`", () => {
+  const verification = { ...byKey("verification"), index: 2 };
+  // the R6CNT.3 placeholder shape: coverage "satisfied" + schema valid, but every row is unchecked.
+  const PLACEHOLDER_FACTS: PredicateFacts = {
+    claimRowCount: 14,
+    inventoryCount: 14,
+    unclosedClaimOrdinals: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    sidecarValidates: { "01-claim-ledger.json": true },
+  };
+
+  it("a placeholder ledger is refused: guided retry names claim_ledger_closed, then fails honestly", async () => {
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () => completeOutputs(PLACEHOLDER_FACTS));
+    client.researchBudget = () =>
+      Promise.resolve({
+        searchesUsed: 4, fetchesUsed: 4, searchBudget: 17, fetchBudget: 48,
+        searchesRemaining: 13, fetchesRemaining: 44, exhausted: false,
+      });
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+
+    expect(res).toMatchObject({ kind: "failed", errorClass: "artifact_missing" });
+    // two execs ran (the attempt + its ONE guided retry) — the retry carried the closure failure.
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(2);
+    expect(rec.runPhaseGuidance[1]).toMatch(/claim_ledger_closed|unchecked/i);
+    // the phase NEVER committed — no `done` step, no finalize.
+    expect(rec.commits).toHaveLength(0);
+    expect(rec.fails).toHaveLength(1);
+  });
+
+  it("a retry that closes the ledger commits (a justified unverifiable disposition is not unclosed)", async () => {
+    let attempt = 0;
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () => {
+      attempt++;
+      return attempt === 1
+        ? completeOutputs(PLACEHOLDER_FACTS)
+        : completeOutputs({ ...PLACEHOLDER_FACTS, unclosedClaimOrdinals: [] }); // justified + evidenced
+    });
+    client.researchBudget = () =>
+      Promise.resolve({
+        searchesUsed: 4, fetchesUsed: 4, searchBudget: 17, fetchBudget: 48,
+        searchesRemaining: 13, fetchesRemaining: 44, exhausted: false,
+      });
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+
+    expect(attempt).toBe(2);
+    expect(res).toEqual({ kind: "stopped", phasesCommitted: 1 });
+    expect(rec.commits).toHaveLength(1);
+    expect(rec.fails).toHaveLength(0);
+  });
+
+  it("the R6CNT.3 replay: placeholders + exhausted budget → research_budget_exhausted, never committed", async () => {
+    // the live run's actual ending posture — research spent, ledger still unchecked → terminal, honest.
+    const spec = makeSpec(verification, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs(PLACEHOLDER_FACTS, { versions: [] }),
+    );
+    client.researchBudget = () =>
+      Promise.resolve({
+        searchesUsed: 17, fetchesUsed: 48, searchBudget: 17, fetchBudget: 48,
+        searchesRemaining: 0, fetchesRemaining: 0, exhausted: true,
+      });
+
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+
+    expect(res).toMatchObject({ kind: "failed", errorClass: "research_budget_exhausted" });
+    expect(rec.calls.filter((c) => c.startsWith("runPhase"))).toHaveLength(1); // no re-drain
+    expect(rec.commits).toHaveLength(0);
+    expect(rec.fails[0]!.errorClass).toBe("research_budget_exhausted");
   });
 });

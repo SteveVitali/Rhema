@@ -35,13 +35,15 @@ export const factCheck: WorkflowManifest = {
       skillPhase: "1",
       seat: "editor",
       artifacts: ["01-claim-ledger.md"],
-      predicates: ["claim rows ≥ inventory", "sidecar validates"],
+      predicates: ["claim rows ≥ inventory", "every claim closed", "sidecar validates"],
       sidecars: ["01-claim-ledger.json"],
       phaseClass: "research",
       budgetShare: 0.7,
       allowsSubagents: true,
       completionPredicates: [
         { kind: "claim_rows_gte_inventory", artifact: "01-claim-ledger.md" },
+        // F-R6CNT.3-1 / R6FIX.4 — same closure gate as Review: placeholder rows are not done.
+        { kind: "claim_ledger_closed", artifact: "01-claim-ledger.md" },
         { kind: "sidecar_validates", sidecar: "01-claim-ledger.json" },
       ],
     },

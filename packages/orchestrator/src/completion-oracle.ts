@@ -105,6 +105,13 @@ export interface PredicateFacts {
   readonly claimRowCount?: number;
   readonly inventoryCount?: number;
   /**
+   * R6FIX.4 (F-R6CNT.3-1) — ordinals of the claim-ledger rows that assert NO check outcome: verdict
+   * absent/`unverifiable` AND no evidence trail (note/url/normalizedUrl/accessedAt/sourceCheck/
+   * sources). `claim_ledger_closed` passes iff this fact is supplied AND empty — a schema-valid
+   * ledger of placeholder `unverifiable` rows is unclosed, not done.
+   */
+  readonly unclosedClaimOrdinals?: readonly number[];
+  /**
    * ECON.1 (§6.5) — the rigor notch's server-frozen claim cap (`inputs.claim_cap`; Quick Review: 5).
    * `claim_rows_gte_inventory` passes when the ledger covers `min(inventory, cap)` claims — a Quick
    * review is COMPLETE once its five load-bearing claims are checked, not when all 23 inventoried are.
@@ -164,7 +171,25 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
         return pass(
           p,
           facts.claimRowCount != null && required != null && facts.claimRowCount >= required,
-          `${facts.claimRowCount} ≥ ${required}${facts.claimCap != null ? ` (capped; inventory ${facts.inventoryCount})` : ""}`,
+          required == null
+            ? "claim-ledger inventoryCount absent — coverage is proven, never assumed"
+            : `${facts.claimRowCount} ≥ ${required}${facts.claimCap != null ? ` (capped; inventory ${facts.inventoryCount})` : ""}`,
+        );
+      }
+      case "claim_ledger_closed": {
+        // R6FIX.4 (F-R6CNT.3-1) — closure is proven by an EMPTY unclosed-ordinals fact; absent
+        // facts fail (proven, never assumed). The detail names the uncovered rows so the guided
+        // retry knows WHICH claims still need a check instead of re-emitting the same ledger.
+        const unclosed = facts.unclosedClaimOrdinals;
+        const ok = unclosed != null && unclosed.length === 0;
+        return pass(
+          p,
+          ok,
+          unclosed == null
+            ? "claim-ledger closure fact not supplied"
+            : ok
+              ? "every claim row carries a disposition"
+              : `${unclosed.length} claim row(s) unchecked — ordinals ${unclosed.slice(0, 12).join(", ")}${unclosed.length > 12 ? ` (+${unclosed.length - 12} more)` : ""} need a verdict + evidence`,
         );
       }
       case "letter_sections_complete":

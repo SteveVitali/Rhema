@@ -215,6 +215,7 @@ numeric field, but stay close to these). Numeric fields (`tier`, `score`, `versi
 {
   "sidecar": "claim_ledger",
   "version": 1,
+  "inventoryCount": 12,
   "claims": [
     {
       "ordinal": 0,
@@ -232,11 +233,23 @@ numeric field, but stay close to these). Numeric fields (`tier`, `score`, `versi
 }
 ```
 
+Top-level **`inventoryCount`**: the Phase-0 claim inventory's row count — the denominator the phase's
+coverage check (`claim_rows_gte_inventory`) reads. Emit it (an integer, or a numeric string). Without it
+the phase cannot prove coverage and will not complete.
+
 Required per claim row: `ordinal` (integer ≥ 0), `text` (string), `tier` (1, 2, or 3), `verdict`. All else is
 optional. `verdict` ∈ {`verified`, `substantially_accurate`, `misleading_in_context`, `unsupported`,
 `contradicted`, `unverifiable`, `verified_against_user_source`}. `kind` ∈ {`factual`, `statistical`,
 `quotation`, `interpretive`, `normative`, `predictive`}. `sourceCheck` ∈ {`matches_citation`, `reputable_list`,
 `from_search`, `suspicious_source`}. A source's `stance` ∈ {`supports`, `contradicts`, `contextualizes`}.
+
+**Closure.** Every row must carry a REAL disposition, not a placeholder. A row whose verdict is
+`unverifiable` is a completed check ONLY when it carries its evidence — a `note` saying why it cannot be
+checked, and/or the trail you did try (`url`, `normalizedUrl`, `accessedAt`, `sourceCheck`, or non-empty
+`sources`). A bare `unverifiable` row asserts nothing was checked: the phase's `claim_ledger_closed` gate
+refuses it and the phase cannot go `done`. If research was genuinely exhausted, keep the rows — but write
+WHY each check failed into `note`/`sourceCheck`/`sources` so the ledger is honest, and flag the residual in
+`phase-result.json`/the ledger rather than letting placeholders pass as verdicts.
 
 **`findings.json`** (Letter, phase `6`) — one row per finding:
 

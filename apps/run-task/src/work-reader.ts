@@ -219,6 +219,58 @@ function harvestFiles(
   return out;
 }
 
+/** The claim-ledger sidecar's raw shape (pre-schema — the closure test must read whatever the agent
+ *  actually wrote, not a schema-coerced doc: a bogus verdict belongs to `sidecar_validates`). */
+interface ClaimLedgerDoc {
+  claims?: unknown;
+  inventoryCount?: unknown;
+}
+
+/** The claim-ledger sidecar twin of a predicate's declared ledger artifact (`NN-claim-ledger.md` →
+ *  `.json`), resolved wherever the skill wrote it (resolveKey's suffix/template/basename cascade —
+ *  draft grounding's `agents/author/drafting/v(N+1)/03-claim-ledger.json` resolves the same way). */
+function readClaimLedger(files: ReadonlyMap<string, Uint8Array>, artifact: string): ClaimLedgerDoc | null {
+  return (
+    readJson<ClaimLedgerDoc>(files, artifact.replace(/\.md$/, ".json")) ??
+    readJson<ClaimLedgerDoc>(files, "01-claim-ledger.json")
+  );
+}
+
+/** Verdict canonicalization — mirrors the claim-ledger sidecar's coerce (trim → lowercase → space/`-`/`/` → `_`). */
+function canonVerdict(verdict: unknown): string {
+  return typeof verdict === "string" ? verdict.trim().toLowerCase().replace(/[\s\-/]+/g, "_") : "";
+}
+
+/**
+ * F-R6CNT.3-1 / R6FIX.4 — ordinals of the ledger rows that assert NO check outcome, i.e. the row is
+ * still a placeholder: verdict absent/`unverifiable` (canonicalized) AND no evidence trail
+ * (`note` | `url` | `normalizedUrl` | `accessedAt` | `sourceCheck` | non-empty `sources`). A
+ * justified `unverifiable` IS a closed disposition (verification-protocol §4: "cannot be checked…
+ * noted so the author can decide" — the note/sources ARE the check's record). `undefined` when the
+ * ledger/`claims` is absent or unparseable — closure is then unprovable and the predicate fails.
+ */
+function unclosedClaimOrdinals(doc: ClaimLedgerDoc | null): number[] | undefined {
+  if (!Array.isArray(doc?.claims)) return undefined;
+  const unclosed: number[] = [];
+  for (const row of doc.claims as Record<string, unknown>[]) {
+    const row_ = (row ?? {}) as Record<string, unknown>;
+    const outcome = canonVerdict(row_.verdict);
+    const asserted = outcome !== "" && outcome !== "unverifiable";
+    const evidence =
+      (typeof row_.note === "string" && row_.note.trim().length > 0) ||
+      (typeof row_.url === "string" && row_.url.length > 0) ||
+      (typeof row_.normalizedUrl === "string" && row_.normalizedUrl.length > 0) ||
+      (typeof row_.accessedAt === "string" && row_.accessedAt.length > 0) ||
+      (typeof row_.sourceCheck === "string" && row_.sourceCheck.length > 0) ||
+      (Array.isArray(row_.sources) && row_.sources.length > 0);
+    if (!asserted && !evidence) {
+      const ord = row_.ordinal;
+      unclosed.push(typeof ord === "number" && Number.isFinite(ord) ? ord : unclosed.length + 1);
+    }
+  }
+  return unclosed;
+}
+
 /** The predicate facts each of the phase's completion predicates reads (oracle leg c). `inputs` are the
  *  run's frozen inputs (a trial preview's `{preview:{sections:N}}` clamps the plan-section count). */
 function factsForPhase(
@@ -266,11 +318,23 @@ function factsForPhase(
         break;
       }
       case "claim_rows_gte_inventory": {
-        const ledger = readJson<{ claims?: unknown[]; inventoryCount?: number }>(files, p.artifact.replace(/\.md$/, ".json")) ?? readJson<{ claims?: unknown[]; inventoryCount?: number }>(files, "01-claim-ledger.json");
-        facts.claimRowCount = ledger?.claims?.length ?? 0;
-        facts.inventoryCount = ledger?.inventoryCount ?? 0; // the inventory count is carried on the ledger sidecar
+        const ledger = readClaimLedger(files, p.artifact);
+        facts.claimRowCount = Array.isArray(ledger?.claims) ? ledger.claims.length : 0;
+        // F-R6CNT.3-1 / R6FIX.4 — NEVER default an absent inventoryCount to 0: that made
+        // `required = min(0, cap) = 0` and the coverage predicate passed tautologically (the
+        // R6CNT.3 defect). Absent ⇒ the fact stays unset ⇒ the predicate fails (proven, never
+        // assumed). LLM-tolerant: a numeric string coerces, matching the sidecar coercion.
+        const inv = ledger?.inventoryCount;
+        const invN = typeof inv === "number" ? inv : typeof inv === "string" && inv.trim() !== "" ? Number(inv) : NaN;
+        if (Number.isInteger(invN) && invN >= 0) facts.inventoryCount = invN;
         // ECON.1 (§6.5) — the rigor's frozen claim cap ("five load-bearing claims" for Quick Review).
         if (typeof inputs?.claim_cap === "number") facts.claimCap = inputs.claim_cap;
+        break;
+      }
+      case "claim_ledger_closed": {
+        // F-R6CNT.3-1 / R6FIX.4 — the ledger's closure fact: which rows still assert no check
+        // outcome. `undefined` ⇒ the predicate fails — an absent ledger proves nothing.
+        facts.unclosedClaimOrdinals = unclosedClaimOrdinals(readClaimLedger(files, p.artifact));
         break;
       }
       case "rubric_dimensions_complete": {

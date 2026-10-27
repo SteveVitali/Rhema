@@ -10,6 +10,7 @@ import type { CompletionPredicate } from "@rhema/protocols";
 // AC8 + REQ-SPEC-13: the three-leg completion oracle.
 
 const claimPredicate: CompletionPredicate = { kind: "claim_rows_gte_inventory", artifact: "01-claim-ledger.md" };
+const closurePredicate: CompletionPredicate = { kind: "claim_ledger_closed", artifact: "01-claim-ledger.md" };
 
 function input(over: Partial<OracleInput>): OracleInput {
   return { sdkSubtype: "success", phaseResult: { status: "done" }, predicates: [claimPredicate], ...over };
@@ -108,5 +109,55 @@ describe("completion oracle (REQ-SPEC-13)", () => {
     const facts: PredicateFacts = { secondReadProducerQueryId: "q_parent", expectedProducerQueryId: "q_scoped" };
     const v = evaluateOracle(input({ predicates: [pred] }), createFactsEvaluator(facts));
     expect(v.outcome).toBe("incomplete");
+  });
+});
+
+describe("F-R6CNT.3-1 / R6FIX.4 — the done-gate requires ledger closure, not row count", () => {
+  // The $10.68 Showcase run's defect: a schema-valid ledger whose rows were all `unverifiable`
+  // placeholders (no evidence) rode the phase to `done` because coverage was vacuous and no
+  // closure check existed.
+
+  it("coverage is never vacuous — absent inventoryCount fails, naming the missing fact", () => {
+    // the work-reader no longer defaults inventoryCount to 0; the predicate must fail closed
+    // rather than `min(0, cap) = 0 → any row count passes`.
+    const ev = createFactsEvaluator({ claimRowCount: 14 })(claimPredicate);
+    expect(ev.passed).toBe(false);
+    expect(ev.detail).toContain("inventoryCount absent");
+  });
+
+  it("claim_ledger_closed: an all-closed ledger passes", () => {
+    const facts: PredicateFacts = { unclosedClaimOrdinals: [] };
+    const v = evaluateOracle(input({ predicates: [closurePredicate] }), createFactsEvaluator(facts));
+    expect(v.outcome).toBe("complete");
+  });
+
+  it("claim_ledger_closed: unchecked rows refuse `done` and name their ordinals (the R6CNT.3 shape)", () => {
+    // fourteen bare-`unverifiable` placeholder rows — schema-valid, substantively unchecked.
+    const facts: PredicateFacts = { unclosedClaimOrdinals: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] };
+    const v = evaluateOracle(input({ predicates: [closurePredicate] }), createFactsEvaluator(facts));
+    expect(v).toMatchObject({ outcome: "incomplete", errorClass: "artifact_missing", failedLeg: "predicate" });
+    const ev = createFactsEvaluator(facts)(closurePredicate);
+    expect(ev.detail).toContain("unchecked");
+    expect(ev.detail).toContain("0, 1, 2, 3");
+  });
+
+  it("claim_ledger_closed: an absent closure fact fails (proven, never assumed)", () => {
+    const v = evaluateOracle(input({ predicates: [closurePredicate] }), createFactsEvaluator({}));
+    expect(v).toMatchObject({ outcome: "incomplete", failedLeg: "predicate" });
+  });
+
+  it("a partially-unclosed ledger fails even when coverage + schema pass", () => {
+    // rows ≥ inventory AND schema-valid, but row 7 is still a placeholder → not done.
+    const preds: CompletionPredicate[] = [claimPredicate, closurePredicate];
+    const facts: PredicateFacts = {
+      claimRowCount: 9,
+      inventoryCount: 9,
+      unclosedClaimOrdinals: [7],
+    };
+    const v = evaluateOracle(input({ predicates: preds }), createFactsEvaluator(facts));
+    expect(v.outcome).toBe("incomplete");
+    if (v.outcome === "incomplete") {
+      expect(v.failedPredicates.map((f) => f.predicate.kind)).toEqual(["claim_ledger_closed"]);
+    }
   });
 });
