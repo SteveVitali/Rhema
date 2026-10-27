@@ -50,9 +50,9 @@
   - jrn-a canary tenant: ws `01M5WD3TRBA88WV12S680745KG` (`is_test`), billing account
     `01M5WD3TRBDK16GABPMV9G3W3Z` — ~4056 cr available (20 daily + 4000 promo grant +
     36 daily adjustment; the R6H11 hold released in full) → **no house-grant needed**.
-- **ci:** pass #222@5e32f3a (run 40478092344 — all seven legs + `ci-pass` anchor,
-  boundary re-read on the docs-only closeout head; first green read
-  #222@c48d30e run 40471626281; record `docs/build/logs/ci-R6DEP.3.json`)
+- **ci:** pass #222@cc7eb31 (run 40478513814 — all seven legs + `ci-pass`
+  anchor; earlier green reads @c48d30e/40471626281 + @5e32f3a/40478092344;
+  record `docs/build/logs/ci-R6DEP.3.json`)
 
 ## Deferrals read
 
