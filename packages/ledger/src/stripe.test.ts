@@ -5,6 +5,7 @@ import {
   signStripePayload,
   insertStripeEvent,
   processStripeEvent,
+  STRIPE_WEBHOOK_EVENT_TYPES,
   type StripeEventDeps,
 } from "./stripe.js";
 import { SqlHoldLedger } from "./sql-ledger.js";
@@ -85,6 +86,37 @@ async function analyticsRows() {
     event: string; props: Record<string, unknown>;
   }[];
 }
+
+describe("STRIPE_WEBHOOK_EVENT_TYPES — the endpoint's enabled_events contract (F-R6H11B-2)", () => {
+  it("pins the exact set processStripeEvent dispatches on — the endpoint's subscribe list", () => {
+    // The prod endpoint (`we_1UH99C2MLe3ETP9Sk4UQBKXs`) was seeded in PRB.18 with only
+    // checkout.session.completed + charge.dispute.* — this list is the update's source of truth.
+    // Every arm added to the processor switch MUST join it (and the deployed endpoint).
+    expect([...STRIPE_WEBHOOK_EVENT_TYPES].sort()).toEqual([
+      "charge.dispute.closed",
+      "charge.dispute.created",
+      "checkout.session.completed",
+      "checkout.session.expired",
+      "customer.subscription.created",
+      "customer.subscription.deleted",
+      "customer.subscription.updated",
+      "invoice.paid",
+      "invoice.payment_failed",
+    ]);
+  });
+
+  it("has no duplicates and every entry names a case in the dispatch switch", () => {
+    expect(new Set(STRIPE_WEBHOOK_EVENT_TYPES).size).toBe(STRIPE_WEBHOOK_EVENT_TYPES.length);
+    // The per-arm describes below prove each of these reaches its handler (checkout completed/expired,
+    // invoice.paid/payment_failed, subscription created/updated/deleted, dispute created/closed) —
+    // this pin guards the list itself against drift: drop an arm from the switch and the sorted-set
+    // assertion above fails to shrink; add an arm without subscribing and nothing here reminds you —
+    // the sorted-set literal is the contract reviewers update alongside the endpoint.
+    expect(STRIPE_WEBHOOK_EVENT_TYPES).toContain("customer.subscription.updated");
+    expect(STRIPE_WEBHOOK_EVENT_TYPES).toContain("customer.subscription.deleted");
+    expect(STRIPE_WEBHOOK_EVENT_TYPES).toContain("invoice.payment_failed");
+  });
+});
 
 describe("verifyStripeSignature (§14.6 step 1)", () => {
   const body = JSON.stringify(checkoutPayload());
@@ -298,6 +330,72 @@ describe("processStripeEvent — the Checkout arms (P1.16; §14.6; REQ-BILL-14)"
       (await db.client.query("select stripe_customer_id from billing_accounts where id = $1", [BA])).rows[0],
     ).toMatchObject({ stripe_customer_id: "cus_ar_1" });
     expect(await topupGrants()).toHaveLength(0);
+  });
+});
+
+// ---- F-R6H11B-1 — the topup grant must land for a Better Auth (nanoid) member --------------------
+// The prod failure (evt_1UVF7T…, cs_live_a1YA4…): `recordAnalyticsEvent` ran INSIDE the grant tx and
+// `parseAnalyticsEvent` rejected `"user".id`'s 32-char alphanumeric shape with "must be a 26-char
+// Crockford-base32 ULID" — the tx rolled back, no grant landed, the event parked unprocessed.
+// `authIdSchema` (contracts) now validates the opaque auth id; these tests pin the money leg.
+
+const NANOID_USER = "fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y"; // the observed prod user.id shape (H11B)
+
+async function memberEvents() {
+  return (await db.client.query("select event, user_id from analytics_events order by at, id")).rows as {
+    event: string; user_id: string;
+  }[];
+}
+
+describe("processStripeEvent — topup for a nanoid (Better Auth) member (F-R6H11B-1)", () => {
+  it("the pack arm grants exactly once + records telemetry under the opaque auth id; replay no-ops", async () => {
+    // the nanoid user is the workspace's (only) member — the telemetry envelope carries its id.
+    await db.pg.query(`insert into "user"(id, email, email_verified) values ($1,$2,true)`, [NANOID_USER, "nanoid@example.test"]);
+    await db.pg.query("delete from workspace_members where workspace_id = $1", [WS]);
+    await db.pg.query("insert into workspace_members(workspace_id, user_id, role) values ($1,$2,'admin')", [WS, NANOID_USER]);
+    await checkoutSessionRow({ id: "chk_nanoid", kind: "topup", packId: "topup_10", stripeSessionId: "cs_nanoid_1" });
+    const out = await emit("evt_nanoid_1", "checkout.session.completed", {
+      id: "cs_nanoid_1",
+      payment_intent: "pi_nanoid_1",
+      metadata: { checkout_session_id: "chk_nanoid" },
+    });
+    expect(out).toMatchObject({ kind: "topup_granted", credits: 1000, billingAccountId: BA, applied: true });
+    expect((await readBalances(db, BA)).topup.available).toBe(1000);
+    // the telemetry that used to roll the grant back now lands under the nanoid id.
+    expect(await memberEvents()).toEqual([
+      { event: "topup.purchased", user_id: NANOID_USER },
+      { event: "wtp.recorded", user_id: NANOID_USER },
+    ]);
+
+    // exactly-once: re-processing the same stored row hits the closed session's state guard…
+    const again = await processStripeEvent(db.client, deps(), "evt_nanoid_1");
+    expect(again.kind).toBe("ignored");
+    // …and a redelivered webhook (new event id, same session) is ignored — the session row closed.
+    const replay = await emit("evt_nanoid_2", "checkout.session.completed", {
+      id: "cs_nanoid_1", metadata: { checkout_session_id: "chk_nanoid" },
+    });
+    expect(replay.kind).toBe("ignored");
+    expect((await readBalances(db, BA)).topup.available).toBe(1000);
+    expect(await topupGrants()).toHaveLength(1);
+  });
+
+  it("the Payment-Link arm (no checkout_sessions row) lands telemetry under a nanoid user too", async () => {
+    await db.pg.query(`insert into "user"(id, email, email_verified) values ($1,$2,true)`, [NANOID_USER, "nanoid@example.test"]);
+    await db.pg.query("delete from workspace_members where workspace_id = $1", [WS]);
+    await db.pg.query("insert into workspace_members(workspace_id, user_id, role) values ($1,$2,'admin')", [WS, NANOID_USER]);
+    await insertStripeEvent(db.client, {
+      id: "evt_pl_nanoid", type: "checkout.session.completed",
+      payload: checkoutPayload({ payment_intent: "pi_pl_nanoid" }),
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, deps(), "evt_pl_nanoid");
+    expect(out.kind).toBe("topup_granted");
+    if (out.kind === "topup_granted") expect(out.applied).toBe(true);
+    expect((await readBalances(db, BA)).topup.available).toBe(5000);
+    expect(await memberEvents()).toEqual([
+      { event: "topup.purchased", user_id: NANOID_USER },
+      { event: "wtp.recorded", user_id: NANOID_USER },
+    ]);
   });
 });
 

@@ -40,6 +40,27 @@ import { convertTrialOnUpgrade } from "./trial.js";
 
 /** The pg-boss queue the webhook enqueues after inserting `stripe_events` (§14.6 step 3). */
 export const STRIPE_EVENT_JOB = "stripe.event" as const;
+
+/**
+ * The canonical `enabled_events` contract for the Stripe webhook endpoint — every type
+ * `processStripeEvent` dispatches on (F-R6H11B-2). The endpoint is Stripe-side state (created
+ * imperatively in PRB.18 with only `checkout.session.completed` + `charge.dispute.*`, before the
+ * P1.16/BILL.3 arms landed — `docs/ops/stripe-webhook-endpoint.md` carries the imperative update
+ * the deployed endpoint needs). A new arm in the `processStripeEvent` switch must join this list
+ * AND the endpoint's `enabled_events` — the dispatch-completeness test pins the list.
+ */
+export const STRIPE_WEBHOOK_EVENT_TYPES = [
+  "checkout.session.completed",
+  "checkout.session.expired",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "charge.dispute.created",
+  "charge.dispute.closed",
+] as const;
+export type StripeWebhookEventType = (typeof STRIPE_WEBHOOK_EVENT_TYPES)[number];
 /** The re-drive queue for deliveries a chargeback withheld (the pod's original POST was refused). */
 export const RUN_DELIVER_JOB = RUN_JOBS.deliver;
 
