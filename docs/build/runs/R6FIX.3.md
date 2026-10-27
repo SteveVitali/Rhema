@@ -33,8 +33,9 @@
   as found; no one-off prod writes) applies.
 - **Spend envelope:** ≤ $8 total incl. the canary (~≤$5 Quick/Base shape). jrn-a
   balance post-R6DEP.3 ≈ 3551 cr → **no house-grant needed**.
-- **ci:** pass #223@`601ad5e` (run 40483816854 — all seven legs + `ci-pass`
-  anchor; record `logs/ci-R6FIX.3.json`)
+- **ci:** pass #223@`834e9f1` (run 40489209098 — all seven legs + `ci-pass`
+  anchor, cache-fast docs-only head; code head `601ad5e` pass run 40483816854;
+  record `logs/ci-R6FIX.3.json`)
 
 ## Deferrals read
 
