@@ -42,6 +42,10 @@ on:
         description: "comma-separated step ids (default: full registry)"
         required: false
         default: ""
+      expect-sha:
+        description: "SHA the provenance assert expects deployed (default: github.sha — a dispatch may pin the deployed SHA for an on-deployed-SHA green run)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -93,7 +97,9 @@ jobs:
         env:
           # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth step above (the federated
           # WIF identity's external_account file — ADC can mint its access token).
-          JOURNEY_EXPECT_SHA: ${{ github.sha }}
+          # A dispatch may pin the expected SHA explicitly (e.g. the deployed SHA for an
+          # on-deployed green run); the schedule always pins github.sha.
+          JOURNEY_EXPECT_SHA: ${{ inputs['expect-sha'] || github.sha }}
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
         run: |
           set -uo pipefail
