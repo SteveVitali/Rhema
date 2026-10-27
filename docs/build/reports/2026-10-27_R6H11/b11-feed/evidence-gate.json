@@ -1,0 +1,18 @@
+{
+  "runId": "01M5XTD893J1F5SKMXCHSS32VH",
+  "slug": "jrn-586d9c8d0ba7-r6excerpt",
+  "at": "2026-10-27T05:04:00.284Z",
+  "notes": [
+    "run-card data-run-state=cancelled",
+    "live-feed rows=0 last-seq=null",
+    "feed text tail: ",
+    "decision line: stopped by you at 05:02",
+    "db run.state=cancelled since=Tue Oct 27 2026 01:02:49 GMT-0400 (Eastern Daylight Time)",
+    "db gate.kind=resume_partial resolved_at=Tue Oct 27 2026 01:02:49 GMT-0400 (Eastern Daylight Time)",
+    "db decisions=[{\"action\":\"stop\",\"by_actor\":\"user\",\"at\":\"2026-10-27T05:02:49.859Z\"}]",
+    "db balances=[{\"bucket\":\"daily\",\"available\":\"20\",\"held\":\"0\"},{\"bucket\":\"promo\",\"available\":\"4000\",\"held\":\"0\"}]",
+    "db usage rows=12 usd=0.259587 credits=36",
+    "db event kinds=[{\"type\":\"gate.opened\",\"n\":\"1\"},{\"type\":\"gate.resolved\",\"n\":\"1\"},{\"type\":\"run.hiccup\",\"n\":\"2\"},{\"type\":\"run.state_changed\",\"n\":\"14\"},{\"type\":\"step.started\",\"n\":\"3\"}]"
+  ],
+  "ok": true
+}

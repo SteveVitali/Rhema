@@ -23,6 +23,20 @@ reports them; verbatim approval words are appended verbatim below. Nothing here 
 (quoted per row below) — R6CNT.2's content gate is unblocked. Browser/money legs (B1–B12)
 and the X-items remain pending — they withhold the legs the marker names, nothing else.
 
+**2026-10-27 (R6H11 — the automatable browser legs ran on prod `e04a8c8`):** B6, B7,
+B8, B9, B11, B12 discharged with real evidence under `docs/build/reports/2026-10-27_R6H11/`
+(run ledger `docs/build/runs/R6H11.md`). Total metered spend **$0.259587** (single
+Quick/Base R6 run on the is_test `jrn-a` tenant, funded by one audited `house-grant`
+of 4000 cr; declared cap $4.50, run cap $5). Still operator-owed:
+B1 (Google OAuth + 409 merge), B2–B4 (real-money Stripe), B5 (Safari caret),
+B10 (real phone viewport). Two live defects surfaced: **F-R6H11-1** (restore apply
+leaves the live collab doc unconverged — stored head correct, canvas resurrects
+removed text) and **F-R6H11-2** (the deployed `run-task` image at `e04a8c8` lacks the
+vendored agent SDK — **no run can execute on prod**; the R6 run parked at
+`resume_partial` per design and was stopped via the UI gate card → `cancelled`, hold
+fully released). F-R6H11-2 leaves the in-phase *meter-advance* half of B11's
+acceptance owed (the feed/cursor/zero-reload mechanics are proven).
+
 ## Checklist — browser / money legs (flagged `is_test` accounts)
 
 | # | Item | Status |
@@ -32,13 +46,13 @@ and the X-items remain pending — they withhold the legs the marker names, noth
 | B3 | Real-money purchase → `grant(topup)` — operator elected the **$10 top-up** path (D-BILL.3-1) | pending |
 | B4 | Portal change-plan + pending-email (D-BILL.3-2) | pending (follows B3) |
 | B5 | Safari/WebKit caret walking (D-EDIT.1-2) | pending |
-| B6 | Source-editor mode-switch + typed round-trip (D-PRB.07-1) | pending |
-| B7 | Versions rail (D-P1.08-1) | pending |
-| B8 | PUT override + standing note + dismiss + gate card (D-P1.09-1) | pending |
-| B9 | Settings walk on a throwaway account (D-P1.20-1) | pending |
+| B6 | Source-editor mode-switch + typed round-trip (D-PRB.07-1) | **done** (2026-10-27, prod `e04a8c8` — journey T17 green; `reports/2026-10-27_R6H11/t17-source-editor/`) |
+| B7 | Versions rail (D-P1.08-1) | **done** (2026-10-27, seeded writable dossier `h11-q6vqlg`: rail chips + ⚑ chip + diff + restore preview/apply w/ undo point — `reports/2026-10-27_R6H11/r6h11-adhoc-all.json` + b7-*.png; live defect F-R6H11-1 filed: apply leaves the collab doc unconverged) |
+| B8 | PUT override + standing note + dismiss + gate card (D-P1.09-1) | **done** (2026-10-27 — `?approvals=saved` persist + `?approvals=invalid` refusal + guidance add/retire `active:false` + explainer dismiss persists + `data-gate-card` in the Needs-you sheet — same report) |
+| B9 | Settings walk on a throwaway account (D-P1.20-1) | **done** (2026-10-27 — nine surfaces 200 + `defaultModelTier` write round-trip persisted via `/bff/settings/preferences`; email-change/support/delete legs stay operator-owed per D-P1.20-1) |
 | B10 | Real-phone ~375–390 px legs (D-P1.19-2) | pending |
-| B11 | EventSource live-feed chip on a live run (D-PRB.04-2 browser half) | pending |
-| B12 | Leg-cap reconciliation (BL-69) | pending |
+| B11 | EventSource live-feed chip on a live run (D-PRB.04-2 browser half) | **done** (2026-10-27 — real `EventSource` `…/events?after=11` observed on the wire during live run `01M5XTD893J1F5SKMXCHSS32VH`; `[data-live-feed]` + 10 feed rows + zero document loads over a 210 s watch; cursor advanced `?after=2→22` across reconnects through the whole lifecycle incl. the `resume_partial` park + user `stop` → `cancelled`, terminal card + "stopped by you" decision line observed live; `reports/2026-10-27_R6H11/b11-feed/` — caveat: in-phase meter ticks unexercised under F-R6H11-2, still owed there) |
+| B12 | Leg-cap reconciliation (BL-69) | **done** (2026-10-27 — declared $4.50 cap/headroom vs measured `usage_records.list_cost_usd` $0.259587 for run `01M5XTD893J1F5SKMXCHSS32VH` (12 proxy rows, 36 cr, preflight only); ISO-week flagged-tenant non-fixture total $0.259587 ≤ $5 run cap; `runs/R6H11.md` gap table) |
 
 ## Checklist — approvals (verbatim words recorded on tick)
 
