@@ -113,10 +113,10 @@ describe("stripe-redrive (R6FIX.5 — the F-R6H11B-1 compensation path)", () => 
     const jobs = queue.ofName(STRIPE_EVENT_JOB);
     expect(jobs).toHaveLength(1);
     expect(jobs[0]!.payload).toEqual({ eventId: "evt_parked" });
-    const audit = (await db.client.query("select actor, action, note from admin_actions")).rows[0] as {
-      actor: string; action: string; note: string;
+    const audit = (await db.client.query("select actor, event_id, note from stripe_event_redrives")).rows[0] as {
+      actor: string; event_id: string; note: string;
     };
-    expect(audit).toMatchObject({ actor: "op_steve", action: "stripe_event_redrive" });
+    expect(audit).toMatchObject({ actor: "op_steve", event_id: "evt_parked" });
     expect(audit.note).toContain("evt_parked");
 
     // an already-processed row is a no-op (idempotent — no second job, no second audit)
@@ -127,8 +127,7 @@ describe("stripe-redrive (R6FIX.5 — the F-R6H11B-1 compensation path)", () => 
     expect(lines.at(-1)).toContain("already processed");
     expect(queue.ofName(STRIPE_EVENT_JOB)).toHaveLength(1);
     expect(
-      (await db.client.query("select count(*)::int n from admin_actions where action = 'stripe_event_redrive'"))
-        .rows[0],
+      (await db.client.query("select count(*)::int n from stripe_event_redrives")).rows[0],
     ).toEqual({ n: 1 });
 
     // unknown event / unbound queue / missing flag

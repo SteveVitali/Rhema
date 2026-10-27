@@ -164,7 +164,9 @@ OPEN.
   (Stub+Fetch), `requestCancellation` in-tx propagation, `syncSubscription`
   clears superseded `scheduled_tier`, route failure mapping.
 - 2026-10-27T18:5xZ — `stripe-redrive` admin verb + migration 0060
-  (`admin_actions` CHECK extension); admin-cli tests.
+  (dedicated `stripe_event_redrives` audit table — the additive-lint-clean
+  shape: `admin_actions.action`'s CHECK can't be widened without a
+  constraint replace, which the lint correctly refuses); admin-cli tests.
 - 2026-10-27T18:5xZ — targeted suites green (contracts, ledger, api);
   turbo build/lint/typecheck 135/135.
 - 2026-10-27T19:0xZ — full `pnpm test`: migration-census fix (0060 joins the
@@ -180,7 +182,7 @@ OPEN.
 |---|---|
 | F-R6H11B-1 root-caused + honest fix | **MET** — `authIdSchema` on the user-bearing contract fields only; ULID `idSchema` keeps guarding every entity id |
 | Nanoid topup grants exactly once under replay | **MET** — deterministic: first process grants + emits, replay returns `ignored` (completed session), one ledger row |
-| Failed event re-drivable post-fix | **MET (engineered) / live leg owed** — `stripe-redrive` re-enqueues the parked `stripe_events` row through the normal `stripe.event` seam, audited in `admin_actions`, idempotent on already-processed rows; ledger idempotency keys make re-drive safe. Chosen over a manual compensation row: the event + session state are intact, and re-driving exercises the REAL path the fix must prove. The `evt_1UVF7T…` execution is the recorded post-deploy step |
+| Failed event re-drivable post-fix | **MET (engineered) / live leg owed** — `stripe-redrive` re-enqueues the parked `stripe_events` row through the normal `stripe.event` seam, audited in the dedicated `stripe_event_redrives` table, idempotent on already-processed rows; ledger idempotency keys make re-drive safe. Chosen over a manual compensation row: the event + session state are intact, and re-driving exercises the REAL path the fix must prove. The `evt_1UVF7T…` execution is the recorded post-deploy step |
 | Endpoint subscribes every handled event type | **MET (engineered) / Stripe-side update owed** — `STRIPE_WEBHOOK_EVENT_TYPES` canonical + pinned by test; `docs/ops/stripe-webhook-endpoint.md` carries the imperative update (endpoint is not IaC-owned — PRB.18 created it via the Stripe API) |
 | Subscription update/delete + renewal-failure sync | **MET (code arms already exist; now reachable)** — the handlers already ship on `dc3a8f6`; the fix makes the endpoint deliver them |
 | No prod mutations; live re-proof honest | **MET** — zero prod writes this run; endpoint update + re-drive + live receipts recorded as owed runbook steps |
@@ -224,8 +226,11 @@ OPEN.
   exit-nonzero); billing-routes +N (Stripe reject→`stripe_rejected`,
   unavailable→`stripe_unavailable`, non-Stripe stays 500).
 - **New migration:** `packages/db/migrations/0060_stripe_event_redrive.sql`
-  — forward-only CHECK-constraint extension adding `stripe_event_redrive`
-  to `admin_actions.action` (additive-lint clean).
+  — a dedicated `stripe_event_redrives` audit table (id/actor/event_id→
+  `stripe_events.id`/note/at). The additive lint correctly refuses the
+  drop+re-add CHECK extension the older migrations used, so the verb's
+  audit vocabulary lives in its own table (CI contracts leg proved this —
+  the first draft's constraint extension failed `[drop]`).
 - **Live verification debt (recorded, not claimed):** (1) `stripe
   webhook_endpoints update we_1UH99C2MLe3ETP9Sk4UQBKXs …` per
   `docs/ops/stripe-webhook-endpoint.md`; (2) `stripe-redrive evt_1UVF7T…`

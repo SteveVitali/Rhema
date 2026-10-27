@@ -69,3 +69,31 @@ test-mode endpoint; never against prod.
 Append the dated evidence line to `docs/build/LEDGER.md` GATE-LAUNCH threshold-1 note and flip
 the F-R6H11B-2 deferral tail (DEFERRALS.md) — live verification is owed until the first real
 `customer.subscription.*` event lands post-update.
+
+## The parked H11B event — `evt_1UVF7T…` (F-R6H11B-1 compensation)
+
+The $10 `topup_10` purchase (`checkout cs_live_a1YA4…`, paid 2026-10-27 via Apple Pay) is parked in
+`stripe_events` with `processed_at` NULL — the nanoid-`user_id` analytics throw rolled its grant tx
+back on the pre-fix build. After the fixed build deploys, re-drive it through the ordinary queue —
+**never** a hand-written compensation ledger row (the grant idempotency keys make the replay
+exactly-once; a second delivery of the same session returns `ignored`):
+
+```bash
+# the operator verb needs RHEMA_OPERATOR_ID + SYSTEM_DATABASE_URL (the prod path runs over the IAP
+# tunnel — the same binding every admin-cli verb uses):
+node dist/admin-cli.js stripe-redrive --event evt_1UVF7T… --note "H11B topup_10 grant — F-R6H11B-1 fix"
+```
+
+Then verify the close-out set:
+
+```sql
+select id, type, processed_at from stripe_events where id = 'evt_1UVF7T…';          -- processed_at set
+select state from checkout_sessions where stripe_session_id = 'cs_live_a1YA4…';    -- completed
+select kind, credits from credit_ledger where idempotency_key like 'stripe:checkout:%'; -- one topup_granted 1000
+select kind, channel, dedup_key from notification_deliveries                        -- the pending-checkout email
+  where dedup_key like 'checkout:%' order by at desc limit 3;
+```
+
+A second `stripe-redrive` on the same event is a no-op (`processed_at` already set) — idempotent by
+construction. If the re-drive lands `failed` again, the event row's `processed_at` stays NULL and the
+job pageable — that is the signal to investigate, not to hand-write a ledger row.

@@ -379,7 +379,8 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
         // THE compensation path: processing is idempotent (the checkout-session state guard + the
         // `stripe:checkout:<sessionId>` ledger key make a replay a no-op), so no manual compensation
         // ledger row is ever hand-written — the money row Stripe earned lands through the ordinary
-        // arm or not at all. Audited: the operator's ask is the admin_actions row.
+        // arm or not at all. Audited: the operator's ask is the `stripe_event_redrives` row (0060 —
+        // a purpose table, since the admin_actions action CHECK can't be widened additively).
         const eventId = flag(rest, "event");
         if (!eventId) return (out(USAGE), 2);
         const row = (
@@ -402,8 +403,8 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
         }
         await deps.queue.send(STRIPE_EVENT_JOB, { eventId }, { singletonKey: `stripe-event:${eventId}` });
         await deps.systemExec.query(
-          `insert into admin_actions (id, actor, action, note, at) values ($1,$2,'stripe_event_redrive',$3,$4)`,
-          [deps.ids("adm"), deps.operatorId, `redrive ${eventId} (${row.type})${note ? ` — ${note}` : ""}`, deps.clock.now()],
+          `insert into stripe_event_redrives (id, actor, event_id, note, at) values ($1,$2,$3,$4,$5)`,
+          [deps.ids("red"), deps.operatorId, eventId, `redrive ${eventId} (${row.type})${note ? ` — ${note}` : ""}`, deps.clock.now()],
         );
         out(`re-drove ${eventId} (${row.type}) → ${STRIPE_EVENT_JOB} (audited)`);
         return 0;

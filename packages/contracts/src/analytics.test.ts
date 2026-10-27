@@ -54,7 +54,7 @@ describe("F-R6H11B-1 — user_id is an opaque auth id, not a ULID", () => {
   // The prod topup that motivated R6FIX.5: a Better Auth user id (`generateId(32)`, [a-zA-Z0-9])
   // failed `idSchema`'s 26-char ULID check inside `recordAnalyticsEvent` and rolled back the whole
   // grant tx. `authIdSchema` accepts BOTH live auth-id shapes while the entity fields stay ULID-only.
-  const BETTER_AUTH_ID = "fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y"; // a real nanoid-shape user.id (H11B evidence)
+  const BETTER_AUTH_ID = "betterAuthTestNanoid000000000000"; // synthetic 32-char nanoid-shape stand-in (H11B evidence had a real one)
 
   it("accepts the ULID and the Better Auth id shapes on user_id", () => {
     const ulid = parseAnalyticsEvent("landing.viewed", ENV, {});

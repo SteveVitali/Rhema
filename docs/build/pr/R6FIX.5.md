@@ -24,7 +24,7 @@
 - **Compensation path:** audited re-drive, not a manual ledger row — the new
   `stripe-redrive` admin verb re-enqueues the parked `stripe_events` row through the
   ordinary `stripe.event` queue seam (ledger idempotency keys make it exactly-once),
-  writes an `admin_actions` audit row, and no-ops on already-processed events.
+  writes a `stripe_event_redrives` audit row, and no-ops on already-processed events.
 
 **Third finding, same drift family — F-R6FIX.5-1:** the reverse direction was also
 broken — in-app `POST /billing/subscription/cancel` wrote `cancel_at_period_end`
@@ -57,9 +57,11 @@ can't be price-switched) → **D-R6FIX.5-1 OPEN**.
   non-Stripe internals stay 500.
 - **`apps/api/src/admin-cli.ts`** — new `stripe-redrive <eventId>` verb: operator-id
   required, finds an unprocessed `stripe_events` row, enqueues `stripe.event`,
-  audits via `admin_actions`; processed row → idempotent no-op.
-- **`packages/db/migrations/0060_stripe_event_redrive.sql`** — forward-only
-  CHECK-constraint extension (`admin_actions.action` += `stripe_event_redrive`).
+  audits via `stripe_event_redrives`; processed row → idempotent no-op.
+- **`packages/db/migrations/0060_stripe_event_redrive.sql`** — the dedicated
+  `stripe_event_redrives` audit table. The `admin_actions.action` CHECK can't be
+  widened additively (a constraint replace is a `drop`, which the migration lint
+  correctly refuses), so this verb's audit vocabulary gets its own table.
 - **`docs/ops/stripe-webhook-endpoint.md`** — the runbook: canonical event list,
   the imperative `stripe webhook_endpoints update` command, verify + record steps,
   and the `stripe-redrive evt_1UVF7T…` compensation step.

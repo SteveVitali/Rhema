@@ -339,7 +339,7 @@ describe("processStripeEvent — the Checkout arms (P1.16; §14.6; REQ-BILL-14)"
 // Crockford-base32 ULID" — the tx rolled back, no grant landed, the event parked unprocessed.
 // `authIdSchema` (contracts) now validates the opaque auth id; these tests pin the money leg.
 
-const NANOID_USER = "fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y"; // the observed prod user.id shape (H11B)
+const NANOID_USER = "betterAuthTestNanoid000000000000"; // synthetic 32-char nanoid-shape stand-in (the observed prod shape — a real literal trips the gitleaks generic-api-key rule)
 
 async function memberEvents() {
   return (await db.client.query("select event, user_id from analytics_events order by at, id")).rows as {
