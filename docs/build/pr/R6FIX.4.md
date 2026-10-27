@@ -49,16 +49,19 @@ release (the path internal-api.ts:1583–1655 already owns).
 check's record per verification-protocol §4) IS a closed disposition — the honest Unverified
 delivery path (dead-bound commit → Unverified label → zero-coverage refund) still rides.
 
-**Honest residual:** `discourse` has no machine-readable outcome contract (markdown artifact,
-no sidecar) — its contested-claim outcomes cannot be gated until a `02-discourse-report.json`
-shape exists. Verification's gate blocks the whole-run lie F-R6CNT.3-1 measured; the
-discourse-side contract is recorded follow-up work (finding resolution + ADR-123).
+**Honest residual (D-R6FIX.4-1):** `discourse` has no machine-readable outcome contract
+(markdown artifact, no sidecar) — its contested-claim outcomes cannot be gated until a
+`02-discourse-report.json` shape exists. Verification's gate blocks the whole-run lie
+F-R6CNT.3-1 measured; the discourse-side contract is a tracked deferral.
+
+**Declared-zero also fails:** a `inventoryCount: 0` + `claims: []` ledger is the same bypass
+through a second channel (`min(0, cap) = 0`) — coverage requires a proven inventory ≥ 1.
 
 ## Tests (deterministic)
 
-- `completion-oracle.test.ts` +5 — closed ledger passes; placeholder rows refuse `done` naming
+- `completion-oracle.test.ts` +6 — closed ledger passes; placeholder rows refuse `done` naming
   ordinals; absent closure fact fails; partial closure fails even with coverage+schema green;
-  absent `inventoryCount` fails coverage with the honest detail.
+  absent `inventoryCount` AND a declared `inventoryCount: 0` both fail coverage honestly.
 - `work-reader.test.ts` +5 — `buildPhaseOutputs` on real ledger JSONs: the R6CNT.3 placeholder
   shape → all 14 ordinals unclosed + `inventoryCount` unset; closed ledger → `[]`;
   mixed ledger → `[4, 9]`; numeric-string `inventoryCount` coerces; absent ledger → fact unset.
@@ -66,14 +69,16 @@ discourse-side contract is recorded follow-up work (finding resolution + ADR-123
   `claim_ledger_closed` → `artifact_missing` fail, never committed; retry-closes → commits;
   placeholders + exhausted bound → `research_budget_exhausted`, no re-drain. Existing
   verification facts updated for the third predicate.
-- **Verify:** `pnpm turbo build lint typecheck` green; `pnpm test` (whole suite) green;
-  `check-build-memory.sh` 0 violations; `check-append-only.mjs --base c1f20f5` OK;
-  `check-upstream-diff` clean.
+- **Verify:** `pnpm turbo build lint typecheck` 135/135; `pnpm test` whole suite **517 files /
+  6,136 pass**; `check-build-memory.sh` 0 violations; `check-append-only.mjs --base c1f20f5` OK;
+  `check-upstream-diff` clean; **ci: pass #224@81c28a1** (run 40494204433 — all seven legs +
+  `ci-pass` anchor; stack #223–#219 pass; record `logs/ci-R6FIX.4.json`).
 
 ## Records
 
 `docs/build/runs/R6FIX.4.md` · ADR-123 · `F-R6CNT.3-1` → **RESOLVED-IN-CODE** (LEDGER open
-finding) · GATE-LAUNCH threshold-9 dated note · BUILD_INDEX row 230 · `nextTicket` stays
+finding) · **D-R6FIX.4-1 opened** (discourse-outcome contract) · D-R6CNT.2-1 dated tail ·
+GATE-LAUNCH threshold-9 dated note · BUILD_INDEX row 230 · `nextTicket` stays
 `196a_HUMAN-H12` · `docs/build/logs/ci-R6FIX.4.json`.
 
 ## Operator asks
