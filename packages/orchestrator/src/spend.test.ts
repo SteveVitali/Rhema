@@ -11,6 +11,7 @@ import {
   incrementalMeteredDebit,
   meteredCredits,
   netDebitedCredits,
+  reconcileRunSpend,
   refundMeteredExcess,
   resettleRun,
   settleMeteredDebit,
@@ -72,6 +73,58 @@ describe("meteredCredits / netDebitedCredits", () => {
     await seedLedger("l3", "refund", 40, "refund:run1#included");
     await seedLedger("l4", "adjustment", 25, "absorb:run1:1#absorbed", "absorbed");
     expect(await inTx((tx) => netDebitedCredits(tx, "run1"))).toBe(120);
+  });
+});
+
+describe("reconcileRunSpend — the terminal committed-total fold (F-R6DEP3-1)", () => {
+  it("folds the net committed charge: Σ per-phase max debits can exceed claims ∪ metered", async () => {
+    // The canary shape verbatim (prod run 01M5Y4YQP827TCBXZHHV3AV4NC): step claims Σ 464,
+    // proxy-metered 502, but committed-mode per-phase floors debited 505 — claim floor over the
+    // metered catch-up on argument (+1) and letter (+2) plus intake's 12 cr of unattributed
+    // pre-beginStep rows. The committed claim IS the charge (D-F) → the meter converges to 505.
+    await db.client.query("update runs set spent_credits = 464 where id = 'run1'");
+    await seedUsage("u1", "run1", 1, 502);
+    await seedLedger("l1", "debit", 505, "debit:run1:letter:1#included");
+    expect(await inTx((tx) => reconcileRunSpend(tx, "run1"))).toBe(505);
+    const row = (await db.client.query("select spent_credits from runs where id = 'run1'")).rows[0] as {
+      spent_credits: number;
+    };
+    expect(Number(row.spent_credits)).toBe(505);
+  });
+
+  it("refunds net the charge: a fully-refunded run's fold stays the metered burn", async () => {
+    // debit landed, then the terminal refund returned it — the charge is 0; the meter keeps the
+    // absorbed burn (claims ∪ metered), not the refunded figure.
+    await seedUsage("u1", "run1", 1, 430);
+    await seedLedger("l1", "debit", 505, "debit:run1:letter:1#included");
+    await seedLedger("l2", "refund", 505, "refund:run1#included");
+    expect(await inTx((tx) => reconcileRunSpend(tx, "run1"))).toBe(430);
+  });
+
+  it("debits never lower the meter — usage still wins when the burn exceeds the charge", async () => {
+    // a cancelled run keeps committed debits while the in-flight burn absorbs: metered > debited →
+    // the metered figure stands (the absorb row is an adjustment, never a debit).
+    await seedUsage("u1", "run1", 1, 600);
+    await seedLedger("l1", "debit", 505, "debit:run1:letter:1#included");
+    await seedLedger("l2", "adjustment", 95, "absorb:run1:1#included", "absorbed");
+    expect(await inTx((tx) => reconcileRunSpend(tx, "run1"))).toBe(600);
+  });
+
+  it("the fold is debit-after-last-render deterministic: a debit written inside the same tx counts", async () => {
+    // the ordering the finding named — a debit landing earlier in the SAME terminal transaction
+    // (the settle's catch-up or a commit's claim-floor arm) is visible to the reconcile read: the
+    // meter's final commit settles after the last usage write AND the last debit write.
+    await seedUsage("u1", "run1", 1, 400);
+    await seedLedger("l1", "debit", 400, "debit:run1:intake:1#included");
+    const spent = await inTx(async (tx) => {
+      await tx.query(
+        `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key, at)
+         values ('l2', $1, $2, 'debit', 105, 'included', 'run1', 'run', 'debit:run1:letter:1#included', now())`,
+        [ws, ba],
+      );
+      return reconcileRunSpend(tx, "run1");
+    });
+    expect(spent).toBe(505);
   });
 });
 

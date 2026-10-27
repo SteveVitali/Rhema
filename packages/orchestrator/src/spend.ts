@@ -4,9 +4,14 @@
 // committed) while `usage_records` already holds the real spend. Every terminal settle reconciles the
 // field from the usage rows of record: the proxy's `{source:'proxy'}` rows are the meter of record
 // (§12.7); `sdk_estimate` (the crosscheck's SDK side) stands in next, then the display rows
-// (`sdk_stream`, `provider_report`) — never summed together, they measure the same tokens. `greatest()`
-// makes the write monotone — a reconciled figure is never lowered by a second settle and a mid-flight
-// call can only fold usage IN.
+// (`sdk_stream`, `provider_report`) — never summed together, they measure the same tokens. A third
+// fold joins them (F-R6DEP3-1): the net committed CHARGE — Σ debit − Σ refund from `credit_ledger`.
+// Under `committed` debit mode each commit charges `max(pod claim, metered − debited)`, so the
+// per-phase maxes can sum ABOVE both Σ claims and Σ metered (ECON.1 D-F — the committed claim IS
+// the charge; the R6DEP.3 canary debited 505 against a 502 meter). Without this fold the committed
+// meter — the run card, `cost.final`, every `spent_credits` read — under-reports what the ledger
+// actually charged. `greatest()` makes the write monotone — a reconciled figure is never lowered
+// by a second settle and a mid-flight call can only fold usage IN.
 
 import type { DebitMode } from "@rhema/contracts";
 import type { SqlClient } from "./tx.js";
@@ -60,9 +65,14 @@ export async function reconcileRunSpend(exec: SqlClient, runId: string): Promise
   // stands in next, then the display rows (`sdk_stream`/`provider_report`). Never sum the SDK twins —
   // stream and estimate measure the same phase's tokens.
   const usage = proxy > 0 ? proxy : estimate > 0 ? estimate : other;
+  // F-R6DEP3-1 — the third fold: the ledger's net committed charge. `committed`-mode per-phase floors
+  // (claim wins over the metered catch-up) make Σ debits ≥ max(Σ claims, metered) — e.g. claims 464 /
+  // metered 502 / debited 505 — and the charge is the figure the card's committed meter must render.
+  // Net-of-refund keeps a failed run's absorbed burn (not its refunded charge) as the floor.
+  const netDebited = await netDebitedCredits(exec, runId);
   const res = await exec.query(
-    "update runs set spent_credits = greatest(spent_credits, $2) where id = $1 returning spent_credits",
-    [runId, usage],
+    "update runs set spent_credits = greatest(spent_credits, $2, $3) where id = $1 returning spent_credits",
+    [runId, usage, netDebited],
   );
   return (res.rows[0] as { spent_credits: number } | undefined)?.spent_credits ?? 0;
 }

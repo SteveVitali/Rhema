@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate GREEN post GD-GOLDEN-BAND.R6 (major band max 12; same scores re-gated 4/4 PASS $0 — D-P0.15-4 DONE)
-lastCompleted:   R6DEP.3            # 2026-10-27; prod deploy e04a8c8→dc3a8f6 + live re-proofs — F-R6H11-2 RESOLVED (run executes to completed on vendored-SDK image), F-R6H11-1 RESOLVED (restore convergence live); F-R6DEP3-1 opened (3cr report/meter drift); unmerged (OPERATOR)
+lastCompleted:   R6FIX.3            # 2026-10-27; F-R6DEP3-1 RESOLVED-IN-CODE (committed-meter folds net debited) + residual legs discharged $0; unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6dep-3-fix-deploy  # R6DEP.3; next row forks here — PROD SERVES dc3a8f6 (F-R6H11-2/-1 RESOLVED live; runs execute again)
+chainTip:        stevevitali/r6fix-3-meter-race  # R6FIX.3; next row forks here — PROD SERVES dc3a8f6 (fix unmerged — the meter-fold lands with the next DEP)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T08:35:00Z         # R6DEP.3 — prod deploy `e04a8c8`→`dc3a8f6` (update 164) + migration 0059 + smoke green; F-R6H11-2/-1 RESOLVED on live evidence (paid canary completed on the vendored-SDK image; restore convergence re-proof CONVERGED); F-R6DEP3-1 opened; unmerged (OPERATOR)
+updatedAt:       2026-10-27T09:50:00Z         # R6FIX.3 — F-R6DEP3-1 RESOLVED-IN-CODE (triage: committed-mode claim-floor, not flush race; `reconcileRunSpend` folds net debited); residual legs: support-access/export/protocol-marker/obligation-chips discharged $0; canary re-drive refused by REQ-ECON-9 weekly guard; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -469,19 +469,26 @@ pointers; substance unchanged.)_
   `usage_records` landed, ~$5.02 debited — runs execute on prod again. The R6
   leg's strict report↔card reconciliation surfaced a separate 3-cr drift →
   **F-R6DEP3-1** below.
-- **F-R6DEP3-1 — OPEN (2026-10-27, R6DEP.3 live-found on prod `dc3a8f6` —
-  `runs/R6DEP.3.md`, `reports/2026-10-27_R6DEP.3/r6-canary/`).** The completed
-  canary run's report charged **505 cr** (`data-estimate-line` "…505 cr spent")
-  while the run card's terminal committed meter showed **502 cr** — a 3-cr
-  debit (`$0.03`) the live meter never rendered, tripping the R6 leg's strict
+- **F-R6DEP3-1 — RESOLVED-IN-CODE 2026-10-27 (R6FIX.3 — `runs/R6FIX.3.md`,
+  branch `stevevitali/r6fix-3-meter-race`).** Root cause (real prod rows,
+  system-DSN): NOT a terminal-flush race — every debit AND every proxy
+  `usage_records` row landed before finalize; the charge (505) is correct
+  committed-mode semantics (per-phase `max(pod claim, metered − debited)`
+  floors sum above `max(Σ claims 464, Σ metered 502)` — ECON.1 D-F). The bug:
+  `reconcileRunSpend` rebuilt `spent_credits` as `greatest(claims, Σ usage)`
+  and never folded the ledger's net charge, so the committed meter
+  (card/`cost.final`/SSR) under-reported what was debited. Fix: the net
+  committed charge (Σ debit − Σ refund) joins the `greatest()` write — monotone,
+  refund-netting keeps absorbed burn the floor; 4 deterministic tests incl. the
+  canary's exact 464/502/505 shape; corrected formula over the real rows = 505
+  = the charged figure. Deployed re-proof owes the next DEP ticket. _Original
+  entry (2026-10-27, R6DEP.3 live-found on prod `dc3a8f6` — `runs/R6DEP.3.md`,
+  `reports/2026-10-27_R6DEP.3/r6-canary/`): the completed canary run's report
+  charged **505 cr** (`data-estimate-line` "…505 cr spent") while the run
+  card's terminal committed meter showed **502 cr** — a 3-cr debit (`$0.03`)
+  the live meter never rendered, tripping the R6 leg's strict
   `reportSpent > finalSpent` assert ("a charge no meter recorded", REQ-SPEC-32
-  shape). Suspected shape: the final `usage.tick`/debit landed after the card's
-  last SSE patch of `data-run-state="completed"` — an in-flight terminal-flush
-  race rather than a systematic debit/meter divergence — but the strict
-  contract stands violated either way; the card's terminal meter must equal Σ
-  debits (or the difference must carry a refund line). Owed: root-cause (probe
-  whether the meter commits post-terminal, or the report reads debits the meter
-  intentionally defers) + fix ticket. Owner: RPT.1.
+  shape)._
 
 ## GATE DECISIONS
 
@@ -1011,3 +1018,5 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-27T09:0xZ — **boundary confirmed — R6DEP.3 green at final head `5e32f3a`.** The closeout-record commit pushed a docs-only head; `ci-boundary --ledger` re-reads **pass** at it (run 40478092344 — all seven legs + `ci-pass` anchor, cache-fast docs-only run; record `logs/ci-R6DEP.3.json` refreshed). Final: PR #222 head `5e32f3a` green, **unmerged (OPERATOR)**; `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T09:1xZ — **boundary final — R6DEP.3 green at head `cc7eb31`.** `ci-boundary --ledger` reads **pass** at the pushed head (run 40478513814 — all seven legs + `ci-pass` anchor, cache-fast docs-only run; record `logs/ci-R6DEP.3.json` refreshed). PR #222 unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T09:2xZ — **boundary re-confirmed — R6DEP.3 green at head `bdf5e06`.** `ci-boundary --ledger` reads **pass** (run 40479353789 — all seven legs + `ci-pass` anchor; record `logs/ci-R6DEP.3.json` refreshed). PR #222 unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`.
+- 2026-10-27T09:5xZ — **R6FIX.3 done — F-R6DEP3-1 root-caused + fixed in code + residual H11 legs discharged (insert row; $0 new spend).** Branch `stevevitali/r6fix-3-meter-race` · base `stevevitali/r6dep-3-fix-deploy` @ `70df2ac` · **triage verdict (real prod rows over the system-DSN IAP tunnel): branch (a) — a REAL debit the meter never rendered, NOT a terminal-flush race.** `credit_ledger` debits `20+33,45,271,46,90` = Σ **505** all pre-finalize; `usage_records` proxy Σ **502** (82 rows, last ts 08:03:13.8 < finalize 08:03:16.7 — no late flush); `steps` claims Σ **464**; `runs.spent_credits` = 502. The arithmetic: `incrementalMeteredDebit` per-phase `max(claim, metered−debited)` floors — intake caught up 53 (incl. 12 cr unattributed pre-`beginStep` rows), verification 271, then `argument`/`letter` debited the claim floor over the metered catch-up (46>45, 90>88 — ECON.1 **D-F** semantics verbatim: the committed claim IS the charge) → Σ maxes 505 > max(464, 502). **The charge is correct committed-mode billing; `reconcileRunSpend` just never looked at it** — `spent_credits` was `greatest(claims, Σ usage)` only. **fix:** `reconcileRunSpend` folds `netDebitedCredits` (Σ debit − Σ refund) into the monotone `greatest()` write — terminal committed meter (run card, `cost.final`, SSR, every `spent_credits` read) converges to the charge; net-of-refund keeps a failed run's absorbed burn (not its refunded charge) as the floor (`packages/orchestrator/src/spend.ts`). **tests:** 4 deterministic PGlite legs in `spend.test.ts` — canary shape 464/502/505→505, refund netting, absorb rows ≠ debits, same-tx debit visibility. **agreement proof:** corrected formula `greatest(464,502,505)=505` evaluated read-only on the real canary rows = the report's charged figure; report's `committed` difference row already explains charged>metered correctly. **canary re-drive REFUSED honestly:** REQ-ECON-9 weekly spend guard — `$3.874573 metered this week + --headroom $4.5 > $5` (the stop works; refused runs never touch the stage). Deployed re-proof owes the next DEP ticket (prod `dc3a8f6` runs pre-fix code). **residual legs live $0 (jrn-a is_test):** D-P1.20-1 **(c)** `admin support-access` — refusal arm clean (no grant → refused, zero rows) + grant arm (fixture grant `00MVQHZH…` → dual-write `support_access_log` `01M5YBW86…` + `admin_actions` `01M5YBW889…`, actor `devin-cli:r6fix-3`); **(d)** export zip end-to-end (POST → 202 building → ready 58,464 B → session download → signed-GCS zip w/ manifest+ledger+project trees); **(f)** marker arm (`protocol_changed_at` stamped + `protocol_version` pinned on PUT); **D-PRB.04-2 DONE** (18 `data-obligation-state="open"` chips rendered on the canary dossier — last residual). **still owed:** (e) destruction fire, (f) marker clear arm, paid re-drive, deployed re-proof. **verify:** turbo build/lint/typecheck 135/135 · vitest orchestrator+worker 633/633 · check-build-memory 0 violations · append-only vs `c1f20f5` OK · **spend $0** · `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-27T10:2xZ — **boundary confirmed — R6FIX.3 green at head `834e9f1`.** `ci-boundary --ledger` reads **pass** (run 40489209098 — all seven legs + `ci-pass` anchor, cache-fast docs-only run; code head `601ad5e` pass at run 40483816854; record `logs/ci-R6FIX.3.json`). PR #223 unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
