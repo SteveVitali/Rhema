@@ -1,0 +1,14 @@
+{
+  "runId": "01M5XTD893J1F5SKMXCHSS32VH",
+  "slug": "jrn-586d9c8d0ba7-r6excerpt",
+  "at": "2026-10-27T04:43:51.757Z",
+  "notes": [
+    "document loads on goto: 1",
+    "data-live-feed elements=1 feed-events-url=/p/jrn-586d9c8d0ba7-r6excerpt/r/01M5XTD893J1F5SKMXCHSS32VH/events last-seq=11",
+    "meter/phase samples over 210s: 1 distinct card states; feed-event row counts: 10",
+    "document loads during watch: 0 (SSE patch path iff 0)",
+    "EventSource requests observed: [\"GET https://rhema.tools/p/jrn-586d9c8d0ba7-r6excerpt/r/01M5XTD893J1F5SKMXCHSS32VH/events?after=11 accept=text/event-stream\"]",
+    "run_events rows=10 kinds=3"
+  ],
+  "ok": true
+}

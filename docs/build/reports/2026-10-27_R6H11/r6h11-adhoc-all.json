@@ -1,0 +1,58 @@
+{
+  "nonce": "h11mvq6xzrg",
+  "at": "2026-10-27T04:34:56.542Z",
+  "results": [
+    {
+      "leg": "B7 versions rail",
+      "ok": false,
+      "notes": [
+        "rail chips: voutline:null:null, v1:imported:frozen, v2:duplicate:working",
+        "obligations chip: 1 (open=1)",
+        "named point minted pre-edit (⌘S) + typed edit synced (data-sync-pill=synced)",
+        "v1 rail + canvas render",
+        "diff /v/2/diff/1: 1 hunks, 0 diff-kind markers",
+        "restore menu lists 5 points",
+        "restore target cause=named href=/p/h11-q6xzrg/v/2?restore=01M5XT6JCH11BEB32Q3732G7WD",
+        "restore preview card mounted",
+        "restored notice: Restored — v2 carries that point's text; the previous state is a restore point.",
+        "marker post-restore: PRESENT ✗"
+      ],
+      "error": "restore apply did not revert the typed marker"
+    },
+    {
+      "leg": "B8 approvals override + standing note + explainer dismiss + gate card",
+      "ok": true,
+      "notes": [
+        "gate card kind=approve_triage (cards on page: 2)",
+        "explainer mounted: true",
+        "explainer after dismiss+reload: gone ✓",
+        "user.dismissed_explainers=[\"approvals\"]",
+        "policies=[\"named\",\"wait_each\",\"run_to_completion\"] override-rows=[\"confirm_cost\",\"approve_plan\",\"approve_scope\",\"approve_triage\",\"approve_outline\",\"approve_sample\",\"approve_cutlist\",\"choose_thesis\",\"continue_rounds\",\"spend_overrun\",\"resume_partial\",\"refusal\"] never-override cells=4",
+        "approve_plan options=[]",
+        "legal override → ?approvals=saved",
+        "policy persisted after reload: true",
+        "illegal override → 302 location=/p/h11-q6xzrg?approvals=invalid",
+        "guidance add → 302",
+        "guidance rows=1 our-note-visible=1",
+        "retired row preserved under data-retired-guidance: 1",
+        "db guidance.active=false"
+      ]
+    },
+    {
+      "leg": "B9 settings walk + write round-trip",
+      "ok": true,
+      "notes": [
+        "/app/settings/account → 200 route=/app/settings/account",
+        "/app/settings/preferences → 200 route=/app/settings/preferences",
+        "/app/settings/notifications → 200 route=/app/settings/notifications",
+        "/app/settings/integrations → 200 route=/app/settings/integrations",
+        "/app/settings/data → 200 route=/app/settings/data",
+        "/settings/billing → 200 route=/settings/billing",
+        "/app/usage → 200 route=/app/usage",
+        "/app/inbox → 200 route=/app/inbox",
+        "/voices → 200 route=/voices",
+        "bff/settings/preferences → 200 balanced-persisted=true"
+      ]
+    }
+  ]
+}
