@@ -12,9 +12,11 @@ name: journeys
 # R6SWP.1 (2026-10-27, F-R6SWP.1-2) — the caller is the federated principalSet itself, NOT an
 # impersonated SA: the repair-era step impersonated `vars.JOURNEY_CI_SA`, and that var points
 # at the mailbox SA, which holds no self-signing grant — every session-minting leg closed in
-# ~1.5s on `iamcredentials signJwt 403` (dispatch 40528915892). `token_format: access_token`
-# with no `service_account` mints the token for the principalSet directly — the identity the
-# tokenCreator binding in infra/pulumi/journeys.ts actually grants.
+# ~1.5s on `iamcredentials signJwt 403` (dispatch 40528915892). auth@v2 also refuses an
+# access_token output without a service_account (dispatch 40529512751), so the run step mints
+# the federated token itself: `gcloud auth application-default print-access-token` over the
+# exported WIF credentials file — the identity the tokenCreator binding in
+# infra/pulumi/journeys.ts actually grants.
 
 on:
   # R6SWP.1 (2026-10-27) — scheduled sweeps restored at the post-merge-nightly ticket, exactly
@@ -80,17 +82,26 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.JOURNEY_WIF_PROVIDER }}
-          # F-R6SWP.1-2: NO service_account — impersonation made the caller the mailbox SA
-          # itself, which cannot self-sign (signJwt 403 on every session leg). The federated
-          # token is the principalSet the IAM binding covers.
-          token_format: access_token
+          # F-R6SWP.1-2: NO service_account + NO token_format — auth@v2 refuses access_token
+          # output without impersonation (dispatch 40529512751), and impersonation made the
+          # caller the mailbox SA itself, which cannot self-sign (signJwt 403 on every
+          # session leg, dispatch 40528915892). The credentials file IS the federated
+          # principalSet identity; the run step mints its access token via ADC below — the
+          # identity the tokenCreator binding in infra/pulumi/journeys.ts actually grants.
+          create_credentials_file: true
       - name: Run the journey suite
         env:
-          JOURNEY_GCP_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth step above (the federated
+          # WIF identity's external_account file — ADC can mint its access token).
           JOURNEY_EXPECT_SHA: ${{ github.sha }}
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
         run: |
           set -uo pipefail
+          # F-R6SWP.1-2 — mint the caller token for the FEDERATED identity (not an
+          # impersonated SA): `gcloud auth application-default print-access-token` honours
+          # the WIF external_account file the auth step exported via
+          # GOOGLE_APPLICATION_CREDENTIALS.
+          export JOURNEY_GCP_ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
           args=(--web "$JOURNEY_WEB_URL" --api "$JOURNEY_API_URL" \
                 --state-dir "$JOURNEY_STATE_DIR" \
                 --out "journey-report")
