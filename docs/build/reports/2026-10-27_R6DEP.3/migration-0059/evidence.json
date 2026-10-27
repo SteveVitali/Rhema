@@ -1,0 +1,13 @@
+{
+  "verifiedAt": "2026-10-27T08:20:00Z",
+  "via": "system-role DSN over the prod IAP tunnel (proxy MIG post-roll instance)",
+  "migrationsRow": { "name": "0059_live_docs_y_epoch.sql", "applied_at": "2026-10-27T07:24:40.035Z" },
+  "tail": [
+    { "name": "0059_live_docs_y_epoch.sql", "applied_at": "2026-10-27T07:24:40.035Z" },
+    { "name": "0058_pgboss_purge_probe.sql", "applied_at": "2026-10-06T13:15:23.081Z" },
+    { "name": "0057_cite1_citation_completeness.sql", "applied_at": "2026-10-04T02:05:53.821Z" },
+    { "name": "0056_cite1_phase_class.sql", "applied_at": "2026-10-04T02:05:53.718Z" }
+  ],
+  "column": { "table": "live_docs", "column": "y_epoch", "data_type": "bigint", "is_nullable": "NO", "column_default": "0" },
+  "additiveGate": "scripts/check-additive-migrations.mjs PASS — single ADD COLUMN, non-volatile DEFAULT 0, no drop/rename/type-rewrite"
+}

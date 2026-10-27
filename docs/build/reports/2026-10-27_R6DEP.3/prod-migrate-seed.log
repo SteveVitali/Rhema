@@ -1,0 +1,11 @@
+[lint] additive-migration gate: checking migrations newer than 0058_pgboss_purge_probe.sql
+[additive-migrations] 1 migration(s) additive — pass
+  packages/db/migrations/0059_live_docs_y_epoch.sql
+[migrate] applied 0059_live_docs_y_epoch.sql
+[migrate] 59 migrations recorded
+[seed] protocol academic v1
+[seed] protocol essay v1
+[seed] protocol memo v1
+[seed] protocol op-ed v1
+[seed] agent_types: assistant, author, editor, persona_builder, system
+[prod-migrate-seed] done

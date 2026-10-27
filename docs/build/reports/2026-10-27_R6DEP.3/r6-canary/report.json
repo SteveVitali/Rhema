@@ -1,0 +1,49 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "3ba68171afa6",
+  "startedAt": "2026-10-27T07:42:14.568Z",
+  "finishedAt": "2026-10-27T08:03:19.100Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3",
+    "observed": {
+      "web": "dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3",
+      "api": "dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0.259587,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=2 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=3 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=8 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=36 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=72 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=106 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=134 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-3ba68171afa6-r6excerpt/r/01M5Y4YQP827TCBXZHHV3AV4NC/events?after=168 net::ERR_ABORTED"
+      ],
+      "durationMs": 1264458,
+      "error": "report spent 505 exceeds the card's committed meter 502 — a charge no meter recorded",
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": false
+}

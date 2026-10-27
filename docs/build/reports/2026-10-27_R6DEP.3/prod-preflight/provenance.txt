@@ -1,0 +1,3 @@
+PASS  https://rhema.tools  deployed=dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3  expected=dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3
+PASS  https://api.rhema.tools  deployed=dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3  expected=dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3
+provenance OK — every observed service deploys dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3
