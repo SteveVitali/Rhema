@@ -312,6 +312,16 @@ export const adminActions = pgTable("admin_actions", {
   at: timestamp("at").notNull().defaultNow(),
 });
 
+// R6FIX.5 (0060) — the `stripe-redrive` verb's audit sink: who re-enqueued which parked stripe_events
+// row. A purpose table because `admin_actions.action`'s CHECK list can't be widened additively.
+export const stripeEventRedrives = pgTable("stripe_event_redrives", {
+  id: text("id").primaryKey(),
+  actor: text("actor").notNull(),
+  eventId: text("event_id").notNull(),
+  note: text("note"),
+  at: timestamp("at").notNull().defaultNow(),
+});
+
 // PRB.08 (0020) — the beta's persisted analytics sink (REQ-BETA-12). Envelope columns lifted for queries;
 // props is the catalogue-validated payload (`parseAnalyticsEvent` at the write boundary). PRB.12 (0024):
 // `dedupe_key` — the materializer's idempotency key; a partial unique index makes a replayed projection

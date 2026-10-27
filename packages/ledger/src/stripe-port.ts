@@ -38,6 +38,18 @@ export interface OffSessionChargeResult {
 export interface StripePort {
   createCheckoutSession(req: CheckoutSessionRequest): Promise<StripeSessionRef>;
   createPortalSession(args: { customerId: string; returnUrl: string }): Promise<StripeSessionRef>;
+  /**
+   * Propagate a cancel/uncancel decision to Stripe (F-R6FIX.5-1): `cancel_at_period_end` flips
+   * WITHOUT a price change, so no Price registry is needed. Stripe answers with
+   * `customer.subscription.updated` — the webhook's sync arm converges our row (idempotent).
+   * Plan-tier changes are NOT here: our Checkout mints subscriptions with inline `price_data`,
+   * which cannot be price-switched — an in-app plan change needs the Price-registry design
+   * (the Customer Portal carries the Stripe-side path meanwhile).
+   */
+  setSubscriptionCancelAtPeriodEnd(args: {
+    subscriptionId: string;
+    cancelAtPeriodEnd: boolean;
+  }): Promise<void>;
   /** The auto-reload charge — off-session on the customer's default payment method (REQ-BILL-17). */
   chargeOffSession(args: {
     customerId: string;
@@ -69,6 +81,12 @@ export class StubStripePort implements StripePort {
     this.calls.push({ method: "createPortalSession", args });
     const id = `bps_stub_${++this.seq}`;
     return { id, url: `https://billing.stripe.test/${id}` };
+  }
+  async setSubscriptionCancelAtPeriodEnd(args: {
+    subscriptionId: string;
+    cancelAtPeriodEnd: boolean;
+  }): Promise<void> {
+    this.calls.push({ method: "setSubscriptionCancelAtPeriodEnd", args });
   }
   async chargeOffSession(args: {
     customerId: string;
@@ -212,6 +230,15 @@ export class FetchStripePort implements StripePort {
       return_url: args.returnUrl,
     });
     return { id: String(body.id), url: String(body.url) };
+  }
+
+  async setSubscriptionCancelAtPeriodEnd(args: {
+    subscriptionId: string;
+    cancelAtPeriodEnd: boolean;
+  }): Promise<void> {
+    await this.post(`/v1/subscriptions/${args.subscriptionId}`, {
+      cancel_at_period_end: args.cancelAtPeriodEnd ? "true" : "false",
+    });
   }
 
   async chargeOffSession(args: {

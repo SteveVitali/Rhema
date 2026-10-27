@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema } from "./ids.js";
+import { authIdSchema, idSchema } from "./ids.js";
 import { dispositionKindSchema, gateKindSchema } from "./enums.js";
 import { rigorSchema } from "./vocab.js";
 
@@ -8,9 +8,10 @@ import { rigorSchema } from "./vocab.js";
 // (PRB.03/05/06/08/12) consumes; none authors its own. Distinct from the §12.5 run-event stream (events.ts):
 // analytics is product telemetry, and every event honors the per-account opt-out (REQ-PROD-15).
 
-/** The standard envelope on every analytics event (design/9 §7.2). */
+/** The standard envelope on every analytics event (design/9 §7.2). `user_id` is an opaque auth id
+ *  (`authIdSchema`, F-R6H11B-1) — never a ULID; Better Auth mints non-ULID ids on its own create paths. */
 export const analyticsEnvelopeSchema = z.object({
-  user_id: idSchema,
+  user_id: authIdSchema,
   workspace_id: idSchema,
   project_id: idSchema.optional(),
   run_id: idSchema.optional(),

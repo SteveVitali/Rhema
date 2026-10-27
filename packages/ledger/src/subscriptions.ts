@@ -8,6 +8,7 @@ import type { SqlClient } from "@rhema/orchestrator";
 import { PLAN_TIERS, planOf, PRICING, type PlanTier, type BillingCycle } from "@rhema/contracts";
 import { grant, type EntryDeps } from "./entries.js";
 import { expireCredits } from "./expiry.js";
+import type { StripePort } from "./stripe-port.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** §14.6: a failed renewal keeps the plan for a 14-day Smart-Retries window, then drops to Free. */
@@ -267,7 +268,12 @@ export async function applyRenewalFailed(
   return { applied: true };
 }
 
-/** `customer.subscription.updated` — sync tier/cycle/cancel flag/period from Stripe. */
+/**
+ * `customer.subscription.updated` — sync tier/cycle/cancel flag/period from Stripe (the system of
+ * record). F-R6FIX.5: when Stripe reports a DIFFERENT effective tier (a Portal plan switch), the
+ * locally-scheduled `scheduled_tier` downgrade is superseded — leaving it would let the period tick
+ * apply a downgrade the Stripe-side change already replaced.
+ */
 export async function syncSubscription(
   tx: SqlClient,
   deps: EntryDeps,
@@ -283,6 +289,7 @@ export async function syncSubscription(
   const res = await tx.query(
     `update subscriptions set
         tier = coalesce($2, tier),
+        scheduled_tier = case when $2 is not null and $2 <> tier then null else scheduled_tier end,
         billing_cycle = coalesce($3, billing_cycle),
         cancel_at_period_end = coalesce($4, cancel_at_period_end),
         period_start = coalesce($5, period_start),
@@ -541,15 +548,30 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
   return { includedGrants, downgradesApplied, pastDueLapsed, warningsSent, dailyGrants };
 }
 
-/** Cancel = cancel_at_period_end (the §14.6 rule: a cancellation runs to the paid-through date). */
+/**
+ * Cancel = cancel_at_period_end (the §14.6 rule: a cancellation runs to the paid-through date).
+ * F-R6FIX.5-1: the flag is also the instruction STRIPE must carry — a local-only write left the
+ * subscription billing at period end while the UI said "Cancels". When a `stripe` port is bound and
+ * the row carries `stripe_subscription_id`, the same flag is propagated inside this transaction
+ * (`POST /v1/subscriptions/:id` — no Price object needed). A failed propagation rolls the local
+ * flag back with the tx (the click fails honestly, never diverges); a succeeded one converges back
+ * through `customer.subscription.updated` → `syncSubscription` (idempotent — same value).
+ */
 export async function requestCancellation(
   tx: SqlClient,
-  deps: EntryDeps,
+  deps: EntryDeps & { stripe?: StripePort },
   args: { subscriptionId: string; billingAccountId: string },
 ): Promise<{ applied: boolean }> {
   const res = await tx.query(
-    "update subscriptions set cancel_at_period_end=true, updated_at=$3 where id=$1 and billing_account_id=$2 returning id",
+    "update subscriptions set cancel_at_period_end=true, updated_at=$3 where id=$1 and billing_account_id=$2 returning id, stripe_subscription_id",
     [args.subscriptionId, args.billingAccountId, deps.clock.now()],
   );
+  const row = res.rows[0] as { id: string; stripe_subscription_id: string | null } | undefined;
+  if (row?.stripe_subscription_id && deps.stripe) {
+    await deps.stripe.setSubscriptionCancelAtPeriodEnd({
+      subscriptionId: row.stripe_subscription_id,
+      cancelAtPeriodEnd: true,
+    });
+  }
   return { applied: res.rows.length > 0 };
 }

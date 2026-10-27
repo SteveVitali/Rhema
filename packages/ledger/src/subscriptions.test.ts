@@ -11,9 +11,11 @@ import {
   grantIncludedCredits,
   effectivePlanTier,
   runBillingPeriodTick,
+  requestCancellation,
   RENEWAL_GRACE_MS,
   type SubDeps,
 } from "./subscriptions.js";
+import { StubStripePort, StripeRequestError } from "./stripe-port.js";
 import {
   createLedgerTestDb,
   seedProject,
@@ -353,5 +355,107 @@ describe("syncSubscription + endSubscription", () => {
     expect(await inTx((tx) => effectivePlanTier(tx, BA))).toBe("free");
     // idempotent
     expect((await inTx((tx) => endSubscription(tx, deps(), { stripeSubscriptionId: "sub_stripe_1" }))).applied).toBe(false);
+  });
+
+  it("F-R6FIX.5: a Stripe-side tier change supersedes the locally-scheduled downgrade; a tier-less sync preserves it", async () => {
+    const { subscriptionId } = await inTx((tx) =>
+      activateSubscription(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "studio",
+        cycle: "monthly",
+        stripeSubscriptionId: "sub_stripe_1",
+        periodStart: P0,
+        periodEnd: P1,
+        idempotencyKey: "evt:act:1",
+      }),
+    );
+    // a downgrade is scheduled locally — the tick would apply it at period end
+    await inTx((tx) =>
+      changePlan(tx, deps(), { subscriptionId, billingAccountId: BA, workspaceId: WS, newTier: "writer" }),
+    );
+    expect((await subRow())?.scheduled_tier).toBe("writer");
+    // a sync carrying no effective tier (e.g. the cancel flag only) must NOT stomp the schedule
+    await inTx((tx) =>
+      syncSubscription(tx, deps(), { stripeSubscriptionId: "sub_stripe_1", cancelAtPeriodEnd: true }),
+    );
+    expect((await subRow())?.scheduled_tier).toBe("writer");
+    // …but a sync reporting a DIFFERENT effective tier (a Stripe/Portal-side switch) supersedes it —
+    // otherwise the tick would apply a downgrade the Stripe-side change already replaced.
+    await inTx((tx) =>
+      syncSubscription(tx, deps(), { stripeSubscriptionId: "sub_stripe_1", tier: "writer" }),
+    );
+    const s = await subRow();
+    expect(s?.tier).toBe("writer");
+    expect(s?.scheduled_tier).toBeNull();
+  });
+});
+
+describe("requestCancellation — the Stripe propagation (F-R6FIX.5-1)", () => {
+  async function activateWriter() {
+    return inTx((tx) =>
+      activateSubscription(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "writer",
+        cycle: "monthly",
+        stripeSubscriptionId: "sub_stripe_1",
+        periodStart: P0,
+        periodEnd: P1,
+        idempotencyKey: "evt:act:1",
+      }),
+    );
+  }
+
+  it("propagates cancel_at_period_end to Stripe inside the tx when the row carries a stripe id", async () => {
+    const { subscriptionId } = await activateWriter();
+    const stripe = new StubStripePort();
+    const res = await inTx((tx) =>
+      requestCancellation(tx, { ...deps(), stripe }, { subscriptionId, billingAccountId: BA }),
+    );
+    expect(res.applied).toBe(true);
+    expect((await subRow())?.cancel_at_period_end).toBe(true);
+    expect(stripe.calls).toEqual([
+      {
+        method: "setSubscriptionCancelAtPeriodEnd",
+        args: { subscriptionId: "sub_stripe_1", cancelAtPeriodEnd: true },
+      },
+    ]);
+  });
+
+  it("makes no Stripe call when no port is bound — or when the row carries no stripe id (a local row)", async () => {
+    const { subscriptionId } = await activateWriter();
+    const stripe = new StubStripePort();
+    // no port bound → local flag only (the pre-0036 shape / a Stripe-less fixture stays legal)
+    const res = await inTx((tx) =>
+      requestCancellation(tx, deps(), { subscriptionId, billingAccountId: BA }),
+    );
+    expect(res.applied).toBe(true);
+    expect(stripe.calls).toHaveLength(0);
+    // a row WITHOUT stripe_subscription_id (a comped/local sub) propagates nothing
+    await db.client.query(
+      `insert into subscriptions (id, billing_account_id, tier, status, period_start, period_end)
+         values ('sub_local_1', $1, 'writer', 'active', $2, $3)`,
+      [BA, P0, P1],
+    );
+    const res2 = await inTx((tx) =>
+      requestCancellation(tx, { ...deps(), stripe }, { subscriptionId: "sub_local_1", billingAccountId: BA }),
+    );
+    expect(res2.applied).toBe(true);
+    expect(stripe.calls).toHaveLength(0);
+  });
+
+  it("a Stripe failure rolls the flag back with the tx — the user is told the cancel failed, never silently divergent", async () => {
+    const { subscriptionId } = await activateWriter();
+    const stripe = new StubStripePort();
+    stripe.setSubscriptionCancelAtPeriodEnd = async () => {
+      throw new StripeRequestError("/v1/subscriptions/sub_stripe_1", 500, "upstream");
+    };
+    await expect(
+      inTx((tx) =>
+        requestCancellation(tx, { ...deps(), stripe }, { subscriptionId, billingAccountId: BA }),
+      ),
+    ).rejects.toThrow("upstream");
+    expect((await subRow())?.cancel_at_period_end).toBe(false); // rolled back — no divergence
   });
 });

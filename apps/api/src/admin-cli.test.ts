@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
 import { testEntryDeps } from "@rhema/ledger/testing";
+import { STRIPE_EVENT_JOB } from "@rhema/ledger";
 import { runAdminCli, type AdminCliDeps } from "./admin-cli.js";
-import { InMemoryEventWriter } from "@rhema/orchestrator";
+import { InMemoryEventWriter, InMemoryQueue } from "@rhema/orchestrator";
 
 // PRB.08 — the operator billing CLI (REQ-BETA-14). Driven in-process over PGlite (the live `main()` just
 // binds DATABASE_URL + RHEMA_OPERATOR_ID): every verb is an ordinary ledger row + an audit row, idempotent
@@ -96,6 +97,44 @@ describe("rhema admin (operator CLI)", () => {
     expect(await run(["house-grant", "--billing-account", BA])).toBe(2); // missing credits/expires
     expect(await run(["frobnicate"])).toBe(2);
     expect(await run(["house-void", "--billing-account", "ba_nonexistent"])).toBe(1); // no workspace
+  });
+});
+
+describe("stripe-redrive (R6FIX.5 — the F-R6H11B-1 compensation path)", () => {
+  it("re-enqueues stripe.event for a parked row + audits; processed rows no-op; unknown exits 1", async () => {
+    const queue = new InMemoryQueue();
+    // a parked row — the H11B failure's exact shape (verified, inserted, never processed).
+    await db.client.query(
+      "insert into stripe_events(id, type, payload, received_at) values ('evt_parked','checkout.session.completed','{}',now())",
+    );
+    const code = await runAdminCli(["stripe-redrive", "--event", "evt_parked"], { ...cliDeps(), queue });
+    expect(code).toBe(0);
+    expect(lines.at(-1)).toContain("re-drove evt_parked");
+    const jobs = queue.ofName(STRIPE_EVENT_JOB);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]!.payload).toEqual({ eventId: "evt_parked" });
+    const audit = (await db.client.query("select actor, event_id, note from stripe_event_redrives")).rows[0] as {
+      actor: string; event_id: string; note: string;
+    };
+    expect(audit).toMatchObject({ actor: "op_steve", event_id: "evt_parked" });
+    expect(audit.note).toContain("evt_parked");
+
+    // an already-processed row is a no-op (idempotent — no second job, no second audit)
+    await db.client.query(
+      "insert into stripe_events(id, type, payload, received_at, processed_at) values ('evt_done','invoice.paid','{}',now(),now())",
+    );
+    expect(await runAdminCli(["stripe-redrive", "--event", "evt_done"], { ...cliDeps(), queue })).toBe(0);
+    expect(lines.at(-1)).toContain("already processed");
+    expect(queue.ofName(STRIPE_EVENT_JOB)).toHaveLength(1);
+    expect(
+      (await db.client.query("select count(*)::int n from stripe_event_redrives")).rows[0],
+    ).toEqual({ n: 1 });
+
+    // unknown event / unbound queue / missing flag
+    expect(await runAdminCli(["stripe-redrive", "--event", "evt_ghost"], { ...cliDeps(), queue })).toBe(1);
+    expect(lines.at(-1)).toContain("not found");
+    expect(await runAdminCli(["stripe-redrive", "--event", "evt_parked"], cliDeps())).toBe(1);
+    expect(await runAdminCli(["stripe-redrive"], cliDeps())).toBe(2);
   });
 });
 

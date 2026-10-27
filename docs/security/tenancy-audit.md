@@ -30,7 +30,7 @@ DSN plumbing for it.
 | `apps/api/src/claim-prepass.ts` | `systemExec` | estimate claim pre-pass mints `proxy_allowlists` / `proxy_credentials` rows | `proxy_*` are system-only tables |
 | `apps/api/src/index.ts` | `systemExec` | composition root forwards the seam into billing deps | plumbing only |
 | `apps/api/src/env.ts` | `SYSTEM_DATABASE_URL` | env parse | plumbing only |
-| `apps/api/src/admin-cli.ts` | `systemExec`, `SYSTEM_DATABASE_URL`, `pg-boss` on system DSN | `rhema admin` operator CLI — support-access logging, run-analytics materialization, beta dashboard; all deliberately cross-tenant and operator-audited (`RHEMA_OPERATOR_ID` required) | operator tooling, never a user route |
+| `apps/api/src/admin-cli.ts` | `systemExec`, `SYSTEM_DATABASE_URL`, `pg-boss` on system DSN | `rhema admin` operator CLI — support-access logging, run-analytics materialization, beta dashboard, `stripe-redrive` re-enqueue + `stripe_event_redrives` audit (0060 — denied to `rhema_app`, written on the system pool only); all deliberately cross-tenant and operator-audited (`RHEMA_OPERATOR_ID` required) | operator tooling, never a user route |
 | `apps/worker/src/env.ts` | `SYSTEM_DATABASE_URL` | env parse — **required**; worker throws at boot without it | fail closed |
 | `apps/worker/src/main.ts` | `systemPool`, `systemExec`, `systemTxRunner`, `PgBoss` on system DSN | pool construction; the queue transport rides the system DSN (pg-boss owns `pgboss.*` schema objects the user role must not hold) | construction + queue transport |
 | `apps/worker/src/run-jobs.ts` | `systemTxRunner` (via deps) | `run.start`/`run.resume` provision mints proxy credentials inside a tenant-scoped tx on the system pool | `proxy_*` grant boundary |

@@ -489,6 +489,42 @@ describe("POST /billing/subscription/cancel + change-plan (§14.6)", () => {
     expect(sub).toEqual({ cancel_at_period_end: true, status: "active" }); // still active to period end
   });
 
+  it("F-R6FIX.5-1: with a stripe-bound app the cancel propagates to Stripe; a Stripe failure answers the truthful code and rolls the flag back", async () => {
+    await db.pg.query(
+      "update subscriptions set stripe_subscription_id = 'sub_stripe_1' where billing_account_id = $1",
+      [BA],
+    );
+    const stripe = new StubStripePort();
+    const res = await app({ stripe }).request("/billing/subscription/cancel", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ applied: true });
+    expect(stripe.calls).toContainEqual({
+      method: "setSubscriptionCancelAtPeriodEnd",
+      args: { subscriptionId: "sub_stripe_1", cancelAtPeriodEnd: true },
+    });
+    expect(
+      (await db.client.query("select cancel_at_period_end from subscriptions where billing_account_id = $1", [BA]))
+        .rows[0],
+    ).toMatchObject({ cancel_at_period_end: true });
+
+    // a Stripe outage on the propagation fails the click honestly — the local flag never diverges.
+    await db.pg.query(
+      "update subscriptions set cancel_at_period_end = false where billing_account_id = $1",
+      [BA],
+    );
+    const broken = new StubStripePort();
+    broken.setSubscriptionCancelAtPeriodEnd = async () => {
+      throw new StripeRequestError("/v1/subscriptions/sub_stripe_1", 500, "upstream");
+    };
+    const res2 = await app({ stripe: broken }).request("/billing/subscription/cancel", { method: "POST" });
+    expect(res2.status).toBe(503);
+    expect(await res2.json()).toEqual({ error: "stripe_unavailable" });
+    expect(
+      (await db.client.query("select cancel_at_period_end from subscriptions where billing_account_id = $1", [BA]))
+        .rows[0],
+    ).toMatchObject({ cancel_at_period_end: false });
+  });
+
   it("change-plan downgrades schedule to period end; no subscription is 404; Team is 422", async () => {
     const post = (body: unknown) =>
       app().request("/billing/subscription/change-plan", {
