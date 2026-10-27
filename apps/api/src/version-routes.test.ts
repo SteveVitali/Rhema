@@ -717,6 +717,40 @@ describe("restore points — grouped list, preview, undoable apply", () => {
     expect(undo.s3_key.startsWith("restore/")).toBe(true);
   });
 
+  it("the apply writes a CONVERGENT y_state + bumps y_epoch — a stale replica merges tombstoned (F-R6H11-1)", async () => {
+    await seedRestorePoints();
+    // The pre-apply stored state — what a loaded collab runtime's in-memory doc holds.
+    const pre = (
+      await db.pg.query(`select y_state from live_docs where id = 'doc_v6'`)
+    ).rows[0] as { y_state: Uint8Array };
+
+    const res = await app.request(
+      `/projects/${seed.projectId}/drafts/${V6_ID}/restore-points/rp_named/restore`,
+      { method: "POST" },
+    );
+    expect(res.status).toBe(200);
+
+    // The out-of-band replace bumps the epoch in the SAME statement — the collab runtime's
+    // convergence signal (a newer epoch = "your in-memory doc is stale; converge, don't flush").
+    const live = (
+      await db.pg.query(`select y_state, y_epoch from live_docs where id = 'doc_v6'`)
+    ).rows[0] as { y_state: Uint8Array; y_epoch: number | string };
+    expect(Number(live.y_epoch)).toBe(1);
+
+    // THE R6H11 REGRESSION ASSERT: a replica holding the PRE-restore items merges the stored
+    // update and converges to the restored markdown — the removed text's items tombstone
+    // relative to shared history, so "The pillar stands on the restated claim." can never
+    // resurrect. Under the old wholesale fresh-doc write this merge kept BOTH texts.
+    const stale = new Y.Doc();
+    Y.applyUpdate(stale, new Uint8Array(pre.y_state));
+    const server = new Y.Doc();
+    Y.applyUpdate(server, new Uint8Array(live.y_state));
+    Y.applyUpdate(stale, Y.encodeStateAsUpdate(server, Y.encodeStateVector(stale)));
+    expect(docToCanonicalMarkdown(stale)).toBe("# Draft\n\nNamed text.\n");
+    stale.destroy();
+    server.destroy();
+  });
+
   it("a held run lock refuses the apply (409)", async () => {
     await seedRestorePoints();
     await seedRun(db, {

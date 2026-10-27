@@ -556,7 +556,10 @@ SHA=$(git rev-parse HEAD)              # the segment's boundary merge commit —
 #    diff-scoped subset — api+web every segment for provenance parity even when api's
 #    diff is empty, because /healthz gitSha is per-image and the gate compares both;
 #    add worker/collab/run-task when the segment's merged range diffs their graphs —
-#    when in doubt, drop _SERVICES for the full canonical set):
+#    when in doubt, drop _SERVICES for the full canonical set).
+#    F-R6H11-2: whenever run-task is in _SERVICES the build FAILS unless the submit
+#    checkout holds the gitignored vendored SDK (PROD-BRINGUP §2b — a clean worktree
+#    does not carry it; the image-contents assert runs before push):
 gcloud builds submit --config infra/cloudbuild/image-set.yaml --project rhema-507501 \
   --substitutions _AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod,_GIT_SHA=$SHA,_SERVICES=api,web
 gcloud artifacts docker images list us-central1-docker.pkg.dev/rhema-507501/rhema-prod \

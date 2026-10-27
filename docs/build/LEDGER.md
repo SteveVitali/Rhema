@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6h11-auto-legs  # R6H11 (H11 auxiliary; stacks on r6dep-2-tip-deploy); next row forks here — PROD SERVES e04a8c8, SQL REGIONAL, alert channels wired, proxy ILB live; run-task image cannot execute runs (F-R6H11-2 OPEN)
+chainTip:        stevevitali/r6fix-2-runtask-sdk  # R6FIX.2; next row forks here — PROD SERVES e04a8c8; run-task can't execute runs until a vendored-SDK build deploys (F-R6H11-2 resolved-in-code)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T05:15:00Z         # R6H11 — H11 browser legs B6–B9/B11/B12 discharged on prod e04a8c8 ($0.26 ≤ $5); F-R6H11-1 + F-R6H11-2 (run-task can't execute runs) filed OPEN; unmerged (OPERATOR)
+updatedAt:       2026-10-27T05:51:00Z         # R6FIX.2 — F-R6H11-1 (collab restore convergence) + F-R6H11-2 (run-task no-SDK image) RESOLVED-IN-CODE, deterministic tests + fail-closed image gate; live re-proof owed post-deploy; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -403,6 +403,21 @@ pointers; substance unchanged.)_
   the restore in storage too. Likely fix shape: the apply must evict/rebind the collab
   runtime (close + unload the document runtime, or version the doc identity) rather than
   only rewriting `y_state`. Owed: root-cause + fix ticket.
+  **RESOLVED-IN-CODE 2026-10-27 (R6FIX.2 — `runs/R6FIX.2.md`; live re-proof owed
+  post-deploy).** Root cause confirmed: the apply's wholesale `y_state` swap carried no
+  tombstones (fresh-doc item ids) AND the loaded runtime's in-memory doc was never
+  reconciled — a stale flush + a stale replica merge BOTH resurrected removed text.
+  Fix: `live_docs.y_epoch` (migration 0059) + convergent restore — the api applies the
+  restored markdown through `updateYFragment` over the STORED state (tombstoned items
+  merge as deletions on every replica) and bumps the epoch in the same statement; the
+  collab runtime records its loaded epoch and `convergeReplacedDoc` reconciles the
+  in-memory doc (with a canonical-markdown convergence check for no-shared-history
+  writes) at the top of `storeDocument`, `markRestorePoint`, and `beforeSync` SS1 —
+  so no stale flush ever reaches `live_docs` and reconnects converge before their
+  first sync reply. Deterministic tests: api apply → epoch bump + tombstoned merge;
+  collab out-of-band restore → store flushes restored bytes; real-provider reconnect
+  over a socket converges to restored content. Owed: live re-proof post-deploy
+  (rides the next deploy's image set).
 - **F-R6H11-2 — OPEN (2026-10-27, R6H11 live-found on prod `e04a8c8` — `runs/R6H11.md`
   §Live finding + `reports/2026-10-27_R6H11/r6-eventsource/`).** The deployed `run-task`
   image (`sha256:c7cf69c6…`, deployed 2026-10-26T15:25Z) ships **without the vendored
@@ -418,6 +433,22 @@ pointers; substance unchanged.)_
   released in full). Fix: rebuild/redeploy `run-task` with the vendored SDK, then
   re-drive a bounded paid leg to prove the meter path. Owed: image fix (operator
   deploy) + the in-phase meter-tick half of D-PRB.04-2.
+  **RESOLVED-IN-CODE 2026-10-27 (R6FIX.2 — `runs/R6FIX.2.md`; live re-proof owed
+  post-deploy).** Root cause: the SDK is gitignored operator-held state and
+  `e04a8c8`'s `gcloud builds submit` ran from a clean worktree (`/private/tmp/
+  rhema-e04a8c8` — vendor/ = README only, confirmed on disk); the Dockerfile's
+  warn-and-continue placeholder contract built+shipped the no-SDK image, and the
+  provenance gate (api/web `/healthz` gitSha parity) never inspected run-task
+  contents — green provenance on a broken image. **Evidence-correctness:** the
+  gate gap is the finding's second half — a SHA-parity check is not an
+  image-contents check. Fix: `apps/run-task/Dockerfile` fails closed on a missing
+  SDK unless `ALLOW_PLACEHOLDER_SDK=1` is explicit; `image-set.yaml` asserts the
+  SDK trees in the uploaded context BEFORE building (`_ALLOW_PLACEHOLDER_SDK`
+  default `"0"`) and asserts the SDK paths inside the BUILT image (agent-uid exec
+  via the shipped `setpriv`) before push; CI images job + privsep docker test opt
+  in explicitly; runbook (PROD-BRINGUP §2b) + INTEGRATION_PLAN §R4.8 + vendor
+  README record the contract. Owed: a `run-task` image build+deploy carrying this
+  SHA's SDK + the in-phase meter-tick leg (D-PRB.04-2 tail).
 
 ## GATE DECISIONS
 

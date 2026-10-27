@@ -22,7 +22,7 @@ import {
 } from "@rhema/contracts";
 import { editorLockForRuns, HOLDING_STATES } from "@rhema/orchestrator";
 import { diffMarkdown } from "@rhema/findings-core";
-import { docToCanonicalMarkdown, markdownToUpdate } from "@rhema/editor";
+import { docToCanonicalMarkdown, replaceDocContent } from "@rhema/editor";
 import {
   reconstructDocState,
   saveManualRevision,
@@ -723,17 +723,29 @@ export function createVersionRoutes(deps: VersionApiDeps): Hono {
       if (!res.ok) return { ok: false as const, reason: res.reason };
 
       // Converge the live doc the RESOLVED head owns (the forked child's, on a frozen target).
+      // F-R6H11-1: the replace is CONVERGENT, not wholesale — apply the restored markdown as a
+      // y-prosemirror diff over the STORED y_state so removed items tombstone relative to every
+      // replica's items (a fresh-doc update carries none, so a replica's pre-restore items merge
+      // back in and the removed text resurrects — the prod symptom), and bump `y_epoch` so a
+      // loaded collab runtime converges its in-memory doc to this state at its next hook instead
+      // of flushing the pre-restore bytes back over it.
       const headLive = (
         await tx.query("select live_doc_id from drafts where id = $1", [res.draftId])
       ).rows[0] as { live_doc_id: string | null } | undefined;
       if (headLive?.live_doc_id) {
-        const update = markdownToUpdate(md);
+        const stored = (
+          await tx.query("select y_state from live_docs where id = $1", [headLive.live_doc_id])
+        ).rows[0] as { y_state: Buffer | Uint8Array } | undefined;
         const tmp = new Y.Doc();
-        Y.applyUpdate(tmp, update);
+        if (stored?.y_state?.byteLength) {
+          Y.applyUpdate(tmp, new Uint8Array(stored.y_state));
+        }
+        replaceDocContent(tmp, md);
+        const update = Y.encodeStateAsUpdate(tmp);
         const sv = Y.encodeStateVector(tmp);
         tmp.destroy();
         await tx.query(
-          `update live_docs set y_state = $2, state_vector = $3 where id = $1`,
+          `update live_docs set y_state = $2, state_vector = $3, y_epoch = y_epoch + 1 where id = $1`,
           [headLive.live_doc_id, update, sv],
         );
       }

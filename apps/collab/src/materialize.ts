@@ -13,7 +13,7 @@
 import * as Y from "yjs";
 import type { ContentStore, DeliveryEventAppender, SqlExecutor } from "@rhema/mirror";
 import { saveManualRevision } from "@rhema/mirror";
-import { docToCanonicalMarkdown } from "@rhema/editor";
+import { docToCanonicalMarkdown, replaceDocContent } from "@rhema/editor";
 import { draftLock } from "./auth.js";
 import type { CollabDb } from "./sql.js";
 import type { DocRuntime, ProvenanceStash } from "./doc-state.js";
@@ -66,6 +66,48 @@ function mergedProvenance(rt: DocRuntime): ProvenanceStash | undefined {
   return { spans, ...(stashed?.agentSpans ? { agentSpans: stashed.agentSpans } : {}) };
 }
 
+/**
+ * F-R6H11-1 — out-of-band live-doc replacement convergence. The api's restore apply replaces
+ * `live_docs.y_state` and bumps `y_epoch` in the same statement; when the stored epoch is
+ * newer than the epoch this runtime loaded, the in-memory doc is STALE — applying the stored
+ * update converges it (the writer tombstoned the removed items relative to the stored
+ * history, so the apply is the ordinary CRDT merge: connected clients get the delete+insert
+ * broadcast, a later flush re-persists converged bytes, and a replica's pre-restore items can
+ * never resurrect). Run at the TOP of every hook that persists or serves doc state, inside
+ * the caller's scoped tx — a stale flush must never reach `live_docs` again.
+ * Returns true when a convergence ran.
+ */
+export async function convergeReplacedDoc(
+  exec: SqlExecutor,
+  rt: DocRuntime,
+  doc: Y.Doc,
+): Promise<boolean> {
+  const row = (
+    await exec.query("select y_epoch, y_state from live_docs where id = $1", [rt.liveDocId])
+  ).rows[0] as { y_epoch: number | string | null; y_state: Uint8Array | null } | undefined;
+  const epoch = row?.y_epoch == null ? 0 : Number(row.y_epoch);
+  if (!row || epoch === rt.yEpoch) return false;
+  if (row.y_state?.byteLength) {
+    Y.applyUpdate(doc, new Uint8Array(row.y_state), "restore");
+    // No-shared-history edge: the stored update only tombstones items the writer's doc knew —
+    // an out-of-band write built from an EMPTY base (or any writer that didn't diff over the
+    // stored state) merges here instead of deleting, leaving stale text beside the restored
+    // text. Convergence is canonical-markdown equality: if the faithful merge didn't reach it,
+    // reproject the stored state's markdown through the fragment diff so the doc's own stale
+    // items tombstone (connected clients + replicas then converge transitively).
+    const stored = new Y.Doc();
+    Y.applyUpdate(stored, new Uint8Array(row.y_state));
+    const want = docToCanonicalMarkdown(stored);
+    stored.destroy();
+    if (docToCanonicalMarkdown(doc) !== want) replaceDocContent(doc, want, "restore");
+  }
+  rt.yEpoch = epoch;
+  // The convergence isn't user activity — clear the pending-delta counter the apply just
+  // repopulated via onChange, so the cadence never cuts a point for the replace itself.
+  rt.pendingDelta = [];
+  return true;
+}
+
 /** The pending-delta flush shared by the cadence point and the named/blur/pre_run triggers. */
 async function flushRestorePoint(
   exec: SqlExecutor,
@@ -112,10 +154,14 @@ export async function storeDocument(
   args: { userId: string },
 ): Promise<StoreOutcome> {
   const now = deps.clock.now();
-  const yState = Y.encodeStateAsUpdate(doc);
-  const sv = Y.encodeStateVector(doc);
 
   return deps.db.scoped(rt.workspaceId, async (tx) => {
+    // F-R6H11-1 — converge BEFORE any y_state write: an out-of-band restore bumped the epoch;
+    // the in-memory doc must absorb the stored (tombstoned) state first or this flush would
+    // re-persist the pre-restore items over it.
+    await convergeReplacedDoc(tx, rt, doc);
+    const yState = Y.encodeStateAsUpdate(doc);
+    const sv = Y.encodeStateVector(doc);
     const lock = await draftLock(tx, rt.projectId, rt.draftId);
 
     if (lock) {
@@ -194,8 +240,12 @@ export async function storeDocument(
     // fork whose markdown nets out to the base would otherwise write the diverged y_state into the
     // FROZEN parent's live doc. Create + link the child's row instead.
     const liveRow = (
-      await tx.query("select live_doc_id from drafts where id = $1", [res.draftId])
-    ).rows[0] as { live_doc_id: string | null } | undefined;
+      await tx.query(
+        `select d.live_doc_id, ld.y_epoch from drafts d
+           left join live_docs ld on ld.id = d.live_doc_id where d.id = $1`,
+        [res.draftId],
+      )
+    ).rows[0] as { live_doc_id: string | null; y_epoch: number | string | null } | undefined;
     let liveDocId = liveRow?.live_doc_id ?? null;
     if (!liveDocId) {
       liveDocId = deps.ids("doc");
@@ -210,8 +260,12 @@ export async function storeDocument(
       [liveDocId, yState, sv],
     );
     // A fork re-homes this runtime: subsequent restore points + state writes target the CHILD's
-    // live doc (the frozen base's y_state and restore chain stay frozen-clean).
-    if (liveDocId !== rt.liveDocId) rt.liveDocId = liveDocId;
+    // live doc (the frozen base's y_state and restore chain stay frozen-clean) — and the epoch
+    // the convergence checks compare against is now the child's own.
+    if (liveDocId !== rt.liveDocId) {
+      rt.liveDocId = liveDocId;
+      rt.yEpoch = Number(liveRow?.y_epoch ?? 0);
+    }
 
     // The 5-minute-activity cadence: owed only when edits actually landed (the debounce stores an
     // unchanged doc silently — no restore churn for a read-only session).
@@ -248,9 +302,12 @@ export async function markRestorePoint(
   doc: Y.Doc,
   args: { cause: "named" | "blur"; label?: string | null; userId: string },
 ): Promise<{ restorePointId: string }> {
-  const yState = Y.encodeStateAsUpdate(doc);
-  const sv = Y.encodeStateVector(doc);
   return deps.db.scoped(rt.workspaceId, async (tx) => {
+    // F-R6H11-1 — same guard as storeDocument: never persist stale state/points over an
+    // out-of-band replace.
+    await convergeReplacedDoc(tx, rt, doc);
+    const yState = Y.encodeStateAsUpdate(doc);
+    const sv = Y.encodeStateVector(doc);
     await tx.query("update live_docs set y_state = $2, state_vector = $3 where id = $1", [
       rt.liveDocId,
       yState,

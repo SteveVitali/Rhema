@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, bigint, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { bytea } from "./_shared.js";
 
 // Drafts (three tiers) — mirrors migrations/0002_schema.sql.
@@ -25,6 +25,9 @@ export const liveDocs = pgTable("live_docs", {
   stateVector: bytea("state_vector").notNull(),
   mdSha256: text("md_sha256"),
   materializedAt: timestamp("materialized_at"),
+  // 0059 (F-R6H11-1) — out-of-band y_state replacement generation; the collab runtime
+  // converges on a newer epoch instead of flushing its stale in-memory doc over it.
+  yEpoch: bigint("y_epoch", { mode: "number" }).notNull().default(0),
 });
 
 export const restorePoints = pgTable("restore_points", {

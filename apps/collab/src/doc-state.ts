@@ -18,6 +18,11 @@ export interface DocRuntime {
   /** the head this runtime writes to — re-pointed when a connection's auth forked a frozen head. */
   draftId: string;
   liveDocId: string;
+  /** F-R6H11-1 — the `live_docs.y_epoch` this runtime last observed (at load / on a converged
+   *  store). An out-of-band replace (the api's restore apply) bumps the stored epoch; any
+   *  persistence/sync hook seeing a newer epoch must converge the in-memory doc to the stored
+   *  state rather than flushing the pre-replace bytes back over it. */
+  yEpoch: number;
   /** the first authenticating connection's user — the materialization's author (single-user MVP). */
   userId: string;
   /** updates applied since the last restore point — the next delta's payload material. */
@@ -42,6 +47,7 @@ export function createDocRuntime(init: {
   lastPointAt?: number | null;
   lastSnapshotAt?: number | null;
   snapshotSv?: Uint8Array | null;
+  yEpoch?: number;
   userId?: string;
 }): DocRuntime {
   return {
@@ -49,6 +55,7 @@ export function createDocRuntime(init: {
     projectId: init.projectId,
     draftId: init.draftId,
     liveDocId: init.liveDocId,
+    yEpoch: init.yEpoch ?? 0,
     userId: init.userId ?? "",
     pendingDelta: [],
     snapshotSv: init.snapshotSv ?? null,

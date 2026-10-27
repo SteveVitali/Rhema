@@ -20,7 +20,7 @@ import type { Extension } from "@hocuspocus/server";
 import { authenticateConnection, resolveDraftBinding, AuthRefusal } from "./auth.js";
 import { createDocRuntime, type DocRuntime, type ProvenanceStash } from "./doc-state.js";
 import { markdownToUpdate } from "@rhema/editor";
-import { markRestorePoint, storeDocument, type MaterializeDeps } from "./materialize.js";
+import { markRestorePoint, storeDocument, convergeReplacedDoc, type MaterializeDeps } from "./materialize.js";
 import type { CollabDb } from "./sql.js";
 
 export interface CollabExtensionDeps extends MaterializeDeps {
@@ -49,7 +49,7 @@ async function loadPersistedState(
   deps: CollabExtensionDeps,
   workspaceId: string,
   draftId: string,
-): Promise<{ update: Uint8Array; liveDocId: string; lastPointAt: number | null; lastSnapshotAt: number | null }> {
+): Promise<{ update: Uint8Array; liveDocId: string; yEpoch: number; lastPointAt: number | null; lastSnapshotAt: number | null }> {
   return deps.db.scoped(workspaceId, async (tx) => {
     const binding = await resolveDraftBinding(tx, workspaceId, draftId);
     if (!binding) throw new AuthRefusal("not_found");
@@ -57,11 +57,11 @@ async function loadPersistedState(
     let liveDocId = binding.liveDocId;
     if (liveDocId) {
       const live = (
-        await tx.query("select y_state from live_docs where id = $1", [liveDocId])
-      ).rows[0] as { y_state: Uint8Array } | undefined;
+        await tx.query("select y_state, y_epoch from live_docs where id = $1", [liveDocId])
+      ).rows[0] as { y_state: Uint8Array; y_epoch: number | string | null } | undefined;
       if (live && live.y_state && live.y_state.byteLength > 0) {
         const points = await pointMarkers(tx, liveDocId);
-        return { update: live.y_state, liveDocId, ...points };
+        return { update: live.y_state, liveDocId, yEpoch: Number(live.y_epoch ?? 0), ...points };
       }
     }
 
@@ -82,6 +82,7 @@ async function loadPersistedState(
     }
     const update = markdownToUpdate(markdown);
 
+    let yEpoch = 0;
     if (!liveDocId) {
       liveDocId = deps.ids("doc");
       await tx.query(
@@ -89,9 +90,15 @@ async function loadPersistedState(
         [liveDocId, draftId],
       );
       await tx.query("update drafts set live_doc_id = $2 where id = $1", [draftId, liveDocId]);
+    } else {
+      // An existing-but-empty live doc — its epoch is still the convergence signal's truth.
+      const live = (
+        await tx.query("select y_epoch from live_docs where id = $1", [liveDocId])
+      ).rows[0] as { y_epoch: number | string | null } | undefined;
+      yEpoch = Number(live?.y_epoch ?? 0);
     }
     const points = await pointMarkers(tx, liveDocId);
-    return { update, liveDocId, ...points };
+    return { update, liveDocId, yEpoch, ...points };
   });
 }
 
@@ -168,6 +175,7 @@ export function createCollabExtension(deps: CollabExtensionDeps): CollabExtensio
           liveDocId: persisted.liveDocId,
           lastPointAt: persisted.lastPointAt,
           lastSnapshotAt: persisted.lastSnapshotAt,
+          yEpoch: persisted.yEpoch,
           userId: ctx.userId,
         }),
       );
@@ -228,6 +236,19 @@ export function createCollabExtension(deps: CollabExtensionDeps): CollabExtensio
         }
         instance.closeConnections(documentName);
       }
+    },
+
+    async beforeSync({ documentName, document, type }) {
+      // F-R6H11-1 — a fresh attach's SyncStep1 (type 0) is the LAST point to converge a stale
+      // in-memory doc before the client syncs it: an out-of-band restore bumps
+      // `live_docs.y_epoch`; converge BEFORE readSyncStep1 answers so the client's pre-restore
+      // items meet tombstoned state — they merge as deletions, never revive. Later message
+      // kinds (SyncStep2/YjsUpdate on an established connection) ride the debounced store's
+      // check instead of a db read per keystroke.
+      if (type !== 0) return;
+      const rt = runtimes.get(documentName);
+      if (!rt) return;
+      await deps.db.scoped(rt.workspaceId, (tx) => convergeReplacedDoc(tx, rt, document));
     },
 
     async afterUnloadDocument({ documentName }) {

@@ -326,3 +326,21 @@ base — the R6FIX.1 anchor used by the recent insert rows).
 ## Evidence report
 
 _(filled at close)_
+
+## Corrections (append-only)
+
+- **2026-10-27 (R6FIX.2 — evidence-correctness note):** this deploy **shipped a
+  broken run-task image despite green provenance.** Cloud Build `a8d53c59` ran
+  from a clean detached worktree (`/private/tmp/rhema-e04a8c8`) whose
+  `apps/run-task/vendor/` held only `README.md` — the vendored agent SDK is
+  gitignored operator-held state, absent from any fresh clone/worktree. The
+  Dockerfile's then-current warn-and-continue placeholder contract built and
+  pushed `sha256:c7cf69c6…` with no engine; R6H11 found every `intake` failing
+  ~1 s `errorClass:infra` (F-R6H11-2 — no run can execute on prod `e04a8c8`).
+  The provenance gate stayed green because `check-deploy-provenance` compares
+  api+web `/healthz` `build.gitSha` — **a SHA-parity check, not an
+  image-contents check; the gate had a gap and this deploy's "all-PASS"
+  evidence did not cover image contents.** Root cause + fail-closed fix
+  (Dockerfile `ALLOW_PLACEHOLDER_SDK` gate + `image-set.yaml` context and
+  built-image asserts) landed in `runs/R6FIX.2.md`; the live re-proof rides the
+  next deploy.
