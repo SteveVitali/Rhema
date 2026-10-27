@@ -185,7 +185,9 @@ debounce window in practice.
   0059; 515 pass / 1 fail). Fixed by pinning `0059_live_docs_y_epoch.sql` in the
   census expectation (`d889969` — the census is intentionally a real-file list).
   Re-read at `d889969` → **PASS** (run 40462016176 — all seven legs + `ci-pass`
-  anchor; record `logs/ci-R6FIX.2.json`). PR #221 green, unmerged (OPERATOR).
+  anchor). The docs-only records commit pushed final head `e52e49e` → boundary
+  re-read **PASS** (run 40465982787; record `logs/ci-R6FIX.2.json` refreshed).
+  PR #221 green, unmerged (OPERATOR).
 - New tests: api "the apply writes a CONVERGENT y_state + bumps y_epoch — a stale
   replica merges tombstoned"; collab "an out-of-band restore converges the loaded
   doc" (incl. no-shared-history edge), "beforeSync converges … SS1 (type 0) and
