@@ -34,15 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6swp-1-post-merge-nightly  # R6SWP.1 (forked off main @ 9c90b00 — merge-sweep base); PROD SERVES dc3a8f6 (main ⊋ deployed until R6LCH.1)
-chainTip:        stevevitali/r6fix-5-money-findings  # R6FIX.5; next row forks here — PROD SERVES dc3a8f6 (money fixes unmerged — land with the launch deploy; endpoint update + evt re-drive are runbook steps)
+chainTip:        main @ fe87262+ (all PRs merged through #226)  # PROD SERVES dc3a8f6 — main ⊋ deployed until R6LCH.1 deploys the tip
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T17:34:10Z         # R6SWP.1 — journeys CI proven end-to-end; 29 free legs green on dc3a8f6 (match:true); F-R6SWP.1-4/-5 open; PR #225; $0; unmerged (OPERATOR)
-updatedAt:       2026-10-27T22:37:00Z         # R6FIX.5 — boundary pass @ 220136f (run 40588477743, all seven legs); gitleaks fixture allowlist + additive audit table resolved CI findings; $0; unmerged (OPERATOR)
+updatedAt:       2026-10-27T23:5xZ            # GATE-LAUNCH SIGNED — dispositions GD-THRESH1/6/13 recorded; R6LCH.1 authorized (deploy main → re-proofs → flips 2–4)
 ```
 
 ## OPEN FINDINGS
