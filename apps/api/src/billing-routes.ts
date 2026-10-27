@@ -104,7 +104,7 @@ function stripeFailure(err: unknown): { error: string; status: 502 | 503 } {
 /** OBS.1 — the ONE structured line for a Stripe-mediated 5xx (kind joins msg; ids stay out). */
 function logStripeFailure(
   c: Context,
-  kind: "checkout" | "portal",
+  kind: "checkout" | "portal" | "cancel",
   err: unknown,
   status: number,
 ): void {
@@ -576,21 +576,30 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   });
 
   // ---- cancel = cancel_at_period_end (§14.6: the plan runs to the paid-through date) -------------------
+  // F-R6FIX.5-1: `requestCancellation` propagates the flag to Stripe inside the tx when the row
+  // carries `stripe_subscription_id` — a Stripe failure rolls the local flag back and maps to the
+  // same truthful codes checkout/portal use, never a silent divergence.
   app.post("/billing/subscription/cancel", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const sub = (
-        await tx.query(
-          `select id from subscriptions where billing_account_id = $1 and status in ('active','past_due')
-             order by created_at desc limit 1`,
-          [principal.billingAccountId],
-        )
-      ).rows[0] as { id: string } | undefined;
-      if (!sub) return { applied: false };
-      return requestCancellation(tx, deps, { subscriptionId: sub.id, billingAccountId: principal.billingAccountId });
-    });
-    return c.json(out);
+    try {
+      const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        const sub = (
+          await tx.query(
+            `select id from subscriptions where billing_account_id = $1 and status in ('active','past_due')
+               order by created_at desc limit 1`,
+            [principal.billingAccountId],
+          )
+        ).rows[0] as { id: string } | undefined;
+        if (!sub) return { applied: false };
+        return requestCancellation(tx, deps, { subscriptionId: sub.id, billingAccountId: principal.billingAccountId });
+      });
+      return c.json(out);
+    } catch (err) {
+      const f = stripeFailure(err);
+      logStripeFailure(c, "cancel", err, f.status);
+      return c.json({ error: f.error }, f.status);
+    }
   });
 
   // ---- change plan: upgrade applies now; downgrade schedules to period end (§14.6) ---------------------

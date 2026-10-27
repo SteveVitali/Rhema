@@ -50,6 +50,30 @@ describe("analytics catalogue — envelope + additions", () => {
   });
 });
 
+describe("F-R6H11B-1 — user_id is an opaque auth id, not a ULID", () => {
+  // The prod topup that motivated R6FIX.5: a Better Auth user id (`generateId(32)`, [a-zA-Z0-9])
+  // failed `idSchema`'s 26-char ULID check inside `recordAnalyticsEvent` and rolled back the whole
+  // grant tx. `authIdSchema` accepts BOTH live auth-id shapes while the entity fields stay ULID-only.
+  const NANOID_USER = "betterAuthTestNanoid000000000000"; // synthetic 32-char nanoid-shape stand-in (H11B evidence had a real one)
+
+  it("accepts the ULID and the Better Auth id shapes on user_id", () => {
+    const ulid = parseAnalyticsEvent("landing.viewed", ENV, {});
+    expect(ulid.user_id).toBe(ENV.user_id);
+    const nanoid = parseAnalyticsEvent("landing.viewed", { ...ENV, user_id: NANOID_USER }, {});
+    expect(nanoid.user_id).toBe(NANOID_USER);
+  });
+
+  it("still rejects non-id garbage on user_id — and entity ids stay ULID-only", () => {
+    for (const bad of ["", "short", "has spaces !!", "x".repeat(65), "id/with*seps"]) {
+      expect(() => parseAnalyticsEvent("landing.viewed", { ...ENV, user_id: bad }, {})).toThrow();
+    }
+    // The widen is scoped to the auth-id field: workspace/project/run ids keep the ULID contract.
+    expect(() =>
+      parseAnalyticsEvent("landing.viewed", { ...ENV, workspace_id: BETTER_AUTH_ID }, {}),
+    ).toThrow();
+  });
+});
+
 describe("REQ-BETA-6…12 event shapes", () => {
   it("carries the one-tap reason code enum (REQ-BETA-6)", () => {
     expect([...REASON_CODES]).toEqual([

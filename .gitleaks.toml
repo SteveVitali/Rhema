@@ -35,4 +35,12 @@ regexes = [
   # secret (gitleaks generic-api-key false positive on packages/journeys/src/stb5a-helpers.ts).
   '''journey2026stb5a''',
   '''api\.pr-212\.34\.8\.177\.69\.sslip\.io''',
+  # R6FIX.5 (2026-10-27) — Better-Auth user-id TEST fixtures in
+  # packages/contracts/src/analytics.test.ts + packages/ledger/src/stripe.test.ts:
+  # `fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y` is the opaque auth-id observed in the H11B
+  # headed-session evidence (a user identifier, not a credential — valueless as a
+  # secret), pinned in history by 90562fe; `betterAuthTestNanoid000000000000` is
+  # its synthetic stand-in. Both only ever appear as test literals.
+  '''fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y''',
+  '''betterAuthTestNanoid000000000000''',
 ]

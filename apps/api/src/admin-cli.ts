@@ -30,6 +30,7 @@ import {
   killTrial,
   reconcileBalances,
   decideRefundReview,
+  STRIPE_EVENT_JOB,
   type EntryDeps,
 } from "@rhema/ledger";
 import {
@@ -105,6 +106,10 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
                  (DEF.2 — the deterministic held/available reconcile: DRY-RUN by default — prints the
                   ledger-fold position, the counter-vs-fold divergences and the planned hold backfills;
                   --apply appends the reconcile holds + rewrites credit_balances + audits the repair)
+  stripe-redrive --event <evt_…> [--note <s>]
+                 (R6FIX.5 — the audited compensation path for a parked stripe_events row whose
+                  processed_at stayed NULL: re-enqueue the ordinary stripe.event job — the row +
+                  the grant idempotency keys make the replay exactly-once; already-processed rows no-op)
 `;
 
 /**
@@ -366,6 +371,43 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
         }
         // every kind arm above returns — reaching here means an unhandled decision result.
         return 1;
+      }
+      case "stripe-redrive": {
+        // R6FIX.5 (F-R6H11B-1 compensation) — a verified `stripe_events` row that never processed
+        // (processed_at NULL — e.g. the nanoid-user topup whose analytics validation threw inside
+        // the grant tx) re-drives through the same `stripe.event` queue the webhook feeds. This is
+        // THE compensation path: processing is idempotent (the checkout-session state guard + the
+        // `stripe:checkout:<sessionId>` ledger key make a replay a no-op), so no manual compensation
+        // ledger row is ever hand-written — the money row Stripe earned lands through the ordinary
+        // arm or not at all. Audited: the operator's ask is the `stripe_event_redrives` row (0060 —
+        // a purpose table, since the admin_actions action CHECK can't be widened additively).
+        const eventId = flag(rest, "event");
+        if (!eventId) return (out(USAGE), 2);
+        const row = (
+          await deps.systemExec.query(
+            "select id, type, processed_at from stripe_events where id = $1",
+            [eventId],
+          )
+        ).rows[0] as { id: string; type: string; processed_at: string | null } | undefined;
+        if (!row) {
+          out(`not found: no stripe_events row ${eventId} (the webhook intake never parked it)`);
+          return 1;
+        }
+        if (row.processed_at) {
+          out(`already processed: ${eventId} (${row.type}, processed_at ${row.processed_at}) — nothing to re-drive`);
+          return 0;
+        }
+        if (!deps.queue) {
+          out(`error: no queue bound — cannot enqueue ${STRIPE_EVENT_JOB}`);
+          return 1;
+        }
+        await deps.queue.send(STRIPE_EVENT_JOB, { eventId }, { singletonKey: `stripe-event:${eventId}` });
+        await deps.systemExec.query(
+          `insert into stripe_event_redrives (id, actor, event_id, note, at) values ($1,$2,$3,$4,$5)`,
+          [deps.ids("red"), deps.operatorId, eventId, `redrive ${eventId} (${row.type})${note ? ` — ${note}` : ""}`, deps.clock.now()],
+        );
+        out(`re-drove ${eventId} (${row.type}) → ${STRIPE_EVENT_JOB} (audited)`);
+        return 0;
       }
       case "beta-report": {
         // PRB.12 — the weekly REQ-PROD-16 readout: refresh the domain→stream projection for the window

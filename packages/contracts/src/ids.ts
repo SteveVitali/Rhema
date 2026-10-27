@@ -39,6 +39,20 @@ const ULID_RE = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 /** A ULID string; the shape every entity id takes. */
 export const idSchema = z.string().regex(ULID_RE, "id must be a 26-char Crockford-base32 ULID");
 
+// Auth-minted user ids are OPAQUE — the auth system owns their shape, not the id factory. Two live
+// shapes exist in `"user".id` (F-R6H11B-1): `admitSignup` mints ULIDs through `deps.ids("usr")`, while
+// Better Auth's own `user.create` paths (magic-link verify, the OAuth callback) mint its default
+// `generateId(32)` — a `[a-zA-Z0-9]` string (better-auth@1.7 `@better-auth/core` `utils/id.ts`;
+// size/alphabet configurable, so the contract never hard-codes 32). The band below covers the
+// nanoid/KSUID/UUID family (21–64 unreserved chars) so a generator change does not strand money
+// again — a ULID (26 chars, upper-alnum) is inside the same band.
+const AUTH_ID_RE = /^[A-Za-z0-9_-]{21,64}$/;
+/** An opaque auth-minted user id — ULID or the Better Auth id shape. Use for `user_id` fields that
+ *  carry `"user".id`; entity ids (workspace/project/run/…) stay `idSchema`. */
+export const authIdSchema = z
+  .string()
+  .regex(AUTH_ID_RE, "id must be an auth-minted user id (26-char ULID or a Better Auth id)");
+
 /** A branded ULID parser for entity `T` (the brand is erased at runtime). */
 export function brandedId<T extends string>(): z.ZodType<Id<T>> {
   return idSchema as unknown as z.ZodType<Id<T>>;
