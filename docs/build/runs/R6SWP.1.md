@@ -15,7 +15,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory
   + self-review @ `~/agent-skills` (`e981ec5`)
 - **Requirement ids stamped:** REQ-GO-2 REQ-POST-4
-- **Started:** 2026-10-27T14:38Z · **Closed:** (at close)
+- **Started:** 2026-10-27T14:38Z · **Closed:** 2026-10-27T18:1xZ
 - **Live stage:** prod (read-only — the suite drives real prod surfaces; no prod mutation).
 - **Production mutations (this ticket's named scope):** `pulumi up --stack prod` of `main`
   HEAD was **conditionally** named (deliverable 1: only if the `main`-vs-deployed diff is
@@ -32,7 +32,9 @@
   `packages/contracts/src/sidecars.ts`, `infra/pulumi/Pulumi.prod.yaml`, `.gitleaks.toml` —
   so the drift arm cannot pass and no redeploy is authorized. Honest posture: `main` ⊋
   deployed until R6LCH.1.
-- **ci:** (at close)
+- **ci:** pass #225@15f759e — boundary read `logs/ci-R6SWP.1.json` (run
+  `40551865601`: fast-path 38s, contracts 36s, public-safe 55s, integration 4m23s,
+  images 9m27s, typecheck/lint/unit 25m57s, ci-pass anchor 19s)
 
 ## Deferrals read
 
@@ -179,8 +181,8 @@ the journeys workflow YAML parse (the restored block is verbatim the pre-pause s
 | DEFERRALS tails (D-OBS.1-3, D-SPA.28-1) | records | **MET** — dated tails appended; both rows stay OPEN on the literal arm | `docs/tickets/DEFERRALS.md` |
 | Threshold-6 dated note | records | **MET** — run URLs + verdict, dispatch-substitute framing verbatim | `readouts/GATE-LAUNCH.md` row 6 |
 | BL-74 / BL-81 dispositions | records | **MET** — dated dispositions (below) | run ledger |
-| Records + PR + INDEX + LEDGER | records | at close | below |
-| Verify gates | records | at close — `check-build-memory.sh .` 0 violations (14 legacy warnings) already green; `check-append-only.mjs --base 9c90b00`, `ci-boundary.sh` owed at final head | below |
+| Records + PR + INDEX + LEDGER | records | **MET** — PR #225, INDEX row 231, LEDGER state+log+findings, run ledger, PR body | this ledger; #225 |
+| Verify gates | records | **MET** — `check-build-memory.sh .` 0 violations (15 warnings, all legacy/pre-existing class); `check-append-only.mjs --base 9c90b00` **OK**; `ci-boundary.sh` **pass** at `15f759e` | `logs/ci-R6SWP.1.json` |
 
 ### Live findings opened/closed this run
 
