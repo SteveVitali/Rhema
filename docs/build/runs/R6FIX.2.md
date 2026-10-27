@@ -6,7 +6,7 @@
 - **Branch:** `stevevitali/r6fix-2-runtask-sdk` · mergePolicy=OPERATOR — never merge.
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec +
   build-memory + self-review @ `~/agent-skills`
-- **Started:** 2026-10-27T05:30Z · **Closed:** —
+- **Started:** 2026-10-27T05:30Z · **Closed:** 2026-10-27T07:2xZ
 - **Live stage:** none — no prod mutations this run; the fixes ride the next deploy
   (R6LCH.1's launch deploy carries this branch's tip). Live re-proof owed post-deploy.
 
@@ -42,16 +42,16 @@
 
 ## Acceptance criteria
 
-- [ ] Root causes named precisely with evidence (not "suspected").
-- [ ] `docker build`/`gcloud builds submit` of a run-task image whose context lacks the
+- [x] Root causes named precisely with evidence (not "suspected").
+- [x] `docker build`/`gcloud builds submit` of a run-task image whose context lacks the
       vendored SDK **fails** unless a placeholder is explicitly requested; the built
       image's SDK paths are asserted before push. *(engineered)*
-- [ ] Restore apply converges the live collab doc: stored `y_state` carries the restored
+- [x] Restore apply converges the live collab doc: stored `y_state` carries the restored
       content with tombstones for removed items; a loaded collab runtime converges rather
       than flushing stale state; a reconnecting client sees restored content. Deterministic
       test proves all three. *(fixture-verified; live re-proof owed post-deploy)*
-- [ ] Green gate + CI pass at head.
-- [ ] "Fix landed, live re-proof owed post-deploy" recorded honestly in LEDGER/GATE-LAUNCH.
+- [x] Green gate + CI pass at head.
+- [x] "Fix landed, live re-proof owed post-deploy" recorded honestly in LEDGER/GATE-LAUNCH.
 
 ## Plan
 
@@ -179,6 +179,13 @@ debounce window in practice.
   checks PASS).
 - `node scripts/check-additive-migrations.mjs --files …/0059…` — additive, pass.
 - `infra/config` tests (cloudbuild/provenance/runbook/stages) — 49/49.
+- CI boundary — **two reads, honestly recorded:** head `0dcb34a` read **FAIL**
+  (`typecheck / lint / unit`, run 40457832512 — the `--newer-than 0044` census in
+  `check-additive-migrations.test.mjs` listed 0045..0058 and did not expect the new
+  0059; 515 pass / 1 fail). Fixed by pinning `0059_live_docs_y_epoch.sql` in the
+  census expectation (`d889969` — the census is intentionally a real-file list).
+  Re-read at `d889969` → **PASS** (run 40462016176 — all seven legs + `ci-pass`
+  anchor; record `logs/ci-R6FIX.2.json`). PR #221 green, unmerged (OPERATOR).
 - New tests: api "the apply writes a CONVERGENT y_state + bumps y_epoch — a stale
   replica merges tombstoned"; collab "an out-of-band restore converges the loaded
   doc" (incl. no-shared-history edge), "beforeSync converges … SS1 (type 0) and
