@@ -122,6 +122,7 @@ const NON_TENANT = new Set([
   // system stores / registries / internals
   "_migrations", "agent_types", "protocols", "deployments", "acquisition_events",
   "estimate_cache", "estimator_config", "estimator_fits", "stripe_events",
+  "stripe_event_redrives",
   // ECON.1 (0049) — the calibration aggregates/cells are cross-tenant platform data (no tenant key);
   // the raw evidence rows stay tenant-scoped (cost_observations is RLS-forced above).
   "cost_card_cells", "cap_calibration_reports", "estimator_cells",
@@ -305,6 +306,7 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   run_events_default: "-",
   pause_signals: "-",
   stripe_events: "-",
+  stripe_event_redrives: "-", // R6FIX.5 (0060) — operator-cli audit sink on the system pool; no user grant
   deployments: "-",
   estimator_config: "-",
   estimator_fits: "-",

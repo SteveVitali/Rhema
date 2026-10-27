@@ -16,4 +16,5 @@ create table stripe_event_redrives (
   note text,
   at timestamptz not null default now());
 create index on stripe_event_redrives (event_id, at);
-grant select, insert on stripe_event_redrives to rhema_app;
+-- no rhema_app grant: the table is written ONLY by the operator admin-cli on the system pool
+-- (same denied-set class as stripe_events — the user-serving role never touches it; REQ-SPEC-30).
