@@ -21,7 +21,8 @@
 - **Branch:** `stevevitali/r6fix-4-donegate`
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory +
   self-review @ `~/agent-skills`
-- **Started:** 2026-10-27T10:4xZ · **Closed:** —
+- **Started:** 2026-10-27T10:4xZ · **Closed:** 2026-10-27T12:1xZ @ `81c28a1` — PR #224
+  green, unmerged (OPERATOR).
 - **Live stage:** none — code + records only; $0 expected (no paid rerun).
   Deployed re-proof rides the next DEP ticket (prod `dc3a8f6` runs pre-fix code).
 - **Production mutations:** none.
@@ -231,4 +232,7 @@ closing it; D-R6SECR.1-1 unaffected.
 - **Deterministic tests added:** oracle +5, work-reader +5 (the literal R6CNT.3
   14-placeholder-row shape), harness-loop +3 (refusal→retry→fail; retry-closes→commit;
   dead-bound→`research_budget_exhausted`).
+- **CI:** `ci-boundary --ledger --stack` reads **pass** at head `81c28a1` (run 40494204433 —
+  all seven legs + `ci-pass` anchor; first read hit the 2700s cap on the 42m33s unit leg →
+  job-polled green → re-read; stack #223–#219 pass). Record `docs/build/logs/ci-R6FIX.4.json`.
 - **Spend:** $0 — code + records only; no paid run, no prod write.
