@@ -55,6 +55,29 @@ Status: STAGED   <!-- the ONLY line that may change: → SIGNED | PASSED | SKIPP
   (the `ba66c4b` deploy touched no secret) but launch-relevant: it blocks any paid model call —
   thresholds 5 + 11 and organic paid runs all ride the operator's key decision.
 
+## Consolidated state at presentation — 2026-10-27 (prod `dc3a8f6`, chain tip `7413b17`)
+
+After R6DEP.3 (fix deploy + live re-proofs) and R6FIX.3/R6FIX.4 (meter-truth + done-gate
+defects, both RESOLVED-IN-CODE, deployed re-proofs ride the launch deploy):
+
+| # | threshold | state at presentation |
+|---|---|---|
+| 1 | zero `LB` OPEN DEFERRALS | **RULINGS OWED** — the remaining open `LB` rows are all operator-act-dependent: `D-P1.16-1`, `D-BILL.3-1`, `D-BILL.3-2` (real-money Stripe legs — need the $10 purchase + portal), `D-MAINT.4-1` (Google OAuth round-trip), `D-EDIT.1-2` (Safari caret), `D-P1.19-2` (real phone), `D-SPA.16-1`/`D-SPA.20-1` (N9 — need `sk_test`), `D-SLO.1-6` (SSE p95 — post-launch traffic only), `D-OBS.1-3`/`D-SPA.28-1` (nightly-on-`main` — merge-dependent), `D-P1.20-1` residual ((e) destruction fire = clock-owed, (f) clear arm). Each row needs either the physical leg or an explicit operator disposition (WONTFIX / PL-reclass). |
+| 2 | REQ-SEC-3 zero open criticals/highs | **MET** — R6SECR.1 (`80db0d5` re-probe, 178 routes). |
+| 3 | REQ-LCH-1 pages approved | **MET** — all five `approved: true`, live-verified. |
+| 4 | Showcase/dossier/H4 stamps | **MET** — authored Wells fixture live; `D-R6CNT.2-1` is `PL`-tagged (paid re-gen rides, launch criterion met). |
+| 5 | REQ-DISC-3 golden 4/4 | **MET** — 4/4 @ `80db0d5`; `e04a8c8`/`dc3a8f6` deploys non-protocol-affecting (re-run rule not re-armed). |
+| 6 | REQ-GO-2 nightly `main`==prod | **RULING OWED** — literal arm is merge-dependent (operator merges, then scheduled nightly). Dispatch-substitute evidence: workflow authed + repaired (F-R6DEP.2-1) but unprovable pre-merge by design. Operator rules: disposition as "nightly-on-deployed-SHA, `main` catch-up deferred to the merge sweep" OR merge first for the literal arm. |
+| 7 | REQ-DEP-2 drills + alerts paging | **MET** — drills pass; webhook channel armed, 14/14 policies reference it, sink-proven (first natural incident owed-by-nature). |
+| 8 | REQ-DEP-3 HA live | **MET** — SQL REGIONAL + proxy ×2 ILB, drill-proven. |
+| 9 | REQ-FOR-2 no ledger defect | **MET (fix deployed at launch)** — `F-R6CNT.3-1` RESOLVED-IN-CODE (`claim_ledger_closed` + proven `inventoryCount`); the launch deploy carries the fix. |
+| 10 | REQ-FOR-4 verdict + notice | **MET** — verdict recorded, notice sent 4/4. |
+| 11 | REQ-DISC-1 complete or dispositioned | **MET** — refusal disposition under GD-R6B.R6. |
+| 12 | launch-surface lint | **MET**. |
+| 13 | debit-mode-flip preconditions | **RULING OWED** — `cap_calibration_reports` = 0; notice sent with `EFFECTIVE_DATE 2026-12-01` (30-day rule: the metered-debit flip cannot fire before 2026-12-01 regardless). Operator rules the recorded gap: flip 1 rides its calendar date; flips 2–4 are unblocked by this gate. |
+
+**11 of 13 MET.** Thresholds 1, 6, 13 carry owed operator rulings; signature follows.
+
 ## Signature block — OWED
 
 The operator's go is recorded verbatim here. _Not yet presented._
