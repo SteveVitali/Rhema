@@ -1,0 +1,51 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "d257e00a1fc0",
+  "startedAt": "2026-10-26T16:33:07.091Z",
+  "finishedAt": "2026-10-26T16:34:16.127Z",
+  "webBaseUrl": "https://posture.136.68.101.101.sslip.io",
+  "apiBaseUrl": "https://api.posture.136.68.101.101.sslip.io",
+  "provenance": {
+    "expected": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7",
+    "observed": {
+      "web": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7",
+      "api": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 56080,
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "R10.keepalive",
+      "journey": "returning",
+      "owner": "NAVC.4",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12879,
+      "screenshot": "R10.keepalive.png"
+    }
+  ],
+  "passed": true
+}

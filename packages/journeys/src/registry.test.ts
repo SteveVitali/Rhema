@@ -68,7 +68,10 @@ describe("the journey step registry", () => {
         // R10 flipped red→green 2026-10-16 (VERIF.2 pr-186 @ e7b21aecb): the warm-return leg
         // reported ready-to-flip on two independent runs (gates/ + seeded2/ — client-side hops,
         // monotone data-nav-count, no warm twin re-GET inside the freshness window).
-        "R1", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9", "R10",
+        // R10.keepalive flipped red→green 2026-10-26 (R6DEP.2 posture stage pr-219 @ e04a8c8):
+        // same data-page-session re-acquired inside the 120 s TTL AND ⌘Z removed the pre-leave
+        // synced marker — F-R6POST.2-2's session-owned UndoManager proven live on the collab wire.
+        "R1", "R4", "R5", "R6", "R6F", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9", "R10", "R10.keepalive",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
         // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7

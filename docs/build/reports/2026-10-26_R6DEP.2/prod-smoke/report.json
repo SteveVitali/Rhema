@@ -1,0 +1,51 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "998675602e89",
+  "startedAt": "2026-10-26T15:26:23.937Z",
+  "finishedAt": "2026-10-26T15:26:49.701Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7",
+    "observed": {
+      "web": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7",
+      "api": "e04a8c875c0e4cbf25b65c3b6784de6812f32dc7"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R8.inbox",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 18677,
+      "screenshot": "R8.inbox.png"
+    },
+    {
+      "id": "T2.badge",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7045,
+      "screenshot": "T2.badge.png"
+    }
+  ],
+  "passed": true
+}

@@ -293,7 +293,10 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
       "leaving /p/:slug/v/working for /app and returning inside the 120 s idle TTL re-acquires the SAME data-page-session, and ⌘Z removes the synced marker typed before leaving — the preserved EditorState's undo stack, not a re-seeded view",
     owner: "NAVC.4",
     // NAVC.4 — flips green on the first live leg over a deployed build carrying NAVC.3's registry.
-    expected: "red",
+    // R6DEP.2 (2026-10-26): ready-to-flip → green — live on posture stage pr-219 @ e04a8c8
+    // (session-owned UndoManager, F-R6POST.2-2): same data-page-session re-acquired inside the
+    // TTL and ⌘Z removed the pre-leave synced marker (docs/build/reports/2026-10-26_R6DEP.2/posture/).
+    expected: "green",
     paid: false,
   },
   // ---- STB.5a weekly paid riders (jrn-a; ride the weekly leg's own-tenant delivered Review) ----

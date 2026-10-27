@@ -1,0 +1,1 @@
+[additive-migrations] no migrations newer than the base — pass

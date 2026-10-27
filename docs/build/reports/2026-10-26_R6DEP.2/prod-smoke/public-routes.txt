@@ -1,0 +1,7 @@
+/ -> 200 data-renderer="ssr"
+/pricing -> 200 data-renderer="ssr"
+/signup -> 200 data-renderer="ssr"
+/login -> 200 data-renderer="ssr"
+/showcase -> 200 data-renderer="ssr"
+/invite -> 200 data-renderer="ssr"
+api /healthz -> 200
