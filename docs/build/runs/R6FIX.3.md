@@ -19,7 +19,7 @@
   self-review @ `~/agent-skills`
 - **Requirement ids stamped:** none (operator insert; the fix serves REQ-SPEC-32's
   "debits equal metered burn" truth + REQ-IDE-11's committed-meter contract).
-- **Started:** 2026-10-27T09:23Z · **Closed:** (at close)
+- **Started:** 2026-10-27T09:23Z · **Closed:** 2026-10-27T10:2xZ
 - **Live stage:** prod `dc3a8f6` (healthy — runs execute). The code fix CANNOT serve
   until the operator merges + a DEP ticket deploys — the live re-proof therefore
   rides the same bounded paid canary plus the corrected-reconcile read over the
@@ -33,7 +33,8 @@
   as found; no one-off prod writes) applies.
 - **Spend envelope:** ≤ $8 total incl. the canary (~≤$5 Quick/Base shape). jrn-a
   balance post-R6DEP.3 ≈ 3551 cr → **no house-grant needed**.
-- **ci:** (at boundary)
+- **ci:** pass #223@`601ad5e` (run 40483816854 — all seven legs + `ci-pass`
+  anchor; record `logs/ci-R6FIX.3.json`)
 
 ## Deferrals read
 
