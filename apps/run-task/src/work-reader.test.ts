@@ -632,6 +632,88 @@ describe("buildPhaseOutputs — second_read producer facts (DEF.1 F2)", () => {
   });
 });
 
+// F-R6CNT.3-1 / R6FIX.4 — the verification phase's closure + coverage facts are read from the
+// ledger the agent actually wrote, never defaulted green. The $10.68 Showcase defect:
+// `inventoryCount ?? 0` made coverage vacuous and no closure fact existed at all.
+describe("buildPhaseOutputs — verification claim-ledger facts (F-R6CNT.3-1)", () => {
+  const verification = review.phases.find((p) => p.key === "verification")!;
+  const files0 = () =>
+    new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success" })],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/01-claim-ledger.md", enc("# Claim ledger\n")],
+    ]);
+  const row = (over: Record<string, unknown>) => ({
+    ordinal: 0,
+    text: "the claim",
+    tier: 1,
+    verdict: "verified",
+    ...over,
+  });
+  const ledger = (claims: unknown[], extra: Record<string, unknown> = {}) => ({
+    sidecar: "claim_ledger",
+    version: 1,
+    ...extra,
+    claims,
+  });
+
+  it("the R6CNT.3 shape — all-`unverifiable` placeholder rows, no inventoryCount — is UNCLOSED", () => {
+    // 14 schema-valid rows, each bare `unverifiable` (note/url/sources null) — zero checks happened.
+    const claims = Array.from({ length: 14 }, (_, i) =>
+      row({ ordinal: i, verdict: "unverifiable", note: null, sourceCheck: null, url: null, normalizedUrl: null, sources: [] }),
+    );
+    const files = files0();
+    files.set("agents/editor/.rhema/01-claim-ledger.json", enc(ledger(claims)));
+    const out = buildPhaseOutputs(files, makeSpec(verification), "editor");
+    expect(out.facts.unclosedClaimOrdinals).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+    // absent inventoryCount stays ABSENT — never defaulted to a vacuous 0 (coverage then fails).
+    expect(out.facts.inventoryCount).toBeUndefined();
+    expect(out.facts.claimRowCount).toBe(14);
+  });
+
+  it("a closed ledger — substantive verdicts + an evidence-bearing `unverifiable` — closes", () => {
+    const claims = [
+      row({ ordinal: 0, verdict: "verified", sources: [{ url: "https://x" }] }),
+      row({ ordinal: 1, verdict: "contradicted", sources: [{ url: "https://y" }] }),
+      // a justified `unverifiable` IS a disposition: the note + attempted trail are the record.
+      row({ ordinal: 2, verdict: "unverifiable", note: "paywalled; no mirror found", sourceCheck: "from_search" }),
+    ];
+    const files = files0();
+    files.set("agents/editor/.rhema/01-claim-ledger.json", enc(ledger(claims, { inventoryCount: 3 })));
+    const out = buildPhaseOutputs(files, makeSpec(verification), "editor");
+    expect(out.facts.unclosedClaimOrdinals).toEqual([]);
+    expect(out.facts.inventoryCount).toBe(3);
+    expect(out.facts.claimRowCount).toBe(3);
+  });
+
+  it("a mixed ledger names only the still-placeholder rows (the retry targets the unclosed ordinals)", () => {
+    const claims = [
+      row({ ordinal: 0, verdict: "verified" }),
+      row({ ordinal: 4, verdict: "unverifiable" }), // no note/url/sources → placeholder
+      row({ ordinal: 7, verdict: "unverifiable", note: "checked; claim is unfalsifiable" }),
+      row({ ordinal: 9, verdict: undefined }), // verdict absent entirely → unclosed
+    ];
+    const files = files0();
+    files.set("agents/editor/.rhema/01-claim-ledger.json", enc(ledger(claims, { inventoryCount: 9 })));
+    const out = buildPhaseOutputs(files, makeSpec(verification), "editor");
+    expect(out.facts.unclosedClaimOrdinals).toEqual([4, 9]);
+  });
+
+  it("inventoryCount coerces a numeric string (LLM-tolerant, matching the sidecar's coercion)", () => {
+    const claims = [row({ ordinal: 0 })];
+    const files = files0();
+    files.set("agents/editor/.rhema/01-claim-ledger.json", enc(ledger(claims, { inventoryCount: "7" })));
+    const out = buildPhaseOutputs(files, makeSpec(verification), "editor");
+    expect(out.facts.inventoryCount).toBe(7);
+  });
+
+  it("an absent ledger leaves the closure fact unset — the predicate fails, never assumed", () => {
+    const out = buildPhaseOutputs(files0(), makeSpec(verification), "editor");
+    expect(out.facts.unclosedClaimOrdinals).toBeUndefined();
+    expect(out.facts.inventoryCount).toBeUndefined();
+  });
+});
+
 // DEF.1 (F1, STB.3 live — profile-voice run 01M3DJ5V…): the persona builder's phase-result lives at the
 // PERSONA root (`/work/personas/<id>/.rhema/phase-result.json`), which `readWorkRoots` folds into the map
 // at key `.rhema/phase-result.json`. The oracle's leg (b) must read it — a project-only walk reported

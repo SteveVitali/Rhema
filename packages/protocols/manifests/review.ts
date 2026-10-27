@@ -55,7 +55,7 @@ export const review: WorkflowManifest = {
       skillPhase: "1",
       seat: "editor",
       artifacts: ["01-claim-ledger.md"],
-      predicates: ["claim rows ≥ inventory", "sidecar validates"],
+      predicates: ["claim rows ≥ inventory", "every claim closed", "sidecar validates"],
       sidecars: ["01-claim-ledger.json"],
       optOutFlag: "verification",
       phaseClass: "research",
@@ -63,6 +63,9 @@ export const review: WorkflowManifest = {
       allowsSubagents: true,
       completionPredicates: [
         { kind: "claim_rows_gte_inventory", artifact: "01-claim-ledger.md" },
+        // F-R6CNT.3-1 / R6FIX.4 — row count is not closure: schema-valid placeholder rows
+        // (bare `unverifiable`, no evidence) must not carry the phase to `done`.
+        { kind: "claim_ledger_closed", artifact: "01-claim-ledger.md" },
         { kind: "sidecar_validates", sidecar: "01-claim-ledger.json" },
       ],
     },

@@ -274,6 +274,11 @@ Required: `spine` (string array — the gate requires ≥3 entries) and `section
 
 Required per claim row: `ordinal` (integer ≥ 0), `text`, `tier` (1, 2, or 3), `verdict`. `verdict` ∈ {`verified`, `substantially_accurate`, `misleading_in_context`, `unsupported`, `contradicted`, `unverifiable`, `verified_against_user_source`}. `kind` ∈ {`factual`, `statistical`, `quotation`, `interpretive`, `normative`, `predictive`}. `sourceCheck` ∈ {`matches_citation`, `reputable_list`, `from_search`, `suspicious_source`}. A source's `stance` ∈ {`supports`, `contradicts`, `contextualizes`}.
 
+**Closure** (same gate as the review's verification ledger): every row must carry a REAL disposition — a
+row whose verdict is `unverifiable` is a completed check only when it carries WHY (`note`, and/or the
+trail you tried: `url`/`normalizedUrl`/`accessedAt`/`sourceCheck`/non-empty `sources`). A bare
+`unverifiable` row asserts nothing was checked; the phase's `claim_ledger_closed` gate refuses it.
+
 ## Execution model
 
 Seven phases. Two want isolation from your context: Phase 3 (verification —

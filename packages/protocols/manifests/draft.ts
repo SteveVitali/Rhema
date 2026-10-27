@@ -81,7 +81,7 @@ export const draft: WorkflowManifest = {
       skillPhase: "3",
       seat: "author",
       artifacts: ["agents/author/drafting/v(N+1)/03-claim-ledger.md"],
-      predicates: ["claim ledger present", "sidecar validates"],
+      predicates: ["claim ledger present", "every claim closed", "sidecar validates"],
       sidecars: ["03-claim-ledger.json"],
       optional: "quick",
       optOutFlag: "grounding",
@@ -91,6 +91,9 @@ export const draft: WorkflowManifest = {
       allowsSubagents: true,
       completionPredicates: [
         { kind: "artifact_nonempty", artifact: "agents/author/drafting/v(N+1)/03-claim-ledger.md" },
+        // F-R6CNT.3-1 / R6FIX.4 — same envelope, same defect class: a grounding ledger of
+        // placeholder `unverifiable` rows (no evidence) is unclosed, not done.
+        { kind: "claim_ledger_closed", artifact: "agents/author/drafting/v(N+1)/03-claim-ledger.md" },
         { kind: "sidecar_validates", sidecar: "03-claim-ledger.json" },
       ],
     },
