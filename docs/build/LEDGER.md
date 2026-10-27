@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      197_R6SWP.1        # merge sweep 1 DONE 2026-10-27 — operator-directed merges #219–#224 → main @ 0039850 (all open PRs landed incl. ancestors #195–#218; zero open); post-merge nightly reads next
-lastCompleted:   R6FIX.4            # 2026-10-27; F-R6CNT.3-1 RESOLVED-IN-CODE (claim-ledger closure is a done-gate predicate — proven, never assumed; ADR-123); unmerged (OPERATOR)
+lastCompleted:   R6FIX.5            # 2026-10-27; F-R6H11B-1 + F-R6H11B-2 RESOLVED-IN-CODE (auth-id contract + canonical webhook event list + stripe-redrive); F-R6FIX.5-1 cancel half fixed; unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6fix-4-donegate  # R6FIX.4; next row forks here — PROD SERVES dc3a8f6 (meter-fold + done-gate unmerged — both land with the next DEP)
+chainTip:        stevevitali/r6fix-5-money-findings  # R6FIX.5; next row forks here — PROD SERVES dc3a8f6 (money fixes unmerged — land with the launch deploy; endpoint update + evt re-drive are runbook steps)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T11:04:00Z         # R6FIX.4 — F-R6CNT.3-1 RESOLVED-IN-CODE (claim-ledger closure is a phase done-gate predicate; proven, never assumed; ADR-123; discourse-side outcome contract recorded as residual); suite 517 files/6,136 pass; $0; unmerged (OPERATOR)
+updatedAt:       2026-10-27T19:07:00Z         # R6FIX.5 — F-R6H11B-1/-2 RESOLVED-IN-CODE + F-R6FIX.5-1 cancel half (authIdSchema, STRIPE_WEBHOOK_EVENT_TYPES, stripe-redrive, cancel propagation); $0; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -511,6 +511,64 @@ pointers; substance unchanged.)_
   the live meter never rendered, tripping the R6 leg's strict
   `reportSpent > finalSpent` assert ("a charge no meter recorded", REQ-SPEC-32
   shape)._
+- **F-R6H11B-1 — RESOLVED-IN-CODE 2026-10-27 (R6FIX.5 — `runs/R6FIX.5.md`,
+  branch `stevevitali/r6fix-5-money-findings`; deployed re-proof owed).**
+  Live-found in the H11B headed money session on prod `dc3a8f6` (PHASE LOG
+  2026-10-27T18:5xZ; evidence `reports/2026-10-27_H11B/`): a REAL `topup_10`
+  $10 checkout paid via Apple Pay (`evt_1UVF7T…`, `cs_live_a1YA4…`) was
+  accepted by Stripe but its `stripe.event` job FAILED —
+  `parseAnalyticsEvent` inside the grant `runTx` rejects the buyer's
+  Better-Auth nanoid `user_id` ("…26-char Crockford-base32 ULID") ⇒ the
+  tenant tx rolls back ⇒ no `topup_granted`, `checkout_sessions` stays
+  `open`, `stripe_events.processed_at` NULL (job failed at retry_count=2).
+  Root cause: `analyticsEnvelopeSchema.user_id` used `idSchema` (ULID-only)
+  while Better Auth mints `[A-Za-z0-9]{32}` ids on its own `user.create`
+  paths (magic-link verify, OAuth) — ~20 `recordAnalyticsEvent` call sites
+  repo-wide throw for every nanoid user (beta-dashboard materializer, `wtp`
+  verb, `credits.exhausted_prompt` incl.). Fix: `authIdSchema`
+  (`contracts/ids.ts`, `[A-Za-z0-9_-]{21,64}` — accepts both live auth-id
+  shapes, still rejects garbage) widens only the user-bearing contract
+  fields (`analytics.user_id` + the domain `actor`); ULID `idSchema` keeps
+  guarding workspace/project/run/entity ids. Compensation path: the parked
+  `stripe_events` row re-drives through the NEW audited `stripe-redrive`
+  admin verb (re-enqueue via the §14.6 queue seam — ledger idempotency keys
+  make it exactly-once; no manual compensating ledger row). Owed: deploy +
+  `stripe-redrive evt_1UVF7T…` + the live `topup_granted` receipt.
+- **F-R6H11B-2 — RESOLVED-IN-CODE 2026-10-27 (R6FIX.5 — `runs/R6FIX.5.md`;
+  the Stripe-side endpoint update is an owed runbook step,
+  `docs/ops/stripe-webhook-endpoint.md`, riding the launch deploy).**
+  Live-found in the same H11B session: a real Customer-Portal
+  cancel-at-period-end set Stripe `canceled_at` but our `subscriptions` row
+  stayed `cancel_at_period_end=false` — the UI kept "Renews …" while Stripe
+  had stopped renewing. Root cause: endpoint `we_1UH99C2MLe3ETP9Sk4UQBKXs`
+  was created imperatively by PRB.18 (Stripe API, not IaC — Pulumi owns only
+  the secret container) when the processor had three arms; the P1.16/BILL.3
+  arms were never subscribed ⇒ `checkout.session.expired`, `invoice.paid`
+  (renewal grants), `invoice.payment_failed` (the `renewal_failed_at` grace
+  clock), `customer.subscription.created|updated|deleted` never arrive.
+  Fix: `STRIPE_WEBHOOK_EVENT_TYPES` (exported from `@rhema/ledger`) is now
+  the canonical handled set, pinned by a dispatch-completeness test; the
+  ops runbook carries the imperative `stripe webhook_endpoints update` +
+  verify step (Stripe-side state — no deploy dependency; every handler arm
+  already ships on `dc3a8f6`). Owed: run the update, then the first real
+  `customer.subscription.*` event syncs the canceled row live.
+- **F-R6FIX.5-1 — found this run (2026-10-27, R6FIX.5 — `runs/R6FIX.5.md`
+  §F-R6FIX.5-1); cancel half RESOLVED-IN-CODE, plan-change half OPEN →
+  `D-R6FIX.5-1`.** The reverse direction of the same webhook-drift family:
+  in-app `POST /billing/subscription/cancel` → `requestCancellation` wrote
+  `cancel_at_period_end=true` LOCALLY only — `StripePort` had no
+  subscription-mutation method — so Stripe renews at period end anyway:
+  **a user who cancelled in-app is still charged** (REQ-SPEC-32). Fix:
+  `StripePort.setSubscriptionCancelAtPeriodEnd` (Stub+Fetch impls) called
+  inside `requestCancellation`'s tx — a Stripe failure rolls the local flag
+  back; the route maps `StripeRequestError` reject→`stripe_rejected` /
+  unavailable→`stripe_unavailable` honestly; `syncSubscription` now clears
+  `scheduled_tier` when Stripe reports a different effective tier (a
+  Stripe-side change supersedes our local schedule). `changePlan` carries
+  the same local-only gap but a correct propagation needs a Stripe
+  Price-registry design (our Checkout mints inline `price_data` subs,
+  which cannot be price-switched in place) → `D-R6FIX.5-1` OPEN. Owed:
+  deployed cancel re-proof + the Price-registry ticket.
 
 ## GATE DECISIONS
 
