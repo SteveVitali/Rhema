@@ -39,10 +39,11 @@ the *gate* letting the phase transition at all.
    decide" — makes the *note/trail* the check's record. This preserves REQ-SPEC-31(3): a ledger of
    justified `unverifiable` rows closes honestly, commits, and the delivery layer's Unverified
    label + zero-coverage refund still fire downstream.
-3. **`inventoryCount` absent ⇒ coverage fails** (never defaults to a vacuous 0). The field is
-   declared optional on `claimLedgerSidecarSchema` (older ledgers omit it) and documented as
-   required-in-practice in both SKILL.md sidecar sections (edited through
-   `upstream-port.manifest.mjs`; the pin-diff stays clean).
+3. **`inventoryCount` absent or declared-zero ⇒ coverage fails** (never defaults to — or accepts —
+   a vacuous 0; `min(0, cap) = 0` is the same bypass through a second channel, so coverage must
+   prove ≥ 1 claim). The field is declared optional on `claimLedgerSidecarSchema` (older ledgers
+   omit it) and documented as required-in-practice in both SKILL.md sidecar sections (edited
+   through `upstream-port.manifest.mjs`; the pin-diff stays clean).
 4. **Hard gate, not a terminal flag**: the phase contract IS `completionPredicates`; a flag
    parallel to it would be a second gate the contract never reads. The failure path rides the
    existing machinery — `incomplete(artifact_missing)` → research checkpoint → live-budget
@@ -53,9 +54,9 @@ the *gate* letting the phase transition at all.
 
 - A phase can no longer go `done` while claims sit unchecked; the R6CNT.3 shape fails
   deterministically (ordinals named in the retry guidance and the failStep reason).
-- Runs whose agents do not emit `inventoryCount` burn at most one guided retry naming the field —
-  SKILL.md now documents it; a non-emitting agent fails honestly rather than riding a vacuous
-  coverage check.
+- Runs whose agents do not emit `inventoryCount` — or declare it `0` — burn at most one guided
+  retry naming the field — SKILL.md now documents it; a non-emitting/empty-inventory agent fails
+  honestly rather than riding a vacuous coverage check.
 - Draft `grounding` inherits the same gate — the identical defect class existed there.
 - **Honest residual:** `discourse` has no machine-readable outcome contract (markdown artifact,
   no sidecar), so its contested-claim outcomes remain un-gated until a

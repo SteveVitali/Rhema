@@ -164,16 +164,20 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
       }
       case "claim_rows_gte_inventory": {
         // ECON.1 — the required row count is the inventory, clamped by the rigor's claim cap.
+        // R6FIX.4 — a declared ZERO inventory is as unprovable as an absent one: `min(0, cap) = 0`
+        // re-creates the vacuity through a second channel. Coverage must prove ≥1 claim.
         const required =
-          facts.inventoryCount == null
+          facts.inventoryCount == null || facts.inventoryCount === 0
             ? undefined
             : Math.min(facts.inventoryCount, facts.claimCap ?? facts.inventoryCount);
         return pass(
           p,
           facts.claimRowCount != null && required != null && facts.claimRowCount >= required,
-          required == null
+          facts.inventoryCount == null
             ? "claim-ledger inventoryCount absent — coverage is proven, never assumed"
-            : `${facts.claimRowCount} ≥ ${required}${facts.claimCap != null ? ` (capped; inventory ${facts.inventoryCount})` : ""}`,
+            : required == null
+              ? "claim-ledger inventoryCount 0 — an empty inventory proves no coverage"
+              : `${facts.claimRowCount} ≥ ${required}${facts.claimCap != null ? ` (capped; inventory ${facts.inventoryCount})` : ""}`,
         );
       }
       case "claim_ledger_closed": {

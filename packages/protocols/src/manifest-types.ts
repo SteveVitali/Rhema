@@ -31,7 +31,8 @@ export type CompletionPredicate =
   /** P1.13 — at least ONE of the listed artifacts exists non-empty (the figure spec path varies by
    *  kind: spec.vl.json | diagram.mmd | table.md). */
   | { kind: "any_artifact_nonempty"; artifacts: string[] }
-  /** claim-ledger rows ≥ the Phase-0 claim inventory count (or an explicit "N of N checked" footer). */
+  /** claim-ledger rows ≥ the Phase-0 claim inventory count (or an explicit "N of N checked" footer).
+   *  R6FIX.4: the inventory must be supplied AND ≥ 1 — absent or declared-zero fails, never vacuous. */
   | { kind: "claim_rows_gte_inventory"; artifact: string }
   /** R6FIX.4 (F-R6CNT.3-1) — every ledger row carries a REAL disposition: a substantive verdict,
    *  or an `unverifiable` verdict backed by an evidence trail (note/url/normalizedUrl/accessedAt/

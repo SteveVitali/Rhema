@@ -123,7 +123,7 @@ closing it; D-R6SECR.1-1 unaffected.
 - [ ] `claim_ledger_closed` declared on review + fact_check verification
       phases (and the draft grounding ledger — same envelope, same defect
       class) *(engineered)*
-- [ ] `inventoryCount` absent → coverage predicate fails (never vacuous)
+- [ ] `inventoryCount` absent OR declared `0` → coverage predicate fails (never vacuous)
       *(engineered)*
 - [ ] R6CNT.3-shaped ledger (all-`unverifiable` placeholders) → phase
       refused; with dead budget → `research_budget_exhausted` terminal
@@ -177,7 +177,7 @@ closing it; D-R6SECR.1-1 unaffected.
   optional on `claimLedgerSidecarSchema`; both SKILL.md sidecar sections
   document `inventoryCount` + the Closure rule — regenerated through
   `upstream-port.manifest.mjs` (`check-upstream-diff` clean);
-  `PROTOCOLS_VERSION` → `0.4.0+d0c1b01a8c9516df`.
+  `PROTOCOLS_VERSION` → `0.4.0+9c2b880dbee74bd8`.
 - 2026-10-27 — tests: oracle +5, work-reader +5 (real ledger JSONs incl.
   the R6CNT.3 14-placeholder-row shape), harness-loop +3 (refusal →
   guided retry → fail / retry-closes → commit / dead bound →
@@ -198,7 +198,7 @@ closing it; D-R6SECR.1-1 unaffected.
 | Discourse contested-claim outcomes must resolve | **MET-DIFFERENTLY (recorded residual, ADR-123)** — discourse has no machine-readable outcome contract (markdown artifact, no sidecar); its closure cannot be gated until a `02-discourse-report.json` shape exists. Verification's gate blocks the whole-run lie F-R6CNT.3-1 measured; the discourse-side contract is follow-up work, named in the finding resolution + ADR-123 rather than silently scoped out |
 | Hard gate vs terminal flag | **MET** — hard gate chosen (the phase contract's own vocabulary); rationale + alternatives in ADR-123 |
 | Closed ledger passes | **MET** — deterministic tests (justified `unverifiable` incl.) |
-| Failing-open not acceptable | **MET** — absent closure fact AND absent `inventoryCount` both fail (proven, never assumed) |
+| Failing-open not acceptable | **MET** — absent closure fact, absent `inventoryCount`, AND a declared-zero inventory all fail (proven, never assumed — `min(0, cap) = 0` is the same bypass through a second channel) |
 | No fake closure on the historical record | **MET** — no re-stamp owed: the card already carries the write-once `unverified` label + blocking findings; recorded honestly |
 
 ## Evidence log
@@ -211,7 +211,7 @@ closing it; D-R6SECR.1-1 unaffected.
 - `node scripts/check-upstream-diff.mjs` — 22 ported files reconcile,
   only sanctioned edits.
 - `node scripts/compute-protocols-version.mjs --write` — froze
-  `0.4.0+d0c1b01a8c9516df` (43 trio files).
+  `0.4.0+9c2b880dbee74bd8` (43 trio files).
 - `bash ~/agent-skills/skills/build-memory/scripts/adr-index.sh docs/adr` —
   README regenerated with ADR-123.
 

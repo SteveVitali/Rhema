@@ -125,6 +125,16 @@ describe("F-R6CNT.3-1 / R6FIX.4 — the done-gate requires ledger closure, not r
     expect(ev.detail).toContain("inventoryCount absent");
   });
 
+  it("coverage is never vacuous — a DECLARED inventoryCount of 0 fails the same way", () => {
+    // an agent writing `inventoryCount: 0` + `claims: []` is the same bypass through a second
+    // channel: `min(0, cap) = 0` must not pass. An empty inventory proves no coverage.
+    const ev = createFactsEvaluator({ claimRowCount: 0, inventoryCount: 0 })(claimPredicate);
+    expect(ev.passed).toBe(false);
+    expect(ev.detail).toContain("inventoryCount 0");
+    const v = evaluateOracle(input({}), createFactsEvaluator({ claimRowCount: 0, inventoryCount: 0 }));
+    expect(v.outcome).toBe("incomplete");
+  });
+
   it("claim_ledger_closed: an all-closed ledger passes", () => {
     const facts: PredicateFacts = { unclosedClaimOrdinals: [] };
     const v = evaluateOracle(input({ predicates: [closurePredicate] }), createFactsEvaluator(facts));

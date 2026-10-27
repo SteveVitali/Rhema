@@ -34,7 +34,7 @@ measured 0/0). ADR-123 records the design.
   through `upstream-port.manifest.mjs`: `inventoryCount` in the exact-shape example + the
   **Closure** contract (a bare `unverifiable` row is a placeholder, not a disposition).
   `check-upstream-diff` clean; `PROTOCOLS_VERSION` re-frozen `0.4.0+ec61156725a895ab` →
-  `0.4.0+d0c1b01a8c9516df` per the regenerated trio.
+  `0.4.0+9c2b880dbee74bd8` per the regenerated trio.
 
 ## How the R6CNT.3 shape fails now
 

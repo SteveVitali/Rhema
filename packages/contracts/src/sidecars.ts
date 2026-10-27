@@ -137,7 +137,7 @@ export const claimLedgerSidecarSchema = envelope("claim_ledger").extend({
   /** R6FIX.4 (F-R6CNT.3-1) — the Phase-0 claim inventory's row count the coverage predicate
    *  `claim_rows_gte_inventory` reads as its denominator. Optional in the envelope (older
    *  ledgers omit it) but REQUIRED in practice: the oracle fails the coverage leg when the
-   *  fact is absent — coverage is proven, never assumed. */
+   *  fact is absent OR declared 0 — coverage is proven (≥ 1 claim), never assumed. */
   inventoryCount: z.preprocess(coerceNum, z.number().int().nonnegative()).optional(),
   claims: z.array(claimRowSchema),
 });

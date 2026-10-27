@@ -158,8 +158,9 @@ numeric field, but stay close to these). Numeric fields (\`tier\`, \`score\`, \`
 \`\`\`
 
 Top-level **\`inventoryCount\`**: the Phase-0 claim inventory's row count — the denominator the phase's
-coverage check (\`claim_rows_gte_inventory\`) reads. Emit it (an integer, or a numeric string). Without it
-the phase cannot prove coverage and will not complete.
+coverage check (\`claim_rows_gte_inventory\`) reads. Emit it (an integer ≥ 1, or a numeric string).
+Absent — or a declared \`0\` (an empty inventory proves no coverage) — the phase cannot prove coverage
+and will not complete.
 
 Required per claim row: \`ordinal\` (integer ≥ 0), \`text\` (string), \`tier\` (1, 2, or 3), \`verdict\`. All else is
 optional. \`verdict\` ∈ {\`verified\`, \`substantially_accurate\`, \`misleading_in_context\`, \`unsupported\`,
