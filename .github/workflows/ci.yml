@@ -263,7 +263,12 @@ jobs:
           declare -A DIGESTS
           for svc in run-task egress-proxy api web worker fetcher convert export collab; do
             # JOURNEY.1 (REQ-ARCH-39) — bake the commit into the image; /healthz serves it.
-            docker build -f "apps/$svc/Dockerfile" --build-arg GIT_SHA="${{ github.sha }}" \
+            # R6FIX.2 — CI has no vendored agent SDK (gitignored operator-held state): the
+            # run-task image here is an EXPLICIT placeholder (provenance record only, never
+            # deployed); the Dockerfile otherwise fails closed on a missing SDK.
+            extra=""
+            [ "$svc" = "run-task" ] && extra="--build-arg ALLOW_PLACEHOLDER_SDK=1"
+            docker build -f "apps/$svc/Dockerfile" --build-arg GIT_SHA="${{ github.sha }}" $extra \
               -t "rhema/$svc:${{ github.sha }}" .
             digest=$(docker image inspect "rhema/$svc:${{ github.sha }}" --format '{{ index .Id }}')
             echo "$svc digest: $digest"

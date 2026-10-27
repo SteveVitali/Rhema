@@ -32,9 +32,13 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
     "denies uid agent the secrets file, isolates the scoped mount namespace, and asserts the distroless shape",
     () => {
       // The production Dockerfile — the same artifact the images job builds + the pod runs.
+      // R6FIX.2 — the vendored-SDK placeholder is opt-in (the Dockerfile fails closed without
+      // it): this leg checks privsep, not the engine, so it explicitly builds the no-SDK image
+      // (CI checkouts never carry the gitignored vendor trees).
       execFileSync(
         "docker",
-        ["build", "-f", "apps/run-task/Dockerfile", "-t", IMAGE, "."],
+        ["build", "-f", "apps/run-task/Dockerfile", "--build-arg", "ALLOW_PLACEHOLDER_SDK=1",
+         "-t", IMAGE, "."],
         { cwd: repoRoot, stdio: "pipe" },
       );
       // The pod's security posture, mirrored EXACTLY: readOnlyRootFilesystem + tmpfs work dirs +

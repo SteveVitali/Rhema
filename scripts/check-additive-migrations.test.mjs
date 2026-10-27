@@ -111,6 +111,7 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0056_cite1_phase_class.sql",
       "packages/db/migrations/0057_cite1_citation_completeness.sql",
       "packages/db/migrations/0058_pgboss_purge_probe.sql",
+      "packages/db/migrations/0059_live_docs_y_epoch.sql",
     ]);
   });
 

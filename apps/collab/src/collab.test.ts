@@ -29,7 +29,7 @@ import {
   writeRestorePoint,
 } from "./restore.js";
 import { applyBlockPatchToDoc, blockPatchGuards } from "./blocks.js";
-import { docToCanonicalMarkdown, markdownToUpdate, pageFragment } from "@rhema/editor";
+import { docToCanonicalMarkdown, markdownToUpdate, pageFragment, replaceDocContent } from "@rhema/editor";
 import type { CollabDb } from "./sql.js";
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -787,6 +787,214 @@ describe("collab service (P1.03)", () => {
       await conn2.disconnect();
     }
   });
+
+  // R6FIX.2 (F-R6H11-1) — the R6H11 prod regression: the api's restore route rewrites the STORED
+  // y_state out-of-band, but a loaded runtime's in-memory doc stayed stale and its next
+  // onStoreDocument flush rewrote the stale bytes over the restored state (resurrection). The fix is
+  // the `y_epoch` marker on live_docs: out-of-band replaces bump it; every persistence seam
+  // (store / restore-point mark / SS1 reply) reconciles the loaded doc against storage FIRST.
+  it("an out-of-band restore converges the loaded doc — store flushes restored bytes, a stale replica merges tombstoned (F-R6H11-1)", async () => {
+    const conn = await openDoc(fx);
+    try {
+      // the client typed a marker paragraph and it persisted — this IS the pre-restore state the
+      // loaded runtime will hold when the restore lands out-of-band.
+      const edited = BASE_MD + "\nMARKER-XYZ paragraph.\n";
+      typeAll(conn.document!, edited);
+      await storeNow(fx, conn.document!);
+      expect(
+        (await fx.exec.query(`select y_epoch from live_docs where id = $1`, [fx.liveDocId]))
+          .rows[0]!.y_epoch,
+      ).toBe(0);
+
+      // A stale replica — the doc a client that synced pre-restore would still hold offline.
+      const staleReplica = new Y.Doc();
+      Y.applyUpdate(staleReplica, Y.encodeStateAsUpdate(conn.document!));
+
+      // THE OUT-OF-BAND RESTORE — the api route's contract: a CONVERGENT replace over the stored
+      // state (old items tombstone so stale replicas can't resurrect them) + the epoch bump that
+      // tells every loaded runtime its in-memory doc is behind.
+      const stored = (
+        await fx.exec.query(`select y_state from live_docs where id = $1`, [fx.liveDocId])
+      ).rows[0]!.y_state as Uint8Array;
+      const tmp = new Y.Doc();
+      Y.applyUpdate(tmp, new Uint8Array(stored));
+      replaceDocContent(tmp, BASE_MD); // restored content = BASE_MD (the marker is removed)
+      await fx.exec.query(
+        `update live_docs set y_state = $2, state_vector = $3, y_epoch = y_epoch + 1
+         where id = $1`,
+        [
+          fx.liveDocId,
+          Buffer.from(Y.encodeStateAsUpdate(tmp)),
+          Buffer.from(Y.encodeStateVector(tmp)),
+        ],
+      );
+      tmp.destroy();
+
+      // the in-memory doc is still stale — the pre-fix bug would flush THESE bytes next.
+      expect(docToCanonicalMarkdown(conn.document!)).toContain("MARKER-XYZ");
+
+      // the next store converges FIRST — persisted state stays restored, the loaded doc heals.
+      const outcome = await storeNow(fx, conn.document!);
+      expect(outcome.forked).toBe(false);
+      expect(docToCanonicalMarkdown(conn.document!)).toBe(BASE_MD);
+      const live = (
+        await fx.exec.query(`select y_state, y_epoch from live_docs where id = $1`, [fx.liveDocId])
+      ).rows[0]! as { y_state: Uint8Array; y_epoch: number };
+      expect(live.y_epoch).toBe(1);
+      const persisted = new Y.Doc();
+      Y.applyUpdate(persisted, new Uint8Array(live.y_state));
+      expect(docToCanonicalMarkdown(persisted)).toBe(BASE_MD);
+      persisted.destroy();
+
+      // a reconnecting client whose doc predates the restore merges the stored update — the
+      // removed items tombstone; nothing resurrects (this is why the restore writes a convergent
+      // update instead of a fresh doc's bytes).
+      const serverDoc = new Y.Doc();
+      Y.applyUpdate(serverDoc, new Uint8Array(live.y_state));
+      const missing = Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(staleReplica));
+      serverDoc.destroy();
+      Y.applyUpdate(staleReplica, missing);
+      expect(docToCanonicalMarkdown(staleReplica)).toBe(BASE_MD);
+      staleReplica.destroy();
+
+      // THE NO-SHARED-HISTORY EDGE: even a stored update built from a FRESH doc (the pre-fix
+      // writer's shape — no tombstones for the doc's items) converges on canonical markdown:
+      // the merge check detects the divergence and the fragment-diff replace tombstones the
+      // stale items anyway.
+      typeAll(conn.document!, edited);
+      await storeNow(fx, conn.document!); // epoch stays 1 — the doc carries the marker again
+      await fx.exec.query(
+        `update live_docs set y_state = $2, state_vector = $3, y_epoch = y_epoch + 1
+         where id = $1`,
+        [fx.liveDocId, Buffer.from(markdownToUpdate(BASE_MD)), Buffer.alloc(0)],
+      );
+      await storeNow(fx, conn.document!);
+      expect(docToCanonicalMarkdown(conn.document!)).toBe(BASE_MD);
+      const live2 = (
+        await fx.exec.query(`select y_state from live_docs where id = $1`, [fx.liveDocId])
+      ).rows[0]!.y_state as Uint8Array;
+      const persisted2 = new Y.Doc();
+      Y.applyUpdate(persisted2, new Uint8Array(live2));
+      expect(docToCanonicalMarkdown(persisted2)).toBe(BASE_MD);
+      persisted2.destroy();
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("beforeSync converges the loaded doc on the SS1 reply (type 0) and leaves SS2 alone (type 2)", async () => {
+    const conn = await openDoc(fx);
+    try {
+      typeAll(conn.document!, BASE_MD + "\nMARKER-XYZ paragraph.\n");
+      await storeNow(fx, conn.document!);
+
+      // a second out-of-band restore bumps the epoch while the runtime stays loaded.
+      const stored = (
+        await fx.exec.query(`select y_state from live_docs where id = $1`, [fx.liveDocId])
+      ).rows[0]!.y_state as Uint8Array;
+      const tmp = new Y.Doc();
+      Y.applyUpdate(tmp, new Uint8Array(stored));
+      replaceDocContent(tmp, BASE_MD);
+      await fx.exec.query(
+        `update live_docs set y_state = $2, state_vector = $3, y_epoch = y_epoch + 1
+         where id = $1`,
+        [
+          fx.liveDocId,
+          Buffer.from(Y.encodeStateAsUpdate(tmp)),
+          Buffer.from(Y.encodeStateVector(tmp)),
+        ],
+      );
+      tmp.destroy();
+      expect(docToCanonicalMarkdown(conn.document!)).toContain("MARKER-XYZ");
+
+      // SS2 (an incremental update broadcast) is NOT a convergence point — the throttle contract.
+      await fx.service.extension.beforeSync!({
+        documentName: `draft:${DRAFT}`,
+        document: conn.document!,
+        type: 2,
+      } as never);
+      expect(docToCanonicalMarkdown(conn.document!)).toContain("MARKER-XYZ");
+
+      // SS1 (the reply that seeds a reconnecting client) MUST converge first — otherwise the
+      // reply is computed from stale in-memory items and the resurrected text ships on the wire.
+      await fx.service.extension.beforeSync!({
+        documentName: `draft:${DRAFT}`,
+        document: conn.document!,
+        type: 0,
+      } as never);
+      expect(docToCanonicalMarkdown(conn.document!)).toBe(BASE_MD);
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("a real provider holding pre-restore state reconnects and converges to the restored content", async () => {
+    const conn = await openDoc(fx);
+    const nodeServer = serve({ fetch: fx.service.app.fetch, port: 0 });
+    const wss = new WebSocketServer({ noServer: true });
+    (nodeServer as http.Server).on("upgrade", (req, socket, head) =>
+      wss.handleUpgrade(req, socket, head, (ws) => fx.service.handleUpgrade(ws, req)),
+    );
+    await new Promise<void>((resolve) => {
+      if ((nodeServer as http.Server).listening) resolve();
+      else nodeServer.once("listening", () => resolve());
+    });
+    const port = (nodeServer.address() as AddressInfo).port;
+    const url = `ws://127.0.0.1:${port}/collab`;
+
+    let provider: HocuspocusProvider | null = null;
+    try {
+      // the loaded doc takes a client edit that the restore then removes.
+      typeAll(conn.document!, BASE_MD + "\nMARKER-XYZ paragraph.\n");
+      await storeNow(fx, conn.document!);
+
+      // the out-of-band restore — convergent write + epoch bump while the doc stays LOADED.
+      const stored = (
+        await fx.exec.query(`select y_state from live_docs where id = $1`, [fx.liveDocId])
+      ).rows[0]!.y_state as Uint8Array;
+      const tmp = new Y.Doc();
+      Y.applyUpdate(tmp, new Uint8Array(stored));
+      replaceDocContent(tmp, BASE_MD);
+      await fx.exec.query(
+        `update live_docs set y_state = $2, state_vector = $3, y_epoch = y_epoch + 1
+         where id = $1`,
+        [
+          fx.liveDocId,
+          Buffer.from(Y.encodeStateAsUpdate(tmp)),
+          Buffer.from(Y.encodeStateVector(tmp)),
+        ],
+      );
+      tmp.destroy();
+
+      // a client that had synced the pre-restore doc reconnects — its SS1 triggers the converge
+      // BEFORE the reply, so the diff it receives tombstones the removed paragraph. The replica
+      // holds the SERVER's items (synced state, not an independently-generated doc — divergent
+      // items would be legitimate concurrent inserts, not resurrectable deletions).
+      const staleDoc = new Y.Doc();
+      Y.applyUpdate(staleDoc, Y.encodeStateAsUpdate(conn.document!));
+      provider = new HocuspocusProvider({
+        url,
+        name: `draft:${DRAFT}`,
+        token: TOKEN,
+        WebSocketPolyfill: WebSocket,
+        document: staleDoc,
+      });
+      await new Promise<void>((resolve, reject) => {
+        provider!.on("synced", () => resolve());
+        provider!.on("authenticationFailed", (e: { reason: string }) =>
+          reject(new Error(e.reason)),
+        );
+        setTimeout(() => reject(new Error("reconnect never synced")), 8000);
+      });
+      // the wire state — not a db read — is the restored content.
+      expect(docToCanonicalMarkdown(provider.document)).toBe(BASE_MD);
+      staleDoc.destroy();
+    } finally {
+      provider?.destroy();
+      await conn.disconnect();
+      (nodeServer as http.Server).close();
+    }
+  }, 15_000);
 
   // SLO.1 — the §13.5 autosave signal's collab leg: the Page saves through `onStoreDocument`, so a real
   // (unlocked) store lands one `autosave_save_ms` sample labelled `detail='collab'` — the grant the

@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate GREEN post GD-GOLDEN-BAND.R6 (major band max 12; same scores re-gated 4/4 PASS $0 — D-P0.15-4 DONE)
-lastCompleted:   R6H11              # 2026-10-27; HUMAN-H11 automatable browser legs B6–B9/B11/B12 on prod e04a8c8 + live findings F-R6H11-1/-2; unmerged (OPERATOR)
+lastCompleted:   R6FIX.2            # 2026-10-27; F-R6H11-1/-2 resolved-in-code (convergent collab restore + fail-closed run-task SDK gate); live re-proofs owed post-deploy; unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6h11-auto-legs  # R6H11 (H11 auxiliary; stacks on r6dep-2-tip-deploy); next row forks here — PROD SERVES e04a8c8, SQL REGIONAL, alert channels wired, proxy ILB live; run-task image cannot execute runs (F-R6H11-2 OPEN)
+chainTip:        stevevitali/r6fix-2-runtask-sdk  # R6FIX.2; next row forks here — PROD SERVES e04a8c8; run-task can't execute runs until a vendored-SDK build deploys (F-R6H11-2 resolved-in-code)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T05:15:00Z         # R6H11 — H11 browser legs B6–B9/B11/B12 discharged on prod e04a8c8 ($0.26 ≤ $5); F-R6H11-1 + F-R6H11-2 (run-task can't execute runs) filed OPEN; unmerged (OPERATOR)
+updatedAt:       2026-10-27T05:51:00Z         # R6FIX.2 — F-R6H11-1 (collab restore convergence) + F-R6H11-2 (run-task no-SDK image) RESOLVED-IN-CODE, deterministic tests + fail-closed image gate; live re-proof owed post-deploy; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -403,6 +403,21 @@ pointers; substance unchanged.)_
   the restore in storage too. Likely fix shape: the apply must evict/rebind the collab
   runtime (close + unload the document runtime, or version the doc identity) rather than
   only rewriting `y_state`. Owed: root-cause + fix ticket.
+  **RESOLVED-IN-CODE 2026-10-27 (R6FIX.2 — `runs/R6FIX.2.md`; live re-proof owed
+  post-deploy).** Root cause confirmed: the apply's wholesale `y_state` swap carried no
+  tombstones (fresh-doc item ids) AND the loaded runtime's in-memory doc was never
+  reconciled — a stale flush + a stale replica merge BOTH resurrected removed text.
+  Fix: `live_docs.y_epoch` (migration 0059) + convergent restore — the api applies the
+  restored markdown through `updateYFragment` over the STORED state (tombstoned items
+  merge as deletions on every replica) and bumps the epoch in the same statement; the
+  collab runtime records its loaded epoch and `convergeReplacedDoc` reconciles the
+  in-memory doc (with a canonical-markdown convergence check for no-shared-history
+  writes) at the top of `storeDocument`, `markRestorePoint`, and `beforeSync` SS1 —
+  so no stale flush ever reaches `live_docs` and reconnects converge before their
+  first sync reply. Deterministic tests: api apply → epoch bump + tombstoned merge;
+  collab out-of-band restore → store flushes restored bytes; real-provider reconnect
+  over a socket converges to restored content. Owed: live re-proof post-deploy
+  (rides the next deploy's image set).
 - **F-R6H11-2 — OPEN (2026-10-27, R6H11 live-found on prod `e04a8c8` — `runs/R6H11.md`
   §Live finding + `reports/2026-10-27_R6H11/r6-eventsource/`).** The deployed `run-task`
   image (`sha256:c7cf69c6…`, deployed 2026-10-26T15:25Z) ships **without the vendored
@@ -418,6 +433,22 @@ pointers; substance unchanged.)_
   released in full). Fix: rebuild/redeploy `run-task` with the vendored SDK, then
   re-drive a bounded paid leg to prove the meter path. Owed: image fix (operator
   deploy) + the in-phase meter-tick half of D-PRB.04-2.
+  **RESOLVED-IN-CODE 2026-10-27 (R6FIX.2 — `runs/R6FIX.2.md`; live re-proof owed
+  post-deploy).** Root cause: the SDK is gitignored operator-held state and
+  `e04a8c8`'s `gcloud builds submit` ran from a clean worktree (`/private/tmp/
+  rhema-e04a8c8` — vendor/ = README only, confirmed on disk); the Dockerfile's
+  warn-and-continue placeholder contract built+shipped the no-SDK image, and the
+  provenance gate (api/web `/healthz` gitSha parity) never inspected run-task
+  contents — green provenance on a broken image. **Evidence-correctness:** the
+  gate gap is the finding's second half — a SHA-parity check is not an
+  image-contents check. Fix: `apps/run-task/Dockerfile` fails closed on a missing
+  SDK unless `ALLOW_PLACEHOLDER_SDK=1` is explicit; `image-set.yaml` asserts the
+  SDK trees in the uploaded context BEFORE building (`_ALLOW_PLACEHOLDER_SDK`
+  default `"0"`) and asserts the SDK paths inside the BUILT image (agent-uid exec
+  via the shipped `setpriv`) before push; CI images job + privsep docker test opt
+  in explicitly; runbook (PROD-BRINGUP §2b) + INTEGRATION_PLAN §R4.8 + vendor
+  README record the contract. Owed: a `run-task` image build+deploy carrying this
+  SHA's SDK + the in-phase meter-tick leg (D-PRB.04-2 tail).
 
 ## GATE DECISIONS
 
@@ -941,3 +972,5 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-26T19:4xZ — **boundary confirmed — R6DEP.2 green at final head `6b9baed`.** `ci-boundary --ledger` re-reads **pass** (run 40376522886 — all seven legs + `ci-pass` anchor; the teardown-final commit's fresh run; the earlier `51eaa79` head read pass at run 40365895145, and the second read hit the 2700s cap with `integration` pending → job-polled green → re-read, R6CNT.3/R6INF.2 precedent; record `logs/ci-R6DEP.2.json` refreshed). Final: PR #219 head `6b9baed` green, **unmerged (OPERATOR)**; `nextTicket` stays `196a_HUMAN-H12`. **2026-10-26T20:0xZ addendum:** the boundary-record commit pushed docs-only head `1acc6a6`; `ci-boundary --ledger` re-reads **pass** at that head (run 40384815811 — all seven legs + anchor, cache-fast docs-only run; record `logs/ci-R6DEP.2.json` refreshed). harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T05:15Z — **R6H11 done — the automatable half of HUMAN-H11's session-2 browser legs ran against prod `e04a8c8`; two launch-relevant live defects surfaced.** Branch `stevevitali/r6h11-auto-legs` · base `stevevitali/r6dep-2-tip-deploy` @ `8430771` (the GD-LCH-GO.R6 boundary commit) · **discharged w/ committed evidence under `reports/2026-10-27_R6H11/`:** B6 source-editor mode-switch+typed round-trip (journey T17 green, $0) · B7 versions rail on a seeded writable dossier (chips/⚑/diff/restore preview+apply+undo point — live defect F-R6H11-1: apply leaves `live_docs.y_state` unconverged, reconnects resurrect restored-away text) · B8 PUT override persist + REQ-SPEC-1 refusal + standing-note lifecycle + explainer dismiss persists + Needs-you gate card · B9 nine settings surfaces 200 + `defaultModelTier` write round-trip · B11 browser `EventSource` on the live run (GET `…/events?after=11` `accept:text/event-stream` on the wire; 10 feed rows; cursor `?after=2→22` across reconnects; **zero document loads** over 210 s; terminal `cancelled` card + "stopped by you" decision line observed live) · B12 reconciliation: declared cap $4.50/headroom 4.5 vs measured `usage_records.list_cost_usd` **$0.259587** (12 proxy rows, 36 cr — preflight only; `steps.credits`=0) · total spend **$0.259587 ≤ $5** · **F-R6H11-2 (launch-blocking):** deployed `run-task` image `sha256:c7cf69c6…` lacks the vendored agent SDK — intake fails ~1 s `errorClass:infra`; **no run can execute on prod**; reaper re-enqueue→`resume_partial` backstop worked per §12.4; run resolved via UI gate card `action=stop` → `cancelled`, 882-cr hold fully released · **funding:** one audited `admin-cli house-grant` 4000 cr on the is_test jrn-a billing account (ledger `01M5XTCJPGW7K1S7WY96XBTHKA`, audit `01M5XTCJTEMNSBXV1BRFKRJ1J8`, actor `devin-cli:r6h11`) · **R6 paid leg** `01M5XTD893J1F5SKMXCHSS32VH` dispatched `--paid --headroom 4.5` → journey `fail` ("meter never advanced within a single phase") = the F-R6H11-2 evidence, honestly recorded · **still operator-owed (never faked):** B1 Google OAuth + 409 merge + revoked-grant, B2–B4 real-money Stripe, B5 Safari caret, B10 real phone ~375–390 px, P1.20 email-change/support/export/delete sub-legs, D-PRB.04-2 in-phase meter ticks (blocked by F-R6H11-2), X1 nonprod Stripe secret, X2 operator-minted D-SEC.2-1 invite · **Deferrals:** dated notes on D-PRB.07-1 (B6 half discharged, autosave/lock/revise halves stay PARTIAL), D-P1.08-1 (rail/restore legs discharged w/ F-R6H11-1), D-P1.09-1 (four legs discharged), D-P1.20-1 (leg (a) discharged, (b)–(f) stay owed), D-PRB.04-2 (browser EventSource half discharged; meter-tick residual + chip-render residual stay) · GATE-LAUNCH threshold-1 dated note · `readouts/HUMAN-H11.md` rows updated for discharged legs only · `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-27T05:3xZ — **boundary confirmed — R6H11 green at head `49cfaab`.** `ci-boundary --ledger` reads **pass** (run 40454430285 — all seven legs + `ci-pass` anchor; record `logs/ci-R6H11.json`). PR #220 unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`. harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-27T06:2xZ — **R6FIX.2 done — both R6H11 live findings root-caused and fixed in code (insert row; zero prod writes, $0).** Branch `stevevitali/r6fix-2-runtask-sdk` · PR #221 · base `stevevitali/r6h11-auto-legs` @ `3e6f35c` · **F-R6H11-2 root cause (confirmed on disk):** the vendored agent SDK is gitignored operator-held state (`apps/run-task/vendor/claude-agent-sdk*/`); `e04a8c8`'s `gcloud builds submit` ran from a clean detached worktree (`/private/tmp/rhema-e04a8c8`, vendor/ = README only) → the Dockerfile's placeholder contract WARNING'd and built anyway → `sha256:c7cf69c6…` shipped with no engine; provenance stayed green because `check-deploy-provenance` compares `/healthz` `build.gitSha` on api+web — never inspected run-task contents (the recorded gate gap; `80db0d5`→`e04a8c8` changed the *context*, not the Dockerfile) · **F-R6H11-2 fix:** Dockerfile `ARG ALLOW_PLACEHOLDER_SDK=0` fails closed on missing vendor trees; `image-set.yaml` `_ALLOW_PLACEHOLDER_SDK:"0"` + pre-build context assert + post-build image-contents probe (`docker run` → `setpriv` uid 10002 → `sdk.mjs` readable + `claude` executable) before push; CI images job + `privsep.docker.test.ts` opt in explicitly; runbook + INTEGRATION_PLAN §R4.8 + vendor README updated · **F-R6H11-1 root cause:** restore apply replaced `live_docs.y_state` with a fresh-doc update (zero tombstones) — loaded runtimes flushed stale state back over the write; replicas resurrected removed items · **F-R6H11-1 fix:** migration 0059 `live_docs.y_epoch`; `@rhema/editor` `replaceDocContent` (`updateYFragment` over stored state); api restore diffs over stored `y_state` + bumps `y_epoch` in one statement; collab `DocRuntime.yEpoch` + `convergeReplacedDoc` at `storeDocument`/`markRestorePoint`/`beforeSync`-SS1 seams + canonical-markdown fallback · **tests:** api +1 convergent-apply leg; collab +3 (out-of-band convergence incl. no-shared-history edge, SS1/SS2 contract, real-provider reconnect over a socket) · **verify:** turbo build/lint/typecheck 135/135 · vitest touched 323/323 (incl. privsep docker test on the real image) · infra/config 49/49 · check-build-memory 0 violations · append-only vs `c1f20f5` OK · **first boundary read FAILED honestly:** `typecheck / lint / unit` red on `scripts/check-additive-migrations.test.mjs` — the `--newer-than 0044` census expectation listed 0045..0058 without the new 0059 (run 40457832512, head `0dcb34a`); fixed by pinning 0059 in the census (`d889969`) · **Deferrals:** dated tails on D-PRB.04-2 (meter-tick unblock landed; re-drive owed until a vendored image deploys) + D-P1.08-1 (F-R6H11-1 resolved-in-code) · F-R6H11-1/-2 → RESOLVED-IN-CODE; GATE-LAUNCH threshold-1 dated note · **live re-proofs owed post-deploy** — the fixes ride the next deploy (R6LCH.1); prod still serves the no-SDK `e04a8c8` run-task image · `nextTicket` stays `196a_HUMAN-H12` · unmerged (OPERATOR) · harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-27T07:13Z — **boundary confirmed — R6FIX.2 green at head `d889969`.** `ci-boundary --ledger` reads **pass** (run 40462016176 — all seven legs + `ci-pass` anchor: fast-path, typecheck/lint/unit, contracts, public-safe, integration, images; the `images` leg exercised the new `ALLOW_PLACEHOLDER_SDK=1` opt-in path; record `logs/ci-R6FIX.2.json`). PR #221 green, unmerged (OPERATOR); `nextTicket` stays `196a_HUMAN-H12`. **2026-10-27T07:3xZ addendum:** the records-commit pushed docs-only head `e52e49e`; `ci-boundary --ledger` re-reads **pass** at that head (run 40465982787 — all seven legs + `ci-pass` anchor; record `logs/ci-R6FIX.2.json` refreshed). harness: devin-desktop/swe-2-high/subagent.

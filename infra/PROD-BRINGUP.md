@@ -189,6 +189,17 @@ gcloud artifacts docker images list us-central1-docker.pkg.dev/rhema-507501/rhem
   --include-tags --format='table(package,tag,digest)'
 ```
 
+**run-task vendored-SDK gate (F-R6H11-2 — never ship a no-engine image).** When `run-task`
+is in `_SERVICES`, the build asserts the vendored agent SDK exists in the uploaded context
+BEFORE building (`apps/run-task/vendor/claude-agent-sdk/sdk.mjs` + `…-linux-x64/claude`),
+and asserts the paths inside the BUILT image (agent-uid exec via the shipped `setpriv`)
+before push. Both fail the build — the `e04a8c8` deploy shipped a no-SDK image because the
+submit ran from a clean worktree (the SDK is gitignored operator-held state; worktrees and
+fresh clones do NOT carry it) and the old contract only warned. **Remediation:** run the
+submit from the checkout where the SDK was populated per `apps/run-task/vendor/README.md`,
+or copy the vendor trees into the build checkout first. `_ALLOW_PLACEHOLDER_SDK=1` is the
+explicit opt-out for builds that never launch runs (CI provenance, preview posture stages).
+
 The Artifact Registry repo `rhema-prod` is created by the program itself — so run `pulumi up` once for
 the substrate (services will be unhealthy on placeholder images; expected), push images, pin
 `rhema:serviceImages`/`runTaskImageDigest`/`proxyImage`, then `pulumi up` again to roll the real

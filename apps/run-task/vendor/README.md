@@ -27,9 +27,14 @@ The `apps/run-task/Dockerfile` runtime stage copies `vendor/` and:
   that at build time (the build fails if it is missing execute permission). The harness pins this path via
   `options.pathToClaudeCodeExecutable` (`sdk-adapter.VENDORED_CLAUDE_BINARY`).
 
-If either is absent (the Phase-0 stand-in / CI placeholder build), the image still builds and the run loop
-fails fast at `loadSdkQuery()` (`sdk-adapter.ts`) with a clear error rather than running the model with no
-engine. The native-binary tree is gitignored alongside the wrapper.
+If either is absent the build **fails closed** (R6FIX.2 / F-R6H11-2): the Dockerfile exits 1 unless the
+caller explicitly opts into a placeholder image with `--build-arg ALLOW_PLACEHOLDER_SDK=1`
+(`image-set.yaml`'s `_ALLOW_PLACEHOLDER_SDK` for Cloud Build; CI provenance + preview posture builds
+opt in deliberately). The run loop still fails fast at `loadSdkQuery()` (`sdk-adapter.ts`) on an
+explicit placeholder image rather than running the model with no engine. The native-binary tree is
+gitignored alongside the wrapper — **a clean worktree/clone does not carry these trees**, so image
+builds must run from a checkout where they were populated (the e04a8c8 no-SDK image came from a
+clean worktree's `gcloud builds submit` under the old warn-and-continue contract).
 
 This directory is intentionally kept in the repo with only this README so the guarded `COPY vendor/`
 always has a source; the SDK tree itself is gitignored (`apps/run-task/vendor/claude-agent-sdk/`).

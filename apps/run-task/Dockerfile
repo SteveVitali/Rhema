@@ -24,7 +24,13 @@
 # mount plan + scrubbed env). dumb-init is the static PID-1 reaper/signal forwarder.
 
 # ---- builder: install the workspace, build the run-task slice + its deps, produce a pruned prod bundle ----
+# R6FIX.2 (F-R6H11-2) — the vendored-SDK placeholder is OPT-IN, never silent: a build whose
+# context lacks the SDK FAILS unless the caller explicitly passes
+# `--build-arg ALLOW_PLACEHOLDER_SDK=1` (CI provenance builds / preview posture stages that
+# never launch a run). The e04a8c8 deploy shipped a no-SDK image because a clean worktree's
+# `gcloud builds submit` hit only the old warn-and-continue path.
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS builder
+ARG ALLOW_PLACEHOLDER_SDK=0
 WORKDIR /repo
 ENV CI=1
 RUN corepack enable
@@ -56,12 +62,23 @@ RUN mkdir -p \
   && chown -R 10002:10002 /img/home/agent \
   # The vendored SDK wrapper → node_modules (the agent uid reads it under uid 10002), and the native
   # `claude` binary at its pinned path (0755, agent-owned — the `assert` stage proves the exec). A missing
-  # vendored tree is a placeholder build: the run loop fails fast at loadSdkQuery(), never here.
+  # vendored tree FAILS the build (F-R6H11-2) unless the caller explicitly opted into a placeholder
+  # image — a no-engine image must be a decision, never an accident of the submit host's checkout.
+  && sdk_missing="" \
+  && [ -d /repo/apps/run-task/vendor/claude-agent-sdk ] || sdk_missing="$sdk_missing claude-agent-sdk" \
+  && [ -f /repo/apps/run-task/vendor/claude-agent-sdk-linux-x64/claude ] || sdk_missing="$sdk_missing claude-agent-sdk-linux-x64/claude" \
+  && if [ -n "$sdk_missing" ] && [ "${ALLOW_PLACEHOLDER_SDK}" != "1" ]; then \
+       echo "FATAL: run-task vendored SDK absent from the build context:${sdk_missing}." >&2 \
+       && echo "The SDK is gitignored operator-held state — populate it per apps/run-task/vendor/README.md" >&2 \
+       && echo "on the submit host (a clean worktree/clone does not carry it), or build with" >&2 \
+       && echo "--build-arg ALLOW_PLACEHOLDER_SDK=1 for a deliberately no-engine image." >&2 \
+       && exit 1; \
+     elif [ -n "$sdk_missing" ]; then \
+       echo "WARNING: vendored SDK absent:${sdk_missing} — explicit placeholder build (ALLOW_PLACEHOLDER_SDK=1; no live run)"; \
+     fi \
   && if [ -d /repo/apps/run-task/vendor/claude-agent-sdk ]; then \
        cp -r /repo/apps/run-task/vendor/claude-agent-sdk /img/app/node_modules/@anthropic-ai/claude-agent-sdk \
        && echo "vendored @anthropic-ai/claude-agent-sdk into the image"; \
-     else \
-       echo "WARNING: @anthropic-ai/claude-agent-sdk NOT vendored — placeholder build (no live run)"; \
      fi \
   && if [ -f /repo/apps/run-task/vendor/claude-agent-sdk-linux-x64/claude ]; then \
        mkdir -p /img/app/vendor/claude-agent-sdk-linux-x64 \
@@ -69,8 +86,6 @@ RUN mkdir -p \
              /img/app/vendor/claude-agent-sdk-linux-x64/claude \
        && chmod 0755 /img/app/vendor/claude-agent-sdk-linux-x64/claude \
        && echo "vendored native claude binary at /app/vendor/claude-agent-sdk-linux-x64/claude"; \
-     else \
-       echo "WARNING: native claude binary NOT vendored — placeholder build (no live run)"; \
      fi \
   && chown -R 10002:10002 /img/app/node_modules /img/app/vendor
 

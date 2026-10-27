@@ -20,6 +20,11 @@ substitutions:
   # The canonical image set — every `apps/<svc>/Dockerfile` the deploy uses (pinned by
   # infra/config/cloudbuild.test.ts against the on-disk Dockerfile set).
   _SERVICES: run-task,egress-proxy,api,web,worker,fetcher,convert,export,collab,turbo-cache
+  # R6FIX.2 (F-R6H11-2) — run-task's vendored agent SDK is gitignored operator-held state, so a
+  # submit from a checkout that lacks it (a clean worktree IS that — e04a8c8 shipped a no-SDK
+  # image this way) must FAIL, not warn-and-continue. `1` = a deliberate no-engine placeholder
+  # image (CI provenance builds / preview posture stages that never launch a run).
+  _ALLOW_PLACEHOLDER_SDK: "0"
 steps:
   - id: image-set
     name: gcr.io/cloud-builders/docker
@@ -43,8 +48,36 @@ steps:
           # JOURNEY.1 (REQ-ARCH-39) — GIT_SHA bakes the built commit into the image for
           # /healthz's build.gitSha (the deploy-provenance check). Only api/web consume the ARG.
           case "$svc" in api|web) extra="--build-arg GIT_SHA=${_GIT_SHA}";; esac
+          if [ "$svc" = "run-task" ]; then
+            extra="$extra --build-arg ALLOW_PLACEHOLDER_SDK=${_ALLOW_PLACEHOLDER_SDK}"
+            # F-R6H11-2 context assert — the uploaded context IS what the Dockerfile sees. The
+            # vendored SDK is gitignored operator-held state; a clean worktree/clone does not
+            # carry it, and a no-SDK image reads "runs work" at every gate except the first real
+            # intake. Fail BEFORE building so a broken image can never reach the registry.
+            if [ "${_ALLOW_PLACEHOLDER_SDK}" != "1" ]; then
+              for f in apps/run-task/vendor/claude-agent-sdk/sdk.mjs \
+                       apps/run-task/vendor/claude-agent-sdk-linux-x64/claude; do
+                if [ ! -f "$f" ]; then
+                  echo "FATAL: run-task would ship WITHOUT the vendored agent SDK — $f is absent" >&2
+                  echo "from the build context (gitignored operator-held state; a clean worktree" >&2
+                  echo "does not carry it). Populate it per apps/run-task/vendor/README.md on the" >&2
+                  echo "submit host, or resubmit with _ALLOW_PLACEHOLDER_SDK=1 for a deliberate" >&2
+                  echo "no-engine placeholder image." >&2
+                  exit 1
+                fi
+              done
+            fi
+          fi
           echo "=== build ${svc} -> ${_AR}/${svc}:${_TAG}"
           docker build -f "apps/${svc}/Dockerfile" ${extra} -t "${_AR}/${svc}:${_TAG}" .
+          # F-R6H11-2 image-contents assert — prove the vendored SDK exists + executes for the
+          # agent uid inside the BUILT image before it can push. The e04a8c8 provenance gate was
+          # green on a broken image; gitSha parity is not image content.
+          if [ "$svc" = "run-task" ] && [ "${_ALLOW_PLACEHOLDER_SDK}" != "1" ]; then
+            docker run --rm --entrypoint /usr/bin/setpriv "${_AR}/run-task:${_TAG}" \
+              --reuid 10002 --regid 10002 --clear-groups -- /nodejs/bin/node -e \
+              'const fs=require("node:fs");fs.accessSync("/app/node_modules/@anthropic-ai/claude-agent-sdk/sdk.mjs",fs.constants.R_OK);fs.accessSync("/app/vendor/claude-agent-sdk-linux-x64/claude",fs.constants.X_OK);console.log("run-task image assert: vendored agent SDK readable+executable by uid agent=10002")'
+          fi
           docker push "${_AR}/${svc}:${_TAG}"
         done
 # E2_HIGHCPU_8 + 100GB — the pnpm install + turbo build of the whole repo dominates; default
