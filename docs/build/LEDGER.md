@@ -21,10 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      198_R6LCH.1        # GATE-LAUNCH SIGNED 2026-10-27 (GD-THRESH1/6/13 dispositions); launch deploy + flips 2–4   # R6SWP.1 sweep done 2026-10-27 — suite proven end-to-end in CI + F-R6SWP.1-1/-2 repaired (PR #225); F-R6SWP.1-4/-5 + literal nightly arm carried; launch gate reads next
-lastCompleted:   R6SWP.1            # 2026-10-27; first-ever complete journeys CI run (65/65 $0 legs) — 29 free legs proven pass on deployed dc3a8f6, provenance match:true; F-R6SWP.1-4/-5 open; unmerged (OPERATOR)
-nextTicket:      197_R6SWP.1        # merge sweep 1 DONE 2026-10-27 — operator-directed merges #219–#224 → main @ 0039850 (all open PRs landed incl. ancestors #195–#218; zero open); post-merge nightly reads next
-lastCompleted:   R6FIX.5            # 2026-10-27; F-R6H11B-1 + F-R6H11B-2 RESOLVED-IN-CODE (auth-id contract + canonical webhook event list + stripe-redrive); F-R6FIX.5-1 cancel half fixed; unmerged (OPERATOR)
+nextTicket:      198_R6LCH.1        # GATE-LAUNCH SIGNED 2026-10-27 (GD-THRESH1/6/13 dispositions); launch deploy + flips 2–4
+lastCompleted:   GATE-LAUNCH        # 2026-10-27; SIGNED — 11/13 MET + thresholds 6/13 ruled (GD-THRESH6/13.R6) + threshold-1 dispositions (GD-THRESH1.R6); prior: R6SWP.1 (nightly proven end-to-end on main) + R6FIX.5 (money findings resolved, merged #226)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
