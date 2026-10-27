@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T17:55:00Z         # R6SWP.1 — post-merge nightly sweep: first full journeys CI execution (65/65, ~61 min, $0); F-R6SWP.1-1 (timeout/evidence-loss) + F-R6SWP.1-2 (caller identity) fixed on PR #225; 29 free legs proven green on deployed dc3a8f6 w/ provenance match:true; F-R6SWP.1-4/-5 OPEN (env gaps + magic-link limiter); $0; unmerged (OPERATOR)
+updatedAt:       2026-10-27T17:34:10Z         # R6SWP.1 — journeys CI proven end-to-end; 29 free legs green on dc3a8f6 (match:true); F-R6SWP.1-4/-5 open; PR #225; $0; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
