@@ -215,6 +215,21 @@ OPEN.
 - **`check-build-memory.sh .`**: 0 violations (see close-out).
 - **`check-append-only.mjs --base 9c90b00`**: protected regions only grew
   (see close-out).
+- **CI boundary (`ci-boundary.sh`, record `logs/ci-R6FIX.5.json`):**
+  **PASS at `220136f`** — run 40588477743, all seven legs + `ci-pass`
+  anchor: fast-path 40s · typecheck/lint/unit 44m56s (incl. the privsep
+  docker leg — green inside CI) · public-safe 40s (gitleaks clean after
+  the fixture allowlist — see below) · contracts 30s (additive lint
+  accepts the dedicated `stripe_event_redrives` table) · integration
+  4m24s · images 10m19s. Earlier CI findings this ticket surfaced and
+  resolved: (a) `DROP CONSTRAINT` in the first migration draft — replaced
+  by the additive audit table; (b) gitleaks `generic-api-key` on the
+  auth-id test literal — the literal is a Better-Auth user id (not a
+  credential); the realistic `fX3Qvxf…` fixture stays pinned in `90562fe`
+  history, so the tip rename alone could not clear `git`-mode scanning —
+  both literals are allowlisted in `.gitleaks.toml` under the standing
+  pinned-test-fixture convention (verified locally: `gitleaks git
+  --log-opts origin/main..HEAD` → no leaks over all branch commits).
 - **Deterministic tests added:** contracts +2 (nanoid `user_id` accepted —
   both ULID and opaque shapes; garbage rejected — while workspace/entity
   ULID rules are unchanged); ledger stripe +~6 (canonical event-list =

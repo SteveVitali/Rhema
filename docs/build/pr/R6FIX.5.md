@@ -83,6 +83,12 @@ can't be price-switched) → **D-R6FIX.5-1 OPEN**.
   non-Stripe errors stay 500.
 - `check-additive-migrations.test.mjs` — census updated for 0060.
 
+**Verify:** turbo build/lint/typecheck 135/135 · vitest 516–517 files /
+6,148–6,149 tests pass (privsep docker leg is a workstation flake only — green
+inside CI) · additive-migrations lint pass · check-build-memory 0 violations ·
+append-only vs `9c90b00` OK · **ci: pass #226@220136f** (run 40588477743 — all
+seven legs + `ci-pass` anchor; record `logs/ci-R6FIX.5.json`).
+
 ## Records
 
 `docs/build/runs/R6FIX.5.md` · `F-R6H11B-1` + `F-R6H11B-2` → **RESOLVED-IN-CODE**,
