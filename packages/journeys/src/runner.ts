@@ -33,9 +33,14 @@ export interface StepCtx {
   /** a fresh anonymous context+page (landing/marketing/phone legs use this) */
   anon(): Promise<{ context: BrowserContext; page: Page }>;
   /** a signed-in context for the run's fresh identity (provisions a flagged tenant on first use) */
-  freshUser(tag: string, opts?: { useCache?: boolean }): Promise<{ context: BrowserContext; page: Page; email: string; via: string }>;
+  freshUser(
+    tag: string,
+    opts?: { useCache?: boolean },
+  ): Promise<{ context: BrowserContext; page: Page; email: string; via: string }>;
   /** a signed-in context for a STABLE returning identity (storageState-cached) */
-  returningUser(tag: string): Promise<{ context: BrowserContext; page: Page; email: string; via: string }>;
+  returningUser(
+    tag: string,
+  ): Promise<{ context: BrowserContext; page: Page; email: string; via: string }>;
   /** nonce-namespaced artifact marker (voice names, project titles) */
   marker(name: string): string;
   /** observed console errors + failed requests on the step's pages (attached to the report) */
@@ -121,6 +126,13 @@ export interface JourneyReport {
   results: StepResult[];
   /** every green step passed? (the process exit code) */
   passed: boolean;
+  /**
+   * R6SWP.1 (F-R6SWP.1-1) — `true` on the per-leg incremental flushes: the runner rewrites
+   * report.json after every leg so a wall-clock kill (e.g. the job timeout cancelling the
+   * 2026-10-27 dispatch mid-registry) leaves the completed legs' verdicts behind instead of
+   * zero per-leg evidence. The final write carries no `partial` marker.
+   */
+  partial?: true;
 }
 
 export interface RunnerDeps {
@@ -224,7 +236,9 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
         if (m.type() === "error") consoleErrors.push(m.text());
       });
       page.on("pageerror", (e) => consoleErrors.push(`pageerror: ${e.message}`));
-      page.on("requestfailed", (r) => failedRequests.push(`${r.method()} ${r.url()} ${r.failure()?.errorText ?? ""}`));
+      page.on("requestfailed", (r) =>
+        failedRequests.push(`${r.method()} ${r.url()} ${r.failure()?.errorText ?? ""}`),
+      );
       page.on("response", (r) => {
         const url = r.url();
         // REQ-TL-13 — the asset ledger covers the WHOLE `/assets/` space, not just the flat island
@@ -232,7 +246,11 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
         // that the old `/assets/[^/]+\.js$` regex never saw. Same-origin only; the parity assert in
         // steps.ts keys content-type by extension.
         if (onOurOrigin(url, deps.webBaseUrl) && new URL(url).pathname.startsWith("/assets/")) {
-          assetHits.push({ url, status: r.status(), contentType: r.headers()["content-type"] ?? null });
+          assetHits.push({
+            url,
+            status: r.status(),
+            contentType: r.headers()["content-type"] ?? null,
+          });
         }
         if (r.request().resourceType() !== "document") return;
         if (r.status() < 200 || r.status() >= 300) return; // redirects/errors carry no marker — and don't count as a landed document
@@ -369,6 +387,33 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     }
     // close contexts the step opened (they're the browser's; anon()/signIn made them all)
     for (const c of deps.browser.contexts()) await c.close().catch(() => undefined);
+    // F-R6SWP.1-1 — flush the report after EVERY leg: the only consumer of `passed` is the
+    // in-process exit code, so a `partial: true` on-disk shape is honest evidence even when
+    // the runner never reaches the final write. A kill mid-run now yields leg verdicts +
+    // durations up to the last completed leg instead of nothing.
+    await writeFile(
+      path.join(deps.outDir, "report.json"),
+      JSON.stringify(
+        {
+          tool: "rhema-journeys",
+          nonce: deps.nonce,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          webBaseUrl: deps.webBaseUrl,
+          apiBaseUrl: deps.apiBaseUrl,
+          provenance: deps.provenance,
+          spend: deps.spend,
+          renderer: { expect: deps.expectRenderer ?? null },
+          results,
+          passed: !results.some((r) => r.outcome === "fail" || r.outcome === "cap_overrun"),
+          partial: true,
+        } satisfies JourneyReport,
+        null,
+        2,
+      ),
+    ).catch(() => {
+      /* the incremental flush is evidence, never a failure cause */
+    });
   }
 
   // `fail` is only ever assigned to expected-green steps (red failures classify as `owed`);

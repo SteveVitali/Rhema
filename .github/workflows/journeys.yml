@@ -8,16 +8,24 @@ name: journeys
 # Both authenticate to GCP via Workload Identity Federation (github-pool → the repo-attribute
 # principalSet), mint a caller token, and the mailbox client signs a Gmail-DWD JWT via IAM
 # Credentials against rhema-journeys@ — no key, no mailbox credential, nothing secret in CI.
+#
+# R6SWP.1 (2026-10-27, F-R6SWP.1-2) — the caller is the federated principalSet itself, NOT an
+# impersonated SA: the repair-era step impersonated `vars.JOURNEY_CI_SA`, and that var points
+# at the mailbox SA, which holds no self-signing grant — every session-minting leg closed in
+# ~1.5s on `iamcredentials signJwt 403` (dispatch 40528915892). `token_format: access_token`
+# with no `service_account` mints the token for the principalSet directly — the identity the
+# tokenCreator binding in infra/pulumi/journeys.ts actually grants.
 
 on:
-  # R6CI.1 (2026-10-20; ADR-115; operator insert 176a ruling D7) — both scheduled runs are
-  # PAUSED: no ticket currently consumes the nightly/weekly signal and the paid Monday leg
-  # bills for nothing. The seeded-ephemeral-DB machinery + the $0/$5 guards below are
-  # preserved unchanged for `workflow_dispatch` (which stays live). The sweeps return at
-  # R6SWP.1 — restore by uncommenting the `schedule:` block and removing this marker.
-  # schedule:
-  #   - cron: "5 6 * * *"     # nightly $0 legs
-  #   - cron: "35 4 * * 1"    # weekly paid leg (Monday 04:35 UTC — inside the off-peak window)
+  # R6SWP.1 (2026-10-27) — scheduled sweeps restored at the post-merge-nightly ticket, exactly
+  # as the R6CI.1 pause marker directed. Nightly $0 legs run at 06:05Z against `main` HEAD
+  # (github.sha on schedule events); the weekly paid leg stays bound to the $5 ISO-week
+  # guard + the standing --headroom 3 below. Until the launch deploy (R6LCH.1) carries `main`
+  # HEAD to prod, each nightly reads provenance NO-MATCH on the deployed `dc3a8f6` — honest
+  # red, closing itself the first nightly after that deploy (GD-THRESH6.R6's literal arm).
+  schedule:
+    - cron: "5 6 * * *" # nightly $0 legs
+    - cron: "35 4 * * 1" # weekly paid leg (Monday 04:35 UTC — inside the off-peak window)
   workflow_dispatch:
     inputs:
       stage:
@@ -46,7 +54,12 @@ jobs:
   journeys:
     name: journeys
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # R6SWP.1 (2026-10-27, F-R6SWP.1-1): the first CI execution of the suite EVER (every
+    # scheduled run since ≥2026-10-08 died at the WIF auth step inside ~1 min — the 30-min
+    # ceiling was never exercised) timed out at 30m mid-registry (dispatch 40523029148:
+    # 19 legs' artifacts, no report.json). Observed cadence ~1.5 min/leg average → 44-leg
+    # nightly ≈70–90 min, 65-leg weekly ≈100–130 min; 180 covers both with headroom.
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,7 +80,9 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.JOURNEY_WIF_PROVIDER }}
-          service_account: ${{ vars.JOURNEY_CI_SA }}
+          # F-R6SWP.1-2: NO service_account — impersonation made the caller the mailbox SA
+          # itself, which cannot self-sign (signJwt 403 on every session leg). The federated
+          # token is the principalSet the IAM binding covers.
           token_format: access_token
       - name: Run the journey suite
         env:
