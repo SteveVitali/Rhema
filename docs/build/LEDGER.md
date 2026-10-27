@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      196a_HUMAN-H12     # merge sweep 1 (pre-launch) — HUMAN marker, precedes 197 R6SWP.1; golden gate GREEN post GD-GOLDEN-BAND.R6 (major band max 12; same scores re-gated 4/4 PASS $0 — D-P0.15-4 DONE)
-lastCompleted:   R6FIX.2            # 2026-10-27; F-R6H11-1/-2 resolved-in-code (convergent collab restore + fail-closed run-task SDK gate); live re-proofs owed post-deploy; unmerged (OPERATOR)
+lastCompleted:   R6DEP.3            # 2026-10-27; prod deploy e04a8c8→dc3a8f6 + live re-proofs — F-R6H11-2 RESOLVED (run executes to completed on vendored-SDK image), F-R6H11-1 RESOLVED (restore convergence live); F-R6DEP3-1 opened (3cr report/meter drift); unmerged (OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/r6fix-2-runtask-sdk  # R6FIX.2; next row forks here — PROD SERVES e04a8c8; run-task can't execute runs until a vendored-SDK build deploys (F-R6H11-2 resolved-in-code)
+chainTip:        stevevitali/r6dep-3-fix-deploy  # R6DEP.3; next row forks here — PROD SERVES dc3a8f6 (F-R6H11-2/-1 RESOLVED live; runs execute again)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-27T05:51:00Z         # R6FIX.2 — F-R6H11-1 (collab restore convergence) + F-R6H11-2 (run-task no-SDK image) RESOLVED-IN-CODE, deterministic tests + fail-closed image gate; live re-proof owed post-deploy; unmerged (OPERATOR)
+updatedAt:       2026-10-27T08:35:00Z         # R6DEP.3 — prod deploy `e04a8c8`→`dc3a8f6` (update 164) + migration 0059 + smoke green; F-R6H11-2/-1 RESOLVED on live evidence (paid canary completed on the vendored-SDK image; restore convergence re-proof CONVERGED); F-R6DEP3-1 opened; unmerged (OPERATOR)
 ```
 
 ## OPEN FINDINGS
@@ -418,6 +418,14 @@ pointers; substance unchanged.)_
   collab out-of-band restore → store flushes restored bytes; real-provider reconnect
   over a socket converges to restored content. Owed: live re-proof post-deploy
   (rides the next deploy's image set).
+  **RESOLVED 2026-10-27 (R6DEP.3, prod `dc3a8f6` — `runs/R6DEP.3.md`,
+  `reports/2026-10-27_R6DEP.3/restore-reproof/`).** Live re-proof PASSED on prod:
+  named restore point → typed marker → UI restore apply → `live_docs.y_epoch`
+  0→1 exactly once + stored `y_state` clean of the restored-away marker; the
+  still-loaded collab runtime's post-restore flush wrote the next edit with the
+  marker still absent (no stale-flush resurrection); a second tab in the same
+  browser context — a stale y-indexeddb replica — reconnected through SS1 and
+  rendered restored content only. CONVERGED end-to-end.
 - **F-R6H11-2 — OPEN (2026-10-27, R6H11 live-found on prod `e04a8c8` — `runs/R6H11.md`
   §Live finding + `reports/2026-10-27_R6H11/r6-eventsource/`).** The deployed `run-task`
   image (`sha256:c7cf69c6…`, deployed 2026-10-26T15:25Z) ships **without the vendored
@@ -449,6 +457,31 @@ pointers; substance unchanged.)_
   in explicitly; runbook (PROD-BRINGUP §2b) + INTEGRATION_PLAN §R4.8 + vendor
   README record the contract. Owed: a `run-task` image build+deploy carrying this
   SHA's SDK + the in-phase meter-tick leg (D-PRB.04-2 tail).
+  **RESOLVED 2026-10-27 (R6DEP.3, prod `dc3a8f6` — `runs/R6DEP.3.md`,
+  `reports/2026-10-27_R6DEP.3/`).** The image-set build (`36964998`) ran the new
+  gates end-to-end: pre-build context assert + post-build uid-10002 image probe
+  (`run-task image assert: vendored agent SDK readable+executable by uid
+  agent=10002`) before push; `pulumi up` update 164 deployed digest
+  `sha256:19c95a63…`. The bounded paid canary on the jrn-a is_test tenant ran a
+  real Quick/Base review to `completed` (`01M5Y4YQP827TCBXZHHV3AV4NC`,
+  07:42→08:03Z): GKE pod `run-01m5y4yqp…` on the new digest executed real SDK
+  tool calls (Bash/Glob/Read/Write/Edit hooks in pod logs), 92 metered
+  `usage_records` landed, ~$5.02 debited — runs execute on prod again. The R6
+  leg's strict report↔card reconciliation surfaced a separate 3-cr drift →
+  **F-R6DEP3-1** below.
+- **F-R6DEP3-1 — OPEN (2026-10-27, R6DEP.3 live-found on prod `dc3a8f6` —
+  `runs/R6DEP.3.md`, `reports/2026-10-27_R6DEP.3/r6-canary/`).** The completed
+  canary run's report charged **505 cr** (`data-estimate-line` "…505 cr spent")
+  while the run card's terminal committed meter showed **502 cr** — a 3-cr
+  debit (`$0.03`) the live meter never rendered, tripping the R6 leg's strict
+  `reportSpent > finalSpent` assert ("a charge no meter recorded", REQ-SPEC-32
+  shape). Suspected shape: the final `usage.tick`/debit landed after the card's
+  last SSE patch of `data-run-state="completed"` — an in-flight terminal-flush
+  race rather than a systematic debit/meter divergence — but the strict
+  contract stands violated either way; the card's terminal meter must equal Σ
+  debits (or the difference must carry a refund line). Owed: root-cause (probe
+  whether the meter commits post-terminal, or the report reads debits the meter
+  intentionally defers) + fix ticket. Owner: RPT.1.
 
 ## GATE DECISIONS
 

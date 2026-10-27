@@ -1,0 +1,15 @@
+{
+  "nonce": "dep3mvqdzxpd",
+  "identity": { "email": "test+jdep3mvqdzxpddel@rhema.tools" },
+  "notes": [
+    "data section mounted — delete form present, no banner pre-schedule",
+    "typed 'delete' + submit → POST /app/settings/account/delete → notice=deletion-scheduled",
+    "server-side deletion_requested_at stamped 2026-10-27T07:51:43.353Z (grace → 2026-11-10)",
+    "data-deletion-banner rendered on /app/settings/data: 'Deletion scheduled — your account and its content are deleted on 2026-11-10 unless you cancel'",
+    "banner mirrored on /app/settings/account (the two surfaces that mount DeletionBanner; other leaves do not mount it in shipped code)",
+    "data-deletion-cancel → POST /app/settings/account/delete/cancel → notice=deletion-cancelled",
+    "re-render: banner gone (count 0) + deletion_requested_at cleared server-side"
+  ],
+  "verdict": "UI-HALF PASS (schedule→banner→cancel; destruction fire stays owed to the sweep arm)",
+  "spendUsd": 0
+}

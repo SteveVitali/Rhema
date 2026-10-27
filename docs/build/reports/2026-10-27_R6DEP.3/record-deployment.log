@@ -1,0 +1,12 @@
+[record-deployment] protocols_version: 0.4.0+ec61156725a895ab
+[deployments] recorded prod:dc3a8f693f2d144c2a0f3a40e26da7003aa9e7e3 protocols_version=0.4.0+ec61156725a895ab
+[deployments]   api -> sha256:8ec46f27cfaac8e90904e78d75235f28396597904b112de474d4f649166ac89b
+[deployments]   web -> sha256:674202c757163f223db43016ce69926462510ca5063410357c152b830ee588ba
+[deployments]   worker -> sha256:71cd2b514a94be623118b0cdb717865f23a95599914037de879cab3eb29ce78e
+[deployments]   fetcher -> sha256:ce834a571d2f88066090b4943907c57fb0c666c9d32cd2e049f315266e359172
+[deployments]   convert -> sha256:e3b78179a1a106c9dae78beedadd43776ddad88b6ecd53d8d2632ea0350de49b
+[deployments]   export -> sha256:277f1682255b81b08b8a2a82dc28ef210ac8d57b74b7d981abef3ee869b81958
+[deployments]   collab -> sha256:bacf9d7584c9dc9d5b727df1e73de03e26dad62b2cf6154205d16c57d77d459b
+[deployments]   egress-proxy -> sha256:026bf0243979a56923a7e9d786194e4eded2ae9523a7aa2ef97150b1fe859c0c
+[deployments]   run-task -> sha256:19c95a63072ce0b2be6a93e521180f5a8f913ea33e5b8cd34084cfcf5a99a287
+[record-deployment] done (4 protocol seed(s) shipped this build)

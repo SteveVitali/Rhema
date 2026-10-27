@@ -1,0 +1,15 @@
+{
+  "nonce": "dep3mvqdyk3u",
+  "notes": [
+    "account settings mounted — email-change form present",
+    "requested — notice=email-pending, data-email-pending rows=1",
+    "confirm mail arrived → https://rhema.tools/app/settings/account?confirmEmail=wn8IPd…",
+    "confirm consume → notice=email-confirmed",
+    "account page renders test+jdep3mvqdyk3uset2@rhema.tools — round-trip complete"
+  ],
+  "identity": {
+    "from": "test+jdep3mvqdyk3uset@rhema.tools",
+    "to": "test+jdep3mvqdyk3uset2@rhema.tools"
+  },
+  "verdict": "ROUND-TRIP PASS"
+}

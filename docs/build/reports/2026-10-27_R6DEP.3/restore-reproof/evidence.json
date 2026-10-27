@@ -1,0 +1,65 @@
+{
+  "nonce": "dep3mvqdt0hg",
+  "notes": [
+    "tenant ws=01M5Y55VXM5JB74M163AT0NKKX is_test=true",
+    "named restore point minted pre-edit (⌘S)",
+    "marker A \"dep3gone-qdt0hg\" typed + synced",
+    "pre-apply live_doc 01M5Y567GD20FS9610QV7W4VME: epoch=0 markerA-bytes=false len=10194",
+    "note: marker A not yet flushed to stored y_state (debounced) — epoch check carries the proof",
+    "reloaded post-mint — SSR rail re-rendered with the named point",
+    "restore menu lists 3 points; target cause=named",
+    "restored notice: Restored — v2 carries that point's text; the previous state is a restore point.",
+    "post-apply: epoch 0 → 1 | y_state markerA-bytes=false (was false) | md_sha256=8610410352e6…",
+    "artifact heads: ord3:3bb1d0ae9239 ord2:c332b3ef7b78",
+    "marker B \"dep3stay-qdt0hg\" typed + synced post-restore (forces the loaded runtime's store hook)",
+    "after marker-B flush: epoch=1 markerA=false markerB=true",
+    "page-A canvas: markerA absent ✓ · markerB present ✓",
+    "page-B (stale-replica reconnect): markerA absent ✓ · markerB present ✓",
+    "final stored: epoch=1 markerA=false markerB=true len=10298"
+  ],
+  "project": {
+    "slug": "dep3-qdt0hg",
+    "projectId": "01M5Y563DEFCNPNXF30SPSCQ3H",
+    "reviewRunId": "01M5Y563DEBVP2X4N8403KRVM4"
+  },
+  "liveDocId": "01M5Y567GD20FS9610QV7W4VME",
+  "preApply": {
+    "epoch": 0,
+    "md": null,
+    "yLen": 10194,
+    "hasMarkerA": false,
+    "hasMarkerB": false
+  },
+  "postApply": {
+    "epoch": 1,
+    "md": "8610410352e665ba936d1b0757d71d93689aea9882a0291ddef93bb1d0ae9239",
+    "yLen": 10250,
+    "hasMarkerA": false,
+    "hasMarkerB": false
+  },
+  "heads": [
+    {
+      "ordinal": 3,
+      "s3_key": "tenants/01M5Y55VXM5JB74M163AT0NKKX/objects/8610410352e665ba936d1b0757d71d93689aea9882a0291ddef93bb1d0ae9239"
+    },
+    {
+      "ordinal": 2,
+      "s3_key": "tenants/01M5Y55VXM5JB74M163AT0NKKX/objects/765f52e01fb07b1c1d8b90f6940bf50c225a56d2e58f9b50704ac332b3ef7b78"
+    }
+  ],
+  "afterMarkerB": {
+    "epoch": 1,
+    "md": "76235e64c07cb01cf46b6264dd2b292edc0aa10fedf4dc23e78f3b97574a802e",
+    "yLen": 10298,
+    "hasMarkerA": false,
+    "hasMarkerB": true
+  },
+  "final": {
+    "epoch": 1,
+    "md": "76235e64c07cb01cf46b6264dd2b292edc0aa10fedf4dc23e78f3b97574a802e",
+    "yLen": 10298,
+    "hasMarkerA": false,
+    "hasMarkerB": true
+  },
+  "verdict": "CONVERGED"
+}
