@@ -201,17 +201,17 @@ OPEN.
 ## Evidence report
 
 - **`pnpm turbo build lint typecheck`**: 135/135 tasks green (whole workspace).
-- **`pnpm test`** (whole suite): **517 test files passed / 1 skipped;
-  6,149 tests passed / 4 skipped; 0 standing failures.** Two transient
-  failures on the first pass: (a) `check-additive-migrations` census (the
-  new `0060_stripe_event_redrive.sql` made the count 16 — expected list
-  updated, leg green); (b) `apps/run-task/src/privsep.docker.test.ts` —
-  `rpc error … error reading from server: EOF` mid-image-build. Cause:
-  the **local Docker Desktop daemon died during the build** (its socket
-  was gone after — `docker info` could not connect); restarted via
-  `open -a Docker`, daemon `server=29.1.3`, and the identical leg then ran
-  **green in 37 s** (all privsep checks pass). Environmental flake, not a
-  code failure — this ticket touches nothing under `apps/run-task/`.
+- **`pnpm test`** (whole suite, two local passes): **516–517 test files
+  passed / 1 skipped; 6,148–6,149 tests passed / 4 skipped.** The only
+  standing flake is `apps/run-task/src/privsep.docker.test.ts` — twice
+  environmental on this workstation's Docker Desktop: (1) the daemon died
+  mid-image-build (`rpc error … EOF`; restarted, leg green in 37 s with
+  all privsep checks pass); (2) after the audit-table change the same leg
+  failed on **Docker-Desktop-VM DNS** (`lookup registry-1.docker.io: no
+  such host` — the daemon's internal network is broken on this machine;
+  `docker pull` fails the same way outside the test). The leg IS green
+  both post-restart locally AND inside CI's unit job (the `34e7f85` CI
+  read below). This ticket touches nothing under `apps/run-task/`.
 - **`check-build-memory.sh .`**: 0 violations (see close-out).
 - **`check-append-only.mjs --base 9c90b00`**: protected regions only grew
   (see close-out).
