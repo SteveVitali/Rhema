@@ -13,10 +13,11 @@ name: journeys
 # impersonated SA: the repair-era step impersonated `vars.JOURNEY_CI_SA`, and that var points
 # at the mailbox SA, which holds no self-signing grant — every session-minting leg closed in
 # ~1.5s on `iamcredentials signJwt 403` (dispatch 40528915892). auth@v2 also refuses an
-# access_token output without a service_account (dispatch 40529512751), so the run step mints
-# the federated token itself: `gcloud auth application-default print-access-token` over the
-# exported WIF credentials file — the identity the tokenCreator binding in
-# infra/pulumi/journeys.ts actually grants.
+# access_token output without a service_account (dispatch 40529512751), and a once-minted
+# env token expires mid-suite (signJwt 401 at ~T+57min on the 65-leg dispatch 40532657165),
+# so JOURNEY_GCP_ACCESS_TOKEN is left UNSET: the mailbox client's gcloud-ADC fallback mints a
+# fresh federated token per signJwt over the exported WIF credentials file — the identity the
+# tokenCreator binding in infra/pulumi/journeys.ts actually grants, with no expiry ceiling.
 
 on:
   # R6SWP.1 (2026-10-27) — scheduled sweeps restored at the post-merge-nightly ticket, exactly
@@ -103,11 +104,11 @@ jobs:
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
         run: |
           set -uo pipefail
-          # F-R6SWP.1-2 — mint the caller token for the FEDERATED identity (not an
-          # impersonated SA): `gcloud auth application-default print-access-token` honours
-          # the WIF external_account file the auth step exported via
-          # GOOGLE_APPLICATION_CREDENTIALS.
-          export JOURNEY_GCP_ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
+          # F-R6SWP.1-2 — NO JOURNEY_GCP_ACCESS_TOKEN export: a once-minted env token dies at
+          # its 3600s lifetime mid-suite (T4–T7 closed signJwt 401 at ~T+57min on dispatch
+          # 40532657165). Leaving it unset drops the mailbox onto its gcloud-ADC path, which
+          # mints a FRESH federated token per signJwt call over the auth step's exported
+          # GOOGLE_APPLICATION_CREDENTIALS file — no expiry, no impersonation.
           args=(--web "$JOURNEY_WEB_URL" --api "$JOURNEY_API_URL" \
                 --state-dir "$JOURNEY_STATE_DIR" \
                 --out "journey-report")
