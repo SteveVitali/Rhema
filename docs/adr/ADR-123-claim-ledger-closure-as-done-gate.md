@@ -58,10 +58,10 @@ the *gate* letting the phase transition at all.
   retry naming the field — SKILL.md now documents it; a non-emitting/empty-inventory agent fails
   honestly rather than riding a vacuous coverage check.
 - Draft `grounding` inherits the same gate — the identical defect class existed there.
-- **Honest residual:** `discourse` has no machine-readable outcome contract (markdown artifact,
-  no sidecar), so its contested-claim outcomes remain un-gated until a
-  `02-discourse-report.json` shape exists. Verification's closure gate blocks the whole-run lie
-  the finding measured, but a discourse-side contract is follow-up work.
+- **Honest residual (tracked as deferral D-R6FIX.4-1):** `discourse` has no machine-readable
+  outcome contract (markdown artifact, no sidecar), so its contested-claim outcomes remain
+  un-gated until a `02-discourse-report.json` shape exists. Verification's closure gate blocks
+  the whole-run lie the finding measured, but a discourse-side contract is follow-up work.
 
 ## Alternatives considered
 

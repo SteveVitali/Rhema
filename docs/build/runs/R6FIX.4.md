@@ -195,7 +195,7 @@ closing it; D-R6SECR.1-1 unaffected.
 |---|---|
 | Phase cannot complete while claims unchecked | **MET** — `claim_ledger_closed` fails `done` on any placeholder row |
 | Every emitted claim has a meaningful verdict/disposition (checked\|unverifiable\|disputed) | **MET** — verdict absent/`unverifiable`-without-evidence ⇒ unclosed; a substantive verdict or an evidence-bearing `unverifiable` closes |
-| Discourse contested-claim outcomes must resolve | **MET-DIFFERENTLY (recorded residual, ADR-123)** — discourse has no machine-readable outcome contract (markdown artifact, no sidecar); its closure cannot be gated until a `02-discourse-report.json` shape exists. Verification's gate blocks the whole-run lie F-R6CNT.3-1 measured; the discourse-side contract is follow-up work, named in the finding resolution + ADR-123 rather than silently scoped out |
+| Discourse contested-claim outcomes must resolve | **MET-DIFFERENTLY (deferred, D-R6FIX.4-1 / ADR-123)** — discourse has no machine-readable outcome contract (markdown artifact, no sidecar); its closure cannot be gated until a `02-discourse-report.json` shape exists. Verification's gate blocks the whole-run lie F-R6CNT.3-1 measured; the discourse-side contract is tracked as its own deferral rather than silently scoped out |
 | Hard gate vs terminal flag | **MET** — hard gate chosen (the phase contract's own vocabulary); rationale + alternatives in ADR-123 |
 | Closed ledger passes | **MET** — deterministic tests (justified `unverifiable` incl.) |
 | Failing-open not acceptable | **MET** — absent closure fact, absent `inventoryCount`, AND a declared-zero inventory all fail (proven, never assumed — `min(0, cap) = 0` is the same bypass through a second channel) |
