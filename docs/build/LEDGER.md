@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-28T06:0xZ            # R6CLK.1 CLOSED — 2/6 dated reads closed on evidence (CLK-3 purge-destruction, CLK-6 export-410), 4 stay OPEN dated; nextTicket → 200 R6WATCH.1
+updatedAt:       2026-10-28T05:42Z            # R6CLK.1 CLOSED — 2/6 dated reads closed on evidence (CLK-3 purge-destruction, CLK-6 export-410), 4 stay OPEN dated; nextTicket → 200 R6WATCH.1
 ```
 
 ## OPEN FINDINGS
