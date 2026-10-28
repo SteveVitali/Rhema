@@ -15,8 +15,8 @@
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec +
   build-memory + self-review @ `~/agent-skills`
 - **Requirement ids stamped:** REQ-CLK-1 REQ-CLK-2 REQ-CLK-3 REQ-CLK-4 REQ-CLK-5 REQ-CLK-6
-- **Started:** 2026-10-28T04:5xZ · **Closed:** 2026-10-28T06:0xZ (evidence reads
-  05:2x–05:4xZ; records + boundary follow)
+- **Started:** 2026-10-28T04:5xZ · **Closed:** 2026-10-28T06:2xZ (evidence reads
+  05:2x–05:4xZ; records + boundary at 06:2xZ)
 - **Live stage:** prod read-only — system-role DSN over the IAP proxy tunnel
   (`rhema-prod-proxy-*`, `localhost:15433`), `BEGIN READ ONLY` throughout; Cloud Logging
   reads; BigQuery metadata read; two anonymous/session HTTP probes. **Zero writes.**
@@ -195,11 +195,15 @@ explicitly not executed** — `Run:` forbids starting before 2026-11-11T04:0xZ.
 
 - Live-executed: every read above ran on prod read-only at the dated times ($0).
 - Tests: no new behaviour — documentation-only ticket (evidence + ticket expansion).
-- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — recorded
-  at final head.
-- `node docs/build/tools/check-append-only.mjs --base 73c1586` — recorded at final head.
-- `ci-boundary.sh --ledger docs/build/LEDGER.md --ticket R6CLK.1 --json
-  docs/build/logs/ci-R6CLK.1.json` — recorded at final head (PR checks read from `gh`).
+- `check-build-memory.sh` → **0 violations**, 14 warnings (all pre-existing classes
+  except the `updatedAt` ISO nit, fixed in `7b27c66`; the `nextTicket` warnings are
+  the standing non-lowest-row class).
+- `check-append-only.mjs --base 73c1586` → **OK**.
+- `ci-boundary.sh` → **pass #229@`a5d2c73`** (run 40639558148 — all seven legs +
+  `ci-pass` anchor: fast-path, typecheck/lint/unit, contracts, public-safe,
+  integration, images; record `logs/ci-R6CLK.1.json` — gitignored subtree by design).
+  The mode resolved full (no `ci-pass` anchor existed for the post-#228 non-docs tree
+  — fail-closed by design).
 
 ## AC ledger
 
