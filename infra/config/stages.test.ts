@@ -288,8 +288,10 @@ describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {
 });
 
 describe("refundWindow.mode stage flag (DEF.4; REQ-SPEC-29; ADR-071)", () => {
-  it("every stage ships test_tenants — closed for every real user; `open` is the operator's commit", () => {
+  it("prod is open (R6LCH.1's launch flip, GD-LAUNCH-MONEY.R6); non-prod stays test_tenants — the flag fails closed", () => {
+    expect(STAGES.prod.refundWindowMode).toBe("open");
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (name === "prod") continue;
       expect(cfg.refundWindowMode, `stage ${name}`).toBe("test_tenants");
     }
   });
