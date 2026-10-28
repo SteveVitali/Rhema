@@ -192,6 +192,12 @@ interface SubscriptionObject {
   customer?: string;
   status?: string;
   cancel_at_period_end?: boolean;
+  // F-R6LCH.1-1 — Stripe carries TWO cancel arms: `cancel_at_period_end` (flag-mode, what our
+  // in-app cancel sets) and `cancel_at` (a timestamp, what the Customer Portal's cancel-schedule
+  // mode writes + `canceled_at`). A portal cancel arrives as `cancel_at=<period_end>` with the
+  // FLAG still `false` — mirroring the flag alone leaves our DB saying "Renews" while Stripe
+  // ends the plan. Both shapes mean "scheduled cancellation" → `cancel_at_period_end` in ours.
+  cancel_at?: number | null;
   current_period_start?: number; // unix seconds
   current_period_end?: number;
   metadata?: { billing_account_id?: string; plan?: string; cycle?: string };
@@ -651,12 +657,19 @@ async function processSubscriptionSync(
       synced = true;
       return;
     }
+    // F-R6LCH.1-1 — a scheduled cancellation is `cancel_at_period_end === true` OR a non-null
+    // `cancel_at` timestamp (the portal's cancel-schedule mode); an un-cancel lands as both null/
+    // false and converges back to `false`. Only write when at least one arm is present.
+    const pendingCancel =
+      sub.cancel_at_period_end === true || (sub.cancel_at !== undefined && sub.cancel_at !== null);
     synced = (
       await syncSubscription(tx, deps, {
         stripeSubscriptionId: sub.id!,
         ...(tier ? { tier } : {}),
         ...(interval ? { cycle: interval === "year" ? ("annual" as const) : ("monthly" as const) } : {}),
-        ...(sub.cancel_at_period_end !== undefined ? { cancelAtPeriodEnd: sub.cancel_at_period_end } : {}),
+        ...(sub.cancel_at_period_end !== undefined || sub.cancel_at !== undefined
+          ? { cancelAtPeriodEnd: pendingCancel }
+          : {}),
         ...(sub.current_period_start ? { periodStart: unixToDate(sub.current_period_start, deps.clock.now()) } : {}),
         ...(sub.current_period_end ? { periodEnd: unixToDate(sub.current_period_end, deps.clock.now()) } : {}),
       })

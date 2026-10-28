@@ -48,16 +48,23 @@ const PRICE = fixturePricer();
 describe("the claims config", () => {
   it("names both HOT.1 claim ids — the ACT.1 flip ships the trial claim ON, audience-gated", () => {
     expect(PUBLIC_CLAIM_IDS).toEqual(["trial.firstReviewIncluded", "plans.whatItCovers"]);
-    // ACT.1 — `trial.firstReviewIncluded` ships ON in the shipped config; the RENDER for a real
-    // user is still gated by `claimsForAudience` folding `trial.audience` (test_tenants ⇒ off).
+    // ACT.1 — `trial.firstReviewIncluded` ships ON in the shipped config; R6LCH.1 flipped the
+    // shipped audience to `everyone`, so the fold now admits every viewer (incl. anonymous).
     expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(true);
     expect(publicClaimEnabled("plans.whatItCovers")).toBe(true); // EST.1's flip
   });
 
-  it("claimsForAudience folds `trial.audience` — test tenant sees the claim, real/anonymous do not", () => {
-    // audience = "test_tenants" (pricing.json): only flagged workspaces get the claim.
-    expect(publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, false))).toBe(false);
+  it("claimsForAudience folds `trial.audience` — the shipped `everyone` admits every viewer", () => {
+    // audience = "everyone" (pricing.json, R6LCH.1): flagged and unflagged viewers alike get the claim.
+    expect(publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, false))).toBe(true);
     expect(publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, true))).toBe(true);
+    // the fold machinery stays armed: an injected `test_tenants` audience still excludes the real viewer.
+    expect(
+      publicClaimEnabled(
+        "trial.firstReviewIncluded",
+        claimsForAudience(PUBLIC_CLAIMS, false, { audience: "test_tenants" }),
+      ),
+    ).toBe(false);
     // non-trial claims are audience-independent.
     expect(publicClaimEnabled("plans.whatItCovers", claimsForAudience(PUBLIC_CLAIMS, false))).toBe(true);
     // an audience-excluded claim can never re-enable through the fold.
@@ -110,11 +117,13 @@ describe("planLadder — the gated coverage lines", () => {
 });
 
 describe("the Free card's trialWindow — the included-Review claim", () => {
-  it("omits the trial-window claim for an audience the go-live flag excludes; the honesty line stays", () => {
-    // ACT.1 — `test_tenants` audience ⇒ a non-test viewer's claims fold the trial claim off.
-    const free = buildPricingPageData(claimsForAudience(PUBLIC_CLAIMS, false), PRICE).plans.find(
-      (p) => p.tier === "free",
-    )!;
+  it("omits the trial-window claim for an audience the config excludes; the honesty line stays", () => {
+    // The shipped audience is `everyone` — inject the pre-flip `test_tenants` posture to keep the
+    // exclusion leg honest: a non-test viewer's claims fold the trial claim off.
+    const free = buildPricingPageData(
+      claimsForAudience(PUBLIC_CLAIMS, false, { audience: "test_tenants" }),
+      PRICE,
+    ).plans.find((p) => p.tier === "free")!;
     expect(free.freeNotes?.trialWindow).toBeUndefined();
     expect(free.freeNotes?.postTrial).toBe(PRICING.trial.postTrialNote);
   });

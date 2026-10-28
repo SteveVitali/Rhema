@@ -278,16 +278,20 @@ describe("spa.surfaces stage flag — RETIRED (SPA.28; REQ-SEQ-4's removal leg)"
 });
 
 describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {
-  it("every stage ships closed — only an auditable operator flip re-opens real-user purchase", () => {
+  it("prod is open (R6LCH.1's launch flip, GD-LAUNCH-MONEY.R6); non-prod stays closed — the flag fails closed", () => {
+    expect(STAGES.prod.purchaseMode).toBe("open");
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (name === "prod") continue;
       expect(cfg.purchaseMode, `stage ${name}`).toBe("closed");
     }
   });
 });
 
 describe("refundWindow.mode stage flag (DEF.4; REQ-SPEC-29; ADR-071)", () => {
-  it("every stage ships test_tenants — closed for every real user; `open` is the operator's commit", () => {
+  it("prod is open (R6LCH.1's launch flip, GD-LAUNCH-MONEY.R6); non-prod stays test_tenants — the flag fails closed", () => {
+    expect(STAGES.prod.refundWindowMode).toBe("open");
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (name === "prod") continue;
       expect(cfg.refundWindowMode, `stage ${name}`).toBe("test_tenants");
     }
   });

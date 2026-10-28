@@ -364,7 +364,13 @@ config:
   # "run-task image assert: vendored agent SDK readable+executable by uid agent=10002").
   # Carries R6FIX.2: convergent collab restore (api/collab/@rhema/editor + migration 0059
   # y_epoch) + the fail-closed run-task SDK gate (F-R6H11-1/-2).
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:8ec46f27cfaac8e90904e78d75235f28396597904b112de474d4f649166ac89b","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:674202c757163f223db43016ce69926462510ca5063410357c152b830ee588ba","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:71cd2b514a94be623118b0cdb717865f23a95599914037de879cab3eb29ce78e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ce834a571d2f88066090b4943907c57fb0c666c9d32cd2e049f315266e359172","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:e3b78179a1a106c9dae78beedadd43776ddad88b6ecd53d8d2632ea0350de49b","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:277f1682255b81b08b8a2a82dc28ef210ac8d57b74b7d981abef3ee869b81958","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:bacf9d7584c9dc9d5b727df1e73de03e26dad62b2cf6154205d16c57d77d459b","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:869cafd6c77b6d438a0bff69e7af89eac4cce14ef27455ca8c066dec78048a46"}'
+  # 2026-10-28 — R6LCH.1: all 10 images rebuilt on chain-tip b04fc1b (Cloud Build
+  # 25e60d7e) — the launch deploy: R6FIX.3/.4/.5 + R6SWP.1 chain content + the
+  # F-R6LCH.1-1 cancel_at-mode subscription-sync convergence fix.
+  # 2026-10-28 — R6LCH.1 flip 4 re-pin (Cloud Build 9f35a18c, flip SHA b953c55):
+  # the everyone-audience contracts change — every image rebuilt at the flip SHA
+  # so provenance stays one commit.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:1e140a4ce8fab0577d1b94e16088c90820537014de07a335ac56625ba4fc7842","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:52123b6efd78372bceff9d4cc0ea6067081dba89fb047fa6d89f79621d530718","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:4b9f45292b6eb50772af2ca1863c745e78cd4135953a5b438176b12fcbb9ad52","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:3aa2ea866545f6a7077ef07a6eeb098da703e57bd6c629608227803e4bd548c5","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4beda1cfe78a4e76aaf0c0b4208234a53d7ef22f10ccac0e9ff7669781b6b546","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:d3373227d20131282e2afedabc05a63916e8a0839cf5e9776bd54af545b3cb72","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:36c55eeb0eebc12af42a57ecd9e15883683776cb42c6f49c16bf6ed79b952a8c","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:4105b565d6f02c41189524e0766b4ebbcdaf00247836fb1742e19c5f97cf8fbc"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -387,7 +393,10 @@ config:
   # 2026-10-27 — R6DEP.3: run-task re-pinned to the dc3a8f6 deploy build (36964998) —
   # the VENDORED-SDK image (F-R6H11-2 fix): built from the populated checkout, in-build
   # context assert + post-build uid-10002 contents assert passed before push.
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:19c95a63072ce0b2be6a93e521180f5a8f913ea33e5b8cd34084cfcf5a99a287
+  # 2026-10-28 — R6LCH.1: run-task re-pinned to the b04fc1b launch build (97e20b12).
+  # 2026-10-28 — R6LCH.1 flip 4: run-task re-pinned to the b953c55 build (9f35a18c,
+  # d984805a) — vendored-SDK asserts ran in-build again.
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:d984805a6371634122ff5f1f0dd0c21d42f5b46b9290c7194732b530f689bd79
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
@@ -402,7 +411,9 @@ config:
   # 2026-10-23 — R6SECR.1: egress-proxy re-pinned to the 80db0d5 tip build (5a9a5c8c).
   # 2026-10-26 — R6DEP.2: egress-proxy re-pinned to the e04a8c8 deploy build (a8d53c59).
   # 2026-10-27 — R6DEP.3: egress-proxy re-pinned to the dc3a8f6 deploy build (36964998).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:026bf0243979a56923a7e9d786194e4eded2ae9523a7aa2ef97150b1fe859c0c
+  # 2026-10-28 — R6LCH.1: egress-proxy re-pinned to the b04fc1b launch build (a550376f).
+  # 2026-10-28 — R6LCH.1 flip 4: egress-proxy re-pinned to the b953c55 build (9f35a18c).
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:df98dd47b674e416664ae6fb098a0b33760fb4e05eea2c127e8f68e3c78012ef
   # 2026-10-24 — R6INF.2 (ADR-122) up B: repoint consumers to the ILB VIP (proxyVipAddress output);
   # the direct 10.8.16.4 path stays live for in-flight pods until the post-soak cleanup update.
   rhema:proxyBaseUrl: http://10.8.16.7:8443

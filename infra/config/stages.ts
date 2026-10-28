@@ -537,9 +537,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
     maxUsdPerRun: 100,
     allowsProductionSecrets: true,
     signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
-    purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
+    purchaseMode: "open", // R6LCH.1 flip 2 (GD-LAUNCH-MONEY.R6) — real-user purchase open at launch
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
-    refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
+    refundWindowMode: "open", // R6LCH.1 flip 3 (GD-LAUNCH-MONEY.R6 / BL-30) — the §14.4 refund window open to real workspaces
     // SPA.28 — `spaSurfaces` retired (see the StageConfig migration note): the prod flips
     // SPAF.1…14 all landed (SPAF.14 = `editor`, the last — REQ-ED-13) and each surface's
     // session gates + the Page family's phone/showcase forced-SSR check still run ahead of

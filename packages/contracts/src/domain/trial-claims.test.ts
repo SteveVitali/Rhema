@@ -88,11 +88,11 @@ describe("the go-live audience (ADR-042)", () => {
     const cfg: PublicClaimsConfig = {
       enabled: { "trial.firstReviewIncluded": true, "plans.whatItCovers": true },
     };
-    const gated = claimsForAudience(cfg, false);
+    const gated = claimsForAudience(cfg, false, { audience: "test_tenants" });
     expect(publicClaimEnabled("trial.firstReviewIncluded", gated)).toBe(false);
     expect(publicClaimEnabled("plans.whatItCovers", gated)).toBe(true);
-    // an `everyone` audience is the operator's everyone-flip — simulate it through the trial arg.
-    const open = claimsForAudience(cfg, false, { audience: "everyone" });
+    // R6LCH.1 — the shipped audience IS `everyone`: the shipped-default fold now opens the claim.
+    const open = claimsForAudience(cfg, false);
     expect(publicClaimEnabled("trial.firstReviewIncluded", open)).toBe(true);
   });
 });

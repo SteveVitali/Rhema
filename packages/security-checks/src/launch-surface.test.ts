@@ -153,14 +153,21 @@ describe("HOT.1 — the hidden public claims stay out of the shipped surface", (
     return out;
   };
 
-  it("the shipped config hides only the claims still gated — ACT.1 flipped the trial flag ON; the AUDIENCE holds it (ADR-042)", () => {
-    // ACT.1 — `trial.firstReviewIncluded` is enabled at flag level; the operator pause lives in
-    // `trial.audience` ('test_tenants'), which `claimsForAudience` folds over every render. A
-    // non-covered viewer (the real-user default) still resolves the claim OFF.
+  it("the shipped config publishes the trial claim to the launched audience — R6LCH.1 flipped it to `everyone`", () => {
+    // ACT.1 — `trial.firstReviewIncluded` is enabled at flag level; R6LCH.1's launch flip moved
+    // the operator pause: `trial.audience` is now 'everyone' (GD-LAUNCH-MONEY.R6), so every
+    // viewer — including anonymous — resolves the claim ON through the same fold.
     expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(true);
-    expect(PRICING.trial.audience).toBe("test_tenants");
+    expect(PRICING.trial.audience).toBe("everyone");
     expect(
       publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, false)),
+    ).toBe(true);
+    // the fold machinery stays armed — an injected excluded audience still resolves OFF.
+    expect(
+      publicClaimEnabled(
+        "trial.firstReviewIncluded",
+        claimsForAudience(PUBLIC_CLAIMS, false, { audience: "test_tenants" }),
+      ),
     ).toBe(false);
     // `plans.whatItCovers` is ON — but its renderers emit only the pricer-COMPUTED line
     // (`planCoverageLine`); the gated pricing.json copy is retired text, not rendered copy.

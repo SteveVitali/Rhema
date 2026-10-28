@@ -464,6 +464,42 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
     expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
   });
 
+  it("customer.subscription.updated converges a cancel_at-mode (Portal schedule) cancellation", async () => {
+    // F-R6LCH.1-1 — the live prod shape: the Portal scheduled cancel_at=<period_end> +
+    // canceled_at while the flag stays `false`. Mirroring the flag alone left "Renews" in
+    // our DB while Stripe stopped renewing (F-R6H11B-2's un-converged arm).
+    await activate();
+    const out = await emit("evt_sub_upd_cancel_at", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      cancel_at_period_end: false,
+      cancel_at: unix(P1),
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+  });
+
+  it("customer.subscription.updated un-cancel (cancel_at back to null) converges to renewing", async () => {
+    await activate();
+    await emit("evt_sub_upd_c1", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      cancel_at_period_end: false,
+      cancel_at: unix(P1),
+      metadata: { billing_account_id: BA },
+    });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+    await emit("evt_sub_upd_c2", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      cancel_at_period_end: false,
+      cancel_at: null,
+      metadata: { billing_account_id: BA },
+    });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(false);
+  });
+
   it("customer.subscription.created for an unknown subscription activates it whole (the Checkout race arm)", async () => {
     const out = await emit("evt_sub_new", "customer.subscription.created", {
       id: "sub_race_1",

@@ -110,7 +110,7 @@
   "trial": {
     "windowDays": 14,
     "interim": true,
-    "audience": "test_tenants",
+    "audience": "everyone",
     "entitlement": { "kind": "review", "wordCap": 2800, "rigor": "standard", "modelTier": "base" },
     "capCeilingUsd": 15,
     "pocketCredits": 150,

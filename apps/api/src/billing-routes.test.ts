@@ -199,9 +199,11 @@ describe("GET /billing/plans — the pricing.json publication", () => {
     expect(body.trial.entitlement.wordCap).toBe(PRICING.trial.entitlement.wordCap);
     expect(body.topUpPacks).toHaveLength(3);
     // HOT.1 — the claims gate is server-side: hidden claims transmit null on the DTO itself.
-    // EST.1 — `plans.whatItCovers` ships ENABLED: the gated lines transmit the COMPUTED coverage
-    // (the shared pricer's figure), never the retired pricing.json copy.
-    expect(body.trial.includedNote).toBeNull();
+    // R6LCH.1 — `trial.audience` ships `everyone`: this unflagged workspace is covered, so the
+    // generated includedNote transmits verbatim. EST.1 — `plans.whatItCovers` ships ENABLED: the
+    // gated lines transmit the COMPUTED coverage (the shared pricer's figure), never the retired
+    // pricing.json copy.
+    expect(body.trial.includedNote).toBe(PRICING.trial.includedNote);
     for (const tier of ["writer", "studio", "studio_max"] as const) {
       expect(body.plans[tier]?.whatItCovers).toBe(planCoverageLine(tier, surfacePricer()));
       expect(body.plans[tier]?.whatItCovers).not.toBe(PRICING.plans[tier].whatItCovers);

@@ -1,0 +1,70 @@
+{
+ "migrations": [
+  {
+   "name": "0059_live_docs_y_epoch.sql",
+   "applied_at": "2026-10-27T07:24:40.035Z"
+  },
+  {
+   "name": "0058_pgboss_purge_probe.sql",
+   "applied_at": "2026-10-06T13:15:23.081Z"
+  },
+  {
+   "name": "0057_cite1_citation_completeness.sql",
+   "applied_at": "2026-10-04T02:05:53.821Z"
+  }
+ ],
+ "stripe_event": [
+  {
+   "id": "evt_1UVF7T2MLe3ETP9SG5x24wSg",
+   "type": "checkout.session.completed",
+   "processed_at": null
+  }
+ ],
+ "checkout": [
+  {
+   "id": "01M5Z9YR738SSQVM36158RGVKW",
+   "stripe_session_id": "cs_live_a1YA4hzCoD4Q85jYVbUPup6iTnJ3Bplkr7YPFegAP5N85cVmNKsidCZ3uE",
+   "state": "open",
+   "kind": "topup",
+   "workspace_id": "01M5Z9MFA1B0F2JGMC4QSFZP2P"
+  }
+ ],
+ "jrna_ws": [
+  {
+   "id": "01M5WD3TRBA88WV12S680745KG",
+   "name": "Personal",
+   "is_test": true,
+   "billing_account_id": "01M5WD3TRBDK16GABPMV9G3W3Z"
+  }
+ ],
+ "jrna_subs": [],
+ "jrna_topups": [],
+ "trial_today": [
+  {
+   "day": "2026-10-27T04:00:00.000Z",
+   "credits": "0",
+   "reconciled_credits": "0",
+   "paused_at": null
+  },
+  {
+   "day": "2026-10-26T04:00:00.000Z",
+   "credits": "0",
+   "reconciled_credits": "0",
+   "paused_at": null
+  },
+  {
+   "day": "2026-10-25T04:00:00.000Z",
+   "credits": "0",
+   "reconciled_credits": "0",
+   "paused_at": null
+  }
+ ],
+ "operator_user": [
+  {
+   "id": "01M2V3PM0WYEPXH26NA2J9BRWB",
+   "email": "14stevevitali@gmail.com",
+   "analytics_opt_out": false,
+   "created_at": "2026-09-18T20:35:35.580Z"
+  }
+ ]
+}
