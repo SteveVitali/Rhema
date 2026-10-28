@@ -20,7 +20,7 @@ build finally has a committed completion record.
   first entry lands, append the round's `##` heading *after* the previous region's last line —
   older regions stay byte-frozen (append-only), and the checker's per-region rules judge only the
   current region.
-- `BUILD_INDEX.md` — one row per landed chain row (one per PR #1–#25).
+- `BUILD_INDEX.md` — one row per landed chain row, with its PR and evidence references.
 - `runs/<ID>.md` — the `implement-spec` run ledger for each ticket · `pr/<ID>.md` — its PR body.
   Entry-ID convention (REQ-MEM-5): `<ID>` is the ticket/run id verbatim (`HYGIENE.1`, `ARMB.2`) and
   BUILD_INDEX `evidence` cells point at `runs/<ID>.md` (else `pr/<ID>.md`); a dated operational run
@@ -29,7 +29,16 @@ build finally has a committed completion record.
 - `tools/`, `fixtures/`, `reports/` — committed · `logs/` — the one gitignored subtree.
 
 Everything here is a **historical record**: corrected by a new entry, never by editing an old one.
-Run `check-build-memory.sh .` to validate.
+The maintainer structural check requires the separate `agent-skills` checkout:
+
+```bash
+bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .
+node docs/build/tools/check-append-only.mjs --base origin/main
+```
+
+Run these from the repository root; use the actual PR base for the append-only comparison.
+The external checker is not a prerequisite for local application development. This README is a
+living navigation page; the migration mapping below remains a historical record.
 
 <!-- migrate appends a "## Migration rename mapping" section below when adopting v2 from a legacy scratch dir. -->
 

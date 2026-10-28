@@ -44,10 +44,16 @@ never read it as a green run.
 
 ## Procedure
 
+Run from the repository root after building. Set the system-role `GOLDEN_DATABASE_URL` and
+the funded test `GOLDEN_WORKSPACE_ID` in the approved operator environment without printing
+them. Choose `EXPECTED_SHA`, a fresh `DISPATCH_TAG`, and an output `SCORES_FILE` for the attempt.
+Set `GOLDEN_REPORT_DIR` to a new report directory for this attempt.
+
 ```bash
 # 0 — provenance + estimate (committed before any paid dispatch)
+mkdir -p "${GOLDEN_REPORT_DIR:?set the report directory}"
 node scripts/live/nightly-golden-driver.mjs --cohort minimal --estimate \
-  > docs/build/reports/<date>_rerun/cohort-estimate.json   # >$100 → PAUSE + report
+  > "${GOLDEN_REPORT_DIR}/cohort-estimate.json"   # >$100 → PAUSE + report
 curl -s https://api.rhema.tools/healthz   # build.gitSha must equal the deploy under test
 
 # 1 — funded is_test workspace + a session for a pinned test identity (admin-cli house-grant is
@@ -60,15 +66,16 @@ curl -s https://api.rhema.tools/healthz   # build.gitSha must equal the deploy u
 #     failure mode was hit live on 2026-10-23).
 GOLDEN_BUDGET_RULING=approved \
 API_BASE_URL=https://api.rhema.tools \
-GOLDEN_DATABASE_URL=<system-role dsn over the IAP tunnel> \
-GOLDEN_WORKSPACE_ID=<is_test workspace> \
+GOLDEN_DATABASE_URL="${GOLDEN_DATABASE_URL:?set the approved system-role DSN}" \
+GOLDEN_WORKSPACE_ID="${GOLDEN_WORKSPACE_ID:?set the funded test workspace}" \
 GOLDEN_MINT_SESSION=1 \
 node scripts/live/nightly-golden-driver.mjs --cohort minimal --dispatch \
-  --expect-sha <deploy sha> --dispatch-tag <attempt-name> --scores-out <scores.json>
+  --expect-sha "${EXPECTED_SHA:?set the expected SHA}" \
+  --dispatch-tag "${DISPATCH_TAG:?set the attempt tag}" --scores-out "${SCORES_FILE:?set the score output path}"
 
 # 3 — gate on the measured scores
 GOLDEN_BUDGET_RULING=approved \
-node scripts/live/nightly-golden-driver.mjs --cohort minimal --execute --scores <scores.json>
+node scripts/live/nightly-golden-driver.mjs --cohort minimal --execute --scores "${SCORES_FILE:?set the measured scores path}"
 ```
 
 ## Escalate to the operator when

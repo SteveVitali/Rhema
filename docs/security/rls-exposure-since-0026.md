@@ -1,5 +1,9 @@
 # RLS-only exposure since migration 0026 — audit list (SEC.1 / REQ-SPEC-30; HUMAN-H7 review)
 
+This is the historical exposure review and role-switch record. Dates and findings below remain
+attributed to that review; they are not a new audit of the current deployment. For current
+source boundaries and the executable census, start with [tenancy-audit.md](tenancy-audit.md).
+
 **The window.** Migration `0026_system_bypassrls.sql` granted the production `postgres` role
 `BYPASSRLS` while every service still connected as `postgres`. From **2026-09-17** (0026 applied /
 first prod deploy — whichever is later, per the ticket) until the SEC.1 role switch lands, RLS was

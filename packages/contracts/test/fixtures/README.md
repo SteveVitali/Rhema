@@ -1,12 +1,7 @@
-# Real-project dossier fixtures (P0.02)
+# Dossier schema fixtures
 
-Structured-output sidecar fixtures **derived from the three real projects** in `~/agent-discourse`
-(`the-politics-of-visibility`, `structure-of-political-difference`, `constitution-of-reason`). The claim
-texts, verdicts, URLs, and finding titles are taken from the real markdown dossiers (`01-claim-ledger.md`,
-`editors-letter.md`, `05-second-read.md`). They were hand-authored JSON twins at P0.02, before the ported
-skills emitted sidecars — the emission landed under REQ-ARCH-5 in P0.03/P0.04 (delivered runs now emit
-validating sidecars; D-P0.03-1 DONE) — and these fixtures are still what the AC6/AC8 contract tests
-validate the schemas against (REQ-SPEC-12, REQ-OBJ-16/17).
+These JSON files exercise the structured-output contracts against examples derived from three projects: `the-politics-of-visibility`, `structure-of-political-difference`, and `constitution-of-reason`.
 
-The golden set grows with every green nightly dossier becoming a parser fixture (§11.1); the nightly
-golden runs themselves are D-P0.15-4 (OPEN — operator-budget-gated), so these three remain the seed.
+They were hand-authored from Markdown dossiers during P0.02, before the ported skills emitted sidecars. Their historical source was the maintainer's separate `agent-discourse` checkout; that checkout is not needed to run the contract tests. The fixtures cover schema acceptance and representative object shapes, not current model quality or a freshly delivered run.
+
+Keep additions small and tied to a contract assertion. Review source text and redistribution permission before adding material from another real project. Live protocol validation follows the [golden rerun rule](../../../../docs/ops/golden-rerun-rule.md); there is no automatic nightly fixture-growth promise.

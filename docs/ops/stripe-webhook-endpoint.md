@@ -1,6 +1,7 @@
 # Stripe webhook endpoint — `enabled_events` runbook (R6FIX.5; F-R6H11B-2)
 
-> **Status: required at the R6LCH.1 launch deploy.** The prod endpoint
+> **Historical launch requirement (R6FIX.5):** verify current endpoint state before using this
+> procedure; this document does not establish that the change has been applied. The prod endpoint
 > `we_1UH99C2MLe3ETP9Sk4UQBKXs` was created **imperatively** in PRB.18 (Stripe API — not
 > Pulumi; IaC owns only the `stripe-webhook-secret` container). Its `enabled_events` was
 > authored when the processor had three arms; P1.16/BILL.3 added six more. The H11B live
@@ -32,22 +33,28 @@ charge.dispute.closed
 
 - Operator `stripe` CLI authenticated to the live account (`stripe login` / `STRIPE_API_KEY`),
   or the Stripe Dashboard → Developers → Webhooks open on `we_1UH99C2MLe3ETP9Sk4UQBKXs`.
-- No deploy dependency: the processing code for every arm already ships on prod (`dc3a8f6`+);
-  this update is Stripe-side state only. Any later arms land through the same update.
+- Verify the live account, endpoint URL, and deployed handler revision before changing the
+  subscription. The original incident recorded the handlers in `dc3a8f6`+; that is historical
+  evidence, not a substitute for checking the deployment under test. Any later arms land
+  through the same update.
+
+The [Stripe CLI resource reference](https://docs.stripe.com/cli/resources) documents `--live`
+for live-mode resource commands and `-d` for API parameters. These commands change an external
+service; run them only within the operator's approved launch work.
 
 ## Step 1 — subscribe the endpoint to the full handled set
 
 ```bash
-stripe webhook_endpoints update we_1UH99C2MLe3ETP9Sk4UQBKXs \
-  --enabled-events checkout.session.completed \
-  --enabled-events checkout.session.expired \
-  --enabled-events invoice.paid \
-  --enabled-events invoice.payment_failed \
-  --enabled-events customer.subscription.created \
-  --enabled-events customer.subscription.updated \
-  --enabled-events customer.subscription.deleted \
-  --enabled-events charge.dispute.created \
-  --enabled-events charge.dispute.closed
+stripe webhook_endpoints update we_1UH99C2MLe3ETP9Sk4UQBKXs --live \
+  -d 'enabled_events[0]=checkout.session.completed' \
+  -d 'enabled_events[1]=checkout.session.expired' \
+  -d 'enabled_events[2]=invoice.paid' \
+  -d 'enabled_events[3]=invoice.payment_failed' \
+  -d 'enabled_events[4]=customer.subscription.created' \
+  -d 'enabled_events[5]=customer.subscription.updated' \
+  -d 'enabled_events[6]=customer.subscription.deleted' \
+  -d 'enabled_events[7]=charge.dispute.created' \
+  -d 'enabled_events[8]=charge.dispute.closed'
 ```
 
 (Dashboard equivalent: edit the endpoint, tick all nine event types, save.)
@@ -55,14 +62,15 @@ stripe webhook_endpoints update we_1UH99C2MLe3ETP9Sk4UQBKXs \
 ## Step 2 — verify
 
 ```bash
-stripe webhook_endpoints retrieve we_1UH99C2MLe3ETP9Sk4UQBKXs \
-  --format json | jq '.enabled_events'
+stripe webhook_endpoints retrieve we_1UH99C2MLe3ETP9Sk4UQBKXs --live \
+  | jq '{id, livemode, url, enabled_events}'
 ```
 
-The list must equal `STRIPE_WEBHOOK_EVENT_TYPES` exactly (supersets are legal — an event the
-processor doesn't dispatch is acknowledged `ignored`; a MISSING type is the bug this runbook
-exists for). `stripe trigger customer.subscription.updated` is a valid smoke leg against a
-test-mode endpoint; never against prod.
+The list must contain every event in `STRIPE_WEBHOOK_EVENT_TYPES` (supersets are legal — an
+event the processor doesn't dispatch is acknowledged `ignored`; a missing type is the bug
+this runbook exists for). For a smoke test, use a separate test-mode endpoint and a test
+subscription change that produces a required event, then verify delivery and handler state.
+Do not send synthetic test events to the production endpoint.
 
 ## Step 3 — record
 
@@ -81,10 +89,15 @@ exactly-once; a second delivery of the same session returns `ignored`):
 ```bash
 # the operator verb needs RHEMA_OPERATOR_ID + SYSTEM_DATABASE_URL (the prod path runs over the IAP
 # tunnel — the same binding every admin-cli verb uses):
-node dist/admin-cli.js stripe-redrive --event evt_1UVF7T… --note "H11B topup_10 grant — F-R6H11B-1 fix"
+node apps/api/dist/admin-cli.js stripe-redrive \
+  --event "${STRIPE_EVENT_ID:?set the full event id from the private incident record}" \
+  --note "H11B topup_10 grant — F-R6H11B-1 fix"
 ```
 
-Then verify the close-out set:
+Run from the repository root after building. The identifiers abbreviated in this historical
+incident are not executable inputs. For the close-out queries below, substitute the full
+event/session ids from the private incident record and scope ledger/notification checks to
+that purchase; do not interpret unrelated matching rows as proof of its grant.
 
 ```sql
 select id, type, processed_at from stripe_events where id = 'evt_1UVF7T…';          -- processed_at set

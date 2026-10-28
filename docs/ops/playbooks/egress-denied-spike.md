@@ -11,7 +11,14 @@ model misbehaving (repeated probing of non-allowlisted hosts), a user-source fet
 
 - `[slo] violation {"signal":"egress_denied_10m"}` + per-run pause: a spiking run also emits
   `egress_denied_spike` → `pause_signals` → the run parks at a refusal-class card (W1 transport).
-- Read `fetch_log` in the window: `select run_id, status, deny_reason, count(*) from fetch_log where decision='deny' group by 1,2,3`.
+- Read `fetch_log` with the same time and tenant scope as the probe in
+  [`slo.ts`](../../../packages/orchestrator/src/slo.ts). An all-history aggregate is not the
+  ten-minute alert window; exclude flagged test tenants when comparing against the SLO.
+
+The global SLO fires on any qualifying denial in that window. The proxy's per-run
+`DenialSpikeTracker` separately fires once at five denials in its in-memory counter
+(`apps/egress-proxy/src/signals.ts`). A single denial therefore does not prove that a run has
+been paused, and the counter is not a durable fleet-wide count.
 
 ## Diagnose (≤ 10 min)
 
@@ -21,7 +28,9 @@ model misbehaving (repeated probing of non-allowlisted hosts), a user-source fet
 
 ## Contain + recover
 
-- A misbehaving run is already paused by the spike rule — verify `runs.state='waiting_gate'` with a `refusal` gate; leave it parked pending review.
+- Check whether the per-run spike produced a pause signal and a `waiting_gate` state with a
+  refusal gate; leave a parked run pending review. Investigate missing signal delivery rather
+  than assuming the global SLO alert itself paused the run.
 - A regression needs the URL-policy change reverted or the domain allowlist amended — never loosen the policy ad hoc to silence the alarm.
 
 ## Post-incident

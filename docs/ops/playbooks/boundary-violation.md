@@ -1,29 +1,19 @@
-# Playbook: boundary violation (§12.6; §13.5 — boundary violations = 0)
+# Playbook: boundary or delivery validation failure
 
-**Alert:** `mirror_errors_10m` — any `boundary.violation` or `engine.error` internal event in 10 min (the
-probe bundles the two error channels; the line's `signal` says which).
+**Alert:** `mirror_errors_10m` counts delivery-validation failures and `boundary.violation` internal events over ten minutes, excluding test tenants. `engine.error` is not part of this probe; terminal engine failures contribute to the success-rate signal. See [`slo.ts`](../../../packages/orchestrator/src/slo.ts).
 
-A `boundary.violation` event means a tool call touched a path outside its seat's declared scope — the
-scoped-seat model (§12.6) failed to contain it, or the hook boundary enforcement recorded a real violation.
-This is a security signal, not a perf signal: respond accordingly.
+## Triage
 
-## Detect
+1. Identify which event class fired. A failed delivery validation and a tool/filesystem containment failure require different investigation.
+2. Preserve the relevant `run_events`, `run_events_internal`, `tool.audit`, and fetch-log evidence, plus the scoped materialization needed for reproduction. Keep customer content and exploit details in the private incident record.
+3. For a boundary violation, identify the seat/agent label and whether the operation was **denied and logged** or **executed before detection**. The former can be an enforcement success; the latter is a containment failure.
+4. Escalate active containment failures immediately to the operator to stop affected work through the supported run/deployment controls. Do not assume the proxy's automated refusal signals provide a general manual pause control.
 
-- `[slo] violation {"signal":"mirror_errors_10m"}` + the `boundary.violation` row in `run_events_internal`.
-- The pod's `boundary.attested` event carries `violations` + `denied_count` counts for the run — read it for the full picture.
+## Sources to inspect
 
-## Immediate steps (≤ 10 min)
+- [`packages/hooks`](../../../packages/hooks/) for tool-boundary enforcement.
+- [`apps/run-task/Dockerfile`](../../../apps/run-task/Dockerfile) and [`scoped-runner.ts`](../../../apps/run-task/src/scoped-runner.ts) for the uid/capability and scoped-process boundaries.
+- [`infra/k8s/apparmor/`](../../../infra/k8s/apparmor/) for the filesystem/mount restrictions.
+- The run's `boundary.attested` record for its violation and denial counts.
 
-1. **Pause the run** if still live — the pause-signal path (`pause_signals` drain) or the manual pause; a boundary violation mid-run means containment is not proven.
-2. **Preserve evidence:** the run's `run_events_internal` rows, `tool.audit` rows, the fetch_log rows, and the pod's `/work` materialization scope — never delete a violating run's rows before the readout.
-3. **Identify the seat:** `agent_label` on the violating event — was it the agent uid or a scoped subagent? A subagent escaping its input-scoped mount namespace is the worst case (SYS_ADMIN/SYS_CHROOT capability audit — `infra/k8s/30-worker-job-rbac.yaml`, `apps/run-task/docker/entrypoint.sh`).
-
-## Diagnose
-
-- Replay the violating tool call against `packages/hooks` boundary enforcement — was the violation DENIED-and-logged (the hook worked; the event is audit signal) or EXECUTED-then-flagged (enforcement gap)?
-- If executed-then-flagged: treat as a live containment failure — pause launches of the affected protocol until the hook gap is fixed.
-
-## Post-incident
-
-- Every boundary violation gets a named entry in `docs/build/LEDGER.md` OPEN FINDINGS until dispositioned.
-- A real containment breach is launch-blocking — feed it to the pen-test scope's known-issues appendix and do not ship past it.
+A confirmed containment breach is launch-blocking. Track remediation privately through the [security triage process](../../security/pen-test-findings-triage.md), add a sanitized build finding when appropriate, and verify the reproduction plus a regression assertion before closing it.

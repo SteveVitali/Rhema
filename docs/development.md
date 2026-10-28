@@ -1,48 +1,132 @@
-# Development — CI cadence policy (R6CI.1, ADR-115)
+# Development
 
-How CI runs are consumed in round 6 under the docs-only/same-tree fast path. The mechanism
-is ADR-115; this page is the *policy* — when a full run is owed and when a fast-path pass
-discharges a boundary read.
+The quickest useful contributor loop is to build the workspace and run the tests around your
+change. Most route, editor, database and orchestration work can be exercised without cloud
+accounts or a live model. This guide also shows how to inspect the web host locally and explains
+where a provisioned backend becomes necessary.
 
-## What runs where
+For contribution and review expectations, start with [CONTRIBUTING](../CONTRIBUTING.md). For
+code navigation, see [Architecture](./architecture.md). The CI cadence policy previously on this
+page is preserved in [CI](./ci.md#maintainer-cadence-policy).
 
-| event | mode | why |
-| --- | --- | --- |
-| `pull_request`, a valid `ci-pass-<h>` anchor whose recorded head is an ancestor **and** every path changed since it is `fast-path-paths.txt`-eligible (same-tree or pure-neutral descendant) | **fast** — gitleaks + `check:no-cookies` + the `neutral-readers.txt` subset; every job still concludes `success` | the head provably cannot change the product or a CI verdict |
-| `pull_request`, anything else | **full** — the five-leg pipeline + `ci-anchor` upload | code, workflow, `.gitleaks.toml`, boundary-tool paths, ambiguous diff, or no valid anchor → full, always |
-| `push` to `main` | **full**, always | D5: `main` never reuses a PR pass |
-| `workflow_dispatch` (`gh workflow run ci.yml --ref <branch>`) | **full**, always | the dispatch is the forcing function; a dispatch on a PR branch attaches its checks to that head SHA |
-| `journeys.yml` schedules | **paused** until R6SWP.1 (D7) — `workflow_dispatch` stays | no ticket consumes the nightly/weekly signal; the WIF variables are unset (15/15 auth failures) |
+## Install and build
 
-## When a FULL run is owed (D4 — per gate + per deploy SHA, never per ticket)
+Use **Node.js 22.x, at least 22.12**, to match CI and satisfy the Vite build, and **pnpm 10.32.1**,
+the version pinned in [`package.json`](../package.json). If pnpm is not installed, install that
+exact version with `npm install --global pnpm@10.32.1`, or use another method from the
+[pnpm installation guide](https://pnpm.io/installation) with the same version pin. Run these
+commands from the repository root:
 
-One green full run, read by `ci-boundary`, is required at:
+```bash
+node --version
+pnpm --version
+pnpm install --frozen-lockfile
+pnpm turbo build lint typecheck
+```
 
-- **each round-6 gate** — GATE-R6B, GATE-LAUNCH, GATE-ACCEPT.R6;
-- **each deploy SHA** — R6DEP.1, R6SWP.1, R6CNT.2's redeploy, R6LCH.1's flip deploys.
+The build compiles the TypeScript project graph, server code, and browser bundles. It does not
+start the application or provision services. Keep the lockfile unchanged unless your change
+actually updates dependencies.
 
-A per-ticket boundary read accepts a **fast-path pass** at that head. If a gate or deploy
-needs a full run and the tip hasn't had one, dispatch it:
-`gh workflow run ci.yml --ref <branch>` → wait for green → proceed.
+No remote-cache credentials or private evaluation checkout are required. Leave
+`RHEMA_EVALS_PATH` unset to use the evaluation stub. The current tree includes the real protocol
+workspace; replacing it for a public distribution is a separate
+[release-preparation task](./open-source-readiness.md).
 
-**Guard:** never add a per-ticket full-run requirement. The October profile (~5 full PR runs
-per ticket at ~58 billed min) shows that cadence cancels the fast path's savings — the whole
-point of phase 1.
+Build before testing: Vitest transpiles test source, but many workspace imports resolve through
+the packages' built `dist/` exports. After a shared-package change, rebuild its consumers before
+interpreting their test results.
 
-## Reading a fast-path head
+## Make a focused change
 
-A fast-path verdict means: *this head's non-docs content is bit-identical (arm A) or
-pure-neutral-descendant (arm B) to a tree a full green run already verified, and every path
-changed since the anchor's recorded head touches only
-`scripts/ci/fast-path-paths.txt`-eligible paths.* Every job prints a
-`CI-FAST-PATH` notice and a step-summary line naming fast vs full; the `ci-boundary` read
-sees the same required checks green at the head.
+For an editor change:
 
-## What is NOT allowed
+```bash
+pnpm turbo build lint typecheck --filter=@rhema/editor...
+pnpm exec vitest run packages/editor
+```
 
-- `main`-push reuse of any PR pass (D5).
-- Phase-2 levers until the measured delta lands — `D-R6CI.1-1` (D6): PGlite template clone,
-  `unit` sharding / job-graph change, shared image builder.
-- Per-image scoping on code heads (a scoped PR once skipped a broken image build — Episteme).
-- `[skip ci]` — leaves the boundary pending.
-- Widening `fast-path-paths.txt` or the anchor contract without a new ADR.
+For web route or component work:
+
+```bash
+pnpm turbo build lint typecheck --filter=@rhema/web...
+pnpm exec vitest run apps/web/src/server.test.ts
+```
+
+The trailing `...` includes the selected package's workspace dependencies. It does not select
+all downstream consumers; use the full build/check command before submitting changes that cross
+package boundaries. To keep a test file running while you edit:
+
+```bash
+pnpm exec vitest apps/web/src/server.test.ts
+```
+
+Choose additional tests based on the behavior you changed. [Testing](./testing.md) explains the
+component, database, integration and deployed-browser layers and their prerequisites.
+
+## Inspect the web host
+
+After building the web package, you can serve its public pages and generated assets:
+
+```bash
+PORT=3000 API_BASE_URL=http://127.0.0.1:8081 APP_BASE_URL=http://localhost:3000 \
+  pnpm --filter @rhema/web start
+```
+
+Open [localhost:3000](http://localhost:3000) or check
+[the health endpoint](http://localhost:3000/healthz). Here `8081` is an explicit local API address;
+the command does not start an API. Public page rendering is useful for layout work, while
+sign-in, authenticated data, imports, collaboration and runs need their configured services.
+Use a fresh browser session when inspecting the host without a backend.
+
+For a watched build, use separate terminals from the repository root:
+
+```bash
+# Terminal 1: rebuild server TypeScript and its referenced packages.
+pnpm --filter @rhema/web exec tsc -b --watch
+```
+
+```bash
+# Terminal 2: rebuild the SPA assets.
+pnpm --filter @rhema/web dev:spa
+```
+
+```bash
+# Terminal 3: restart the compiled server when its output changes.
+PORT=3000 API_BASE_URL=http://127.0.0.1:8081 APP_BASE_URL=http://localhost:3000 \
+  pnpm --filter @rhema/web exec node --watch dist/main.js
+```
+
+Refresh the browser after the watched build finishes. `dev:spa` runs `vite build --watch`; there
+is no configured Vite HMR server. Changes to the permanent SSR browser entry points under
+`apps/web/src/client/` need their separate build:
+
+```bash
+pnpm --filter @rhema/web exec node build-client.mjs
+```
+
+The compiled entry point matters: `src/main.ts` auto-starts only when invoked as `main.js`.
+Running `tsx watch src/main.ts` does not start this server.
+
+## Before opening a pull request
+
+Run the full build, lint and type checks, plus the tests relevant to your change. For the full
+test suite, first read [its optional database and Docker behavior](./testing.md#full-local-suite).
+Browser changes also need the bundle and DOM-contract checks documented there. A user-visible
+change requires a deployed browser journey for final acceptance; a successful local build alone
+does not verify the served experience.
+
+Follow [CONTRIBUTING](../CONTRIBUTING.md) for PR scope and evidence. The
+[CI guide](./ci.md) explains which additional checks run remotely and why a Markdown-only edit
+does not always qualify for the fast path.
+
+## Common setup problems
+
+| Symptom                                                           | Check                                                                                                                                                            |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vite or Rolldown fails on an old Node release                     | Use Node 22.12 or newer within the CI's 22.x line.                                                                                                               |
+| A test cannot resolve `@rhema/*` or a `dist/` entry               | Run the workspace build, or build the affected package and its dependency closure.                                                                               |
+| An install unexpectedly links a private evaluation package        | Unset `RHEMA_EVALS_PATH` and reinstall with the pinned pnpm version.                                                                                             |
+| The local web host renders pages but sign-in or data actions fail | Check the API and integration prerequisites in [Configuration](./configuration.md).                                                                              |
+| Editing an SSR browser entry point appears to have no effect      | Re-run `build-client.mjs`, then refresh the page. The SPA watcher does not build these entry points.                                                             |
+| A clean run-task Docker build refuses to proceed                  | Live images require the separately supplied [SDK trees](../apps/run-task/vendor/README.md). The CI placeholder is only for checks that do not execute the model. |

@@ -1,71 +1,53 @@
-# Licenses & third-party dependency policy
+# Licensing and third-party dependencies
 
-Rhema is MIT-licensed (see `LICENSE`) and closed-source but **open-source-ready** (Q-19). This
-document is the human-readable companion to the machine-enforced licence policy (REQ-ARCH-40):
+Rhema's repository license is [MIT](LICENSE). Third-party libraries, binaries, fonts, and separately supplied SDK files retain their own licenses. This page describes the dependency policy and the components that need attention when distributing source or container images.
 
-- **Allowlist** — `licenses.allowlist.json`: permissive SPDX licences accepted with no per-package
-  rationale (MIT, Apache-2.0, BSD-2/3-Clause, ISC, and a few equivalents).
-- **Exceptions** — `licenses.exceptions.json`: dependencies whose licence is **not** on the allowlist
-  but is knowingly accepted, each with a rationale. An allowlist without an exception list dies by
-  undocumented exceptions (review 13 F48).
-- **Enforcement** — the `public-safe` CI job runs `pnpm check:licenses`, which fails the build on any
-  dependency that is neither allowlisted nor excepted. **SSPL, BUSL (BSL) and AGPL never pass.**
+## Dependency checks
 
-## Exceptions and their rationale
+Run from the repository root after installation:
 
-### `@anthropic-ai/claude-agent-sdk` — commercial terms
-The Agent SDK is a **proprietary** dependency that the whole run model depends on — the largest
-control concession in the design (Q-3; §12.1, REQ-ARCH-4). Its commercial terms are accepted
-knowingly and mitigated by the `Engine` abstraction (REQ-ARCH-7), which keeps a second engine a test
-away.
+```bash
+pnpm check:licenses
+```
 
-**Brand rule:** the harness is hosted under **our own brand**. It is **never** surfaced to users or
-marketed as "Claude Code". User-facing strings that say "Claude Code" are lint-banned
-(`eslint-plugin-rhema/no-banned-strings`).
+The check reads the installed npm dependency graph and applies:
 
-### `pandoc` — GPL-2.0-or-later, separate process
-Pandoc is used only inside the isolated `export` / `convert` containers, invoked as a **separate
-process** over files. GPL copyleft is **not** triggered by separate-process invocation, so it does
-not affect the licensing of our TypeScript. Pandoc is a system binary shipped in the container image,
-not an npm dependency, so the automated npm scan cannot see it — hence this explicit entry.
+- [`licenses.allowlist.json`](licenses.allowlist.json): accepted license identifiers and expressions.
+- [`licenses.exceptions.json`](licenses.exceptions.json): named exceptions with recorded rationales.
+- [`scripts/lib/license-policy.mjs`](scripts/lib/license-policy.mjs): the evaluation rules. A named exception is considered before the package's declared license; otherwise the declared expression must satisfy the allowlist.
 
-### `typst` — Apache-2.0, system binary
-PDF rendering in the `export` container; a separate-process system binary. Permissive, but recorded
-because the npm scan cannot see non-npm binaries.
+SSPL, BUSL, and AGPL are not on the current allowlist. Changes to exceptions require review. A passing npm check does not audit system binaries, font packaging, SDK redistribution rights, or compliance of a release image.
 
-### `util-linux` — GPL-2.0-or-later, vendored static applets (SEC.3)
-The distroless run-task image vendors three statically-linked util-linux applets — `setpriv`,
-`unshare`, `mount` — built from the SHA-256-pinned upstream tarball (kernel.org, util-linux 2.40.4)
-because the runtime has no package manager. They are invoked as **separate processes** by absolute
-argv, never linked into our TypeScript — the pandoc precedent: separate-process invocation does not
-trigger GPL copyleft.
+## Components outside the ordinary npm check
 
-### `libcap-ng` — LGPL-2.1-or-later, statically linked into setpriv (SEC.3)
-`setpriv` links libcap-ng; the toolchain ships only a shared object, so it is built static from the
-SHA-256-pinned upstream source (libcap-ng 0.8.5). Static linkage into a GPL-2.0 binary produces a
-GPL-2.0 whole in any case; the binary remains a separate process.
+| Component                                              | Recorded license                         | Use and source of the build input                                                                                                           |
+| ------------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anthropic Agent SDK (`@anthropic-ai/claude-agent-sdk`) | Commercial terms                         | Operator-supplied wrapper and native executable in [`apps/run-task/vendor/`](apps/run-task/vendor/README.md); not included in a clean clone |
+| Pandoc (`pandoc`)                                      | GPL-2.0-or-later                         | Runs as a separate process for conversion/export; see the [convert](apps/convert/Dockerfile) and [export](apps/export/Dockerfile) images    |
+| Typst                                                  | Apache-2.0                               | PDF rendering in the export image                                                                                                           |
+| util-linux applets                                     | GPL-2.0-or-later in the exception record | Static `setpriv`, `unshare`, and `mount` executables built from pinned source in the [run-task Dockerfile](apps/run-task/Dockerfile)        |
+| libcap-ng                                              | LGPL-2.1-or-later                        | Static library used by the vendored `setpriv` build                                                                                         |
+| dumb-init                                              | MIT                                      | Static PID-1 signal forwarding and reaping in run-task                                                                                      |
+| Turborepo remote cache                                 | MIT                                      | Exact-pinned `turborepo-remote-cache` dependency in [`apps/turbo-cache`](apps/turbo-cache/package.json)                                     |
 
-### `dumb-init` — MIT, static PID-1 init (SEC.3)
-The PID-1 reaper + signal forwarder in the distroless run-task image — the equivalent-approved tini
-substitute (ADR-074), built static from the SHA-256-pinned upstream source (dumb-init 1.2.5).
+The Dockerfiles and lockfiles own the build versions. The SDK's presence in an image does not make it MIT-licensed or establish permission to redistribute it.
 
-### `turborepo-remote-cache` — MIT, deployed container (OPS.2)
-The self-hosted Turborepo remote-cache server (Ducktors) running as the `rhema-prod-turbo-cache`
-Cloud Run service — wrapped exact-pinned `2.14.2` by `apps/turbo-cache` so the root lockfile carries
-the integrity hash (ADR-081). MIT on the allowlist; recorded here as the deployed-container entry
-the OPS.2 ticket requires.
+The harness must never be called "Claude Code" in Rhema's user-facing strings. This repository's branding rule is also enforced by the vocabulary linter.
 
-### Fonts — OFL-1.1 / vendor-specific
-Bundled font files (SIL Open Font License and vendor licences) shipped as assets in the
-export/marketing containers. Redistribution terms are honored per font and enumerated here as fonts
-are added.
+The process boundary used for Pandoc and the util-linux applets describes the architecture; it is not a blanket exemption from license obligations. The FSF's [aggregation guidance](https://www.gnu.org/licenses/gpl-faq.en.html#MereAggregation) considers both the communication mechanism and how closely the programs interact, including when containers are involved. Before distributing images, review the exact component licenses and provide the applicable notices, license texts, and source or other required materials. Static libcap-ng linkage needs its own review; this document does not treat it as automatically settled by the executable's license.
 
-## Notes
-- Protocol IP (skills, rubrics, calibration language, prompts) lives in the **private**
-  `packages/protocols` — a committed workspace member since the 2026-09-01 REQ-ARCH-37 amendment —
-  and in `evals/`, which is still path-resolved (`RHEMA_EVALS_PATH`, `.pnpmfile.cjs`). Neither may
-  reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33). A public export
-  drops `packages/protocols` and builds against `packages/protocols-stub` + `evals-stub`.
-- `beautiful-mermaid@1.1.3` is MIT — the earlier "licence unverified" caveat (§16.3 #22) is resolved;
-  its EPL-2.0 transitive dep is excepted in `licenses.exceptions.json` (worker-only diagram layout,
-  never a client bundle).
+## Fonts
+
+The web build copies Latin WOFF2 assets from these Fontsource packages into `apps/web/public/fonts/`:
+
+- `@fontsource-variable/inter`
+- `@fontsource-variable/jetbrains-mono`
+- `@fontsource-variable/literata`
+
+They are recorded as OFL-1.1 exceptions. The [Open Font License](https://openfontlicense.org/open-font-license-official-text/) requires the copyright notice and license to accompany redistributed copies, including through qualifying readable metadata. Verify those materials in the final served assets and release image; the build's font-copy step and the npm policy check alone do not establish that requirement is satisfied.
+
+## Public export boundary
+
+The development repository contains private editorial material in `packages/protocols`. The intended public export replaces that package with `packages/protocols-stub` under the `@rhema/protocols` package name. Private evaluation code is resolved from an external `RHEMA_EVALS_PATH`; [`evals-stub`](evals-stub/) supplies the fallback when it is unset.
+
+These boundaries also apply to history, generated artifacts, fixtures, and logs. The marker gate checks specific public outputs; it is not an audit of everything a GitHub visibility change would expose. See [open-source readiness](docs/open-source-readiness.md) for the release work that remains. No protocol or evaluation text may enter a client bundle, OpenAPI document, or event payload.

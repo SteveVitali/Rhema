@@ -1,8 +1,29 @@
-# PRB.15 — Production bring-up runbook (Stage B, operator-gated)
+# Production operations and bring-up record
 
-> **Stage A (this PR) authored everything offline.** Nothing below has run. Every step spends money or
-> touches production — the [OPERATOR GATE] is `HUMAN-H6` complete + a stated budget. Do not proceed
-> past a step whose output does not match the expected result.
+This operator guide began with PRB.15 and retains dated deployment observations and amendments.
+It is not a fresh-install tutorial or evidence that today's production matches this checkout.
+Deployment and spending require the operator's approved scope and budget. Stop when an observed
+result differs from the reviewed plan.
+
+## Read before an operation
+
+**Source review, 2026-10-27:** use the current [stage configuration](config/stages.ts) and a
+reviewed Pulumi plan for resource shape. The original September sizing estimates below are
+historical. Current source specifies regional Cloud SQL and a two-instance proxy MIG behind an
+internal load balancer; follow [proxy HA operations](../docs/ops/proxy-ha.md), not the retired
+direct-instance proxy address. The application delivers user content through tenant-authorized
+GCS V4 signed URLs, not the retired CDN signing recipe. Monitoring-channel binding was recorded
+on 2026-10-23 in §2; verify its current state before relying on paging.
+
+For routine work, start with the [Pulumi guide](pulumi/README.md), [configuration reference](../docs/configuration.md),
+and the relevant [operator runbook](../docs/README.md). The numbered sections below preserve the
+bring-up sequence and its later corrections. Dated SHA snapshots, cost estimates, missing-secret
+observations, and one-time role switches are evidence of their date, not steps to repeat blindly.
+
+**Command directories:** run `pulumi` and the separate `npm install` from `infra/pulumi`.
+Run `pnpm`, `node scripts/...`, Cloud Build submissions, and `./infra/k8s/apply.sh` from the
+repository root. The blocks do not form one continuous shell session. Never paste placeholder
+credentials into shell history; use the deployment's approved secret-input mechanism.
 
 ## 0. Human prerequisites (HUMAN-H6 — `docs/tickets/28c_HUMAN-H6__prod-launch-accounts.md`)
 
@@ -67,8 +88,9 @@ pulumi config set          rhema:serviceImages \
   '{"api":"<repo>/api@sha256:…","web":"<repo>/web@sha256:…","worker":"<repo>/worker@sha256:…",
     "fetcher":"<repo>/fetcher@sha256:…","convert":"<repo>/convert@sha256:…",
     "export":"<repo>/export@sha256:…","collab":"<repo>/collab@sha256:…"}'
-# internalApiUrl defaults to https://api.rhema.tools on prod; proxyBaseUrl is set after the MIG stands up:
-pulumi config set          rhema:proxyBaseUrl        'http://<proxy-internal-address>:8443'  # the proxy serves PLAIN HTTP (surfaced live 2026-09-17 — https:// gets "wrong version number"); the address is the RESERVED rhema-prod-proxy-ip — read it via `gcloud compute addresses describe rhema-prod-proxy-ip-* --region us-central1` (the MIG re-assigns ephemeral IPs on every template roll without it)
+# internalApiUrl defaults to https://api.rhema.tools on prod. Use the ILB VIP, never an instance NIC:
+pulumi config set          rhema:proxyBaseUrl        'http://<proxyVipAddress-output>:8443'
+# See docs/ops/proxy-ha.md for the maintained endpoint/rollback procedure.
 # OPS.2 — collab: the `rhema_collab` role's DSN was set by hand at STB.1 (2026-09-25) and is
 # ADOPTED AS-IS — never re-set, rotated, or role-altered (the SEC.1 switch moved the collab env to
 # the Secret Manager `rhema-prod-collab-database-url` version, so on prod this config key is now a
@@ -208,6 +230,9 @@ revisions. (Or pre-create the repo: `gcloud artifacts repositories create rhema-
 
 ## 3. [OPERATOR GATE] `pulumi up`
 
+Run from `infra/pulumi`. The expected-surface paragraph below records the original September
+bring-up shape; the current stage facts and reviewed preview supersede its zonal/MIG-size values.
+
 ```bash
 pulumi preview    # review the plan — Cloud SQL db-g1-small warm + 35d backups/7d PITR, prod domains
                 # cert, prod-locked deletions (Cloud SQL + GKE + buckets)
@@ -223,6 +248,8 @@ Cloud Run services + the convert Cloud Run **Job**, the Secret Manager container
 live) + the reserved global IP.
 
 ## 4. Apply the run-task k8s state (post-`up`, stack-parameterized)
+
+Run from the repository root, with the approved stage's cluster selected.
 
 ```bash
 # prod is a ZONAL cluster (us-central1-a) — get-credentials takes --zone, not --region:
@@ -250,6 +277,13 @@ take minutes–an hour after DNS propagates).
 > `usercontent.rhema.tools` host — the app does not depend on per-workspace subdomains yet.
 
 ## 6. Seed the Secret Manager versions (out-of-band; values never in repo/state/ledger)
+
+The September checklist below is retained for its amendment history. Read the current
+`requiredSecrets` output and `PROD_REQUIRED_SECRETS` before provisioning: `ops-alert-webhook-url`
+is required again. Program-managed values, including the app DSN and remote-cache token, have
+their own creation/rotation paths in `pulumi/index.ts`; do not overwrite them as an indiscriminate
+seeding loop. Pulumi-managed secret values are encrypted in state; the heading's out-of-band
+rule applies to the operator-supplied values.
 
 ```bash
 for s in $(pulumi stack output requiredSecrets --show-secrets=false | jq -r '.[]'); do
@@ -288,9 +322,9 @@ later leg — the key plumbing exists now):
 
 ## 7. Migrations + protocol seed on prod Cloud SQL
 
-Reach the private-IP instance from an in-VPC path — **the Cloud SQL Auth Proxy on the operator's
-machine is the one-liner** (private-IP instances need an authorized-network route; the proxy
-dials out through the VPC):
+Reach the private-IP instance from a host with VPC reachability. The Cloud SQL Auth Proxy does
+not create that network path for an arbitrary operator laptop; use an approved in-VPC host or
+tunnel. The migration commands below run from the repository root.
 
 ```bash
 # one-liner: cloud-sql-proxy <PROJECT>:<REGION>:<INSTANCE> — instance name from
@@ -372,7 +406,10 @@ curl -fsS https://rhema.tools/ | head
 #   -H 'content-type: application/json' -d '{"provider":"google","callbackURL":"https://api.rhema.tools/"}' \
 #   | grep -i '^set-cookie'   # ⇒ __Host-rhema.* …; Secure; HttpOnly; SameSite=Lax  (no Domain=)
 # the user-content origin must never set a cookie of its own:
-curl -fsSI https://usercontent.rhema.tools/<a-seeded-object> | grep -i 'set-cookie' && echo FAIL
+# ADR-113: obtain a short-lived signed GCS URL for an authorized fixture through the application.
+# Do not print or commit the signed URL. GET signatures are method-bound; do not substitute HEAD.
+curl -fsS --dump-header - --output /dev/null "${USERCONTENT_SIGNED_URL:?set an authorized fixture URL}"
+# Expect HTTP 200 and no Set-Cookie header; a curl error or another status fails the check.
 # sandbox egress (from a runs-namespace pod): only the proxy answers; api.anthropic.com is blackholed.
 kubectl -n runs run egress-check --rm -i --image=curlimages/curl -- \
   sh -c 'curl -m5 -sS https://api.anthropic.com || echo BLOCKED; curl -m5 -sS http://<proxy>:8443/v1/messages -X POST -d "{}"'  # the proxy is plain HTTP with NO /healthz (surfaced live 2026-09-17) — an uncredentialed request must come back `{"error":{"type":"egress.denied","message":"missing proxy credential"}}` 403; anything else is a wiring bug
@@ -412,11 +449,16 @@ PROBE_SESSION_A='…' PROBE_SESSION_B='…' \
 #    not a rollback trigger by itself).
 ```
 
-**Rollback (retained pre-switch revision):** `gcloud run services list-revisions
+**Historical SEC.1 rollback (retained pre-switch revision):** `gcloud run revisions list
 --service rhema-prod-api` → shift traffic back to the pre-switch revision
 (`gcloud run services update-traffic rhema-prod-api --to-revisions <rev>=100`), same for
 `rhema-prod-worker`, then `alter role rhema_app_login nologin` to seal the window. The `postgres`
 system DSNs are untouched throughout — system paths never leave the elevated role.
+
+That rollback would restore the old bypassing user-serving role. It is a record of the SEC.1
+transition, not a standing incident remedy. Current tenant-isolation failures require a reviewed
+fix/rollback that preserves the non-bypass user boundary. Revision enumeration uses the
+[documented `gcloud run revisions list` command](https://docs.cloud.google.com/sdk/gcloud/reference/run/revisions/list).
 
 ## What Stage B then records
 
@@ -467,7 +509,11 @@ The service scales to zero (min 0 / max 2, ~$0–2/mo); artifacts land in
 protocol-bearing artifact leaves the project). Rotation = a fresh secret version + repo-secret
 update; nothing else depends on the value.
 
-### 12c. Cloud SQL HA pre-plan (plan-only — never executed inside OPS.2)
+### 12c. Historical Cloud SQL HA pre-plan (plan-only inside OPS.2)
+
+The following estimates and proposals are the OPS.2 record. Later source changes configure
+regional Cloud SQL, proxy HA, and lower Cloud Run floors; inspect current configuration and
+dated R6INF receipts before planning an operation. These figures are not current quotations.
 
 The measured bill (ADR-082) puts the always-on floor ≈ $285/mo, dominated by the Cloud Run warm
 floor; the HA levers below are priced but NOT executed:
@@ -489,7 +535,10 @@ The round-4 frontend-SPA migration rewrote the renderer contract. This section i
 operational truth for anything touching renderer, rollback, or activation order; the pre-cleanup
 flag recipes elsewhere in this runbook are retained for pre-cleanup checkouts only.
 
-### 13.0 Provenance first — prod is pre-chain
+### 13.0 Historical provenance snapshot — 2026-10-10
+
+The SHA comparison below is the SPACAP.2 observation. It is preserved as evidence, not a claim
+about the deployment now. Run the provenance check against the exact deployment under test.
 
 Current prod serves **pre-chain ancestors**: web `6ebb1cb76e14be8bfa6c6dc0731932c9011e6224`,
 api `0acd16d0f6d5af473f28815b7358140d70e39146` (`/healthz` `build.gitSha`,
@@ -558,7 +607,11 @@ The chain activates by the SPACAP.2 runbook
    it jumps all-SSR→all-SPA in one deploy with flag rollback already gone. It is a fallback, not
    the plan; every deviation from the cadence is an operator call, recorded.
 
-### 13.4 The owed operator secret — `rhema-nonprod-resend-api-key`
+### 13.4 Historical preview prerequisite — `rhema-nonprod-resend-api-key`
+
+The missing-secret observations below were recorded during the SPA implementation. Check the
+current guarded preview setup rather than assuming they remain unresolved; do not expose a
+secret value while checking whether the prerequisite exists.
 
 Every `pr-<n>` preview leg is blocked on one human act: seeding a real send-only Resend key as the
 shared Secret Manager secret `rhema-nonprod-resend-api-key` in project `rhema-507501` (probed

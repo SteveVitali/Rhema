@@ -31,8 +31,11 @@ and one of three dispositions: **fix ticket**, **accepted-with-mitigation (DEFER
 
 ## 3. Intake workflow (the tickets-from-findings path)
 
-1. **Receive** — the report lands in `docs/build/readouts/` (a `pen-test-<vendor-tag>.md` file) with
-   each finding normalized to the §1 template. `<vendor-tag>` is filled at procurement.
+1. **Receive privately** — keep the vendor's report and reproduction payloads in the agreed
+   restricted disclosure channel, following [SECURITY.md](../../SECURITY.md). Normalize each
+   finding to the §1 template there. The repository receives a sanitized readout only after
+   the operator approves disclosure; unpublished exploit details, customer data, and credentials
+   do not belong in public issues, tickets, or build records.
 2. **Number + dedupe** — assign `PT-NN` ids in report order. Cross-check each finding against the
    deterministic suite (`@rhema/security-checks` `injection-controls.test.ts`) and the live-smoke
    record: a finding the suite already guards is re-verified, not re-litigated; a finding that
@@ -42,7 +45,7 @@ and one of three dispositions: **fix ticket**, **accepted-with-mitigation (DEFER
 4. **Disposition** — per the §2 table:
    - *fix ticket*: file under `docs/tickets/` in the next sequence slot with the `PT-NN` id in the
      title; the runbook links ticket ↔ finding both ways.
-   - *accepted-with-mitigation*: append a `DEFERRALS.md` row (id `D-PT-NN`) naming the mitigation,
+   - _accepted-with-mitigation_: append a sanitized `DEFERRALS.md` row (id `D-<TICKET>-<n>`, linked to the `PT-NN` finding) naming the mitigation,
      the risk owner, and the revisit trigger — an acceptance that is not in the ledger did not happen.
    - *backlog*: backlog ticket with the `PT-NN` id; no DEFERRALS row needed.
 5. **Launch gate** — the launch-blocking list is every `critical` not yet `closed-fixed` plus any
@@ -58,6 +61,8 @@ and one of three dispositions: **fix ticket**, **accepted-with-mitigation (DEFER
 - **No silent drops.** Every received finding ends at a status; `received` findings older than the
   triage cadence are themselves a process bug to name in the readout.
 - **Secrets never** enter findings, tickets, ledgers, or this repo — cite the disclosure *path*.
+  Keep sensitive reproduction details private until coordinated disclosure; a public tracking
+  row can identify the work and its owner without exposing the exploit.
 - **Compensating controls stay named** while the engagement is un-procured: the deterministic
   §12.8 suite + the Stage-B live smokes are the interim assurance, and the readout says so (per
   the scope doc — a slipped engagement is not a quiet skip).

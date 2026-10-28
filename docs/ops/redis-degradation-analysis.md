@@ -1,5 +1,9 @@
 # Redis degradation analysis (REQ-COST-4 — COST.1, 2026-10-16)
 
+This is the dated COST.1 analysis. Its prices, observations, and rulings remain the
+2026-10-16 record; consult current configuration and a new measurement before an operational
+decision. The source-level consumer dependencies below do not constitute a fresh outage drill.
+
 > Scope: the Memorystore BASIC M1 1 GiB instance on prod — **$35.77/mo**, the second-largest
 > single line after the Cloud Run warm floor (`billing-read.mjs` recompute 2026-10-16). This
 > is the degradation analysis REQ-COST-4 gates ANY Redis tier/removal lever on (D1-F4/F5:

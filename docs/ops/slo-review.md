@@ -26,8 +26,10 @@ Recorded for the launch checklist (P1.22). This file IS the REQ-ARCH-34 record.
   window, feature work on that surface pauses until the budget recovers. "The surface" is the signal's
   owning layer (e.g. `run_start_latency_p95_s` → the run-launch path; `provider_429_5xx_pct_5m` → the
   egress-proxy/provider path).
-- **Breach ⇒ playbook.** Every alert row has a playbook in `docs/ops/playbooks/`. A paging breach is
-  handled by its playbook, not improvised.
+- **Breach ⇒ response.** Use the signal-to-playbook mapping in [on-call.md](on-call.md). Five
+  playbooks cover specific failure classes; other signals follow the incident process below
+  with a named operator and owning surface. Do not assume a missing playbook or an unimplemented
+  control has been supplied by the alert definition.
 - **Unmeasured signals.** Signals with no data path are listed `unmeasured` in `probeSlos`
   (`packages/orchestrator/src/slo.ts`) — the §17 readout and this review carry them verbatim; an
   unmeasured signal is never reported as green.
@@ -35,8 +37,8 @@ Recorded for the launch checklist (P1.22). This file IS the REQ-ARCH-34 record.
 ## Where the numbers come from
 
 | Signal | Source |
-|---|---|
-| DB-backed signals (10) | `slo.probe` sweep — `apps/worker/src/main.ts`, `packages/orchestrator/src/slo.ts` (ONB.1 added `import_preview_p95_s`: the api samples `import_preview_ms` into `slo_samples` per ready preview, `detail` = format kind) |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DB-backed signals | `slo.probe` sweep — `apps/worker/src/main.ts`, `packages/orchestrator/src/slo.ts` owns the current probe set (ONB.1 added `import_preview_p95_s`: the api samples `import_preview_ms` into `slo_samples` per ready preview, `detail` = format kind) |
 | Weekly readings | `slo.review.weekly` cron → `sloWeeklyReview` → `[slo] weekly`/`weekly-summary` log lines → `rhema_slo_weekly`(+`_value`) metrics → the dashboard's weekly tiles (SLO.1) |
 | API availability | Cloud Monitoring request SLI + `Slo` resource — `infra/pulumi/monitoring.ts` |
 | Cost drift | `usage.reconcile` nightly → alertSink — `apps/worker/src/billing-jobs.ts` |
@@ -46,3 +48,7 @@ Recorded for the launch checklist (P1.22). This file IS the REQ-ARCH-34 record.
 Every breach that pages is recorded in `docs/build/LEDGER.md` OPEN FINDINGS until the budget recovers,
 with the playbook used. Recurring breaches of the same signal in consecutive weeks get a named deferral
 or a fix ticket — never a silently-raised threshold.
+
+Keep exploit payloads, credentials, and customer content in a private incident record. Public build
+records identify the signal, owner, disposition, and sanitized evidence. The provider-outage and
+orphan playbooks name current implementation gaps; a green or empty metric does not discharge them.

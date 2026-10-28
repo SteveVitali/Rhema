@@ -1,29 +1,24 @@
-# Security Policy
+# Security policy
 
-## Reporting a vulnerability
-Please report suspected security issues privately to **security@rhema.tools**. Do not open a public
-issue for a vulnerability. We aim to acknowledge within 3 business days and to provide a remediation
-timeline after triage.
+## Report a vulnerability privately
 
-## Handling of secrets
-Secrets are **never** committed to this repository (enforced by gitleaks in the `public-safe` CI job)
-and are never passed as plaintext environment variables to `web` or `collab` (REQ-ARCH-30). Provider
-keys live only in the `egress-proxy`; Stripe and Better Auth secrets live in GCP Secret Manager. The
-per-run token and proxy credential are delivered to the `harness` uid via a file the `agent` uid
-cannot read — never as env vars to the model's process (REQ-SPEC-10).
+Email **security@rhema.tools** with suspected security issues. Please do not include an unpublished vulnerability in a public issue, pull request, or build record. We aim to acknowledge reports within three business days and provide a remediation timeline after triage.
 
-## Isolation posture
-- The sandbox subnet has **no** route to an internet or NAT gateway (REQ-ARCH-2); its only egress
-  target is the egress-proxy tier (enforced by VPC firewall rules).
-- `fetcher` is the only component that opens arbitrary outbound HTTP and it parses nothing; `convert`
-  parses and has no network (REQ-ARCH-4 amended).
-- Row-Level Security (`FORCE ROW LEVEL SECURITY`, `SET LOCAL` only) scopes every tenant-owned table.
-  Tenant isolation in depth (REQ-SPEC-30): user-serving code connects as the `rhema_app_login` role
-  that cannot bypass RLS; only the documented system pool (`SYSTEM_DATABASE_URL`) holds a bypass
-  role — never for a user request — and the deployed stage is exercised by a two-tenant probe over
-  the tenant-scoped read routes (`integration/src/two-tenant-probe.ts`).
+Include the affected commit or deployment, reproduction steps, expected and observed behavior, and the likely impact. Use a minimal reproduction with accounts and data you control. Redact credentials, session cookies, signed URLs, and other users' content; describe where a secret was exposed without sending its value.
 
-## Data retention & deletion
-Retention follows the §13.3 schedule (REQ-ARCH-29); project and account deletion follow the
-tombstone→purge and grace→hard-delete pipelines (REQ-ARCH-28; REQ-ACCT-4). See `infra/config/retention.ts`
-and `apps/worker/src/deletion.ts`.
+Publication of the source does not authorize testing other people's accounts or the hosted service. An external assessment uses an agreed scope, test accounts, and budget; see the [engagement scope](docs/security/pen-test-scope.md).
+
+## Security boundaries
+
+The repository's required controls include:
+
+- **Secrets:** never commit credentials. The `public-safe` CI job runs gitleaks. Provider keys belong at the egress-proxy boundary; Stripe and authentication secrets are managed through Secret Manager. The model process must not receive provider keys, run tokens, or proxy credentials. Run-task separates the `harness` and `agent` uids, with privileged credentials in harness-readable files.
+- **Sandbox egress:** arbitrary internet access is restricted through the proxy. The network also permits specific infrastructure traffic, including DNS, Private Google Access, and Workload Identity; inspect both [VPC rules](infra/pulumi/network.ts) and [pod NetworkPolicy](infra/k8s/20-run-task-egress-policy.yaml) when changing this boundary.
+- **Tenant isolation:** user-serving database access uses a role without `BYPASSRLS`. Directly tenant-scoped tables use RLS; child tables also depend on authorized parent access and explicit predicates. Elevated system connections are restricted to reviewed call sites. See the [tenancy audit](docs/security/tenancy-audit.md), table census, and [two-tenant probe](integration/src/two-tenant-probe.ts).
+- **Untrusted content:** fetching and parsing are separated; conversion is isolated from network access. User-content delivery applies a closed inline-image allowlist and download disposition for other types. See the [content/CSP audit](docs/security/usercontent-csp-audit.md).
+
+These are requirements and source-level controls, not a claim that every deployment or integration has been independently certified. In particular, the worker has optional model-key integrations that need review against the proxy-only policy before release; the [release-readiness review](docs/open-source-readiness.md) records that discrepancy. Dated security audits describe their recorded scope and date, not a fresh assessment of the current deployment.
+
+## Retention and deletion
+
+Retention configuration lives in [`infra/config/retention.ts`](infra/config/retention.ts). Project and account deletion use staged tombstone/purge and grace/hard-delete workflows implemented in [`apps/worker/src/deletion.ts`](apps/worker/src/deletion.ts). Review those paths when changing storage or adding a retained data class.

@@ -4,7 +4,10 @@ The prod egress proxy is a **regional MIG of 2 ephemeral-NIC instances fronted b
 internal passthrough Network Load Balancer**. Consumers never dial an instance — they
 dial the shared VIP.
 
-## The addresses (prod, `rhema-507501` / `us-central1`)
+## Recorded addresses (2026-10-24; prod, `rhema-507501` / `us-central1`)
+
+These names and measurements belong to the recorded drill. Confirm current stack outputs and
+resource membership before reusing an operational command; this document is not a new live read.
 
 | thing | value | notes |
 | --- | --- | --- |
@@ -41,7 +44,7 @@ gcloud compute instance-groups managed list-instances rhema-prod-proxy-mig-34ea2
   --region us-central1 --project rhema-507501
 
 # 3. Is the VIP answering? (in-VPC; unauthenticated EXPECTS 403 missing proxy credential —
-#    any other response means the proxy process, not the network, is down)
+#    an unexpected response needs proxy/auth/routing diagnosis)
 kubectl run ilb-probe --rm -i --namespace runs --image=curlimages/curl:8.10.1 \
   --restart=Never -- curl -sS --max-time 10 -o /dev/stdout -w "\nSTATUS %{http_code}\n" \
   -X POST http://10.8.16.7:8443/v1/messages -H "content-type: application/json" -d '{}'
@@ -54,8 +57,9 @@ kubectl run ilb-probe --rm -i --namespace runs --image=curlimages/curl:8.10.1 \
   interval) and autoheal re-creates (~4min to 2×HEALTHY). If autoheal doesn't trigger,
   check `gcloud compute operations` for stockout/quota and the health check above.
 - **All backends down** (e.g., bad image rollout): run pods get connection errors on
-  provider calls. MIG roll back via template or `gcloud compute instance-groups managed
-  rolling-action restart`; if the whole ILB shape is implicated, see Rollback.
+  provider calls. Restore the reviewed known-good template/image through the deployment path.
+  A rolling restart alone keeps the current template and is not an image rollback. If the
+  whole ILB shape is implicated, see Rollback.
 - **VIP not answering but backends HEALTHY**: check the forwarding rule still binds
   `proxyVipAddress` + `proxy-be`, and that the request came from same-region
   (`allowGlobalAccess:false`).
@@ -76,9 +80,9 @@ kubectl run ilb-probe --rm -i --namespace runs --image=curlimages/curl:8.10.1 \
 
 `proxy-ip` (`10.8.16.4`) is retained RESERVED purely for the rollback window. After the
 posture soaks (operator decides — suggest ≥1 week of green + one maintenance window),
-a cleanup `up` may delete the Address and the `egressProxyIpPin` fact. Until then it is
-free (internal reservations bill nothing) and must not be deleted out-of-band — Pulumi
-owns it.
+a cleanup `up` may delete the Address and the `egressProxyIpPin` fact. Until then it must not
+be deleted out-of-band — Pulumi owns it. Recheck current billing separately when deciding
+the cleanup window.
 
 ## Drill procedure (repeat of the 2026-10-24 receipt)
 
