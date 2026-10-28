@@ -2232,55 +2232,48 @@ async function p1DesktopPillLeg(ctx: StepCtx): Promise<void> {
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-1440.png"), fullPage: true });
 }
 
-/** C1 (RED, ACT.1) — claims equal the entitlement config, per AUDIENCE (ADR-043): while
- *  `trial.audience` sits at `test_tenants` an anonymous `/` + `/pricing` carry NO trial claim
- *  (the operator pause), and a signed-in is_test session's `?audience=test` preview renders the
- *  generated config figures — the derived word cap + pocket — identical on both surfaces. */
+/** C1 (GREEN, ACT.1 → R6LCH.1) — claims equal the entitlement config, per AUDIENCE (ADR-043):
+ *  R6LCH.1 shipped `trial.audience = everyone` (2026-10-28, GD-LAUNCH-MONEY.R6) — the anonymous
+ *  `/` + `/pricing` now carry the config claim for every viewer, and a signed-in is_test
+ *  session's `?audience=test` preview renders the same config-equal figures — the derived word
+ *  cap + pocket — identical on both surfaces. */
 const C1: StepFn = async (ctx) => {
   const cap = PRICING.trial.entitlement.wordCap.toLocaleString("en-US");
   const pocket = PRICING.trial.pocketCredits.toLocaleString("en-US");
   const generated = trialIncludedNote();
-  // — the operator pause: anonymous surfaces render no trial claim whatsoever.
-  const { page: anonPage } = await ctx.anon();
-  for (const path of ["/", "/pricing"]) {
-    await gotoOk(anonPage, `${ctx.webBaseUrl}${path}`);
-    const body = (await anonPage.textContent("body")) ?? "";
-    for (const leak of [generated, "first review is included", "one included Review"]) {
-      if (body.toLowerCase().includes(leak.toLowerCase())) {
-        throw new Error(`${path} leaks the gated trial claim to an uncovered audience: "${leak}"`);
+  const claimsCheck = async (page: Page, base: string, suffix: string) => {
+    const landing = await gotoOk(page, `${base}/${suffix}`)
+      .then(() => page.textContent("body"))
+      .then((b) => b ?? "");
+    for (const claim of [
+      PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote,
+      PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer,
+    ]) {
+      if (!landing.toLowerCase().includes(claim.toLowerCase())) {
+        throw new Error(`/${suffix} render lacks the published trial claim under audience=everyone: "${claim}"`);
       }
     }
-  }
-  // — the covered audience's preview: a signed-in test tenant sees config-equal claims.
-  // Per §15.1/§15.2 the landing carries the claim TEXT (the hero note + the FAQ answer — the
-  // spec copy carries no figure), while /pricing carries the generated figures: the derived
-  // word cap, the pocket, and the generated includedNote. The assertions match
-  // claims-visibility.test.ts's deterministic contract exactly — "claims equal the config",
-  // surface by surface.
+    const pricing = await gotoOk(page, `${base}/pricing${suffix}`)
+      .then(() => page.textContent("body"))
+      .then((b) => b ?? "");
+    for (const [label, figure] of [
+      ["word cap", cap],
+      ["pocket", pocket],
+      ["includedNote", generated],
+    ] as const) {
+      if (!pricing.includes(figure)) {
+        throw new Error(`/pricing${suffix} render lacks the configured ${label} "${figure}"`);
+      }
+    }
+  };
+  // — the launched audience: the anonymous viewer is covered — both public surfaces must carry
+  // the config claim (its ABSENCE is now the leak: a hidden claim post-flip is a lie of omission).
+  const { page: anonPage } = await ctx.anon();
+  await claimsCheck(anonPage, ctx.webBaseUrl, "");
+  // — the covered preview leg stays config-equal: the signed-in test tenant sees the same
+  // generated figures (the ?audience=test seam still answers isTest).
   const { page } = await ctx.returningUser("a");
-  const landing = await gotoOk(page, `${ctx.webBaseUrl}/?audience=test`)
-    .then(() => page.textContent("body"))
-    .then((b) => b ?? "");
-  for (const claim of [
-    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote,
-    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer,
-  ]) {
-    if (!landing.toLowerCase().includes(claim.toLowerCase())) {
-      throw new Error(`/?audience=test render lacks the config claim text: "${claim}"`);
-    }
-  }
-  const pricing = await gotoOk(page, `${ctx.webBaseUrl}/pricing?audience=test`)
-    .then(() => page.textContent("body"))
-    .then((b) => b ?? "");
-  for (const [label, figure] of [
-    ["word cap", cap],
-    ["pocket", pocket],
-    ["includedNote", generated],
-  ] as const) {
-    if (!pricing.includes(figure)) {
-      throw new Error(`/pricing?audience=test render lacks the configured ${label} "${figure}"`);
-    }
-  }
+  await claimsCheck(page, ctx.webBaseUrl, "?audience=test");
 };
 
 /** SPA.6 (REQ-VFY-8; design/27 F9) — X1 is split per-surface so `--surface` gates exactly the legs

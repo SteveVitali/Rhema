@@ -1220,9 +1220,9 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
         s.userId,
       ]);
     }
-    // ACT.1 (ADR-042) — the trial serves `test_tenants` only while the everyone-flip stays
-    // operator-paused: the fixture workspace defaults to a flagged JOURNEY.1 tenant
-    // (`testTenant: false` stages the operator pause's real-user refusal).
+    // ACT.1 (ADR-042) — R6LCH.1 shipped `audience: everyone`, so an unflagged workspace is
+    // admitted too; the fixture still defaults to a flagged JOURNEY.1 tenant (flagged tenants
+    // are also exempt from the daily ceiling, which several arms rely on).
     if (opts.testTenant !== false) {
       await db.pg.query("update workspaces set is_test = true where id = $1", [s.workspaceId]);
     }
@@ -1356,39 +1356,71 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     void s;
   });
 
-  it("the operator pause: an UNFLAGGED workspace's entitlement claim is 422 entitlement_unavailable (audience: test_tenants)", async () => {
-    // ADR-042 — while `trial.audience = 'test_tenants'` the audience gate refuses BEFORE the
-    // unlock runs: no audit row, no unlock, no run. The everyone-flip is the operator's.
+  it("the shipped `everyone` audience admits an UNFLAGGED workspace's entitlement claim (R6LCH.1's flip)", async () => {
+    // R6LCH.1 — `trial.audience` shipped `everyone` on 2026-10-28: the pre-flip 422
+    // `entitlement_unavailable` refusal is gone; the real-workspace claim runs the unlock gate
+    // like any covered viewer.
     const { s, post } = await seedTrial({ userId: "usr_taud", testTenant: false });
     const r = await post();
-    expect(r.status).toBe(422);
-    expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
     expect(
       (
-        await db.client.query("select state from trial_entitlements where billing_account_id = $1", [
-          s.billingAccountId,
-        ])
+        await db.pg.query("select state, entitlement_id from runs where id = $1", [runId])
       ).rows[0],
-    ).toMatchObject({ state: "locked" });
+    ).toMatchObject({ state: "queued", entitlement_id: expect.any(String) });
     expect(
-      (await db.pg.query("select count(*)::int n from runs where workspace_id = $1", [s.workspaceId]))
-        .rows[0],
-    ).toMatchObject({ n: 0 });
+      (
+        await db.client.query(
+          "select decision from trial_unlock_checks where billing_account_id = $1",
+          [s.billingAccountId],
+        )
+      ).rows.map((c: { decision: string }) => c.decision),
+    ).toEqual(["allow"]);
   });
 
-  it("the global daily trial-spend ceiling pauses the unlock — 429 trial_ceiling", async () => {
-    // ACT.1 — a flagged test tenant is EXEMPT from the ceiling by design (JOURNEY.1 must never
-    // trip the kill switch), so under `test_tenants` the pause is unreachable at HTTP. The gate's
-    // `paused → trial_ceiling` branch is exercised through a NON-test workspace… which the
-    // audience gate would refuse first — so instead we drive the deps seam directly: stage the
-    // day at the ceiling, then prove the workspace's is_test flag is what shields it. (Ledger
-    // level coverage of `paused` lives in packages/ledger trial.test.ts.)
-    const { post } = await seedTrial({ userId: "usr_tceil" });
+  it("the audience gate stays armed — a staged `test_tenants` posture still refuses the uncovered viewer", async () => {
+    // ADR-042 — the gate machinery is unchanged by the flip; staging the pre-launch audience
+    // proves an uncovered workspace is still refused by name BEFORE the unlock runs.
+    const prev = PRICING.trial.audience;
+    (PRICING.trial as { audience: typeof prev }).audience = "test_tenants";
+    try {
+      const { s, post } = await seedTrial({ userId: "usr_taud2", testTenant: false });
+      const r = await post();
+      expect(r.status).toBe(422);
+      expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
+      expect(
+        (
+          await db.client.query("select state from trial_entitlements where billing_account_id = $1", [
+            s.billingAccountId,
+          ])
+        ).rows[0],
+      ).toMatchObject({ state: "locked" });
+      expect(
+        (await db.pg.query("select count(*)::int n from runs where workspace_id = $1", [s.workspaceId]))
+          .rows[0],
+      ).toMatchObject({ n: 0 });
+    } finally {
+      (PRICING.trial as { audience: typeof prev }).audience = prev;
+    }
+  });
+
+  it("the global daily trial-spend ceiling pauses the unlock — 429 trial_ceiling for real, exempt for flagged", async () => {
+    // R6LCH.1 — the shipped `everyone` audience exposes the `paused → trial_ceiling` arm at HTTP
+    // for a real workspace; a flagged JOURNEY.1 tenant stays exempt by design (the harness must
+    // never trip the kill switch). Same workspace, flag toggled: 429 then 201.
+    const { s, post } = await seedTrial({ userId: "usr_tceil" });
     await db.client.query(
       "insert into trial_spend_daily (day, credits) values ('2026-09-02', 250000)",
       [],
     );
+    // the real-workspace posture: the paused day refuses the claim (audited 'paused').
+    await db.pg.query("update workspaces set is_test = false where id = $1", [s.workspaceId]);
+    const refused = await post();
+    expect(refused.status).toBe(429);
+    expect(((await refused.json()) as { error: string }).error).toBe("trial_ceiling");
     // flagged ⇒ exempt: the claim sails through the paused day.
+    await db.pg.query("update workspaces set is_test = true where id = $1", [s.workspaceId]);
     const r = await post();
     expect(r.status).toBe(201);
   });
@@ -1425,9 +1457,9 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
 
 // R6MNY.1 (REQ-LCH-5d; GD-LAUNCH-MONEY.R6; GD-TRIAL-CEIL.R6 "Keep $50/day") — the ruled launch
 // posture serves the trial to `everyone`, guarded by the $50/day kill switch and the 1-concurrent
-// cap. The config NEVER flips here: each test stages `audience: "everyone"` in-process (restored in
-// `finally`) and drives REAL — unflagged — workspaces through the live HTTP gate, proving the two
-// guards hold under exactly the posture R6LCH.1 will open.
+// cap. R6LCH.1 SHIPPED that audience (pricing.json, 2026-10-28): the `asEveryone` staging is now
+// idempotent belt-and-braces — these tests drive REAL — unflagged — workspaces through the live
+// HTTP gate, proving the two guards hold under the posture prod serves.
 describe("POST /projects/:id/runs — the trial gate under `everyone` (R6MNY.1; REQ-LCH-5d)", () => {
   type P = PricingPublication["trial"]["audience"];
   /** Stage the launch audience for the block; the shipped config is restored unconditionally. */

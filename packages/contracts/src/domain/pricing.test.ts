@@ -66,8 +66,9 @@ describe("pricing.json (§14.2)", () => {
     // ACT.1 — the $50/day trial-COGS kill switch (proxy-metered list COGS; $1 = 140 credits).
     expect(PRICING.trial.dailyCeilingUsd).toBe(50);
     expect(PRICING.trial.dailySpendCeilingCredits).toBe(7000);
-    // the go-live audience is the operator's pause: test tenants only until the everyone-flip.
-    expect(PRICING.trial.audience).toBe("test_tenants");
+    // R6LCH.1 — the everyone-flip landed 2026-10-28 (GD-LAUNCH-MONEY.R6): the shipped audience
+    // is `everyone`, guarded by the $50/day kill switch + the 1-concurrent cap pinned above.
+    expect(PRICING.trial.audience).toBe("everyone");
     // the generated claims — no literal figure may be typed into the JSON templates.
     expect(PRICING.trial.includedNote).toBe(
       "One Review of up to 2,800 words, Standard rigor, Base — on us, plus a 150-credit pocket.",
