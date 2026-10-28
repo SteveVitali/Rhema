@@ -4,6 +4,10 @@
 > (`debitMode: "committed"` on every stage); the flip is a config change + deploy, preceded by the
 > paid-account notice (step 0) whose timing is the operator's call (LEDGER GATE DECISIONS).
 
+Run repository scripts from the repository root and Pulumi commands in `infra/pulumi`.
+Bind the system DSN and mail credentials through the approved operator environment; never paste
+them into a committed command or print a service's complete environment while checking one flag.
+
 ## Preconditions (all must hold)
 
 1. The calibrated-cap deploy has landed: migration `0049_cost_calibration.sql` applied;
@@ -13,9 +17,8 @@
    from cap_calibration_reports order by computed_at desc`).
 2. In-sample cap reach ≤ 10% on the adopted buckets (the report's `cap_reach_pct` column).
 3. The notice (step 0) has been sent and the chosen effective date reached.
-4. `DEBIT_MODE=committed` is the live env on `rhema-prod-api` and `rhema-prod-worker`
-   (verify: `gcloud run services describe rhema-prod-api --region=us-central1
-   --format='value(spec.template.spec.containers[0].env)' | grep DEBIT_MODE`).
+4. `DEBIT_MODE=committed` is the live env on `rhema-prod-api` and `rhema-prod-worker`.
+   Read only that field using the filtered command in step 2, once per service.
 
 ## Step 0 — the paid-account notice (before anything flips)
 
@@ -31,8 +34,8 @@ DATABASE_URL=… EFFECTIVE_DATE=YYYY-MM-DD APP_ORIGIN=https://rhema.tools \
   node scripts/live/send-metered-notice.mjs --send
 ```
 
-The notice names the effective date; the flip must not happen before it (REQ-BILL-2's 30-day
-spirit — see ADR-014).
+The notice names the effective date; the flip must not happen before it. The maintained
+[launch order](launch-flips.md) requires at least 30 days after sending (REQ-BILL-2 / ADR-014).
 
 ## Step 1 — stamp the calibration cutovers (once, at the conformance deploy)
 
@@ -52,15 +55,16 @@ until a stage lands them.)
 # 1. infra/config/stages.ts — prod (and dev/preview if desired): debitMode: "metered"
 # 2. rebuild api + worker images on the chain tip; pin digests in Pulumi.prod.yaml
 # 3. checks BEFORE up:
-pulumi preview --diff          # expect: api+worker env rolls only; ZERO create/replace/delete
+(cd infra/pulumi && pulumi preview --stack prod --diff) # expect: api+worker env rolls only; ZERO create/replace/delete
 node scripts/check-additive-migrations.mjs   # additive only
 #    monthly delta ≤ $15/mo (the round-3 standing authorization)
 # 4. deploy
-pulumi up --stack prod         # record the update number + the deployments row
+(cd infra/pulumi && pulumi up --stack prod) # record the update number + the deployments row
 node scripts/check-deploy-provenance.mjs     # /healthz build.gitSha == chain-tip SHA
 # 5. verify the live env
 gcloud run services describe rhema-prod-worker --region=us-central1 \
-  --format='value(spec.template.spec.containers[0].env)' | grep DEBIT_MODE=metered
+  --format=json | jq -r '.spec.template.spec.containers[].env[] | select(.name == "DEBIT_MODE") | .value'
+# expect metered; repeat for rhema-prod-api
 ```
 
 ## Step 3 — verify (within one hour)

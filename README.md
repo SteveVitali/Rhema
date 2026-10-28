@@ -1,105 +1,85 @@
-# Rhema
+# Rhēma
 
-TypeScript-end-to-end monorepo (pnpm + Turborepo) for Rhema — closed-source, open-source-ready.
+A writing workspace for developing, reviewing, and revising long-form prose.
 
-This repo builds the product deployed in production on GCP at **https://rhema.tools**
-(`api.rhema.tools`, `usercontent.rhema.tools`) — the stacked chain of ticket PRs decomposed from the
-ratified spec (`docs/rhema-design-spec.md`; order in `docs/tickets/00_MANIFEST.md`). The substrate:
-Pulumi (TypeScript) stacks over Cloud Run services, a GKE cluster running each run-task as a Job
-(CAP_SYS_ADMIN two-uid sandbox), Cloud SQL Postgres 16 on prod (AlloyDB on dev/previews), Memorystore
-Redis, GCS, Secret Manager, an egress-proxy that is the no-egress sandbox subnet's only route out,
-and the five-job CI pipeline with the licence policy and public-safe checks. *(Cloud amended
-2026-09-02 from AWS to GCP — see `docs/tickets/00_MANIFEST.md` § Spec amendments applied.)*
+Rhema brings the manuscript, editorial feedback, and supporting research into one place. A Review
+produces a dossier with an editorial letter, a claims ledger, and findings attached to the draft.
+Writers can inspect the evidence, decide how to address each finding, and carry those decisions into
+the next revision.
 
-## Status (2026-10-18 — honest, not aspirational)
+The repository contains the web application, collaborative editor, run orchestration, and deployment
+infrastructure behind [rhema.tools](https://rhema.tools).
 
-- **Prod** is live on `rhema.tools`. `dev` deploys the full stack for verification windows and returns
-  to idle between them (ADR-077); `pr-<n>` previews exist only through the guarded
-  `scripts/live/preview-stack.mjs` (refuses `prod`, refuses any non-`pr-<digits>` name).
-- **Trial:** interim terms in force (ADR-014) — one Standard Review on Base of ≤ 2,800 words plus a
-  150-credit pocket, offered to flagged test tenants only until the operator flips `trial.audience`
-  (`packages/contracts/src/domain/pricing.json` — `interim: true`, `audience: "test_tenants"`).
-- **Purchases:** the path works but `purchaseMode: "closed"` on every stage pending the operator's
-  re-open ruling (ADR-028; GD-BILL.3-1) — no real-money purchase is open to users.
-- **Refund window:** shipped flag-off — `refundWindowMode: "test_tenants"` admits only
-  server-flagged `is_test` workspaces; `open` awaits the BL-30 ruling (ADR-071; D-DEF.4-3).
-- **Cost:** the measured prod bill is ~$198/mo list against the ~$50/mo target — COST.1's
-  authorized class-A levers moved it $285.80 → $198.32, but the target stays **unmet**: the
-  remaining levers are paused out-of-class pending per-lever rulings (D-COST.1-3, BL-29;
-  OPS.2; ADR-082).
-- **SLOs:** four named breaches are OPEN on prod (D-SLO.1-5…8 — run success rate, event-delivery p95,
-  proxy-vs-SDK divergence, egress-denied spikes); per REQ-ARCH-34 a breach pauses feature work on the
-  owning surface.
-- **Efficacy claims:** gate G2 is deferred — no benchmark wave has run, so no superiority or efficacy
-  claim appears on any surface, docs included (REQ-EVAL-19; `lintGrowthCopy` enforces it).
-- **Frontend (rounds 4–5):** the SPA migration is engineered and deterministic-test green at the
-  chain tip but **authored-dormant** — prod still serves pre-chain ancestors while the operator
-  runs the ordered merge/activation (`docs/build/INTEGRATION_PLAN.md` §R4/§R5; spec §14.17;
-  `docs/build/OPERATIONAL_READINESS.md`). The landed architecture is a permanent hybrid, not a
-  transition state: Hono SSR serves the public funnel (`/`, `/invite`, `/pricing`, `/signup`,
-  `/login`, `/showcase` — REQ-BND-1) and the forced-SSR Page family (phone UA + `showcase`
-  projects, read-only — ADR-108); every other authenticated document GET serves the Vite-built
-  TanStack Router + Query SPA shell unconditionally (ADR-106), reading same-origin `/bff/*`
-  session-cookie twins; `page.js`/`ide.js`/`landing.js` are the surviving permanent island set
-  (ADR-107). Round 5 landed the client half (NAVC.1–NAVC.5; ADR-110; spec §14.18/§14.19): one
-  delegated `document` click interceptor installed by `mountSpa` routes in-tree `<a href>`
-  clicks to `router.navigate`; the ordered guard pipeline + skip-list (modifiers, `target`,
-  `download`, `data-spa-native`, foreign origins, hash-only, out-of-tree, the `RELOAD_STUB_IDS`
-  redirect stubs) stay native or document-navigate; clicks always push and no intent-preload
-  ships. The settle contract extends with it: `data-nav-count="0"` is stamped on every served
-  document and ticks per committed transition, and `data-mounted` drops while a client nav is
-  pending. The migration-window flag machinery is deleted — `?ssr=1`, `?renderer=spa`, and
-  `x-rhema-renderer` are inert request text; rollback is `git revert` + redeploy, not a config
-  flip (SPA.28; spec §14.1/§14.4).
+## What is here
 
-## Round-3 invariants (REQ-SPEC-29…32, 2026-09-30)
+- **Writing and revision:** a ProseMirror editor with Yjs collaboration, Markdown source mode,
+  versioned drafts, outlines, and import/export workflows.
+- **Editorial review:** dossiers, source-linked claims, finding dispositions, and revision
+  obligations that keep feedback connected to the text.
+- **Controlled agent runs:** explicit approval gates, live run events, budget caps, and a separate
+  execution environment for model-driven work.
+- **A TypeScript application stack:** React, Hono, TanStack Router/Query, PostgreSQL, and a pnpm
+  workspace built with Turborepo. Infrastructure is defined in TypeScript with Pulumi for GCP.
 
-- **REQ-SPEC-29 — user-journey acceptance:** scripted Playwright journeys (`@rhema/journeys`) walk
-  the deployed stage as the acceptance evidence of every user-surface change, plus scheduled runs
-  against prod (`.github/workflows/journeys.yml`); assertions are on visible text and actionable
-  controls, never HTTP status alone.
-- **REQ-SPEC-30 — tenant isolation in depth:** user-serving code connects as a Postgres role that
-  cannot bypass RLS over the forced-RLS tenant tables; only the documented system pool
-  (`SYSTEM_DATABASE_URL`) may bypass — never for a user request — and a two-tenant probe runs over
-  the tenant-scoped read routes on the deployed stage.
-- **REQ-SPEC-31 — research integrity:** research-bearing runs preflight their model × server-tool
-  pairs through the proxy before any debit and keep a research floor; a Review that ends with zero
-  verification coverage delivers *Unverified* and its research debits are refunded as a platform
-  fault.
-- **REQ-SPEC-32 — cost truthfulness:** committed debits equal proxy-metered burn at the published
-  rate, clamped at the cap; every user-facing price, cap and trial claim renders from the one
-  calibrated estimator — never a hand-written figure.
+These describe the application source. Hosted availability and configured entitlements can differ;
+the [hosted service](https://rhema.tools) presents its current terms. The mobile app is a skeleton.
+Review output still requires editorial judgment; the repository does not establish a benchmarked
+quality advantage.
 
-## Quickstart
+## Release status
+
+This repository is being prepared for an open-source release. The current source tree includes
+private editorial protocols; private evaluation content lives outside the repository. Public stubs
+exist, but a complete application build using only those stubs is **not yet supported**. Building the
+stub packages in CI does not prove that an exported repository works.
+
+See [public-release readiness](docs/open-source-readiness.md) for the exact boundary, measured gaps,
+and work still needed before publication. The instructions below apply to a checkout of this source
+tree. They do not require the separate private evaluation repository.
+
+## Start developing
+
+Use **Node.js 22.12 or later in the 22.x line** and **pnpm 10.32.1**, matching the repository's CI
+major version and pinned package manager. From the repository root:
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm turbo build lint typecheck
-pnpm test
+pnpm exec vitest run packages/contracts/src/notes.test.ts
 ```
 
-## Layout
-- `apps/*` — deployable services: `web` (Hono SSR host + Vite/TanStack SPA + same-origin BFF —
-  ADR-106; React Router stays server-side only), `api` (Hono REST + SSE, Better
-  Auth), `worker` (pg-boss consumers), `collab` (Hocuspocus WSS + materialization), `run-task` (the
-  two-uid agent run image — one GKE Job per run), `fetcher` (network-only link reads), `convert`
-  (no-network bytes→markdown), `export` (pandoc/typst rendering), `egress-proxy` (the sandbox's only
-  egress: per-run credential + allowlist, usage meter, cap enforcer, fetch log of record), `mobile`
-  (Expo companion, skeleton), `turbo-cache` (self-hosted Turborepo remote cache)
-- `packages/*` — shared libraries: the run pipeline (`engine`, `orchestrator`, `harness`, `hooks`,
-  `mirror`, `ledger`, `measure`, `live-clients`), the product surface (`ui`, `editor`, `ide`,
-  `markdown`, `markdown-view`, `figures`, `findings-core`, `obligations`, `run-sheet`, `assistant`,
-  `ai-use`, `commands`, `tokens`), data + contracts (`contracts`, `db`, `ingest`, `archive`,
-  `api-client`), evaluation + verification (`benchmark`, `benchmark-runner`, `journeys`,
-  `security-checks`), and the private protocols workspace (`protocols` — committed member;
-  `protocols-stub` — the public-export swap)
-- `infra/` — pure GCP stage/retention/provenance config (`config/`, unit-tested) + the Pulumi
-  (TypeScript) program (`pulumi/`, operator-run IaC) + `k8s/` manifests + `cloudbuild/` image sets +
-  `PROD-BRINGUP.md` (the operator runbook)
-- `integration/` — the composed FakeEngine integration suite (G21) plus the live-stage drivers
-  (prod bring-up, two-tenant probe, instrumented-run folder, deploy provenance)
-- `evals-stub/` — public stub of the private `evals/` package (path-resolved via `RHEMA_EVALS_PATH`)
-- `tools/` — repo-local tooling (ESLint plugin, checks)
+This installs the workspace, checks the build, and runs a small contract test. For the full test suite,
+browser prerequisites, focused development, and a local web-server preview, follow the
+[development guide](docs/development.md). Running the complete service requires additional
+[configuration and infrastructure](docs/configuration.md).
 
-See `AGENTS.md` for conventions, `CONTRIBUTING.md` to get started, `SECURITY.md` for the security
-posture, `LICENSES.md` for the dependency licence policy, and `docs/tickets/DEFERRALS.md` for the
-ledger of acceptance criteria deferred to later prerequisites (e.g. live GCP deploys).
+## Find your way around
+
+| Area                                                     | Start here                                                                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Browser application, SSR host, and same-origin API layer | [`apps/web`](apps/web/README.md)                                                                                           |
+| HTTP API, background jobs, and collaboration service     | [`apps/api`](apps/api), [`apps/worker`](apps/worker), [`apps/collab`](apps/collab)                                         |
+| Editor and reusable interface components                 | [`packages/editor`](packages/editor), [`packages/ui`](packages/ui), [`packages/ide`](packages/ide)                         |
+| Contracts, database, and run lifecycle                   | [`packages/contracts`](packages/contracts), [`packages/db`](packages/db), [`packages/orchestrator`](packages/orchestrator) |
+| Run isolation and provider traffic                       | [`apps/run-task`](apps/run-task), [`apps/egress-proxy`](apps/egress-proxy)                                                 |
+| Integration tests and browser journeys                   | [`integration`](integration/README.md), [`packages/journeys`](packages/journeys/README.md)                                 |
+| Deployment infrastructure                                | [`infra`](infra/pulumi/README.md)                                                                                          |
+
+The [architecture guide](docs/architecture.md) connects these pieces. The
+[documentation index](docs/README.md) separates maintained guidance from the project's design and
+build history.
+
+## Contribute
+
+Start with [CONTRIBUTING](CONTRIBUTING.md) for the development and review workflow. Reproducible bug
+reports, documentation corrections, and focused improvements are useful contributions. Agents should
+read [AGENTS.md](AGENTS.md) and the instructions for the area they change.
+
+For questions, see [SUPPORT](SUPPORT.md). Report vulnerabilities privately through the
+[security policy](SECURITY.md).
+
+## License
+
+The repository's license is [MIT](LICENSE). Third-party components have their own terms; see
+[LICENSES](LICENSES.md), including the separately licensed runtime dependencies and public-export
+boundary.

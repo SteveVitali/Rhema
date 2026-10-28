@@ -11,6 +11,7 @@ and the bypass-tier connection is reachable only through the seams audited below
 DSN plumbing for it.
 
 **The pins.**
+
 - `tools/system-pool-boundary.json` — the single allowlist of files that may reference a seam.
 - `eslint-plugin-rhema/no-system-pool-in-user-route` — user-route modules (`apps/api/src/*-routes.ts`)
   and worker user-scoped handlers may never touch a seam (identifiers *and* `process.env.SYSTEM_DATABASE_URL`).
@@ -19,6 +20,11 @@ DSN plumbing for it.
 - `packages/security-checks/src/rls-catalog.test.ts` — the per-table grant census; `rhema_app_login`
   inherits `rhema_app`'s surface and every public table carries an explicit decision.
 - `integration/src/two-tenant-probe.ts` — end-to-end proof that the restricted posture leaks nothing.
+
+The table below records the audited seams and their purpose; the machine-enforced
+[`tools/system-pool-boundary.json`](../../tools/system-pool-boundary.json) is the current file
+census. Its explicit exceptions (including webhook intake before tenant resolution) matter:
+an allowlisted system operation is not permission to use the elevated pool for user data.
 
 ## Audited system call sites
 
@@ -47,7 +53,7 @@ DSN plumbing for it.
 | `integration/src/harness.ts`, `integration/src/run-live-exit.ts` | `systemTxRunner`/`systemExec`-shaped adapters | same binding for integration | test wiring |
 | `infra/pulumi/compute.ts`, `infra/pulumi/data.ts`, `infra/pulumi/index.ts` | `SYSTEM_DATABASE_URL`/`systemDatabaseUrl`/`app-database-url` | IaC — injects the env values into api/worker service envs | intentional env wiring |
 
-## Non-bypass service roles (verified, not bypassed)
+## Restricted roles and separate system connections
 
 - **collab** connects as `rhema_collab` (migration `0028` grants; `live_docs`/`restore_points`/
   `working_copies`/limited `drafts`) — never a bypass role. SEC.1 moves its `DATABASE_URL` to a
@@ -64,10 +70,12 @@ DSN plumbing for it.
 
 ## Residuals (tracked, not silent)
 
-- `apiSystemDatabaseUrl`/`workerSystemDatabaseUrl`/`proxyDatabaseUrl`/`collabDatabaseUrl` config
-  secrets still inject as plaintext env `value:` on non-prod stages (the secretKeyRef path engages
-  only where the stage's `requiredSecrets` provision the container). Previews keep the value path by
-  design — they never carry production secrets (REQ-ARCH-38).
+- **Source correction, 2026-10-27:** nonproduction app, system, and collab DSNs are generated in
+  `infra/pulumi/index.ts` and mounted into Cloud Run through `secretKeyRef` in `compute.ts`.
+  The earlier assertion that previews deliberately retain plaintext DSN environments is obsolete.
+  Production system-DSN and proxy wiring have separate paths; inspect the selected stage rather
+  than extrapolating one service's secret handling to every process. Previews must never carry
+  production secret values (REQ-ARCH-38).
 - Bucket-C tables (child tables tenant-keyed only through a parent FK — `threads`, `findings`,
   `correspondence_items`, …) carry residual risk: a route that reads one without a parent-join is
   cross-tenant under ANY bypass role. `loadProject`'s explicit `workspace_id` predicate

@@ -1,28 +1,26 @@
-# Playbook: orphan storm (§13.5 — orphaned runs = 0)
+# Playbook: orphaned runs
 
-**Alert:** `orphaned_runs` — runs in `state='orphaned'` for > 10 min (the reaper's `run.reap` cron normally clears a stale heartbeat within ~4 min: 3-min stale window + 1-min cron period).
+**Alert:** `orphaned_runs`. The intended alert identifies a lingering orphan; consult the implementation caveat below before using the metric to rule out stuck work.
 
-## Detect
+## Diagnose
 
-- `[slo] violation {"signal":"orphaned_runs", ...}` persisting across sweeps.
-- `select id, state_since from runs where state='orphaned'` on the system role — a storm is a count growing between reads, not a single row.
+1. Read the worker's `run.reap` consumer logs and pg-boss queue state. The cron runs once per minute. An HTTP `ok` from the worker proves its health listener is alive; the listener starts before database and queue initialization, so it does not prove the consumer is progressing.
+2. Check the Redis heartbeat path and the run's current attempt. Inspect pods in the `runs` namespace for image/startup failures and correlate their image digest with the deployment.
+3. Read orphan age explicitly using the authorized system connection:
 
-## Diagnose (≤ 10 min)
+```sql
+select id, state_since, now() - state_since as orphan_age
+from runs
+where state = 'orphaned'
+order by state_since;
+```
 
-1. **Is the reaper itself dead?** `run.reap` is a 1-minute pg-boss cron on the worker — check worker health (`/health`), pg-boss queue depth, and the worker's recent `[worker] run.reap` errors. A dead reaper orphans everything with a stale heartbeat.
-2. **Is the heartbeat path dead?** Heartbeats write Redis — check Redis connectivity (`REDIS_URL` reachability from the worker). Pods whose heartbeats can't land look orphaned while still running.
-3. **Is the launcher loop alive?** A crash-looping run-task image orphans every run at launch — check the GKE `runs` namespace for pods failing before first heartbeat (`kubectl get pods -n runs`).
+**Known source discrepancy (2026-10-27):** the `orphaned_runs` SQL in [`slo.ts`](../../../packages/orchestrator/src/slo.ts) selects `state_since > now() - interval '10 minutes'`, although its target describes lingering orphans. An older stuck orphan can therefore be absent from this probe. A zero metric is not sufficient evidence of recovery; this discrepancy needs a code fix and is recorded in [readiness](../../open-source-readiness.md).
 
-## Contain
+## Recovery behavior
 
-- Pause new launches (same §14.4 admission pause as provider-outage) until the orphan count stops growing.
-- For each orphaned run: the reaper re-enqueues up to `maxAttempts`; past that it parks `waiting_gate` with a `resume_partial` card — those are already user-visible and safe. Don't hand-flip states.
+[`reaper.ts`](../../../packages/orchestrator/src/reaper.ts) considers a heartbeat stale after three minutes. A current running attempt is moved through orphaned state and re-enqueued with an incremented attempt, up to **two re-enqueues per step**; exhaustion opens a `resume_partial` gate. A stale heartbeat for a superseded attempt is skipped. Preserve those transitions and their ledger/credential effects; do not hand-edit run states.
 
-## Recover
+Fix the failing worker, Redis path, or run-task image through the reviewed deployment procedure. Confirm queue progress, current heartbeats, and the affected runs' outcomes over successive sweeps. The repository does not currently implement the global launch-pause switch described in the original playbook; any admission restriction requires an explicit operator remedy rather than an invented flag.
 
-- Fix the failing layer (worker deploy, Redis, image), let `run.reap` drain the backlog — one sweep handles one pass; a storm may take several minutes to clear.
-- Verify: `orphaned_runs` probe reads 0 for two consecutive sweeps.
-
-## Post-incident
-
-- If the root cause was a pod-side failure, check the run-task image digest pin + `privsep-check.sh` health; a systemic launch failure is a release rollback, not an orphan patch.
+Record the incident and the source discrepancy in the [SLO review](../slo-review.md) process. Keep customer content and credentials out of public records.

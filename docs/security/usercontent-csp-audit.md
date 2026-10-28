@@ -2,6 +2,21 @@
 
 Written down, then asserted. Executable leg: `packages/security-checks/src/usercontent-csp.test.ts`.
 
+## Current source boundary (reviewed 2026-10-27)
+
+The older origin audit below predates the signed-GCS delivery path; the dated ADR-113 amendment
+at the end records that change. Current web source serves both SSR and SPA documents. Its CSP
+in `apps/web/src/server.ts` admits the configured GCS origin for images and connections, the
+configured collaboration WebSocket origin for connections, and the shared Stripe/Google
+allowlists for form hand-offs. Read that implementation and its response tests when changing
+the policy. A source review is not a fresh live-header audit.
+
+Inline styles remain allowed because the application uses style attributes. This is a security
+tradeoff; CSS is not assumed incapable of leaking information. Escaping, sanitization, origin
+restrictions, and the rest of the CSP remain necessary controls.
+
+The following sections describe the original audit except where explicitly updated below.
+
 ## The origins
 
 | Origin | Serves | Cookies |
@@ -33,9 +48,9 @@ domain gap, it's a cookie-shape contract:
 
 ## The CSP (asserted per response, not per design)
 
-- **web** (`apps/web/src/server.ts`): per-request nonce stamped into every `<script>` tag of HTML
+- **web (original audit policy)** (`apps/web/src/server.ts`): per-request nonce stamped into every `<script>` tag of HTML
   responses; `script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'` (hand-authored `style=`
-  attributes are pervasive and style cannot exfiltrate); `img-src 'self' https://usercontent.rhema.tools
+  attributes are pervasive); `img-src 'self' https://usercontent.rhema.tools
   data:`; `connect-src 'self'`; `font-src 'self'`; `object-src 'none'`; `frame-ancestors 'none'`;
   `base-uri 'self'`; `form-action 'self'`; `nosniff` + `Referrer-Policy` alongside. Non-HTML responses
   pass through untouched. Multi-valued `Set-Cookie` survives the header clone verbatim.
@@ -46,8 +61,8 @@ domain gap, it's a cookie-shape contract:
 
 ## Residual (named, not hidden)
 
-- `style-src 'unsafe-inline'` is a deliberate Scope trade — CSS-in-HTML attributes; styles cannot
-  exfiltrate but a stray `expression()`-era browser is not a target anyway.
+- `style-src 'unsafe-inline'` permits CSS-in-HTML attributes; the current-source note above
+  supersedes the original blanket claim that styles cannot exfiltrate data.
 - The nonce middleware marks *every* script tag — DOM injection defenses (escaping) remain the real
   control for user text inside pages; CSP is the second layer.
 - Live response-header verification against prod objects is **Stage B** (operator-gated).

@@ -1,4 +1,4 @@
-# @rhema/journeys — browser-journey acceptance (JOURNEY.1; REQ-SPEC-29; ADR-016/ADR-020)
+# Browser journeys
 
 The committed Playwright suite that walks the product as a user does — visible-text and
 actionable-control assertions (never status-only), real magic-link sessions into the
@@ -8,7 +8,7 @@ and the deploy-provenance check.
 ## Layout
 
 - `src/registry.ts` — **the step registry** (the planning-ledger table's live home): `{id, journey,
-  asserts, owner, expected, paid}` for every journey step. An owner flips its step `green` in its
+asserts, owner, expected, paid}` for every journey step. An owner flips its step `green` in its
   own PR with the Stage-B screenshot attached.
 - `src/runner.ts` — runs one step or the whole registry. Expected-flag semantics: a **green** step
   failing fails the run; a **red** step failing is reported `owed` (its owner carries the debt); a
@@ -18,7 +18,7 @@ and the deploy-provenance check.
 - `src/mailbox.ts` — the **keyless Gmail-DWD mailbox client**: IAM Credentials `signJwt` → OAuth
   jwt-bearer → `gmail.readonly` on `users/test@rhema.tools`. The `sub` is hard-pinned; the client
   refuses any other mailbox. The caller token comes from `JOURNEY_GCP_ACCESS_TOKEN` or `gcloud auth
-  application-default print-access-token` — never a key file.
+application-default print-access-token` — never a key file.
 - `src/session.ts` — `JourneySessions`: real `/signup` → magic-link → mailbox → verify navigation.
   `storageState` caches per identity in `.journeys-state/` (gitignored); a dead cache (purged
   tenant, expired cookie) re-mints. `assertTestIdentity` makes non-test sessions impossible.
@@ -48,20 +48,35 @@ and the deploy-provenance check.
   `planted-error-excerpt.md` (RES.1), `restore-eval-essay.md` (ECON.2's ~6,000-word restore
   measurement).
 
-## Run it
+## Before running against a deployment
+
+These are operator acceptance journeys, not an unauthenticated local smoke test. Choose an
+authorized target and its expected build SHA. Session steps require the configured test mailbox
+and permission to sign its domain-wide-delegation JWT through Google IAM. The mailbox is pinned
+to `test@rhema.tools`; ordinary contributors can run the deterministic tests described in
+[testing](../../docs/testing.md) without these credentials.
+
+Run the following from the repository root. Only `prod` resolves public origins automatically;
+other stages need explicit `--web` and `--api` URLs. Set `EXPECTED_SHA` to the deployed revision
+being verified. The CLI tries installed Chrome, then falls back to Playwright's Chromium.
 
 ```bash
 pnpm --filter @rhema/journeys build
 pnpm --filter @rhema/journeys exec playwright install chrome   # or chromium for local dev
-pnpm --filter @rhema/journeys exec rhema-journeys \
-  --stage prod \          # resolves --web https://rhema.tools --api https://api.rhema.tools
-  --steps N2,N7,R1,R5,X1 --expect-sha <chain-tip-sha> \
-  --out docs/build/reports/$(date +%F)_JOURNEY.1-journeys
+node packages/journeys/dist/cli.js \
+  --stage prod \
+  --steps N2,N7,R1 --expect-sha "${EXPECTED_SHA:?set the expected deployed SHA}" \
+  --out "docs/build/reports/$(date +%F)_journeys"
 ```
 
-`--paid` includes the paid legs (N5/N6/R4/R6) — the weekly run only, bounded by the spend guard and
-the single ≤300-word fixture. `workflow_dispatch` on `.github/workflows/journeys.yml` takes
-`stage`/`steps`/`paid` inputs.
+Invoke the built CLI directly: pnpm does not link a package's own binary into that package's
+`node_modules/.bin`. The [journey workflow](../../.github/workflows/journeys.yml) uses the same
+entry point. Its manual inputs include `stage`, `steps`, `paid`, and `expect-sha`.
+
+`--paid` admits selected registry rows marked `paid`; each row owns its `capUsd`. Paid execution
+requires the spend controls below and the corresponding operator authorization. The scheduled
+weekly run has a separate, bounded no-database exception; a manual workflow dispatch does not
+inherit it.
 
 ## Spend guards — the system-DSN convention (BL-72 / REQ-ECON-6/7/8/9/13)
 
@@ -113,7 +128,7 @@ MAINT.6 seeded-preview invite path (`RHEMA_INVITE_CODE`).
 Round-5 additions (NAVC.2 / REQ-NAVT): the settle contract is mechanism-pinned — the runner
 wires an unconditional `documentLoads` response counter into `SettleScope`, every served
 document stamps `data-nav-count="0"`, and `data-mounted` drops while a client nav is pending.
-`settleClientNav`/`settleDocumentNav` prove *how* the browser arrived (a committed
+`settleClientNav`/`settleDocumentNav` prove _how_ the browser arrived (a committed
 in-document transition vs a real document response), not just which document rendered;
 `data-page-session="<bootNonce>.<seq>"` marks editor-conditional page-session roots.
 

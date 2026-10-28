@@ -1,8 +1,9 @@
 # External pen test — vendor package index (STB.4 Leg B / D-P1.22-3)
 
-This document is the **single index a procured vendor needs to start**. Everything referenced exists
-in this repo; nothing here invents names, dates, or prices — procurement-owned fields are marked
-`<TBD: procurement>`.
+This index prepares a procured vendor's assessment. Testing starts only after the operator and
+vendor have completed an engagement record with the target deployment SHA, dates, test accounts,
+credit budget, secure contact channel, access agreement, and accepted rules of engagement.
+It is not a general authorization to test the hosted service.
 
 ## Package contents (what the vendor receives)
 
@@ -21,24 +22,25 @@ deliberately name-free so it can attach to any statement of work.
 
 ## 1. Architecture summary (for the vendor)
 
-Rhema is a GCP-hosted monorepo product: an AI-assisted editorial-review platform. All customer
-inference rides a **metering egress proxy** — the sandboxed run environment has no direct internet
-route — and all provider calls are priced into per-request `usage_records` rows (the meter of record)
-that drive a credit ledger (hold → debit → refund per run phase).
+Rhema is a GCP-hosted editorial-review application. Sandboxed review runs use a **metering egress
+proxy**; their provider usage feeds `usage_records` and the credit ledger. The required
+provider-key boundary and known optional worker-integration discrepancy are documented in
+[SECURITY.md](../../SECURITY.md). Include that discrepancy in the assessment instead of assuming
+every model integration follows the same path.
 
-**Deployed topology (prod, `rhema-507501`, us-central1):**
+**Source topology (verify against the chosen deployment at kickoff):**
 
-- **`rhema.tools`** — `web` (Cloud Run): the SSR app today — the round-4 SPA migration is
-  authored-dormant (unmerged; `docs/build/INTEGRATION_PLAN.md` §R4): after activation the
-  authenticated surfaces serve a Vite/TanStack SPA shell whose data flows through same-origin,
+- **`rhema.tools`** — `web` (Cloud Run): authenticated surfaces use a Vite/TanStack SPA shell
+  whose data flows through same-origin,
   session-cookie `/bff/*` endpoints on this same host, while the public funnel and the
   phone/showcase Page family stay SSR. Session auth via `__Host-`-prefix cookies,
   Better Auth mounted under `/api/auth/*` (Google + magic-link). CSP nonces on every page.
 - **`api.rhema.tools`** — `api` (Cloud Run): the REST/internal API. Session middleware + Origin guard
   on browser routes; run routes (launch/gates/caps); billing, trial, entitlement, import presigns;
   the **internal run API** the sandbox calls back into (RS256 run-token auth + `attempt` fencing).
-- **`usercontent.rhema.tools` + `*.`** — user-content CDN surface (GCS-backed, Cloud CDN + signed
-  URLs): quarantine + converted upload objects. Carries no cookies by design.
+- **User content** — the API authorizes and signs GCS V4 GET URLs; browser uploads use signed
+  PUT URLs. The old `usercontent.rhema.tools` CDN infrastructure is retained but no longer the
+  delivery path (ADR-113). Test authorization, signature constraints, and response dispositions.
 - **`worker`** (Cloud Run, no HTTP routes): pg-boss consumers — run lifecycle, billing jobs
   (`usage.reconcile`, `stripe.event`, period tick, auto-reload, estimator refit), notifications,
   ingestion, exports, pause-signal drain, SLO probes.
@@ -47,19 +49,24 @@ that drive a credit ledger (hold → debit → refund per run phase).
   no-network conversion/export workers.
 - **`collab`** (Cloud Run, `wss://rhema.tools/collab`): the Hocuspocus collab wire — separate auth
   surface on the same session cookie.
-- **`egress-proxy`** (single-instance MIG): the only internet egress from the sandbox subnet.
+- **`egress-proxy`** (prod: two-instance regional MIG behind an internal load balancer): the
+  sanctioned provider/research egress from the sandbox.
   Enforces per-run domain caps, >256-char query refusal, the ≥12-word draft n-gram exfiltration
   match, and writes `egress.denied` pause signals. **This is also the meter**: every provider
   response's `usage` block + `request-id` header lands a `usage_records{source:'proxy'}` row.
 - **Run-task sandbox** (GKE Standard cluster, `runs` namespace): each run is a Kubernetes Job —
   two-uid split (`harness` holds the run token + proxy credential; `agent` runs scrubbed),
-  read-only rootfs, tmpfs mounts, the sandbox subnet has no Cloud NAT / no default route (egress
-  only to the proxy).
+  read-only rootfs, tmpfs mounts, and no sandbox Cloud NAT. Explicit infrastructure allowances
+  include DNS, the Google API VIP, and Workload Identity; review the VPC and pod policies as
+  well as the credential/uid boundary.
 - **Data plane**: Cloud SQL Postgres (RLS enforced on tenant tables — note the app connects under a
-  role where RLS is the backstop, routes also predicate tenancy in SQL), Memorystore Redis
-  (pg-boss + event bus + heartbeats), GCS object store (content-addressed) + usercontent bucket.
-- **Secret posture**: provider keys live only in the egress proxy; Stripe/Better-Auth/Anthropic
-  admin keys in Secret Manager; no provider key reachable from web/collab/the model's process.
+  role where RLS is the backstop, routes also predicate tenancy in SQL), PostgreSQL-backed
+  pg-boss queues, Memorystore Redis (event bus, heartbeats, throttles, and import-preview timing),
+  GCS object store (content-addressed) + usercontent bucket.
+- **Secret policy**: provider keys belong at the egress-proxy boundary; Stripe/Better-Auth/Anthropic
+  admin keys use Secret Manager; no provider key may reach web/collab/the model process.
+  Verify the worker integration exception noted above rather than treating this policy as a
+  claim of complete enforcement.
 
 **Trust boundaries the engagement tests:** browser↔web/api (session, Origin, CSP), sandbox↔internal
 API (run token, attempt fencing), sandbox→internet (the proxy's §12.8 channel), tenant↔tenant
@@ -76,18 +83,19 @@ API (run token, attempt fencing), sandbox→internet (the proxy's §12.8 channel
     credit grant via `admin-cli house-grant` (audited `promo` bucket, expiring).
   - `PT-TRIAL` — one free-trial account (zero credits, daily-chat allowance), to exercise
     trial/entitlement boundaries.
-  - Provisioning mechanics: the operator signs each up through the normal flow, promotes the two
-    paid accounts' billing via the audited admin path, and records the account ids + a per-tenant
-    credit cap in the engagement record (NOT in this doc — no secrets or account ids in the repo).
-- **Credentials the vendor receives:** the three accounts' sign-in credentials (magic-link inbox
-  or test passwords, per the operator's choice), the surface list (§1 of the scope doc), and the
+  - Provisioning mechanics: the operator signs each up through the normal flow, establishes the
+    required plan through the supported billing flow, and uses `admin-cli house-grant` only for
+    the authorized promotional credit grant. A grant does not change the account's plan. Record
+    account ids and per-tenant bounds privately in the engagement record.
+- **Credentials the vendor receives:** access to the provisioned accounts' agreed magic-link
+  inbox or Google sign-in identity, the surface list (§1 of the scope doc), and the
   paid-inference budget per tenant. **Never**: DB access, Secret Manager, GCP console, other
   tenants' data, or real payment instruments (billing legs use operator-provided Stripe test
   objects only).
 - **Repo access (white-box on request):** read access to the scope surfaces only — the
   `apps/{api,web,worker,egress-proxy,fetcher,convert,export,collab,run-task}` trees +
   `packages/{ledger,orchestrator,db,mirror,obligations,security-checks}` — under the operator's
-  repo-sharing arrangement (`<TBD: procurement>` NDA/access form). The ported editorial protocol
+  agreed repository-access arrangement. The ported editorial protocol
   IP (`packages/protocols` skill text) is out of scope for copying and is not needed for the
   surface tests.
 
@@ -118,16 +126,18 @@ API (run token, attempt fencing), sandbox→internet (the proxy's §12.8 channel
 **Communications**
 
 - [ ] Criticals (auth bypass, cross-tenant read/write, secret disclosure, cap circumvention) are
-      reported within 24h of discovery through the secure channel (`<TBD: procurement>`), not held
+      reported within 24h of discovery through the engagement's agreed secure channel, not held
       for the report.
 - [ ] Findings use the template in `pen-test-findings-triage.md` — one record per finding, severity
       per its rubric, reproduction steps + evidence refs.
-- [ ] Safe harbor: good-faith testing inside this ROE is authorized; the operator will not pursue
-      action over in-scope research activity.
+- [ ] Confirm the engagement agreement records the operator's authorization and safe-harbor
+      terms for good-faith testing within the agreed scope. This preparation document alone does
+      not authorize production access or testing.
 
 ## 4. What the engagement returns
 
-1. The findings report in the triage-template format (§5 file).
+1. The private findings report in the [triage-template format](pen-test-findings-triage.md),
+   with a separately reviewed, sanitized version for public disclosure.
 2. A residual-risk number for the §14.7 channel the scope doc asks to be sized (draft-fragment
    exfiltration capacity through sub-threshold search queries, per query / per run).
 3. A list of tested-but-held controls (the controls list's "suite asserts / pen test tried" column).

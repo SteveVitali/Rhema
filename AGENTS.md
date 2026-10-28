@@ -1,243 +1,169 @@
-# AGENTS.md — Rhema monorepo conventions
+# AGENTS.md — Rhema
 
-This file is authoritative for the conventions **every later ticket inherits** (package boundaries,
-lint rules, CI job names, stage names). P0.01 owns it. Read it before adding code.
+## Purpose
 
-## Deferred obligations — READ FIRST, EVERY RUN
-`docs/tickets/DEFERRALS.md` is the durable ledger of acceptance criteria/deliverables a ticket could
-not fully satisfy at implementation time (usually needing a live GCP deploy or a HUMAN prerequisite
-like H0).
-At the **start of every `implement-spec` run**: read `DEFERRALS.md`; if this ticket — or a
-prerequisite it depends on — unblocks any `OPEN` row, **closing that row (verify for real, flip to
-`DONE` with evidence) is part of your run**. When you defer something new, append a row in the same
-run. Phase-exit gates (`docs/tickets/*GATE*`) must not pass while an `OPEN` row scoped to that phase
-remains.
+- Rhema is a writing and editorial workflow system: collaborative documents, structured reviews,
+  revisions, research, and budgeted AI runs.
+- This file defines repository-wide constraints. Read the nearest scoped `AGENTS.md` before editing;
+  scoped instructions add detail without relaxing the security, accounting, or history rules here.
+- All paths and commands below are relative to the repository root. Human onboarding starts in
+  `CONTRIBUTING.md` and `docs/development.md`.
 
-## Build memory (build-memory v2, ADR-004)
-`docs/build/` is the **committed** memory root (opted in by the `<!-- build-memory: v2 -->` marker in its
-README): `docs/build/LEDGER.md` holds the machine state (`nextTicket`, `chainTip`, CURRENT STATE / OPEN
-FINDINGS / GATE DECISIONS / RETURN PASS / PHASE LOG); `docs/build/BUILD_INDEX.md` is one row per landed PR;
-`docs/build/runs/<ID>.md` are the per-ticket run ledgers, `docs/build/pr/<ID>.md` the PR bodies,
-`docs/build/readouts/` the gate readouts; `docs/build/logs/` is the one gitignored subtree. `.agents/scratch/`
-is retired (MAINT.1). `docs/tickets/00_MANIFEST.md § The chain` is the authoritative order; a human can drive
-the stacked chain from it alone. `docs/adr/` holds decision records; its `README.md` is **generated** by
-`build-memory adr-index` — never hand-edit it. The id grammar the ledgers + run records share: deferral
-carriers `D-<TICKET>-<n>` (DEFERRALS.md), gate decisions `GD-<TICKET>-<n>` (LEDGER GATE DECISIONS), live-found
-defects `F-<TICKET>-<n>`, post-deploy verification streams `V-<n>` (post-spa-disposition spec §9), backlog
-rows `BL-<n>` (BACKLOG.csv). Contracts + history are **append-only** (amend by a dated note
-or a new ADR, never by rewriting a landed file); PRs **stack** and `mergePolicy: OPERATOR` — the operator
-merges bottom-up, a run never merges its own PR; a **gate is a pause, not a block**; **secrets never** enter
-any ledger. Validate with `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` (structure)
-and `node docs/build/tools/check-append-only.mjs --base <base-sha>` (history only grew).
+## Architecture
 
-## Stack (Q-3, §13.1)
-TypeScript **end-to-end; no Python anywhere**. pnpm + Turborepo; Pulumi (TypeScript) stacks; **GCP-first**
-(amended 2026-09-02 from AWS-first; inference from the direct Anthropic API — see 00_MANIFEST § Spec
-amendments applied). Node ≥ 20 (CI: 22). Test runner: Vitest. Linter: ESLint 9 flat config. Formatter: Prettier.
+- TypeScript end-to-end; no Python. pnpm workspaces + Turborepo + composite TypeScript projects.
+- GCP-first deployment through TypeScript Pulumi; model inference is designed to use the direct
+  Anthropic API through the egress proxy.
+- Browser → Hono web host / same-origin BFF → API → orchestration / worker → isolated run-task.
+  PostgreSQL stores tenant data and job state; Redis coordinates live events; GCS stores artifacts.
 
-## Commands
+| Work area                                           | Read before changing it           |
+| --------------------------------------------------- | --------------------------------- |
+| SSR, SPA, navigation, editor integration, BFF       | `apps/web/AGENTS.md`              |
+| API routes, auth, request tenancy                   | `apps/api/AGENTS.md`              |
+| Schema, migrations, tenant isolation                | `packages/db/AGENTS.md`           |
+| Run lifecycle, gates, delivery, accounting coupling | `packages/orchestrator/AGENTS.md` |
+| Harness, model process, sandbox                     | `apps/run-task/AGENTS.md`         |
+| Provider access, metering, research limits          | `apps/egress-proxy/AGENTS.md`     |
+| Browser acceptance and any paid verification        | `packages/journeys/AGENTS.md`     |
+| Infrastructure or any deploy/preview script         | `infra/AGENTS.md`                 |
+| Guides, specifications, tickets, build records      | `docs/AGENTS.md`                  |
+
+- For cross-package work, read each affected area's instructions. Before using `scripts/live`, read
+  the infrastructure instructions and, for journey/funded scripts, the journey instructions too.
+- Shared DTOs and vocabulary live in `packages/contracts`; UI primitives in `packages/ui`; editor
+  logic in `packages/editor`; production service adapters in `packages/live-clients`.
+
+## Key Files
+
+| File                 | Lines (approx) | Purpose                                                          |
+| -------------------- | -------------- | ---------------------------------------------------------------- |
+| `package.json`       | ~50            | Node/pnpm requirements and root commands.                        |
+| `tsconfig.base.json` | ~50            | Strict NodeNext compiler and composite-project defaults.         |
+| `eslint.config.js`   | ~200           | Package, tenant-pool, vocabulary, and browser-import boundaries. |
+| `vitest.config.ts`   | ~50            | Repository test discovery and web DOM-test environment.          |
+
+## Build & Test
+
+- Use Node 22 (22.12 or newer, matching CI's major) and the pnpm version in `package.json`.
+  The package engine floor is Node 20.19; the Vite build also constrains supported Node versions.
+- Build before tests that import workspace packages: those exports resolve to generated `dist` files.
+  No operator credentials or private eval checkout are needed for the ordinary build/test path.
+
 ```bash
-pnpm install                       # @rhema/protocols is committed; @rhema/evals links RHEMA_EVALS_PATH, else evals-stub
-pnpm turbo build lint typecheck    # the green gate (per-package, remote-cached)
-pnpm test                          # vitest, colocated *.test.ts
-pnpm check:licenses                # licence allowlist + exceptions (public-safe)
-pnpm check:protocol-markers        # no protocol IP in public bundles (public-safe)
-pnpm check:no-cookies              # never-cookies ingestion gate (public-safe)
-pnpm check:spa-budget              # SPA bundle gzip ceilings (public-safe)
-pnpm check:spa-env                 # env-leak tripwire: no server env / VITE_* secrets in bundles (public-safe)
-pnpm check:dom-contract            # emitted-DOM manifest: journeys ⊆ manifest ⊆ emitted ⊆ asserted (unit job)
+pnpm install --frozen-lockfile
+pnpm turbo build lint typecheck
+pnpm --filter @rhema/journeys exec playwright install chromium
+pnpm test
+
+# Focused example: build the package's dependency closure, then run one test file.
+pnpm turbo build --filter=@rhema/db...
+pnpm exec vitest run packages/db/src/rls.test.ts
 ```
 
-## Bazel-compatible invariants (enforced, not advised)
-1. **Explicit per-package dependencies.** Import only what a package's `package.json` declares.
-2. **Project references.** Every package is a composite TS project; `tsc -b` builds the graph.
-3. **No cross-package relative imports.** Cross the package boundary only via `@rhema/*`
-   (`eslint-plugin-rhema/no-cross-package-relative-import`). Within a package, relative imports must
-   carry the `.js` extension (NodeNext).
-4. **Canonical vocabulary** (Appendix D.2; REQ-SPEC-2). Plans / model tiers / rigor / seats /
-   approvals are disjoint and verbatim; banned synonyms are lint-errors
-   (`eslint-plugin-rhema/no-banned-strings`). The harness is **never** called "Claude Code" in
-   user-facing strings.
+| Check                                         | Command                                        |
+| --------------------------------------------- | ---------------------------------------------- |
+| Dependency license policy                     | `pnpm check:licenses`                          |
+| Private material in public bundles            | `pnpm check:protocol-markers`                  |
+| Never-cookies ingestion contract              | `pnpm check:no-cookies`                        |
+| SPA gzip ceilings / environment leaks         | `pnpm check:spa-budget` / `pnpm check:spa-env` |
+| Declared, emitted, and asserted DOM selectors | `pnpm check:dom-contract`                      |
+| Protocol port against vendored upstream pin   | `node scripts/check-upstream-diff.mjs`         |
+| Formatting check                              | `pnpm format`                                  |
 
-## Round-3 invariants (00_MANIFEST § Cross-cutting invariants 12–14)
-- **A user surface is verified by walking it** (REQ-SPEC-29, ADR-016): Stage-B acceptance for any
-  user-surface change is the JOURNEY.1 browser journeys (visible text + actionable controls +
-  screenshots); a built client bundle without a served route fails CI; a close records deployed
-  provenance = the chain-tip SHA.
-- **User-serving vs system DB pools** (REQ-SPEC-30, ADR-017): user-serving code connects with a role
-  that cannot bypass RLS; only the documented system pool may bypass — never for a user request, and
-  always with explicit workspace predicates. A new tenant read extends the two-tenant probe.
-- **Money and research are truthful** (REQ-SPEC-32, REQ-SPEC-31, ADR-014/015): debits equal metered
-  burn clamped at the cap; every user-visible price/duration/trial claim comes from the one
-  estimator/entitlement config; a Review that could not research says so and refunds the research
-  phases.
+- CI's core jobs are `typecheck / lint / unit`, `contracts`, `integration`, `images`, and
+  `public-safe (gitleaks / markers / licence policy)`, with `fast-path` and `ci-anchor` helpers.
+  Their dependency graph and full-versus-fast evidence requirements are documented in
+  `.github/workflows/ci.yml` and `docs/ci.md`.
+- A skipped Docker, server-Postgres, browser, or live leg is not proof of that leg. Report it explicitly.
 
-## Frontend — the SPA hybrid (round 4; ADR-106/107/108)
-`apps/web` is a **Hono SSR host + Vite-built TanStack Router/Query SPA + same-origin BFF**.
-React Router survives only as the server-side manifest/match library — it is never shipped to
-browsers. **Authored vs activated:** prod still serves pre-chain ancestors; this section
-describes landed code. Live posture changes only through the operator's ordered activation
-(`docs/build/INTEGRATION_PLAN.md` §R4) — never claim a round-4 surface is live without
-`check-deploy-provenance` green.
+## Code Conventions
 
-- **Renderer split.** The public funnel (`SPA_PUBLIC_ROUTES` — `/`, `/invite`, `/pricing`,
-  `/signup`, `/login`, `/showcase`) stays SSR forever; every other authenticated document GET
-  serves `spaShellDocument` unconditionally (`apps/web/src/spa-shell.ts`). The document census
-  is `SPA_DOCUMENT_ROUTES` in `packages/contracts/src/spa.ts` — a `surfaces: null` row is a
-  server-owned redirect GET (registered in the client tree as a `reloadDocument` stub so the
-  server's 302 still answers).
-- **Flag machinery is deleted (SPA.27/28).** `?ssr=1`, `?renderer=spa`, `x-rhema-renderer`,
-  `SPA_OVERRIDES`, the `SPA_SURFACES` env + `rhema:spaSurfaces` stack key — all inert or removed;
-  never resurrect them (`renderer-overrides.test.ts` + `check:spa-env` are the tripwires).
-  `SPA_SURFACES`/`SPA_IDE_FRAMED_*`/`SPA_DOCUMENT_ROUTES` survive as **contract vocabulary
-  only** — no request-path code consults them.
-- **Forced-SSR is a server verdict (REQ-ED-12, ADR-108).** The five Page-family GETs serve SSR
-  on `isPhoneRequest(c) || row.showcase === true`. The boot `surfaces` map owns the phone leg;
-  the BFF twin's `project.showcase` owns the showcase leg — leaves consult `twinForcesSsr`
-  (`spa/states.tsx`) and hand off through `SsrHandoff` → `replaceDocument` (`spa/dom.ts`, the
-  one document-navigation seam — `navigateDocument`/`replaceDocument` share the `spaRuntime`
-  arms; `/logout`, external hand-offs, binaries are document navigations). The client never
-  decides a renderer.
-- **Client-side navigation is one delegated interceptor (round 5, ADR-110).** A single
-  bubble-phase `click` listener on `document` — installed by `mountSpa`, never
-  `createSpaRouter` — routes in-tree `<a href>` clicks to `router.navigate`. The ordered
-  guard pipeline + skip-list are normative in `apps/web/src/spa/nav-intercept.ts`
-  (modifiers/secondary-button/contenteditable/`target`/`download`/`data-spa-native`/
-  foreign-origin/hash-only/out-of-tree/`RELOAD_STUB_IDS` stays native or doc-navs).
-  Interception is unconditional once in-tree — it never consults `surfaces`,
-  `deviceClass`, `twinForcesSsr`, or `spaRouteFor`; renderer verdicts stay in leaf
-  pipelines. Clicks always push; no intent-preload ships. Settle contract
-  (NAVC.2, REQ-NAVT-1/2): `data-nav-count` (every served document stamps `"0"`;
-  HeadManager ticks committed transitions) + `data-mounted` removed while a nav
-  is pending + `data-page-session` on `[data-page-root]` (the keep-alive session
-  identity). Native `hashchange` hops the router never sees are compensated by
-  the IDE controller's `hashchange` listener (`spa/ide/controller.ts`,
-  REQ-NAVM-10).
-- **Transport.** `bffFetch` (`spa/bff.ts`) is the ONE JSON transport — same-origin `/…` paths
-  only, `credentials:"same-origin"`, no client POST retries; non-2xx throws
-  `BffError{status,code,detail?,requestId}`; 401 → `/login` document nav. Reads are the typed
-  `/bff/*` twins. Writes post to the same paths a no-JS form would — the server dual-modes on
-  `content-type`/`accept`: JSON callers get `{ok:true, redirect?, flash?, data?, pending?,
-  url?}` (`url` = allowlist-validated external hand-off only); form posts get the verbatim
-  302+flash URL (the no-JS floor is always equivalent). Failures are
-  `{error:"<stable_code>", detail?}` at the preserved status — a JSON caller never gets a
-  redirect; stale-state 400/404/409 means re-read → invalidate the owning Query keys.
-- **Query conventions (REQ-FW-7).** Loaders orchestrate `ensureQueryData` with
-  endpoint-verbatim keys + `defaultPreloadStaleTime: 0`; leaves use `useQuery` + `SurfaceShell`,
-  not `useSuspenseQuery`.
-- **DOM contract.** `apps/web/src/dom-contract.ts` is the committed selector manifest — the
-  `data-*` hooks / roles / field names are THE test+journey vocabulary; `check:dom-contract`
-  fails on a selector a journey or test cites that the manifest doesn't declare, and on a
-  manifest entry nothing emits or asserts. Never invent an undeclared hook.
-- **Component tests.** `*.dom.test.tsx` run under happy-dom + Testing Library + `axe-core`
-  (`apps/web/vitest.config.ts` `environmentMatchGlobs`, `test-setup.ts`); layout-dependent axe
-  rules stay off — the journey-level axe leg is the deferred authoritative tier.
-- **Permanent islands (ADR-107).** `CLIENT_ENTRIES = ["ide","page","landing"]`
-  (`apps/web/client-entries.mjs`): `page.js`/`ide.js` mount forever on the forced-SSR family +
-  SSR-framed IDE documents; `outline` (SPA.26) and `editor` (SPA.24) are retired. An entry
-  leaves the list only when nothing served can mount it — removing `page`/`ide` is a REQ-ED-12
-  design change, not cleanup.
-- **Source mode (SPA.25, REQ-ED-17).** `spa/page-source-mode.ts` — a CodeMirror 6 view loaded
-  only via `import()` (the `codemirror` async group; plain-text — `@codemirror/lang-markdown`
-  broke the REQ-SAFE-7 ceiling). Commits flow through `applySourceMarkdown`
-  (`packages/editor/src/source-mode.ts`, three-way top-level-block merge); the PM view stays
-  mounted + dispatching inside `data-pm-host`.
-- **Rollback is `git revert` + redeploy** — no flag exists to flip (spec §14.4).
+- Declare every imported dependency in the owning package's `package.json`; use `@rhema/*` across
+  package boundaries. Within a package, relative TypeScript imports use the emitted `.js` extension.
+- Correct ✓: `import type { TenantClient } from "@rhema/db"` and `import { helper } from "./helper.js"`.
+  Wrong ✗: reaching into another package through `../../db/src/...` or omitting `.js`.
+- Preserve composite projects and references. The compiler enables `strict`,
+  `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, and `noImplicitOverride`.
+- Use canonical vocabulary from `packages/contracts/src/reserved-strings.ts`: plans, model tiers,
+  rigor, seats, and approvals are separate concepts. Never call the product's harness “Claude Code”
+  in user-facing strings; the Rhema ESLint rules enforce banned copy and package boundaries.
+- To add a package: create an explicit workspace member under `apps` or `packages`, named
+  `@rhema/<name>`, with `type: module` and `build` / `typecheck` / `lint` scripts; extend
+  the root `tsconfig.base.json` using a relative path from the package directory, reference each
+  workspace dependency, and add the project to root
+  `tsconfig.json`. Wire a new container into `infra/pulumi`.
+- Colocate `*.test.ts` / `*.test.tsx`; exclude tests from TypeScript production builds. Regenerate
+  outputs with their owning tool; do not patch compiled `dist`, bundles, or generated route trees.
 
-## Browser journeys (JOURNEY.1; REQ-SPEC-29)
-`packages/journeys` (`@rhema/journeys`) is the committed Playwright suite. `src/registry.ts` is the
-step registry: a step is `expected: "red"` until its owner proves it in Stage B, then flips it
-`"green"` with the screenshot — a green step failing fails the run, a red step failing reports `owed`.
+## Critical Gotchas
+
+1. **Read `docs/tickets/DEFERRALS.md` first, every run.** In an `implement-spec` run, verifying and
+   closing any `OPEN` row unblocked by the ticket or its prerequisites is part of the work. Append
+   newly deferred work in the same run. A phase-exit gate must not pass with an unresolved `OPEN`
+   row scoped to that phase; preserve explicit, recorded operator dispositions.
+2. **Never cross the tenant boundary.** User-serving code uses a role that cannot bypass RLS.
+   Set tenant context only through `withTenant`; elevated system pools are limited to the audited
+   seams in `tools/system-pool-boundary.json`, never a user request, with explicit workspace
+   predicates. Extend the two-tenant probe for every new tenant read.
+3. **Protect secrets and private material.** Secrets never enter the repo, logs, or ledgers.
+   Provider keys belong only in the egress proxy; Stripe/Better Auth secrets belong in Secret
+   Manager. No plaintext secret environment variables in web/collab, and no secret may reach the
+   model's process. Private protocol/eval text must never enter browser bundles, OpenAPI, or event
+   payloads. These are required boundaries; do not infer universal enforcement from a green build.
+4. **Prove user surfaces in a browser.** Stage-B acceptance requires JOURNEY.1 visible text,
+   actionable controls, and screenshots at the deployed chain-tip SHA (REQ-SPEC-29). A built client
+   asset without a served route fails acceptance. Use the committed DOM selector vocabulary.
+5. **Keep money and research truthful.** Preserve REQ-SPEC-32: debits must equal metered burn,
+   clamped at the cap. The implementation retains `committed` mode alongside `metered`; this is an
+   activation discrepancy to disclose, not permission to weaken the requirement. Read stage facts
+   and the activation record before claiming `metered` is active. Every price/duration/trial claim comes
+   from the shared estimator/entitlement configuration. A Review that could not research must say
+   so and refund its research phases (REQ-SPEC-31). Do not change a money-mode activation as cleanup.
+6. **Authored code is not deployed evidence.** Live claims require successful
+   `check-deploy-provenance` evidence for the expected SHA. Follow the ordered activation in
+   `docs/build/INTEGRATION_PLAN.md`. Never restore deleted renderer override flags.
+7. **Live actions require their existing operator authorization.** Preview lifecycle goes only
+   through `scripts/live/preview-stack.mjs`; it refuses prod and requires owned stacks. Paid
+   journeys retain their measured spend guards and explicit headroom; a funded envelope or pause
+   cannot be reset by editing docs, changing an epoch, or removing a sentinel without reauthorization.
+8. **A public stub build is not a public export.** This tree commits `packages/protocols`; its
+   private material also exists in history. The export contract drops it and substitutes
+   `packages/protocols-stub` under the `@rhema/protocols` name. `public-safe` builds the fallback;
+   it does not prove a complete sanitized export. `@rhema/evals` uses `RHEMA_EVALS_PATH` through
+   `.pnpmfile.cjs`, otherwise `evals-stub`. Never use git submodules for either package.
+
+## Build memory
+
+- `docs/build/` is the committed memory root (`<!-- build-memory: v2 -->`, ADR-004).
+  `docs/tickets/00_MANIFEST.md` § The chain owns ticket order; `docs/build/LEDGER.md` owns machine
+  state (`nextTicket`, `chainTip`, CURRENT STATE / OPEN FINDINGS / GATE DECISIONS / RETURN PASS /
+  PHASE LOG). Read the current records rather than copying an old posture into guidance.
+- `docs/build/BUILD_INDEX.md`, `docs/build/runs`, `docs/build/pr`, and `docs/build/readouts` hold
+  PR/run/gate evidence. `docs/build/logs` is gitignored; `.agents/scratch` is retired.
+- Contracts and historical records are **append-only**: correct them by a dated note or new ADR.
+  `docs/adr/README.md` is generated by `build-memory adr-index`; never hand-edit it.
+- Build-chain PRs **stack**; `mergePolicy: OPERATOR` means the operator merges bottom-up and a run
+  never merges its own PR. A gate is a pause, not a block. Secrets never enter any ledger.
+- Detailed record rules and identifier grammar are in `docs/AGENTS.md`. The external build-memory
+  skill owns the detailed layout contract. With that skill installed, run the structural check;
+  run the committed history check against the actual PR base (shown here as `origin/main`):
+
 ```bash
-pnpm --filter @rhema/journeys build
-pnpm --filter @rhema/journeys exec playwright install chrome      # chromium for local dev
-pnpm --filter @rhema/journeys exec rhema-journeys \
-  --stage prod \                # resolves the stage's public origins; only prod has real DNS —
-                                # any other stage needs explicit --web/--api
-  --steps N2,N7,R1 \            # CSV of registry ids; omit for the whole registry
-  --expect-sha <chain-tip-sha> --out docs/build/reports/<date>_journeys
+bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .
+node docs/build/tools/check-append-only.mjs --base origin/main
 ```
-`--paid` adds the paid legs (weekly only, bounded by the $5 ISO-week spend guard + the single
-≤300-word fixture). Every `--paid` dispatch declares `--headroom <legCapUsd>` to pre-flight the
-measured week (REQ-ECON-9 — the cron's standing bound is $3); an operator dispatch additionally
-requires the system-role `JOURNEY_DATABASE_URL` — only the scheduled self-bounding cron may
-attest no-db. Every paid registry row declares `capUsd` ≥ the $0.50 floor
-in advance, and the metered leg-close throws `CapOverrunError` past it (REQ-ECON-7).
-Post-ADR-093 the guard's `JOURNEY_DATABASE_URL` MUST be the **system-role** DSN — an app-login
-DSN reads `usage_records` as $0 through FORCE RLS and blinds the guard, so the bound role is
-probed and a blind pool fails closed. The model-judgment legs pin `cogsLevers` on every launch
-(`cogsLeversFor`; REQ-ECON-11 — N6/R4/B19C pin `testCheapRoute:false` and carry full-tier caps).
-Nightly $0 legs (06:05Z) and the weekly `--paid` run (Mon 04:35Z) come from
-`.github/workflows/journeys.yml`.
 
-The funded-window driver `scripts/live/funded-window.mjs` (R5ECON.1–3) substitutes the weekly
-guard with the operator-funded window's own binding when an envelope is authorized:
-`--dry-run` prints the §5.5 checklist as nine pass/fail rows, each fail-closed when
-unmeasurable — system-role DSN → pinned-scope cumulative (flagged-tenant proxy rows only;
-`req_jrn_` seeded rows excluded, REQ-ECON-6) < the re-authorized `FUNDED_WINDOW_CAP_USD` (~$60)
-→ `--headroom` covering the selected legs' summed `capUsd` → per-leg `CapOverrunError`
-enforcement → the ordering (T9 first → launchers → riders → B19C last-and-conditional) → the
-`JOURNEY_FUNDED_STABLE_TAG` purge-exempt stable tenant (`funded-tenant.mjs`) → REQ-ECON-6
-exclusions → REQ-ECON-11 opt-outs → unpaused. A `cap_overrun` leg-close writes
-`<stateDir>/funded-pause.json` and every later dispatch refuses until the operator re-authorizes. The
-regime was exercised at bind on 2026-10-16 and **refused** — pinned-scope cumulative $80.86 ≥
-~$60, zero legs ran, $0 spent; the wave stays **carried** (GD-FUNDED.1-1 / D-CAP.2-1) until a
-fresh envelope ruling — never describe it as having run.
+## Terminology
 
-Round-4 CLI surface: `--surface <key[,key…]>` scopes a run to a `SURFACE_GATES` surface;
-`--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` differs
-(`spa` on every authenticated SPA-space document, `ssr` on public + forced-SSR arms);
-`--invite-code` (env `RHEMA_INVITE_CODE`) seeds the preview invite path. `--pin-renderer`/
-`JOURNEY_PIN_RENDERER` are **retired** (SPA.28 deleted `x-rhema-renderer`) and refuse loudly with
-exit 2. The marker vocabulary `data-renderer` / `data-route` / `data-mounted` /
-`data-nav-count` / `data-page-session` is the settle + renderer contract — it stays true on
-both renderers. Settles are mechanism-pinned (`src/settle.ts`): `settleClientNav` requires the
-current document's `data-nav-count` to tick with **zero** document loads;
-`settleDocumentNav` requires the inverse — both read the runner's unconditional
-`documentLoads` same-origin response counter (`runner.ts`), the only proof that survives a
-document swap. Leg ids are family-prefixed (`N*`/`R*`/`T*`/`B*`/`P1.*`/`X1.*`/`C1`;
-sub-assertions suffix `.sub` — `N2.invite`, `R8.inbox`).
+| Term              | Meaning                                                                  |
+| ----------------- | ------------------------------------------------------------------------ |
+| Stage A / Stage B | Repository-level proof / deployed acceptance proof.                      |
+| Chain tip         | The implementation revision whose deployed behavior is being verified.   |
+| Deferral          | An explicit owed criterion with evidence and an unblock condition.       |
+| BFF / twin        | Same-origin web backend / JSON read corresponding to a document surface. |
 
-## Adding a package
-1. Create `apps/<name>` or `packages/<name>` with `package.json` (`@rhema/<name>`, `type: module`,
-   `build`/`typecheck`/`lint` scripts) and a `tsconfig.json` extending the repo-root
-   `tsconfig.base.json` (`extends` = "../../tsconfig.base.json" from the package dir) with
-   `references` to each `@rhema/*` dependency.
-2. Add it to the root `tsconfig.json` `references` and (if a new container) the Pulumi program in `infra/pulumi/`.
-3. Colocate tests as `*.test.ts` (excluded from `tsc` build; run by Vitest).
+## Do / Don't
 
-## Private packages (REQ-ARCH-37, amended 2026-09-01)
-`@rhema/protocols` is a **committed workspace member** (`packages/protocols`): this repo is private, so
-the protocol IP lives in its history. Open-source-readiness is an **export-time swap** — a public export
-drops `packages/protocols` and renames `@rhema/protocols-stub` (`packages/protocols-stub`) back to
-`@rhema/protocols`; the `public-safe` CI job builds that stub to prove the fallback still compiles. The
-drift gate `scripts/check-upstream-diff.mjs` verifies the ported skills against the vendored pin at
-`packages/protocols/upstream-pin/` (REQ-ARCH-5). `@rhema/evals` is still **path-resolved** to a separate
-private checkout when `RHEMA_EVALS_PATH` is set (see `.pnpmfile.cjs`), falling back to `evals-stub`
-otherwise — **never git submodules**. No protocol/eval text (skills, rubrics, calibration language,
-prompts) may reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33).
-
-## Stages (§13.2)
-`dev` (shared integration, AlloyDB), `pr-<n>` (per-PR preview: small/paused AlloyDB, isolated GCS buckets,
-Base tier, `max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (Cloud SQL `db-g1-small` —
-amended 2026-09-17 from AlloyDB; the ~$50/mo prod budget cannot carry an AlloyDB primary). Stage facts
-live in `infra/config/stages.ts` and are unit-tested; the Pulumi program in `infra/pulumi/` consumes them.
-
-`pr-<n>` lifecycle goes through ONE guarded path — `scripts/live/preview-stack.mjs` (verbs `init` /
-`select` / `output` / `config` / `resend-pull` / `preview` / `up` / `refresh` / `seed-invite` /
-`destroy` / `rm`): `prod` is refused on every verb including reads, and mutating verbs require the
-stack's `rhema:owner=ops-preview` tag — a stack the guard did not create cannot be adopted. The
-session-capable recipe (MAINT.6/VERIF.2): `init` → `config` the images → `resend-pull` (pipes the
-operator-seeded `rhema-nonprod-resend-api-key` into `rhema:resendApiKey` on stdin, never printed) →
-`up` → the stack's migrate Job → `seed-invite` mints the deterministic non-secret code
-`prv-<n>-test` → journeys run with `--invite-code`. Teardown is three guarded acts — `destroy` →
-zero-orphan enumeration → `rm` (never `destroy --remove`).
-
-## CI jobs (§13.2), in order
-`typecheck/lint/unit` → `contracts` → `integration` → `images` → `public-safe`. Jobs may be thin
-placeholders that later tickets fill; the pipeline, licence policy, and public-safe checks are real.
-
-## Secrets (REQ-ARCH-30)
-Never in the repo (gitleaks-scanned). Provider keys only in `egress-proxy`; Stripe/Better-Auth secrets
-in Secret Manager. No secret as a plaintext env var to `web`/`collab`. Never reachable from the
-model's process.
+- **Do:** identify the owning package, read its scoped instructions, and report exactly which checks ran.
+- **Don't:** merge your own PR, weaken a safeguard to obtain a green check, or claim unrun live evidence.

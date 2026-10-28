@@ -34,7 +34,8 @@
   (REQ-DISC-1) is what supplies admissible rows. This stays a **finding for an operator
   ruling — never flipped past**; evidence in
   `docs/build/reports/2026-10-21_R6MNY.1/`.
-- **Verify:** `gcloud run services describe rhema-prod-api|worker` env shows
+- **Verify:** inspect `rhema-prod-api` and `rhema-prod-worker` separately using the filtered
+  `DEBIT_MODE` read in [debit-mode-flip.md](debit-mode-flip.md); each shows
   `DEBIT_MODE=metered`; a completed run's `credit_ledger` settles to the proxy meter
   (`debit:<run>:settle` + `metered_over_debit` refunds where the floor overshot) — the
   runbook's Step-3 list.
