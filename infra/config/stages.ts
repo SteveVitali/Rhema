@@ -537,7 +537,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     maxUsdPerRun: 100,
     allowsProductionSecrets: true,
     signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
-    purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
+    purchaseMode: "open", // R6LCH.1 flip 2 (GD-LAUNCH-MONEY.R6) — real-user purchase open at launch
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
     // SPA.28 — `spaSurfaces` retired (see the StageConfig migration note): the prod flips
