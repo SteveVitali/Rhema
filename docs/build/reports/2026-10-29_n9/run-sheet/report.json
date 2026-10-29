@@ -1,0 +1,82 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "cf6a31015f0b",
+  "startedAt": "2026-10-29T19:09:40.114Z",
+  "finishedAt": "2026-10-29T19:10:18.574Z",
+  "webBaseUrl": "https://rhema-pr-230-web-1fd9f10-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-230-api-788dce8-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "ea7d8f22e702567a9020bd889e02784c321a4e90",
+    "observed": {
+      "web": "ea7d8f22e702567a9020bd889e02784c321a4e90",
+      "api": "ea7d8f22e702567a9020bd889e02784c321a4e90"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16595,
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "failedRequests": [
+        "GET https://398b2c0c590a.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://30cb9cb8e3b2.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://020b5d149b26.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://37f8d1a091a6.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 14941,
+      "screenshot": "N9.png"
+    },
+    {
+      "id": "R7",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2750,
+      "screenshot": "R7.png"
+    },
+    {
+      "id": "P1.runsheet",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2905,
+      "screenshot": "P1.runsheet.png"
+    }
+  ],
+  "passed": true
+}

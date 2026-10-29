@@ -1,0 +1,22 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:deployProxyMig: "true"
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  rhema:gitSha: ea7d8f22e702567a9020bd889e02784c321a4e90
+  rhema:protocolsVersion: 0.4.0+9c2b880dbee74bd8
+  rhema:extraRequiredSecrets: stripe-secret
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
+  rhema:resendApiKey:
+    secure: AAABAI2UK8dSlEkWNX6tGiB3pQ0PkJAz9D8kR/0Cy2ITn3QoIaZZE3CZZPt3yviBIO/JzgsgJLQeW0R52j5Hx0NwzmA=
+  rhema:emailFrom: hello@rhema.tools
+  rhema:stripeSecret:
+    secure: AAABAEpI3CQraAYtnI5U9Z86WOW+DLMM2XeVDpT6+nC17uLfsIE4cQr2onDsDgl+adH9YxbzCF6bTmi/d5b+N5h/+rNSaBcMUs+MGAyJ8xA1bqFqIvaOf/B9sZ+cGqwCZeUO/QB5P63E9D0C21MMFxwtcoslCOmjXmZXiKSyxV7v7iUX2feujxa0Rw==
+  rhema:stripePaymentLinkUrl: https://buy.stripe.com/test_14AaEQbU030E61k5D7a7C00
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/api@sha256:deb7836c4b1adf5d157c932bdd7fe14919c6f0c3854c661d33ff93799167b41d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/web@sha256:9e7abc9b613fb8914b0c49991670f135e19fae7c03dcb38b289dba27806c88ef","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/worker@sha256:96ad8396844c8476d65cf999c1e88bb070651143f713842f1fefdf04eff14ec9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/fetcher@sha256:031a1f3ead4fa9cfec55b20fb3cdf82da414a1422734d866e74d4f23003b104d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/convert@sha256:d92c6b03e28af28f1963977528979f41b42f19f878dc949b10e052c35bb01529","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/export@sha256:aec7a7cee89bf97873b774e42f86b10bb7206ce6fa6006db056cc7c4535779af","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/collab@sha256:f41395b799b81722bf9322219a35e5251035d99147181fd904757bf3a93af4ec"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/run-task@sha256:78ce280082392686c699eb0b0b2d9edf7d1beeb13734b1e8680b244a39838c41
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-230/egress-proxy@sha256:72797e923c62d8ba5d23736f04d69d095891ce7f8e894dd03642dcfb5c7f8cb1
+  rhema:appBaseUrl: https://rhema-pr-230-web-1fd9f10-tkbl73n3tq-uc.a.run.app
+  rhema:apiPublicUrl: https://rhema-pr-230-api-788dce8-tkbl73n3tq-uc.a.run.app
