@@ -10,7 +10,8 @@
 - **Base:** `origin/main` @ `5e0e87e` · **Branch:** `stevevitali/f-r6swp1-5-limiter`
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** implement-spec + build-memory + self-review
 - **Requirement ids stamped:** REQ-BETA-19 REQ-SPEC-29 (the throttle + the test-tenant class)
-- **Started:** 2026-10-29T21:0xZ
+- **Started:** 2026-10-29T21:0xZ · **Closed:** 2026-10-29T22:0xZ · **PR:** #231 @ `d98f0c1`
+- **ci:** pass #231@d98f0c1 — boundary read `logs/ci-F-R6SWP1-5.json` (run 40956036883 — all seven legs + `ci-pass` anchor)
 - **Live stage:** none — code + deterministic tests; live re-proof rides the next scheduled/dispatch
   nightly on `main` post-merge (provenance refuses non-`main` refs; merge is OPERATOR).
 - **Production mutations:** none.

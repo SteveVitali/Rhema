@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
 nextTicket:      200_R6WATCH.1      # launch+14d read — runs no earlier than 2026-11-11T04:0xZ (clock-bound; expansion committed by R6CLK.1)
-lastCompleted:   N9                # 2026-10-29 (findings run) — Stripe posture legs green on pr-230; D-SPA.16-1/D-SPA.20-1 DONE; prior chain ticket R6CLK.1 (2026-10-28)
+lastCompleted:   F-R6SWP1-5        # 2026-10-29 (findings run) — rl:testidentity exemption landed (ADR-124); F-R6SWP.1-5 RESOLVED-IN-CODE; prior N9 (same day)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-29T19:4xZ            # N9 DONE — Stripe test-mode posture legs green on pr-230 (D-SPA.16-1/D-SPA.20-1 closed); nextTicket stays 200_R6WATCH.1
+updatedAt:       2026-10-29T21:5xZ            # F-R6SWP1-5 done — test-mailbox identities ride bounded rl:testidentity bucket (PR #231); nextTicket stays 200_R6WATCH.1
 ```
 
 ## OPEN FINDINGS
@@ -541,14 +541,31 @@ pointers; substance unchanged.)_
   dispositions owed: wire `secrets.JOURNEY_DATABASE_URL` (posture decision — a prod
   DSN in GitHub secrets) + env export; T8 needs an in-workflow mint step or leg
   reclassification (owner STB.5a).
-- **F-R6SWP.1-5 — OPEN (2026-10-27, R6SWP.1 live-found — `runs/R6SWP.1.md`).**
-  **Structural**: prod's shared magic-link limiter (SEC.2) serves ~4–5 sends per
-  window vs the suite's ~20+ fresh-signup demand — re-drive `40544946473` passed its
-  first 4 signup legs then 429'd the remaining 9 (X1.*, T1, T2.badge, T2.matrix, T3).
-  An isolated nightly hits the same wall: the scheduled run can never close fully
-  green under the current policy. Options recorded (owner/operator call): exempt
-  `test+*@rhema.tools` tenants from the limiter; runner-side signup pacing; or
-  pre-mint session fixtures for the fixture-family legs.
+  **2026-10-29 (F-R6SWP1-5 — dated tail, T8 half dispositioned):** every
+  workflow-side self-supply channel reduces to a SYSTEM-role prod DSN in GitHub
+  secrets PLUS an authorized recurring prod write — two operator rulings, so
+  nothing was implemented (recorded in `runs/F-R6SWP1-5.md` § F-R6SWP.1-4
+  disposition). Shrinking path offered: one-time re-mint on the purge-exempt
+  `test+jrn-a` tenant + bind `JOURNEY_T8_EXPORT_TOKEN` (harmless — only ever yields
+  410); a self-gating mint-step recipe is recorded, not committed. The
+  `JOURNEY_DATABASE_URL` ask is unchanged — NOT wired here (operator posture call).
+- **F-R6SWP.1-5 — RESOLVED-IN-CODE 2026-10-29 (F-R6SWP1-5 — `runs/F-R6SWP1-5.md`,
+  PR #231 `stevevitali/f-r6swp1-5-limiter`; deployed re-proof rides the next
+  scheduled/dispatch nightly on `main` post-merge).** Root cause was broader than the
+  finding's wording: each session-minting submit crosses TWO shared buckets —
+  `rl:signup` (POST /signup, perIp=10) AND `rl:magiclink` (send gate, perIp=20/
+  perEmail=4) — all on the single runner IP (nightlies 40689727097 + 40876457031:
+  ~13 legs 429'd on `test+` signups, fresh AND stable identities). Option (a)
+  implemented, amended per **ADR-124**: `test[+<tag>]@<TEST_MAILBOX>` identities
+  count on a dedicated bounded bucket `rl:testidentity` (perIp=240, perEmail=120, 1 h
+  — moved ceiling, never removed, ADR-039's posture holds) at all three admission
+  call sites (`POST /signup`, the send gate, `user.create.before`). Boundary =
+  `matchesTestMailbox` exactly; unconfigured ⇒ no exemption (fail-closed); invite/mode
+  admission untouched. 10 deterministic tests green. _Original entry (2026-10-27,
+  R6SWP.1 live-found — `runs/R6SWP.1.md`): prod's shared magic-link limiter (SEC.2)
+  served ~4–5 sends per window vs the suite's ~20+ fresh-signup demand — re-drive
+  `40544946473` passed its first 4 signup legs then 429'd the remaining 9 (X1.*, T1,
+  T2.badge, T2.matrix, T3); an isolated nightly could never close fully green._
 - **F-R6H11B-1 — RESOLVED-IN-CODE 2026-10-27 (R6FIX.5 — `runs/R6FIX.5.md`,
   branch `stevevitali/r6fix-5-money-findings`; deployed re-proof owed).**
   Live-found in the H11B headed money session on prod `dc3a8f6` (PHASE LOG
@@ -1163,3 +1180,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-10-28T06:3xZ — **boundary confirmed — R6CLK.1 green at head `a5d2c73`, re-confirmed at final head `f584aa6`.** `ci-boundary` reads **pass** at `a5d2c73` (run 40639558148 — all seven legs + `ci-pass` anchor: fast-path, typecheck/lint/unit, contracts, public-safe, integration, images) and **pass** at `f584aa6` (run 40643689669 — same-tree anchor reuse on the docs-only head; record `logs/ci-R6CLK.1.json` refreshed). PR #229 green, **unmerged (OPERATOR)**; `nextTicket` → `200_R6WATCH.1` (clock-bound ≥ 2026-11-11T04:0xZ). harness: devin-desktop/swe-2-high/subagent.
 - 2026-10-29T19:4xZ — **N9 done — the Stripe test-mode posture legs discharged D-SPA.16-1 + D-SPA.20-1 (findings run; deferral discharge).** Branch `stevevitali/n9-stripe-posture` · PR #230 · base `main` @ `ea7d8f2` · the operator's `sk_test_` re-seed (v3 on `rhema-nonprod-stripe-secret`) cleared the last blocker → owned `pr-230` posture stack: `extraRequiredSecrets=stripe-secret` + `stripe-pull` (stdin, never printed) + live test-mode `buy.stripe.com/test_…` Payment Link config → `--surface billing` **N9 PASS** (all four entry points reached Stripe-hosted TEST pages: `cs_test_` subscribe/topup sessions minted `open` — never completed; honest no-card portal arm) + `--surface run-sheet` **N4/N9/R7/P1.runsheet PASS**, `--expect-renderer spa` + provenance `ea7d8f2` match · **Verify:** committed reports + screenshots `reports/2026-10-29_n9/`; tunnel honesty rows (4 sessions open, 0 stripe_events); destroy+rm + zero-orphan sweep; `check-build-memory` 0 viol; append-only OK; turbo/test green on docs delta · **Deferrals:** closed D-SPA.16-1 + D-SPA.20-1 · dated notes on D-P1.16-1 (no arm lands — legs (e)–(g),(i) owe live-mode cadence) + D-OPS.1-1 (N9 posture residual discharged; row stays OPEN) · GATE-LAUNCH threshold-1 dated note (carried N9 items resolved) · **Deviations:** none — jrn-a `writer/active` seeded as the fixture equivalent of prod's funded grants (recorded, §14.2 invariant honored) · chainTip unchanged (non-chain findings run) · next → `200_R6WATCH.1` (unchanged) · ci: **pass #230@`d009c21`** (run 40942380289 — all seven legs + `ci-pass` anchor; record `logs/ci-N9.json`) · layer: live-executed · harness: devin-desktop/swe-2-high/subagent · spend ≈$4–6 infra, $0 legs
 - 2026-10-29T21:1xZ — **boundary re-confirmed — N9 green at final head `59a4aa8`.** `ci-boundary --ledger` re-reads **pass** at the closeout head (run 40952787539 — all seven legs + `ci-pass` anchor, cache-fast docs-only run; record `logs/ci-N9.json` refreshed). PR #230 open, unmerged (OPERATOR); `nextTicket` stays `200_R6WATCH.1`. harness: devin-desktop/swe-2-high/subagent.
+- 2026-10-29T22:5xZ — **F-R6SWP1-5 done — the prod magic-link limiter is lifted for the test-identity class (findings run; ADR-124).** Branch `stevevitali/f-r6swp1-5-limiter` · PR #231 · base `main` @ `5e0e87e` · root cause broader than the finding's wording: every session-minting submit crosses TWO shared buckets (`rl:signup` perIp=10 + `rl:magiclink` perIp=20/perEmail=4, one runner IP) — scheduled nightlies `40689727097`/`40876457031` show ~13 `test+` legs 429'd on fresh AND stable identities · option (a) landed amended (ADR-124): `test[+<tag>]@<TEST_MAILBOX>` counts on the dedicated bounded `rl:testidentity` bucket (240/120·h) at all three admission call sites; boundary = `matchesTestMailbox` exactly; unconfigured ⇒ fail-closed; invite/mode admission untouched; +10 deterministic tests · **Verify:** vitest `apps/api/src` 575 pass · turbo 135/135 · api lint+typecheck clean · check-build-memory 0 viol (14 warnings legacy) · append-only vs `5e0e87e` OK · **Findings:** F-R6SWP.1-5 RESOLVED-IN-CODE · **Deferrals:** none opened/closed · **Deviations:** bounded bucket over a full skip (ADR-039 posture); finding's "send limiter" widened to both admission buckets · **F-R6SWP.1-4 dated tail:** T8 self-supply needs two operator rulings (system-role DSN + recurring prod write) — shrinking path + recipe recorded, `JOURNEY_DATABASE_URL` NOT wired · live re-proof rides the next nightly on `main` post-merge · chainTip unchanged (non-chain findings run) · next → `200_R6WATCH.1` (unchanged) · ci: **pass #231@`d98f0c1`** (run 40956036883 — all seven legs + `ci-pass` anchor; record `logs/ci-F-R6SWP1-5.json`) · layer: engineered · harness: devin-desktop/swe-2-high/subagent
