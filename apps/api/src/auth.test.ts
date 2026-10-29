@@ -200,6 +200,131 @@ describe("SEC.2 — the magic-link SEND throttle + admission gate (a direct /api
   });
 });
 
+// F-R6SWP.1-5 — the test-identity exemption: `test[+<tag>]@<TEST_MAILBOX>` sends + creations count
+// on the dedicated high-ceiling bucket (`testIdentityThrottle`), never the production buckets —
+// the suite's ~20+ mints cannot starve prod's limits. The boundary is exactly `matchesTestMailbox`,
+// the bucket is still bounded (never unlimited), and no configured mailbox/bucket ⇒ no exemption.
+describe("F-R6SWP.1-5 — test-mailbox identities ride the dedicated bucket, not the prod limits", () => {
+  const MAILBOX = "test@rhema.tools";
+  const generous = () => createIpEmailThrottle({ perIp: 100, perEmail: 100, windowMs: 60_000 });
+
+  it("test+ sends past the prod email + IP limits still send — and the prod bucket is untouched", async () => {
+    const db: MemoryDB = {};
+    const { auth, send } = authWith(
+      db,
+      admission({
+        magicLinkThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 1, windowMs: 60_000 }),
+        testIdentityThrottle: generous(),
+        testMailbox: MAILBOX,
+      }),
+    );
+    const ip = { "x-forwarded-for": "9.9.9.9" };
+    // Prod would stop this at the 2nd send to the same email / the 3rd from the IP — the test
+    // identities all count on `rl:testidentity` instead.
+    for (const email of ["test+j1@rhema.tools", "test+j1@rhema.tools", "test+j2@rhema.tools", "test+jrn-b@rhema.tools"]) {
+      expect((await sendLink(auth, { email }, ip)).status, email).toBe(200);
+    }
+    // …and a real address from the same IP still gets exactly its production budget (perIp=2 —
+    // the test sends never touched the `rl:magiclink` ip bucket).
+    expect((await sendLink(auth, { email: "real@x.test" }, ip)).status).toBe(200);
+    expect((await sendLink(auth, { email: "real2@x.test" }, ip)).status).toBe(200);
+    expect((await sendLink(auth, { email: "real3@x.test" }, ip)).status).toBe(429);
+    expect(send).toHaveBeenCalledTimes(6); // 4 test + 2 real — every refusal stayed off the queue
+  });
+
+  it("the boundary is exact — near-miss aliases stay on the production bucket", async () => {
+    const db: MemoryDB = {};
+    const { auth, send } = authWith(
+      db,
+      admission({
+        magicLinkThrottle: createIpEmailThrottle({ perIp: 100, perEmail: 1, windowMs: 60_000 }),
+        testIdentityThrottle: generous(),
+        testMailbox: MAILBOX,
+      }),
+    );
+    // None of these is `test[+<tag>]@rhema.tools` — each gets its perEmail=1 production budget only.
+    for (const email of ["test+evil@other.test", "tesseract@rhema.tools", "test@rhema.tools.evil"]) {
+      expect((await sendLink(auth, { email })).status, email).toBe(200);
+      expect((await sendLink(auth, { email })).status, `${email} resend`).toBe(429);
+    }
+    expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  it("no configured testMailbox or testIdentityThrottle ⇒ no exemption (fail-closed default)", async () => {
+    const db: MemoryDB = {};
+    // throttle only — a test+ send hits the same limits as any address.
+    const { auth: a1 } = authWith(
+      db,
+      admission({ magicLinkThrottle: createIpEmailThrottle({ perIp: 100, perEmail: 1, windowMs: 60_000 }) }),
+    );
+    expect((await sendLink(a1, { email: "test+j1@rhema.tools" })).status).toBe(200);
+    expect((await sendLink(a1, { email: "test+j1@rhema.tools" })).status).toBe(429);
+    // bucket bound but mailbox unconfigured — the class can't exist, so nothing is exempt.
+    const { auth: a2 } = authWith(
+      {},
+      admission({
+        magicLinkThrottle: createIpEmailThrottle({ perIp: 100, perEmail: 1, windowMs: 60_000 }),
+        testIdentityThrottle: generous(),
+      }),
+    );
+    expect((await sendLink(a2, { email: "test+j1@rhema.tools" })).status).toBe(200);
+    expect((await sendLink(a2, { email: "test+j1@rhema.tools" })).status).toBe(429);
+  });
+
+  it("the test bucket still bounds — past its own ceiling a test+ send is refused (never unlimited)", async () => {
+    const db: MemoryDB = {};
+    const { auth, send } = authWith(
+      db,
+      admission({
+        testIdentityThrottle: createIpEmailThrottle({ perIp: 1, perEmail: 100, windowMs: 60_000 }),
+        testMailbox: MAILBOX,
+      }),
+    );
+    const ip = { "x-forwarded-for": "9.9.9.9" };
+    expect((await sendLink(auth, { email: "test+j1@rhema.tools" }, ip)).status).toBe(200);
+    const res = await sendLink(auth, { email: "test+j2@rhema.tools" }, ip);
+    expect(res.status).toBe(429);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("the verify-create leg rides the test bucket too — prod accountThrottle burned, test+ still creates", async () => {
+    const db: MemoryDB = {};
+    const { auth, send, onUserCreate } = authWith(
+      db,
+      admission({
+        accountThrottle: createIpEmailThrottle({ perIp: 1, perEmail: 100, windowMs: 60_000 }),
+        testIdentityThrottle: generous(),
+        testMailbox: MAILBOX,
+      }),
+    );
+    const ip = { "x-forwarded-for": "9.9.9.9" };
+    // burn the single prod per-IP creation slot with a real account.
+    expect((await sendLink(auth, { email: "real@x.test" }, ip)).status).toBe(200);
+    const l1 = sentLink(send);
+    expect((await verifyLink(auth, l1.token, l1.callbackURL)).status).toBe(302);
+    expect((db["user"] ?? []).length).toBe(1);
+    // a second prod-bucket creation from the IP would be refused — the test identity isn't one.
+    expect((await sendLink(auth, { email: "test+jnew@rhema.tools" }, ip)).status).toBe(200);
+    const l2 = sentLink(send, 1);
+    const res = await verifyLink(auth, l2.token, l2.callbackURL);
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).not.toContain("error=");
+    expect((db["user"] ?? []).length).toBe(2);
+    expect(onUserCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("the exemption lifts ONLY the throttle — invite-mode admission still gates a test+ send", async () => {
+    const db: MemoryDB = {};
+    const { auth, send } = authWith(
+      db,
+      admission({ mode: "invite", testIdentityThrottle: generous(), testMailbox: MAILBOX }),
+    );
+    // invite mode + never-seen email + no code ⇒ refused even on the test bucket.
+    expect((await sendLink(auth, { email: "test+j1@rhema.tools" })).status).toBe(403);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("SEC.2 — admission on the magic-link VERIFY creation leg (user.create.before/after)", () => {
   it("open mode: verify creates the user and provisions via onUserCreate", async () => {
     const db: MemoryDB = {};

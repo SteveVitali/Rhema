@@ -59,7 +59,7 @@ import {
   createSharedIpEmailThrottle,
 } from "@rhema/contracts";
 import { provisionPersonalAccount, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
-import { MAGIC_LINK_THROTTLE_DEFAULTS, OAUTH_SIGNIN_THROTTLE_DEFAULTS } from "./auth.js";
+import { MAGIC_LINK_THROTTLE_DEFAULTS, OAUTH_SIGNIN_THROTTLE_DEFAULTS, TEST_IDENTITY_THROTTLE_DEFAULTS } from "./auth.js";
 import { magicLinkSender } from "./magic-link-email.js";
 import { createGcpOidcVerifier } from "./gcp-oidc.js";
 import { createShowcaseSeeder } from "./showcase.js";
@@ -163,6 +163,16 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     createIpEmailThrottle({ ...OAUTH_SIGNIN_THROTTLE_DEFAULTS }),
     { onDegraded: degraded("oauth-signin") },
   );
+  // F-R6SWP.1-5 — the test-identity bucket: `test[+<tag>]@rhema.tools` signups/sends/creations count
+  // on their OWN higher-ceiling shared bucket (`rl:testidentity`), never the production
+  // `rl:signup`/`rl:magiclink` buckets — the journey suite's ~20+ mints per run cannot starve the
+  // prod limits, and a hostile caller can never ride the exemption past its own ceiling
+  // (never-unlimited holds). Same shared-store + per-instance-fallback shape.
+  const testIdentityThrottle = createFallbackIpEmailThrottle(
+    createSharedIpEmailThrottle(throttleStore, { ...TEST_IDENTITY_THROTTLE_DEFAULTS, keyPrefix: "rl:testidentity" }),
+    createIpEmailThrottle({ ...TEST_IDENTITY_THROTTLE_DEFAULTS }),
+    { onDegraded: degraded("test-identity") },
+  );
   // SEC.2 (ADR-040) — the trusted client-IP channel: the web stamps `x-rhema-client-ip` and proves it
   // with its runtime SA's OIDC token (`x-rhema-internal-token`). The verifier checks the signature
   // against Google's JWKS + iss/aud/exp/the caller SA — unset ⇒ the stamp is never honored.
@@ -214,6 +224,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
             accountThrottle: signupThrottle,
             magicLinkThrottle,
             signinThrottle,
+            // F-R6SWP.1-5 — test-mailbox identities ride the dedicated higher-ceiling bucket.
+            testIdentityThrottle,
+            ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
             ...(verifyInternalToken ? { verifyInternalToken } : {}),
           },
           // self-serve paths that never pass through POST /signup provision the same account rows here
@@ -406,6 +419,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // SEC.2 — the SHARED account-creation throttle (Redis; D-PRB.13-1) + the trusted web→api
     // client-IP channel verifier (ADR-040).
     signupThrottle,
+    // F-R6SWP.1-5 — test-mailbox identities count on the dedicated `rl:testidentity` bucket.
+    testIdentityThrottle,
     ...(verifyInternalToken ? { verifyInternalToken } : {}),
     // BILL.3 — `purchase.mode` (ADR-028): stage-config-driven, default closed; the is_test allowlist is
     // evaluated per request inside the billing routes.

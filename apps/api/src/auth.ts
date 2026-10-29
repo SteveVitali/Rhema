@@ -8,6 +8,7 @@ import {
   type IpEmailThrottle,
   type SignupMode,
 } from "@rhema/contracts";
+import { matchesTestMailbox } from "@rhema/ledger";
 import type { InviteGate } from "./invite.js";
 
 // Better Auth, self-hosted in our Postgres (§13.1; R4): Google OAuth + email magic link + sessions.
@@ -79,6 +80,23 @@ export interface AuthAdmission {
   readonly accountThrottle: IpEmailThrottle;
   /** The magic-link SEND throttle (per IP + per email) on `POST /sign-in/magic-link`. */
   readonly magicLinkThrottle: IpEmailThrottle;
+  /**
+   * F-R6SWP.1-5 — the configured test mailbox (`TEST_MAILBOX`). Sends + account creations for
+   * `test[+<tag>]@<its-domain>` identities count against `testIdentityThrottle` instead of the
+   * production buckets. Unset ⇒ nothing matches and every caller counts on the production
+   * buckets — the test-identity class exists only while the mailbox is configured.
+   */
+  readonly testMailbox?: string;
+  /**
+   * F-R6SWP.1-5 — the dedicated higher-ceiling bucket test-mailbox identities count against
+   * (`rl:testidentity` on the deploy's shared store). NOT an unlimited pass — ADR-039's
+   * never-unlimited posture holds: the exemption moves the ceiling, it never removes it.
+   * The exemption is safe because a `test+*` magic link can only ever deliver to OUR OWN
+   * pinned DWD test mailbox — the third-party send-bombing surface the production limiter
+   * exists to close cannot open. What stays bounded: account-creation writes and our own
+   * mailbox's volume. Unset ⇒ test identities count on the production buckets (safe default).
+   */
+  readonly testIdentityThrottle?: IpEmailThrottle;
   /**
    * MAINT.4 — the OAuth sign-in START throttle (per IP only — the provider identity is
    * unknown at initiation) on `POST /sign-in/social` + `/sign-in/oauth2/*`. It replaces
@@ -157,7 +175,32 @@ export const MAGIC_LINK_THROTTLE_DEFAULTS = { perIp: 20, perEmail: 4, windowMs: 
  */
 export const OAUTH_SIGNIN_THROTTLE_DEFAULTS = { perIp: 10, perEmail: 10, windowMs: 60_000 } as const;
 
+/**
+ * F-R6SWP.1-5 — the test-identity bucket's ceiling: an order of magnitude over the journey suite's
+ * demand (a full registry run mints ~20–30 sessions; the /signup gate AND the send gate both count
+ * a test-mailbox attempt here — ~60 attempts per run on the shared runner IP, with headroom for a
+ * same-window re-drive), still a hard bound so a hostile caller can never spin the unauthenticated
+ * admission path unbounded on our own alias space.
+ */
+export const TEST_IDENTITY_THROTTLE_DEFAULTS = { perIp: 240, perEmail: 120, windowMs: 3_600_000 } as const;
+
 const NO_VERIFY = async () => false;
+
+/**
+ * F-R6SWP.1-5 — pick the bucket an admission attempt counts on: a test-mailbox identity rides the
+ * dedicated test bucket (when configured); everything else the production bucket. The boundary is
+ * exactly `matchesTestMailbox` (the ADR-020 flag predicate) — near-misses like `test+x@other.test`,
+ * `tesseract@rhema.tools`, and `test@rhema.tools.evil` never match and stay production-limited.
+ */
+function admissionThrottle(
+  admission: AuthAdmission,
+  email: string,
+  prodThrottle: IpEmailThrottle,
+): IpEmailThrottle {
+  return admission.testIdentityThrottle && matchesTestMailbox(email, admission.testMailbox)
+    ? admission.testIdentityThrottle
+    : prodThrottle;
+}
 
 /** The request's client IP under the SEC.2 rule (verified stamp, else the LB-appended XFF hop). */
 async function authClientIp(
@@ -267,7 +310,7 @@ export function createAuth(
                   // Throttle BEFORE any invite work — a direct /api/auth/* caller cannot bypass the
                   // account-creation limit `POST /signup` enforces.
                   const ip = await authClientIp(ctx, admission.verifyInternalToken ?? NO_VERIFY);
-                  const verdict = await admission.accountThrottle.attempt(ip, email || undefined);
+                  const verdict = await admissionThrottle(admission, email, admission.accountThrottle).attempt(ip, email || undefined);
                   if (!verdict.allowed) {
                     throw new APIError("TOO_MANY_REQUESTS", { message: "rate_limited", code: "rate_limited" });
                   }
@@ -374,7 +417,7 @@ export function createAuth(
               const body = (ctx.body ?? {}) as { email?: unknown; callbackURL?: unknown };
               const email = typeof body.email === "string" ? body.email.toLowerCase() : "";
               const ip = await authClientIp(ctx, admission.verifyInternalToken ?? NO_VERIFY);
-              const verdict = await admission.magicLinkThrottle.attempt(ip, email || undefined);
+              const verdict = await admissionThrottle(admission, email, admission.magicLinkThrottle).attempt(ip, email || undefined);
               if (!verdict.allowed) {
                 throw new APIError("TOO_MANY_REQUESTS", { message: "rate_limited", code: "rate_limited" });
               }

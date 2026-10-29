@@ -32,7 +32,7 @@ import { resolveClientIp } from "@rhema/contracts";
 import type { SignupMode, IpEmailThrottle } from "@rhema/contracts";
 import type { SqlClient, InviteGate, InviteRejectReason } from "./invite.js";
 import type { IdFactory, Clock } from "@rhema/orchestrator";
-import { recordAnalyticsEvent, provisionTrial, flagWorkspaceIfTestTenant } from "@rhema/ledger";
+import { recordAnalyticsEvent, provisionTrial, flagWorkspaceIfTestTenant, matchesTestMailbox } from "@rhema/ledger";
 
 /** Why a signup was refused — stable codes; the web maps these to copy, the route maps them to statuses. */
 export type SignupRejectReason =
@@ -265,6 +265,14 @@ export async function provisionPersonalAccount(
 export interface SignupApiDeps extends SignupPolicyDeps {
   /** The account-creation throttle (per IP + per email). */
   readonly throttle: IpEmailThrottle;
+  /**
+   * F-R6SWP.1-5 — the dedicated higher-ceiling bucket test-mailbox identities count against
+   * (`rl:testidentity` — the same bucket the Better Auth send/create gates use). The exemption is
+   * safe because `test+*` mail can only deliver to OUR OWN pinned DWD mailbox; the boundary is
+   * exactly `matchesTestMailbox(email, deps.testMailbox)`. Unset ⇒ test identities count on
+   * `throttle` (safe default — no exemption without the configured bucket AND mailbox).
+   */
+  readonly testIdentityThrottle?: IpEmailThrottle;
   readonly clock: Clock;
   /** Tenant-scoped tx for the `signup.completed` analytics write (analytics_events is RLS'd to the
    *  new account's workspace). */
@@ -328,7 +336,14 @@ export function createSignupRoutes(deps: SignupApiDeps): Hono {
         }
       : undefined;
 
-    const verdict = await deps.throttle.attempt(await clientIp(c, deps), email || undefined);
+    // F-R6SWP.1-5 — a test-mailbox identity counts on the dedicated test bucket; every other
+    // address the production bucket. The suite's ~20+ mints can never starve the prod limits,
+    // and a near-miss alias (`test+x@other.test`) never leaves the production bucket.
+    const throttle =
+      deps.testIdentityThrottle && matchesTestMailbox(email, deps.testMailbox)
+        ? deps.testIdentityThrottle
+        : deps.throttle;
+    const verdict = await throttle.attempt(await clientIp(c, deps), email || undefined);
     if (!verdict.allowed) {
       c.header("retry-after", String(verdict.retryAfterSec ?? 60));
       return c.json({ error: "rate_limited" }, 429);

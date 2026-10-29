@@ -496,3 +496,77 @@ describe("JOURNEY.1 — test-tenant flagging at provisioning", () => {
     expect(r.status).toBe(403);
   });
 });
+
+// F-R6SWP.1-5 — the test-identity exemption on `POST /signup`: `test[+<tag>]@<TEST_MAILBOX>`
+// creations count on the dedicated `rl:testidentity` bucket, never the production `rl:signup`
+// bucket — the suite's ~20+ mints cannot starve prod's perIp=10. Real + near-miss addresses keep
+// the production limits, and no configured bucket/mailbox ⇒ no exemption.
+describe("F-R6SWP.1-5 — test-mailbox identities ride the dedicated bucket on POST /signup", () => {
+  const MAILBOX = "test@rhema.tools";
+  function appWithTestBucket(over: { perIp?: number; testPerIp?: number; mailbox?: string | null } = {}) {
+    return createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle({ perIp: over.perIp ?? 2 }),
+      ...(over.mailbox !== null ? { testMailbox: over.mailbox ?? MAILBOX } : {}),
+      testIdentityThrottle: throttle({ perIp: over.testPerIp ?? 100 }),
+      stripeWebhookSecret: SECRET,
+      systemExec: db.client,
+      paymentLinkUrl: "https://buy.stripe.com/test_beta",
+    });
+  }
+
+  it("test+ signups past the prod per-IP limit still create — the prod bucket never moved", async () => {
+    const a = appWithTestBucket({ perIp: 2 });
+    const ip = "203.0.113.10";
+    // 4 test-identity creations from one IP — prod's perIp=2 would have stopped the third.
+    for (const email of ["test+j1@rhema.tools", "test+j2@rhema.tools", "test+j3@rhema.tools", "test+jrn-b@rhema.tools"]) {
+      expect((await postSignup(a, { email }, ip)).status, email).toBe(201);
+    }
+    // a real address from the same IP still gets exactly its production budget.
+    expect((await postSignup(a, { email: "real@x.test" }, ip)).status).toBe(201);
+    expect((await postSignup(a, { email: "real2@x.test" }, ip)).status).toBe(201);
+    expect((await postSignup(a, { email: "real3@x.test" }, ip)).status).toBe(429);
+  });
+
+  it("near-miss aliases stay production-limited — the boundary is exactly matchesTestMailbox", async () => {
+    const a = appWithTestBucket({ perIp: 3 });
+    const ip = "203.0.113.10";
+    // Each shape consumes the production IP bucket — had any ridden the test bucket, the prod
+    // budget would still hold and the 4th post would admit.
+    for (const email of ["test+evil@other.test", "tesseract@rhema.tools", "test@rhema.tools.evil"]) {
+      expect((await postSignup(a, { email }, ip)).status, email).toBe(201);
+    }
+    expect((await postSignup(a, { email: "test+fourth@other.test" }, ip)).status).toBe(429);
+  });
+
+  it("no configured testIdentityThrottle or testMailbox ⇒ test+ stays production-limited", async () => {
+    const a = createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle({ perIp: 2 }),
+      testMailbox: MAILBOX, // mailbox configured but no dedicated bucket — no exemption
+      stripeWebhookSecret: SECRET,
+      systemExec: db.client,
+      paymentLinkUrl: "https://buy.stripe.com/test_beta",
+    });
+    const ip = "203.0.113.10";
+    expect((await postSignup(a, { email: "test+j1@rhema.tools" }, ip)).status).toBe(201);
+    expect((await postSignup(a, { email: "test+j2@rhema.tools" }, ip)).status).toBe(201);
+    expect((await postSignup(a, { email: "test+j3@rhema.tools" }, ip)).status).toBe(429);
+  });
+
+  it("the test bucket still bounds — past its own ceiling a test+ signup is refused", async () => {
+    const a = appWithTestBucket({ perIp: 100, testPerIp: 2 });
+    const ip = "203.0.113.10";
+    expect((await postSignup(a, { email: "test+j1@rhema.tools" }, ip)).status).toBe(201);
+    expect((await postSignup(a, { email: "test+j2@rhema.tools" }, ip)).status).toBe(201);
+    const res = await postSignup(a, { email: "test+j3@rhema.tools" }, ip);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+  });
+});
