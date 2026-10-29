@@ -1,0 +1,42 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "2aad0812c2bb",
+  "startedAt": "2026-10-29T19:09:18.204Z",
+  "finishedAt": "2026-10-29T19:09:35.790Z",
+  "webBaseUrl": "https://rhema-pr-230-web-1fd9f10-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-230-api-788dce8-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "ea7d8f22e702567a9020bd889e02784c321a4e90",
+    "observed": {
+      "web": "ea7d8f22e702567a9020bd889e02784c321a4e90",
+      "api": "ea7d8f22e702567a9020bd889e02784c321a4e90"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://b4b730de4693.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://b906d212310c.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 16834,
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": true
+}
