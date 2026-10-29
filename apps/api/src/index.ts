@@ -219,6 +219,12 @@ export interface BetaApiDeps {
    */
   signupThrottle?: IpEmailThrottle;
   /**
+   * F-R6SWP.1-5 — the dedicated higher-ceiling bucket `test[+<tag>]@<testMailbox>` identities count
+   * against on the unauthenticated admission paths (`POST /signup` + the Better Auth send/create
+   * gates). Unset ⇒ test identities count on the production buckets — no exemption.
+   */
+  testIdentityThrottle?: IpEmailThrottle;
+  /**
    * SEC.2 (ADR-040) — verify the web service's OIDC token so its stamped `x-rhema-client-ip` is trusted
    * as the throttle bucket key. Unset ⇒ the stamp is never honored (the penultimate XFF hop governs).
    */
@@ -548,6 +554,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           }),
           // JOURNEY.1 — test-mailbox flagging at provisioning.
           ...(deps.testMailbox ? { testMailbox: deps.testMailbox } : {}),
+          // F-R6SWP.1-5 — test-mailbox identities count on the dedicated higher-ceiling bucket.
+          ...(deps.testIdentityThrottle ? { testIdentityThrottle: deps.testIdentityThrottle } : {}),
           // SEC.2 (ADR-040) — trust the web-stamped client IP only behind a verified OIDC token.
           ...(deps.verifyInternalToken ? { verifyInternalToken: deps.verifyInternalToken } : {}),
         }),
