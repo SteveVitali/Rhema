@@ -151,3 +151,40 @@
 - 2026-10-30T05:16Z — **branch dispatch `41007476023`** (`--ref stevevitali/r6dep-4-limiter-deploy`,
   stage=prod paid=false expect-sha=4938b8e…) — exercises the env-wiring + self-healing arms.
   `--ref main` dispatch queued after (sequential — mailbox/session safety).
+- 2026-10-30T05:2xZ — **PR #232 opened** (`docs/build/pr/R6DEP.4.md` committed as the body).
+- 2026-10-30T06:4xZ — **branch dispatch `41007476023` COMPLETED: 37 pass / 21 skip / 7 fail**
+  (was 25/21/19 pre-deploy). Provenance `match:true` on `4938b8e`. **The ~14 signup legs +
+  every session leg now pass** — the `rl:testidentity` bucket is live. Fails:
+  - **N9** `Choose Writer: Stripe page did not show /\$20/` — Entry 1 DID reach a real
+    `checkout.stripe.com/c/pay/cs_live_…` page (hand-off works; the amount text didn't render in
+    30 s — classify: Stripe page-render flake vs content; Entry-2 substrate seat proven below).
+  - **R6F/T12F/T13F/T5/T7/T8** `read ECONNRESET` — all DB legs. ROOT CAUSE CONFIRMED (repro'd
+    locally with owner ADC — identical ECONNRESET): **cloud-sql-proxy dials the instance IP
+    directly; a private-IP-only instance is unreachable from outside the VPC — the proxy
+    approach is dead for this topology.** Correct path = the IAP+SSH tunnel (the same one local
+    ops uses: `gcloud compute ssh <proxy-inst> --tunnel-through-iap -- -NL 15433:10.46.0.3:5432`).
+    Prod firewall `rhema-prod-iap-ssh-stageb` already allows 35.235.240.0/20→tcp:22 on
+    `egress-proxy` tag.
+- Bound `secrets.JOURNEY_DATABASE_URL` user = **`postgres`** (system DSN, per the suite log's
+  "journey dsn user: postgres" — NOT the app-login DSN the boundary note described; reads/writes
+  work either way for these legs; the app-login-vs-system posture question rides the F-R6SWP.1-4
+  tail either way).
+- **Fixture arms worked live:** N9's `ensureJrnaPaidFixture` seated `sub_jrna_journey_seed`
+  (writer/past_due) on jrn-a's current acct pre-run (verified in prod). T8's self-heal arm
+  identical pattern.
+- **PLAN — env-gap v2 (IAP+SSH):** (1) `infra/pulumi/journeys.ts`: swap
+  `roles/cloudsql.client` → `roles/iap.tunnelResourceAccessor` on the principalSet +
+  `roles/compute.viewer` (instance discovery). (2) proxy InstanceTemplate metadata `ssh-keys`
+  `journeys-ci <pubkey>` in `compute.ts` (public key only; private →
+  `secrets.JOURNEY_CI_SSH_KEY` via `gh secret set`). (3) journeys.yml: replace proxy step with
+  `gcloud compute start-iap-tunnel` ProxyCommand `ssh -NL 15433:10.46.0.3:5432 journeys-ci@<inst>`
+  + instance discovery; keep `!paid` gating + DSN rewrite verbatim. (4) second `pulumi up`
+  (metadata → another stateless template replace). (5) redispatch branch → then `--ref main`.
+- **Keypair:** generated `/tmp/jrn-ci-key{,.pub}` (ed25519, no passphrase) — pub goes into
+  pulumi, priv into GH secret. jrn-a ws purge ~14:51Z today — re-seat owed if dispatches slip.
+- 2026-10-30T05:4xZ — **env-gap v2 applied (`pulumi up` update 170, 42s):** +2 IAMMembers
+  (`ci-journeys-iap-tunnel` roles/iap.tunnelResourceAccessor, `ci-journeys-compute-viewer`
+  roles/compute.viewer on the WIF principalSet), −1 (`ci-journeys-cloudsql-client` —
+  cloud-sql-proxy dead for private-IP-only Cloud SQL off-VPC, verified locally + on 41007476023),
+  proxy template metadata `ssh-keys` journeys-ci (prod-only) → another stateless template
+  replace + MIG roll. `JOURNEY_CI_SSH_KEY` secret bound (private half; pub in template).
