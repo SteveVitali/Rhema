@@ -234,3 +234,7 @@
 | N9 substrate self-heals across purge | live-executed | `ensureJrnaPaidFixture` seated `sub_jrna_journey_seed` live; N9 pass on both dispatches |
 | Nightly literal clause | gate-pending | scheduled 06:05Z nightly owes merge + cron — recorded on GD-THRESH6.R6/D-OBS.1-3/D-SPA.28-1 |
 - **Closed:** 2026-10-30 · **Spend:** $0 (is_test fixture writes only) · **Carries:** none new.
+- 2026-10-30T07:2xZ — **boundary confirmed — R6DEP.4 green at head `0040cd8`.** `ci-boundary
+  --ledger --ticket R6DEP.4` reads **pass** (run 41012766361 — all seven legs + `ci-pass`
+  anchor: fast-path, typecheck/lint/unit, contracts, public-safe, integration, images; record
+  `logs/ci-R6DEP.4.json`). PR #232 open, **unmerged (OPERATOR)**; `nextTicket` stays `200_R6WATCH.1`.
