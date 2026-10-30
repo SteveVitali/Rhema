@@ -323,7 +323,10 @@ export function createCompute(args: ComputeArgs): Compute {
         // half lives in `secrets.JOURNEY_CI_SSH_KEY` and the caller needs
         // `roles/iap.tunnelResourceAccessor` (journeys.ts). Public half only — nothing secret.
         "ssh-keys": cfg.kind === "prod"
-          ? "journeys-ci ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO4yeHhUUlMPRkKFrwvojg7CgVBVsSBEWJ0LKhDt1W83 journeys-ci@rhema"
+          // GCE metadata format is `username:ssh-type key [comment]` — the colon is load-bearing;
+          // a space-separated entry is silently dropped by the guest agent (dispatch 41009532658:
+          // publickey denied, `id: no such user`).
+          ? "journeys-ci:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO4yeHhUUlMPRkKFrwvojg7CgVBVsSBEWJ0LKhDt1W83 journeys-ci@rhema"
           : "",
       },
     });
