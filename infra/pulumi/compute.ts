@@ -316,6 +316,15 @@ export function createCompute(args: ComputeArgs): Compute {
         "anthropic-key-secret": args.anthropicKeySecret ?? "",
         "database-url": args.proxyDatabaseUrl ?? "",
         "proxy-port": proxyPort,
+        // R6DEP.4 — the journeys CI env-gap legs (T7/R6F/T12F/T13F/T8 + the N9/T8 self-healing
+        // arms) reach the private-IP Cloud SQL only through an IAP+SSH local forward on one of
+        // these instances (cloud-sql-proxy can't — it dials the instance IP directly). The
+        // `journeys-ci` account exists only to carry `ssh -L 15433:10.46.0.3:5432`; the private
+        // half lives in `secrets.JOURNEY_CI_SSH_KEY` and the caller needs
+        // `roles/iap.tunnelResourceAccessor` (journeys.ts). Public half only — nothing secret.
+        "ssh-keys": cfg.kind === "prod"
+          ? "journeys-ci ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO4yeHhUUlMPRkKFrwvojg7CgVBVsSBEWJ0LKhDt1W83 journeys-ci@rhema"
+          : "",
       },
     });
     const proxyHealth = new gcp.compute.HealthCheck(name("proxy-health"), {
