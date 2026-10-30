@@ -50,8 +50,19 @@ cost Δ≈$0), provenance all-PASS on web+api, `deployments` row recorded, publi
 - Fixture arms exercised live over the IAP tunnel before dispatch: `sub_jrna_journey_seed` +
   `t8exp_jrn_5c4ef3991b1d22` on jrn-a's current workspace.
 - `pnpm --filter @rhema/journeys typecheck` + `lint` + `build` clean.
-- Post-deploy journeys dispatch `41007476023` on this branch ref (expect-sha 4938b8e) → report
-  in the run ledger; a `--ref main` dispatch records the literal arm's pre-merge truth.
+- Post-deploy journeys dispatches, all `stage=prod` `paid=false` `expect-sha=4938b8e…`:
+  - `41007476023` (env-gap v1, cloud-sql-proxy) → 37/21/7: limiter legs green; DB legs
+    ECONNRESET — proxy can't reach a private-IP-only instance off-VPC (verified locally too).
+  - `41009532658` (env-gap v2, IAP+SSH) → tunnel step failed `publickey` — GCE metadata
+    `ssh-keys` needs `username:key` (colon form); fixed `c12ee47` + update 171.
+  - **`41010350002` (branch ref `c12ee47`) → 44 pass / 21 skip / 0 FAIL — FULL GREEN,**
+    provenance `match:true`. Every signup leg, every env-gap leg, N9 + T8 all green.
+  - `41011507952` (`--ref main` `4938b8e`) → 39/21/5: the five reds are exactly the
+    env-gap legs gated on this PR's merge (main's `journeys.yml` lacks the wiring);
+    N9 green on the seated fixture. Zero product regressions, zero limiter failures.
+- GATE-LAUNCH `GD-THRESH6.R6` dated note: disposition discharged in substance; the literal
+  clause (scheduled 06:05Z nightly, `provenance == deployments.sha == github.sha == main
+  HEAD`) owes only this merge + the next cron.
 
 ## Requirement ids
 

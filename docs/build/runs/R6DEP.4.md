@@ -205,3 +205,32 @@
   carries a plaintext postgres DSN — visible to anyone with `compute.instances.get`. Flag for the
   operator as a posture finding (SM-ref exists in template metadata; the plaintext key predates
   this ticket). Value intentionally not copied anywhere.
+- 2026-10-30T06:1xZ — `41010350002` tunnel step **SUCCESS** (IAP+SSH arm live on the runner).
+- 2026-10-30T06:0xZ — **branch dispatch `41010350002` = FULL GREEN: 44 pass / 21 skip / 0 FAIL**
+  (65 results, provenance `match:true` on `4938b8e` web+api). The IAP+SSH arm carried the DB legs;
+  the self-healing substrate seated N9 (writer/past_due on current acct → [data-topup-form]
+  mounted; Entry 1's Stripe-page render also went green this run) + T8 (re-minted expired-export
+  hash on the current ws → 410). **Env-gap v3 proven end-to-end.**
+- 2026-10-30T06:4xZ — **`--ref main` dispatch `41011507952` = 39 pass / 21 skip / 5 fail**,
+  provenance `match:true` on `4938b8e`. The five reds are exactly the env-gap legs gated on this
+  PR's merge (main's `journeys.yml` carries no secret injection/tunnel): R6F/T12F/T13F/T7
+  `needs JOURNEY_DATABASE_URL` + T8 `JOURNEY_T8_EXPORT_TOKEN` owed. **N9 PASSED on main** via the
+  seated `sub_jrna_journey_seed` fixture — Entry 1's Stripe render was green this run too
+  (the 41007476023 $20-miss was a render flake, not a defect). **Zero product regressions,
+  zero limiter failures — F-R6SWP.1-5 discharged on live evidence.**
+- 2026-10-30T06:5xZ — records: GATE DECISIONS `GD-THRESH6.R6` dated note; DEFERRALS tails
+  D-OBS.1-3 + D-SPA.28-1 (both stay OPEN on the scheduled-nightly clause); LEDGER CURRENT STATE
+  lastCompleted→R6DEP.4, chainTip→this branch, nextTicket stays `200_R6WATCH.1`; PHASE LOG entry;
+  BUILD_INDEX row 237. journeys vitest 192/192; append-only vs `4938b8e` OK; check-build-memory
+  0 violations (14 warnings, all legacy-shape).
+
+## Close — evidence report
+
+| Claim | Evidence layer | Proof |
+|---|---|---|
+| prod serves `4938b8e` (the `main` tip; #231 limiter bucket live) | live-executed | `check-deploy-provenance` all-PASS web+api; `deployments` row `prod:4938b8e…`; updates 169–171 additive-only |
+| F-R6SWP.1-5 discharged (test-identity 429s gone) | live-executed | `41010350002`: every former 429 leg passes; `41011507952`: zero 429s |
+| F-R6DEP4-1 fixed (env-gap legs reachable) | live-executed | `41010350002` 44/21/0 — T7/R6F/T12F/T13F/T8 all pass through the IAP+SSH tunnel |
+| N9 substrate self-heals across purge | live-executed | `ensureJrnaPaidFixture` seated `sub_jrna_journey_seed` live; N9 pass on both dispatches |
+| Nightly literal clause | gate-pending | scheduled 06:05Z nightly owes merge + cron — recorded on GD-THRESH6.R6/D-OBS.1-3/D-SPA.28-1 |
+- **Closed:** 2026-10-30 · **Spend:** $0 (is_test fixture writes only) · **Carries:** none new.
