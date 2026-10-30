@@ -188,3 +188,20 @@
   cloud-sql-proxy dead for private-IP-only Cloud SQL off-VPC, verified locally + on 41007476023),
   proxy template metadata `ssh-keys` journeys-ci (prod-only) → another stateless template
   replace + MIG roll. `JOURNEY_CI_SSH_KEY` secret bound (private half; pub in template).
+- 2026-10-30T05:5xZ — **branch dispatch `41009532658`** fired on `8992ef9` — proves the
+  IAP+SSH env arm end-to-end. Remaining: `--ref main` dispatch, then closeout (BUILD_INDEX 237,
+  LEDGER PHASE LOG + CURRENT STATE lastCompleted=R6DEP.4 / nextTicket stays 200_R6WATCH.1,
+  DEFERRALS tails D-OBS.1-3 / D-SPA.28-1, GATE-LAUNCH threshold-6 dated note, pr body refresh,
+  check-build-memory 0 viol, append-only --base 4938b8e, ci-boundary --ledger docs/build/LEDGER.md
+  --ticket R6DEP.4 --json docs/build/logs/ci-R6DEP.4.json).
+- 2026-10-30T06:0xZ — dispatch `41009532658`: IAP tunnel connected + host added but
+  `journeys-ci@…: Permission denied (publickey)` — `id: no such user`: GCE metadata ssh-keys
+  needs `username:ssh-type key` (colon form); a space entry is silently dropped by the guest
+  agent. Fixed (`c12ee47`) → `pulumi up` update 171 (stateless template roll). `journeys-ci`
+  now exists (uid 20162); **full path proven locally: `start-iap-tunnel` ProxyCommand + ssh
+  `-L 15435:10.46.0.3:5432` + pg query OK**.
+- 2026-10-30T06:0xZ — **branch dispatch `41010350002`** on `c12ee47` — env-gap v3 attempt.
+- **Security note (pre-existing posture, not new):** the proxy template `database-url` metadata
+  carries a plaintext postgres DSN — visible to anyone with `compute.instances.get`. Flag for the
+  operator as a posture finding (SM-ref exists in template metadata; the plaintext key predates
+  this ticket). Value intentionally not copied anywhere.
