@@ -36,6 +36,8 @@ import {
   quietWindowUtc,
   substackFixturePosts,
 } from "./stb5a-helpers.js";
+import { stableIdentity } from "./session.js";
+import { ensureT8ExpiredExport } from "./fixture-substrate.js";
 
 // ---------------------------------------------------------------- shared plumbing
 
@@ -872,6 +874,11 @@ const T8: StepFn = async (ctx) => {
   // D-FIX.1-1) and bound its token here: the download must answer 410 `export_link_expired`.
   const minted = process.env.JOURNEY_T8_EXPORT_TOKEN;
   if (minted) {
+    // R6DEP.4 — the minted expired row dies with jrn-a's ~26 h-purged workspace (the static
+    // secret's token survives because this leg re-mints the SAME hash onto the CURRENT workspace
+    // each run; the mint script's rotating token is what made a static binding impossible).
+    // Under a bound DSN the leg self-heals; unbound ⇒ no-op and the probe below stays honest.
+    await ensureT8ExpiredExport(stableIdentity("a"), minted);
     const res = await context.request.get(
       `${ctx.apiBaseUrl}/export/download?token=${encodeURIComponent(minted)}`,
     );

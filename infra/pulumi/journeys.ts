@@ -53,6 +53,25 @@ export function createJourneys(args: JourneysArgs): void {
     member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
   }, { retainOnDelete: true });
 
+  // R6DEP.4 — the env-gap legs' DB read pool. `secrets.JOURNEY_DATABASE_URL` binds a prod DSN
+  // whose host is the VPC-PRIVATE Cloud SQL IP (10.46.0.3) — unreachable from a GitHub-hosted
+  // runner, and cloud-sql-proxy can't carry it (it dials the instance IP directly — private-IP
+  // instances are unreachable off-VPC, verified on dispatch 41007476023). The workflow instead
+  // runs `gcloud compute start-iap-tunnel` + `ssh -L 15433:10.46.0.3:5432 journeys-ci@<proxy>`
+  // under the federated WIF credentials, which needs `iap.tunnelResourceAccessor` (IAP TCP) and
+  // `compute.instances.list/get` (rolling MIG name discovery). The `journeys-ci` account is a
+  // metadata ssh-keys entry on the proxy template — no OS Login, no key install at runtime.
+  new gcp.projects.IAMMember("ci-journeys-iap-tunnel", {
+    project: args.project,
+    role: "roles/iap.tunnelResourceAccessor",
+    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+  }, { retainOnDelete: true });
+  new gcp.projects.IAMMember("ci-journeys-compute-viewer", {
+    project: args.project,
+    role: "roles/compute.viewer",
+    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+  }, { retainOnDelete: true });
+
   // The operator who drives local Stage-B legs with `gcloud auth application-default` needs the same
   // grant (the hand binding exists already — declared here so state and reality agree; the member
   // string matches the stored form exactly so adoption does not drift).

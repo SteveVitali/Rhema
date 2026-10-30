@@ -94,6 +94,39 @@ jobs:
           # principalSet identity; the run step mints its access token via ADC below — the
           # identity the tokenCreator binding in infra/pulumi/journeys.ts actually grants.
           create_credentials_file: true
+      - name: Open the IAP+SSH DB tunnel (env-gap legs' read pool)
+        # R6DEP.4 — the free env-gap legs (T7/R6F/T12F/T13F/T8 + the N9/T8 self-healing arms) read
+        # through JOURNEY_DATABASE_URL, whose bound host is the VPC-PRIVATE Cloud SQL IP
+        # (10.46.0.3). cloud-sql-proxy can't carry it — it dials the instance IP directly and a
+        # private-IP-only instance is unreachable off-VPC (verified: ECONNRESET on dispatch
+        # 41007476023 + locally). The path the operator uses locally is `gcloud compute ssh
+        # <egress-proxy> --tunnel-through-iap -- -NL 15433:10.46.0.3:5432` — same shape here:
+        # start-iap-tunnel as an ssh ProxyCommand into the `journeys-ci` account (a metadata
+        # ssh-keys entry on the proxy template; the private half is secrets.JOURNEY_CI_SSH_KEY).
+        # The WIF identity needs only roles/iap.tunnelResourceAccessor + roles/compute.viewer
+        # (infra/pulumi/journeys.ts) and the prod iap-ssh firewall already admits the IAP range.
+        # Skipped on the paid arm, verbatim as before.
+        if: ${{ !((github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid) }}
+        env:
+          JOURNEY_CI_SSH_KEY: ${{ secrets.JOURNEY_CI_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          gcloud config set project rhema-507501 --quiet
+          printf '%s\n' "$JOURNEY_CI_SSH_KEY" > /tmp/jrn-ci-key && chmod 600 /tmp/jrn-ci-key
+          INST=$(gcloud compute instances list \
+            --filter='name ~ ^rhema-prod-proxy- AND status=RUNNING' \
+            --format='value(name,zone)' --limit=1)
+          [ -n "$INST" ] || { echo "no running rhema-prod-proxy instance"; exit 1; }
+          NAME=${INST%%	*}; ZONE=${INST##*	}; ZONE=${ZONE##*/}
+          echo "tunnelling via $NAME ($ZONE)"
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o "ProxyCommand=gcloud compute start-iap-tunnel $NAME 22 --listen-on-stdin --zone=$ZONE --verbosity=warning" \
+              -i /tmp/jrn-ci-key -fN -L 15433:10.46.0.3:5432 "journeys-ci@$NAME"
+          for i in $(seq 1 30); do
+            (echo >"/dev/tcp/127.0.0.1/15433") 2>/dev/null && exit 0
+            sleep 1
+          done
+          echo "tunnel failed to open"; exit 1
       - name: Run the journey suite
         env:
           # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth step above (the federated
@@ -102,8 +135,28 @@ jobs:
           # on-deployed green run); the schedule always pins github.sha.
           JOURNEY_EXPECT_SHA: ${{ inputs['expect-sha'] || github.sha }}
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
+          # R6DEP.4 — the operator-bound env-gap secrets (2026-10-30, GD-THRESH1.R6-style ruling).
+          # JOURNEY_DATABASE_URL is NEVER auto-injected by Actions — this mapping is the missing
+          # half that left T7/R6F/T12F/T13F red on dispatch 40965117844.
+          JOURNEY_T8_EXPORT_TOKEN: ${{ secrets.JOURNEY_T8_EXPORT_TOKEN }}
+          JOURNEY_DATABASE_URL_BOUND: ${{ secrets.JOURNEY_DATABASE_URL }}
         run: |
           set -uo pipefail
+          # R6DEP.4 — rewrite the bound DSN's host to the local proxy listener (the secret carries
+          # the VPC-private IP verbatim; ssl params are stripped — the proxy terminates TLS). Paid
+          # runs skip it entirely (see the proxy step): an app-login pool can never satisfy the
+          # paid spend guard, so this arm preserves the cron's no-db attestation verbatim.
+          # Diagnostic prints ONLY the DSN username — never the password/host payload.
+          if [ "${JOURNEY_PAID:-false}" != "true" ] && [ -n "${JOURNEY_DATABASE_URL_BOUND:-}" ]; then
+            export JOURNEY_DATABASE_URL="$(node -e '
+              const u = new URL(process.env.JOURNEY_DATABASE_URL_BOUND);
+              console.error("journey dsn user:", u.username);
+              u.hostname = "127.0.0.1"; u.port = "15433";
+              for (const k of [...u.searchParams.keys()]) if (/^ssl/i.test(k)) u.searchParams.delete(k);
+              u.searchParams.set("sslmode", "disable");
+              console.log(u.toString());')"
+          fi
+          unset JOURNEY_DATABASE_URL_BOUND
           # F-R6SWP.1-2 — NO JOURNEY_GCP_ACCESS_TOKEN export: a once-minted env token dies at
           # its 3600s lifetime mid-suite (T4–T7 closed signJwt 401 at ~T+57min on dispatch
           # 40532657165). Leaving it unset drops the mailbox onto its gcloud-ADC path, which
