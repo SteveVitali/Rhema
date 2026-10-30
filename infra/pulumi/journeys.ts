@@ -53,6 +53,18 @@ export function createJourneys(args: JourneysArgs): void {
     member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
   }, { retainOnDelete: true });
 
+  // R6DEP.4 — the env-gap legs' DB read pool. `secrets.JOURNEY_DATABASE_URL` binds the prod
+  // app-login DSN whose host is the VPC-PRIVATE Cloud SQL IP (10.46.0.3) — unreachable from a
+  // GitHub-hosted runner. The workflow runs the Cloud SQL Auth Proxy under the same federated
+  // WIF credentials (ADC), which needs `cloudsql.instances.connect` on the project — this is the
+  // minimal role carrying it. Connect only: DB auth still needs the DSN's `rhema_app_login`
+  // password, and every leg's read stays own-tenant under FORCE RLS.
+  new gcp.projects.IAMMember("ci-journeys-cloudsql-client", {
+    project: args.project,
+    role: "roles/cloudsql.client",
+    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+  }, { retainOnDelete: true });
+
   // The operator who drives local Stage-B legs with `gcloud auth application-default` needs the same
   // grant (the hand binding exists already — declared here so state and reality agree; the member
   // string matches the stored form exactly so adoption does not drift).

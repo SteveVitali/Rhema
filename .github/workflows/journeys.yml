@@ -94,6 +94,31 @@ jobs:
           # principalSet identity; the run step mints its access token via ADC below — the
           # identity the tokenCreator binding in infra/pulumi/journeys.ts actually grants.
           create_credentials_file: true
+      - name: Start Cloud SQL Auth Proxy (env-gap legs' read pool)
+        # R6DEP.4 — the free env-gap legs (T7/R6F/T12F/T13F + the N9/T8 self-healing arms) read
+        # own-tenant rows through JOURNEY_DATABASE_URL, bound to the prod app-login DSN whose host
+        # is the VPC-private Cloud SQL IP (10.46.0.3) — unreachable from a GitHub runner. The
+        # proxy carries it over the federated WIF credentials the auth step already exported
+        # (GOOGLE_APPLICATION_CREDENTIALS → ADC); the infra/pulumi grant is roles/cloudsql.client
+        # on the repo principalSet. Skipped on the paid arm: an app-login pool can never satisfy
+        # the paid spend guard (it probes rolsuper/rolbypassrls and fails closed), so the weekly
+        # self-bounding cron keeps its no-db attestation — env + proxy stay exactly absent there,
+        # today's behavior verbatim.
+        if: ${{ !((github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid) }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/cloud-sql-proxy \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64
+          echo '31607582f62be0109ee09c9165dafc7bb585c29108fc6b7b9734f3797acdd357  /tmp/cloud-sql-proxy' | sha256sum -c -
+          chmod +x /tmp/cloud-sql-proxy
+          /tmp/cloud-sql-proxy rhema-507501:us-central1:rhema-prod-postgres \
+            --address 127.0.0.1 --port 15433 >/tmp/cloud-sql-proxy.log 2>&1 &
+          for i in $(seq 1 30); do
+            (echo >"/dev/tcp/127.0.0.1/15433") 2>/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/cloud-sql-proxy.log
+          exit 1
       - name: Run the journey suite
         env:
           # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth step above (the federated
@@ -102,8 +127,28 @@ jobs:
           # on-deployed green run); the schedule always pins github.sha.
           JOURNEY_EXPECT_SHA: ${{ inputs['expect-sha'] || github.sha }}
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
+          # R6DEP.4 — the operator-bound env-gap secrets (2026-10-30, GD-THRESH1.R6-style ruling).
+          # JOURNEY_DATABASE_URL is NEVER auto-injected by Actions — this mapping is the missing
+          # half that left T7/R6F/T12F/T13F red on dispatch 40965117844.
+          JOURNEY_T8_EXPORT_TOKEN: ${{ secrets.JOURNEY_T8_EXPORT_TOKEN }}
+          JOURNEY_DATABASE_URL_BOUND: ${{ secrets.JOURNEY_DATABASE_URL }}
         run: |
           set -uo pipefail
+          # R6DEP.4 — rewrite the bound DSN's host to the local proxy listener (the secret carries
+          # the VPC-private IP verbatim; ssl params are stripped — the proxy terminates TLS). Paid
+          # runs skip it entirely (see the proxy step): an app-login pool can never satisfy the
+          # paid spend guard, so this arm preserves the cron's no-db attestation verbatim.
+          # Diagnostic prints ONLY the DSN username — never the password/host payload.
+          if [ "${JOURNEY_PAID:-false}" != "true" ] && [ -n "${JOURNEY_DATABASE_URL_BOUND:-}" ]; then
+            export JOURNEY_DATABASE_URL="$(node -e '
+              const u = new URL(process.env.JOURNEY_DATABASE_URL_BOUND);
+              console.error("journey dsn user:", u.username);
+              u.hostname = "127.0.0.1"; u.port = "15433";
+              for (const k of [...u.searchParams.keys()]) if (/^ssl/i.test(k)) u.searchParams.delete(k);
+              u.searchParams.set("sslmode", "disable");
+              console.log(u.toString());')"
+          fi
+          unset JOURNEY_DATABASE_URL_BOUND
           # F-R6SWP.1-2 — NO JOURNEY_GCP_ACCESS_TOKEN export: a once-minted env token dies at
           # its 3600s lifetime mid-suite (T4–T7 closed signJwt 401 at ~T+57min on dispatch
           # 40532657165). Leaving it unset drops the mailbox onto its gcloud-ADC path, which

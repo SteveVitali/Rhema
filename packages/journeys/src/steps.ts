@@ -25,6 +25,7 @@ import {
 // the IndexedDB draft (sessions.signIn mints a NEW context — a separate storage partition where
 // the hold does not exist). The identities are still test-mailbox-only.
 import { freshIdentity, assertTestIdentity } from "./session.js";
+import { ensureJrnaPaidFixture } from "./fixture-substrate.js";
 import { cogsLeversFor } from "./registry.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
@@ -856,6 +857,12 @@ const N9: StepFn = async (ctx) => {
 
   // Entries 2–4 — the funded paid test tenant (jrn-a): top-up, Portal, and the run-sheet Payment Link.
   const { page } = await ctx.returningUser("a"); // flagged by workspaces.is_test too
+  // R6DEP.4 — the ~26 h test-tenant purge strands the BILL.3 fixture sub on the dead account every
+  // cycle (§14.2's `topups_require_plan` is correct on the re-minted free tier — Entry 2's missing
+  // [data-topup-form] is substrate drift, not a product defect). Under a bound DSN the leg
+  // re-seats the writer fixture on the CURRENT account first — self-healing, same arm as the
+  // dossier seeds. Unbound ⇒ no-op and the leg keeps its honest failure mode.
+  await ensureJrnaPaidFixture();
   await gotoOk(page, `${webBase}/app/settings/billing`);
 
   // Entry 2 — Billing → Buy 1,000 credits: Checkout top-up session, $10 / 1,000 credits.
