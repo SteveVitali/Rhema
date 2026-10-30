@@ -124,3 +124,30 @@
 ## Gap table / Evidence log / Evidence report
 
 (filled at close)
+- 2026-10-30T05:11Z — **Cloud Build `c6d7dedb-37c6-4808-b287-c3b1a4397bb6` SUCCESS — all 10**
+  at `4938b8e4024777417c5a8ed9f518f9afb4bebd08`, `_TAG=r6dep-4` (vendored-SDK gate fail-closed).
+  Digests: api `7fa61aa9`, web `ad5d5cd1`, worker `aaefca88`, fetcher `ff23f011`,
+  convert `3db54baa`, export `f4e9fa77`, collab `34e9300a`, turbo-cache `8bf03ad3`,
+  run-task `f8d4c6d8`, egress-proxy `7f844844` — all pinned in `Pulumi.prod.yaml` w/ dated comment.
+- **Commit `26f1fcd`**: journeys.yml env-injection+proxy, fixture-substrate.ts, steps.ts N9 arm,
+  stb5a.ts T8 arm, infra/pulumi/journeys.ts cloudsql.client, this ledger. Code commit BEFORE
+  `pulumi up` so the program (journeys.ts IAM) applies in the same up.
+- 2026-10-30T05:1xZ — `pulumi preview --diff` classified: **+1 create (IAMMember
+  ci-journeys-cloudsql-client), ~10 update (image rolls), +-1 replace (stateless proxy
+  InstanceTemplate only), 165 unchanged — zero stateful replace/delete**, cost Δ≈$0 → all four
+  GD-DEPLOY.R6 conditions hold. **`pulumi up` update 169 SUCCEEDED 05:1xZ (1m31s).**
+- 2026-10-30T05:1xZ — **provenance all-PASS**: web+api `/healthz` `gitSha=4938b8e4024777417c5a8ed9f518f9afb4bebd08`.
+- Tunnel: old `6vxq` STOPPING (MIG rolled); re-establish via `rhema-prod-proxy-v27m` (b) or `r847` (f).
+  Next: record-deployment (DATABASE_URL=system-DSN-file GIT_SHA=4938b8e… STAGE=prod
+  IMAGE_DIGESTS='{api:7fa61aa9,web:ad5d5cd1,worker:aaefca88,fetcher:ff23f011,convert:3db54baa,export:f4e9fa77,collab:34e9300a,egress-proxy:7f844844,run-task:f8d4c6d8}'),
+  smoke, push, dispatch `--ref stevevitali/r6dep-4-limiter-deploy` then `--ref main` (expect-sha
+  4938b8e…), poll, closeout (BUILD_INDEX 237, LEDGER, DEFERRALS D-OBS.1-3/D-SPA.28-1, GATE-LAUNCH
+  threshold-6 note, pr/R6DEP.4.md, PR, check-build-memory, append-only --base 4938b8e, ci-boundary).
+- 2026-10-30T05:2xZ — **`record-deployment` wrote `prod:4938b8e…`** (protocols
+  `0.4.0+9c2b880dbee74bd8`, all 10 digests, over the re-established IAP tunnel
+  `rhema-prod-proxy-v27m`→15433). **Smoke:** public routes 6×200
+  (`/` `/pricing` `/signup` `/login` `/showcase` `/invite`); api `/healthz` 4938b8e.
+- 2026-10-30T05:2xZ — branch `stevevitali/r6dep-4-limiter-deploy` pushed @ `26f1fcd`.
+- 2026-10-30T05:16Z — **branch dispatch `41007476023`** (`--ref stevevitali/r6dep-4-limiter-deploy`,
+  stage=prod paid=false expect-sha=4938b8e…) — exercises the env-wiring + self-healing arms.
+  `--ref main` dispatch queued after (sequential — mailbox/session safety).
