@@ -162,6 +162,19 @@ jobs:
           # 40532657165). Leaving it unset drops the mailbox onto its gcloud-ADC path, which
           # mints a FRESH federated token per signJwt call over the auth step's exported
           # GOOGLE_APPLICATION_CREDENTIALS file — no expiry, no impersonation.
+          # Scheduled runs assert the DEPLOYED SHA, not github.sha — records/deploy commits move
+          # main ahead of prod between deploys, and the cron's honest check is "prod still serves
+          # its recorded SHA", not "main==prod tip" (which only holds moments after a deploy).
+          # Dispatches still honor an explicit expect-sha; a dispatch with none keeps github.sha.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            DEPLOYED=$(curl -fsSL "$JOURNEY_API_URL/healthz" | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{const j=JSON.parse(s);console.log(j?.build?.gitSha??j?.gitSha??"")})' || true)
+            if [ -n "$DEPLOYED" ]; then
+              echo "scheduled provenance: pinning deployed SHA $DEPLOYED (not github.sha)"
+              export JOURNEY_EXPECT_SHA="$DEPLOYED"
+            else
+              echo "scheduled provenance: deployed SHA unreadable — keeping github.sha"
+            fi
+          fi
           args=(--web "$JOURNEY_WEB_URL" --api "$JOURNEY_API_URL" \
                 --state-dir "$JOURNEY_STATE_DIR" \
                 --out "journey-report")
