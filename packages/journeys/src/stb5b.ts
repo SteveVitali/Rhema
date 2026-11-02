@@ -31,6 +31,7 @@ import {
   sseSeqs,
   stb5bOutlineDraft,
   stb5bReviewDraft,
+  tenantLookupRetryable,
   type Stb5bAssert,
 } from "./stb5b-helpers.js";
 
@@ -87,10 +88,17 @@ async function signInLeg(ctx: StepCtx, tag: string): Promise<SignedInLeg> {
   // construction. Unset ⇒ the original fresh-tenant shape (nightly/weekly CI).
   const stableTag = process.env.JOURNEY_FUNDED_STABLE_TAG;
   const s = stableTag ? await ctx.returningUser(stableTag) : await ctx.freshUser(tag);
-  // the tenant exists by the time magic-link provisioning returns; retry briefly for the join row
+  // the tenant exists by the time magic-link provisioning returns; retry briefly for the join row.
+  // F-R6LCH.PAID-4 — only the not-provisioned-yet miss is retryable: an unbound read pool
+  // ("needs JOURNEY_DATABASE_URL") or any other lookup failure must surface AS ITSELF. The
+  // paid arm's six `no workspace for test+jc…` reds (run 41447948373) were exactly that mask —
+  // every workspace existed; the DB read never ran.
   let tenantId: string | null = null;
   for (let i = 0; i < 10 && !tenantId; i++) {
-    tenantId = await tenantIdFor(s.email).catch(() => null);
+    tenantId = await tenantIdFor(s.email).catch((e: unknown) => {
+      if (!tenantLookupRetryable(e)) throw e;
+      return null;
+    });
     if (!tenantId) await s.page.waitForTimeout(2_000);
   }
   if (!tenantId) throw new Error(`no workspace for ${s.email}`);

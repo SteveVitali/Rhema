@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           6                  # public launch readiness — spec docs/round-6-draft-spec.md v0.3 (ratified 2026-10-20)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — switched at the NAVC.1 boundary (PHASE LOG harness-switch entry)
-updatedAt:       2026-10-30T06:5xZ            # R6DEP.4 done — prod b953c55e→4938b8e (updates 169–171); nightly literal arm green on branch-ref dispatch; nextTicket stays 200_R6WATCH.1
+updatedAt:       2026-11-02T21:5xZ            # R6PAIDARM done — paid-arm substrate fixes F-R6LCH.PAID-1..4 RESOLVED-IN-CODE (paid cron re-proof → D-R6PAIDARM-1); nextTicket stays 200_R6WATCH.1
 ```
 
 ## OPEN FINDINGS
@@ -625,6 +625,27 @@ pointers; substance unchanged.)_
   which cannot be price-switched in place) → `D-R6FIX.5-1` OPEN. Owed:
   deployed cancel re-proof + the Price-registry ticket.
 
+- **F-R6LCH.PAID-1..4 — RESOLVED-IN-CODE 2026-11-02 (R6PAIDARM — `runs/R6PAIDARM.md`,
+  branch `stevevitali/paid-arm-substrate`; paid-cron live re-proof owed → D-R6PAIDARM-1).**
+  Root causes verified live over the IAP tunnel (system-DSN, read-only, $0): **(1)** the env
+  injection was `!paid`-gated under the misread that `secrets.JOURNEY_DATABASE_URL` is the
+  app-login pool — it is the system-role `postgres` DSN (`pg_roles` `rolbypassrls=true`, the
+  guard's own trust probe). Fix: `journeys.yml` tunnel + DSN export ungated; the paid arm now
+  takes the measured weekly read ($3.34/96 rows at fix time — the same-week `--paid` honestly
+  refuses `--headroom 3`) while the unbound-cron attestation and non-cron refusal stand.
+  **(2)** T8's 404 was the same env gap, not a mint defect — the route looks up
+  `sha256Hex(token)` and `ensureT8ExpiredExport` writes exactly that; bound token correct
+  (scheduled-green `41472916874`), no rebind. **(3)** T14 badge 0→0 was a harness substrate
+  defect, not a badge-counter regression — zero `decision_requests`/`inbox_items` on jrn-a:
+  `findDeliveredReview` picked the seeded `showcase:true` dossier whose writes 409 under
+  `showcaseReadOnlyGuard`. Fix: `writable` option skips `data-ssr-cause="showcase"` dossiers
+  on T12/T13/T14 (the T12/T13 fails were the same arm). **(4)** B16 `no workspace` was the
+  env-gap mask — `test+jc…b16`'s workspace exists (minted at signup); `signInLeg` now retries
+  only the not-provisioned miss and surfaces a needs-DSN error verbatim. Deterministic pins:
+  `workflow-env.test.ts` + the existing guard/preflight suites. Verify: journeys vitest
+  197/197, turbo 135/135, `pnpm test` green; check-build-memory 0 violations; append-only OK.
+  Original finding text is the PHASE LOG 2026-11-02 entry below.
+
 ## GATE DECISIONS
 
 _(append-only: `| date | ticket | gate | item | answer | consequence |`)_
@@ -1190,3 +1211,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-01 — **nightly literal-arm diagnosis + semantic fix (PR #233):** three consecutive scheduled nightlies on `744c95d` failed `provenance NO-MATCH` while every leg passed (44 PASS incl. T7/T8/T12F/T13F — the bound secrets + IAP tunnel + fixture-substrate all live). Root: the cron pinned `github.sha` — unholdable between a deploy and the next records commit; the honest scheduled assert is "prod serves its recorded SHA". Fix: scheduled runs resolve deployed SHA from `/healthz` (dispatch behavior unchanged). CLK-1/CLK-4/CLK-2 reads carry to their dates (purge fired ~10-30; export tables land ~11-01; digest ~11-02). `nextTicket` stays `200_R6WATCH.1`.
 - 2026-11-02 — **threshold-6 literal arm CLOSED:** scheduled nightly `41472916874` on `main` → SUCCESS (deployed-SHA provenance pin per #233; all legs green incl. T7/T8/T12F/T13F env-gap legs — secrets + IAP tunnel live). D-OBS.1-3/D-SPA.28-1 discharged on the scheduled-arm clause. Prior run `41447948373` (12:50Z) failed — checked below; the standing Monday 04:35Z paid cron remains the separate weekly arm.
 - 2026-11-02 — **F-R6LCH.PAID-1..4 opened (paid-cron arm, run 41447948373):** (1) T7/T13F `needs JOURNEY_DATABASE_URL` — env injection is `!paid`-gated; the paid arm never receives the bound secret (design gap, not the secret); (2) T8 minted-fixture token → 404 vs expected 410 — hand-written `token_sha256` doesn't match the route's real export-token lookup; needs a real API mint + hand-dated `expires_at`; (3) T14 badge 0→0 on escalate — triage owed (flake vs real); (4) B16 `no workspace` — test-tenant substrate purged before the self-heal arm could seat it. Scheduled arm unaffected (green run 41472916874). Scheduled for a focused substrate fix.
+- 2026-11-02T21:5xZ — **R6PAIDARM done — paid-arm nightly substrate fixes (findings run; F-R6LCH.PAID-1..4).** Branch `stevevitali/paid-arm-substrate` · PR #234 · base `main` @ `cb61b67` · root causes live-verified over the IAP tunnel (system DSN, read-only, $0): the bound `JOURNEY_DATABASE_URL` secret IS the system-role `postgres` DSN (`rolbypassrls=true`) — the `!paid` env carve-out was authored on the app-login misread; removed on both the IAP+SSH tunnel step and the DSN export → the paid arm takes the measured weekly read ($3.34/96 rows at fix; same-week `--paid` honestly refuses `--headroom 3`) · T8's 404 = the same env gap (arm `sha256Hex` mint matches the route; bound token correct — no rebind) · T14 badge 0→0 = harness substrate (zero decision/inbox rows on jrn-a — `findDeliveredReview` picked the read-only `showcase:true` seed; `writable` filter on T12/T13/T14 + honest error — NOT a badge regression) · B16 `no workspace` = the env-gap mask (`jc…b16` ws exists live; `signInLeg`/`tenantLookupRetryable` surfaces needs-DSN verbatim) · **Verify:** journeys vitest 197/197 · turbo build lint typecheck 135/135 · `pnpm test` green · check-build-memory 0 viol · append-only OK · **Deferrals:** opened D-R6PAIDARM-1 (next paid-cron live re-proof) · **Deviations:** none · chainTip unchanged (non-chain findings run) · next → `200_R6WATCH.1` (unchanged) · ci: pending #234 (unit leg in flight at close; boundary re-read owed) · layer: engineered · harness: devin-desktop/swe-2-high/subagent.

@@ -25,7 +25,12 @@ import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
 // SPA.6 (REQ-VFY-4) — the settle contract: post-action waits are the mounted markers, never bare
 // domcontentloaded; POST targets are data hooks, never `form[action]` strings.
-import { gotoOk as gotoSettled, settleNav, type SettleScope } from "./settle.js";
+import {
+  gotoOk as gotoSettled,
+  settleNav,
+  ssrCauseOfDocument,
+  type SettleScope,
+} from "./settle.js";
 import {
   CITE_KEY,
   buildSubstackExportZip,
@@ -157,10 +162,18 @@ async function apiProjectId(ctx: StepCtx, context: BrowserContext, slug: string,
 /**
  * Find a delivered own-tenant Review: walk /app's project rows, then each project's /p/<slug> for
  * `/review/<runId>` links, probing until one 200s. Returns the dossier coordinates.
+ *
+ * F-R6LCH.PAID-3 (2026-11-02): `writable: true` skips `data-ssr-cause="showcase"` dossiers — the
+ * seeded Showcase project is read-only by construction (`showcaseReadOnlyGuard` 409s every
+ * disposition/apply/bulk POST), so a write leg that lands on it can never move (the paid arm's
+ * badge 0→0 was exactly that: the only delivered review on the purged-then-reminted jrn-a was
+ * the showcase seed). The document's own SSR verdict is the read-only marker — no slug/string
+ * guessing. A write leg with only the showcase seed fails HERE, naming the real substrate state.
  */
 async function findDeliveredReview(
   page: Page,
   ctx: StepCtx,
+  opts: { writable?: boolean } = {},
 ): Promise<{ slug: string; runId: string }> {
   // The funded-window pin: with several delivered Reviews on one tenant the first-200 discovery
   // is order-dependent (it picked CITE.1 Leg-1a's all-unverifiable dossier over the healthy Leg-3
@@ -196,12 +209,27 @@ async function findDeliveredReview(
       if (m?.[1] && m[2]) reviewHrefs.push({ slug: m[1], runId: m[2], href });
     }
   }
+  let readOnlySkipped = 0;
   for (const h of reviewHrefs) {
     const r = await page.request.get(`${ctx.webBaseUrl}${h.href}`).catch(() => null);
-    if (r && r.status() === 200) return { slug: h.slug, runId: h.runId };
+    if (!r || r.status() !== 200) continue;
+    if (opts.writable) {
+      // the seeded Showcase dossier self-declares read-only (`data-ssr-cause="showcase"`) — a
+      // write leg's dispositions would 409 under showcaseReadOnlyGuard, so it is not a candidate.
+      const html = await r.text().catch(() => "");
+      if (ssrCauseOfDocument(html) === "showcase") {
+        readOnlySkipped += 1;
+        continue;
+      }
+    }
+    return { slug: h.slug, runId: h.runId };
   }
   throw new Error(
-    `no delivered own-tenant Review found (${slugs.length} project(s), ${reviewHrefs.length} review link(s) probed)`,
+    `no delivered own-tenant Review found (${slugs.length} project(s), ${reviewHrefs.length} review link(s) probed` +
+      (opts.writable && readOnlySkipped > 0
+        ? `; ${readOnlySkipped} read-only showcase dossier(s) skipped — the weekly run produced no delivered review of its own`
+        : "") +
+      `)`,
   );
 }
 
@@ -883,7 +911,15 @@ const T8: StepFn = async (ctx) => {
       `${ctx.apiBaseUrl}/export/download?token=${encodeURIComponent(minted)}`,
     );
     if (res.status() !== 410) {
-      throw new Error(`the minted expired export token → ${res.status()}, expected the 410 expiry arm`);
+      // F-R6LCH.PAID-2 — an unbound DSN silently no-ops ensureT8ExpiredExport; a 404 then means
+      // "the minted row was purged and never re-seated", not "the token lookup is wrong" (the
+      // route hashes sha256(token) — the same input the arm writes). Say which.
+      throw new Error(
+        `the minted expired export token → ${res.status()}, expected the 410 expiry arm` +
+          (process.env.JOURNEY_DATABASE_URL
+            ? ""
+            : " (JOURNEY_DATABASE_URL unbound — the self-heal re-mint could not run; the row stays purged)"),
+      );
     }
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (body.error !== "export_link_expired") {
@@ -1008,7 +1044,8 @@ const T11: StepFn = async (ctx) => {
  *  obligation files a source:'user' row that shows in the export dialog's obligation summary. */
 const T12: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  const { slug, runId } = await findDeliveredReview(page, ctx);
+  // write leg — a read-only showcase dossier can never take its dispositions (F-R6LCH.PAID-3).
+  const { slug, runId } = await findDeliveredReview(page, ctx, { writable: true });
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
 
   // ---- the disposition round-trip --------------------------------------------------------
@@ -1080,7 +1117,8 @@ const T12: StepFn = async (ctx) => {
  *  AC's documented PARTIAL. */
 const T13: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  const { slug, runId } = await findDeliveredReview(page, ctx);
+  // write leg — a read-only showcase dossier can never take its Apply/bulk writes (F-R6LCH.PAID-3).
+  const { slug, runId } = await findDeliveredReview(page, ctx, { writable: true });
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
 
   // ---- Apply ------------------------------------------------------------------------------
@@ -1514,7 +1552,9 @@ const T13F: StepFn = async (ctx) => {
  *  pre_export sweep. */
 const T14: StepFn = async (ctx) => {
   const { page, context } = await ctx.returningUser("a");
-  const { slug, runId } = await findDeliveredReview(page, ctx);
+  // write leg — the escalate must land on a writable dossier; the seeded showcase 409s every
+  // disposition (F-R6LCH.PAID-3's badge 0→0 was that guard, not a badge-counter regression).
+  const { slug, runId } = await findDeliveredReview(page, ctx, { writable: true });
 
   // ---- badge arithmetic: an escalate decision row lands now (quiet hours never defer gates /
   //      decisions) and answers drop the count back. -----------------------------------------

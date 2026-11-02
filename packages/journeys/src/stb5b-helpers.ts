@@ -28,6 +28,14 @@ export const STB5B_CAPS: Readonly<Record<string, number>> = Object.freeze(
 /** The ticket's combined Stage B cap — the runner's spend accounting, never raised. */
 export const STB5B_TOTAL_CAP_USD = 25;
 
+/** F-R6LCH.PAID-4 — signInLeg's tenant-lookup retry predicate: only the not-provisioned-yet miss
+ *  heals with time. An unbound read pool ("needs JOURNEY_DATABASE_URL") or any other lookup
+ *  failure must surface verbatim — the paid arm's six `no workspace for test+jc…` reds (run
+ *  41447948373) were exactly that mask; every workspace existed and the DB read never ran. */
+export function tenantLookupRetryable(err: unknown): boolean {
+  return err instanceof Error && /not provisioned yet/.test(err.message);
+}
+
 /**
  * R5ECON.1 (REQ-ECON-7) — the leg-close cap assert, enforced (B3-F1: the caps were recorded,
  * never asserted — measured overruns passed silently). `meteredUsd ≤ capUsd` or the leg closes
