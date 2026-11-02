@@ -105,8 +105,11 @@ jobs:
         # ssh-keys entry on the proxy template; the private half is secrets.JOURNEY_CI_SSH_KEY).
         # The WIF identity needs only roles/iap.tunnelResourceAccessor + roles/compute.viewer
         # (infra/pulumi/journeys.ts) and the prod iap-ssh firewall already admits the IAP range.
-        # Skipped on the paid arm, verbatim as before.
-        if: ${{ !((github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid) }}
+        # F-R6LCH.PAID-1 (2026-11-02): runs on BOTH arms now — the bound secret is the
+        # system-role postgres DSN (verified pg_roles rolbypassrls=true), which the paid arm
+        # NEEDS for the spend guard's measured read + the DB legs + the fixture substrate
+        # (its 5 reds on run 41447948373 were all this env gap). Unconditional: an absent
+        # secret already no-ops the rewrite below, and the tunnel alone reads nothing.
         env:
           JOURNEY_CI_SSH_KEY: ${{ secrets.JOURNEY_CI_SSH_KEY }}
         run: |
@@ -143,11 +146,17 @@ jobs:
         run: |
           set -uo pipefail
           # R6DEP.4 — rewrite the bound DSN's host to the local proxy listener (the secret carries
-          # the VPC-private IP verbatim; ssl params are stripped — the proxy terminates TLS). Paid
-          # runs skip it entirely (see the proxy step): an app-login pool can never satisfy the
-          # paid spend guard, so this arm preserves the cron's no-db attestation verbatim.
-          # Diagnostic prints ONLY the DSN username — never the password/host payload.
-          if [ "${JOURNEY_PAID:-false}" != "true" ] && [ -n "${JOURNEY_DATABASE_URL_BOUND:-}" ]; then
+          # the VPC-private IP verbatim; ssl params are stripped — the proxy terminates TLS).
+          # F-R6LCH.PAID-1 — exported on BOTH arms: the bound secret is the system-role postgres
+          # DSN (verified `pg_roles` rolbypassrls=true — the spend guard's own trust probe), so
+          # the paid arm gets the MEASURED weekly read it is supposed to enforce, not a blind
+          # attestation. The `!paid` carve-out was authored under the misread that the secret was
+          # the app-login pool; an app-login bind would fail the probe closed regardless (the
+          # guard checks the ROLE, not the env flag). Secret absent ⇒ no export ⇒ the scheduled
+          # cron's no-db attestation stands verbatim; a non-cron --paid without it still refuses
+          # in paidDispatchPreflight. Diagnostic prints ONLY the DSN username — never the
+          # password/host payload.
+          if [ -n "${JOURNEY_DATABASE_URL_BOUND:-}" ]; then
             export JOURNEY_DATABASE_URL="$(node -e '
               const u = new URL(process.env.JOURNEY_DATABASE_URL_BOUND);
               console.error("journey dsn user:", u.username);
