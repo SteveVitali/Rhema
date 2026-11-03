@@ -1,0 +1,4 @@
+# R6OSS.1 audit config — NO path/regex allowlist. Everything surfaces for disposition.
+title = "Rhema R6OSS.1 full-history audit (unfiltered)"
+[extend]
+useDefault = true

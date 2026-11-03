@@ -127,11 +127,15 @@ pnpm exec vitest run packages/db/src/rls.test.ts
    through `scripts/live/preview-stack.mjs`; it refuses prod and requires owned stacks. Paid
    journeys retain their measured spend guards and explicit headroom; a funded envelope or pause
    cannot be reset by editing docs, changing an epoch, or removing a sentinel without reauthorization.
-8. **A public stub build is not a public export.** This tree commits `packages/protocols`; its
-   private material also exists in history. The export contract drops it and substitutes
-   `packages/protocols-stub` under the `@rhema/protocols` name. `public-safe` builds the fallback;
-   it does not prove a complete sanitized export. `@rhema/evals` uses `RHEMA_EVALS_PATH` through
-   `.pnpmfile.cjs`, otherwise `evals-stub`. Never use git submodules for either package.
+8. **Protocols ship public; evals stay private — and a stub build proves neither.** Amended
+   2026-11-03 (operator ruling 2026-11-02, R6OSS.1; ADR-002 amendment/ADR-125): the ADR-002
+   export-time swap is retired — `packages/protocols` publishes with the tree and its history;
+   `packages/protocols-stub` is a retained dormant shim (`public-safe` still compiles it; it is
+   not "the intended replacement"). `@rhema/evals` stays private, resolved by `RHEMA_EVALS_PATH`
+   through `.pnpmfile.cjs`, otherwise `evals-stub` — never commit eval text or private protocol
+   derivatives into public-facing artifacts, and never use git submodules for either package.
+   The visibility flip is the operator's act; its exposure surface is **all of git history** —
+   the audit and flip steps live in `docs/ops/open-source-readiness.md`.
 
 ## Build memory
 

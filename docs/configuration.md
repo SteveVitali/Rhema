@@ -12,8 +12,9 @@ dependencies. This page separates those two paths and points to the code that ow
 | `TURBO_API`, `TURBO_TOKEN`, `TURBO_TEAM` | No                                | Optional remote build-cache configuration. Local builds work without remote-cache credentials.                                                                                                                      |
 | `DATABASE_URL`                           | Only for the server-Postgres test | Enables a test that migrates, seeds and changes roles in its target database. Use a disposable database as described in [Testing](./testing.md#server-postgres-tests). Leave it unset for the in-process test path. |
 
-The dependency choice is implemented in [`.pnpmfile.cjs`](../.pnpmfile.cjs). It does not replace
-the committed `@rhema/protocols` package with its stub; that is a separate public-export concern.
+The dependency choice is implemented in [`.pnpmfile.cjs`](../.pnpmfile.cjs). It concerns only
+`@rhema/evals`; `packages/protocols` is an ordinary committed member that ships public with the
+repository (operator ruling 2026-11-02).
 
 Runtime entry points read `process.env`. The checked-in start commands do not automatically load
 a `.env` file. Export the needed values in your shell or have your process/deployment manager
@@ -110,4 +111,4 @@ A clean checkout does not contain the SDK trees needed by a working run-task ima
 opts into a placeholder SDK image for image-shape checks; that artifact cannot perform a live
 model run. Follow the [vendor instructions](../apps/run-task/vendor/README.md) for the separate
 runtime prerequisite. [Release preparation](./open-source-readiness.md) covers the remaining
-public-export boundary.
+public-release boundary.

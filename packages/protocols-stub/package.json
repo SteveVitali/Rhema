@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "PUBLIC STUB of @rhema/protocols: manifest types + a fixture skill, no rubric text (REQ-ARCH-37).",
+  "description": "DORMANT public stub of @rhema/protocols (manifest types + a fixture skill, no rubric text). Retained escape hatch — protocols ship public per the 2026-11-02 ruling (REQ-ARCH-37 re-amended; ADR-002 amendment/ADR-125).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

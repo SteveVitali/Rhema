@@ -28,14 +28,16 @@ quality advantage.
 
 ## Release status
 
-This repository is being prepared for an open-source release. The current source tree includes
-private editorial protocols; private evaluation content lives outside the repository. Public stubs
-exist, but a complete application build using only those stubs is **not yet supported**. Building the
-stub packages in CI does not prove that an exported repository works.
+This repository is being prepared for an open-source release. Amended 2026-11-03 (operator
+ruling 2026-11-02): the editorial protocols in `packages/protocols` publish **with** the tree —
+the former export-time stub swap is retired. Private evaluation content stays outside the
+repository (`RHEMA_EVALS_PATH`; `evals-stub` supplies the fallback). The remaining publication
+work is a full-history audit and the visibility flip itself — see
+[public-release readiness](docs/open-source-readiness.md) for the boundary and
+[the flip runbook](docs/ops/open-source-readiness.md) for the audit dispositions and exact steps.
 
-See [public-release readiness](docs/open-source-readiness.md) for the exact boundary, measured gaps,
-and work still needed before publication. The instructions below apply to a checkout of this source
-tree. They do not require the separate private evaluation repository.
+The instructions below apply to a checkout of this source tree. They do not require the separate
+private evaluation repository.
 
 ## Start developing
 

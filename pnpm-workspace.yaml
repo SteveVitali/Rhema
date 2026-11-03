@@ -8,7 +8,9 @@ packages:
   - "evals-stub"
   - "integration"
   - "tools/*"
-  # `packages/protocols` is a COMMITTED member (name `@rhema/protocols`); the renamed public fallback
-  # `@rhema/protocols-stub` (dir `packages/protocols-stub`) is swapped in only at open-source export.
+  # `packages/protocols` is a COMMITTED member (name `@rhema/protocols`) and — per the 2026-11-02
+  # operator ruling (R6OSS.1; ADR-002 amendment/ADR-125; REQ-ARCH-37 re-amended) — ships PUBLIC
+  # with the repository; the former export-time swap is retired. `packages/protocols-stub`
+  # (`@rhema/protocols-stub`) is retained as a dormant fallback shim, still compiled by `public-safe`.
   # `evals/` remains PRIVATE, resolved by path (REQ-ARCH-37) with `evals-stub` (`@rhema/evals`) as its
   # fallback via `.pnpmfile.cjs`; a public clone builds against that stub.
