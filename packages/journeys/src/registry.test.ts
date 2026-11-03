@@ -119,10 +119,11 @@ describe("the journey step registry", () => {
       "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
       "U7.import": "R7HOME.2a", "U3.stopgap": "R7FIX.1", "R8.showcase.spa": "R7RO.1",
     };
-    // R7RO.1 landed the real `R8.showcase.spa` body — it still reads red (the 224 phase deploy
-    // is the sanctioned flipper) but its impl is no longer the owed stub: invoking it must NOT
-    // throw the stub message. Every other round-7 leg still throws owed-loudly.
-    const REAL_BODIES = new Set(["R8.showcase.spa"]);
+    // R7RO.1 / R7FIX.1 landed the real `R8.showcase.spa` / `U3.stopgap` bodies — they still read
+    // red (the 224 phase deploy is the sanctioned flipper) but their impls are no longer the owed
+    // stub: invoking them must NOT throw the stub message. Every other round-7 leg still throws
+    // owed-loudly.
+    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

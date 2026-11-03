@@ -91,7 +91,10 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
     "data-paper-theme",
     "data-paper-surface",
     "data-app-theme-pref",
-    "data-open",
+    // R7FIX.1 (REQ-PANE-0) — "data-open" is now runtime-only: the SSR shell emits every pane
+    // closed (the controller derives the effective open from paneLayout() at bind), so no
+    // document can statically paint an open pane/popover. It stays a declared manifest hook —
+    // the island + the controller still emit it, and journeys still assert it.
     "data-view",
     "data-count",
     "data-current",

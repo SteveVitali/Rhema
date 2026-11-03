@@ -107,6 +107,13 @@ export function ideCss(): string {
     // ---- Focus view (⌘⇧F / ?focus=1): everything but the Page and finding ticks hides ----
     ".ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-timeline, .ide[data-view='focus'] .ide-desk, .ide[data-view='focus'] .ide-statusbar { display: none; }",
     ".ide[data-view='focus'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
+    // R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed. It is a
+    // fixed button top-centre; outside focus view it never mounts an affordance (display:none).
+    // opacity:0 keeps it hit-testable — a pointer entering its box (or Tab reaching it) reveals.
+    ".ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 65; align-items: center; gap: var(--s1); padding: 5px 14px; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-micro, 12px); font-family: var(--font-shell); cursor: pointer; opacity: 0; transition: opacity var(--dur-pane) ease, transform var(--dur-pane) ease; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }",
+    ".ide[data-view='focus'] .ide-focus-exit { display: inline-flex; }",
+    ".ide[data-view='focus'] .ide-focus-exit:hover, .ide[data-view='focus'] .ide-focus-exit:focus-visible { opacity: 1; transform: translateX(-50%); }",
+    ".ide[data-view='focus'] .ide-focus-exit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
 
     // UX.2 (ADR-067) — the project page's action row: ≥ 24-px targets at every width (WCAG 2.5.8);
     // the <768 block below lifts them to bordered ≥ 44-px controls. These BASE rules must precede
@@ -117,10 +124,11 @@ export function ideCss(): string {
     ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
 
     // ---- yield order (§5.1; the same breakpoints paneLayout() implements) ----
-    // Below 1600 with Files open: Margin → ticks, Timeline → overlay.
+    // Below 1600 with Files open: Margin → ticks. R7FIX.1 (REQ-PANE-0, B1): the Timeline stays
+    // docked at ≥1280 — the Page column reflows instead of sliding under it. Its overlay arm is
+    // the <1280 block below.
     `@media (max-width: ${B.bpFilesTicksMarginPx - 1}px) {`,
     "  .ide[data-files='open'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
-    `  .ide[data-files='open'] .ide-timeline[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, ${B.timelinePx}px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     "}",
     // Below 1280: Margin → ticks and Timeline → overlay regardless of Files.
     `@media (max-width: ${B.bpNarrowPx - 1}px) {`,
@@ -132,6 +140,13 @@ export function ideCss(): string {
     `  .ide[data-files='open'] .ide-files { position: absolute; left: ${B.railPx}px; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
     `  .ide .ide-timeline[data-open] { position: absolute; left: ${B.railPx}px; right: 0; bottom: 0; top: auto; width: auto; height: 55%; z-index: 20; border-top: 1px solid var(--shell-border); box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }`,
     "}",
+    // R7FIX.1 (REQ-PANE-0) — the scrim under every open overlay/sheet: the controller derives
+    // `data-timeline-mode`/`data-files-mode` from paneLayout() (overlay|sheet only where the mode
+    // really applies), so a scrim can never be claimed under a docked pane. `.ide-scrim` covers
+    // `.ide-main`; the rail (z 30) and the open pane (z 20) stay above it — outside clicks land
+    // on it and dismiss.
+    ".ide-scrim { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(0,0,0,0.45); }",
+    ".ide[data-timeline='open'][data-timeline-mode='overlay'] .ide-scrim, .ide[data-timeline='open'][data-timeline-mode='sheet'] .ide-scrim, .ide[data-files='open'][data-files-mode='overlay'] .ide-scrim { display: block; }",
     // Below ~768: the phone layout — reader-only Page; the other regions hide. P1.19 (§10.1): the
     // §10.1 input set the regions carried re-mounts INSIDE the Page — elements stamped
     // `ide-phone-only` render only at this width (the compact chat surface is the one today).

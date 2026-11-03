@@ -889,12 +889,33 @@ importers:
         specifier: ^1.49.0
         version: 1.63.0
     devDependencies:
+      '@rhema/ide':
+        specifier: workspace:*
+        version: link:../ide
+      '@rhema/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      '@rhema/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.1
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
 
   packages/ledger:
     dependencies:

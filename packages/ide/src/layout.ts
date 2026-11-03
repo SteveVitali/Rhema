@@ -60,12 +60,14 @@ export interface LayoutInput extends PaneState {
 }
 
 /**
- * §5.1's yield order, exactly:
+ * §5.1's yield order, exactly (REQ-PANE-0 stopgap, R7FIX.1):
  *  - <768: phone — reader-only Page; every other region hides (the phone input set lands in P1.19).
  *  - Focus view: everything but the Page + finding ticks hides.
  *  - <1024: single-column — open Files becomes an overlay drawer; an open Timeline becomes a sheet.
  *  - <1280: Margin → ticks; Timeline → overlay.
- *  - <1600 with Files open: Margin → ticks; Timeline → overlay (the spec's "overlay while Browser open").
+ *  - <1600 with Files open: Margin → ticks. The Timeline stays DOCKED at ≥1280 — the Page column
+ *    reflows under it instead of sliding beneath an overlay (B1). The Timeline overlay arms only
+ *    at <1280; the R7PANE.1 SplitPane engine owns the full breakpoint table.
  */
 export function paneLayout(width: number, input: LayoutInput): PaneLayout {
   const mode =
@@ -104,7 +106,7 @@ export function paneLayout(width: number, input: LayoutInput): PaneLayout {
       ? "hidden"
       : mode === "single"
         ? "sheet"
-        : mode === "narrow" || (input.filesOpen && width < LAYOUT.bpFilesTicksMarginPx)
+        : mode === "narrow"
           ? "overlay"
           : "pane";
 

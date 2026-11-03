@@ -2,6 +2,8 @@
 // NEVER in the URL. The ONLY URL-carried pane fact is the shareable `?focus=1` deep link, which seeds
 // the view and is then stripped from the address (the island does the strip; the flag is not a URL mode).
 // The codec is versioned and total: a malformed/partial stored blob falls back per-key to DEFAULTS.
+// R7FIX.1 (REQ-WRITE-4): `view:"focus"` is SESSION-scoped — it is never restored from storage and
+// never written back (a stored blob's `focus` coerces to `write`; serialize emits `write` for it).
 
 import type { DeskTab, PaneState, ViewMode } from "./layout.js";
 
@@ -50,8 +52,11 @@ export function parsePaneState(raw: string | null | undefined): PaneState {
   }
   if (!o || typeof o !== "object" || o["v"] !== PANE_STORAGE_VERSION) return { ...DEFAULT_PANE_STATE };
   const d = DEFAULT_PANE_STATE;
+  const view = oneOf(o["view"], VIEWS, d.view);
   return {
-    view: oneOf(o["view"], VIEWS, d.view),
+    // REQ-WRITE-4 — focus never survives a reload (legacy blobs may carry it; coerce, don't drop
+    // the rest of the arrangement).
+    view: view === "focus" ? "write" : view,
     filesOpen: bool(o["filesOpen"], d.filesOpen),
     filesWidth: num(o["filesWidth"], d.filesWidth, 160, 480),
     timelineOpen: bool(o["timelineOpen"], d.timelineOpen),
@@ -67,5 +72,10 @@ export function parsePaneState(raw: string | null | undefined): PaneState {
 }
 
 export function serializePaneState(state: PaneState): string {
-  return JSON.stringify({ v: PANE_STORAGE_VERSION, ...state });
+  // REQ-WRITE-4 — the session-scoped focus view is never written to pane storage.
+  return JSON.stringify({
+    v: PANE_STORAGE_VERSION,
+    ...state,
+    view: state.view === "focus" ? "write" : state.view,
+  });
 }
