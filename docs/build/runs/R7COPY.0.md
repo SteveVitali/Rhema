@@ -7,7 +7,7 @@
 - **Skills:** e981ec5
 - **Started:** 2026-11-03T21:55Z
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7). Size budget ~550 changed lines.
-- **Closed:** (pending)
+- **Closed:** 2026-11-03T22:3xZ — `ci: pending #244@ab0cf3f (bounded read; record logs/ci-R7COPY.0.json)`
 
 ## Deferrals read
 
@@ -120,8 +120,20 @@ expire (ADR-130); the REQ-IDE-48 landing is unchanged and now lands on the run c
 
 ## Evidence log
 
-(pending Phase 5)
+- `pnpm turbo build lint typecheck` — 135/135 green.
+- `pnpm test` — 6,262 pass / 1 fail on first full run (`check-coverage-matrix` cited the deleted
+  `walkthrough-generator.*`; `COVERAGE_MATRIX.csv` repointed to `delivered-summary.ts`, re-run green).
+- Touched: findings-core (composer 5, run-card, timeline, surface) · ui run-card/margin · api
+  dossier+timeline 42 (card ≡ card + retired-route legs) · worker env 4 · grep test 10 ·
+  `run-state-parity.dom` 1 · fixture files (server/data/evidence/surface/triage/dossier.dom) green.
+- Gates: `check:dom-contract` OK · `spa-env` OK · `spa-budget` OK · `no-cookies` OK ·
+  `protocol-markers` OK · `check-append-only` OK vs `stevevitali/r7fix-1-pane-stopgap` ·
+  `check-build-memory` 0 new violations (3 pre-existing 12-col BUILD_INDEX rows incl. 243/244 —
+  my row matches the convention).
+- `ci-boundary` — PR #244 @ `abc91db`/`ab0cf3f`, read pending at close (bounded read follows).
 
 ## Evidence report
 
-(pending Phase 6)
+All Stage-A ACs met (see the gap table). Stage-B screenshots deferred to `D-R7COPY.0-1` (224's
+preview walk); infra env residue to `D-R7COPY.0-2`. Money untouched (no `spend.ts`/`delivery.ts`/
+ledger diff). `$0` spent; no preview (GD-PREVIEW.R7); no prod mutations; PR #244 unmerged (OPERATOR).
