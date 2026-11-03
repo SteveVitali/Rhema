@@ -241,11 +241,12 @@ describe("theme policy (REQ-IDE-38 amended)", () => {
 });
 
 describe("the View menu (§5.1 — exact contents; Source absent)", () => {
-  it("is Write/Read/Focus + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
+  it("is Write/Read/Focus + Timeline (R7FIX.1 on-demand path) + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
     expect(viewMenuIds("write")).toEqual([
       "view.write",
       "view.read",
       "view.focus",
+      "timeline",
       "findingCards",
       "suggestionsInline",
       "authorship",

@@ -400,19 +400,16 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           </button>
         ))}
         <div className="ide-menu-sep" />
-        {/* R7FIX.1 (REQ-PANE-0) — the Timeline's on-demand pointer path: below 1280 it is closed
-            by default and this row (plus ⌘2) is how it opens; the island toggles it without
-            persisting from overlay mode. */}
-        <button type="button" role="menuitemcheckbox" aria-checked="false"
-                data-ide-timeline-toggle className="ide-menu-row">
-          {L.viewMenu.timeline}
-        </button>
         {viewMenuModel(view).map((t) => (
           <button key={t.id} type="button" role="menuitemcheckbox"
-                  aria-checked={t.id === "advanced" || t.id === "authorship" ? "false" : "true"}
+                  aria-checked={t.id === "advanced" || t.id === "authorship" || t.id === "timeline" ? "false" : "true"}
                   {...(t.id === "authorship" ? { "data-tier": "advanced" } : {})}
-                  data-ide-toggle={t.id} className="ide-menu-row">
-            {t.id === "findingCards" ? L.viewMenu.findingCards
+                  // R7FIX.1 (REQ-PANE-0) — the Timeline row rides `data-ide-timeline-toggle`
+                  // (the island's overlay-aware path) rather than the boolean-pane toggle.
+                  {...(t.id === "timeline" ? { "data-ide-timeline-toggle": true } : { "data-ide-toggle": t.id })}
+                  className="ide-menu-row">
+            {t.id === "timeline" ? L.viewMenu.timeline
+              : t.id === "findingCards" ? L.viewMenu.findingCards
               : t.id === "suggestionsInline" ? L.viewMenu.suggestionsInline
               : t.id === "authorship" ? L.viewMenu.authorship
               : L.viewMenu.advanced}

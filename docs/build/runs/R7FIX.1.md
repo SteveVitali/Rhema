@@ -93,7 +93,7 @@
 | Focus trapped (B12): no visible exit, Esc inert | ⌘⇧F only; Esc never left | `data-ide-focus-exit` pill (hover/:focus-visible reveal) + layered Esc + codec `focus`→`write` both ways |
 | SSR could paint an open overlay pre-JS | `data-timeline="open"` + `data-open` static | SSR emits closed; `data-open` runtime-only (contract test updated) |
 | `U3.stopgap` was an owed stub | no body | real body in `r7legs.ts`; registry stays `expected:"red"` |
-| View-menu Timeline row added | — | recorded deviation: `viewMenuIds` shape extended; "Source" still absent |
+| View-menu Timeline row added | hardcoded outside `viewMenuModel` in the first pass (self-review catch — broke the "exact ordered model" contract) | row moved into `VIEW_MENU_TOGGLES[0]`; `viewMenuIds` extended honestly; "Source" still absent |
 
 ## Evidence log
 

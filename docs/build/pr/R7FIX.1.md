@@ -102,7 +102,7 @@ fix covers it). The harness now pins the guarantee at every reference height.
 
 - **Opened:** `D-R7FIX.1-1` — Stage-B walk + `U3.stopgap` flip at 224 (four sizes, B1/B2/F1/F2 + pill screenshots).
 - **Closed:** none (no OPEN row unblocked by this ticket).
-- **Deviation (recorded):** the View-menu Timeline row is the new pointer path at <1280 — the spec's `viewMenuIds()` table is extended honestly (the row asserts `aria-checked`, "Source" stays absent).
+- **Deviation (recorded):** the View-menu gains a `timeline` toggle row — the on-demand pointer path at <1280 — as the first `VIEW_MENU_TOGGLES` entry (`viewMenuIds` extended honestly; the row renders `data-ide-timeline-toggle` so the island's overlay-aware path owns it; "Source" stays absent).
 - The phone-only island `apps/web/src/client/ide.ts` is NOT extended — desktop documents never mount it post-R7RO.1 (phone UA hides every pane; its `data-open` toggle is harmless there).
 
 **Ready to flip at 224:** `U3.stopgap` (real body; offline-harness evidence committed) — same posture as `R8.showcase.spa`.
