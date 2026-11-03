@@ -7,7 +7,7 @@
 - **Skills:** e981ec5
 - **Started:** 2026-11-03T19:39Z
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7). Size budget ~550 changed lines excl. route tree + fixtures — if census exceeds, STOP + report.
-- **Closed:** —
+- **Closed:** 2026-11-03T21:35Z — `ci: pending #242@ccf0e71 (run 41713652186: fast-path pass; typecheck/lint/unit pending — bounded read, orchestrator's next boundary decides)`
 
 ## Deferrals read
 
@@ -125,7 +125,7 @@ MET-DIFFERENTLY notes: (1) the `R8.showcase.spa` body lives in `r7legs.ts` besid
 - `pnpm exec vitest run apps/web/src` — 66 files / 1348 tests green (incl. `read-only.dom.test.tsx` 20, `server.test.ts` 117, `editor.dom.test.tsx` 23, migrated SSR-surface files).
 - `vitest packages/contracts+ui+journeys` — green (registry.test.ts + runner.test.ts honest-arm updates).
 - `pnpm check:dom-contract` / `check:spa-env` / `check:spa-budget` / `check:no-cookies` / `check:protocol-markers` — green (added `note` role + `data-readonly-*` hooks to the manifest).
-- `pnpm test` (repo-wide vitest) — recorded at close (see Evidence report).
+- `pnpm test` (repo-wide vitest, 11-min run) — 521 files / 6,231 pass / 4 skip / 1 fail: `scripts/check-coverage-matrix.test.mjs` (the new REQ-RELOAD-5/REQ-WRITE-7 ids had no matrix rows — added, re-verified 6/6 green).
 - `pnpm format` — pre-existing repo-wide red at BASE (1136 files incl. untouched; not a CI job).
 - Live: no local target could host the journey leg (Stage A, $0) — recorded, D-R7RO.1-1 carries the 224 walk.
 
