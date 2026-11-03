@@ -7,7 +7,7 @@
 - **Skills:** e981ec5 (same checkout as R7RO.1)
 - **Started:** 2026-11-03T20:45Z
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7). Size budget ~400 changed lines.
-- **Closed:** 2026-11-03T23:1xZ — PR #243 open on `stevevitali/r7ro-1-read-only` (unmerged, OPERATOR); ci read at head recorded below
+- **Closed:** 2026-11-03T23:5xZ — `ci: pass #243@438ee2e (run 41720614270 — all seven legs + ci-pass anchor; PR open, unmerged, OPERATOR)`
 
 ## Deferrals read
 
