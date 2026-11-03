@@ -24,7 +24,7 @@
 - `k-published` (Published post (REQ-CORPUS-12)): 1
 
 ### Excluded (file → reason)
-- `.DS_Store` — dotfile (OS junk)
+- `.ds-store` — dotfile (OS junk)
 - `agents/author/drafting/v1/draft-part1.md` — working fragment; the merged draft is canonical
 - `agents/author/drafting/v1/ledger-sliceA.md` — working fragment; the merged ledger is canonical
 - `agents/author/outline/01-outline.md` — deep-research outline (GD-DEMO-REDACT.R7)

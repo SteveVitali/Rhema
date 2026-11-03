@@ -15,7 +15,7 @@ const SOURCE = fileURLToPath(
 
 const EXPECTED_EXCLUSIONS: Record<string, string> = {
   "manifest.md": "round log",
-  ".DS_Store": "dotfile",
+  ".ds-store": "dotfile",
   "agents/editor/notes.md": "private notes",
   "agents/author/voice-charter.md": "persona internals",
   "agents/author/outline/01-outline.md": "deep-research outline",

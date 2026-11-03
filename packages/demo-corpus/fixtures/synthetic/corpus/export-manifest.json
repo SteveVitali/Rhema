@@ -2,7 +2,7 @@
   "exportDate": "2026-11-03",
   "files": {
     "PROVENANCE.md": {
-      "sha256": "b4d81b857beb4501cfa51d54a50f3d8b43c8b633bc70e951d7c7c1044cd5fc12",
+      "sha256": "1fe152735f5bf5ae7e50c726f5c0cfabe9f1c612d769bfa443341c14e3c34090",
       "bytes": 4615
     },
     "_rules/facts.json": {
@@ -166,5 +166,5 @@
       "bytes": 1295
     }
   },
-  "digest": "51d42f3a5c79c55c5d304fe34c430becdc377f574eecc0e7ca7bd0895a911fd9"
+  "digest": "5747d7e7d285a1d33f6e6c59a74ada0f4592676c9b73134825715bad751211ac"
 }

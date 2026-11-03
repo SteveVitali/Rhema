@@ -22,7 +22,8 @@ Converter goldens and synthetic snapshots (215–218a) land beside `corpus/` add
 
 ## Excluded-file decoys (all excluded with recorded reasons)
 
-`manifest.md`, `.DS_Store`, `agents/editor/notes.md`, `agents/author/voice-charter.md`,
+`manifest.md`, `.ds-store` (dotfile decoy — the real tree's `.DS_Store` hits the same rule),
+`agents/editor/notes.md`, `agents/author/voice-charter.md`,
 `agents/author/outline/01-outline.md`, `drafts/short-v1.md`, `drafts/figures/values-table.png`,
 `agents/author/drafting/v1/draft-part1.md`, `ledger-sliceA.md`,
 `agents/author/research/index-sliceA.md`, `correspondence/v2-review/01-claim-ledger-{A,B}.md`.
