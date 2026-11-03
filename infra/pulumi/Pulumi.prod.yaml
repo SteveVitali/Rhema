@@ -12,7 +12,11 @@
 #                                    Cloud SQL `postgres` built-in user; also seed the SM container
 #                                    rhema-prod-alloydb-password)
 #   rhema:proxyDatabaseUrl         — egress-proxy's DATABASE_URL (restricted role; Cloud SQL
-#                                    private-IP host — get it via `pulumi stack output databaseHost`)
+#                                    private-IP host — get it via `pulumi stack output databaseHost`).
+#                                    R6HRD.1: the program writes this value ONLY into the
+#                                    `rhema-prod-proxy-database-url` SM container — the proxy
+#                                    resolves `versions/latest` at boot via its instance SA
+#                                    (never in InstanceTemplate metadata any more).
 #   rhema:workerDatabaseUrl        — worker DATABASE_URL (RLS-enforced role)
 #   rhema:workerSystemDatabaseUrl  — worker SYSTEM_DATABASE_URL (elevated, cross-tenant sweeps)
 #   rhema:appDatabaseUrl           — api DATABASE_URL (RLS-enforced role) — canonical name

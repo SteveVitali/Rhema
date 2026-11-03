@@ -118,6 +118,17 @@ export function createIam(args: IamArgs): Iam {
     grantSecret("worker-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["worker"]);
     grantSecret("worker-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["worker"]);
   }
+  // R6HRD.1 — the proxy resolves its RunContextResolver DSN from Secret Manager at boot (the
+  // `database-url-secret` metadata carries only the version NAME; the plaintext `database-url`
+  // metadata attribute it replaced was readable by `compute.instances.get`). Prod reads the
+  // dedicated `proxy-database-url` container; non-prod reads the generated `system-database-url`
+  // (its proxy DSN IS the composed system DSN — the same value the config fallback supplied).
+  if (secrets.byId["proxy-database-url"]) {
+    grantSecret("proxy-reads-proxydb", secrets.byId["proxy-database-url"], serviceAccounts["egress-proxy"]);
+  }
+  if (secrets.byId["system-database-url"]) {
+    grantSecret("proxy-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["egress-proxy"]);
+  }
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it

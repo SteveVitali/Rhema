@@ -93,8 +93,12 @@ describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R
     expect(fr).toContain("ports: [proxyPort]");
     expect(fr).toContain("backendService: proxyBe.id");
     expect(fr).toContain("allowGlobalAccess: false"); // same-region consumers only
-    // The retained rollback path: `proxy-ip` stays reserved-but-unused (ADR-122 §Rollback).
-    expect(SRC).toContain('new gcp.compute.Address(name("proxy-ip")');
+    // R6HRD.1 — the retained `proxy-ip` rollback reservation is DISCHARGED per ADR-122's own
+    // cleanup step ("Cleanup `up` D deletes the reservation once the VIP path has soaked" —
+    // VIP green since 2026-10-24, ~10 d): the Address is now created ONLY when
+    // `egressProxyIpPin` needs a reservation to pin (a future transition), not parked on every
+    // stage. An unconditional `new Address` would keep the surrendered-IP footgun alive.
+    expect(SRC).toContain('cfg.egressProxyIpPin\n      ? new gcp.compute.Address(name("proxy-ip")');
   });
 
   it("the template pins networkIp ONLY through the transitional fact — never unconditionally", () => {
@@ -104,7 +108,7 @@ describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R
     // An unconditional `networkIp: proxyIp.address` literal would re-create F-R6INF.1-1's
     // one-holder trap on every size-2 stage; a missing conditional would kill the direct
     // path before consumers repoint. Both shapes fail here.
-    expect(SRC).toContain("cfg.egressProxyIpPin ? { networkIp: proxyIp.address }");
+    expect(SRC).toContain("cfg.egressProxyIpPin && proxyIp ? { networkIp: proxyIp.address }");
     expect(SRC).not.toMatch(/\{\s*subnetwork: network\.subnets\["private-app"\]\.id, networkIp:/);
   });
 
@@ -134,6 +138,44 @@ describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R
     const apiBlock = SRC.slice(SRC.indexOf("EGRESS_PROXY_URL"));
     expect(apiBlock).toContain("args.proxyBaseUrl ??");
     expect(apiBlock).toContain("(proxyVip ?? proxyIp)!.address");
+  });
+});
+
+describe("R6HRD.1 — the proxy DSN leaves template metadata for a Secret Manager NAME (F-R6DEP4-2)", () => {
+  const INDEX_SRC = readFileSync(fileURLToPath(new URL("./index.ts", import.meta.url)), "utf8");
+
+  it("the template metadata carries `database-url-secret` (a NAME) and never `database-url` (a value)", () => {
+    // The plaintext `database-url` attribute was readable by anyone with
+    // `compute.instances.get` — the whole finding. The new attribute names the SM secret
+    // version the proxy resolves at boot via the instance SA (`anthropic-key-secret`
+    // precedent); a value-bearing key returning would reopen it.
+    expect(SRC).toContain('"database-url-secret": args.proxyDatabaseSecret ?? ""');
+    expect(SRC).not.toContain('"database-url"');
+    expect(SRC).not.toContain("args.proxyDatabaseUrl");
+  });
+
+  it("the template waits on the secret versions + IAM grants (boot reads versions/latest)", () => {
+    const tmpl = SRC.indexOf('new gcp.compute.InstanceTemplate(name("proxy-tmpl")');
+    const dep = SRC.indexOf("dependsOn: [...(args.secretVersions ?? []), ...iam.members]", tmpl);
+    expect(dep, "template dependsOn secretVersions + iam.members").toBeGreaterThan(tmpl);
+  });
+
+  it("prod gains the dedicated `proxy-database-url` container + a program-managed version", () => {
+    expect(INDEX_SRC).toContain('isProd ? ["proxy-database-url"] : ["system-database-url"]');
+    expect(INDEX_SRC).toContain("rhema-${stack}-proxy-database-url-v1");
+    expect(INDEX_SRC).toContain('secrets.byId["proxy-database-url"].id');
+    // the config value lands ONLY in Secret Manager — the metadata arg is the version NAME.
+    expect(INDEX_SRC).toContain("proxyDatabaseSecret: pulumi.interpolate");
+  });
+
+  it("the egress-proxy SA holds secretAccessor on the DSN container it resolves", () => {
+    expect(IAM_SRC).toContain(
+      'grantSecret("proxy-reads-proxydb", secrets.byId["proxy-database-url"], serviceAccounts["egress-proxy"])',
+    );
+    // non-prod: the generated system DSN container is the proxy's resolver source.
+    expect(IAM_SRC).toContain(
+      'grantSecret("proxy-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["egress-proxy"])',
+    );
   });
 });
 

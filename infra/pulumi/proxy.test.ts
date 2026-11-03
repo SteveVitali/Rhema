@@ -10,7 +10,11 @@ describe("buildProxyStartupScript (D-P0.15c-7)", () => {
   it("reads the image + config from instance metadata (no secret baked into the template)", () => {
     expect(script).toContain("computeMetadata/v1/instance/attributes");
     expect(script).toContain("$MD/proxy-image");
-    expect(script).toContain("$MD/database-url");
+    // R6HRD.1 — the resolver DSN is a Secret Manager NAME (`database-url-secret`), never the
+    // plaintext `database-url` value that used to sit in template metadata readable by
+    // `compute.instances.get` (F-R6DEP4-2).
+    expect(script).toContain("$MD/database-url-secret");
+    expect(script).not.toContain("$MD/database-url\"");
     expect(script).toContain("$MD/anthropic-key-secret");
     expect(script).toContain("$MD/proxy-port");
     expect(script).toContain("Metadata-Flavor: Google");
@@ -20,7 +24,8 @@ describe("buildProxyStartupScript (D-P0.15c-7)", () => {
     expect(script).toContain('docker pull "$IMAGE"');
     expect(script).toContain("docker run -d");
     expect(script).toContain("--restart always");
-    expect(script).toContain('-e DATABASE_URL="$DB_URL"');
+    expect(script).toContain('-e DATABASE_URL_SECRET="$DB_SECRET"');
+    expect(script).not.toContain('-e DATABASE_URL="');
     expect(script).toContain('-e ANTHROPIC_KEY_SECRET="$KEY_SECRET"');
     expect(script).toContain('-e PORT="$PORT"');
     // authenticates docker to Artifact Registry with the instance SA's metadata OAuth token (no baked key).

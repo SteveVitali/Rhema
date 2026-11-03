@@ -43,8 +43,13 @@ export interface ComputeArgs {
   proxyImage?: pulumi.Input<string>;
   /** The Secret Manager secret NAME the proxy reads the provider key from (never the value). */
   anthropicKeySecret?: pulumi.Input<string>;
-  /** The proxy's DATABASE_URL (a Pulumi secret config, not committed) for the RunContextResolver. */
-  proxyDatabaseUrl?: pulumi.Input<string>;
+  /**
+   * R6HRD.1 — the Secret Manager secret-VERSION resource name the proxy resolves its
+   * RunContextResolver DSN from at boot (`projects/<p>/secrets/<name>/versions/latest`,
+   * same shape as `anthropicKeySecret`). The metadata carries this NAME only — the plaintext
+   * `database-url` attribute it replaced was readable by anyone with `compute.instances.get`.
+   */
+  proxyDatabaseSecret?: pulumi.Input<string>;
   // The always-on worker's dynamic env (D-P0.08-1). All optional so `pulumi preview` stays clean with empty
   // defaults; the operator sets them (Pulumi config) before the `dev` deploy. The CONSTANT worker env
   // (K8S_NAMESPACE, KUBE_SERVICE_ACCOUNT) + the derivable ones (run SA, sandbox node pool) are set in-program.
@@ -262,7 +267,8 @@ export function createCompute(args: ComputeArgs): Compute {
   // GCP discontinued the COS `gce-container-declaration` container-on-VM path (the InstanceTemplate create
   // 400s). This is the SUPPORTED re-platform (D-P0.15c-7): a COS MIG whose instance runs the digest-pinned
   // proxy image via a startup-script `docker run`, pulling the image from Artifact Registry with the instance
-  // SA and taking DATABASE_URL / ANTHROPIC_KEY_SECRET / PORT from instance metadata. Enabled by default now
+  // SA and taking DATABASE_URL_SECRET / ANTHROPIC_KEY_SECRET / PORT from instance metadata (secret NAMES,
+  // never values — R6HRD.1). Enabled by default now
   // (`rhema:deployProxyMig` defaults true) so a plain `pulumi up` stands the proxy up; set it false to run the
   // proxy out-of-band. The firewall's allow-to-proxy-tier rule (network.ts) is independent of this MIG.
   const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? true;
@@ -270,24 +276,27 @@ export function createCompute(args: ComputeArgs): Compute {
   // OPS.1 — hoisted so the worker's `ANTHROPIC_BASE_URL` can resolve to the proxy endpoint on
   // stacks that don't set `rhema:proxyBaseUrl` (non-prod self-wiring; prod's config still wins).
   // R6INF.2 (ADR-122): `proxyVip` is the ILB frontend address — the endpoint consumers dial;
-  // `proxyIp` is the old direct-path reservation (retained as the rollback path).
+  // `proxyIp` is the old direct-path reservation.
   let proxyIp: gcp.compute.Address | undefined;
   let proxyVip: gcp.compute.Address | undefined;
   let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
   if (deployProxyMig) {
-    // A RESERVED internal IP pinned into the template (surfaced live PRB.15 Stage B, 2026-09-17): the
-    // MIG replaces its instance on every template change and a fresh NIC auto-assigns a NEW address —
-    // the api/worker's `ANTHROPIC_BASE_URL` (rhema:proxyBaseUrl) would silently dangle at the old IP.
-    // High end of the private-app /20 so auto-assigned addresses never collide.
-    // ADR-122: RETAINED across the ILB cutover (reserved-but-unused) as the rollback path —
-    // deleting it in the same `up` would surrender `10.8.16.4` and a re-created Address would get
-    // a NEW literal, dangling the old `proxyBaseUrl`. Cleanup `up` D removes it after soak.
-    proxyIp = new gcp.compute.Address(name("proxy-ip"), {
-      addressType: "INTERNAL",
-      purpose: "GCE_ENDPOINT",
-      subnetwork: network.subnets["private-app"].id,
-      region,
-    });
+    // A RESERVED internal IP exists ONLY while `egressProxyIpPin` pins it into the template
+    // (surfaced live PRB.15 Stage B, 2026-09-17): the MIG replaces its instance on every template
+    // change and a fresh NIC auto-assigns a NEW address — the api/worker's `ANTHROPIC_BASE_URL`
+    // (rhema:proxyBaseUrl) would silently dangle at the old IP. R6HRD.1 (ADR-122's own cleanup
+    // step: "Cleanup `up` D deletes the reservation once the VIP path has soaked" — soak ≈10 d,
+    // VIP green since 2026-10-24): the unconditional reservation is DELETED — a re-created
+    // Address gets a NEW literal, so post-soak rollback is `proxyBaseUrl` repoint + up, per the
+    // ADR's caveat. The `ipPin` fact still re-materializes a reservation for a future transition.
+    proxyIp = cfg.egressProxyIpPin
+      ? new gcp.compute.Address(name("proxy-ip"), {
+          addressType: "INTERNAL",
+          purpose: "GCE_ENDPOINT",
+          subnetwork: network.subnets["private-app"].id,
+          region,
+        })
+      : undefined;
     const proxyTemplate = new gcp.compute.InstanceTemplate(name("proxy-tmpl"), {
       machineType: "e2-small",
       tags: [EGRESS_PROXY_TAG],
@@ -300,7 +309,7 @@ export function createCompute(args: ComputeArgs): Compute {
         // NICs go ephemeral — the VIP, never a NIC, is the stable endpoint.
         {
           subnetwork: network.subnets["private-app"].id,
-          ...(cfg.egressProxyIpPin ? { networkIp: proxyIp.address } : {}),
+          ...(cfg.egressProxyIpPin && proxyIp ? { networkIp: proxyIp.address } : {}),
         },
       ],
       serviceAccount: {
@@ -309,12 +318,15 @@ export function createCompute(args: ComputeArgs): Compute {
       },
       metadata: {
         // A supported startup-script runs the container (the discontinued container-declaration is gone). The
-        // script reads the image + config from these metadata attributes at boot — no secret is baked into the
-        // template (DATABASE_URL comes from a Pulumi secret config; the key is fetched by the proxy from SM).
+        // script reads the image + config from these metadata attributes at boot — no secret VALUE is
+        // baked into the template (the DSN and the provider key are fetched by the proxy from SM).
         "startup-script": buildProxyStartupScript(),
         "proxy-image": args.proxyImage ?? placeholderImage,
         "anthropic-key-secret": args.anthropicKeySecret ?? "",
-        "database-url": args.proxyDatabaseUrl ?? "",
+        // R6HRD.1 — the resolver DSN is a Secret Manager NAME the proxy resolves at boot via
+        // the instance SA (the `anthropic-key-secret` precedent): the plaintext `database-url`
+        // attribute this replaced was readable by anyone with `compute.instances.get`.
+        "database-url-secret": args.proxyDatabaseSecret ?? "",
         "proxy-port": proxyPort,
         // R6DEP.4 — the journeys CI env-gap legs (T7/R6F/T12F/T13F/T8 + the N9/T8 self-healing
         // arms) reach the private-IP Cloud SQL only through an IAP+SSH local forward on one of
@@ -329,6 +341,12 @@ export function createCompute(args: ComputeArgs): Compute {
           ? "journeys-ci:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO4yeHhUUlMPRkKFrwvojg7CgVBVsSBEWJ0LKhDt1W83 journeys-ci@rhema"
           : "",
       },
+    }, {
+      // R6HRD.1 — the boot path reads `versions/latest` of the program-managed DSN secret:
+      // the template (and therefore the MIG's replacement instance) must not exist before
+      // the version OR the SA's secretAccessor grant does (the update-68 class of ordering
+      // bug, applied to the VM substrate — same `containerPrereqs` semantics as Cloud Run).
+      dependsOn: [...(args.secretVersions ?? []), ...iam.members],
     });
     const proxyHealth = new gcp.compute.HealthCheck(name("proxy-health"), {
       tcpHealthCheck: { port: Number(proxyPort) },

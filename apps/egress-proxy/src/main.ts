@@ -12,6 +12,7 @@ import {
   ANTHROPIC_KEY_REFRESH_INTERVAL_MS,
   ReloadableAnthropicSecretProvider,
   createSecretAccessor,
+  type SecretAccessor,
 } from "./secret-manager.js";
 import { SqlUsageWriter, SqlFetchLogWriter, SqlCapAccountant, type SqlExecutor } from "./sinks.js";
 import { SqlSignalSink } from "./signal-sink.js";
@@ -20,7 +21,12 @@ import { ulid } from "./ids.js";
 
 interface ProxyEnv {
   readonly port: number;
-  readonly databaseUrl: string;
+  /** the DSN as a literal env value — the legacy/local path (never on the deployed MIG). */
+  readonly databaseUrl?: string;
+  /** the Secret Manager resolver-DSN version resource name — the deployed path (R6HRD.1:
+   *  the template metadata carries a NAME, never the value; the DSN exists only in
+   *  process memory, fetched with the instance SA exactly like the provider key). */
+  readonly databaseUrlSecret?: string;
   /** the Secret Manager `anthropic-api-key` version resource name. */
   readonly anthropicKeySecret: string;
   /** the provider host every request is forwarded to (`api.anthropic.com`). */
@@ -35,21 +41,40 @@ function readProxyEnv(): ProxyEnv {
   };
   return {
     port: Number(process.env.PORT ?? 8443),
-    databaseUrl: req("DATABASE_URL"),
+    databaseUrl: process.env.DATABASE_URL || undefined,
+    databaseUrlSecret: process.env.DATABASE_URL_SECRET || undefined,
     anthropicKeySecret: req("ANTHROPIC_KEY_SECRET"),
     providerHost: process.env.PROVIDER_HOST ?? "api.anthropic.com",
   };
 }
 
+/**
+ * R6HRD.1 — the resolver DSN comes from Secret Manager when `DATABASE_URL_SECRET` names a
+ * version (the deployed path — the InstanceTemplate metadata used to carry the plaintext
+ * DSN, readable by anyone with `compute.instances.get`). `DATABASE_URL` remains the
+ * fallback for local/test launches; neither set fails closed with a named reason. The
+ * value is awaited before listen and never logged.
+ */
+export async function resolveProxyDatabaseUrl(
+  env: Pick<ProxyEnv, "databaseUrl" | "databaseUrlSecret">,
+  accessor: SecretAccessor,
+): Promise<string> {
+  if (env.databaseUrlSecret) return accessor(env.databaseUrlSecret);
+  if (env.databaseUrl) return env.databaseUrl;
+  throw new Error("egress-proxy: missing required env DATABASE_URL or DATABASE_URL_SECRET");
+}
+
 export async function startProxy(): Promise<void> {
   const env = readProxyEnv();
-  const pool = new pg.Pool({ connectionString: env.databaseUrl });
+  // One accessor serves both secret reads (the provider key provider + the resolver DSN).
+  const secretAccessor = await createSecretAccessor();
+  const pool = new pg.Pool({ connectionString: await resolveProxyDatabaseUrl(env, secretAccessor) });
   // the proxy's SqlExecutor over the pool (the non-RLS proxy tables + usage/fetch-log writes).
   const db: SqlExecutor = {
     query: (sql, params) => pool.query(sql, params ?? undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
 
-  const secrets = await ReloadableAnthropicSecretProvider.create(env.anthropicKeySecret, await createSecretAccessor());
+  const secrets = await ReloadableAnthropicSecretProvider.create(env.anthropicKeySecret, secretAccessor);
   // rotate the provider key on SIGHUP without a restart (REQ-ARCH-30). (createProxyServer only auto-wires SIGHUP
   // for the base ReloadableSecretProvider; this async provider installs its own handler.)
   process.on("SIGHUP", () => {

@@ -39,8 +39,10 @@ const rhemaConfig = new pulumi.Config("rhema");
 // A placeholder container image until each service ships real logic; overridden per-deploy with the
 // digest-pinned image from the `images` job (REQ-ARCH-39).
 const placeholderImage = rhemaConfig.get("placeholderImage") ?? "gcr.io/google-containers/pause:3.9";
-// The digest-pinned egress-proxy image + its DATABASE_URL (a Pulumi SECRET config — encrypted, not committed);
-// the proxy reads the provider key from Secret Manager itself (only the secret NAME is passed). D-P0.15c-7.
+// The digest-pinned egress-proxy image + its DATABASE_URL (a Pulumi SECRET config — encrypted, not
+// committed). R6HRD.1: the config now seeds ONLY the `proxy-database-url` SM container (below) —
+// the proxy resolves `versions/latest` at boot via its instance SA, the same path the provider key
+// already took (only secret NAMES reach the InstanceTemplate metadata). D-P0.15c-7.
 const proxyImage = rhemaConfig.get("proxyImage") ?? placeholderImage;
 const proxyDatabaseUrl = rhemaConfig.getSecret("proxyDatabaseUrl");
 
@@ -161,7 +163,14 @@ if (resendPlan === "refused") {
 const network = createNetwork({ stack, cfg, region });
 // OPS.1 — `system-database-url` is a non-prod-only container: it carries the program-generated
 // `postgres`-role DSN and is kept OUT of ALL_SECRET_IDS so prod's provisioned set is byte-identical.
-const secrets = createSecrets({ stack, region, extraIds: isProd ? [] : ["system-database-url"] });
+// R6HRD.1 — prod instead gains `proxy-database-url` (the mirror-image prod-only container): the
+// egress-proxy's resolver DSN leaves the plaintext `database-url` InstanceTemplate metadata for a
+// Secret Manager NAME the proxy resolves at boot (readable by `compute.instances.get` no more).
+const secrets = createSecrets({
+  stack,
+  region,
+  extraIds: isProd ? ["proxy-database-url"] : ["system-database-url"],
+});
 // OPS.1 — non-prod postgres bootstrap: the operator's `rhema:alloydbPassword` config still wins when
 // set (prod + any operator-seeded dev); otherwise a @pulumi/random value lives ONLY in encrypted
 // state + the `alloydb-password` secret — no hand step, nothing in the repo.
@@ -225,6 +234,28 @@ if (cfg.requiredSecrets.includes("app-database-url")) {
       // would break prod). Non-prod keeps full management: a rotated RandomPassword there SHOULD
       // propagate a new version.
       isProd ? { ignoreChanges: ["secretData"] } : {},
+    ),
+  );
+}
+// R6HRD.1 — the proxy's resolver DSN leaves the InstanceTemplate `database-url` metadata (a
+// plaintext value readable by anyone with `compute.instances.get`) for a Secret Manager
+// reference: the `rhema:proxyDatabaseUrl` SECRET config stays the source of truth, but its
+// value now lands ONLY in `rhema-prod-proxy-database-url` — the template metadata carries the
+// secret NAME and the proxy fetches the value at boot via the instance SA (the
+// `ANTHROPIC_KEY_SECRET` precedent; R6DEP.4's flagged posture finding F-R6DEP4-2). Same
+// prod immutable-version posture as app-database-url: a `pulumi refresh` can't read
+// `secretData` back, so without `ignoreChanges` every preview would plan a byte-identical
+// replace — drift noise + a rotation footgun. Rotation goes through
+// `gcloud secrets versions add` (versions/latest is read live at boot).
+if (isProd && proxyDatabaseUrl && secrets.byId["proxy-database-url"]) {
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(
+      `rhema-${stack}-proxy-database-url-v1`,
+      {
+        secret: secrets.byId["proxy-database-url"].id,
+        secretData: proxyDatabaseUrl,
+      },
+      { ignoreChanges: ["secretData"] },
     ),
   );
 }
@@ -389,10 +420,16 @@ const compute = createCompute({
   // (`projects/<p>/secrets/<name>/versions/latest`); the bare secretId is parsed as the project id by the
   // Secret Manager client → CONSUMER_INVALID (surfaced live P0.15e).
   anthropicKeySecret: pulumi.interpolate`${secrets.anthropicApiKey.id}/versions/latest`,
-  // OPS.1 — the proxy's resolver DSN is the generated system DSN on non-prod (the config path stays
-  // for prod, where the operator seeds `rhema:proxyDatabaseUrl`).
-  ...(proxyDatabaseUrl || systemDatabaseDsn
-    ? { proxyDatabaseUrl: proxyDatabaseUrl ?? systemDatabaseDsn! }
+  // R6HRD.1 — the template metadata carries the DSN secret's NAME, never the value: prod's
+  // dedicated `proxy-database-url` container (program-seeded from `rhema:proxyDatabaseUrl`
+  // above), non-prod's generated `system-database-url` (its proxy DSN IS the composed system
+  // DSN — the same value the old config fallback supplied).
+  ...(secrets.byId["proxy-database-url"] ?? secrets.byId["system-database-url"]
+    ? {
+        proxyDatabaseSecret: pulumi.interpolate`${
+          (secrets.byId["proxy-database-url"] ?? secrets.byId["system-database-url"])!.id
+        }/versions/latest`,
+      }
     : {}),
   // worker env (all optional; OBJECTS_BUCKET defaults to the artifacts bucket).
   ...(workerDatabaseUrl ? { workerDatabaseUrl } : {}),
