@@ -156,6 +156,61 @@ describe("§5.9 contrast invariants — light theme", () => {
   });
 });
 
+// R7KIT.1 (REQ-KIT-1; UXC-32) — the previously-undefined diff/state tokens carry their own floors:
+// `--paper-diff-add/del` are background tints on the sheet, so the paper's body text keeps its AAA
+// ≥10:1 reading contrast ON the tint AND the tint stays perceivable against `--paper-bg` (≥1.1:1,
+// the same floor the structural hairlines clear); `--state-ok` is a text/chip hue — AA ≥4.5:1 on
+// every shell ground and on the scoped-paper grounds it can land inside `.paper`.
+describe("R7KIT.1 token floors — diff tints + state-ok (UXC-32)", () => {
+  for (const [name, v] of [["dark", DARK_VARS], ["light", LIGHT_VARS]] as const) {
+    it(`${name}: paper body text keeps ≥10:1 on both diff tints, and the tints are perceivable`, () => {
+      for (const tint of ["--paper-diff-add", "--paper-diff-del"] as const) {
+        expect(
+          contrastRatio(fg(v, "--paper-fg"), fg(v, tint)),
+          `${name} paper-fg on ${tint}`,
+        ).toBeGreaterThanOrEqual(10);
+        expect(
+          contrastRatio(fg(v, tint), fg(v, "--paper-bg")),
+          `${name} ${tint} vs paper-bg`,
+        ).toBeGreaterThanOrEqual(1.1);
+      }
+    });
+    it(`${name}: --state-ok clears AA ≥4.5:1 as text on every shell ground`, () => {
+      expectMin(
+        [
+          [fg(v, "--state-ok"), fg(v, "--shell-bg")],
+          [fg(v, "--state-ok"), fg(v, "--shell-surface")],
+          [fg(v, "--state-ok"), fg(v, "--shell-raised")],
+        ],
+        4.5,
+        `${name} state-ok`,
+      );
+    });
+  }
+  it("the pinned-paper pairings keep both floors (the tints ride [data-paper] via PAPER_KEYS)", () => {
+    for (const mode of ["light", "dark"] as const) {
+      const p = paperVars(mode);
+      for (const tint of ["--paper-diff-add", "--paper-diff-del"] as const) {
+        expect(contrastRatio(p["--paper-fg"]!, p[tint]!), `pinned ${mode} ${tint}`).toBeGreaterThanOrEqual(10);
+        expect(contrastRatio(p[tint]!, p["--paper-bg"]!)).toBeGreaterThanOrEqual(1.1);
+      }
+    }
+  });
+  it("--state-ok clears AA on the scoped sheet's grounds (it is re-emitted by paperScopeVars)", () => {
+    for (const mode of ["light", "dark"] as const) {
+      const s = paperScopeVars(mode);
+      expectMin(
+        [
+          [s["--state-ok"]!, s["--shell-bg"]!],
+          [s["--state-ok"]!, s["--shell-raised"]!],
+        ],
+        4.5,
+        `paper ${mode} state-ok`,
+      );
+    }
+  });
+});
+
 describe("pinned paper (REQ-IDE-38 amended — pinning never blends with the shell theme)", () => {
   it("pinned-light paper inside the dark shell keeps ≥ 10:1 body contrast", () => {
     const p = paperVars("light");

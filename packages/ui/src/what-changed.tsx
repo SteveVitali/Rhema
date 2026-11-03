@@ -62,7 +62,7 @@ function BlockText({ text, side }: { text: string; side: "before" | "after" }): 
         fontSize: "12.5px",
         lineHeight: 1.5,
         whiteSpace: "pre-wrap",
-        background: side === "before" ? "var(--paper-diff-del, rgba(180,40,40,0.06))" : "var(--paper-diff-add, rgba(30,130,60,0.07))",
+        background: side === "before" ? "var(--paper-diff-del)" : "var(--paper-diff-add)",
         borderLeft: `2px solid ${side === "before" ? "var(--sev-major, #b33)" : "var(--accent, #3a7)"}`,
       }}
     >

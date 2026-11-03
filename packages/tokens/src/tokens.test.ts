@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DARK_VARS, LIGHT_VARS, PAPER_KEYS, SPACING, RADIUS, TYPOGRAPHY, LAYOUT, MOTION, cssVar, hexValues, paperVars } from "./tokens.js";
+import { DARK_VARS, FONT_SIZE, LIGHT_VARS, PAPER_KEYS, SPACING, RADIUS, TYPOGRAPHY, LAYOUT, MOTION, cssVar, hexValues, paperVars, paperScopeVars } from "./tokens.js";
 import { themeCss, FONT_FACES } from "./theme-css.js";
 import { ideCss } from "./ide-css.js";
 
@@ -25,11 +25,35 @@ describe("§5.9 tokens", () => {
     expect(LIGHT_VARS["--state-failed"]).toBeDefined();
   });
 
-  it("uses the 4-pt spacing scale and 4/8/12 radii", () => {
+  it("uses the 4-pt spacing scale and 4/8/12 radii + the named pill step (R7KIT.1)", () => {
     expect(SPACING["--s1"]).toBe(4);
     expect(SPACING["--s4"]).toBe(16);
     expect(SPACING["--s12"]).toBe(48);
-    expect(Object.values(RADIUS)).toEqual([4, 8, 12]);
+    expect(Object.values(RADIUS)).toEqual([4, 8, 12, 999]);
+    expect(RADIUS["--radius-pill"]).toBe(999);
+  });
+
+  it("the --fs-* scale names the shell sizes and the two off-scale bands (R7KIT.1; UXC-31)", () => {
+    expect(FONT_SIZE["--fs-body"]).toBe(TYPOGRAPHY.shellBodyPx);
+    expect(FONT_SIZE["--fs-dense"]).toBe(TYPOGRAPHY.shellDensePx);
+    expect(FONT_SIZE["--fs-micro"]).toBe(TYPOGRAPHY.shellMicroPx);
+    // the two bands R6 §8 counted outside the 14/13/12 scale — caption (10.5–11 px) and lead (15–16 px).
+    expect(FONT_SIZE["--fs-caption"]).toBe(11);
+    expect(FONT_SIZE["--fs-lead"]).toBe(16);
+  });
+
+  it("defines the R7KIT.1 diff/state colour tokens in BOTH themes (UXC-32 — they were undefined)", () => {
+    for (const v of [DARK_VARS, LIGHT_VARS]) {
+      expect(v["--paper-diff-add"]).toBeDefined();
+      expect(v["--paper-diff-del"]).toBeDefined();
+      expect(v["--state-ok"]).toBeDefined();
+    }
+    // the tints ride the [data-paper] pin — a pinned paper keeps ITS theme's diff colours.
+    expect(paperVars("light")["--paper-diff-add"]).toBe(LIGHT_VARS["--paper-diff-add"]);
+    expect(paperVars("dark")["--paper-diff-del"]).toBe(DARK_VARS["--paper-diff-del"]);
+    // and the paper scope carries --state-ok so a control inside `.paper` reads the paper theme.
+    expect(paperScopeVars("light")["--state-ok"]).toBe(LIGHT_VARS["--state-ok"]);
+    expect(paperScopeVars("dark")["--state-ok"]).toBe(DARK_VARS["--state-ok"]);
   });
 
   it("uses no pure black or white in either shipped theme (§5.9 contrast rule)", () => {
@@ -113,6 +137,74 @@ describe("themeCss()", () => {
     expect(css).toContain(":focus-visible { outline: 2px solid var(--accent)");
     expect(css).toContain("@media print");
     expect(css).toContain("font-size: 11pt;");
+  });
+
+  // R7KIT.1 (REQ-KIT-1) — the assertions below fail if any control class, state or scheme rule
+  // is removed from the emitted stylesheet.
+  it("declares color-scheme per theme: dark default, light opt-in (Auto resolves onto them)", () => {
+    expect(css).toContain(":root {\n  color-scheme: dark;");
+    expect(css).toContain('[data-theme="light"] {\n  color-scheme: light;');
+    // the sheet's UA widgets follow the PAPER theme (incl. the pinned pairings)
+    for (const rule of [
+      ".paper { color-scheme: dark; }",
+      '[data-theme="light"] .paper { color-scheme: light; }',
+      '[data-paper="light"] .paper { color-scheme: light; }',
+      '[data-paper="dark"] .paper { color-scheme: dark; }',
+    ]) {
+      expect(css, rule).toContain(rule);
+    }
+  });
+  it("emits the --fs-* scale and the --radius-pill step", () => {
+    for (const name of Object.keys(FONT_SIZE)) {
+      expect(css, name).toContain(`${name}: ${FONT_SIZE[name]}px;`);
+    }
+    expect(css).toContain("--radius-pill: 999px;");
+  });
+  it("emits the diff + ok colour tokens in both themes and under [data-paper] pinning", () => {
+    expect(css).toContain(`--paper-diff-add: ${DARK_VARS["--paper-diff-add"]};`);
+    expect(css).toContain(`--paper-diff-del: ${DARK_VARS["--paper-diff-del"]};`);
+    expect(css).toContain(`--paper-diff-add: ${LIGHT_VARS["--paper-diff-add"]};`);
+    expect(css).toContain(`--paper-diff-del: ${LIGHT_VARS["--paper-diff-del"]};`);
+    expect(css).toContain(`--state-ok: ${DARK_VARS["--state-ok"]};`);
+    expect(css).toContain(`--state-ok: ${LIGHT_VARS["--state-ok"]};`);
+  });
+  it("carries a base rule for EVERY REQ-KIT-1 control class", () => {
+    // the shared box rule covers button/select/textarea + every non-check input
+    expect(css).toContain(
+      "button, select, textarea, input:where(:not([type='checkbox']):not([type='radio'])) {",
+    );
+    expect(css).toContain("input:where([type='checkbox'], [type='radio']) {");
+    expect(css).toContain("input[type='file']::file-selector-button {");
+  });
+  it("carries every REQ-KIT-1 control state: hover, active, disabled, focus-visible, invalid", () => {
+    for (const sel of [
+      "button:where(:not(:disabled)):hover",
+      "input:where(:not(:disabled)):hover",
+      "select:where(:not(:disabled)):hover",
+      "textarea:where(:not(:disabled)):hover",
+      "button:where(:not(:disabled)):active",
+      "input:where(:not(:disabled)):active",
+      "select:where(:not(:disabled)):active",
+      "button:disabled",
+      "input:disabled",
+      "select:disabled",
+      "textarea:disabled",
+      "button:focus-visible",
+      "input:focus-visible",
+      "select:focus-visible",
+      "textarea:focus-visible",
+      "input:invalid",
+      "select:invalid",
+      "textarea:invalid",
+    ]) {
+      expect(css, sel).toContain(sel);
+    }
+  });
+  it("the control layer stays element-level — no IDE-class selectors leak into themeCss (specificity contract)", () => {
+    // The contract (ticket Notes): the base rules must LOSE to ide-css's `.ide-*` region rules and
+    // to inline styles. `:where()` wrapping keeps every state rule at element specificity.
+    expect(css).not.toMatch(/\.ide-[a-z-]+ (button|input|select|textarea)/);
+    expect(css).not.toMatch(/!important[^}]*border|border[^}]*!important/);
   });
 });
 

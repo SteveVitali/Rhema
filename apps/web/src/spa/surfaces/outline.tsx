@@ -235,7 +235,7 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
             </span>
           ) : null}
           {saved ? (
-            <span data-saved-note="true" style={{ marginLeft: "12px", color: "var(--sev-ok, var(--shell-fg-muted))" }}>{O.savedNote}</span>
+            <span data-saved-note="true" style={{ marginLeft: "12px", color: "var(--state-ok)" }}>{O.savedNote}</span>
           ) : null}
           {notice ? (
             <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{notice}</span>

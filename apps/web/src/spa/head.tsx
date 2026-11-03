@@ -90,6 +90,17 @@ export function HeadManager(): ReactNode {
     const focusEl = hashTarget ?? document.querySelector("[data-spa-root] h1");
     if (focusEl instanceof HTMLElement) {
       if (!focusEl.hasAttribute("tabindex")) focusEl.tabIndex = -1;
+      // REQ-COPY-7 (R7KIT.1; R5 A4/D7) — route focus is PROGRAMMATIC, so it must not paint the
+      // :focus-visible ring on the heading: suppress the outline inline until the element blurs
+      // (every nav re-stamps; blur restores the prior inline value, so a later real keyboard focus
+      // on the same node — e.g. an interactive hash target — still gets its 2-px accent ring from
+      // the stylesheet). Keyboard focus never passes through this arm, so the REQ-IDE-42/REQ-UX-7
+      // ring is untouched.
+      if (focusEl.style.outlineStyle !== "none") {
+        const prev = focusEl.style.outlineStyle;
+        focusEl.style.outlineStyle = "none";
+        focusEl.addEventListener("blur", () => (focusEl.style.outlineStyle = prev), { once: true });
+      }
       focusEl.focus();
     }
   }, [navKey, pathname, hash, isLoading]);

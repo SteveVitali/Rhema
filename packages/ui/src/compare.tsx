@@ -58,8 +58,8 @@ function BlockCell({ block, side }: { block: DiffBlock | null; side: "before" | 
         background: !block
           ? "transparent"
           : side === "before"
-            ? "var(--paper-diff-del, rgba(180,40,40,0.06))"
-            : "var(--paper-diff-add, rgba(30,130,60,0.07))",
+            ? "var(--paper-diff-del)"
+            : "var(--paper-diff-add)",
         borderLeft: block
           ? `2px solid ${side === "before" ? "var(--sev-major, #b33)" : "var(--accent, #3a7)"}`
           : "2px solid transparent",

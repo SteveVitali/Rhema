@@ -4,6 +4,7 @@ export {
   PAPER_KEYS,
   SPACING,
   RADIUS,
+  FONT_SIZE,
   TYPOGRAPHY,
   LAYOUT,
   MOTION,

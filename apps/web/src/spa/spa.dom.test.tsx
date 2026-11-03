@@ -320,6 +320,53 @@ describe("head manager (REQ-BND-8, REQ-UX-7/9)", () => {
     expect(announcer?.textContent).toBe("Usage · Rhēma");
   });
 
+  it("REQ-COPY-7 — programmatic route focus lands on the h1 with NO visible ring (inline suppression)", async () => {
+    await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    const h1 = document.querySelector<HTMLElement>("[data-spa-root] h1")!;
+    expect(document.activeElement).toBe(h1);
+    // The stamp IS the programmatic/keyboard distinction: only HeadManager's focus arm writes it,
+    // so the :focus-visible ring in the stylesheet can never paint the heading's full-width box
+    // (R5 A4/D7). `tabindex=-1` keeps the h1 out of the tab order.
+    expect(h1.style.outlineStyle).toBe("none");
+    expect(h1.tabIndex).toBe(-1);
+  });
+
+  it("REQ-COPY-7 — the suppression lifts on blur; a direct (keyboard) focus is never stamped", async () => {
+    await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    const h1 = document.querySelector<HTMLElement>("[data-spa-root] h1")!;
+    expect(h1.style.outlineStyle).toBe("none");
+    h1.blur();
+    expect(h1.style.outlineStyle).toBe("");
+    // Keyboard focus never passes through the route-focus arm: an element focused directly keeps
+    // its inline outline unset, so the stylesheet's 2-px :focus-visible ring still reaches it
+    // (REQ-IDE-42 / REQ-UX-7 preserved).
+    h1.focus();
+    expect(h1.style.outlineStyle).toBe("");
+  });
+
+  it("REQ-COPY-7 — a programmatic hash-target focus is suppressed the same way and re-stamps per nav", async () => {
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa" }));
+    const target = document.createElement("div");
+    target.id = "deep2";
+    document.body.appendChild(target);
+    await act(async () => {
+      await router.navigate({ href: "/usage#deep2" });
+    });
+    expect(document.activeElement).toBe(target);
+    expect(target.style.outlineStyle).toBe("none");
+    expect(target.tabIndex).toBe(-1);
+    target.blur();
+    expect(target.style.outlineStyle).toBe("");
+    // the next committed nav re-stamps the new focus target
+    const deeper = document.createElement("div");
+    deeper.id = "deep3";
+    document.body.appendChild(deeper);
+    await act(async () => {
+      await router.navigate({ href: "/usage#deep3" });
+    });
+    expect(deeper.style.outlineStyle).toBe("none");
+  });
+
   it("focuses a hash target over the h1 (deep-link parity)", async () => {
     const anchor = document.createElement("div");
     anchor.id = "report";

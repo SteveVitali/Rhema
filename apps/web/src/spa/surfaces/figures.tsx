@@ -139,7 +139,7 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
                   <Chip label={f.kind} />
                   {f.badgeText ? <Chip label={f.badgeText} color="var(--sev-major)" /> : null}
                   <Chip label={fmt(F.versionFmt, { n: f.n })} />
-                  {f.insertedInDraftId ? <Chip label={F.insertedChip} color="var(--sev-ok, var(--shell-fg-muted))" /> : null}
+                  {f.insertedInDraftId ? <Chip label={F.insertedChip} color="var(--state-ok)" /> : null}
                   {f.pendingProposal ? <Chip label={F.proposalChip} /> : null}
                   {!f.hasRender && f.specKind !== "table" ? <Chip label={F.renderingChip} /> : null}
                 </div>
@@ -243,7 +243,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
           <Chip label={card.kind} />
           {card.badgeText ? <Chip label={card.badgeText} color="var(--sev-major)" /> : null}
-          {card.insertedInDraftId ? <Chip label={FC.insertedNote} color="var(--sev-ok, var(--shell-fg-muted))" /> : null}
+          {card.insertedInDraftId ? <Chip label={FC.insertedNote} color="var(--state-ok)" /> : null}
         </div>
 
         {/* the preview — the persisted server-side render (never browser-produced); a table shows
@@ -379,7 +379,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
           ) : (
             <Fragment>
               {card.insertedInDraftId != null && (
-                <p data-inserted-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-ok, var(--shell-fg-muted))" }}>{FC.insertedNote}</p>
+                <p data-inserted-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--state-ok)" }}>{FC.insertedNote}</p>
               )}
               {card.insertedInDraftId == null && card.readiness.ok && data.headDraftId != null ? (
                 <form method="post" action={`${cardBase}/propose`} data-propose-form="true" style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
