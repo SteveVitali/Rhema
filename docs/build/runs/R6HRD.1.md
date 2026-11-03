@@ -100,4 +100,80 @@ bundle — the four items are findings/cleanups, not deferral carriers. `D-R6INF
 
 ## Gap table / Evidence log / Evidence report
 
-(filled at close)
+- 2026-11-03T02:5xZ — code landed `994c177`: `main.ts` `resolveProxyDatabaseUrl`
+  (`DATABASE_URL_SECRET` via `createSecretAccessor`, `DATABASE_URL` fallback, named
+  fail-closed) + `main.test.ts` (5 tests); `proxy.ts` script → `database-url-secret` /
+  `-e DATABASE_URL_SECRET`; `compute.ts` metadata swap + `proxy-ip` conditional on
+  `egressProxyIpPin` + template `dependsOn` secretVersions+iam.members; `iam.ts` proxy-SA
+  grants (prod `proxy-database-url` / non-prod `system-database-url`); `index.ts` prod
+  `extraIds` + program-managed `SecretVersion` from `rhema:proxyDatabaseUrl`
+  (`ignoreChanges: secretData`, app-database-url precedent); journeys.yml debug line out;
+  `Pulumi.prod.yaml` doc + pin.
+- Verify pre-deploy: `pnpm turbo build lint typecheck` 135/135 · vitest egress-proxy+infra
+  295 pass (incl. `main.test.ts` 5, `proxy.test.ts` 3, `compute.test.ts` 26) ·
+  `workflow-env.test.ts` 5 · `infra/pulumi tsc --noEmit` clean.
+- 2026-11-03T02:5xZ — **Cloud Build `d1b8f9ec-1896-474b-872c-fa14bca44be1` SUCCESS** —
+  `_SERVICES=egress-proxy`, `_GIT_SHA=994c177…`, `_TAG=r6hrd-1`, 1m10s → digest
+  `sha256:5237d8f9f2838911693736b9b7003e6f378f93a876e90271053e309b20ad1cdc`, pinned in
+  `Pulumi.prod.yaml` w/ dated comment.
+- **Stripe (item 4) — discharged live:** `plink_1UVxKU2MLe3ETP9S0YzD7T9L` → `active:false`
+  (200) via the nonprod `sk_test_` (SM `rhema-nonprod-stripe-secret`, stdin pipe — key never
+  printed; `sk_live` can't touch test-mode). Stripe exposes NO delete verb for payment
+  links — `active=false` is the removal. `price_1UVxKU2MLe3ETP9S58EMA6es` can't archive
+  ("default price of its product"); parent `prod_VX1NQq7Q9E3oVP` ("Rhema preview top-up
+  (test)") → `active:false` — nothing purchasable remains.
+- 2026-11-03T02:5xZ — **`pulumi preview --diff --stack prod` classified:** +3 create
+  (`rhema-prod-proxy-database-url` Secret + `…-v1` SecretVersion + `proxy-reads-proxydb`
+  IAMMember), +-1 replace (stateless InstanceTemplate — `database-url` removed,
+  `database-url-secret` NAME + new digest + new script), ~1 update (MIG version ptr),
+  **−1 delete (`proxy-ip` Address — the ADR-122-named post-soak cleanup)**, 175 unchanged.
+  Zero stateful replace/delete; the one delete is the ticket's own item 3. Cost Δ≈−$0.001/day.
+- **`pulumi up` update 172 SUCCEEDED (46s).** MIG rolled to `rhema-prod-proxy-tmpl-b54c9b9`;
+  old instances deleted, `proxy-rwjl`/`proxy-bvpb` RUNNING on the new template.
+- **Zero-secret verified live:** `instance-templates describe b54c9b9` + `instances describe
+  proxy-rwjl` metadata = `database-url-secret`→`projects/…/rhema-prod-proxy-database-url/
+  versions/latest` + `anthropic-key-secret` NAME + `proxy-image` + `proxy-port` + `ssh-keys`
+  + `startup-script` — **no `database-url` key, no secret value anywhere in metadata.**
+- **Proxy healthy post-roll:** serial log shows image `5237d8f9` pulled + startup-script
+  exit 0; `docker logs egress-proxy` = **`[egress-proxy] listening on :8443 →
+  api.anthropic.com`** (that line is gated on the awaited SM DSN fetch + pool — the
+  `createSecretAccessor` path works through the instance SA); `docker inspect` env carries
+  only `DATABASE_URL_SECRET=projects/…/versions/latest` — a NAME, no value;
+  `backend-services get-health` = 2×HEALTHY behind VIP `10.8.16.7`.
+- **`10.8.16.4` (item 3) — DELETED honestly:** `addresses list` = only `proxy-vip`
+  `10.8.16.7`; the reservation `rhema-prod-proxy-ip-effec9d` is gone. Basis: ADR-122's own
+  rollback note ("cleanup `up` D deletes the reservation once the VIP path has soaked",
+  suggest ≥7d) — deployed 2026-10-24 (updates 160–162), failover drill green (232s autoheal,
+  credentialed egress through the VIP with metered rows), ~10 d soak, and three clean deploys
+  since (R6DEP.3/R6DEP.4/this roll). Post-soak rollback per the ADR's caveat: a re-created
+  Address takes a NEW literal — repoint `rhema:proxyBaseUrl` + up.
+- **Smoke:** api `/healthz` `gitSha=4938b8e…` (unchanged — only the proxy image rolled;
+  `record-deployment`/`deployments` row honestly not owed, R6OPS.2 precedent); `rhema.tools`
+  web 200.
+- **Carry note (not a deferral):** `Pulumi.dev.yaml` + the destroyed `Pulumi.pr-230.yaml`
+  still pin pre-fix `egress-proxy` digests — a non-prod `pulumi up` on an OLD pin now pairs
+  `DATABASE_URL_SECRET` with an image that only reads `DATABASE_URL` → fail-closed
+  crash-loop (no leak). Program + image pins travel in the same checkout (preview lifecycle
+  builds from its own SHA); prod is pinned. No owed action.
+- **Carry note 2:** the Stripe `price_1UVxKU2MLe3ETP9S58EMA6es` cannot be archived (default
+  product price); harmless — the link and its product are both `active:false`.
+
+## Gap table
+
+| item (directive §) | required layer | achieved layer | status | evidence |
+|---|---|---|---|---|
+| 1. DSN out of metadata → SM-ref + boot fetch, zero-secret end state | live-executed | live-executed | **met** | `main.ts` resolver + SM container + IAM + `database-url-secret` NAME; update 172; template/instance metadata describe clean; `listening` log; inspect env NAME-only |
+| 1b. preview = zero stateful replace/delete except stateless template roll | live-executed | live-executed | **met** | preview classified +3/+-1/~1/−1(`proxy-ip`, the ticket's own item); up 172 46s |
+| 2. journeys.yml debug line removed | engineered | engineered | **met** | `.github/workflows/journeys.yml` — `console.error("journey dsn user:",…)` gone; `workflow-env.test.ts` green |
+| 3. `10.8.16.4` disposition — honest decide | live-executed | live-executed | **met** | deleted (up 172); `addresses list` VIP-only; ADR-122 soak basis recorded |
+| 4. `plink_1UVxKU…` TEST-mode cleanup | live-executed | live-executed | **met** | `active:false` on link + product (price unarchivable — recorded); no delete verb exists |
+| 5. verify commands | engineered | engineered | **met** | turbo 135/135; vitest 295+5; check-build-memory + append-only + ci-boundary at close |
+| 6. records | engineered | engineered | **met** | this ledger + pr/R6HRD.1.md + BUILD_INDEX 239 + LEDGER + PR |
+
+**Findings:** F-R6DEP4-2 (plaintext proxy DSN in template metadata — flagged without an id in
+`runs/R6DEP.4.md`) → **RESOLVED live**. **Deferrals:** none opened/closed. **Deviations:**
+Stripe "delete" = `active:false` (no delete verb for payment links); the DSN stays in
+`rhema:proxyDatabaseUrl` SECRET config as the program-managed source (encrypted state — the
+value is now in SM only, metadata carries a NAME). **Spend:** $0 (image build + IAM/metadata
+mutations only; Stripe API calls free).
+- **Closed:** 2026-11-03 · **layer:** live-executed · **harness:** devin-desktop/swe-2-high/subagent

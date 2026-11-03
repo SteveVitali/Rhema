@@ -419,7 +419,9 @@ config:
   # 2026-10-27 — R6DEP.3: egress-proxy re-pinned to the dc3a8f6 deploy build (36964998).
   # 2026-10-28 — R6LCH.1: egress-proxy re-pinned to the b04fc1b launch build (a550376f).
   # 2026-10-28 — R6LCH.1 flip 4: egress-proxy re-pinned to the b953c55 build (9f35a18c).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:7f844844bb0151ceeef83923e9a63154e7e88ff4690065241fbf28bb89369e4f
+  # 2026-11-03 — R6HRD.1: egress-proxy re-pinned to the 994c177 build (d1b8f9ec,
+  # _SERVICES=egress-proxy) — carries the DATABASE_URL_SECRET boot-fetch (F-R6DEP4-2).
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:5237d8f9f2838911693736b9b7003e6f378f93a876e90271053e309b20ad1cdc
   # 2026-10-24 — R6INF.2 (ADR-122) up B: repoint consumers to the ILB VIP (proxyVipAddress output);
   # the direct 10.8.16.4 path stays live for in-flight pods until the post-soak cleanup update.
   rhema:proxyBaseUrl: http://10.8.16.7:8443
