@@ -1,0 +1,15 @@
+{
+  "$comment": "REQ-CORPUS-2 (R1 §2, amended): the hard-fail denylist over every corpus-derived output — corpus, goldens, snapshots, real and synthetic. Single source read by both src/denylist.ts (the exporter's gate) and tools/demo-corpus/check-corpus.mjs (the always-run CI checker); denylist.test.ts pins parity. Bare Steven / Desktop / claude / operator / @example.com are deliberately NOT gated (content citations). Positive controls are the synthetic fixture's allowlisted lines; negative controls are synthesized in-test, never committed.",
+  "patterns": [
+    { "id": "identity-vitali", "re": "vitali", "flags": "i", "reason": "identity token (S-11 pen-name scope)" },
+    { "id": "identity-steve", "re": "\\bSteve\\b", "reason": "identity token (S-11); 'Steven' alone is a cited scholar and stays ungated" },
+    { "id": "academia-edu", "re": "academia\\.edu", "flags": "i", "reason": "identity profile host" },
+    { "id": "home-absolute", "re": "/Users/", "reason": "operator-local absolute path" },
+    { "id": "home-tilde", "re": "~/", "reason": "operator-local home path" },
+    { "id": "utm-param", "re": "[?&]utm_[A-Za-z0-9_]*=", "flags": "i", "reason": "tracking parameter in a URL; the sanitizer strips them pre-gate" },
+    { "id": "reader-proxy", "re": "https?://r\\.jina\\.ai/", "flags": "i", "reason": "reader-proxy prefix; the sanitizer unwraps it pre-gate" },
+    { "id": "scratch-path", "re": "agent-scratch", "reason": "private scratch path" },
+    { "id": "persona-slug", "re": "sjs-substack", "reason": "persona slug" },
+    { "id": "persona-dir", "re": "personas/", "reason": "persona profile path" }
+  ]
+}

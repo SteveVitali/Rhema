@@ -390,6 +390,11 @@ jobs:
       # can change the ingestion surface — so it runs on every head.
       - name: never-cookies — no credential field/header/input on the ingestion surface (AC-I-B, REQ-INGEST-5)
         run: pnpm check:no-cookies
+      # R7DEM.1 always-run guard (REQ-CORPUS-2): a corpus byte can enter permanent public history
+      # via any diff — the denylist checker is self-contained (no install needed), so it runs on
+      # every head alongside gitleaks.
+      - name: demo-corpus denylist gate (REQ-CORPUS-2)
+        run: pnpm check:demo-corpus
       # REQ-SAFE-7 (SPA.1): gzip ceilings over public/spa — runs AFTER the SPA build (fail-closed if
       # the manifest is absent) and after the scan gates, per the REQ-SAFE-9 step order.
       - name: SPA bundle budget (REQ-SAFE-7)

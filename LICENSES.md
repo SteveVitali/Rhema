@@ -55,3 +55,14 @@ is resolved from an external `RHEMA_EVALS_PATH`; [`evals-stub`](evals-stub/) sup
 fallback when it is unset.
 
 These boundaries also apply to history, generated artifacts, fixtures, and logs. The marker gate checks specific public outputs; it is not an audit of everything a GitHub visibility change would expose. See [open-source readiness](docs/open-source-readiness.md) for the release work that remains. Evaluation text must never enter a client bundle, OpenAPI document, or event payload; protocol text is public by choice but is likewise kept out of shipped client artifacts by the marker gate.
+
+## Content outside the MIT grant
+
+The demo corpus under `packages/demo-corpus/corpus/**` — and corpus-derived `snapshots/**` and
+`goldens/**` — is licensed content, not source code: it is the collected record of essays authored
+by **S. J. Sebastian** (pen name; GD-DEMO-BYLINE.R7), licensed under
+[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) (GD-DEMO-LICENSE.R7, ADR-127,
+REQ-DOPS-3). The legal code ships as `packages/demo-corpus/LICENSE`. Scope: corpus content and its
+derivatives only — the package's `src/` code, the invented synthetic fixture, and the rest of the
+repository remain MIT. The carve-out is recorded as a `"type":"asset"` entry in
+`licenses.exceptions.json`.

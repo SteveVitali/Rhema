@@ -701,6 +701,8 @@ importers:
         specifier: ^0.31.4
         version: 0.31.10
 
+  packages/demo-corpus: {}
+
   packages/editor:
     dependencies:
       '@rhema/contracts':
@@ -1205,6 +1207,12 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+
+  tools/demo-corpus:
+    dependencies:
+      '@rhema/demo-corpus':
+        specifier: workspace:*
+        version: link:../../packages/demo-corpus
 
   tools/eslint-plugin-rhema: {}
 

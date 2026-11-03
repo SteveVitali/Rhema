@@ -1,0 +1,11 @@
+{
+  "name": "@rhema/demo-corpus-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operator-run CLIs for the demo corpus: deterministic export and the always-run denylist gate (REQ-CORPUS-2/11).",
+  "license": "MIT",
+  "dependencies": {
+    "@rhema/demo-corpus": "workspace:*"
+  }
+}
