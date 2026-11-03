@@ -714,6 +714,146 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     // funded window eventually runs MUST post it (`cogsLeversFor` is the read seam).
     cogsLevers: { testCheapRoute: false },
   },
+  // ---- round 7 (R7OPEN.1; REQ-DACC-8) — every D*/U* leg + the two sub-assertions ----------
+  // All enter `expected:"red"`, `paid:false`, each with a wired owed-stub (r7legs.ts) that fails
+  // loudly — the nightly reports `owed`, never a run failure, and a leg can never "pass" before
+  // its owner lands the real body (spec §4.17/§10; RV-13). One owner per row; the phase deploys
+  // (224 R7a, 250 R7b) and 248 (D2.tour only, P4-23) are the sanctioned flippers under
+  // GD-PREVIEW.R7 — the nightly runs `main`'s registry against prod and no owner has a preview.
+  {
+    id: "D1.hub",
+    journey: "new-visitor",
+    asserts:
+      "/demo meets N10's public-page invariants (distinct title, one <h1>, meta, favicon); the four essay cards are visible and actionable; the persistent provenance banner renders; the landing + /showcase entry links resolve to /demo (REQ-TOUR-1/8, REQ-DACC-1)",
+    owner: "R7DEM.5b",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "D2.tour",
+    journey: "new-visitor",
+    asserts:
+      "the full guided tour on Structure of Political Difference end to end: each coach mark visible with its DOM-contract target un-occluded, Next/Back actionable, the route change through the expected mechanism, and the final CTA → /signup?src=demo (REQ-TOUR-2, REQ-DACC-2; 248 R7TOUR.2 is the sanctioned re-flipper, P4-23)",
+    owner: "R7DEM.6a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "D3.readonly",
+    journey: "both",
+    asserts:
+      "demo pages make zero same-origin non-GET requests except the REQ-TOUR-9 POST, open no EventSource/WebSocket, serve no 4xx/5xx, and mount no mutation forms or contenteditable (REQ-DACC-3, REQ-DWEB-14)",
+    owner: "R7DEM.5",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "P1.demo",
+    journey: "phone",
+    asserts:
+      "demo Pages at 390 and 320 px: no overflow, axe clean, the SPA-compact render holds and REQ-UX-10's desktop-capability subtree never mounts (REQ-DACC-4 restated — NOT the phone reader contract)",
+    owner: "R7DEM.4b",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // R7OPEN.1 picked `R11.demo` — the next free R number + `.demo` (spec §10's "R*.demo" leg).
+    id: "R11.demo",
+    journey: "returning",
+    asserts:
+      "signed-in /demo renders the same content as the logged-out walk (returningUser('a'), never a fresh signup — cohort hygiene per R4 §6) (REQ-DACC-5)",
+    owner: "R7DEM.4b",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U1.shell",
+    journey: "returning",
+    asserts:
+      "one AppShell wraps every authenticated leaf: the persistent collapsible left sidebar carries wordmark/New project/Search/recents/Inbox(badge)/Voices/Usage/Settings/Demo/account menu, and pending/error/404 states render inside it (REQ-SHELL-1/2, REQ-DACC-7)",
+    owner: "R7SHELL.1a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U2.noreload",
+    journey: "returning",
+    asserts:
+      "the scripted walk list → project → dossier → compare → export → settings → inbox → chat send → gate approve → Showcase → back performs zero document loads (navigation entries stay 1, the window marker persists; S-14's named document navigations excluded) (REQ-RELOAD-6/REQ-GUARD-3, REQ-DACC-7)",
+    owner: "R7RELOAD.1",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U3.occlusion",
+    journey: "returning",
+    asserts:
+      "at 1440×900, 1280×800, 1024×768, 820×1180 and 390×844 emulated: zero intersection between the Page text column / dossier letter column / tour targets and any un-scrimmed panel, and no main column below 45 ch at ≥768 px (REQ-PANE-4/REQ-GUARD-4, REQ-DACC-7)",
+    owner: "R7PANE.1",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U4.controls",
+    journey: "returning",
+    asserts:
+      "the computed-style probe finds zero native-styled buttons/inputs/selects/textareas on the 12 migrated surfaces (REQ-GUARD-1, REQ-DACC-7)",
+    owner: "R7KIT.3e",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U5.write",
+    journey: "returning",
+    asserts:
+      "new project → inline title → type in the blank Page → format bubble above the selection → comment lands anchored Guidance → focus mode in/out → source toggle (REQ-WRITE-1/2/4/5, REQ-HOME-3; REQ-DACC-7)",
+    owner: "R7WRITE.1b",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // P4-25: U6 is NEVER a paid:true row — the one manual paid run is R7DEP.2's act (CLI one-shot
+    // or the updated R4 leg). This free leg drives a stubbed turn only.
+    id: "U6.chat",
+    journey: "returning",
+    asserts:
+      "a stubbed chat turn returns the JSON 201 with its turn id, progress events stream over the run-event channel with no document reload, and the reply renders on completion (REQ-TALK-3, REQ-DACC-7)",
+    owner: "R7TALK.1a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "U7.import",
+    journey: "returning",
+    asserts:
+      "pasting markdown with a leading # H1 keeps the H1 as the title, the typeset preview lists any normalization in Conversion notes, and the imported draft is immediately editable (REQ-HOME-4/5, REQ-DACC-7)",
+    owner: "R7HOME.2a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // Sub-assertion: the R7a stopgap probe — REQ-PANE-0 needs R7a browser evidence while U3's
+    // owner is R7b. 224_R7DEP.1 flips it at the R7a phase preview.
+    id: "U3.stopgap",
+    journey: "returning",
+    asserts:
+      "the stopgap geometry: the 1024–1279 overlay and the <1024 sheet carry a scrim + Esc/outside-click dismiss, are closed by default and never persisted from overlay mode, the page column reflows at ≥1280 with Files open, and the Desk head is never occluded by the status bar (REQ-PANE-0)",
+    owner: "R7FIX.1",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // Sub-assertion: the SPA renderer re-expectation for the signed-in Showcase (REQ-DACC-6) —
+    // enters red so the nightly can't re-redden before R7DEP.1 deploys; the existing green
+    // R8.showcase row is untouched.
+    id: "R8.showcase.spa",
+    journey: "returning",
+    asserts:
+      "the signed-in Showcase resolves to the workspace Showcase rendered data-renderer=\"spa\" (REQ-DACC-6, REQ-RELOAD-5 — the ReadOnlyProject SPA arm)",
+    owner: "R7RO.1",
+    expected: "red",
+    paid: false,
+  },
 ];
 
 export function stepById(id: string): JourneyStep | undefined {
