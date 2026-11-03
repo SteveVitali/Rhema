@@ -1,0 +1,29 @@
+{
+  "$comment": "Synthetic file-targeted rewrites — the fixture's own _rules data exercising the reader this package owns (the real rows are 214b's). Schema: id + file (project-relative source path) + line (1-based) + literal pattern → replacement + reason; a stale row fails the export.",
+  "rewrites": [
+    {
+      "id": "rw-operator-writer",
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 3,
+      "pattern": "by operator \"approved,",
+      "replacement": "by the writer \"approved,",
+      "reason": "workflow-sense role vocabulary — 'operator' becomes 'the writer' (S-10), never 'the author'"
+    },
+    {
+      "id": "rw-operator-writer-2",
+      "file": "agents/author/drafting/v1/04-draft-ledger.md",
+      "line": 12,
+      "pattern": "by operator \"go ahead\"",
+      "replacement": "by the writer \"go ahead\"",
+      "reason": "workflow-sense role vocabulary — 'operator' becomes 'the writer' (S-10), never 'the author'"
+    },
+    {
+      "id": "rw-utm-prose",
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 9,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    }
+  ]
+}

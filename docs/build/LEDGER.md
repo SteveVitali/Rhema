@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      R7DEM.1            # row 214 — out of order (GD-ORDER.R7): 200_R6WATCH.1 + R6 tail resume on their clock (≥ 2026-11-11)
-lastCompleted:   R7COPY.0           # 2026-11-03 — retire generated walkthrough; record-composed run card; one run state, one count ($0; PR #244 on stevevitali/r7fix-1-pane-stopgap, unmerged; mergePolicy OPERATOR)
+nextTicket:      214b_R7DEM.1b      # row 214b — out of order (GD-ORDER.R7): 200_R6WATCH.1 + R6 tail resume on their clock (≥ 2026-11-11)
+lastCompleted:   R7DEM.1            # 2026-11-03 — @rhema/demo-corpus: allowlist exporter, sanitizer, denylist gate, PROVENANCE, synthetic fixture, licence carve-out ($0; PR #245 on stevevitali/r7copy-0-run-card, unmerged; mergePolicy OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,13 +34,13 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/r7-demo-spec  # round 7 forks from main HEAD (a34eb51) via the planning/decompose branch (spec §2)
 pinnedBaseSha:   a34eb51           # round-7 fork point (main HEAD 2026-11-03); round-4 stack fork: fab08ed; round-1..3: bbb5d81
-chainTip:        stevevitali/r7copy-0-run-card     # R7COPY.0 PR #244. Prior: stevevitali/r7fix-1-pane-stopgap (R7FIX.1 PR #243); Prior: stevevitali/r7ro-1-read-only (R7RO.1 PR #242); stevevitali/r7kit-1-control-base (R7KIT.1 PR #241); stevevitali/r7open-1-open-round (R7OPEN.1 PR #240); stevevitali/r7-demo-spec (planning/decompose); stevevitali/r6dep-4-limiter-deploy (prod last recorded 4938b8e)
+chainTip:        stevevitali/r7dem-1-corpus-export # R7DEM.1 PR #245. Prior: stevevitali/r7copy-0-run-card (R7COPY.0 PR #244); stevevitali/r7fix-1-pane-stopgap (R7FIX.1 PR #243); stevevitali/r7ro-1-read-only (R7RO.1 PR #242); stevevitali/r7kit-1-control-base (R7KIT.1 PR #241); stevevitali/r7open-1-open-round (R7OPEN.1 PR #240); stevevitali/r7-demo-spec (planning/decompose); stevevitali/r6dep-4-limiter-deploy (prod last recorded 4938b8e)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           7                  # public demo + UX overhaul — spec docs/round-7-draft-spec.md v0.2 (ratified 2026-11-03); phases R7a (demo + must-fix) → R7b (UX overhaul)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — round-7 planning/decomposition ran in claude-code/claude-opus-5.5; the drive resumes on devin-desktop/swe-2-high at the pre-209 boundary (the legal switch point)
-updatedAt:       2026-11-03T23:1xZ            # R7FIX.1 done — pane stopgap + Desk head + focus exit (PR #243, unmerged)
+updatedAt:       2026-11-03T23:11:56Z            # R7DEM.1 done — corpus exporter + fixture + licence carve-out (PR #245, unmerged)
 ```
 
 ## OPEN FINDINGS

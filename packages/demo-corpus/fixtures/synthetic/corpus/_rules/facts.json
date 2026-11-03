@@ -1,0 +1,13 @@
+{
+  "$comment": "Structured round/approval facts — the only facts PROVENANCE.md and S-9 may cite; anything not stated here is 'not recorded'. Synthetic values; the real facts are authored by 214b from the round logs without rendering them.",
+  "slugs": {
+    "the-borrowed-commons": {
+      "sourceCommit": "synthetic fixture (invented; no upstream HEAD)",
+      "writerDirected": ["v3"],
+      "approvals": [
+        { "round": "v1 review", "decision": "revision plan approved", "note": "recorded in the round log" },
+        { "round": "v2 review", "decision": "approved to publish" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "refs": [
+    {
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 4,
+      "excluded": "agents/author/outline/01-outline.md"
+    },
+    {
+      "file": "drafts/v1.md",
+      "line": 21,
+      "excluded": "agents/author/outline/01-outline.md"
+    },
+    {
+      "file": "drafts/v1.md",
+      "line": 27,
+      "excluded": "manifest.md"
+    }
+  ]
+}

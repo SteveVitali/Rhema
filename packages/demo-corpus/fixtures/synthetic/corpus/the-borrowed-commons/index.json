@@ -1,0 +1,209 @@
+{
+  "slug": "the-borrowed-commons",
+  "artifacts": [
+    {
+      "path": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "bytes": 531,
+      "sha256": "bea87a15cca6e4726083a2e8139b2c6cfc95faf48e1320d4cccd7f83fa53515e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/01-voice-brief.md",
+      "bytes": 301,
+      "sha256": "040310d024fca661d4a57d7c81f6704d88de064dcaa56f0cfb4d91e6c0e07399",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/02-structure-plan.md",
+      "bytes": 550,
+      "sha256": "9e2b6915e87891f83ee44928fb9ee33832d7cf5089a6b36541669c79efee36ee",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/03-claim-ledger.md",
+      "bytes": 311,
+      "sha256": "9e362f78028f702070d0845dab33a27520af578234731a06f2c106c684a025b0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/04-draft-ledger.md",
+      "bytes": 408,
+      "sha256": "0a7f38ac6c01951280ee6fcad372504b6aa0a18499a70f2dd86edd58d3c19c29",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "bytes": 238,
+      "sha256": "ce9e9d0445314ccd30c88c88462549fdf0c93336ee63010f406cd4decde65e30",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/ledgers/v1-response-ledger.md",
+      "bytes": 1462,
+      "sha256": "0f8ebad21019c9333e0eb40b9b65fed5765350589647b5068efd3ffadfeb0cc5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/ledgers/v2-response-ledger.md",
+      "bytes": 620,
+      "sha256": "1cbc03dccab0fa75572998683ec9f20767d2ac2c92edfbeff63a8675587817af",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/index.md",
+      "bytes": 264,
+      "sha256": "d291329998b1877dc436f6408e40b6c12c2314026b9e0d0a5a0e57fce05b277b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ekwueme-commons-2019.md",
+      "bytes": 263,
+      "sha256": "8c2fdcf8962d457c9ec908a896f485e0619dd7b3bb0975a7e9963cd525ddca75",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/marsh-viscosity-2021.md",
+      "bytes": 297,
+      "sha256": "6340770edb050635c16174849a22b56dbf7f15c9715956294744ed34210cca8f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ondatje-ledger-2024.md",
+      "bytes": 319,
+      "sha256": "22f549a305baa1fc2c21433597c210215e95ea330d0afabb228cc27fe15e82c2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/index.md",
+      "bytes": 192,
+      "sha256": "59db17c0878f496037b3d24b9ccf1094ec6d2e9447f2577d3eaab1217e21d220",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/freeform-gazette-note.md",
+      "bytes": 344,
+      "sha256": "10fb50f2c6342ce4b1568ca424db70e3f9495789379dd4a64e86cd9a3311ad7f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/workdocs-log-note.md",
+      "bytes": 322,
+      "sha256": "68856009dd0434a16ec515efb8be2b0222d797b847ca4d09c724f4ea27f37c9a",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-drafting-note.md",
+      "bytes": 303,
+      "sha256": "e6c13bdb5597062244c2fb74d3d4432d016985c253e41c6b1dbc058b9968374a",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-response.md",
+      "bytes": 563,
+      "sha256": "522290ce8323567f2b436f0010d6c4ba1a341cb9da4651e40990dd5e59eebd23",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/00-piece-brief.md",
+      "bytes": 395,
+      "sha256": "b33f732798d6523ab4e81c090a9e5cceea36bcedd57aae0df94ff1713924f50b",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/01-claim-ledger.md",
+      "bytes": 2669,
+      "sha256": "706e4c6cee57a065a0010acae99e2c62d8630551e546864224c456f388544900",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/02-discourse-report.md",
+      "bytes": 324,
+      "sha256": "32e85931b412bd83e2342dc0054c6afe461ef277abddb93e535bf0fff1c73112",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/03-argument-notes.md",
+      "bytes": 226,
+      "sha256": "8339d9fe6b97876d1600e104129b648a05461f33358f8571eec0325460c71a68",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/04-craft-notes.md",
+      "bytes": 223,
+      "sha256": "3964dc97173b112db2f680fa315d9bb232006700f715e5263f762f9f1bbaccd4",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/05-second-read.md",
+      "bytes": 717,
+      "sha256": "ff121b53c66059f117c6d706b482816356a9eb5296da1e2a52476a71af3b0134",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/editors-letter.md",
+      "bytes": 2648,
+      "sha256": "e867395f6eb9ff127a6cdd290dfeb85ca2729699a15eece7cbc13cd504e2f02b",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-response.md",
+      "bytes": 311,
+      "sha256": "0dffab696138db64957a0f3409cce35e0e3efea1b7ae9e2b61a054ddfbc78a61",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/01-claim-ledger.md",
+      "bytes": 716,
+      "sha256": "ee35ff06abe060d527eb95857101b9f3b07745ae7041461c067d10401c0523e9",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/editors-letter.md",
+      "bytes": 630,
+      "sha256": "418b139b91e707dadf1ddc40408625a457f7115344b77d01d2b87a6dc6fabd47",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/figures/figure_1_signal_map.png",
+      "bytes": 161,
+      "sha256": "3a17c0502cfb2958d34d38f147ed7d305dceea8f5be5b2918336ab5109614331",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_2_load_curve.png",
+      "bytes": 123,
+      "sha256": "52c5084f4e93459ab8f00164a5853dcaebaed7fb9e66e2be5874043ba009cd3f",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/taxonomy_reference_sheet.md",
+      "bytes": 221,
+      "sha256": "c1dcf3024dd98f6933960790745c3878c864c745fc1562363ccd7e804a520bec",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v1.md",
+      "bytes": 3258,
+      "sha256": "d4af4af4a5170b1be7ded2558558d1928625927437bde1f63c6fc18498115d77",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v2.md",
+      "bytes": 3308,
+      "sha256": "6ec25cf8d384d471b8ceafe5e17bbf265a8d49c275dc8c5ba329f98eb8f55c4e",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v3.md",
+      "bytes": 3335,
+      "sha256": "d8f14ca531b9eae3985645e77f320c41e1ebec402c5aee91435f3062b14a6bf5",
+      "kind": "markdown"
+    },
+    {
+      "path": "published.md",
+      "bytes": 528,
+      "sha256": "38b5136408400f858a674b09791d1f0d1db8e7b4181b50468f04fafb72a51a3b",
+      "kind": "markdown"
+    }
+  ]
+}
