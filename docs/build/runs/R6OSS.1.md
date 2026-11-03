@@ -163,4 +163,4 @@ committed. Verify: turbo 135/135; vitest 518 files pass / 1 skip — one self-in
 (`.pnpmfile.cjs` comment edit changed `pnpmfileChecksum`, failing `privsep.docker` inside
 `--frozen-lockfile`); lockfile checksum refreshed in the same commit, docker leg re-verified
 green. check-build-memory 0 violations; append-only OK; prettier clean on touched docs.
-ci: read by `ci-boundary --ledger --ticket R6OSS.1` at the closeout head.
+ci: **pending #236@`1824e6c`** — `ci-boundary --ledger --ticket R6OSS.1` ran against the closeout head: run 41579679486, `fast-path` pass (35 s), `typecheck / lint / unit` in flight at close; the bounded re-read records its verdict to `docs/build/logs/ci-R6OSS.1.json`.
