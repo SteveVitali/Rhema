@@ -154,12 +154,12 @@ jobs:
           # the app-login pool; an app-login bind would fail the probe closed regardless (the
           # guard checks the ROLE, not the env flag). Secret absent ⇒ no export ⇒ the scheduled
           # cron's no-db attestation stands verbatim; a non-cron --paid without it still refuses
-          # in paidDispatchPreflight. Diagnostic prints ONLY the DSN username — never the
-          # password/host payload.
+          # in paidDispatchPreflight. The rewritten URL is exported only — no part of the
+          # DSN is ever printed (R6HRD.1 removed the `journey dsn user:` diagnostic; the
+          # tunnel is proven now).
           if [ -n "${JOURNEY_DATABASE_URL_BOUND:-}" ]; then
             export JOURNEY_DATABASE_URL="$(node -e '
               const u = new URL(process.env.JOURNEY_DATABASE_URL_BOUND);
-              console.error("journey dsn user:", u.username);
               u.hostname = "127.0.0.1"; u.port = "15433";
               for (const k of [...u.searchParams.keys()]) if (/^ssl/i.test(k)) u.searchParams.delete(k);
               u.searchParams.set("sslmode", "disable");
