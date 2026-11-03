@@ -387,6 +387,7 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 201 | `201_R6CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-6 REQ coverage + §7 accounting completeness | — |
 | 202 | `202_R6CAP.3__capstone-closure.md` | tail | **capstone** — routed gaps + accepted-deviations draft | — |
 | 203 | `203_GATE-ACCEPT.R6__accepted-deviations.md` | tail | **gate** — operator signs the R6 deviations list | operator |
+| 204 | `204_R6OSS.1__open-source-readiness.md` | tail | open-source readiness: ADR-002 reversal + history/PII audit + OSS hygiene (flip = operator) | — |
 | 204 | `204_R6REC.1__backlog-and-readiness.md` | tail | **reconcile** — backlog + readiness; G2/H2 re-home; roadmap; owned obligations | — |
 | 205 | `205_R6REC.2__spec-reconciliation.md` | tail | **reconcile** — spec fold-back (ADR-111/112/113) | — |
 | 206 | `206_R6REC.3__integration-plan.md` | tail | **reconcile** — §R6 merge plan (never merges) | — |
