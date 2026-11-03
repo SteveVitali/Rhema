@@ -88,7 +88,7 @@ bundle — the four items are findings/cleanups, not deferral carriers. `D-R6INF
 | Live: template+instance metadata show no `database-url`; proxy boots + serves via VIP | live — `instance-templates describe`, `instances describe`, backend health, serial/boot log |
 | journeys.yml has no `journey dsn user` line | unit — workflow source grep (+ workflow-env tests stay green) |
 | `plink_1UVxKU…` inactive on Stripe | live — API `active:false` response |
-| Verify | `pnpm turbo build lint typecheck`; `pnpm test` touched pkgs; check-build-memory; append-only vs `d2bd2c4` |
+| Verify | `pnpm turbo build lint typecheck`; `pnpm test` touched pkgs; check-build-memory; append-only vs `d2bd2c4`; ci: pass #235@f0854ed |
 
 ## Progress
 
