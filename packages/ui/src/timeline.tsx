@@ -66,33 +66,64 @@ export interface TimelineHrefs {
   /** resolve a run id → its delivered-dossier href (open_deliverable). */
   readonly deliverableHref?: (runId: string) => string;
   /** resolve a run id → each steering POST target. */
-  readonly steeringHref?: (runId: string, action: "pause" | "stop" | "resume" | "note" | "cancel" | "walkthrough") => string;
+  readonly steeringHref?: (
+    runId: string,
+    action: "pause" | "stop" | "resume" | "note" | "cancel",
+  ) => string;
   /** a waiting_gate run's gate-card href. */
   readonly gateHref?: (runId: string) => string;
+  /** R7COPY.0 (REQ-COPY-4) — resolve a delivered link key (dossier | letter | ledger) per run. */
+  readonly deliveredLinkHref?: (runId: string, key: string) => string;
   /** a `vN` chip's page href. */
   readonly versionHref?: (n: number) => string;
   /** the run-sheet href for one of the three verbs (§5.5 "each opens the run sheet"). */
   readonly verbHref?: (verb: "draft" | "review" | "revise") => string;
 }
 
-function VersionChip({ n, labels, hrefs }: { n: number; labels: TimelineLabels; hrefs?: TimelineHrefs }): ReactNode {
+function VersionChip({
+  n,
+  labels,
+  hrefs,
+}: {
+  n: number;
+  labels: TimelineLabels;
+  hrefs?: TimelineHrefs;
+}): ReactNode {
   const text = labels.versionLabel(n);
-  const style = { fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" } as const;
+  const style = {
+    fontSize: "12px",
+    color: "var(--shell-fg-muted)",
+    fontVariantNumeric: "tabular-nums",
+  } as const;
   const href = hrefs?.versionHref?.(n);
   return (
     <span data-version-chip={n} style={style}>
-      {href ? <a href={href} style={{ color: "inherit" }}>{text}</a> : text}
+      {href ? (
+        <a href={href} style={{ color: "inherit" }}>
+          {text}
+        </a>
+      ) : (
+        text
+      )}
     </span>
   );
 }
 
-function CollapsedSummary({ parts, labels }: { parts: readonly RoundSummaryPart[]; labels: TimelineLabels }): ReactNode {
+function CollapsedSummary({
+  parts,
+  labels,
+}: {
+  parts: readonly RoundSummaryPart[];
+  labels: TimelineLabels;
+}): ReactNode {
   return (
     <p data-round-summary style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
       {parts.map((p, i) => (
         <span key={i}>
           {i > 0 ? ` ${labels.arrow} ` : ""}
-          {p.kind === "version" ? labels.versionLabel(p.n) : labels.workflowLabel(p.workflow, p.count)}
+          {p.kind === "version"
+            ? labels.versionLabel(p.n)
+            : labels.workflowLabel(p.workflow, p.count)}
         </span>
       ))}
     </p>
@@ -106,9 +137,11 @@ function cardHrefs(runId: string, hrefs?: TimelineHrefs): RunCardHrefs {
     cancel: hrefs?.steeringHref?.(runId, "cancel"),
     resume: hrefs?.steeringHref?.(runId, "resume"),
     note: hrefs?.steeringHref?.(runId, "note"),
-    retryWalkthrough: hrefs?.steeringHref?.(runId, "walkthrough"),
     report: hrefs?.reportHref?.(runId),
     deliverable: hrefs?.deliverableHref?.(runId),
+    deliveredLink: hrefs?.deliveredLinkHref
+      ? (key) => hrefs.deliveredLinkHref!(runId, key)
+      : undefined,
     gate: hrefs?.gateHref?.(runId),
   };
 }
@@ -174,7 +207,14 @@ export function TimelinePane({
               key={v}
               href={hrefs.verbHref!(v)}
               data-verb={v}
-              style={{ fontSize: "12px", padding: "3px 10px", borderRadius: "999px", border: "1px solid var(--shell-border)", color: "var(--shell-fg)", textDecoration: "none" }}
+              style={{
+                fontSize: "12px",
+                padding: "3px 10px",
+                borderRadius: "999px",
+                border: "1px solid var(--shell-border)",
+                color: "var(--shell-fg)",
+                textDecoration: "none",
+              }}
             >
               {labels.verbLabel!(v)} ▾
             </a>
@@ -183,7 +223,16 @@ export function TimelinePane({
       ) : null}
       {/* the next-step card (§5.5 — above the newest round) */}
       {next.verb !== "none" ? (
-        <div data-next-step={next.verb} style={{ border: "1px solid var(--shell-border)", borderRadius: "12px", padding: "12px 16px", marginBottom: "14px", background: "var(--shell-raised)" }}>
+        <div
+          data-next-step={next.verb}
+          style={{
+            border: "1px solid var(--shell-border)",
+            borderRadius: "12px",
+            padding: "12px 16px",
+            marginBottom: "14px",
+            background: "var(--shell-raised)",
+          }}
+        >
           {hrefs?.nextStep ? (
             <a href={hrefs.nextStep} style={{ fontWeight: 600, color: "var(--shell-fg)" }}>
               {nextLabel}
@@ -192,12 +241,27 @@ export function TimelinePane({
             <span style={{ fontWeight: 600 }}>{nextLabel}</span>
           )}
           {next.estimateCredits != null && labels.estimateLabel ? (
-            <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+            <span
+              style={{
+                marginLeft: "8px",
+                fontSize: "12px",
+                color: "var(--shell-fg-muted)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               {labels.estimateLabel(next.estimateCredits)}
             </span>
           ) : null}
           {next.duration != null ? (
-            <span data-next-step-duration style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-faint)", fontVariantNumeric: "tabular-nums" }}>
+            <span
+              data-next-step-duration
+              style={{
+                marginLeft: "8px",
+                fontSize: "12px",
+                color: "var(--shell-fg-faint)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               ~{next.duration.lowMinutes}–{next.duration.highMinutes} min
             </span>
           ) : null}
@@ -213,7 +277,14 @@ export function TimelinePane({
           <CollapsedSummary parts={round.parts} labels={labels} />
           <ul style={{ listStyle: "none", margin: "8px 0", padding: 0 }}>
             {round.runs.map((run) => (
-              <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} {...(renderGateCard ? { renderGateCard } : {})} />
+              <RunRow
+                key={run.runId}
+                run={run}
+                labels={labels}
+                cardLabels={cardLabels}
+                hrefs={hrefs}
+                {...(renderGateCard ? { renderGateCard } : {})}
+              />
             ))}
           </ul>
           {round.anchor ? <VersionChip n={round.anchor.n} labels={labels} hrefs={hrefs} /> : null}
@@ -229,13 +300,23 @@ export function TimelinePane({
       {view.ungrouped.length > 0 ? (
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {view.ungrouped.map((run) => (
-            <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} {...(renderGateCard ? { renderGateCard } : {})} />
+            <RunRow
+              key={run.runId}
+              run={run}
+              labels={labels}
+              cardLabels={cardLabels}
+              hrefs={hrefs}
+              {...(renderGateCard ? { renderGateCard } : {})}
+            />
           ))}
         </ul>
       ) : null}
 
       {view.originChip ? (
-        <p data-origin-chip={view.originChip.kind} style={{ marginTop: "8px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+        <p
+          data-origin-chip={view.originChip.kind}
+          style={{ marginTop: "8px", fontSize: "12px", color: "var(--shell-fg-faint)" }}
+        >
           {labels.originChipLabel(view.originChip.kind)}
         </p>
       ) : null}

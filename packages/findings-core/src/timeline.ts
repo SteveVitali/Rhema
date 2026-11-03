@@ -5,8 +5,7 @@
 // rounds in display order. No prose is generated here — collapsed summaries are PARTS the caller's copy
 // table renders (the count joins the workflow label at render time, REQ-SPEC-2 vocabulary stays verbatim).
 
-import type { RunState } from "@rhema/contracts";
-import type { RunCardView } from "./run-card.js";
+import type { RunSummaryView } from "./run-card.js";
 import type { GateCardWire } from "./gate-card.js";
 
 /** A draft version row the timeline needs (the `vN` chips + round anchors). */
@@ -22,16 +21,10 @@ export interface TimelineDraft {
  * review/revise key on `inputs.draftId` (the reviewed/base draft); a draft run keys on the version it
  * produced (`inputs.nextDraftId`); runs with neither land in the ungrouped tail.
  */
-export interface TimelineRun {
-  readonly runId: string;
-  readonly workflow: string;
-  readonly state: RunState;
-  readonly createdAt: string;
+export interface TimelineRun extends RunSummaryView {
   readonly subjectN: number | null;
   /** the draft ordinal the run PRODUCED (a draft/revise run's `nextDraftId`), when known. */
   readonly producedN: number | null;
-  /** the run's card view, already built from whitelisted facts (REQ-IDE-11). */
-  readonly card: RunCardView;
   /**
    * P1.09 (§6.4) — the run's UNRESOLVED approval as the full card DTO, so the Timeline renders the
    * identical approve-with-deadline card the Needs-you surface mounts (same fields, same anatomy).
@@ -96,7 +89,11 @@ export function collapsedRoundParts(round: TimelineRound): RoundSummaryPart[] {
   const parts: RoundSummaryPart[] = [{ kind: "version", n: round.n }];
   for (const run of round.runs) {
     const chip = run.card.deliverables.find((d) => d.key === "findings" || d.key === "moves");
-    parts.push({ kind: "run", workflow: run.workflow, ...(chip?.count != null ? { count: chip.count } : {}) });
+    parts.push({
+      kind: "run",
+      workflow: run.workflow,
+      ...(chip?.count != null ? { count: chip.count } : {}),
+    });
   }
   if (round.producedN != null) parts.push({ kind: "version", n: round.producedN });
   return parts;
@@ -108,7 +105,18 @@ export function collapsedRoundParts(round: TimelineRound): RoundSummaryPart[] {
  * card's controlled verb. `run`/`approval` yield a next-step card pointing at the live surface instead of
  * a launcher.
  */
-export type NextStepVerb = "draft" | "review" | "revise" | "read_letter" | "outline" | "export" | "archive" | "run" | "approval" | "start" | "none";
+export type NextStepVerb =
+  | "draft"
+  | "review"
+  | "revise"
+  | "read_letter"
+  | "outline"
+  | "export"
+  | "archive"
+  | "run"
+  | "approval"
+  | "start"
+  | "none";
 
 export function nextStepVerb(suggestedNext: string): NextStepVerb {
   switch (suggestedNext) {

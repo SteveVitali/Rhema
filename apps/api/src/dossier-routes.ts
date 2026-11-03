@@ -5,25 +5,34 @@
 // findings-core read model, `claims` + `claim_sources` joined to the run's proxy `fetch_log` (the
 // cited⇒fetched chip source), the editors-letter markdown → letter sections (finding refs join through the
 // rows' `letter_section` slots, never by parsing agent prose for links), `buildAccessReport` re-derived
-// for the trust chip (REQ-PROD-2), `deriveRunCardInput` over the run's own event stream (REQ-IDE-11 — only
-// whitelisted orchestrator event types feed the card), and the `revision_obligations` counts for the
-// obligation summary + per-finding state chips (REQ-OBJ-6).
+// for the trust chip (REQ-PROD-2), the ONE `RunSummaryView` card (REQ-SYNC-1 — the same SQL-fact
+// assembly the Timeline mounts, never an event-derived projection), and the `revision_obligations`
+// counts for the obligation summary + per-finding state chips (REQ-OBJ-6).
 
 import { Hono } from "hono";
 import { buildAccessReport, type ContentStore } from "@rhema/mirror";
 import {
   buildFindingView,
-  deriveRunCardInput,
+  buildRunCardView,
+  composeDeliveredSummary,
+  deliveredRecordCounts,
   normalizeEvidence,
+  parseLetterSections,
+  SLOT_PATTERNS,
+  type DeliveredFindingFact,
+  type DeliverableChip,
   type DispositionState,
   type RubricRowInput,
-  type RunEventLike,
+  type RunSummaryView,
 } from "@rhema/findings-core";
-import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
+// (WORKFLOW_MANIFESTS import removed — the card's phase shape now comes from the shared
+//  `phasesForRun` in timeline-routes.ts, which resolves the manifest itself.)
 import type { Actor, Claim, ClaimSource, Finding, ObligationState } from "@rhema/contracts";
 import { deliveryLabelFromRow } from "@rhema/contracts";
 import { scopeChip, type ScopeRef } from "@rhema/commands";
 import type { Principal } from "./run-routes.js";
+import { parseInputs, phasesForRun } from "./timeline-routes.js";
+import { loadRunDecisions } from "./gate-dto.js";
 import type { SqlClient } from "./invite.js";
 import type { TxRunner, IdFactory } from "@rhema/orchestrator";
 import { recordAnalyticsEvent } from "@rhema/ledger";
@@ -42,67 +51,13 @@ export interface DossierApiDeps {
 }
 
 // ---------------------------------------------------------------- letter parsing
+// R7COPY.0 — `parseLetterSections` + `SLOT_PATTERNS` moved to @rhema/findings-core
+// (`delivered-summary.ts`) so the record-composed run card's verdict rule shares them; the
+// re-export keeps existing importers working.
+export { parseLetterSections, SLOT_PATTERNS };
 
-interface LetterSectionOut {
-  readonly id: string;
-  readonly title: string;
-  readonly paragraphs: readonly string[];
-  readonly findingRefs?: readonly { readonly findingId: string; readonly label: string }[];
-}
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
-
-/**
- * The finding rows' `letter_section` slots (the canonical §11.3 enum) → the heading a real letter gives
- * that slot. The letter's headings are free prose, so the join is by ordered pattern, first match wins —
- * a slot whose pattern no heading matches simply gets no refs (the finding cards still render; nothing is
- * fabricated into a section that doesn't exist).
- */
-const SLOT_PATTERNS: Readonly<Record<string, readonly RegExp[]>> = {
-  one_thing: [/^verdict\b/i, /one thing/i],
-  major: [/major/i],
-  strength: [/strength/i],
-  roadmap: [/roadmap/i, /revision/i],
-  considered_rejected: [/considered/i],
-};
-
-/** Split the editors-letter markdown on `## ` headings → letter sections with paragraph bodies. */
-export function parseLetterSections(markdown: string): LetterSectionOut[] {
-  const lines = markdown.split("\n");
-  const sections: { id: string; title: string; paras: string[] }[] = [];
-  let cur: { id: string; title: string; paras: string[] } | null = null;
-  let buf: string[] = [];
-  const flushPara = (): void => {
-    const p = buf.join("\n").trim();
-    if (cur && p !== "") cur.paras.push(p);
-    buf = [];
-  };
-  for (const line of lines) {
-    const h2 = /^##\s+(.+)$/.exec(line);
-    const h1 = /^#\s+/.test(line);
-    if (h1) continue; // the letter's own H1 is the title, not a section
-    if (h2) {
-      flushPara();
-      if (cur) sections.push(cur);
-      const title = h2[1]!.trim();
-      cur = { id: slugify(title), title, paras: [] };
-      continue;
-    }
-    if (cur) {
-      if (line.trim() === "") flushPara();
-      else buf.push(line);
-    }
-  }
-  flushPara();
-  if (cur) sections.push(cur);
-  return sections.map((s) => ({ id: s.id, title: s.title, paragraphs: s.paras }));
-}
+/** The dossier's letter section type is `LetterSectionLike` (finding-core); the route joins
+ *  `findingRefs` onto the parsed output before serializing. */
 
 // ---------------------------------------------------------------- row → domain mapping
 
@@ -286,20 +241,24 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       // P1.17 (§3.5) — `showcase.opened` fires on the FIRST dossier open of a showcase project (the
       // stamp's transition is the signal: null→now). Server-owned, opt-out honored, non-fatal.
       if (corr.showcase === true && corr.letter_opened_at == null) {
-        await recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
-          userId: principal.userId,
-          workspaceId: principal.workspaceId,
-          projectId,
-          runId,
-          event: "showcase.opened",
-          props: {},
-        }).catch(() => undefined);
+        await recordAnalyticsEvent(
+          tx,
+          { ids: deps.ids, clock: deps.clock },
+          {
+            userId: principal.userId,
+            workspaceId: principal.workspaceId,
+            projectId,
+            runId,
+            event: "showcase.opened",
+            props: {},
+          },
+        ).catch(() => undefined);
       }
 
       const run = (
         await tx.query(
           `select id, workflow, state, cap_credits, current_attempt, estimate_credits,
-                  spent_credits, paused_at, walkthrough, scope, rigor, delivery
+                  spent_credits, paused_at, scope, rigor, delivery, inputs, created_at
              from runs where id = $1`,
           [runId],
         )
@@ -313,11 +272,12 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             estimate_credits: number;
             spent_credits: number;
             paused_at: string | Date | null;
-            walkthrough: { status?: string; text?: string } | null;
             scope: unknown;
             rigor: string | null;
             /** RES.2 — the persisted delivery label blob (write-once; read, never recomputed). */
             delivery: unknown;
+            inputs: Record<string, unknown> | string;
+            created_at: string | Date;
           }
         | undefined;
       if (!run) return null;
@@ -326,39 +286,50 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
 
       // P1.06 (§7.2; REQ-CHAT-23) — a scoped run's dossier is keyed (version, run) and LABELLED with
       // its scope: the stored ref list renders as the same chips the sheet showed (§III · v2/17…).
-      const scopeLabels = Array.isArray(run.scope)
-        ? (run.scope as ScopeRef[]).map(scopeChip)
-        : [];
+      const scopeLabels = Array.isArray(run.scope) ? (run.scope as ScopeRef[]).map(scopeChip) : [];
 
-      // ---- run card: only whitelisted orchestrator event types feed the card (REQ-IDE-11) ----
-      const events = (
-        await tx.query(`select type, payload from run_events where run_id = $1 order by seq`, [
-          runId,
-        ])
-      ).rows as RunEventLike[];
-      const manifest = WORKFLOW_MANIFESTS[run.workflow as keyof typeof WORKFLOW_MANIFESTS];
-      const phaseKeys = manifest?.phases.map((p) => p.key) ?? [];
-      const committed = new Set(
-        (
-          await tx.query(`select phase from steps where run_id = $1 and state = 'done'`, [runId])
-        ).rows.map((r) => (r as { phase: string }).phase),
-      );
-      const offPhases = phaseKeys.filter((k) => !committed.has(k));
-      const runCard = deriveRunCardInput(runId, events, {
-        phaseKeys,
-        offPhases,
-        capCredits: run.cap_credits,
-        // P1.05 — the dossier card carries the same SQL-side facts the Timeline's card does: the
-        // estimate (actual-vs-estimate line), the walkthrough state, and the steering park flag.
-        estimateCredits: run.estimate_credits,
-        paused: run.paused_at != null,
-        ...(run.walkthrough?.status === "ready" && typeof run.walkthrough.text === "string"
-          ? { walkthrough: { status: "ready" as const, text: run.walkthrough.text } }
-          : run.walkthrough?.status === "failed"
-            ? { walkthrough: { status: "failed" as const } }
-            : { walkthrough: { status: "pending" as const } }),
-        deliveryLabel,
-      });
+      // ---- run card (REQ-SYNC-1): the ONE RunSummaryView — the same SQL-fact card assembly the
+      // Timeline uses (R5 C4; the old event-derived `deriveRunCardInput` card could lag the run's
+      // committed state — "Created · 0 cr" beside the Timeline's "Completed") ----
+      const cardSteps = (
+        await tx.query(
+          `select run_id, phase, ordinal, state, credits, started_at, ended_at
+             from steps where run_id = $1 order by ordinal, attempt`,
+          [runId],
+        )
+      ).rows as {
+        run_id: string;
+        phase: string;
+        ordinal: number;
+        state: string;
+        credits: number;
+        started_at: string | Date | null;
+        ended_at: string | Date | null;
+      }[];
+      const producedKinds = (
+        await tx.query(
+          `select distinct a.kind from steps s
+             join artifact_versions av on av.id = any(s.produced_version_ids)
+             join artifacts a on a.id = av.artifact_id
+            where s.run_id = $1 and s.state = 'done'`,
+          [runId],
+        )
+      ).rows as { kind: string }[];
+      const refundedRow = (
+        await tx.query(
+          `select coalesce(sum((payload->>'credits')::int), 0)::int as refunded
+             from run_events where run_id = $1 and type = 'cost.refunded'`,
+          [runId],
+        )
+      ).rows[0] as { refunded: number } | undefined;
+      const noteCountRow = (
+        await tx.query(
+          `select count(*)::int as n from guidance
+             where run_id = $1 and standing = false and active = true and consumed_by = '[]'::jsonb`,
+          [runId],
+        )
+      ).rows[0] as { n: number } | undefined;
+      const decisionsByRun = await loadRunDecisions(tx, [runId]);
 
       // ---- letter: the delivered artifact's markdown → sections; finding refs join via letter_section ----
       const versions = (
@@ -518,6 +489,67 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       }
       for (const o of obligationRows) findingObligations[o.finding_id] = o.state;
 
+      // ---- the ONE run summary (REQ-SYNC-1/C4) + the record-composed card (REQ-COPY-4/C3) ----
+      // The card is built from the same SQL facts the Timeline's card is (same `phasesForRun`, same
+      // chips via `deliveredRecordCounts`, same estimate/paused/label facts) — never the retired
+      // event-derived projection. "What it delivered" composes from THIS dossier's own delivered
+      // record: the letter's verdict line quoted verbatim, the counts, the dossier/letter/ledger links.
+      const cardCounts = deliveredRecordCounts({
+        findings: findingRows.map((f): DeliveredFindingFact => ({
+          letterSection: f.letter_section,
+        })),
+        claims: claimRows.length,
+      });
+      const delivered = composeDeliveredSummary({
+        letterSections,
+        findings: findingRows.map((f): DeliveredFindingFact => ({
+          letterSection: f.letter_section,
+        })),
+        claims: claimRows.length,
+        links: ["dossier", "letter", "ledger"],
+      });
+      const deliverables: DeliverableChip[] = [
+        { key: "letter" },
+        ...(cardCounts.findings > 0 ? [{ key: "findings", count: cardCounts.findings }] : []),
+        ...(cardCounts.strengths > 0 ? [{ key: "strengths", count: cardCounts.strengths }] : []),
+        ...(cardCounts.claims > 0 ? [{ key: "claims", count: cardCounts.claims }] : []),
+        ...[...new Set(producedKinds.map((k) => k.kind))]
+          .filter((k) => k !== "letter" && k !== "response")
+          .map((k) => ({ key: k })),
+      ];
+      const card = buildRunCardView({
+        runId,
+        state: run.state as RunSummaryView["state"],
+        phases: phasesForRun(
+          run.workflow,
+          parseInputs(run.inputs),
+          cardSteps,
+          run.state as RunSummaryView["state"],
+        ),
+        spentCredits: run.spent_credits,
+        capCredits: run.cap_credits,
+        refundedCredits: refundedRow?.refunded ?? 0,
+        estimateCredits: run.estimate_credits,
+        paused: run.paused_at != null,
+        resumable:
+          (run.state === "completed_partial" ||
+            run.state === "failed" ||
+            run.state === "cancelled") &&
+          cardSteps.some((s) => s.state === "done"),
+        queuedNotes: noteCountRow?.n ?? 0,
+        ...(decisionsByRun.has(runId) ? { decisions: decisionsByRun.get(runId) } : {}),
+        deliverables,
+        delivered,
+        deliveryLabel,
+      });
+      const runSummary: RunSummaryView = {
+        runId,
+        workflow: run.workflow,
+        state: run.state as RunSummaryView["state"],
+        createdAt: new Date(run.created_at).toISOString(),
+        card,
+      };
+
       // ---- re-review delta: the prior round's rubric (REQ-IDE-30) ----
       let priorRubric: RubricRowInput[] | undefined;
       if (corr.prior_review_id != null) {
@@ -546,7 +578,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         ...(corr.showcase === true && findingRows.length > 0
           ? { firstFindingId: findingRows[0]!.id }
           : {}),
-        runCard,
+        runSummary,
         // RES.2 — the dossier banner's label (the page renders it above the verdict when set).
         deliveryLabel,
         letterTitle: corr.project_title,

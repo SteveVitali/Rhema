@@ -18,6 +18,7 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FindingView } from "@rhema/contracts";
+import { buildRunCardView } from "@rhema/findings-core";
 import type { GateCardDto, ChatPanelDto } from "@rhema/api-client";
 import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
@@ -25,7 +26,13 @@ import type { DossierViewData } from "../dossier-view.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffDossierTwin, BffObligationNewTwin } from "./queries.js";
-import { expectManifestEmission, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
+import {
+  expectManifestEmission,
+  restoreDocumentNav,
+  SETTLE_TIMEOUT,
+  settled,
+  stubDocumentNav,
+} from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -62,19 +69,44 @@ const DOSSIER: DossierViewData = {
   rigor: "standard",
   openObligations: 0,
   addressedObligations: 0,
-  runCard: { runId: RUN, state: "completed", phases: [], spentCredits: 100, capCredits: 840 },
+  runSummary: {
+    runId: RUN,
+    workflow: "review",
+    state: "completed",
+    createdAt: "2026-11-01T00:00:00Z",
+    card: buildRunCardView({
+      runId: RUN,
+      state: "completed",
+      phases: [],
+      spentCredits: 100,
+      capCredits: 840,
+    }),
+  },
   letterTitle: "The Politics of Visibility",
   letterSections: [{ id: "verdict", title: "Verdict", paragraphs: ["Holds."] }],
   claims: [],
   fetchLog: [],
   findings: [
     finding({ id: "f_1", severity: "blocking", suggestion: { replacement: "better wording" } }),
-    finding({ id: "f_2", severity: "note", title: "A note", suggestion: { replacement: "tweak" }, letterSection: "strength" }),
+    finding({
+      id: "f_2",
+      severity: "note",
+      title: "A note",
+      suggestion: { replacement: "tweak" },
+      letterSection: "strength",
+    }),
     finding({ id: "f_3", severity: "minor", title: "A minor one" }),
     finding({ id: "f_s", title: "streaming", provisional: true }),
   ],
   rubric: [],
-  accessReport: { seat: "editor", mountedPathCount: 0, fetches: 0, deniedAttempts: 0, violations: 0, subagents: [] },
+  accessReport: {
+    seat: "editor",
+    mountedPathCount: 0,
+    fetches: 0,
+    deniedAttempts: 0,
+    violations: 0,
+    subagents: [],
+  },
 };
 
 /** The focused-gate card (the inbox.dom.test.tsx fixture verbatim — `proceed_as_proposed` +
@@ -98,7 +130,10 @@ const GATE_CARD: GateCardDto = {
   remainingEstimateCredits: 20,
 };
 
-function twinFor(over: Partial<BffDossierTwin> = {}, viewOver: Partial<BffDossierTwin["dossierView"]> = {}): BffDossierTwin {
+function twinFor(
+  over: Partial<BffDossierTwin> = {},
+  viewOver: Partial<BffDossierTwin["dossierView"]> = {},
+): BffDossierTwin {
   return {
     dossier: DOSSIER,
     dossierView: { filters: {}, triage: false, ...viewOver },
@@ -196,7 +231,10 @@ function makeFetch(opts: FetchOpts = {}) {
   return { impl, posts, gets, reads: () => dossierReads };
 }
 
-function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop" | "phone" = "desktop"): SpaBoot {
+function bootFor(
+  surfaces: Record<string, "spa" | "ssr">,
+  deviceClass: "desktop" | "phone" = "desktop",
+): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass, surfaces };
 }
 
@@ -209,7 +247,12 @@ let docNavSpy: ReturnType<typeof vi.fn>;
 let beaconSpy: ReturnType<typeof vi.spyOn>;
 const mounted: Root[] = [];
 
-async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"], opts?: { awaitLoad?: boolean }) {
+async function mountAt(
+  path: string,
+  boot: SpaBoot,
+  fetchImpl: ReturnType<typeof makeFetch>["impl"],
+  opts?: { awaitLoad?: boolean },
+) {
   vi.stubGlobal("fetch", fetchImpl);
   const rootEl = document.createElement("div");
   rootEl.setAttribute("data-spa-root", "");
@@ -237,9 +280,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
     // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
     // commit — the BL-87 mount-settle flake class. (The awaitLoad:false legs deliberately
     // stay pending — the gate lives inside this branch.)
-    await vi.waitFor(() => {
-      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
-      }, { timeout: SETTLE_TIMEOUT });
+    await vi.waitFor(
+      () => {
+        expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+      },
+      { timeout: SETTLE_TIMEOUT },
+    );
   }
   return { router, rootEl };
 }
@@ -302,7 +348,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     }
     // Apply on the two suggestion-carrying cards + obligations + the finding anchors.
     expect(root.querySelectorAll("[data-apply-form]").length).toBeGreaterThanOrEqual(2);
-    expect(root.querySelector(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`)).not.toBeNull();
+    expect(
+      root.querySelector(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`),
+    ).not.toBeNull();
     expect(root.querySelector(`form[action="/p/${SLUG}/findings/f_1/obligations"]`)).not.toBeNull();
     expect(root.querySelector('[data-finding="f_1"],[data-desk-row="f_1"]')).not.toBeNull();
     // the manifest's fixtured hooks (manifest-driven, never an ad-hoc selector list).
@@ -398,12 +446,12 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
         },
       },
       twin: (q) =>
-        q.includes("disposed=")
-          ? { ...twinFor(), triage: { savedFindingId: "f_1" } }
-          : twinFor(),
+        q.includes("disposed=") ? { ...twinFor(), triage: { savedFindingId: "f_1" } } : twinFor(),
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/disposition"]`);
+    const form = await settled<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/f_1/disposition"]`,
+    );
     const verb = form.querySelector<HTMLElement>('[data-verb="accept"]')!;
     await submit(form, verb);
     const post = f.posts.find((p) => p.url.endsWith("/disposition"));
@@ -427,14 +475,18 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const applyForm = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`);
+    const applyForm = await settled<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`,
+    );
     await submit(applyForm);
     expect(f.posts.some((p) => p.url.endsWith("/findings/f_1/apply"))).toBe(true);
     await waitFor(() => expect(router.state.location.search).toMatchObject({ applied: "f_1" }));
     // the post-nav refetch re-pends the leaf briefly — wait for the card set to return.
     let oblForm: HTMLFormElement | null = null;
     await waitFor(() => {
-      oblForm = el()!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/findings/f_1/obligations"]`);
+      oblForm = el()!.querySelector<HTMLFormElement>(
+        `form[action="/p/${SLUG}/findings/f_1/obligations"]`,
+      );
       expect(oblForm).not.toBeNull();
     });
     await submit(oblForm!);
@@ -455,36 +507,61 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
       twin: (q) =>
         q.includes("bulk=apply_notes")
-          ? twinFor({}, {
-              bulk: {
-                action: "apply_notes",
-                preview: {
+          ? twinFor(
+              {},
+              {
+                bulk: {
                   action: "apply_notes",
-                  rows: [{ findingId: "f_2", title: "A note", severity: "note", disposition: "accept", obligation: "none" }],
-                  skipped: [{ findingId: "f_1", title: "A finding", reason: "severity_not_note" }],
-                  total: 4,
+                  preview: {
+                    action: "apply_notes",
+                    rows: [
+                      {
+                        findingId: "f_2",
+                        title: "A note",
+                        severity: "note",
+                        disposition: "accept",
+                        obligation: "none",
+                      },
+                    ],
+                    skipped: [
+                      { findingId: "f_1", title: "A finding", reason: "severity_not_note" },
+                    ],
+                    total: 4,
+                  },
                 },
               },
-            })
+            )
           : q.includes("bulkdone=")
             ? twinFor({}, { bulkDone: { count: 1, skipped: 0 } })
             : twinFor(),
     });
     const { router } = await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
     // the Desk's consolidated affordance posts the preview request.
-    const previewForm = [...el()!.querySelectorAll<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/bulk-preview"]`)].find(
+    const previewForm = [
+      ...el()!.querySelectorAll<HTMLFormElement>(
+        `form[action="/p/${SLUG}/review/${RUN}/findings/bulk-preview"]`,
+      ),
+    ].find(
       (fm) => fm.querySelector('input[name="action"]')?.getAttribute("value") === "apply_notes",
     )!;
     await submit(previewForm);
-    expect(f.posts.some((p) => p.url.endsWith("/findings/bulk-preview") && p.json?.["action"] === "apply_notes")).toBe(true);
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ bulk: "apply_notes" }));
+    expect(
+      f.posts.some(
+        (p) => p.url.endsWith("/findings/bulk-preview") && p.json?.["action"] === "apply_notes",
+      ),
+    ).toBe(true);
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ bulk: "apply_notes" }),
+    );
     // the refetched twin carries the server's preview — the checklist renders checked-only rows.
     let preview: Element | null = null;
     await waitFor(() => {
       preview = el()!.querySelector("[data-bulk-preview]");
       expect(preview).not.toBeNull();
     });
-    const confirmForm = preview!.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/bulk"]`)!;
+    const confirmForm = preview!.querySelector<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/bulk"]`,
+    )!;
     // uncheck nothing — the checked rows ride `only`; f_2 is the covered row.
     await submit(confirmForm);
     const bulk = f.posts.find((p) => p.url.endsWith("/findings/bulk"));
@@ -492,13 +569,16 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     // a single checked `only` box serializes as a scalar — the same shape a document
     // POST produces; the server arm `asArray`s it either way.
     expect([bulk?.json?.["only"]].flat()).toEqual(["f_2"]);
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ bulkdone: 1, bulkskip: 0 }));
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ bulkdone: 1, bulkskip: 0 }),
+    );
     await waitFor(() => expect(el()!.querySelector("[data-bulk-done]")).not.toBeNull());
   });
 
   it("the focused ?gate= card renders at the artifact's head and its decide POST rides the envelope", async () => {
     const f = makeFetch({
-      twin: (q) => (q.includes("gate=gate_1") ? twinFor({}, { focusedGate: GATE_CARD }) : twinFor()),
+      twin: (q) =>
+        q.includes("gate=gate_1") ? twinFor({}, { focusedGate: GATE_CARD }) : twinFor(),
       mutations: {
         [`/p/${SLUG}/gates/gate_1`]: { body: { ok: true, redirect: `/p/${SLUG}` } },
       },
@@ -508,9 +588,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     expect(section.querySelector("[data-gate-card]")).not.toBeNull();
     // No inline presence <script> under React — `useGatePresence` carries the pings (REQ-SPEC-18).
     expect(section.querySelector("script")).toBeNull();
-    expect(
-      beaconSpy.mock.calls.some(([url]) => url === `/p/${SLUG}/gates/gate_1/activity`),
-    ).toBe(true);
+    expect(beaconSpy.mock.calls.some(([url]) => url === `/p/${SLUG}/gates/gate_1/activity`)).toBe(
+      true,
+    );
     const form = section.querySelector<HTMLFormElement>(`form[action="/p/${SLUG}/gates/gate_1"]`)!;
     const approve = form.querySelector<HTMLElement>('button[name="action"], [name="action"]')!;
     await submit(form, approve);
@@ -531,7 +611,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       },
     });
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_3/disposition"]`);
+    const form = await settled<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/f_3/disposition"]`,
+    );
     const verb = form.querySelector<HTMLElement>('[data-verb="rebut"]')!;
     await submit(form, verb);
     let notice: Element | null = null;
@@ -542,7 +624,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     expect(notice!.textContent).toContain("a rationale is required for rebut");
     // the same message renders under the refused card (the SSR's `triage.dispositionError` arm).
     await waitFor(() =>
-      expect(el()!.querySelector('[data-disposition-error]')?.textContent).toContain("a rationale is required for rebut"),
+      expect(el()!.querySelector("[data-disposition-error]")?.textContent).toContain(
+        "a rationale is required for rebut",
+      ),
     );
   });
 
@@ -553,7 +637,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       mutations: { [`/p/${SLUG}/review/${RUN}/findings/f_1/apply`]: gate },
     });
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
-    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`);
+    const form = await settled<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`,
+    );
     const btn = form.querySelector<HTMLButtonElement>("button")!;
     await act(async () => {
       const ev = new Event("submit", { bubbles: true, cancelable: true });
@@ -567,7 +653,9 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     await act(async () => {});
     // the nav remounts off server truth; the settled form is live again.
     await waitFor(() => {
-      const settled = el()!.querySelector(`form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`);
+      const settled = el()!.querySelector(
+        `form[action="/p/${SLUG}/review/${RUN}/findings/f_1/apply"]`,
+      );
       expect(settled?.getAttribute("aria-busy") ?? null).toBeNull();
       expect(settled?.querySelector("button")?.disabled).toBe(false);
     });
@@ -580,22 +668,32 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
           ...DOSSIER,
           findings: [
             ...DOSSIER.findings,
-            finding({ id: "f_e", severity: "note", title: "Cited", evidence: { urls: [{ url: "https://example.test/src" }] } }),
-          ] } }) });
+            finding({
+              id: "f_e",
+              severity: "note",
+              title: "Cited",
+              evidence: { urls: [{ url: "https://example.test/src" }] },
+            }),
+          ],
+        },
+      }),
+    });
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
     expect(el()!.querySelector("[data-evidence-explainer]")).not.toBeNull();
   });
 
   it("phone width mounts the Page's own chat section (data-phone-chat — §10.1)", async () => {
     const f = makeFetch({
-      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
+      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }),
+    });
     await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
     expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
   });
 
   it("phone width withholds the desk affordances — bulk controls AND the per-finding Apply (§10.1/Q-1; VERIF.2 F-VERIF.2-3)", async () => {
     const f = makeFetch({
-      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
+      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }),
+    });
     await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
     const root = el()!;
     // the fixture's suggestion-carrying cards (f_1, f_2) must NOT mount the apply verb at
@@ -608,7 +706,11 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
 
   it("an unflipped verdict hands the document back to the server", async () => {
     const f = makeFetch();
-    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor({ ...SPA_DOSSIER, "/p/$project/review/$runId": "ssr" }), f.impl);
+    await mountAt(
+      `/p/${SLUG}/review/${RUN}`,
+      bootFor({ ...SPA_DOSSIER, "/p/$project/review/$runId": "ssr" }),
+      f.impl,
+    );
     expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/review/${RUN}`);
   });
 
@@ -655,7 +757,11 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
     });
     await submit(form);
     const post = f.posts.find((p) => p.url === `/p/${SLUG}/obligations`);
-    expect(post?.json).toMatchObject({ title: "Re-check the census stats", severity: "minor", next: `/p/${SLUG}` });
+    expect(post?.json).toMatchObject({
+      title: "Re-check the census stats",
+      severity: "minor",
+      next: `/p/${SLUG}`,
+    });
     await waitFor(() => expect(router.state.location.pathname).toBe(`/p/${SLUG}`));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ obligation: "new" }));
   });
@@ -667,7 +773,9 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
     // The leaf-owned `back` rides the twin GET verbatim (server re-confines it via safeBack);
     // the serialized `sheet.back` lands in the form's hidden `next` field, not the address bar.
     expect(
-      f.gets.some((u) => u.startsWith(`/bff/p/${SLUG}/obligations/new?back=${encodeURIComponent(back)}`)),
+      f.gets.some((u) =>
+        u.startsWith(`/bff/p/${SLUG}/obligations/new?back=${encodeURIComponent(back)}`),
+      ),
     ).toBe(true);
     const form = await settled<HTMLFormElement>("form[data-obligation-form]");
     expect(form.querySelector<HTMLInputElement>('input[name="next"]')?.value).toBe(back);
@@ -676,7 +784,10 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
   it("the 422 refusal lands the same role=alert slot (server detail verbatim)", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/obligations`]: { status: 422, body: { error: "title_required", detail: COPY.obligation.required } },
+        [`/p/${SLUG}/obligations`]: {
+          status: 422,
+          body: { error: "title_required", detail: COPY.obligation.required },
+        },
       },
     });
     await mountAt(`/p/${SLUG}/obligations/new`, BOOT, f.impl);
@@ -693,4 +804,3 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
 });
 
 // ---- REQ-TST-2 — the SSR/SPA parity leg ------------------------------------------------------------
-

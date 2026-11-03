@@ -32,7 +32,13 @@ import { hooksForSurface } from "../dom-contract.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffRunReportTwin } from "./queries.js";
-import { expectManifestEmission, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
+import {
+  expectManifestEmission,
+  restoreDocumentNav,
+  SETTLE_TIMEOUT,
+  settled,
+  stubDocumentNav,
+} from "./testkit.js";
 import axe from "axe-core";
 
 declare global {
@@ -60,9 +66,39 @@ const REPORT_VIEW: RunReportView = {
   refundedCredits: 0,
   estimateRatio: 0.62,
   phases: [
-    { key: "reading_the_piece", ordinal: 1, status: "done", seat: "editor", credits: 40, durationMs: 45_000, searches: 0, fetches: 0, subagentLabels: [] },
-    { key: "checking_claims", ordinal: 2, status: "done", seat: "verifier", credits: 300, durationMs: 120_000, searches: 12, fetches: 40, subagentLabels: [] },
-    { key: "editors_letter", ordinal: 3, status: "done", seat: "editor", credits: 180, durationMs: 60_000, searches: 0, fetches: 0, subagentLabels: [] },
+    {
+      key: "reading_the_piece",
+      ordinal: 1,
+      status: "done",
+      seat: "editor",
+      credits: 40,
+      durationMs: 45_000,
+      searches: 0,
+      fetches: 0,
+      subagentLabels: [],
+    },
+    {
+      key: "checking_claims",
+      ordinal: 2,
+      status: "done",
+      seat: "verifier",
+      credits: 300,
+      durationMs: 120_000,
+      searches: 12,
+      fetches: 40,
+      subagentLabels: [],
+    },
+    {
+      key: "editors_letter",
+      ordinal: 3,
+      status: "done",
+      seat: "editor",
+      credits: 180,
+      durationMs: 60_000,
+      searches: 0,
+      fetches: 0,
+      subagentLabels: [],
+    },
   ],
   seatSplit: [
     { seat: "verifier", credits: 300, share: 0.58 },
@@ -130,7 +166,7 @@ const LIVE_CARD = {
   paused: false,
   waitingGate: null,
   deliverables: [],
-  walkthrough: null,
+  delivered: null,
   failureCode: null,
   resumable: false,
   queuedNotes: 0,
@@ -147,7 +183,12 @@ const TIMELINE_LIVE: TimelineDto = {
     overlay: "running",
     suggested: { action: "revise_using_edits", label: "Revise using your edits" },
   },
-  nextStep: { verb: "revise", label: "Revise using your edits", estimateCredits: 1240, headDraftN: 2 },
+  nextStep: {
+    verb: "revise",
+    label: "Revise using your edits",
+    estimateCredits: 1240,
+    headDraftN: 2,
+  },
   rounds: [
     {
       n: 1,
@@ -248,7 +289,13 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(
         200,
         (query ?? "").includes("advanced=1")
-          ? { ...t, runReport: { ...t.runReport, report: { ...t.runReport.report, advancedView: ADVANCED_VIEW } } }
+          ? {
+              ...t,
+              runReport: {
+                ...t.runReport,
+                report: { ...t.runReport.report, advancedView: ADVANCED_VIEW },
+              },
+            }
           : t,
       );
     }
@@ -257,7 +304,10 @@ function makeFetch(opts: FetchOpts = {}) {
   return { impl, posts, gets, reads: () => reportReads };
 }
 
-function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop" | "phone" = "desktop"): SpaBoot {
+function bootFor(
+  surfaces: Record<string, "spa" | "ssr">,
+  deviceClass: "desktop" | "phone" = "desktop",
+): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass, surfaces };
 }
 
@@ -290,7 +340,11 @@ class FakeEventSource {
 let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
-async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
+async function mountAt(
+  path: string,
+  boot: SpaBoot,
+  fetchImpl: ReturnType<typeof makeFetch>["impl"],
+) {
   vi.stubGlobal("fetch", fetchImpl);
   vi.stubGlobal("EventSource", FakeEventSource);
   const rootEl = document.createElement("div");
@@ -319,9 +373,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
   // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
   // commit — the BL-87 mount-settle flake class.
-  await vi.waitFor(() => {
-    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
-    }, { timeout: SETTLE_TIMEOUT });
+  await vi.waitFor(
+    () => {
+      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    },
+    { timeout: SETTLE_TIMEOUT },
+  );
   return { router, rootEl };
 }
 
@@ -388,7 +445,9 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
     expect(root.querySelectorAll("[data-report-phase]").length).toBe(3);
     expect(root.textContent).not.toMatch(/·\s*0\s*min\b/);
     // the Advanced affordance is the SSR's identical ?advanced=1 link (Level 4 lazy-loads).
-    const advLink = root.querySelector<HTMLAnchorElement>(`a[href="/p/${SLUG}/r/${RUN}?advanced=1"]`);
+    const advLink = root.querySelector<HTMLAnchorElement>(
+      `a[href="/p/${SLUG}/r/${RUN}?advanced=1"]`,
+    );
     expect(advLink).not.toBeNull();
     // the manifest's fixtured hooks (manifest-driven, never an ad-hoc selector list).
     const hooks = hooksForSurface("run-report").filter((e) =>
@@ -489,7 +548,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       },
     });
     const { router } = await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`);
     expect(form.getAttribute("data-refund-form")).toBe("true");
     expect(el()!.textContent).toContain("Get 160 cr back");
     await submit(form);
@@ -529,13 +588,11 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       },
     });
     await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`);
     await submit(form);
     // the 4xx arm: the twin re-reads and the fresh block is the answer — no role=alert, no flash.
     await waitFor(() => expect(f.reads()).toBeGreaterThanOrEqual(2));
-    await waitFor(() =>
-      expect(el()!.querySelector('[data-refund-state="denied"]')).not.toBeNull(),
-    );
+    await waitFor(() => expect(el()!.querySelector('[data-refund-state="denied"]')).not.toBeNull());
     expect(el()!.querySelector('[role="alert"]')).toBeNull();
     expect(el()!.querySelector("[data-refund-form]")).toBeNull();
   });
@@ -576,7 +633,7 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
       mutations: { [`/p/${SLUG}/r/${RUN}/refund`]: gate },
     });
     await mountAt(`/p/${SLUG}/r/${RUN}`, BOOT, f.impl);
-    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`));
+    const form = await settled<HTMLFormElement>(`form[action="/p/${SLUG}/r/${RUN}/refund"]`);
     const btn = form.querySelector<HTMLButtonElement>("button")!;
     await act(async () => {
       const ev = new Event("submit", { bubbles: true, cancelable: true });
@@ -701,4 +758,3 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
 });
 
 // ---- REQ-TST-2 — the SSR/SPA parity leg ----------------------------------------------------------
-

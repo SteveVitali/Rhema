@@ -84,12 +84,8 @@ export interface WorkerEnv {
   readonly apiPublicUrl?: string;
   /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
   readonly appBaseUrl?: string;
-  /**
-   * P1.05 — the provider API key's secret-version NAME for the `run.walkthrough` package-class call (a
-   * deploy may point it at the same `anthropic-api-key` version the proxy holds). Unset ⇒ the consumer
-   * marks attempts `failed` and the card's Retry stays live.
-   */
-  readonly walkthroughModelKeySecret?: string;
+  // R7COPY.0/ADR-130 — `walkthroughModelKeySecret` is retired with the generator; the
+  // WALKTHROUGH_MODEL_KEY_SECRET env survives ONLY as the ingest key's legacy fallback below.
   /**
    * P1.15 — the user-content bucket holding `ingest/<conn>/<item>` bodies + `export/<conn>/<file>`
    * zips; `voice.purge` also deletes retained bytes under it. Unset ⇒ `ingest.sync` reports
@@ -103,7 +99,8 @@ export interface WorkerEnv {
   readonly fetcherServiceUrl?: string;
   /**
    * P1.15 — the provider API key's secret-version NAME `ingest.reconstruct` spends through (a deploy
-   * may point it at the same `anthropic-api-key` version; falls back to WALKTHROUGH_MODEL_KEY_SECRET).
+   * may point it at the same `anthropic-api-key` version; R7COPY.0: falls back to the retired
+   * WALKTHROUGH_MODEL_KEY_SECRET name as a legacy alias so every stage resolves identically).
    * Unset ⇒ reconstruction reports `reconstructor_unconfigured`.
    */
   readonly ingestModelKeySecret?: string;
@@ -163,17 +160,23 @@ export function readWorkerEnv(): WorkerEnv {
     systemDatabaseUrl: required("SYSTEM_DATABASE_URL"), // SEC.1 — required; no fallback to DATABASE_URL
     ...(process.env.GKE_ENDPOINT ? { gkeEndpoint: process.env.GKE_ENDPOINT } : {}),
     ...(process.env.GKE_CA_DATA ? { gkeCaData: process.env.GKE_CA_DATA } : {}),
-    ...(process.env.RUN_TASK_APPARMOR_TYPE ? { runTaskAppArmorType: process.env.RUN_TASK_APPARMOR_TYPE } : {}),
+    ...(process.env.RUN_TASK_APPARMOR_TYPE
+      ? { runTaskAppArmorType: process.env.RUN_TASK_APPARMOR_TYPE }
+      : {}),
     ...(process.env.RUN_TASK_APPARMOR_LOCALHOST_PROFILE
       ? { runTaskAppArmorLocalhostProfile: process.env.RUN_TASK_APPARMOR_LOCALHOST_PROFILE }
       : {}),
     ...(process.env.ANTHROPIC_ADMIN_KEY_SECRET
       ? { anthropicAdminKeySecret: process.env.ANTHROPIC_ADMIN_KEY_SECRET }
       : {}),
-    ...(process.env.OPS_ALERT_WEBHOOK_URL ? { opsAlertWebhookUrl: process.env.OPS_ALERT_WEBHOOK_URL } : {}),
+    ...(process.env.OPS_ALERT_WEBHOOK_URL
+      ? { opsAlertWebhookUrl: process.env.OPS_ALERT_WEBHOOK_URL }
+      : {}),
     // PRB.09 notifications: the Resend key + the action-signing secret are secret-NAMES (Secret Manager at
     // boot); the From/api/app origins are plain deploy config.
-    ...(process.env.RESEND_API_KEY_SECRET ? { resendApiKeySecret: process.env.RESEND_API_KEY_SECRET } : {}),
+    ...(process.env.RESEND_API_KEY_SECRET
+      ? { resendApiKeySecret: process.env.RESEND_API_KEY_SECRET }
+      : {}),
     ...(process.env.EMAIL_FROM ? { emailFrom: process.env.EMAIL_FROM } : {}),
     ...(process.env.EMAIL_ACTION_SECRET_NAME
       ? { emailActionSecretName: process.env.EMAIL_ACTION_SECRET_NAME }
@@ -195,19 +198,29 @@ export function readWorkerEnv(): WorkerEnv {
       : {}),
     ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
     ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),
-    ...(process.env.WALKTHROUGH_MODEL_KEY_SECRET
-      ? { walkthroughModelKeySecret: process.env.WALKTHROUGH_MODEL_KEY_SECRET }
-      : {}),
     // P1.15 ingestion wiring — all optional; each unset seam fails closed with a named reason.
-    ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
-    ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
+    ...(process.env.USER_CONTENT_BUCKET
+      ? { userContentBucket: process.env.USER_CONTENT_BUCKET }
+      : {}),
+    ...(process.env.FETCHER_SERVICE_URL
+      ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL }
+      : {}),
+    // R7COPY.0 — the ingest key resolves on its own variable; the retired walkthrough var survives
+    // ONLY as this legacy fallback so every deployed stage resolves the same key it did before the
+    // generator went away (removing the fallback would unset the reconstructor where only the old
+    // name was provisioned).
     ...((process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET)
-      ? { ingestModelKeySecret: process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET }
+      ? {
+          ingestModelKeySecret:
+            process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET,
+        }
       : {}),
     // ECON.1 — the metered-debit flag (default committed; ADR-031).
     debitMode: parseDebitMode(process.env.DEBIT_MODE),
     ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
     ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
   };
-  return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
+  return process.env.RUN_TOKEN_KEY_ID
+    ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID }
+    : base;
 }

@@ -41,7 +41,8 @@ const marginLabels: MarginLabels = {
   kindLabel: (k) => k,
   severityLabel: (s) => s,
   provisionalLabel: "streaming…",
-  chipLabel: (count, top, topCount) => `${count} findings · ${topCount} ${top}`,
+  chipLabel: (counts, top, topCount) =>
+    `${counts.findings} findings${counts.strengths > 0 ? ` · ${counts.strengths} strength` : ""} · ${topCount} ${top}`,
   chipAria: (count) => `${count} findings stacked`,
 };
 

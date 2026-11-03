@@ -18,7 +18,12 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_pv",
     slug: "the-politics-of-visibility",
     title: "The Politics of Visibility",
-    state: { key: "edited_by_you", pill: "Edited by you", overlay: null, suggested: { action: "revise_using_edits", label: "Revise using your edits" } },
+    state: {
+      key: "edited_by_you",
+      pill: "Edited by you",
+      overlay: null,
+      suggested: { action: "revise_using_edits", label: "Revise using your edits" },
+    },
   },
 ];
 
@@ -27,7 +32,12 @@ const SHOWCASE_ROW: ProjectRow = {
   slug: "showcase",
   title: "Showcase — a worked example",
   showcase: true,
-  state: { key: "edited_by_you", pill: "Edited by you", overlay: null, suggested: { action: "none", label: null } },
+  state: {
+    key: "edited_by_you",
+    pill: "Edited by you",
+    overlay: null,
+    suggested: { action: "none", label: null },
+  },
 } as ProjectRow;
 
 const SHOWCASE_ENTRY = {
@@ -47,7 +57,8 @@ function makeDeps(over: Partial<WebDeps> = {}, dsOver: Partial<DataSource> = {})
     dataSource: {
       checkSession: async () => true,
       listProjects: async () => PROJECTS,
-      checkInvite: async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" }),
+      checkInvite: async (code) =>
+        code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" },
       signup: async () => ({ ok: true as const, created: true }),
       getBillingBalance: async () => ({ spendableCredits: 100, suspended: false, clawbackDebt: 0 }),
       ...dsOver,
@@ -70,8 +81,18 @@ describe("§15.1 — the landing page", () => {
     expect(html).toContain(HERO_HEADLINE);
     const order = [...html.matchAll(/data-section="([^"]+)"/g)].map((m) => m[1]);
     expect(order).toEqual([
-      "hero", "dossier", "workflow", "seat", "voices", "runs",
-      "models", "proof", "pricing", "changelog", "faq", "final-cta",
+      "hero",
+      "dossier",
+      "workflow",
+      "seat",
+      "voices",
+      "runs",
+      "models",
+      "proof",
+      "pricing",
+      "changelog",
+      "faq",
+      "final-cta",
     ]);
     // dark-default theme, no flash (data-theme stamped on the SSR root)
     expect(html).toContain('data-theme="dark"');
@@ -87,7 +108,9 @@ describe("§15.1 — the landing page", () => {
     const data = buildPricingPageData(undefined, surfacePricer());
     const card = data.cards[0]!;
     const review = card.rows.find((r) => r.key === "review")!;
-    expect(html).toContain(`${review.range.low.toLocaleString("en-US")} – ${review.range.high.toLocaleString("en-US")}`);
+    expect(html).toContain(
+      `${review.range.low.toLocaleString("en-US")} – ${review.range.high.toLocaleString("en-US")}`,
+    );
   });
 });
 
@@ -112,7 +135,9 @@ describe("§15.2 — /pricing renders only derived figures", () => {
     expect(html.indexOf(`data-cost-card="${essayIdx}"`)).toBe(firstCard);
     const card = data.cards[0]!;
     for (const row of card.rows) {
-      expect(html).toContain(`${row.range.low.toLocaleString("en-US")} – ${row.range.high.toLocaleString("en-US")}`);
+      expect(html).toContain(
+        `${row.range.low.toLocaleString("en-US")} – ${row.range.high.toLocaleString("en-US")}`,
+      );
     }
     // the FAQ's 8,000-word figure is the computed one
     expect(html).toContain(data.faq[0]!.q);
@@ -151,8 +176,9 @@ describe("§15.3 — signup intent + the precedence redirect", () => {
       calls.push(req.intent ?? {});
       return { ok: true as const, created: true };
     };
-    const beginAuth = vi.fn(async (method: string) =>
-      (method === "google" ? { redirect: "/auth/google/start" } : { sent: true }) as AuthOutcome,
+    const beginAuth = vi.fn(
+      async (method: string) =>
+        (method === "google" ? { redirect: "/auth/google/start" } : { sent: true }) as AuthOutcome,
     );
     const app = createWebApp(makeDeps({ beginAuth, signupMode: "open" }, { signup }));
 
@@ -195,7 +221,10 @@ describe("§15.3 — signup intent + the precedence redirect", () => {
       { session: () => ({}) },
       {
         listProjects: async () => [SHOWCASE_ROW],
-        getShowcaseEntry: async () => ({ ...SHOWCASE_ENTRY, intent: { entry: "draft" as const, held: true } }),
+        getShowcaseEntry: async () => ({
+          ...SHOWCASE_ENTRY,
+          intent: { entry: "draft" as const, held: true },
+        }),
       },
     );
     const res = await createWebApp(deps).request("/app");
@@ -232,21 +261,20 @@ describe("§15.3 — signup intent + the precedence redirect", () => {
     // SPA.27 — the list is leaf paint now; the surviving contract is NO redirect to the Showcase
     // walkthrough + the shell mount (the row itself rides the /bff/app list).
     expect(await res.text()).toContain('id="spa-root"');
-    const twin = await (await createWebApp(deps).request("/bff/app")).json() as { rows: { slug: string; title: string }[] };
+    const twin = (await (await createWebApp(deps).request("/bff/app")).json()) as {
+      rows: { slug: string; title: string }[];
+    };
     expect(twin.rows.map((r) => r.title)).toContain("Showcase — a worked example");
   });
 
   it("GET /app?verified=1 mints email.verified through the acquisition channel", async () => {
     const events: { event: string; props?: Record<string, unknown> }[] = [];
-    const deps = makeDeps(
-      { session: () => ({}) },
-      {
-        postAcquisitionEvent: async (_s, req) => {
-          events.push(req as { event: string });
-          return { ok: true, recorded: true };
-        },
-      } as Partial<DataSource>,
-    );
+    const deps = makeDeps({ session: () => ({}) }, {
+      postAcquisitionEvent: async (_s, req) => {
+        events.push(req as { event: string });
+        return { ok: true, recorded: true };
+      },
+    } as Partial<DataSource>);
     const res = await createWebApp(deps).request("/app?verified=1");
     expect(res.status).toBe(200);
     // fire-and-forget — give the void promise a tick

@@ -1,5 +1,6 @@
 // P1.05 — the Timeline / run-report / steering routes (§5.5/§6.5/§14.5): the round-log read (grouping,
-// next-step card, lazy walkthrough enqueue), the Level-3 report + Level-4 drill-down privacy boundary,
+// next-step card; R7COPY.0: the record-composed delivered block — no lazy enqueue), the Level-3
+// report + Level-4 drill-down privacy boundary,
 // and the five steering endpoints' status codes — all over real migrations via PGlite.
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -12,7 +13,7 @@ import {
   type OrchestratorTestDb,
   type TestDeps,
 } from "@rhema/orchestrator/testing";
-import { RUN_JOBS } from "@rhema/orchestrator";
+// R7COPY.0 — RUN_JOBS import removed (no walkthrough leg remains).
 import { InMemoryContentStore } from "@rhema/mirror";
 import { createApp, type Principal } from "./index.js";
 import type { SqlClient } from "./invite.js";
@@ -34,7 +35,12 @@ beforeEach(async () => {
   deps = makeDeps(db);
   sql = { query: (q, p) => db.pg.query(q, p as unknown[]) as Promise<{ rows: unknown[] }> };
   seed = await seedProject(db, { draftN: 1 });
-  app = createApp({ ...deps, principal: () => principal(), db: sql, store: new InMemoryContentStore() });
+  app = createApp({
+    ...deps,
+    principal: () => principal(),
+    db: sql,
+    store: new InMemoryContentStore(),
+  });
 });
 afterEach(() => db.close());
 
@@ -136,7 +142,9 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     });
     await db.client.query("update runs set paused_at = now() where id = 'run_p'");
     const res = await app.request(`/projects/${seed.projectId}/timeline`);
-    const body = (await res.json()) as { ungrouped: { runId: string; card: { paused: boolean; waitingGate: unknown } }[] };
+    const body = (await res.json()) as {
+      ungrouped: { runId: string; card: { paused: boolean; waitingGate: unknown } }[];
+    };
     const card = body.ungrouped.find((r) => r.runId === "run_p")!.card;
     expect(card.paused).toBe(true);
     expect(card.waitingGate).toBeNull();
@@ -171,9 +179,16 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     expect(card.etaBand!.highMin).toBeGreaterThan(card.etaBand!.lowMin);
 
     // a terminal run's card carries no band
-    await seedRun(db, { runId: "run_dead", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "failed" });
+    await seedRun(db, {
+      runId: "run_dead",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "failed",
+    });
     const res2 = await app.request(`/projects/${seed.projectId}/timeline`);
-    const body2 = (await res2.json()) as { ungrouped: { runId: string; card: { etaBand: unknown } }[] };
+    const body2 = (await res2.json()) as {
+      ungrouped: { runId: string; card: { etaBand: unknown } }[];
+    };
     expect(body2.ungrouped.find((r) => r.runId === "run_dead")!.card.etaBand).toBeNull();
   });
 
@@ -187,7 +202,12 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     });
     await seedGate(db, { gateId: "g1", runId: "run_g", kind: "approve_plan", onExpiry: "wait" });
     const res = await app.request(`/projects/${seed.projectId}/timeline`);
-    const body = (await res.json()) as { ungrouped: { runId: string; card: { paused: boolean; waitingGate: { kind: string } | null } }[] };
+    const body = (await res.json()) as {
+      ungrouped: {
+        runId: string;
+        card: { paused: boolean; waitingGate: { kind: string } | null };
+      }[];
+    };
     const card = body.ungrouped.find((r) => r.runId === "run_g")!.card;
     expect(card.paused).toBe(false);
     expect(card.waitingGate).toMatchObject({ kind: "approve_plan" });
@@ -210,10 +230,13 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
       deadlineAt: new Date("2026-09-18T12:00:00Z"),
     });
     // a resolved gate → the run's permanent decision row (§6.4 item 8; REQ-RUN-5/6)
-    await seedGate(db, { gateId: "g_done", runId: "run_w", kind: "approve_scope", onExpiry: "proceed_as_proposed" });
-    await db.client.query(
-      `update gates set resolved_at = now() where id = 'g_done'`,
-    );
+    await seedGate(db, {
+      gateId: "g_done",
+      runId: "run_w",
+      kind: "approve_scope",
+      onExpiry: "proceed_as_proposed",
+    });
+    await db.client.query(`update gates set resolved_at = now() where id = 'g_done'`);
     await db.client.query(
       `insert into decisions(gate_id, by_actor, action, changes, overlay_version_ids, at)
        values ('g_done','user','approve',3,'{}',now())`,
@@ -229,11 +252,19 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     };
     const run = body.ungrouped.find((r) => r.runId === "run_w")!;
     // the open gate DTO rides the run — identical fields to the Needs-you read (one loader).
-    expect(run.gate).toMatchObject({ id: "g_open", kind: "approve_plan", onExpiry: "proceed_conservative" });
+    expect(run.gate).toMatchObject({
+      id: "g_open",
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+    });
     expect(run.gate!.deadlineAt).toBeTruthy();
     // the permanent decision record is on the card (resolved gate, never re-created).
     expect(run.card.decisions).toHaveLength(1);
-    expect(run.card.decisions![0]).toMatchObject({ gateId: "g_done", action: "approve", changes: 3 });
+    expect(run.card.decisions![0]).toMatchObject({
+      gateId: "g_done",
+      action: "approve",
+      changes: 3,
+    });
   });
 
   // RUN.1 (ADR-050) — an informational gate (blocking:false — the default approve_scope) rides its
@@ -305,7 +336,7 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     expect(run.card.waitingGate).toMatchObject({ kind: "approve_plan" });
   });
 
-  it("lazily enqueues the walkthrough for a delivered run with no record (§5.5 D20), once", async () => {
+  it("R7COPY.0 — a delivered run's card carries the record-composed 'What it delivered', no job enqueued", async () => {
     await seedRun(db, {
       runId: "run_done",
       workspaceId: seed.workspaceId,
@@ -313,14 +344,20 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
       workflow: "review",
       state: "completed",
     });
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      await tx
+        .query(
+          `insert into correspondence_items
+           (id, project_id, run_id, workspace_id, kind, draft_version_id, finding_schema_version, created_at)
+         values ('ci_1', $1, 'run_done', $2, 'review', 'dv_1', 1, now())`,
+          [seed.projectId, seed.workspaceId],
+        )
+        .catch(() => null); // best-effort: schema shape may differ across seeds
+    });
     const res = await app.request(`/projects/${seed.projectId}/timeline`);
     expect(res.status).toBe(200);
-    const sent = deps.queue.ofName(RUN_JOBS.walkthrough);
-    expect(sent).toHaveLength(1);
-    expect(sent[0]!.singletonKey).toBe("walkthrough:run_done");
-    // a second render does not re-send (the singleton is still active in the in-memory queue)
-    await app.request(`/projects/${seed.projectId}/timeline`);
-    expect(deps.queue.ofName(RUN_JOBS.walkthrough)).toHaveLength(1);
+    // ADR-130 — the generated walkthrough is retired: no lazy enqueue happens on render.
+    expect(deps.queue.ofName("run.walkthrough" as never)).toHaveLength(0);
   });
 });
 
@@ -368,7 +405,9 @@ describe("GET /runs/:id/report (§14.5)", () => {
     const res = await app.request("/runs/run_rep/report?advanced=1");
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      advancedView: { rows: { phase: string; seat: string; inputTokens: number; providerRequestIds: string[] }[] };
+      advancedView: {
+        rows: { phase: string; seat: string; inputTokens: number; providerRequestIds: string[] }[];
+      };
     };
     expect(body.advancedView.rows[0]).toMatchObject({
       phase: "checking_claims",
@@ -459,10 +498,16 @@ describe("steering endpoints (§6.5)", () => {
     });
 
   it("POST /runs/:id/pause flags a running run; 409s a terminal one; 404s a missing one", async () => {
-    await seedRun(db, { runId: "run_p", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await seedRun(db, {
+      runId: "run_p",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "running",
+    });
     const res = await post("/runs/run_p/pause");
     expect(res.status).toBe(200);
-    const row = (await db.client.query("select pause_requested_at from runs where id = 'run_p'")).rows[0] as {
+    const row = (await db.client.query("select pause_requested_at from runs where id = 'run_p'"))
+      .rows[0] as {
       pause_requested_at: Date | null;
     };
     expect(row.pause_requested_at).not.toBeNull();
@@ -473,16 +518,28 @@ describe("steering endpoints (§6.5)", () => {
   });
 
   it("POST /runs/:id/resume re-queues a parked run; a gate wait answers 409 gate_waiting", async () => {
-    await seedRun(db, { runId: "run_p", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedRun(db, {
+      runId: "run_p",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "waiting_gate",
+    });
     await db.client.query("update runs set paused_at = now() where id = 'run_p'");
     const res = await post("/runs/run_p/resume", { note: "go easy on the verdict" });
     expect(res.status).toBe(200);
-    expect((await db.client.query("select state from runs where id = 'run_p'")).rows[0]).toMatchObject({ state: "queued" });
+    expect(
+      (await db.client.query("select state from runs where id = 'run_p'")).rows[0],
+    ).toMatchObject({ state: "queued" });
     // the note landed as queued_message guidance
     const g = await db.client.query("select source, body from guidance where run_id = 'run_p'");
     expect(g.rows[0]).toMatchObject({ source: "queued_message", body: "go easy on the verdict" });
 
-    await seedRun(db, { runId: "run_g", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedRun(db, {
+      runId: "run_g",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "waiting_gate",
+    });
     await seedGate(db, { gateId: "g1", runId: "run_g", kind: "approve_plan", onExpiry: "wait" });
     const gw = await post("/runs/run_g/resume");
     expect(gw.status).toBe(409);
@@ -490,7 +547,12 @@ describe("steering endpoints (§6.5)", () => {
   });
 
   it("POST /runs/:id/notes captures the note (201); empty text 400s; missing run 404s", async () => {
-    await seedRun(db, { runId: "run_n", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await seedRun(db, {
+      runId: "run_n",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "running",
+    });
     expect((await post("/runs/run_n/notes", { text: "check the §2 stat" })).status).toBe(201);
     expect((await post("/runs/run_n/notes", { text: "   " })).status).toBe(400);
     expect((await post("/runs/run_n/notes", {})).status).toBe(400);
@@ -507,47 +569,29 @@ describe("steering endpoints (§6.5)", () => {
     });
     const res = await post("/runs/run_s/stop");
     expect(res.status).toBe(200);
-    expect((await db.client.query("select state from runs where id = 'run_s'")).rows[0]).toMatchObject({
+    expect(
+      (await db.client.query("select state from runs where id = 'run_s'")).rows[0],
+    ).toMatchObject({
       state: "cancelled",
     });
     expect((await post("/runs/run_s/stop")).status).toBe(200); // alreadyTerminal → ok
   });
 
-  it("POST /runs/:id/walkthrough/retry clears a failed record and re-enqueues; ready is a no-op", async () => {
+  it("R7COPY.0 — the retired /runs/:id/walkthrough/retry route is gone", async () => {
     await seedRun(db, {
       runId: "run_w",
       workspaceId: seed.workspaceId,
       projectId: seed.projectId,
       state: "completed",
     });
-    await db.client.query(
-      `update runs set walkthrough = '{"status":"failed","attempts":1,"lastError":"boom"}'::jsonb where id = 'run_w'`,
-    );
+    // ADR-130 — nothing to retry: the route is removed, not a no-op (an honest 404 beats a dead dial).
     const res = await post("/runs/run_w/walkthrough/retry");
-    expect(res.status).toBe(202);
-    expect(((await res.json()) as { status: string }).status).toBe("requeued");
-    expect((await db.client.query("select walkthrough from runs where id = 'run_w'")).rows[0]).toMatchObject({
-      walkthrough: null,
-    });
-    expect(deps.queue.ofName(RUN_JOBS.walkthrough)).toHaveLength(1);
-
-    // a ready record: 200 {status:'ready'}, no re-enqueue
-    await db.client.query(
-      `update runs set walkthrough = '{"status":"ready","text":"done","attempts":2}'::jsonb where id = 'run_w'`,
-    );
-    const res2 = await post("/runs/run_w/walkthrough/retry");
-    expect(res2.status).toBe(200);
-    expect(deps.queue.ofName(RUN_JOBS.walkthrough)).toHaveLength(1);
-
-    // a live run refuses
-    await seedRun(db, { runId: "run_live", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
-    expect((await post("/runs/run_live/walkthrough/retry")).status).toBe(409);
-    expect((await post("/runs/run_missing/walkthrough/retry")).status).toBe(404);
+    expect(res.status).toBe(404);
   });
 
   it("every steering POST 401s unauthenticated", async () => {
     const anon = createApp({ ...deps, principal: () => null, db: sql });
-    for (const p of ["pause", "resume", "notes", "stop", "walkthrough/retry"]) {
+    for (const p of ["pause", "resume", "notes", "stop"]) {
       const res = await anon.request(`/runs/run_x/${p}`, { method: "POST" });
       expect(res.status, p).toBe(401);
     }
@@ -582,7 +626,10 @@ describe("RPT.1 — the live meter on the timeline card", () => {
     const res = await app.request(`/projects/${seed.projectId}/timeline`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      ungrouped: { runId: string; card: { spentCredits: number; provisional?: boolean; capCredits: number } }[];
+      ungrouped: {
+        runId: string;
+        card: { spentCredits: number; provisional?: boolean; capCredits: number };
+      }[];
     };
     const card = body.ungrouped.find((r) => r.runId === "run_live")!.card;
     expect(card.spentCredits).toBe(300); // the live figure, not the stale committed 100
@@ -671,7 +718,11 @@ describe("RPT.1 — the reconciled run report (§14.4)", () => {
     expect(body.report.refundedCredits).toBe(4);
     // charged(630) ran above metered(300) → the committed-mode gap is stated; the refund lists separately.
     expect(body.report.differences).toContainEqual({ key: "committed", credits: 330 });
-    expect(body.report.differences).toContainEqual({ key: "refund", credits: 4, reason: "metered_over_debit" });
+    expect(body.report.differences).toContainEqual({
+      key: "refund",
+      credits: 4,
+      reason: "metered_over_debit",
+    });
   });
 
   it("the capped fixture: metered past the cap reports the absorbed overrun as 'not charged'", async () => {
@@ -697,7 +748,11 @@ describe("RPT.1 — the reconciled run report (§14.4)", () => {
     const res = await app.request("/runs/run_cap/report?advanced=1");
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      report: { spentCredits: number; meteredCredits: number; differences: { key: string; credits: number }[] };
+      report: {
+        spentCredits: number;
+        meteredCredits: number;
+        differences: { key: string; credits: number }[];
+      };
       advancedView: { rows: { phase: string; credits: number }[] };
     };
     expect(body.report.spentCredits).toBe(840);
@@ -757,7 +812,9 @@ describe("RPT.1 — the reconciled run report (§14.4)", () => {
     // …and the unmarked project's run carries none
     await db.client.query("update projects set showcase = false where id = $1", [seed.projectId]);
     const res2 = await app.request("/runs/run_sc/report");
-    expect(((await res2.json()) as { report: { workedExample?: boolean } }).report.workedExample).toBeUndefined();
+    expect(
+      ((await res2.json()) as { report: { workedExample?: boolean } }).report.workedExample,
+    ).toBeUndefined();
   });
 });
 
@@ -776,7 +833,12 @@ async function seedRefundableRun(runId: string, opts: { endedAt?: Date } = {}): 
     "insert into credit_balances(billing_account_id, bucket, available, held) values ($1,'included',5000,0) on conflict do nothing",
     [seed.billingAccountId],
   );
-  await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "completed" });
+  await seedRun(db, {
+    runId,
+    workspaceId: seed.workspaceId,
+    projectId: seed.projectId,
+    state: "completed",
+  });
   await db.client.query(
     "insert into steps(id, run_id, phase, ordinal, state) values ($1,$2,'craft',1,'done')",
     [`st_${runId}`, runId],
@@ -784,7 +846,14 @@ async function seedRefundableRun(runId: string, opts: { endedAt?: Date } = {}): 
   await db.client.query(
     `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, idempotency_key)
      values ($1,$2,$3,'debit',160,'included',$4,$5,'phase',$6)`,
-    [`led_${runId}`, seed.workspaceId, seed.billingAccountId, runId, `st_${runId}`, `debit:${runId}`],
+    [
+      `led_${runId}`,
+      seed.workspaceId,
+      seed.billingAccountId,
+      runId,
+      `st_${runId}`,
+      `debit:${runId}`,
+    ],
   );
   await db.client.query("update runs set ended_at = $2 where id = $1", [
     runId,
@@ -795,10 +864,12 @@ async function seedRefundableRun(runId: string, opts: { endedAt?: Date } = {}): 
 const includedAvailable = async () =>
   Number(
     (
-      (await db.client.query(
-        "select available from credit_balances where billing_account_id = $1 and bucket = 'included'",
-        [seed.billingAccountId],
-      )).rows[0] as { available: number }
+      (
+        await db.client.query(
+          "select available from credit_balances where billing_account_id = $1 and bucket = 'included'",
+          [seed.billingAccountId],
+        )
+      ).rows[0] as { available: number }
     ).available,
   );
 
@@ -834,11 +905,15 @@ describe("POST /runs/:id/refund (DEF.4; REQ-SPEC-24(6))", () => {
     expect(body).toMatchObject({ status: "refunded", credits: 160 });
     expect((await includedAvailable()) - before).toBe(160);
     const rows = (
-      await db.client.query("select kind, reason, credits from credit_ledger where run_id = 'run_rf2' and kind = 'refund'")
+      await db.client.query(
+        "select kind, reason, credits from credit_ledger where run_id = 'run_rf2' and kind = 'refund'",
+      )
     ).rows as { kind: string; reason: string; credits: number }[];
     expect(rows).toEqual([{ kind: "refund", reason: "user_window", credits: 160 }]);
     const req = (
-      await db.client.query("select state, decision, quarter from user_refund_requests where run_id = 'run_rf2'")
+      await db.client.query(
+        "select state, decision, quarter from user_refund_requests where run_id = 'run_rf2'",
+      )
     ).rows[0] as { state: string; decision: string; quarter: string };
     expect(req).toEqual({ state: "refunded", decision: "auto_allowance", quarter: "2026Q3" });
     expect(
@@ -846,18 +921,27 @@ describe("POST /runs/:id/refund (DEF.4; REQ-SPEC-24(6))", () => {
     ).toMatchObject({ credits: 160, reason: "user_window" });
     // the report now reports refunded (the block IS the audit's read model)
     const report = await (await refundApp("open").request("/runs/run_rf2/report")).json();
-    expect((report as { refundWindow: unknown }).refundWindow).toEqual({ state: "refunded", credits: 160 });
+    expect((report as { refundWindow: unknown }).refundWindow).toEqual({
+      state: "refunded",
+      credits: 160,
+    });
   });
 
   it("the report block answers eligible+figure before the request and ineligible on a day-8 run", async () => {
     await seedRefundableRun("run_rf3");
     const appO = refundApp("open");
     const before = await (await appO.request("/runs/run_rf3/report")).json();
-    expect((before as { refundWindow: unknown }).refundWindow).toEqual({ state: "eligible", credits: 160 });
+    expect((before as { refundWindow: unknown }).refundWindow).toEqual({
+      state: "eligible",
+      credits: 160,
+    });
     // day 8 — the window's edge
     await db.client.query("update runs set ended_at = '2026-08-24T00:00:00Z' where id = 'run_rf3'");
     const after = await (await appO.request("/runs/run_rf3/report")).json();
-    expect((after as { refundWindow: unknown }).refundWindow).toEqual({ state: "ineligible", credits: 160 });
+    expect((after as { refundWindow: unknown }).refundWindow).toEqual({
+      state: "ineligible",
+      credits: 160,
+    });
     const res = await appO.request("/runs/run_rf3/refund", { method: "POST" });
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "window_expired" });
@@ -867,23 +951,36 @@ describe("POST /runs/:id/refund (DEF.4; REQ-SPEC-24(6))", () => {
     await seedRefundableRun("run_rf4");
     await seedRefundableRun("run_rf5");
     const appO = refundApp("open");
-    expect((await (await appO.request("/runs/run_rf4/refund", { method: "POST" })).json()).status).toBe("refunded");
+    expect(
+      (await (await appO.request("/runs/run_rf4/refund", { method: "POST" })).json()).status,
+    ).toBe("refunded");
     const res = await appO.request("/runs/run_rf5/refund", { method: "POST" });
     expect(res.status).toBe(202);
     const body = (await res.json()) as { status: string; credits: number };
     expect(body).toMatchObject({ status: "pending_review", credits: 160 });
     expect(
-      (await db.client.query("select count(*)::int n from credit_ledger where run_id = 'run_rf5' and kind = 'refund'")).rows[0],
+      (
+        await db.client.query(
+          "select count(*)::int n from credit_ledger where run_id = 'run_rf5' and kind = 'refund'",
+        )
+      ).rows[0],
     ).toEqual({ n: 0 });
     // a replay returns the recorded verdict (202 again, same request row — never a second refund)
     const replay = await appO.request("/runs/run_rf5/refund", { method: "POST" });
     expect(replay.status).toBe(202);
     expect(
-      (await db.client.query("select count(*)::int n from user_refund_requests where run_id = 'run_rf5'")).rows[0],
+      (
+        await db.client.query(
+          "select count(*)::int n from user_refund_requests where run_id = 'run_rf5'",
+        )
+      ).rows[0],
     ).toEqual({ n: 1 });
     // and the report block tells the user their request is queued
     const report = await (await appO.request("/runs/run_rf5/report")).json();
-    expect((report as { refundWindow: unknown }).refundWindow).toEqual({ state: "pending_review", credits: 160 });
+    expect((report as { refundWindow: unknown }).refundWindow).toEqual({
+      state: "pending_review",
+      credits: 160,
+    });
   });
 
   it("replaying a refunded request is a no-op — same verdict, no second refund row", async () => {
@@ -894,7 +991,11 @@ describe("POST /runs/:id/refund (DEF.4; REQ-SPEC-24(6))", () => {
     expect(again.status).toBe(200);
     expect(await again.json()).toMatchObject({ status: "refunded", credits: 160 });
     expect(
-      (await db.client.query("select count(*)::int n from credit_ledger where run_id = 'run_rf6' and kind = 'refund'")).rows[0],
+      (
+        await db.client.query(
+          "select count(*)::int n from credit_ledger where run_id = 'run_rf6' and kind = 'refund'",
+        )
+      ).rows[0],
     ).toEqual({ n: 1 });
   });
 

@@ -14,6 +14,7 @@ export * from "./reconciliation.js";
 export * from "./rubric.js";
 export * from "./ledger.js";
 export * from "./run-card.js";
+export * from "./delivered-summary.js";
 export * from "./timeline.js";
 export * from "./run-report.js";
 export * from "./feed.js";

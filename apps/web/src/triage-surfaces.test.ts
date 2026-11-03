@@ -1,9 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ApiError, type ProjectRow, type GateCardDto, type DecisionItemDto, type ApprovalSettingsDto } from "@rhema/api-client";
+import {
+  ApiError,
+  type ProjectRow,
+  type GateCardDto,
+  type DecisionItemDto,
+  type ApprovalSettingsDto,
+} from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
+import { buildRunCardView } from "@rhema/findings-core";
 import { ProjectOverviewBody } from "./page-chrome.js";
 
 // PRB.05 — the web shell's triage surfaces (§5.7/§6.4/§10.1): the dossier renders the five-verb disposition
@@ -40,7 +47,19 @@ const DOSSIER: DossierData = {
   versionLabel: "Review of v1",
   openObligations: 1,
   addressedObligations: 0,
-  runCard: { runId: "run_1", state: "completed", phases: [], spentCredits: 100, capCredits: 840 },
+  runSummary: {
+    runId: "run_1",
+    workflow: "review",
+    state: "completed",
+    createdAt: "2026-11-01T00:00:00Z",
+    card: buildRunCardView({
+      runId: "run_1",
+      state: "completed",
+      phases: [],
+      spentCredits: 100,
+      capCredits: 840,
+    }),
+  },
   letterTitle: "The Politics of Visibility",
   letterSections: [{ id: "verdict", title: "Verdict", paragraphs: ["Holds."] }],
   claims: [],
@@ -71,7 +90,13 @@ const DOSSIER: DossierData = {
       body: "The ruling did the opposite.",
       rubricDims: [],
       provisional: false,
-      disposition: { kind: "defer", rationale: "Not this round", by: { kind: "user", userId: "u_1" }, at: "2026-09-16T00:00:00Z", frozen: false },
+      disposition: {
+        kind: "defer",
+        rationale: "Not this round",
+        by: { kind: "user", userId: "u_1" },
+        at: "2026-09-16T00:00:00Z",
+        frozen: false,
+      },
     },
     {
       id: "f_s",
@@ -88,7 +113,14 @@ const DOSSIER: DossierData = {
     },
   ],
   rubric: [],
-  accessReport: { seat: "editor", mountedPathCount: 0, fetches: 0, deniedAttempts: 0, violations: 0, subagents: [] },
+  accessReport: {
+    seat: "editor",
+    mountedPathCount: 0,
+    fetches: 0,
+    deniedAttempts: 0,
+    violations: 0,
+    subagents: [],
+  },
 };
 
 const GATE: GateCardDto = {
@@ -105,8 +137,19 @@ const GATE: GateCardDto = {
   capCredits: 840,
   triage: {
     rows: [
-      { findingId: "f_1", ordinal: 1, title: "The injury is the least-evidenced thing.", severity: "blocking" },
-      { findingId: "f_2", ordinal: 2, title: "A citation is misstated.", severity: "major", disposition: { kind: "escalate", rationale: "my call", actor: "user" } },
+      {
+        findingId: "f_1",
+        ordinal: 1,
+        title: "The injury is the least-evidenced thing.",
+        severity: "blocking",
+      },
+      {
+        findingId: "f_2",
+        ordinal: 2,
+        title: "A citation is misstated.",
+        severity: "major",
+        disposition: { kind: "escalate", rationale: "my call", actor: "user" },
+      },
     ],
   },
 };
@@ -130,7 +173,10 @@ const GATE_AUTO: GateCardDto = {
 };
 delete (GATE_AUTO as Record<string, unknown>).triage;
 
-function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = () => ({})): WebDeps {
+function makeDeps(
+  over: Partial<DataSource> = {},
+  session: WebDeps["session"] = () => ({}),
+): WebDeps {
   const dataSource: DataSource = {
     listProjects: async () => PROJECTS,
     getDossier: async () => DOSSIER,
@@ -140,7 +186,12 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
     },
     createImport: async () => ({ draftId: "d" }),
     createRun: async () => ({ runId: "run_new", state: "queued" }),
-    recordDisposition: async () => ({ id: "dsp_1", findingId: "f_1", kind: "accept", status: "proposed" }),
+    recordDisposition: async () => ({
+      id: "dsp_1",
+      findingId: "f_1",
+      kind: "accept",
+      status: "proposed",
+    }),
     listGates: async () => [GATE],
     decideGate: async () => {},
     recordGateActivity: async () => {},
@@ -149,7 +200,11 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
     getPretriage: async () => ({ correspondenceId: "c_1", triaged: 1, total: 3, entries: [] }),
     getApprovalOverrides: async () => ({}),
     setApprovalOverrides: async () => {},
-    getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+    getBillingBalance: async () => ({
+      spendableCredits: 200_000,
+      suspended: false,
+      clawbackDebt: 0,
+    }),
     recordExhaustedPrompt: async () => undefined,
     ...over,
   };
@@ -157,7 +212,10 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
 }
 
 function form(fields: Record<string, string>): { body: string; headers: Record<string, string> } {
-  return { body: new URLSearchParams(fields).toString(), headers: { "content-type": "application/x-www-form-urlencoded" } };
+  return {
+    body: new URLSearchParams(fields).toString(),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  };
 }
 
 const SLUG = "the-politics-of-visibility";
@@ -169,11 +227,22 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
   // The POST contract — the forward, the flashes, the refusals — stays server-owned below.
 
   it("POST forwards verb/note/reason_code/adapted_text and bounces back with ?disposed=", async () => {
-    const recordDisposition = vi.fn(async () => ({ id: "dsp_1", findingId: "f_1", kind: "adapt", status: "proposed" }));
+    const recordDisposition = vi.fn(async () => ({
+      id: "dsp_1",
+      findingId: "f_1",
+      kind: "adapt",
+      status: "proposed",
+    }));
     const app = createWebApp(makeDeps({ recordDisposition }));
     const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/disposition`, {
       method: "POST",
-      ...form({ verb: "adapt", note: "", adapted_text: "the fixed wording", reason_code: "already_knew", next: `/p/${SLUG}/review/run_1` }),
+      ...form({
+        verb: "adapt",
+        note: "",
+        adapted_text: "the fixed wording",
+        reason_code: "already_knew",
+        next: `/p/${SLUG}/review/run_1`,
+      }),
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(`/p/${SLUG}/review/run_1?disposed=f_1`);
@@ -181,7 +250,11 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
       expect.anything(),
       "proj_pv",
       "f_1",
-      expect.objectContaining({ kind: "adapt", adaptedText: "the fixed wording", reasonCode: "already_knew" }),
+      expect.objectContaining({
+        kind: "adapt",
+        adaptedText: "the fixed wording",
+        reasonCode: "already_knew",
+      }),
     );
     // empty note → no rationale key at all.
     expect(recordDisposition.mock.calls[0]![3]).not.toHaveProperty("rationale");
@@ -189,7 +262,11 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
 
   it("a 422 (rationale required) bounces back with the ferr/fmsg flash the leaf paints under the card", async () => {
     const app = createWebApp(
-      makeDeps({ recordDisposition: async () => { throw new ApiError(422, "invalid_disposition"); } }),
+      makeDeps({
+        recordDisposition: async () => {
+          throw new ApiError(422, "invalid_disposition");
+        },
+      }),
     );
     const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/disposition`, {
       method: "POST",
@@ -206,7 +283,11 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
 
   it("a 409 (frozen at delivery) bounces back with the frozen notice's flash", async () => {
     const app = createWebApp(
-      makeDeps({ recordDisposition: async () => { throw new ApiError(409, "frozen"); } }),
+      makeDeps({
+        recordDisposition: async () => {
+          throw new ApiError(409, "frozen");
+        },
+      }),
     );
     const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/disposition`, {
       method: "POST",
@@ -219,7 +300,12 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
   });
 
   it("the project-scoped POST (a gate row's per-finding override) bounces back to /p/:slug", async () => {
-    const recordDisposition = vi.fn(async () => ({ id: "dsp_1", findingId: "f_1", kind: "rebut", status: "proposed" }));
+    const recordDisposition = vi.fn(async () => ({
+      id: "dsp_1",
+      findingId: "f_1",
+      kind: "rebut",
+      status: "proposed",
+    }));
     const app = createWebApp(makeDeps({ recordDisposition }));
     const res = await app.request(`/p/${SLUG}/findings/f_1/disposition`, {
       method: "POST",
@@ -256,18 +342,30 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
     const answerDecision = vi.fn(async () => {});
     const app = createWebApp(makeDeps({ decideGate, answerDecision }));
 
-    const g = await app.request(`/p/${SLUG}/gates/gate_1`, { method: "POST", ...form({ action: "approve", guidance: "keep it tight", standing: "on" }) });
+    const g = await app.request(`/p/${SLUG}/gates/gate_1`, {
+      method: "POST",
+      ...form({ action: "approve", guidance: "keep it tight", standing: "on" }),
+    });
     expect(g.status).toBe(302);
-    expect(decideGate).toHaveBeenCalledWith(expect.anything(), "proj_pv", "gate_1", { action: "approve", guidance: "keep it tight", standingRule: true });
+    expect(decideGate).toHaveBeenCalledWith(expect.anything(), "proj_pv", "gate_1", {
+      action: "approve",
+      guidance: "keep it tight",
+      standingRule: true,
+    });
 
-    const d = await app.request(`/p/${SLUG}/decisions/dcr_1`, { method: "POST", ...form({ answer: "dismiss" }) });
+    const d = await app.request(`/p/${SLUG}/decisions/dcr_1`, {
+      method: "POST",
+      ...form({ answer: "dismiss" }),
+    });
     expect(d.status).toBe(302);
     expect(answerDecision).toHaveBeenCalledWith(expect.anything(), "proj_pv", "dcr_1", "dismiss");
   });
 
   it("only an auto-proceed card carries the presence-ping script; its pings hit the activity route (REQ-SPEC-18)", async () => {
     const recordGateActivity = vi.fn(async () => {});
-    const app = createWebApp(makeDeps({ listGates: async () => [GATE, GATE_AUTO], recordGateActivity }));
+    const app = createWebApp(
+      makeDeps({ listGates: async () => [GATE, GATE_AUTO], recordGateActivity }),
+    );
     const res = await app.request(`/p/${SLUG}`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -278,11 +376,22 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
     // the script pings present/blur/reading at the card's activity endpoint.
     expect(html).toContain("sendBeacon");
 
-    const p = await app.request(`/p/${SLUG}/gates/gate_auto/activity`, { method: "POST", ...form({ activity: "present" }) });
+    const p = await app.request(`/p/${SLUG}/gates/gate_auto/activity`, {
+      method: "POST",
+      ...form({ activity: "present" }),
+    });
     expect(p.status).toBe(204);
-    expect(recordGateActivity).toHaveBeenCalledWith(expect.anything(), "proj_pv", "gate_auto", "present");
+    expect(recordGateActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_pv",
+      "gate_auto",
+      "present",
+    );
     // an invalid activity value is rejected before the data source is touched.
-    const bad = await app.request(`/p/${SLUG}/gates/gate_auto/activity`, { method: "POST", ...form({ activity: "nope" }) });
+    const bad = await app.request(`/p/${SLUG}/gates/gate_auto/activity`, {
+      method: "POST",
+      ...form({ activity: "nope" }),
+    });
     expect(bad.status).toBe(422);
   });
 });
@@ -351,7 +460,10 @@ describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
     });
 
     // unchecking removes just the triage key, preserving any other overrides.
-    const res2 = await app.request(`/p/${SLUG}/approval-overrides`, { method: "POST", ...form({}) });
+    const res2 = await app.request(`/p/${SLUG}/approval-overrides`, {
+      method: "POST",
+      ...form({}),
+    });
     expect(res2.status).toBe(302);
     expect(setApprovalOverrides).toHaveBeenLastCalledWith(expect.anything(), "proj_pv", {});
   });
@@ -411,15 +523,32 @@ const SETTINGS = {
   policy: "named" as const,
   overrides: { approve_triage: 24 * 60 * 60 * 1000 },
   defaults: [
-    { kind: "approve_plan", deadlineMs: 24 * 60 * 60 * 1000, onExpiry: "proceed_conservative", overridable: true },
+    {
+      kind: "approve_plan",
+      deadlineMs: 24 * 60 * 60 * 1000,
+      onExpiry: "proceed_conservative",
+      overridable: true,
+    },
     { kind: "approve_triage", deadlineMs: null, onExpiry: "wait", overridable: true },
     { kind: "confirm_cost", deadlineMs: null, onExpiry: "cancel", overridable: false },
   ],
   standing: [
-    { id: "gdn_1", body: "Always ask before apparatus over 1,000 words.", workflows: ["draft"], active: true, createdAt: "2026-09-10T00:00:00Z" },
+    {
+      id: "gdn_1",
+      body: "Always ask before apparatus over 1,000 words.",
+      workflows: ["draft"],
+      active: true,
+      createdAt: "2026-09-10T00:00:00Z",
+    },
   ],
   retired: [
-    { id: "gdn_0", body: "An old rule.", workflows: [], active: false, createdAt: "2026-09-01T00:00:00Z" },
+    {
+      id: "gdn_0",
+      body: "An old rule.",
+      workflows: [],
+      active: false,
+      createdAt: "2026-09-01T00:00:00Z",
+    },
   ],
 };
 
@@ -437,9 +566,7 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
   });
 
   it("orders rows §5.11: deadline-bearing first (soonest), waiting next, informational last", async () => {
-    const app = createWebApp(
-      makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }),
-    );
+    const app = createWebApp(makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }));
     const html = await (await app.request(`/p/${SLUG}`, PHONE)).text();
     const order = [...html.matchAll(/data-approval-row="([^"]+)"/g)].map((m) => m[1]);
     expect(order).toEqual(["gate_dl", "gate_1", "gate_info"]);
@@ -451,14 +578,21 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
     expect(html).toContain('data-gate-explainer="true"');
     expect(html).toContain(`action="/p/${SLUG}/explainers/approvals/dismiss"`);
 
-    const seen = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }));
-    expect(await (await seen.request(`/p/${SLUG}`, PHONE)).text()).not.toContain('data-gate-explainer');
+    const seen = createWebApp(
+      makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }),
+    );
+    expect(await (await seen.request(`/p/${SLUG}`, PHONE)).text()).not.toContain(
+      "data-gate-explainer",
+    );
   });
 
   it("the explainer dismiss POST hits the api seam and bounces back", async () => {
     const dismissExplainer = vi.fn(async () => ({ ok: true as const }));
     const app = createWebApp(makeDeps({ dismissExplainer }));
-    const res = await app.request(`/p/${SLUG}/explainers/approvals/dismiss`, { method: "POST", ...form({}) });
+    const res = await app.request(`/p/${SLUG}/explainers/approvals/dismiss`, {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(dismissExplainer).toHaveBeenCalledWith(expect.anything(), "approvals");
   });
@@ -520,7 +654,10 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
       body: "Prefer two-sentence paragraphs.",
       workflows: ["draft", "revise"],
     });
-    const retire = await app.request(`/p/${SLUG}/guidance/gdn_1/retire`, { method: "POST", ...form({}) });
+    const retire = await app.request(`/p/${SLUG}/guidance/gdn_1/retire`, {
+      method: "POST",
+      ...form({}),
+    });
     expect(retire.status).toBe(302);
     expect(retireGuidance).toHaveBeenCalledWith(expect.anything(), "proj_pv", "gdn_1");
   });
@@ -563,13 +700,21 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
   });
 
   it("the run sheet's 'this run only, autonomously' posts autoProceedRun to createRun", async () => {
-    const createRun = vi.fn(async () => ({ runId: "run_auto", state: "queued" as const, deduped: false }));
+    const createRun = vi.fn(async () => ({
+      runId: "run_auto",
+      state: "queued" as const,
+      deduped: false,
+    }));
     const app = createWebApp(makeDeps({ createRun }));
     const res = await app.request(`/p/${SLUG}/run`, {
       method: "POST",
       ...form({
-        workflow: "review", rigor: "standard", idempotencyKey: "idem_auto",
-        estimateCredits: "560", capCredits: "840", modelTier: "balanced",
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_auto",
+        estimateCredits: "560",
+        capCredits: "840",
+        modelTier: "balanced",
         autoRun: "on",
       }),
     });

@@ -62,9 +62,9 @@ export * from "./voice-status.js";
 // P1.19 — the Inbox read model + the in-app channel (§5.11; REQ-IDE-2 amended/48, REQ-MOBILE-19)
 export * from "./inbox.js";
 
-// user steering + the run walkthrough (P1.05; §5.5/§6.5)
+// user steering (P1.05; §6.5). R7COPY.0/ADR-130 — the generated run walkthrough is retired:
+// `run.walkthrough` is gone; the card composes "What it delivered" from the delivered record.
 export * from "./steering.js";
-export * from "./walkthrough.js";
 
 // P1.12 — the Approve-outline delivery consequences (§7.3: research-note copies + outline.approved)
 export * from "./outline-delivery.js";

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FindingView } from "@rhema/contracts";
+import { buildRunCardView } from "@rhema/findings-core";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
 import type { ProjectRow } from "@rhema/api-client";
@@ -50,12 +51,18 @@ const dossier = (findings: readonly FindingView[]): DossierData => ({
   versionLabel: "Review of v1",
   openObligations: 0,
   addressedObligations: 0,
-  runCard: {
+  runSummary: {
     runId: "run_1",
+    workflow: "review",
     state: "completed",
-    phases: [{ key: "reading_the_piece", ordinal: 1, status: "done" }],
-    spentCredits: 3860,
-    capCredits: 5850,
+    createdAt: "2026-11-01T00:00:00Z",
+    card: buildRunCardView({
+      runId: "run_1",
+      state: "completed",
+      phases: [{ key: "reading_the_piece", ordinal: 1, status: "done" }],
+      spentCredits: 3860,
+      capCredits: 5850,
+    }),
   },
   letterTitle: "The archive that remembers",
   letterSections: [{ id: "verdict", title: "Verdict", paragraphs: ["One real problem."] }],
@@ -77,7 +84,14 @@ const dossier = (findings: readonly FindingView[]): DossierData => ({
   fetchLog: [SCOTLAND_URL],
   findings,
   rubric: [{ dimension: "evidence_accuracy", score: 2 }],
-  accessReport: { seat: "editor", mountedPathCount: 1, fetches: 1, deniedAttempts: 0, violations: 0, subagents: [] },
+  accessReport: {
+    seat: "editor",
+    mountedPathCount: 1,
+    fetches: 1,
+    deniedAttempts: 0,
+    violations: 0,
+    subagents: [],
+  },
 });
 
 function makeDeps(findings: readonly FindingView[]): WebDeps {
@@ -87,10 +101,18 @@ function makeDeps(findings: readonly FindingView[]): WebDeps {
     getDossier: async () => dossier(findings),
     checkInvite: async () => ({ ok: false, reason: "unknown" }),
     signup: async () => ({ ok: false, status: 403, error: "invite_required" }),
-    previewImport: async () => ({ status: "ready" as const, preview: {
-      sourceFormat: "markdown" as const, markdown: "", counts: { words: 0, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
-      warnings: [], unconverted: [], quality: "full" as const, qualityNotes: [],
-    } }),
+    previewImport: async () => ({
+      status: "ready" as const,
+      preview: {
+        sourceFormat: "markdown" as const,
+        markdown: "",
+        counts: { words: 0, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
+        warnings: [],
+        unconverted: [],
+        quality: "full" as const,
+        qualityNotes: [],
+      },
+    }),
     createImport: async () => ({ draftId: "d_new" }),
     createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
     getBillingBalance: async () => ({ spendableCredits: 0, suspended: false, clawbackDebt: 0 }),
@@ -133,9 +155,13 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the tw
 
   it("the legacy Showcase [{claim, source}] array ships verbatim (pre-normalization this 500'd)", async () => {
     const [ev] = await evidenceOf([
-      finding("f_legacy", [{ claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL }]),
+      finding("f_legacy", [
+        { claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL },
+      ]),
     ]);
-    expect(ev).toEqual([{ claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL }]);
+    expect(ev).toEqual([
+      { claim: "The 1871 census recorded 3.1M households.", source: SCOTLAND_URL },
+    ]);
   });
 
   it("a malformed evidence blob (urls: not-an-array) ships verbatim — the leaf degrades it", async () => {
@@ -146,7 +172,10 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the tw
 
   it("a dossier mixing every shipped shape ships in one pass (the real Showcase+Memo page mix)", async () => {
     const d = await getDossier([
-      finding("f_a", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL, accessed: "2026-09-30T00:00:00Z" }] }),
+      finding("f_a", {
+        verdict: "contradicted",
+        urls: [{ url: SCOTLAND_URL, accessed: "2026-09-30T00:00:00Z" }],
+      }),
       finding("f_b", { verdict: "verified" }),
       finding("f_c", [{ claim: "x", source: "https://archive.org/web/" }]),
       finding("f_d", undefined),
@@ -156,7 +185,9 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the tw
   });
 
   it("REQ-POS-3 — the contradicted Tier-1 claim still carries its fetched URL", async () => {
-    const d = await getDossier([finding("f_canon", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] })]);
+    const d = await getDossier([
+      finding("f_canon", { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] }),
+    ]);
     expect(d.claims[0]).toMatchObject({ tier: 1, verdict: "contradicted", url: SCOTLAND_URL });
     expect(d.fetchLog).toContain(SCOTLAND_URL); // the leaf's data-fetched pin
   });
@@ -164,7 +195,9 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the tw
   it("RES.2 — the persisted Unverified label rides the payload (the leaf paints the banner)", async () => {
     const data: DossierData = { ...dossier([]), deliveryLabel: "unverified" };
     const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
-    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/bff/p/showcase/review/run_1");
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request(
+      "/bff/p/showcase/review/run_1",
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { dossier: DossierData };
     expect(body.dossier.deliveryLabel).toBe("unverified");
@@ -175,7 +208,9 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all ride the tw
   it("SPA.6 — the showcase flag rides the payload (the leaf's banner + Duplicate affordance)", async () => {
     const data: DossierData = { ...dossier([]), showcase: true };
     const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
-    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/bff/p/showcase/review/run_1");
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request(
+      "/bff/p/showcase/review/run_1",
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { dossier: DossierData };
     expect(body.dossier.showcase).toBe(true);

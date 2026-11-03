@@ -57,6 +57,8 @@ export const runs = pgTable("runs", {
   pausedAt: timestamp("paused_at"),
   // P1.05 (0030; §5.5 D20): the lazily-generated ≤200-word walkthrough {status,text?,model?,inputDigest?,
   // attempts,generatedAt?,lastAttemptAt?,lastError?} — one package-class call over delivered artifacts.
+  // R7COPY.0 (ADR-130): the generator is RETIRED — column + stored values stay (append-only),
+  // unread by every read path and never rendered.
   walkthrough: jsonb("walkthrough"),
   // P1.16 (0036; §14.6): the parked-resume re-price marker — set when a rate-table change mid-park
   // re-priced the run; `repriced_from_version` records the frozen table version it moved from.
