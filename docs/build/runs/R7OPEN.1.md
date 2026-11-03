@@ -13,7 +13,7 @@
   the r7-demo-spec tip incl. the harness-switch boundary commit).
 - **Branch:** `stevevitali/r7open-1-open-round` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-11-03T18:30Z · **Closed:** TBD
+- **Started:** 2026-11-03T18:30Z · **Closed:** 2026-11-03T19:5xZ
 - **Production mutations:** none (repo-only; the one external act was a read-only
   `gh run view 41472916874`).
 
@@ -170,13 +170,16 @@ check — it is a round-7 leg (REQ-DACC-4), not a P1 split; documented in the te
 - `gh run view 41472916874` (read-only): success · schedule · main `79aca4af` · pinned deployed
   `4938b8e…` · provenance match · 44 PASS/21 skip/0 FAIL · $0.
 - `git merge-base --is-ancestor 3c3d7a7 4938b8e4024777417c5a8ed9f518f9afb4bebd08` → 0.
-- `pnpm turbo build lint typecheck` → TBD
-- `pnpm test` → TBD
-- `check-build-memory.sh .` → TBD
-- `check-append-only.mjs --base stevevitali/r7-demo-spec` → TBD
-- `check-backlog.sh` → TBD (baseline carried 27 pre-existing issues; target: zero new ones)
-- Spend: $0.
+- `pnpm turbo build lint typecheck` → **135/135 green** (journeys typecheck cache-miss rebuilt clean).
+- `pnpm exec vitest run packages/journeys/src` → **205/205**; `scripts/deferral-status-parity.test.mjs` → **6/6** (first-canonical-token semantics held — flips prepend DONE, original cells survive).
+- `pnpm test` (full suite) → launched; journeys + parity legs green above, suite-wide tail reported in the closeout (no new-file failures observed through the api/web/journeys legs).
+- `check-build-memory.sh .` → **0 violations** (3 warnings were my `kind: note` rows → flipped to `correction`; remaining warnings all pre-existing-class).
+- `check-append-only.mjs --base stevevitali/r7-demo-spec` → **append-only OK**.
+- `check-backlog.sh` → 27 issues, **all pre-existing at the base** (ADR-111…125 unhomed, nine R6 D-rows, two stale MET-ENGINEERED verdicts, BL-30 status cell); zero new — ADR-126…130 homed in BL-102's sources, D-R7OPEN.1-1 in BL-103's.
+- `gh run view 41472916874` → SUCCESS · `event: schedule` · `main` head `79aca4af` · pinned deployed `4938b8e4024777417c5a8ed9f518f9afb4bebd08` · `provenance match` · 44 PASS / 21 paid-skip / 0 FAIL · $0.
+- `git merge-base --is-ancestor 3c3d7a7 4938b8e…` → 0 (OBS.1 deployment is an ancestor of the verified SHA).
+- Spend: **$0**.
 
 ## ci:
 
-TBD
+pending — recorded by `ci-boundary.sh` at closeout (`logs/ci-R7OPEN.1.json`).
