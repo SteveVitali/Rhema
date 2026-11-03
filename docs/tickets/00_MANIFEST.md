@@ -825,6 +825,13 @@ has exactly one owner.
   "criticals are launch-blocking" rule now binds the in-round adversarial review (REQ-SEC-3); the
   external engagement completes ≤ 60 days after launch. **(ADR-112)** — and, owed in-round, the
   §13.3 usercontent delivery amendment lands with R6UCD.1 **(ADR-113)**.
+- **2026-11-03 (REQ-ARCH-37 re-amended / §13.2 / Q-19 — operator ruling 2026-11-02, R6OSS.1):** the
+  ADR-002 export-time stub swap is **retired** — "I'm okay with packages/protocols being public.
+  We should amend the docs that say otherwise." `packages/protocols` stays public through the
+  GitHub visibility flip (history included); `packages/protocols-stub` is retained as the dormant
+  fallback shim; `@rhema/evals` stays private/path-resolved. Open-source-readiness becomes a
+  full-history audit + the flip runbook (`docs/ops/open-source-readiness.md`). **(ADR-002
+  amendment; ADR-125)**
 
 ## Decomposition decisions (operator may veto; see the session report)
 

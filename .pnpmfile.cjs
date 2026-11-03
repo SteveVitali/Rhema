@@ -8,9 +8,11 @@
  * without a git submodule. When it is unset (a public clone, or the `public-safe` CI job), this hook is
  * a no-op and `evals-stub` (`@rhema/evals`) satisfies the graph.
  *
- * NOTE (2026-09-01): `@rhema/protocols` is no longer path-resolved — it is a COMMITTED workspace member
- * (`packages/protocols`), with `@rhema/protocols-stub` swapped in only at open-source export. So this
- * hook deliberately does NOT rewrite `@rhema/protocols`. Read automatically by pnpm on every install.
+ * NOTE (2026-09-01, amended 2026-11-03): `@rhema/protocols` is a COMMITTED workspace member
+ * (`packages/protocols`) that ships PUBLIC with the repository (operator ruling 2026-11-02,
+ * R6OSS.1) — the former export-time swap to `packages/protocols-stub` is retired and the stub is a
+ * dormant fallback. This hook deliberately does NOT rewrite `@rhema/protocols`.
+ * Read automatically by pnpm on every install.
  */
 
 const fs = require("node:fs");

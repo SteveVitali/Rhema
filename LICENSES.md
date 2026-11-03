@@ -46,8 +46,12 @@ The web build copies Latin WOFF2 assets from these Fontsource packages into `app
 
 They are recorded as OFL-1.1 exceptions. The [Open Font License](https://openfontlicense.org/open-font-license-official-text/) requires the copyright notice and license to accompany redistributed copies, including through qualifying readable metadata. Verify those materials in the final served assets and release image; the build's font-copy step and the npm policy check alone do not establish that requirement is satisfied.
 
-## Public export boundary
+## Public release boundary
 
-The development repository contains private editorial material in `packages/protocols`. The intended public export replaces that package with `packages/protocols-stub` under the `@rhema/protocols` package name. Private evaluation code is resolved from an external `RHEMA_EVALS_PATH`; [`evals-stub`](evals-stub/) supplies the fallback when it is unset.
+Amended 2026-11-03 (operator ruling 2026-11-02, R6OSS.1; REQ-ARCH-37 re-amended): the editorial
+protocols in `packages/protocols` publish with this repository — the former export-time swap to
+`packages/protocols-stub` is retired and the stub is a dormant fallback. Private evaluation code
+is resolved from an external `RHEMA_EVALS_PATH`; [`evals-stub`](evals-stub/) supplies the
+fallback when it is unset.
 
-These boundaries also apply to history, generated artifacts, fixtures, and logs. The marker gate checks specific public outputs; it is not an audit of everything a GitHub visibility change would expose. See [open-source readiness](docs/open-source-readiness.md) for the release work that remains. No protocol or evaluation text may enter a client bundle, OpenAPI document, or event payload.
+These boundaries also apply to history, generated artifacts, fixtures, and logs. The marker gate checks specific public outputs; it is not an audit of everything a GitHub visibility change would expose. See [open-source readiness](docs/open-source-readiness.md) for the release work that remains. Evaluation text must never enter a client bundle, OpenAPI document, or event payload; protocol text is public by choice but is likewise kept out of shipped client artifacts by the marker gate.

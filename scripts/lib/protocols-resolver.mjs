@@ -1,10 +1,12 @@
 /**
  * Pure private-package resolution logic (REQ-ARCH-37 amended, spec §13.2).
  *
- * `@rhema/protocols` and `@rhema/evals` resolve BY PATH to a separate private checkout when it is
- * present, and fall back to the in-repo public stubs (`packages/protocols-stub` published as
- * @rhema/protocols; `evals-stub` as @rhema/evals) otherwise — never git submodules. A public clone
- * therefore builds against stubs by default, and the `public-safe` CI job builds exactly that way.
+ * Amended 2026-11-03 (operator ruling 2026-11-02, R6OSS.1): `@rhema/protocols` is a committed
+ * workspace member that ships PUBLIC — it is no longer path-resolved and its former stub
+ * (`packages/protocols-stub`) is a dormant fallback. Only `@rhema/evals` still resolves BY PATH
+ * to a separate private checkout when present, falling back to the in-repo `evals-stub`
+ * (published as @rhema/evals) otherwise — never git submodules. A public clone therefore builds
+ * against the evals stub by default, and the `public-safe` CI job builds exactly that way.
  *
  * This module is the side-effect-free decision function (unit-tested); the `.pnpmfile.cjs` hook and
  * the preinstall logger apply it against the real environment.

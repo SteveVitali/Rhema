@@ -9,14 +9,14 @@ manual dispatch. CI uses Node 22 and the pnpm version pinned in the root package
 Every run begins with `fast-path`, which decides whether the head needs the full pipeline or
 can reuse a verified full-run result. The main jobs retain these names in either mode:
 
-| Job                                                 | Full-run work                                                                                                                                 | Depends on                |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `typecheck / lint / unit`                           | Workspace build/lint/typecheck, Chromium installation, root Vitest suite, DOM contract, protocol drift and version checks                     | `fast-path`               |
-| `contracts`                                         | Additive-migration check against the base branch                                                                                              | `typecheck / lint / unit` |
-| `integration`                                       | Composed integration suite with PostgreSQL 16, then Docker privilege-separation checks                                                        | `contracts`               |
-| `images (build + scan, pin digests)`                | All nine service image builds, AppArmor loader build/profile compilation, and provenance recording                                            | `contracts`               |
-| `public-safe (gitleaks / markers / licence policy)` | Stub builds, real web build, secret scan, dependency licences, protocol markers, ingestion credential policy, SPA size and environment checks | `typecheck / lint / unit` |
-| `ci-pass anchor`                                    | Upload an anchor only after a successful full run                                                                                             | All preceding jobs        |
+| Job                                                 | Full-run work                                                                                                                                                       | Depends on                |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `typecheck / lint / unit`                           | Workspace build/lint/typecheck, Chromium installation, root Vitest suite, DOM contract, protocol drift and version checks                                           | `fast-path`               |
+| `contracts`                                         | Additive-migration check against the base branch                                                                                                                    | `typecheck / lint / unit` |
+| `integration`                                       | Composed integration suite with PostgreSQL 16, then Docker privilege-separation checks                                                                              | `contracts`               |
+| `images (build + scan, pin digests)`                | All nine service image builds, AppArmor loader build/profile compilation, and provenance recording                                                                  | `contracts`               |
+| `public-safe (gitleaks / markers / licence policy)` | Stub builds (kept-warm fallbacks), real web build, secret scan, dependency licences, protocol markers, ingestion credential policy, SPA size and environment checks | `typecheck / lint / unit` |
+| `ci-pass anchor`                                    | Upload an anchor only after a successful full run                                                                                                                   | All preceding jobs        |
 
 Thus `integration` and `images` can run in parallel after `contracts`; `public-safe` can run
 after the first check job. The job names are stable check interfaces, not a strictly serial
@@ -27,9 +27,12 @@ Two limits of the current workflow are relevant to contributors:
 - The image job's name mentions scanning, but the checked-in workflow has no container
   vulnerability-scanner invocation. Image builds and provenance are not evidence of a
   vulnerability scan.
-- `public-safe` builds the protocol and evaluation stubs as packages. It does not replace the
-  real protocol package and rebuild the entire repository as a public export. The
-  [release-preparation guide](./open-source-readiness.md) tracks that separate requirement.
+- `public-safe` builds the protocol and evaluation stubs as packages. Amended 2026-11-03
+  (operator ruling 2026-11-02, R6OSS.1): protocols ship public, so the `protocols-stub` build is
+  a kept-warm fallback check (ADR-002 amendment/ADR-125), not a model of an export; the evals
+  stub still substitutes for the private `@rhema/evals`. Neither stub build proves a
+  public-export artifact. The [release-preparation guide](./open-source-readiness.md) and the
+  [flip runbook](./ops/open-source-readiness.md) track the remaining publication work.
 
 The run-task image built in CI explicitly allows a placeholder SDK. This supports image and
 isolation checks without the separately supplied SDK trees; it is not an image for live model

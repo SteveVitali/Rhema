@@ -358,8 +358,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
         if: needs.fast-path.outputs.mode == 'full'
-      # Prove the open-source-export fallback builds: `@rhema/protocols-stub` (swapped in for the
-      # committed `@rhema/protocols` at export) and the `@rhema/evals` stub (RHEMA_EVALS_PATH unset).
+      # Build the kept-warm stubs: `@rhema/protocols-stub` — a DORMANT fallback since the
+      # 2026-11-02 ruling shipped protocols public (R6OSS.1; ADR-002 amendment/ADR-125; it is
+      # retained, not an export swap) — and the `@rhema/evals` stub (RHEMA_EVALS_PATH unset),
+      # which still substitutes for the private evals checkout.
       - run: pnpm turbo build --filter=@rhema/protocols-stub --filter=@rhema/evals
         if: needs.fast-path.outputs.mode == 'full'
       # REQ-SAFE-9 / REQ-TL-3 (SPA.1): build the real @rhema/web bundle — including the Vite SPA

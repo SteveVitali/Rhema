@@ -5,9 +5,10 @@ the project itself. A useful contribution explains the problem, makes a focused 
 reviewers a way to verify the result.
 
 The repository is preparing for public release. Read the
-[release boundary](docs/open-source-readiness.md) before assuming that the public stubs can run the
-complete application. Local development on this source tree does not require a private evaluation
-checkout or the maintainer's agent-skills installation.
+[release boundary](docs/open-source-readiness.md) for what publishes (the tree, including
+`packages/protocols`) and what stays outside it (private evaluations, resolved through
+`RHEMA_EVALS_PATH` with a committed stub fallback). Local development on this source tree does
+not require a private evaluation checkout or the maintainer's agent-skills installation.
 
 ## Choose a change
 

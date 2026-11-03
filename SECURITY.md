@@ -8,6 +8,12 @@ Include the affected commit or deployment, reproduction steps, expected and obse
 
 Publication of the source does not authorize testing other people's accounts or the hosted service. An external assessment uses an agreed scope, test accounts, and budget; see the [engagement scope](docs/security/pen-test-scope.md).
 
+## Supported versions
+
+Security fixes are applied on the `main` branch and ride the next deployment; only the current
+`main` (and the deployment it serves) is supported. The hosted service tracks this repository's
+deployed revision — report against the commit or deployment you observed.
+
 ## Security boundaries
 
 The repository's required controls include:

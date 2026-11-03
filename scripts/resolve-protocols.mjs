@@ -5,9 +5,10 @@
  * by pnpm); this script only surfaces the decision and must never fail the install — hence the
  * defensive try/catch and unconditional exit 0.
  *
- * NOTE (2026-09-01): `@rhema/protocols` is now a COMMITTED workspace member (`packages/protocols`), so
- * it is no longer path-resolved and is not reported here; `@rhema/protocols-stub` is swapped in only at
- * open-source export. Only `@rhema/evals` is still path-resolved (RHEMA_EVALS_PATH → `evals-stub`).
+ * NOTE (2026-09-01, amended 2026-11-03): `@rhema/protocols` is a COMMITTED workspace member
+ * (`packages/protocols`) that ships PUBLIC (operator ruling 2026-11-02, R6OSS.1) — it is not
+ * path-resolved, and `packages/protocols-stub` is a dormant fallback, not an export swap. Only
+ * `@rhema/evals` is still path-resolved (RHEMA_EVALS_PATH → `evals-stub`).
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";

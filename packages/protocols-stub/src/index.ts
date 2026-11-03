@@ -1,10 +1,12 @@
-// @rhema/protocols (PUBLIC STUB) — REQ-ARCH-37 amended, spec §13.2.
+// @rhema/protocols (PUBLIC STUB — DORMANT) — REQ-ARCH-37 amended 2026-09-01, re-amended 2026-11-03.
 //
-// This is the stub that a PUBLIC clone resolves `@rhema/protocols` to when the private checkout is
-// absent (via RHEMA_PROTOCOLS_PATH + .pnpmfile.cjs). It carries the manifest TYPES and a single
-// harmless fixture manifest so the engine/harness build and typecheck without the private repo — and
-// deliberately NO rubric text, calibration language, skill prompts, or protocol markers (REQ-ARCH-33).
-// The `public-safe` CI job builds exactly this.
+// Formerly the export-time replacement for `@rhema/protocols` (dropped package + renamed stub).
+// Per the operator ruling of 2026-11-02 (R6OSS.1; ADR-002 amendment; ADR-125), `packages/protocols`
+// ships PUBLIC with the repository — this package is retained as a dormant escape-hatch shim in
+// case the boundary ever reverses again. It carries the manifest TYPES and a single harmless
+// fixture manifest — and deliberately NO rubric text, calibration language, skill prompts, or
+// protocol markers (REQ-ARCH-33). The `public-safe` CI job still compiles it as the kept-warm
+// fallback; nothing resolves `@rhema/protocols` to it today.
 
 import type { Rigor, AgentTypeKey } from "@rhema/contracts";
 
