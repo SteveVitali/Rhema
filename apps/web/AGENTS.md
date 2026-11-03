@@ -12,9 +12,11 @@
 - Public routes in `packages/contracts/src/spa.ts` `SPA_PUBLIC_ROUTES` stay SSR, including the
   funnel and legal/trust pages. Authenticated documents serve the SPA shell after their session
   checks, except server-owned redirects and the five forced-SSR Page-family GETs.
-- Page SSR is a **server verdict**: `isPhoneRequest(c) || row.showcase === true`. The boot
-  `surfaces` map carries the phone verdict; the JSON twin's `project.showcase` carries showcase.
-  Leaves use `twinForcesSsr` → `SsrHandoff` → `replaceDocument`, never choose a renderer themselves.
+- Page SSR is a **server verdict**: `isPhoneRequest(c)` alone (ADR-128/R7RO.1 — the showcase
+  arm is removed; a showcase row renders inside the SPA read-only through
+  `ReadOnlyProject{reason:"showcase"}`). The boot `surfaces` map carries the phone verdict;
+  the JSON twin carries `project.showcase` + `project.readOnlyProject` as row facts. No leaf
+  chooses a renderer for a twin fact any more; `SsrHandoff` remains the boot-verdict fallback.
 
 ## Key Files
 

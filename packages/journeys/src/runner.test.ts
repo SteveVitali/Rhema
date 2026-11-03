@@ -89,7 +89,13 @@ describe("runJourneys — the expected-flag semantics", () => {
     const r = await run(steps, ALL_IMPLS);
     for (const res of r.results) {
       expect(res.outcome, res.id).toBe("owed");
-      expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
+      // R7RO.1 landed the real `R8.showcase.spa` body — it still classifies `owed` on the
+      // offline path (a red step failing), but its error is the body's own, never the stub's.
+      if (res.id === "R8.showcase.spa") {
+        expect(res.error, res.id).not.toContain("owed — owner");
+      } else {
+        expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
+      }
     }
     expect(r.passed).toBe(true); // owed is a debt report, never a run failure
   });

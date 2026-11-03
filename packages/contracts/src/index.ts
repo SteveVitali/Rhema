@@ -63,6 +63,9 @@ export * from "./growth-lint.js";
 // R6LGL.1 (REQ-LCH-1; ADR-118) — the legal/trust pages' flag + placeholder census of record.
 export * from "./legal.js";
 
+// R7RO.1 (REQ-DWEB-14; spec §3.3 S-3) — the client read-only mechanism's shared type + reasons.
+export * from "./read-only-project.js";
+
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";
 

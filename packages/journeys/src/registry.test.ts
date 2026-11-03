@@ -119,6 +119,10 @@ describe("the journey step registry", () => {
       "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
       "U7.import": "R7HOME.2a", "U3.stopgap": "R7FIX.1", "R8.showcase.spa": "R7RO.1",
     };
+    // R7RO.1 landed the real `R8.showcase.spa` body — it still reads red (the 224 phase deploy
+    // is the sanctioned flipper) but its impl is no longer the owed stub: invoking it must NOT
+    // throw the stub message. Every other round-7 leg still throws owed-loudly.
+    const REAL_BODIES = new Set(["R8.showcase.spa"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();
@@ -126,9 +130,13 @@ describe("the journey step registry", () => {
       expect(s!.paid, id).toBe(false);
       expect(s!.capUsd, id).toBeUndefined();
       expect(s!.owner, id).toBe(OWNERS[id]);
-      await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
-        `${id} owed — owner ${OWNERS[id]}`,
-      );
+      if (REAL_BODIES.has(id)) {
+        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(/^(?!.*owed — owner)/);
+      } else {
+        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
+          `${id} owed — owner ${OWNERS[id]}`,
+        );
+      }
     }
     // no round-7 leg silently became a paid row (the weekly cron would sweep it in).
     const r7paid = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id) && s.paid);

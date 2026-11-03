@@ -84,8 +84,11 @@ export interface VersionRailProps {
   };
   readonly restore?: {
     readonly points: readonly RestorePointRow[];
-    /** POST target for the apply (the point id in the action URL). */
-    readonly restoreAction: (pointId: string) => string;
+    /** POST target for the apply (the point id in the action URL). Absent ⇒ the apply button
+     *  renders disabled with `disabledTitle` (R7RO.1 — read-only projects withhold writes). */
+    readonly restoreAction?: (pointId: string) => string;
+    /** the withheld-apply tooltip (the read-only reason text). */
+    readonly disabledTitle?: string;
     /** the picked point's preview — renders the diff card with the Restore button. */
     readonly preview?: RestorePreviewData;
   };
@@ -316,15 +319,27 @@ export function VersionRail(props: VersionRailProps): ReactNode {
             <span style={{ fontSize: "12px", ...muted }}>
               {L.restorePointLabel(props.restore.preview.point)}
             </span>
-            <form
-              method="post"
-              action={props.restore.restoreAction(props.restore.preview.point.id)}
-              style={{ marginLeft: "auto" }}
-            >
-              <button type="submit" data-restore-apply style={{ fontSize: "12px", padding: "4px 12px" }}>
+            {props.restore.restoreAction ? (
+              <form
+                method="post"
+                action={props.restore.restoreAction(props.restore.preview.point.id)}
+                style={{ marginLeft: "auto" }}
+              >
+                <button type="submit" data-restore-apply style={{ fontSize: "12px", padding: "4px 12px" }}>
+                  {L.restoreApply}
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                data-restore-apply
+                disabled
+                title={props.restore.disabledTitle}
+                style={{ marginLeft: "auto", fontSize: "12px", padding: "4px 12px" }}
+              >
                 {L.restoreApply}
               </button>
-            </form>
+            )}
           </header>
           <p style={{ fontSize: "11.5px", ...muted }}>{L.restoreUndoHint}</p>
           <WhatChangedView

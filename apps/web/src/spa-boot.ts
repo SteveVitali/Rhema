@@ -5,6 +5,7 @@
 // compiles under BOTH tsconfig.json (the server graph) and tsconfig.spa.json (the Vite graph).
 
 import type { PrincipalDto } from "@rhema/api-client";
+import type { ReadOnlyProject } from "@rhema/contracts";
 import type { AppTheme, PaperTheme } from "@rhema/ide";
 
 /** REQ-BND-10 — the shell's runtime seed (the `<script type="application/json" data-spa-boot>`). */
@@ -24,4 +25,11 @@ export interface SpaBoot {
    */
   readonly surfaces: Record<string, "spa" | "ssr">;
   readonly project?: { readonly slug: string };
+  /**
+   * R7RO.1 (REQ-DWEB-14) — the document-level read-only fact (S-3): the server stamps
+   * `{reason:"showcase"}` on a showcase row's shell; the `demo` slot is 220's payload. Row-facts
+   * the request-scoped boot cannot see (a `run_lock`) still arrive on the Page-family twin —
+   * `readOnlyProjectFor` merges both carriers.
+   */
+  readonly readOnlyProject?: ReadOnlyProject;
 }

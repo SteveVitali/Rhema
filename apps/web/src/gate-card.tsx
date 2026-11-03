@@ -236,6 +236,10 @@ export function gateCardFor(
     readonly explainer?: boolean;
     /** false ⇒ no inline presence script (React renderers mount `useGatePresence` instead). */
     readonly presenceScript?: boolean;
+    /** R7RO.1 — read-only projects withhold the card's decide controls: the form area renders
+     *  inside a disabled fieldset with this reason tooltip (the run-lifecycle arms under
+     *  `run_lock` are never fed this flag — withholding them would deadlock the run). */
+    readonly readOnlyTitle?: string;
   },
 ): ReactNode {
   const model = gateCardModel(gate, compact);
@@ -259,7 +263,7 @@ export function gateCardFor(
       : {}),
   }));
   const hasEscalations = rows?.some((r) => r.disposition?.kind === "escalate") ?? false;
-  return (
+  const card = (
     <GateCard
       key={gate.id}
       model={model}
@@ -307,5 +311,14 @@ export function gateCardFor(
         />
       ) : undefined}
     </GateCard>
+  );
+  // R7RO.1 — a disabled fieldset withholds every control the card carries (the decide form AND
+  // the ledger's per-row dispositions) with the reason tooltip — no request is ever issued.
+  return opts?.readOnlyTitle != null ? (
+    <fieldset disabled title={opts.readOnlyTitle} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+      {card}
+    </fieldset>
+  ) : (
+    card
   );
 }

@@ -33,6 +33,24 @@ read-only — UXC-6; the phone-UA SSR reader remains for real projects).
 _(Shell — written by R7OPEN.1 from spec §3.2. The owning tickets fill the decision section by
 section as they land their items.)_
 
+### REQ-ED-12 — Showcase Pages render in the SPA read-only (R7RO.1, 2026-11-03)
+
+The Page family's forced-SSR verdict is **phone-UA only**. The `row.showcase === true` arm is
+removed from all five Page-family document predicates (`/p/:slug`, `/p/:slug/v/:v`,
+`/p/:slug/v/:n/diff/:m`, `/p/:slug/revisions/:cid`, `/p/:slug/a/:artifactId`): a `showcase`
+row's document GET serves the SPA shell, and its in-app hops are client navigations — the
+seeded Showcase stops being a forced-SSR multi-page site.
+
+Read-only posture is carried by the shared `ReadOnlyProject{reason}` mechanism (REQ-DWEB-14):
+`project.readOnlyProject = {reason:"showcase"}` on every Page-family twin plus the dossier,
+run-report, and obligation-new twins; `readOnlyProject` in the SPA boot payload on those same
+document routes; `{reason:"run_lock"}` when a run's lock set holds the head (DS §5.4 — a frozen
+VERSION is never a reason; typing in one forks `v(N+1)`, REQ-WRITE-7). The client derives the
+fact once (`readOnlyProjectFor` — twin wins, boot slot slug-scoped), mounts one notice per
+reason, and hides or disables every write control before any request is made; the api's 409
+guards stay as defence in depth. The phone-UA SSR reader remains the only forced renderer for
+real projects (`isPhoneRequest(c)`), unchanged.
+
 ## Consequences
 
 _(Filled by the owners: migration order, pane breakpoints (REQ-PANE-2), the Desk-retirement

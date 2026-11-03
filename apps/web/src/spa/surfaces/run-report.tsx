@@ -36,6 +36,7 @@ import { chatPanel } from "../../chat-pane.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
+import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -209,6 +210,11 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
   const { mutation, mutError, write } = useRunReportWrite();
   const runReport = data.runReport;
   const slug = runReport.slug;
+  // R7RO.1 (REQ-DWEB-14) — the read-only fact (the twin's carrier, else the boot slot); the
+  // §14.4 refund write and the chrome's gate/chat writes withhold under demo/showcase
+  // (`run_lock` is run-lifecycle — its own arms stay live).
+  const ro = useReadOnlyProject(data);
+  const roTip = ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null;
 
   // REQ-BETA-10 — the SSR document's `dwellSurface:"report"` heartbeat (the hook twin).
   useDwell("report");
@@ -226,19 +232,22 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
             timelineLabels,
             timelineCardLabels: runCardLabels,
             timelineHrefs: timelineHrefs(slug),
-            renderGateCard: (run: TimelineRun) => <TimelineGateCard run={run} slug={slug} compact={compact} />,
+            renderGateCard: (run: TimelineRun) => (
+              <TimelineGateCard run={run} slug={slug} compact={compact} readOnlyTitle={roTip} />
+            ),
           }
         : {}),
       ...(data.ide.chat != null
-        ? { chatBody: chatPanel(data.ide.chat, slug, data.ide, compact) }
+        ? { chatBody: chatPanel(data.ide.chat, slug, data.ide, compact, roTip) }
         : {}),
     }),
-    [data.ide, slug, compact],
+    [data.ide, slug, compact, roTip],
   );
   useShellChrome(data, extras);
 
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={busy || undefined}>
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageTitle>{COPY.report.heading}</PageTitle>
       <div style={{ margin: "16px 0" }}>
         <RunReport
@@ -251,7 +260,7 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
       {/* DEF.4 — the §14.4 refund-window affordance (REQ-SPEC-24(6)), verbatim from RunReportPage:
           rendered ONLY while the api's `refundWindow` block is present — the flag admitting
           nothing ⇒ no control at all. The form posts through the leaf's JSON leg. */}
-      {runReport.report.refundWindow?.state === "eligible" ? (
+      {runReport.report.refundWindow?.state === "eligible" && roTip == null ? (
         <form method="post" action={`/p/${runReport.slug}/r/${runReport.runId}/refund`} data-refund-form="true" style={{ margin: "0 0 12px" }}>
           <button
             type="submit"
@@ -262,6 +271,12 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
           </button>
           <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{COPY.report.refundNote}</span>
         </form>
+      ) : null}
+      {runReport.report.refundWindow?.state === "eligible" && roTip != null ? (
+        // R7RO.1 — the withheld refund control (disabled + reason tooltip, before any request).
+        <button type="button" data-refund-cta="true" disabled title={roTip} style={{ margin: "0 0 12px" }}>
+          {fmt(COPY.report.refundCtaFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+        </button>
       ) : null}
       {runReport.report.refundWindow?.state === "refunded" ? (
         <p data-refund-state="refunded" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 12px" }}>

@@ -499,10 +499,13 @@ export function PageMount(props: PageMountProps): ReactNode {
         const now = Date.now();
         if (now - lastMintAt < RESTORE_DEDUPE_MS) return;
         lastMintAt = now;
+        // R7RO.1 — a read-only mount has NO collab wire: minting would paint the syncing lie
+        // with no transport beneath it. The chord is a no-op before any request is made.
+        if (wire == null) return;
         // SPA.25 — a restore point must cover the pending source buffer (design/30).
         sourceRef.current?.commitNow();
-        wire?.markRestorePoint?.();
-        setPill({ state: "syncing", queued: wire?.provider.unsyncedChanges ?? 0 });
+        wire.markRestorePoint?.();
+        setPill({ state: "syncing", queued: wire.provider.unsyncedChanges });
       };
       const chromeClaimsChord = (): boolean => {
         if (document.querySelector("[data-ide]") == null) return false;

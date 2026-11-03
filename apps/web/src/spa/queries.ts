@@ -52,6 +52,7 @@ import type {
   VoiceUpdatePlanDto,
   WhatChangedDto,
 } from "@rhema/api-client";
+import type { ReadOnlyProject } from "@rhema/contracts";
 import type { GateOutlineView } from "@rhema/findings-core";
 import type { FeedLabelMaps } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
@@ -925,7 +926,12 @@ export interface BffDossierTwin {
   readonly dossier: DossierViewData;
   readonly dossierView: DossierViewState;
   readonly triage?: TriageSurfaceState;
-  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    readonly readOnlyProject?: ReadOnlyProject | null;
+  };
   readonly paperTheme: string;
   readonly appTheme?: string;
   readonly ide: BffIdeBag;
@@ -1003,6 +1009,7 @@ export interface BffObligationNewTwin {
     readonly slug: string;
     readonly projectTitle: string;
     readonly back: string;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
 }
 export const obligationNewQuery = (slug: string, back?: string) =>
@@ -1043,6 +1050,7 @@ export interface BffRunReportTwin {
     readonly title: string;
     readonly pill: string;
     readonly slug: string;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
   readonly paperTheme: string;
   readonly appTheme?: string;
@@ -1139,11 +1147,12 @@ export interface BffProjectTwin {
     /** the resolved head's draft number — the `?created=draft` card's `v{n}` template arg. */
     readonly headDraftN?: number | null;
     /**
-     * SPACAP.3 (G2) — the row fact the boot map cannot carry: the document forces SSR on
-     * `isPhoneRequest(c) || row.showcase === true`; the twins ship the row leg so the leaf
-     * can hand a showcase navigation back to a document load (REQ-ED-12/REQ-VFY-5).
+     * R7RO.1 (REQ-DWEB-14) — `showcase` stays a project fact; `readOnlyProject` is the
+     * read-only carrier the leaves consume (`{reason:"showcase"}` or `{reason:"run_lock"}` —
+     * a frozen version is never a reason). The forced-SSR handoff is gone (ADR-128).
      */
     readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
   readonly gates: readonly GateCardDto[];
   readonly decisions: readonly DecisionItemDto[];
@@ -1173,8 +1182,9 @@ export type BffVersionPageTwin =
         readonly pill: string;
         readonly slug: string;
         readonly headDraftId?: string | null;
-        /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+        /** R7RO.1 — the read-only carrier (see `BffProjectTwin`). */
         readonly showcase?: boolean;
+        readonly readOnlyProject?: ReadOnlyProject | null;
       };
       readonly paperTheme: string;
       readonly appTheme?: string;
@@ -1196,8 +1206,9 @@ export interface BffCompareTwin {
     readonly title: string;
     readonly pill: string;
     readonly slug: string;
-    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    /** R7RO.1 — the read-only carrier (see `BffProjectTwin`). */
     readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
   readonly paperTheme: string;
   readonly appTheme?: string;
@@ -1211,8 +1222,9 @@ export interface BffArtifactTwin {
     readonly title: string;
     readonly pill: string;
     readonly slug: string;
-    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    /** R7RO.1 — the read-only carrier (see `BffProjectTwin`). */
     readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
   readonly paperTheme: string;
   readonly appTheme?: string;
@@ -1229,8 +1241,9 @@ export interface BffRevisionTwin {
     readonly title: string;
     readonly pill: string;
     readonly slug: string;
-    /** SPACAP.3 (G2) — the showcase leg of the forced-SSR truth (see `BffProjectTwin`). */
+    /** R7RO.1 — the read-only carrier (see `BffProjectTwin`). */
     readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
   };
   readonly paperTheme: string;
   readonly appTheme?: string;

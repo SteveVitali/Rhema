@@ -11,8 +11,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { BffError } from "../../bff.js";
 import { postProjectHandoff, projectPageQuery } from "../../queries.js";
+import { readOnlyProjectFor } from "../../read-only.js";
 import { flagParam, strParam, validateSearchParams } from "../../search.js";
-import { PendingShell, SsrHandoff, SurfaceShell, twinForcesSsr } from "../../states.js";
+import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
 import { ProjectPageSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/")({
@@ -34,6 +35,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
     // answers `{handoff:{href}}` only when an unread run_finished row exists (the same find the
     // document ran inline); `?focus=1` suppresses it verbatim. The href is already workflow-shaped
     // — a document navigation lands the target under its own flag verdict.
+    // R7RO.1 — a read-only project never issues the POST before any request: the boot slot (the
+    // document-level stamp for THIS slug) says so up front; a stale stamp for another slug can't.
+    if (readOnlyProjectFor(context.boot, null, params.project) != null) return;
     const out = await postProjectHandoff(params.project, { focus: (search as Record<string, string | undefined>).focus });
     if (out.data.handoff != null) {
       throw redirect({ href: out.data.handoff.href, reloadDocument: true });
@@ -65,9 +69,7 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;
-    // SPACAP.3 (G2) — a showcase row's Page is forced-SSR server-side; hand the navigation back
-    // to a document load so the server's `phone || showcase` arm lands the read-only document.
-    if (twinForcesSsr(q.data)) return <SsrHandoff />;
+
     return <ProjectPageSurface data={q.data} compact={boot?.deviceClass === "phone"} search={search} />;
   },
 });

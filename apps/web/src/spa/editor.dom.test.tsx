@@ -562,67 +562,91 @@ describe("unflipped routes (SPA.23)", () => {
   });
 });
 
-// ---- SPACAP.3 (G2) — the showcase leg of the forced-SSR truth ----------------------------------------
+// ---- R7RO.1 — the showcase arm is gone: the Page family mounts INSIDE the SPA read-only -------
 //
-// The document forces SSR on `isPhoneRequest(c) || row.showcase === true` (server.ts's five
-// Page-family arms); the boot map owns the phone leg (`deviceClass === "phone" && pageMount`),
-// and the twin's `project.showcase` carries the row leg the request-scoped boot payload cannot
-// see. A leaf whose twin says showcase hands the navigation back through SsrHandoff — the same
-// document-load seam the phone leg takes — so the server's forced-SSR document lands. These legs
-// FAIL if the leaf stops consulting the twin's flag (the SPA would mount the showcase Page — the
-// divergence G2 named, posture-preserving but renderer-divergent).
+// ADR-128's REQ-ED-12 item: the server verdict is `isPhoneRequest(c)` alone — a showcase row's
+// document is the SPA shell, and the leaf mounts the surface read-only through the twin's
+// `project.readOnlyProject` carrier. These legs FAIL if the leaf still hands off to a document
+// load (the old `twinForcesSsr` seam is deleted) or if the read-only notice never mounts; a
+// non-showcase twin mounts the editable surface exactly as before.
 
-describe("showcase rows hand the Page family back to a document load (SPACAP.3 G2)", () => {
-  const SHOWCASE_PROJECT = { ...PROJECT, showcase: true };
+describe("showcase rows mount the Page family in the SPA read-only (R7RO.1)", () => {
+  const SHOWCASE_PROJECT = { ...PROJECT, showcase: true, readOnlyProject: { reason: "showcase" as const } };
 
-  it("/p/:slug — the twin's showcase flag drives the document handoff; the SPA never mounts the Page", async () => {
+  it("/p/:slug — the surface mounts read-only with the notice; no document handoff", async () => {
     const f = makeFetch({ project: { ...PROJECT_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
     expect(f.gets).toContain(`/bff/p/${SLUG}`);
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}`));
     const main = el()!;
-    // the handoff skeleton painted — the Page mount never did.
-    expect(main.querySelector("[data-page-mount]")).toBeNull();
-    expect(main.querySelector("[data-page-view]")).toBeNull();
+    await vi.waitFor(() => {
+      expect(main.querySelector("[data-readonly-notice='showcase']")).not.toBeNull();
+    });
+    // the SPA Page mount rendered (never a handoff skeleton, never a document nav).
+    expect(main.querySelector("[data-page-mount]")).not.toBeNull();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-  it("/p/:slug/v/:v — showcase twin hands off the same way", async () => {
+  it("/p/:slug — a boot-stamped showcase slug skips the beforeLoad handoff POST", async () => {
+    const boot: SpaBoot = {
+      ...bootFor(SPA_EDITOR),
+      project: { slug: SLUG },
+      readOnlyProject: { reason: "showcase" },
+    };
+    const f = makeFetch({ project: { ...PROJECT_TWIN, project: SHOWCASE_PROJECT } });
+    await mountAt(`/p/${SLUG}`, boot, f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-mount]")).not.toBeNull());
+    // the read-only fact was known BEFORE the twin loaded — zero non-GET ran.
+    expect(f.posts).toEqual([]);
+  });
+
+  it("/p/:slug/v/:v — the read-only SPA mount carries the notice + the rail", async () => {
     const f = makeFetch({ version: { ...VERSION_TWIN, project: SHOWCASE_PROJECT } as BffVersionPageTwin });
     await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
-    expect(f.gets).toContain(`/bff/p/${SLUG}/v/working`);
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/working`));
-    expect(el()!.querySelector("[data-page-view]")).toBeNull();
-    expect(el()!.querySelector("[data-version-rail]")).toBeNull();
+    await vi.waitFor(() => {
+      expect(el()!.querySelector("[data-page-view]")).not.toBeNull();
+    });
+    expect(el()!.querySelector("[data-readonly-notice='showcase']")).not.toBeNull();
+    expect(el()!.querySelector("[data-version-rail]")).not.toBeNull();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-  it("/p/:slug/v/:n/diff/:m — the compare twin's showcase flag hands off", async () => {
+  it("/p/:slug/v/:n/diff/:m — the compare mounts read-only; hunk comments withhold", async () => {
     const f = makeFetch({ compare: { ...COMPARE_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/v/6/diff/7`, bootFor(SPA_EDITOR), f.impl);
-    expect(f.gets).toContain(`/bff/p/${SLUG}/v/6/diff/7`);
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/6/diff/7`));
-    expect(el()!.querySelector("[data-compare]")).toBeNull();
+    await vi.waitFor(() => {
+      expect(el()!.querySelector("[data-compare]")).not.toBeNull();
+    });
+    expect(el()!.querySelector("[data-readonly-notice='showcase']")).not.toBeNull();
+    expect(el()!.querySelector("[data-hunk-comment]")).toBeNull();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-  it("/p/:slug/a/:artifactId — the artifact twin's showcase flag hands off", async () => {
+  it("/p/:slug/a/:artifactId — the artifact Page mounts read-only under the notice", async () => {
     const f = makeFetch({ artifact: { ...ARTIFACT_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/a/a_1`, bootFor(SPA_EDITOR), f.impl);
-    expect(f.gets).toContain(`/bff/p/${SLUG}/a/a_1`);
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/a/a_1`));
-    expect(el()!.querySelector("[data-page-view]")).toBeNull();
+    await vi.waitFor(() => {
+      expect(el()!.querySelector("[data-page-view]")).not.toBeNull();
+    });
+    expect(el()!.querySelector("[data-readonly-notice='showcase']")).not.toBeNull();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-  it("/p/:slug/revisions/:cid — the revision twin's showcase flag hands off", async () => {
+  it("/p/:slug/revisions/:cid — the revision mounts read-only; comments withhold", async () => {
     const f = makeFetch({ revision: { ...REVISION_TWIN, project: SHOWCASE_PROJECT } });
     await mountAt(`/p/${SLUG}/revisions/c_1`, bootFor(SPA_EDITOR), f.impl);
-    expect(f.gets).toContain(`/bff/p/${SLUG}/revisions/c_1`);
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/revisions/c_1`));
-    expect(el()!.querySelector("[data-hunk]")).toBeNull();
+    await vi.waitFor(() => {
+      expect(el()!.querySelector("[data-what-changed], [data-hunk]")).not.toBeNull();
+    });
+    expect(el()!.querySelector("[data-readonly-notice='showcase']")).not.toBeNull();
+    expect(el()!.querySelector("[data-hunk-comment]")).toBeNull();
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-  it("a non-showcase twin never hands off — the flag is consultive, not a blanket verdict", async () => {
+  it("a non-showcase twin mounts the editable surface — the posture is row-scoped", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/v/working`, bootFor(SPA_EDITOR), f.impl);
     await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    expect(el()!.querySelector("[data-readonly-notice]")).toBeNull();
     expect(docNavSpy).not.toHaveBeenCalled();
   });
 });

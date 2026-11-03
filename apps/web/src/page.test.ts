@@ -6,8 +6,12 @@ import type { DataSource } from "./data.js";
 // P1.02 — the Page web surface (§5.4; REQ-DATA-28/29 amended): the /v/:v + /v/working routes render the
 // schema-first editor (SSR preview + the embedded doc/provenance/findings JSON the page.js island mounts),
 // the project overview mounts the working head, and the transport endpoints carry the provenance capture.
-// SPA.28 — the only SSR Page left is the forced-SSR read-only arm (phone/showcase — REQ-ED-12; the
-// `` escape is gone): the fixture is a `showcase` row, the desktop-shaped survivor.
+// R7RO.1 — the only SSR Page left is the forced-SSR PHONE arm (ADR-128/REQ-ED-12 amended: the
+// `showcase` arm is deleted — a showcase row on desktop serves the shell and renders read-only INSIDE
+// the SPA). The fixture keeps `showcase: true` so the SSR render asserts below pin a showcase row's
+// read-only posture on the surviving phone arm.
+
+const PHONE = { headers: { "sec-ch-ua-mobile": "?1" } };
 
 const PROJECTS: ProjectRow[] = [
   {
@@ -15,9 +19,9 @@ const PROJECTS: ProjectRow[] = [
     slug: "the-piece",
     title: "The Piece",
     headDraftId: "d_2",
-    // SPA.28 — `showcase: true` is what forces the SSR Page now (the `` escape is gone; a
-    // non-showcase row on desktop serves the shell). Read-only posture: the surviving SSR arm is
-    // reader-only by design — the editable Page is the SPA leaf's alone.
+    // R7RO.1 — `showcase: true` no longer forces SSR on desktop (the phone request does — PHONE
+    // below). Read-only posture: the surviving SSR arm is reader-only by design — the editable
+    // Page is the SPA leaf's alone.
     showcase: true,
     state: { key: "edited_by_you", pill: "Edited by you", overlay: null, suggested: { action: "revise_using_edits", label: "Revise using your edits" } },
   },
@@ -84,7 +88,7 @@ function makeDeps(over: Partial<DataSource> = {}): WebDeps {
   };
 }
 
-describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm — REQ-ED-12)", () => {
+describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR phone arm — REQ-ED-12 as amended by ADR-128)", () => {
   it("the retired escape signals are INERT on a non-showcase row — ?ssr=1 / x-rhema-renderer: ssr ⇒ the shell (REQ-SEQ-4 removal)", async () => {
     // Removal-detecting: the only SSR arms left are phone/showcase. A resurrected consult that
     // honors either signal would render the SSR Page here; the correct answer is the shell.
@@ -112,7 +116,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("renders /v/working: the page root, embedded doc JSON, static preview, island script", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-piece/v/working");
+    const res = await app.request("/p/the-piece/v/working", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-page-root="1"');
@@ -126,14 +130,15 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
     // SPA.24 (REQ-ED-16): `data-save-url` is GONE — collab is the transport; /save stays server-side.
     expect(html).not.toContain("data-save-url");
     expect(html).toContain('data-doc-url="/p/the-piece/edit/d_2/doc"');
-    // the read-only posture the surviving SSR arm always carries (showcase — REQ-ED-12): the
+    // the read-only posture the surviving SSR arm always carries (REQ-ED-12): the
     // version/fork banner stays suppressed (it describes an edit affordance) and the read-only
     // note renders instead.
     expect(html).toContain('data-readonly="1"');
     expect(html).toContain("This version is read-only.");
     expect(html).not.toContain("Editing v2");
-    // ARMB-1 — the forced arm self-reports its cause so the journeys renderer assert can honor it.
-    expect(html).toContain('data-ssr-cause="showcase"');
+    // ARMB-1 — the forced arm self-reports its cause so the journeys renderer assert can honor
+    // it. R7RO.1: the cause is phone-only now — a showcase row stamps it through the same verdict.
+    expect(html).toContain('data-ssr-cause="phone"');
     // the provenance + findings sidecars embed as JSON for the island
     expect(html).toContain("data-page-prov");
     expect(html).toContain("data-page-findings");
@@ -141,7 +146,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("the data-page-* embeds are RAW parseable JSON — entity-escaping kills the island (EDIT.1, found on the N8 prod walk)", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     for (const sel of ["data-page-doc", "data-page-prov", "data-page-findings"]) {
       const m = new RegExp(`<script[^>]*${sel}[^>]*>([\\s\\S]*?)</script>`).exec(html);
       expect(m, `${sel} embed missing`).toBeTruthy();
@@ -152,20 +157,20 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("renders /v/2 (a versioned draft) through the same surface", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-piece/v/2");
+    const res = await app.request("/p/the-piece/v/2", PHONE);
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('data-page-root="1"');
   });
 
   it("404s on an unknown version", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-piece/v/99");
+    const res = await app.request("/p/the-piece/v/99", PHONE);
     expect(res.status).toBe(404);
   });
 
   it("has NO Save button and no unsaved-changes dialog (ticket AC)", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).not.toContain('action="/p/the-piece/edit/d_2/save"'); // no form saves
     expect(html).not.toMatch(/>\s*Save\s*</);
     expect(html).not.toContain("beforeunload");
@@ -174,7 +179,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("renders the findings rail + the dangling cite callout", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).toContain("from Review of v1");
     expect(html).toContain("The quote drifted.");
     expect(html).toContain("Citations without a bibliography entry");
@@ -184,7 +189,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
   it("a held lock shows the run banner + marks the root locked + readonly", async () => {
     const locked: EditorDocDto = { ...DOC, lock: { runId: "run_5", kind: "writer", workflow: "revise" } };
     const app = createWebApp(makeDeps({ getEditorDoc: async () => locked }));
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).toContain('data-locked="1"');
     expect(html).toContain('data-readonly="1"');
     expect(html).toContain("A revise run is writing this draft");
@@ -205,7 +210,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
   it("a frozen draft under the forced-SSR arm renders read-only — the fork-on-type posture is the SPA leaf's", async () => {
     const frozen: EditorDocDto = { ...DOC, state: "frozen" };
     const app = createWebApp(makeDeps({ getEditorDoc: async () => frozen }));
-    const html = await (await app.request("/p/the-piece/v/2")).text();
+    const html = await (await app.request("/p/the-piece/v/2", PHONE)).text();
     // The surviving SSR arm is reader-only (REQ-ED-12): no fork banner (it describes typing),
     // the read-only note instead. The editable fork behavior lives on the SPA leaf's mount.
     expect(html).toContain('data-readonly="1"');
@@ -219,11 +224,11 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
       resolveEditorDraft: async () => ({ draftId: "d_1", draftN: 1, state: "frozen", origin: "human_upload" }),
       getEditorDoc: async () => frozen,
     }));
-    const res = await app.request("/p/the-piece/v/working");
+    const res = await app.request("/p/the-piece/v/working", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-draft-id="d_1"');
-    expect(html).toContain('data-readonly="1"'); // the showcase/read-only arm — never an editable mount
+    expect(html).toContain('data-readonly="1"'); // the forced-SSR read-only arm — never an editable mount
     // REQ-ED-12 — a read-only SSR Page gets NO collab wire (the attr emits empty).
     expect(html).toContain('data-collab-url=""');
   });
@@ -232,24 +237,24 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
     const app = createWebApp(makeDeps({
       resolveEditorDraft: async () => Promise.reject(new ApiError(404, "/x")),
     }));
-    const res = await app.request("/p/the-piece/v/working");
+    const res = await app.request("/p/the-piece/v/working", PHONE);
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-piece");
     // …while a numeric miss keeps the truthful 404
-    const miss = await app.request("/p/the-piece/v/7");
+    const miss = await app.request("/p/the-piece/v/7", PHONE);
     expect(miss.status).toBe(404);
   });
 
   it("the CSP's connect-src carries the configured collab wss origin explicitly (EDIT.1 — engine-independent)", async () => {
     const app = createWebApp({ ...makeDeps(), collabWsUrl: "wss://app.example.test/collab" });
-    const res = await app.request("/p/the-piece/v/working");
+    const res = await app.request("/p/the-piece/v/working", PHONE);
     const csp = res.headers.get("content-security-policy") ?? "";
     expect(csp).toContain("connect-src 'self' wss://app.example.test");
   });
 
   it("renders exactly ONE sync indicator — the [data-sync-pill]; the status bar carries no second one", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html.match(/data-sync-pill/g) ?? []).toHaveLength(1);
     expect(html).toContain('role="status"');
     expect(html).not.toContain('class="ide-sync"'); // the shell's dead second indicator is gone
@@ -257,8 +262,10 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("the Showcase renders its Page read-only (§15.4) — banner + host flag, no edit affordance", async () => {
     // The base fixture is already `showcase: true` — the read-only posture needs no extra flag.
+    // R7RO.1: on desktop this row now serves the shell (the SPA leaf renders read-only — pinned
+    // by read-only.dom.test.tsx); on the surviving phone arm the SSR render is still read-only.
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).toContain('data-readonly="1"');
     expect(html).toContain("This version is read-only.");
     // no note form under the read-only arm
@@ -274,7 +281,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("renders proposal cards with accept/reject + the agent origin", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).toContain("Proposed changes");
     expect(html).toContain("Tighten the quote&#x27;s lead-in");
     expect(html).toContain('data-proposal-accept="prop_1"');
@@ -285,7 +292,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
   it("renders /a/:artifactId as a read-only Page (any markdown artifact)", async () => {
     const artifact: EditorDocDto = { ...DOC, draftId: "art_1", origin: "artifact", state: "frozen" };
     const app = createWebApp(makeDeps({ getArtifactPage: async () => artifact }));
-    const res = await app.request("/p/the-piece/a/art_1");
+    const res = await app.request("/p/the-piece/a/art_1", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-page-root="1"');
@@ -299,7 +306,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
       listDecisions: async () => [],
       getApprovalOverrides: async () => ({}),
     }));
-    const res = await app.request("/p/the-piece");
+    const res = await app.request("/p/the-piece", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-page-mount="working"');
@@ -310,7 +317,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR showcase arm 
 
   it("the status bar carries the server-computed meters", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/v/working")).text();
+    const html = await (await app.request("/p/the-piece/v/working", PHONE)).text();
     expect(html).toContain("12 words");
     expect(html).toContain("1 min read");
   });

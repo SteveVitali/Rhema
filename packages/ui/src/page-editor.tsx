@@ -93,6 +93,14 @@ export interface PageEditorProps {
   readonly danglingCites: readonly string[];
   readonly readOnly?: boolean;
   /**
+   * R7RO.1 (REQ-DWEB-14) — the read-only reason when the project is read-only
+   * (demo/showcase/run_lock): proposal accept/reject and the Revise form withhold with the
+   * `readOnlyTooltip` reason text. `run_lock` also arrives through `lock` — the banner IS the
+   * notice; a frozen version is never a reason (typing forks v(N+1)).
+   */
+  readonly readOnlyReason?: string;
+  readonly readOnlyTooltip?: string;
+  /**
    * P1.03 — the collab WSS base (`wss://<host>/collab`); absent ⇒ the island mounts the read-only
    * static view (artifact reads) instead of a live session.
    */
@@ -330,8 +338,12 @@ export function PageEditor(props: PageEditorProps): ReactNode {
   const L = props.labels;
   const locked = props.lock != null;
   // A frozen draft is NOT read-only — typing on it forks v(N+1) server-side (§5.4 editing rules;
-  // the banner tells the user). Read-only means: an artifact read (explicit) or a held run lock.
-  const readOnly = props.readOnly === true || locked;
+  // the banner tells the user). Read-only means: an artifact read (explicit), a held run lock,
+  // or a ReadOnlyProject reason (R7RO.1).
+  const readOnly = props.readOnly === true || locked || props.readOnlyReason != null;
+  // The write controls the reason withholds (proposal accept/reject, the Revise form).
+  const withholdWrites = props.readOnly === true || locked || props.readOnlyReason != null;
+  const tip = props.readOnlyTooltip;
   return (
     <div
       data-page-root="1"
@@ -370,9 +382,15 @@ export function PageEditor(props: PageEditorProps): ReactNode {
               : L.versionLabel(props.draftN, props.baseDraftN)}
           </span>
           {props.origin === "human_revision" && props.reviseUrl ? (
+            withholdWrites ? (
+              <button type="button" disabled title={tip} style={{ fontSize: "12px" }}>
+                {L.revise}
+              </button>
+            ) : (
             <form method="post" action={props.reviseUrl} style={{ margin: 0 }}>
               <button type="submit" style={{ fontSize: "12px" }}>{L.revise}</button>
             </form>
+            )
           ) : null}
         </div>
       ) : null}
@@ -415,7 +433,8 @@ export function PageEditor(props: PageEditorProps): ReactNode {
                 <button
                   type="button"
                   data-proposal-accept={p.id}
-                  {...(props.onProposalAccept ? { onClick: () => props.onProposalAccept?.(p) } : {})}
+                  {...(withholdWrites ? { disabled: true, title: tip } : {})}
+                  {...(props.onProposalAccept && !withholdWrites ? { onClick: () => props.onProposalAccept?.(p) } : {})}
                   style={{ fontSize: "12px" }}
                 >
                   {L.accept}
@@ -423,7 +442,8 @@ export function PageEditor(props: PageEditorProps): ReactNode {
                 <button
                   type="button"
                   data-proposal-reject={p.id}
-                  {...(props.onProposalReject ? { onClick: () => props.onProposalReject?.(p.id) } : {})}
+                  {...(withholdWrites ? { disabled: true, title: tip } : {})}
+                  {...(props.onProposalReject && !withholdWrites ? { onClick: () => props.onProposalReject?.(p.id) } : {})}
                   style={{ fontSize: "12px" }}
                 >
                   {L.reject}

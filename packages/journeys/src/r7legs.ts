@@ -8,6 +8,8 @@
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
 import type { StepFn } from "./runner.js";
+import { gotoOk, settleClientNav } from "./settle.js";
+import { assertBundleParity } from "./steps.js";
 
 /** The leg's full assert contract, kept next to the stub so the owner's real body has the
  *  checklist in-tree (the registry `asserts` line is the one-line summary). */
@@ -72,6 +74,61 @@ function ownerOf(id: string): string {
   return OWNERS[id] ?? "unknown";
 }
 
+/** R7RO.1 (REQ-RELOAD-5, REQ-DACC-6) — the real `R8.showcase.spa` body: the signed-in `/showcase`
+ *  resolves to the workspace Showcase served as the SPA SHELL under ReadOnlyProject — the
+ *  renderer re-expectation. The in-app hop to the dossier and back settles as a CLIENT
+ *  navigation (zero document loads), the read-only notice mounts, and the green `R8.showcase`
+ *  asserts (the workspace Showcase renders — never the static sample's SSR floor) still hold.
+ *  Stage B stays deferred to the 224 phase deploy — this leg keeps `expected:"red"` at head. */
+const R8_SHOWCASE_SPA: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  // `/showcase` document-redirects to the workspace Showcase's `/p/<slug>` document — a DOCUMENT
+  // nav (the shell serves it; ADR-128's forced-SSR verdict is phone-only now).
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+  if (!/\/p\/[^/]+/.test(page.url())) {
+    throw new Error(`signed-in /showcase did not land on the workspace Showcase (${page.url()})`);
+  }
+  const renderer = await page.locator("html").getAttribute("data-renderer");
+  if (renderer !== "spa") {
+    throw new Error(`the workspace Showcase is ${renderer ?? "renderer-less"} — the SPA read-only arm did not mount`);
+  }
+  // the read-only mechanism mounts the notice + the mounted Page stays non-editable — a real
+  // `contenteditable` body would mean the read-only posture failed open.
+  if ((await page.locator("[data-readonly-notice='showcase']").count()) === 0) {
+    throw new Error("the showcase notice (ReadOnlyProject{showcase}) did not mount");
+  }
+  // in-app hops are client navigations — the dossier link is the Page family's own walk.
+  const dossierLink = page.locator('a[href*="/review/"]').first();
+  if ((await dossierLink.count()) === 0) {
+    throw new Error("the Showcase overview carries no dossier link to hop through");
+  }
+  await settleClientNav(page, ctx, async () => {
+    await dossierLink.click();
+  });
+  // the dossier's showcase banner carries the SAME notice (the mechanism's own slot) — and it
+  // must be the SPA render again, never a document reload.
+  if ((await page.locator("[data-readonly-notice='showcase'], [data-showcase-banner]").count()) === 0) {
+    throw new Error("the showcase dossier carries no read-only notice");
+  }
+  const dossierRenderer = await page.locator("html").getAttribute("data-renderer");
+  if (dossierRenderer !== "spa") {
+    throw new Error(`the dossier hop re-rendered as ${dossierRenderer ?? "renderer-less"} — a document nav escaped the SPA`);
+  }
+  // back to the overview — a second client nav.
+  const back = page.locator(`a[href="/p/${page.url().split("/p/")[1]?.split("/")[0] ?? ""}"]`).first();
+  if ((await back.count()) > 0) {
+    await settleClientNav(page, ctx, async () => {
+      await back.click();
+    });
+  }
+  await page.screenshot({ path: `${ctx.outDir}/r8-showcase-spa.png`, fullPage: true });
+  assertBundleParity(ctx);
+};
+
+const REAL_BODIES: Readonly<Record<string, StepFn>> = {
+  "R8.showcase.spa": R8_SHOWCASE_SPA,
+};
+
 export const R7_LEGS_IMPLS: Readonly<Record<string, StepFn>> = Object.fromEntries(
-  Object.keys(OWNERS).map((id) => [id, owedStub(id)]),
+  Object.keys(OWNERS).map((id) => [id, REAL_BODIES[id] ?? owedStub(id)]),
 );

@@ -25,7 +25,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "hono";
 import { themeBootScript, resolveAppTheme, type PaperTheme } from "@rhema/ide";
-import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES } from "@rhema/contracts";
+import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES, type ReadOnlyProject } from "@rhema/contracts";
 import { themeCss, ideCss } from "@rhema/tokens";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
@@ -156,7 +156,7 @@ export async function spaBootPayload(
   c: Context,
   deps: SpaShellDeps,
   session: SessionHeaders,
-  opts?: { paperTheme?: PaperTheme },
+  opts?: { paperTheme?: PaperTheme; readOnlyProject?: ReadOnlyProject },
 ): Promise<SpaBootPayload> {
   const [principal, theme] = await Promise.all([
     Promise.resolve()
@@ -190,6 +190,9 @@ export async function spaBootPayload(
     deviceClass,
     surfaces,
     ...(slug != null ? { project: { slug } } : {}),
+    // R7RO.1 (REQ-DWEB-14) — the document-level read-only fact the Page routes stamp for a
+    // showcase row (the `demo` slot is 220's payload); a `run_lock` lives on the twin instead.
+    ...(opts?.readOnlyProject != null ? { readOnlyProject: opts.readOnlyProject } : {}),
   };
 }
 
@@ -257,7 +260,7 @@ export async function spaShellDocument(
   c: Context,
   deps: SpaShellDeps,
   session: SessionHeaders,
-  opts?: { paperTheme?: PaperTheme },
+  opts?: { paperTheme?: PaperTheme; readOnlyProject?: ReadOnlyProject },
 ): Promise<Response> {
   const root = deps.spaAssetRoot ?? DEFAULT_SPA_ASSET_ROOT;
   const [boot, entry] = await Promise.all([
