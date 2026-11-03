@@ -14,7 +14,7 @@
 - **Base:** `origin/main` @ `298970955c7e842bd131d734bc20b5410e9d013c` (the ticket-append commit).
 - **Branch:** `stevevitali/r6oss-1-open-source` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-11-03T04:2xZ · **Closed:** (set at close)
+- **Started:** 2026-11-03T04:2xZ · **Closed:** 2026-11-03T05:5xZ
 - **Production mutations:** none (repo-only ticket; the GitHub visibility flip is the operator's
   act after this audit's dispositions).
 
@@ -152,4 +152,15 @@ spellings exercised literally; `gh` commands are the operator's, marked as such)
 
 ## Evidence report
 
-(to be filled at close — PR body derives from it)
+PR #236 (`docs/build/pr/R6OSS.1.md` carries the submitted body). Headline: **zero real secrets
+in reachable git history** — every secret-shaped literal is fixture/placeholder/benign-id/
+revoked/ciphertext; the one reachable-history-adjacent real literal (`r6-bf266…`, F-R6DEP.2-2)
+is in unreachable object `cbc6ac3` and was revoked+reminted on prod 2026-10-26. PII/internals
+classes dispositioned in `docs/ops/open-source-readiness.md`; big classes escalated verbatim
+via `D-R6OSS.1-1`. ADR-002 + 16 surfaces carry the dated protocols-public reversal; ADR-125
+records the dormant-stub decision. Hygiene verified; workflows fork-safe; flip runbook
+committed. Verify: turbo 135/135; vitest 518 files pass / 1 skip — one self-inflicted break
+(`.pnpmfile.cjs` comment edit changed `pnpmfileChecksum`, failing `privsep.docker` inside
+`--frozen-lockfile`); lockfile checksum refreshed in the same commit, docker leg re-verified
+green. check-build-memory 0 violations; append-only OK; prettier clean on touched docs.
+ci: read by `ci-boundary --ledger --ticket R6OSS.1` at the closeout head.
