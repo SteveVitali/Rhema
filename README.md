@@ -28,16 +28,45 @@ quality advantage.
 
 ## Release status
 
-This repository is being prepared for an open-source release. Amended 2026-11-03 (operator
-ruling 2026-11-02): the editorial protocols in `packages/protocols` publish **with** the tree —
-the former export-time stub swap is retired. Private evaluation content stays outside the
-repository (`RHEMA_EVALS_PATH`; `evals-stub` supplies the fallback). The remaining publication
-work is a full-history audit and the visibility flip itself — see
-[public-release readiness](docs/open-source-readiness.md) for the boundary and
-[the flip runbook](docs/ops/open-source-readiness.md) for the audit dispositions and exact steps.
+**Public source release (MIT), 2026-11-03.** The tree publishes as-is — including the editorial
+protocols in `packages/protocols` — after a full-history secrets and personal-data audit
+(disposition table + procedure: [docs/ops/open-source-readiness.md](docs/ops/open-source-readiness.md)).
+Private evaluation content stays outside the repository (`RHEMA_EVALS_PATH`; `evals-stub` supplies
+the fallback), and is not required for the checkout below.
 
-The instructions below apply to a checkout of this source tree. They do not require the separate
-private evaluation repository.
+The hosted service runs at [rhema.tools](https://rhema.tools). Deployed provenance, launch state,
+and the live verification record live in [docs/build](docs/build/README.md); GitHub Actions runs
+CI and the scheduled browser-journey suite against production.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Browser --> Web[Web: SSR, SPA and BFF]
+  Web --> API[API: sessions, reads and commands]
+  Browser <-->|WebSocket| Collab[Collaboration]
+  API --> DB[(Postgres and pg-boss)]
+  Worker[Worker] --> DB
+  Worker -->|launch| Task[Isolated run task]
+  Task --> Proxy[Egress proxy]
+  Proxy --> Provider[Model provider]
+  Collab --> DB
+  Collab --> Objects[(GCS content)]
+  API --> Objects
+```
+
+- **Web** serves HTML and keeps session cookies on the app origin, proxying auth and exposing a
+  backend-for-frontend under `/bff/*`.
+- **API** authenticates and persists; run creation enters the orchestration state machine on
+  Postgres + pg-boss.
+- **Worker** advances the lifecycle — consumes jobs, launches an isolated Kubernetes task, and
+  performs background maintenance.
+- **Run task** executes model work under a privileged-harness / unprivileged-agent split; all
+  provider traffic passes through the egress proxy, which authorizes, meters, and enforces caps.
+- Tenant data is isolated by **row-level security**; budgets are enforced server-side.
+
+The [architecture guide](docs/architecture.md) walks each boundary in depth, and the package
+table below maps it to code.
 
 ## Start developing
 
@@ -67,8 +96,7 @@ browser prerequisites, focused development, and a local web-server preview, foll
 | Integration tests and browser journeys                   | [`integration`](integration/README.md), [`packages/journeys`](packages/journeys/README.md)                                 |
 | Deployment infrastructure                                | [`infra`](infra/pulumi/README.md)                                                                                          |
 
-The [architecture guide](docs/architecture.md) connects these pieces. The
-[documentation index](docs/README.md) separates maintained guidance from the project's design and
+The [documentation index](docs/README.md) separates maintained guidance from the project's design and
 build history.
 
 ## Contribute
