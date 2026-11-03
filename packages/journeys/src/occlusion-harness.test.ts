@@ -19,29 +19,61 @@ import { paneLayout, DEFAULT_PANE_STATE } from "@rhema/ide";
 
 const LABELS = {
   rail: { home: "Home", inbox: "Inbox", settings: "Settings", project: "Project navigation" },
-  files: { heading: "Files", empty: "empty", close: "Close Files", open: "Files", sourceFile: "Source" },
+  files: {
+    heading: "Files",
+    empty: "empty",
+    close: "Close Files",
+    open: "Files",
+    sourceFile: "Source",
+  },
   margin: { heading: "Findings", ticksLabel: "Finding markers" },
   timeline: { heading: "Timeline", empty: "No runs yet", close: "Close Timeline" },
   desk: {
     heading: "Desk",
     tabs: { chat: "Chat", feed: "Live feed", findings: "Findings", claims: "Claims" },
-    emptyChat: "e", emptyFeed: "e", emptyFindings: "e", emptyClaims: "e",
+    emptyChat: "e",
+    emptyFeed: "e",
+    emptyFindings: "e",
+    emptyClaims: "e",
     findingsTable: { finding: "Finding", severity: "Severity", kind: "Kind", status: "Status" },
     close: "Close Desk",
   },
   statusBar: {
-    view: "View", theme: "Theme", paper: "Paper",
-    creditsFmt: "{n} cr", versionPrefix: "", wordsFmt: "{n} words", readMinFmt: "{n} min",
+    view: "View",
+    theme: "Theme",
+    paper: "Paper",
+    creditsFmt: "{n} cr",
+    versionPrefix: "",
+    wordsFmt: "{n} words",
+    readMinFmt: "{n} min",
   },
   viewMenu: {
     heading: "View",
     views: { write: "Write", read: "Read", focus: "Focus" },
-    findingCards: "Finding cards", suggestionsInline: "Inline suggestions", authorship: "Authorship",
-    advanced: "Advanced", fontSerif: "Serif", fontSans: "Sans",
-    readerBigger: "Bigger", readerSmaller: "Smaller", timeline: "Timeline",
+    findingCards: "Finding cards",
+    suggestionsInline: "Inline suggestions",
+    authorship: "Authorship",
+    advanced: "Advanced",
+    fontSerif: "Serif",
+    fontSans: "Sans",
+    readerBigger: "Bigger",
+    readerSmaller: "Smaller",
+    timeline: "Timeline",
   },
-  themes: { dark: "Dark", light: "Light", auto: "Auto", paperLight: "Light", paperFollow: "Follow", paperDark: "Dark" },
-  palette: { dialogLabel: "Palette", placeholder: "Search", emptyLabel: "Empty", sectionLabels: {} },
+  themes: {
+    dark: "Dark",
+    light: "Light",
+    auto: "Auto",
+    paperLight: "Light",
+    paperFollow: "Follow",
+    paperDark: "Dark",
+  },
+  palette: {
+    dialogLabel: "Palette",
+    placeholder: "Search",
+    emptyLabel: "Empty",
+    sectionLabels: {},
+  },
   cheatsheet: { heading: "Keys", closeLabel: "Close" },
   focusExit: "Exit focus · Esc",
 };
@@ -80,7 +112,10 @@ function fixture(opts: FixtureOpts = {}): string {
     .replace('data-desk="closed"', `data-desk="${opts.desk ?? "closed"}"`)
     .replace('data-view="write"', `data-view="${opts.view ?? "write"}"`);
   const modes = `data-pane-mode="wide" ${opts.timelineMode ? `data-timeline-mode="${opts.timelineMode}"` : ""} ${opts.filesMode ? `data-files-mode="${opts.filesMode}"` : ""}${opts.timeline === "open" ? " data-open-set" : ""}`;
-  const final = stamped.replace("<aside class=\"ide-timeline\"", `<aside class="ide-timeline"${opts.timeline === "open" ? " data-open" : ""}`);
+  const final = stamped.replace(
+    '<aside class="ide-timeline"',
+    `<aside class="ide-timeline"${opts.timeline === "open" ? " data-open" : ""}`,
+  );
   return `<!doctype html><html><head><style>${themeCss("dark")}${ideCss()}</style></head><body style="margin:0">${final.replace('data-ide="1"', `data-ide="1" ${modes}`)}</body></html>`;
 }
 
@@ -102,11 +137,7 @@ interface Probe {
   covers: Record<string, string | null>;
 }
 
-async function probe(
-  opts: FixtureOpts,
-  w: number,
-  hgt: number,
-): Promise<Probe | null> {
+async function probe(opts: FixtureOpts, w: number, hgt: number): Promise<Probe | null> {
   const b = await getBrowser();
   if (!b) return null;
   const page = await b.newPage({ viewport: { width: w, height: hgt } });
@@ -124,7 +155,11 @@ async function probe(
         if (!el) return null;
         const r = el.getBoundingClientRect();
         const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return at === el || el.contains(at) ? null : at ? `${at.tagName}.${at.className}` : "(none)";
+        return at === el || el.contains(at)
+          ? null
+          : at
+            ? `${at.tagName}.${at.className}`
+            : "(none)";
       };
       const scrim = document.querySelector<HTMLElement>("[data-ide-scrim]");
       return {
@@ -138,7 +173,9 @@ async function probe(
           page: box(".ide-page"),
         },
         positions: {
-          timeline: document.querySelector(".ide-timeline") ? getComputedStyle(document.querySelector(".ide-timeline") as Element).position : "(none)",
+          timeline: document.querySelector(".ide-timeline")
+            ? getComputedStyle(document.querySelector(".ide-timeline") as Element).position
+            : "(none)",
           files: getComputedStyle(document.querySelector(".ide-files") as Element).position,
         },
         scrimShown: scrim != null && getComputedStyle(scrim).display !== "none",
@@ -156,18 +193,30 @@ async function probe(
 const intersects = (
   a: { x: number; y: number; w: number; h: number } | null,
   b: { x: number; y: number; w: number; h: number } | null,
-): boolean => a != null && b != null && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+): boolean =>
+  a != null &&
+  b != null &&
+  a.x < b.x + b.w &&
+  b.x < a.x + a.w &&
+  a.y < b.y + b.h &&
+  b.y < a.y + a.h;
 
 describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evidence)", () => {
   it("1440×900 + Files open: the Timeline DOCKS (no overlay arm) and the Page column reflows under it", async () => {
-    const p = await probe({ files: "open", timeline: "open", filesMode: "open", timelineMode: "pane" }, 1440, 900);
+    const p = await probe(
+      { files: "open", timeline: "open", filesMode: "open", timelineMode: "pane" },
+      1440,
+      900,
+    );
     if (!p) {
       if (process.env.CI) throw new Error("playwright chromium missing under CI");
       console.warn("playwright browsers not installed — skipping layout assertions");
       return;
     }
     // paneLayout() says: docked at ≥1280 — the <1600 arm carries no overlay.
-    expect(paneLayout(1440, { ...DEFAULT_PANE_STATE, filesOpen: true, hasFindings: true }).timeline).toBe("pane");
+    expect(
+      paneLayout(1440, { ...DEFAULT_PANE_STATE, filesOpen: true, hasFindings: true }).timeline,
+    ).toBe("pane");
     expect(p.positions.timeline).not.toBe("absolute");
     // B1 — the Page column reflows: its box never intersects the docked Timeline's.
     expect(intersects(p.boxes.paper, p.boxes.timeline)).toBe(false);
@@ -182,14 +231,21 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
       console.warn("playwright browsers not installed — skipping layout assertions");
       return;
     }
-    for (const [w, expectedMode] of [[1280, "pane"], [1279, "overlay"]] as const) {
+    for (const [w, expectedMode] of [
+      [1280, "pane"],
+      [1279, "overlay"],
+    ] as const) {
       const opts: FixtureOpts =
         expectedMode === "pane"
           ? { timeline: "open", timelineMode: "pane" }
           : { timeline: "open", timelineMode: "overlay" };
       const p = await probe(opts, w, 800);
-      expect(paneLayout(w, { ...DEFAULT_PANE_STATE, hasFindings: true }).timeline).toBe(expectedMode);
-      expect(p?.positions.timeline, `timeline position at ${w}`).toBe(expectedMode === "overlay" ? "absolute" : "static");
+      expect(paneLayout(w, { ...DEFAULT_PANE_STATE, hasFindings: true }).timeline).toBe(
+        expectedMode,
+      );
+      expect(p?.positions.timeline, `timeline position at ${w}`).toBe(
+        expectedMode === "overlay" ? "absolute" : "static",
+      );
       expect(p?.scrimShown, `scrim at ${w}`).toBe(expectedMode === "overlay");
       if (expectedMode === "overlay") {
         // the scrimmed overlay may cover the paper — the scrim, never bare chrome, is what sits
@@ -232,10 +288,19 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
       if (process.env.CI) throw new Error("playwright chromium missing under CI");
       return;
     }
-    for (const [w, hgt] of [[1440, 757], [1440, 900], [1280, 800], [1024, 768], [820, 1180]] as const) {
+    for (const [w, hgt] of [
+      [1440, 757],
+      [1440, 900],
+      [1280, 800],
+      [1024, 768],
+      [820, 1180],
+    ] as const) {
       const p = await probe({ desk: "open" }, w, hgt);
       // B2 — the head's box sits strictly above the status bar's and a tab is clickable.
-      expect(intersects(p?.boxes.deskHead ?? null, p?.boxes.statusbar ?? null), `desk head ∩ statusbar @${w}×${hgt}`).toBe(false);
+      expect(
+        intersects(p?.boxes.deskHead ?? null, p?.boxes.statusbar ?? null),
+        `desk head ∩ statusbar @${w}×${hgt}`,
+      ).toBe(false);
       expect(p?.covers.deskTab, `desk tab covered @${w}×${hgt}`).toBeNull();
     }
   }, 120_000);
@@ -267,7 +332,9 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
       expect(onFocus).toBe("1");
       // outside focus view it never mounts an affordance.
       await page.setContent(fixture({ view: "write" }));
-      const hidden = await page.locator("[data-ide-focus-exit]").evaluate((el) => getComputedStyle(el).display);
+      const hidden = await page
+        .locator("[data-ide-focus-exit]")
+        .evaluate((el) => getComputedStyle(el).display);
       expect(hidden).toBe("none");
     } finally {
       await page.close();
