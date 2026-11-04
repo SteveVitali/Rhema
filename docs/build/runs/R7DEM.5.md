@@ -105,4 +105,16 @@
 
 ## Evidence report
 
-(To fill with the pnpm test result + git stats at closeout.)
+- `pnpm test`: first full run — 4 failures, all mine, all fixed and re-verified green:
+  (a) registry.test/runner.test real-bodies census needed `D3.readonly` added to the
+  real-body arm; (b) read-only.dom.test source pin needs the literal
+  `if (wire == null) return;` — restructured the demo pill ahead of it; (c) spa-env bans
+  `import.meta.env` outside `spa/env.ts` too — `demo-bundle.test.ts` moved out of `spa/`;
+  (d) unused `docNavSpy`/`Page` imports trimmed.
+- `pnpm turbo build lint typecheck` — 138/138 after all fixes.
+- `check:dom-contract` / `check:spa-env` / `check:spa-budget` — all green.
+- `node docs/build/tools/check-append-only.mjs --base stevevitali/r7dem-4b-demo-spa` — OK.
+- `check-build-memory.sh` — 0 violations (16 warnings, all legacy/pre-existing patterns;
+  `221a_R7DEM.5b` resolves to manifest row 221a).
+- Commit `56d0f2b`, PR #255 → base `stevevitali/r7dem-4b-demo-spa`; ci-boundary read at head
+  recorded in `docs/build/logs/ci-R7DEM.5.json`.
