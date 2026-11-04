@@ -90,6 +90,10 @@ describe("the journey step registry", () => {
         // `export_link_expired` minted — D-FIX.1-1 DONE. T15/T16 stay red — clock/prerequisite rows.
         "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14",
         "T12F", "T13F", "T17",
+        // D1.hub/D2.tour/D3.readonly/P1.demo/R11.demo flipped red→green 2026-11-04 — 224
+        // R7DEP.1 Part A on the owned pr-259 preview @4f66cebc (ready-to-flip + three-width
+        // screenshots, provenance match; U3.stopgap + R8.showcase.spa stay owed on defects).
+        "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
         // D-P0.03-2 DONE.
@@ -107,14 +111,14 @@ describe("the journey step registry", () => {
   // before its owner lands the body (the phase deploys 224/250 plus 248 for D2.tour are the
   // only sanctioned flippers under GD-PREVIEW.R7). U6 is never a paid row (P4-25).
   it("every round-7 leg is red, free, single-owned, and its stub fails owed-loudly", async () => {
+    // 224 R7DEP.1 (the sanctioned flipper) flipped D1.hub/D2.tour/D3.readonly/P1.demo/R11.demo
+    // green on pr-259 preview evidence @4f66cebc — they are out of the red census; U3.stopgap +
+    // R8.showcase.spa stay owed (D-R7DEP.1-1/-2).
     const R7_IDS = [
-      "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
       "U3.stopgap", "R8.showcase.spa",
     ];
     const OWNERS: Record<string, string> = {
-      "D1.hub": "R7DEM.5b", "D2.tour": "R7DEM.6a", "D3.readonly": "R7DEM.5",
-      "P1.demo": "R7DEM.4b", "R11.demo": "R7DEM.4b",
       "U1.shell": "R7SHELL.1a", "U2.noreload": "R7RELOAD.1", "U3.occlusion": "R7PANE.1",
       "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
       "U7.import": "R7HOME.2a", "U3.stopgap": "R7FIX.1", "R8.showcase.spa": "R7RO.1",
@@ -127,7 +131,7 @@ describe("the journey step registry", () => {
     // impl is a real body whose offline throw is its own error, never the stub message).
     // R7DEM.5b landed the real `D1.hub` body — same arm.
     // 222 R7DEM.6a landed the real `D2.tour` body — same arm (stays red until 224's preview evidence).
-    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo", "D3.readonly", "D1.hub", "D2.tour"]);
+    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

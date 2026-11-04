@@ -79,8 +79,9 @@ describe("runJourneys — the expected-flag semantics", () => {
   // wired owed-stub classifies `owed` through the runner (never a run failure), so the nightly
   // cannot re-redden. Removing a leg's stub (or flipping its row green) fails this test.
   it("every round-7 registry leg reports owed on the offline path", async () => {
+    // 224 R7DEP.1 flipped the five D*/R11/P1.demo legs green on pr-259 evidence @4f66cebc —
+    // they are out of this owed census; U3.stopgap + R8.showcase.spa stay owed (D-R7DEP.1-1/-2).
     const R7_IDS = [
-      "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
       "U3.stopgap", "R8.showcase.spa",
     ];
@@ -94,7 +95,7 @@ describe("runJourneys — the expected-flag semantics", () => {
       // bodies' own, never the stub's.
       // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies; R7DEM.5 landed `D3.readonly`;
       // R7DEM.5b landed `D1.hub`; 222 R7DEM.6a landed `D2.tour` — same classification arm.
-      if (["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo", "D3.readonly", "D1.hub", "D2.tour"].includes(res.id)) {
+      if (["R8.showcase.spa", "U3.stopgap"].includes(res.id)) {
         expect(res.error, res.id).not.toContain("owed — owner");
       } else {
         expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
