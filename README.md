@@ -8,7 +8,9 @@ Writers can inspect the evidence, decide how to address each finding, and carry 
 the next revision.
 
 The repository contains the web application, collaborative editor, run orchestration, and deployment
-infrastructure behind [rhema.tools](https://rhema.tools).
+infrastructure behind [rhema.tools](https://rhema.tools). The project builds on the earlier
+[agent-discourse](https://github.com/SteveVitali/agent-discourse) experiment, which explored
+structured agent review of prose; this repository carries that work into a full product.
 
 ## What is here
 
