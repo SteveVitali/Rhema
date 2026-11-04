@@ -22,11 +22,19 @@ describe("migrations (REQ-DATA-3)", () => {
     );
     expect(Number(n)).toBeGreaterThan(50);
     // the limited roles exist (REQ-ARCH-25/REQ-SPEC-30): the three product roles + the benchmark-runner
-    // role (0013) + the SEC.1 user-serving LOGIN member `rhema_app_login` (0045)
+    // role (0013) + the SEC.1 user-serving LOGIN member `rhema_app_login` (0045) + the R7DEM.6b
+    // NOLOGIN insert-only demo-metrics role `rhema_demo_writer` (0061)
     const roles = (
       await db.query("select rolname from pg_roles where rolname like 'rhema%' order by 1")
     ).rows.map((r) => (r as { rolname: string }).rolname);
-    expect(roles).toEqual(["rhema_app", "rhema_app_login", "rhema_benchmark", "rhema_collab", "rhema_harvester"]);
+    expect(roles).toEqual([
+      "rhema_app",
+      "rhema_app_login",
+      "rhema_benchmark",
+      "rhema_collab",
+      "rhema_demo_writer",
+      "rhema_harvester",
+    ]);
     // backlog_items is dropped by the final migration
     const { exists } = await one(
       db,
