@@ -116,5 +116,8 @@
 - `node docs/build/tools/check-append-only.mjs --base stevevitali/r7dem-4b-demo-spa` — OK.
 - `check-build-memory.sh` — 0 violations (16 warnings, all legacy/pre-existing patterns;
   `221a_R7DEM.5b` resolves to manifest row 221a).
-- Commit `56d0f2b`, PR #255 → base `stevevitali/r7dem-4b-demo-spa`; ci-boundary read at head
-  recorded in `docs/build/logs/ci-R7DEM.5.json`.
+- Commits `56d0f2b`..`615ee50`, PR #255 → base `stevevitali/r7dem-4b-demo-spa`.
+- ci-boundary: first read at `4c104f11` — public-safe FAILED (protocol-markers:
+  `demo-markers.tsx` rode the SPA bundle unlisted — a shared leaf like dossier-view).
+  Fixed at source (allowlist + comment), re-read at `615ee50`: **CI PASS — all seven
+  legs** (run 41821088236), recorded in `docs/build/logs/ci-R7DEM.5.json`.
