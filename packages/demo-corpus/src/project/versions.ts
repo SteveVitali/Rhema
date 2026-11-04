@@ -3,7 +3,7 @@
 // the head the demo opens to (REQ-IDE-48). Origin/state/flag derivations are declared here, never
 // invented per call.
 
-import { extractTitle, type VersionIndex, type VersionEntry } from "../versions.js";
+import type { VersionIndex, VersionEntry } from "../versions.js";
 
 export interface DemoVersion {
   /** The stable draft id — the corpus version key (`v1`) or `published`. */
