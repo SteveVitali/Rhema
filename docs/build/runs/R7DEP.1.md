@@ -142,6 +142,33 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
   R4/R3 sections, ADR-130, R6DEP.1/R6DEP.4 precedents, infra+journeys AGENTS loaded.
   Tooling: pulumi v3.261.0, gcloud → `rhema-507501`, node v25.2.1, pnpm 10.32.1; vendored
   agent SDK present in the worktree.
+- 2026-11-04T19:1xZ — commit: `cdn-invalidate-demo.mjs` + test (9/9 vitest legs), golden
+  classification (**NOT protocol-affecting → no re-run**, `reports/2026-11-04_R7DEP.1/
+  golden-classification.md`), this ledger, `pr/R7DEP.1.md`. Pushed → **PR #259** → stack
+  `pr-259`.
+- 2026-11-04T19:2xZ — preview bring-up: `init` + config (project/region/placeholderImage/
+  deployProxyMig/AppArmor/gitSha=`8f6ef478`/protocolsVersion `0.4.0+9c2b880dbee74bd8`/
+  googleOauthClientId) + `resend-pull`. `up` converged on third pass (196 resources; two
+  known-transient AlertPolicy metric-propagation races, same class as R6DEP.1). Cloud Build
+  `ce135762` SUCCESS — all 10 images at `8f6ef478` (~11m35s); digests pinned to
+  `rhema:serviceImages`/`rhema:runTaskImageDigest`/`rhema:proxyImage` +
+  `appBaseUrl`/`apiPublicUrl` (`…web-4043971`, `…api-e2d977b` run.app).
+- 2026-11-04T19:5xZ — **F-R7DEP.1-1 (the ticket's P4-2 named risk, REAL):** the migrate Job
+  `rhema-pr-259-migrate-824e6f4` applied `0047…0060` then failed on `0061_demo_events.sql`:
+  `must be able to SET ROLE "rhema_demo_writer"`. On the preview's AlloyDB **POSTGRES_18**
+  the `postgres` (alloydbsuperuser) migration user cannot `SET ROLE` to the same-file-created
+  NOLOGIN role — `ALTER FUNCTION … OWNER TO` therefore fails (the `createrole_self_grant`
+  assumption the file's comment makes holds on prod's Cloud SQL **POSTGRES_16** but NOT on
+  the preview's AlloyDB managed postgres). The migration as committed is non-portable:
+  it can never apply on a `pr-<n>` preview. Fix per the ticket's defect path (BM-MANIFEST-03
+  run-time insert): `create role … role postgres` (membership at creation; additive-lint
+  clean — it is part of `CREATE ROLE`, not a `GRANT` statement) — recorded as insert `223b`
+  below; the preview DB's orphaned role (from the partially-applied first attempts) is
+  dropped manually before the re-run so the amended file's `if not exists` path creates the
+  membered role.
+- Next: insert `223b` (manifest row + ticket file + the one-word fix) → drop orphan role on
+  the preview DB (IAP tunnel) → re-execute migrate Job → `up` (roll real images) →
+  `seed-invite` → the leg walk.
 
 ## Gap table
 
