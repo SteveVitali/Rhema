@@ -32,12 +32,13 @@ import {
   spaRouteFor,
 } from "@rhema/contracts";
 import { renderDocument } from "./render.js";
-import { demoHubElement, demoReadOnlyElement, notFoundElement } from "./routes.js";
+import { demoReadOnlyElement, notFoundElement } from "./routes.js";
+import { demoHubDocument } from "./demo-page.js";
 import { feedLabelMaps } from "./feed-labels.js";
 import { spaShellDocument } from "./spa-shell.js";
 import { wantsJson } from "./bff.js";
 import { createWebApp, type WebDeps } from "./server.js";
-import { DemoError, demoDataSource, demoSessionFor, defaultDemoCorpusRoot } from "./demo-data.js";
+import { DemoError, demoDataSource, demoHubCards, demoSessionFor, defaultDemoCorpusRoot } from "./demo-data.js";
 import type { SessionHeaders } from "./data.js";
 
 /** The twin cache posture (S-13): browser TTL short, CDN TTL long; the `?b=<sha>` the boot
@@ -257,7 +258,11 @@ export function mountDemo(app: Hono, deps: WebDeps): void {
       return;
     }
     if (demo.hub === true) {
-      c.res = c.html(renderDocument(c.req.path, demoHubElement));
+      // 221a (REQ-TOUR-1) — the filled hub: card facts read off the snapshots before render.
+      // An unresolvable root serves the honest empty set (the same fail-closed posture as the
+      // twins' 404) — the frame + provenance still render, never a fabricated card.
+      const cards = corpusRoot == null ? [] : await demoHubCards(corpusRoot);
+      c.res = c.html(renderDocument(c.req.path, demoHubDocument(cards)));
       return;
     }
     if (!allowed(demo.routeId)) {

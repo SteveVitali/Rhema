@@ -16,6 +16,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import type {
+  DemoCardFactsDto,
   EditorDocDto,
   EditorResolveDto,
   FigureCardDto,
@@ -28,7 +29,7 @@ import type {
   WhatChangedDto,
   ProjectRow,
 } from "@rhema/api-client";
-import { DEMO_SLUG_PREFIX } from "@rhema/contracts";
+import { DEMO_HUB_ESSAYS, DEMO_SLUG_PREFIX } from "@rhema/contracts";
 import type { DataSource, SessionHeaders } from "./data.js";
 
 /** A snapshot-miss / malformed-request error — the adapter in demo.ts maps it to `ApiError`. */
@@ -338,6 +339,28 @@ export function demoDataSource(root: string): DataSource {
       return () => Promise.reject(new DemoUnsupported(prop));
     },
   }) as DataSource;
+}
+
+/**
+ * 221a R7DEM.5b (REQ-TOUR-1) — the hub's card facts: each `DEMO_HUB_ESSAYS` essay's
+ * `card-facts.json` snapshot (`dto` slot of the envelope — 218a's `demoCardFacts` output,
+ * verbatim). A missing or malformed envelope skips that essay: the synthetic fixture serves
+ * zero public cards rather than fabricating facts (S-12; the fixture essay itself is never in
+ * `DEMO_HUB_ESSAYS`). Rendering these structured numbers is the hub's whole read — nothing here
+ * recomputes a count (P4-6).
+ */
+export async function demoHubCards(root: string): Promise<DemoCardFactsDto[]> {
+  const snapRoot = join(root, "snapshots");
+  const cards: DemoCardFactsDto[] = [];
+  for (const essay of DEMO_HUB_ESSAYS) {
+    const env = await readJson<SnapshotEnvelope>(
+      join(snapRoot, essay, "card-facts.json"),
+    ).catch(() => null);
+    const dto = env?.dto as DemoCardFactsDto | undefined;
+    if (dto == null || dto.essay !== essay || dto.counts == null) continue;
+    cards.push(dto);
+  }
+  return cards;
 }
 
 /**

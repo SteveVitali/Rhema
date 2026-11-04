@@ -194,7 +194,9 @@ export async function crawlDemo(
   },
 ): Promise<readonly string[]> {
   const visited: string[] = [];
-  const queue: string[] = [`/demo/${opts.essay}`, ...(opts.seeds ?? [])];
+  // 221a — the hub joins every walk (position 2 keeps the essay index page first for the
+  // interaction pass); the recording proxy must stay clean over the filled `/demo` too.
+  const queue: string[] = [`/demo/${opts.essay}`, "/demo", ...(opts.seeds ?? [])];
   const seen = new Set<string>();
   const maxPages = opts.maxPages ?? 48;
   while (queue.length > 0 && visited.length < maxPages) {

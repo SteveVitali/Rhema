@@ -9,6 +9,8 @@
 // the committed synthetic mini-corpus (S-12): it is served so every test exercises the real path,
 // and 221a's hub excludes it from the public card list.
 
+import { spaRouteFor } from "./spa.js";
+
 /** The reserved slug prefix — `~` is outside the api slug grammar, so the namespace can never
  *  collide with a tenant slug. */
 export const DEMO_SLUG_PREFIX = "demo~";
@@ -151,3 +153,41 @@ export function isDemoNamespacePath(pathname: string | null | undefined): boolea
     /^\/p\/demo~/.test(pathname)
   );
 }
+
+// ---- 221a R7DEM.5b (REQ-TOUR-1/8) — the hub's card order, the stable deep-link builder, and
+// the tour-entry href 222 consumes.
+
+/**
+ * The hub's card order: SPD (the hero — it carries the tour CTA), GM, POV, CoR. Every row is a
+ * non-fixture `DEMO_ESSAYS` member; the synthetic fixture never renders a public card.
+ */
+export const DEMO_HUB_ESSAYS = [
+  "structure-of-political-difference",
+  "the-governable-mind",
+  "the-politics-of-visibility",
+  "constitution-of-reason",
+] as const;
+
+/**
+ * A stable deep link into a demo essay (REQ-TOUR-8): the public `/demo/<essay>…` form with the
+ * DOM-contract hook as the `#fragment` — `#data-demo-escalation` names the same hook the tours
+ * and legs resolve to a `[data-demo-escalation]` selector. `route` is the essay-relative path
+ * (`""` = the essay root, `/v/1`, `/review/<runId>`, `/a/<flattened-artifactId>`…).
+ *
+ * Fail-closed: an unregistered essay or a `route` whose mapped `/p/demo~…` path resolves to no
+ * `DEMO_ROUTE_IDS` member throws — a card bullet can never deep-link outside the allowlist.
+ */
+export function demoDeepLink(essay: string, route = "", hook?: string): string {
+  const row = demoEssayFor(essay);
+  if (row == null) throw new Error(`demoDeepLink: unregistered essay ${essay}`);
+  const inner = route === "" ? "" : route.startsWith("/") ? route : `/${route}`;
+  const routeId = spaRouteFor(`/p/${row.slug}${inner}`).routeId;
+  if (routeId == null || !(DEMO_ROUTE_IDS as readonly string[]).includes(routeId)) {
+    throw new Error(`demoDeepLink: /demo/${essay}${inner} resolves to ${routeId ?? "no route"} — outside DEMO_ROUTE_IDS`);
+  }
+  return `/demo/${essay}${inner}${hook ? `#${hook}` : ""}`;
+}
+
+/** The tour-entry href the hub's hero CTA carries and 222_R7DEM.6a consumes (REQ-TOUR-2's
+ *  tour opens on SPD's essay root — the Published card). */
+export const DEMO_TOUR_ENTRY_HREF = demoDeepLink("structure-of-political-difference");
