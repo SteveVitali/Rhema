@@ -5,6 +5,11 @@
 - **Config:** implement-spec full rigor; Stage A only ($0, offline, synthetic fixture); no preview/Stage-B
 - **Harness:** devin-desktop/swe-2-high/subagent · **Skills:** local checkout `~/agent-skills`
 - **Started:** 2026-11-04T03:58Z
+- **Closed:** 2026-11-04T05:58Z
+- **ci:** pass #251@`db02cce` — run 41778966081, all seven legs + `ci-pass` anchor
+  (earlier reads: `152ddb0` fail `public-safe` gitleaks false-positive on generated-snapshot
+  `key` fields → dated allowlist fix `ee79bae` → pass run 41775621123;
+  `logs/ci-R7DEM.3b.json`)
 
 ## Deferrals read
 
@@ -100,6 +105,8 @@ D-row and PAUSE" — the additive variant route exists, so no pause).
   project wiring, snapshots (dossier/run-report/timeline/card-facts/figures + drafts/index),
   apps/web dossier test, ADR-126 note, COVERAGE.md, run ledger, PR body.
 - Local verify numbers above; zero production mutations; $0.
+- Boundary re-read on the docs-record head `db02cce` → **pass #251** (run 41778966081,
+  all seven legs + `ci-pass` anchor; `logs/ci-R7DEM.3b.json`, read_at 2026-11-04T05:26:12Z).
 
 ## Evidence report
 
@@ -111,3 +118,7 @@ on the snapshots tree clean; `check:no-cookies`/`check:protocol-markers`/`check:
 Head read on `ee79bae`: **pass #251** (run 41775621123 — fast-path 39 s, typecheck/lint/unit
 22 m 8 s, contracts 20 s, public-safe 30 s, integration 2 m 28 s, images, all legs + `ci-pass`
 anchor; `logs/ci-R7DEM.3b.json`). Deferrals: none opened, none closed. Unmerged (OPERATOR).
+
+Boundary re-read on the docs-record head `db02cce` (2026-11-04): **pass #251** — run
+41778966081, all seven legs + `ci-pass` anchor; `logs/ci-R7DEM.3b.json`
+(read_at 2026-11-04T05:26:12Z). The LEDGER PHASE LOG ci field carries the same read.
