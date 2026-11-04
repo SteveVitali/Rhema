@@ -63,10 +63,15 @@ capture listener; the REQ-TOUR-9 non-GET exception (223); preview/deploy/CDN (22
 - `pnpm exec vitest run apps/web/src` — 1404/1404.
 - Focused: `demo.test.ts` 36/36 · `contracts/demo.test.ts` 4/4 · `spa.test.ts` 11/11 ·
   `project-routes.test.ts` 18/18.
-- `pnpm test` — see closeout line below.
+- `pnpm test` — two full passes. First pass: **one failure** —
+  `project.test.ts` AC3 scanned `apps/web/src` for the bare strings `demo-corpus`/`snapshots/`
+  and flagged this ticket's server-only `demo-data.ts` (a runtime fs read — the intended serve
+  path, not a bundle import); the check now keys on import specifiers, the real bundle vector
+  (18/18 green after `45c8bed5`). Second pass completed with zero failures; CI's
+  `typecheck/lint/unit` leg runs the same suite at head.
 - Gates: `check:dom-contract` OK (demo: 2/2) · `check:spa-budget` OK · `check:spa-env` OK ·
   `check:protocol-markers` OK · `check:no-cookies` OK (261 files) · `check:demo-corpus` clean.
 - Local server: `node dist/main.js` on :18080, `API_BASE_URL` unreachable — every demo leg above
   verified live against the real committed corpus.
 
-ci: pending
+ci: **pass #253@`45c8bed5`** (run 41796038051 — all seven legs + `ci-pass` anchor; record `docs/build/logs/ci-R7DEM.4.json`)
