@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "companion_doc",
+  "artifactPath": "drafts/taxonomy_reference_sheet.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d09238fa08b4bb32",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "4fe975cc6a949818",
+    "ordinal": 2
+   }
+  },
+  "draftId": "drafts/taxonomy_reference_sheet.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Companion reference sheet\n\nCited by the essay's later section: the five failure registers (roster, ledger, budget, covenant,\napprenticeship) with one-line glosses each. Kept as an artifact per the REQ-CORPUS-11 ruling.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 30
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c1dcf3024dd98f6933960790745c3878c864c745fc1562363ccd7e804a520bec",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "drafts/taxonomy_reference_sheet.md",
+ "kind": "artifact-page"
+}

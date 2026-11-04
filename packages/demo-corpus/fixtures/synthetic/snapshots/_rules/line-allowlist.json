@@ -1,0 +1,35 @@
+{
+  "$comment": "Denylist line-allowlist for the GENERATED snapshot tree — file:line only. These lines carry the corpus's own allowlisted bytes verbatim: published.md:12's 'Mirrored from the writer's archive (~/...)' line (corpus allowlist row la-published-mirror; S-11 keeps Published credit/mirror lines verbatim, never altered). Positions are regenerated-file positions: when snapshots regenerate, re-run check:demo-corpus and refresh any moved entries — a stale entry fails the gate by design.",
+  "entries": [
+    {
+      "id": "la-snap-published-doc",
+      "file": "the-borrowed-commons/drafts/published.json",
+      "line": 23,
+      "reason": "verbatim corpus bytes; source allowlist la-published-mirror (published.md:12)"
+    },
+    {
+      "id": "la-snap-diff-a",
+      "file": "the-borrowed-commons/diffs/3-4.json",
+      "line": 42,
+      "reason": "verbatim corpus bytes; source allowlist la-published-mirror (published.md:12)"
+    },
+    {
+      "id": "la-snap-diff-b",
+      "file": "the-borrowed-commons/diffs/3-4.json",
+      "line": 188,
+      "reason": "verbatim corpus bytes; source allowlist la-published-mirror (published.md:12)"
+    },
+    {
+      "id": "la-snap-diff-c",
+      "file": "the-borrowed-commons/diffs/3-4.json",
+      "line": 349,
+      "reason": "verbatim corpus bytes; source allowlist la-published-mirror (published.md:12)"
+    },
+    {
+      "id": "la-snap-wc",
+      "file": "the-borrowed-commons/what-changed/v3-published.json",
+      "line": 35,
+      "reason": "verbatim corpus bytes; source allowlist la-published-mirror (published.md:12)"
+    }
+  ]
+}

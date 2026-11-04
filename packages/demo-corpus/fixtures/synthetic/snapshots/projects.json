@@ -1,0 +1,29 @@
+{
+ "dto": [
+  {
+   "activeRun": null,
+   "archivedAt": null,
+   "headDraftId": "published",
+   "headDraftN": 4,
+   "id": "the-borrowed-commons",
+   "protocolId": null,
+   "slug": "the-borrowed-commons",
+   "state": {
+    "key": "accepted",
+    "overlay": null,
+    "pill": "Accepted",
+    "suggested": {
+     "action": "open",
+     "label": null
+    }
+   },
+   "title": "The Borrowed Commons: a Grammar of Shared Decay",
+   "venue": null,
+   "voice": null
+  }
+ ],
+ "essay": "*",
+ "format": 1,
+ "key": "projects",
+ "kind": "projects"
+}

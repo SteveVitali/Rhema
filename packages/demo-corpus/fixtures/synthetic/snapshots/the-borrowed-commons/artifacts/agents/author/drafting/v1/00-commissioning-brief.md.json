@@ -1,0 +1,43 @@
+{
+ "dto": {
+  "artifactKind": "commissioning_brief",
+  "artifactPath": "agents/author/drafting/v1/00-commissioning-brief.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3d8f4e20ba8feedd",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "a48a0243965f521b",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "f21b906ac4dc1fde",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "ac520ff628c51f30",
+    "ordinal": 4
+   }
+  },
+  "draftId": "agents/author/drafting/v1/00-commissioning-brief.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Commissioning brief — The Borrowed Commons\n\nThesis in its strongest form: shared infrastructure fails grammatically before it fails\nmaterially — the ledger's missing subject precedes the broken seal.\n\nSuccess looks like a reader who arrived at \"commons tragedy\" and leaves holding the\nroster/ledger distinction. Target ~1,400–1,600 words, ceiling 1,600.\n\nDiscipline: every citation carries a deep-research tracking parameter and is therefore unverified until the\nresearch pass replaces each link with a checked record URL.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bea87a15cca6e4726083a2e8139b2c6cfc95faf48e1320d4cccd7f83fa53515e",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/drafting/v1/00-commissioning-brief.md",
+ "kind": "artifact-page"
+}

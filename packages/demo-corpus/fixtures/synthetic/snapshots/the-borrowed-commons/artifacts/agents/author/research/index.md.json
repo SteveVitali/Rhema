@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "research_note",
+  "artifactPath": "agents/author/research/index.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8702ec6d8aaa17dc",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "79945546b5631ece",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/index.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Research index — author pass\n\n| Slug | Source | Date |\n|---|---|---|\n| ekwueme-commons-2019 | Ekwueme, \"Shared plant\" | 2019 |\n| marsh-viscosity-2021 | Marsh, Averly footbridge history | 2021 |\n| ondatje-ledger-2024 | Ondatje, Fenland drainage boards | 2024 |\n",
+  "meters": {
+   "readMin": 1,
+   "words": 25
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d291329998b1877dc436f6408e40b6c12c2314026b9e0d0a5a0e57fce05b277b",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/research/index.md",
+ "kind": "artifact-page"
+}

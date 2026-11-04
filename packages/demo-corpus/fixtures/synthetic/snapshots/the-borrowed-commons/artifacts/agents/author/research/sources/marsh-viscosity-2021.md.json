@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/marsh-viscosity-2021.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c281fb3c9e01f1eb",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "00b4c690c513c324",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "9b072cb6a3c6ef53",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/author/research/sources/marsh-viscosity-2021.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Source note — Marsh, Averly footbridge (2021)\n\n- **URL:** https://books.example.org/marsh/averly-footbridge\n- **Accessed:** 2026-07-29\n- **Key passages:** the three-hand toll ledgers; the ordered-ironwork gap.\n\nSteven Marsh's county history; the bridge chapter is the essay's §I second case.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 33
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6340770edb050635c16174849a22b56dbf7f15c9715956294744ed34210cca8f",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/research/sources/marsh-viscosity-2021.md",
+ "kind": "artifact-page"
+}

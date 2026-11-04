@@ -1,0 +1,40 @@
+{
+ "dto": {
+  "baseDraftId": "v3",
+  "baseDraftN": 3,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5a4a0e66651100b3",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "ea04a1884f06ecd1",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "8cbef4411369299b",
+    "ordinal": 3
+   }
+  },
+  "draftId": "published",
+  "draftN": 4,
+  "findings": [],
+  "lock": null,
+  "markdown": "# The Borrowed Commons: a Grammar of Shared Decay\n\nShared infrastructure fails quietly, then all at once — and the failure is recorded before it is\nvisible. (The published text is abbreviated in this synthetic fixture; the real fetch writes the\nfull post body.)\n\n*Mirrored from the writer's archive (`~/archive/the-borrowed-commons`); the mirror is not canonical.*\n",
+  "meters": {
+   "readMin": 1,
+   "words": 54
+  },
+  "origin": "imported",
+  "proposals": [],
+  "provenance": null,
+  "sha256": "38b5136408400f858a674b09791d1f0d1db8e7b4181b50468f04fafb72a51a3b",
+  "state": "working",
+  "venueCap": null,
+  "versionLabel": "Published · sjsebastian.example.org · fetched 2026-09-01"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "published",
+ "kind": "editor-doc"
+}

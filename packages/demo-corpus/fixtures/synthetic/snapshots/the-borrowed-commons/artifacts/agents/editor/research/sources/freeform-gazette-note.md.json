@@ -1,0 +1,43 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/freeform-gazette-note.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "442b53e0b6ba033c",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "1030ef6f32dfc483",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "8d40760cb7fcc3ac",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "a180a4618e828963",
+    "ordinal": 4
+   }
+  },
+  "draftId": "agents/editor/research/sources/freeform-gazette-note.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Averly Gazette clippings file\n\nEstablishes: the seal failure was reported in the Gazette's March issue with the parish\nspokesperson using the passive — \"maintenance was performed\" appears verbatim.\n\n- https://gazette.example.org/averly/seal-failure\n\nAccessed on a Tuesday; the clipping's date line is smudged but the byline reads J. Corvo.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 45
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "10fb50f2c6342ce4b1568ca424db70e3f9495789379dd4a64e86cd9a3311ad7f",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/editor/research/sources/freeform-gazette-note.md",
+ "kind": "artifact-page"
+}

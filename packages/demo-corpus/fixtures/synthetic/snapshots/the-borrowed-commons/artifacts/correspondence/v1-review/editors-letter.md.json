@@ -1,0 +1,107 @@
+{
+ "dto": {
+  "artifactKind": "editors_letter",
+  "artifactPath": "correspondence/v1-review/editors-letter.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dcbf471e1bcf7740",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "c4f6b648484c029a",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "7bb57924eae73423",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "7ca2893336428b46",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "7e6cd6ea72a98727",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "495a8d088de497a4",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "2583eaa8d94cbfc6",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "dc59d0791932f63c",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "56cc86393e6be615",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "deaa2b89fffac583",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "888df49e862db28e",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "630bddac4cfb7a4a",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "e8aaa711a6162577",
+    "ordinal": 20
+   },
+   "b3": {
+    "contentHash": "9ae4ead5910b4820",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "0eb19343cc558bc7",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "3ec92ef20ee2cd9d",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "389728ffb317c91f",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "30ba60c521c4e054",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "05f0669dafa8cfbd",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "13f3bc72762561f2",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v1-review/editors-letter.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Editor's letter — The Borrowed Commons v1\n\n- Draft read: v1 (from the writer's Substack package)\n- Verdict: major revisions\n- The fact-check came back cleaner than expected for a draft of this ambition.\n\n**The one thing:** the essay's hinge — \"the grammar precedes the budget\" — is asserted, not\nearned. The Averly record supports \"the roster failed\"; the leap to grammar-first needs the\nfunding counterfactual argued, not gestured at.\n\n### 1. The grammar/budget hinge is asserted, not earned\n\n- **Where:** \"For the commons to be kept, three sentences have to be writable…\"\n- **The problem:** the essay's central claim is stated where its proof should be.\n- **Why it matters here:** the whole piece stands or falls on ordering.\n- **Direction:** argue the funded-but-unwritten case explicitly; Averly supplies it.\n\n### 2. The roster is named but never shown failing\n\n- **Where:** \"What fails first is never the iron. It is the roster.\"\n- **The problem:** the essay describes a roster-shaped hole without showing the hole.\n- **Why it matters here:** the reader has to take the mechanism on faith.\n- **Direction:** the figure already carries it — let the missing edge do the work.\n\n## Strengths\n\n- The pump/bridge/ledger braid is the essay at its best.\n- The Ondatje \"silent nominative\" framing is borrowed cleanly and credited honestly.\n- The two objections are real objections, not straw men.\n- Prose is clean at the sentence level throughout.\n- The close lands without overclaiming.\n\n## Minor issues\n\n1. Ledger C7b is right that \"none that named a party\" overclaims (ref [1]).\n2. The \"eleven times\" count needs the minute cited or the quotation dropped.\n\n## Line notes\n\n- §II: \"the municipal equivalent of a shrug\" — keep.\n- §IV: \"a habit is not restored by resolution\" — borderline aphorism, tolerable.\n\n## Considered and rejected\n\n- Moving the figure to §I: rejected — the edge needs the roster vocabulary first.\n\n## Revision roadmap\n\n1. Argue the grammar/budget hinge in a new section.\n2. Fix the C7b overclaim and the quotation.\n3. Open questions for the writer: is the county board record quotable?\n\n## Scorecard\n\n| Dimension | Score | Basis |\n|---|---|---|\n| Thesis & contribution | 4 | strong frame; hinge unearned (Major 1) |\n| Rigor & reasoning | 3 | the ordering claim is asserted (Major 1) |\n| Evidence & accuracy | 3 | two ledger flags cap it (Minor 1–2) |\n| Originality | 4 | silent nominative is genuinely fresh |\n| Structure | 3 | hinge arrives late (Major 2) |\n| Prose & style | 4 | clean |\n| Voice & audience fit | 4 | right register |\n| Intellectual honesty | 4 | objections are real |\n\nNo aggregate score.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 391
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e867395f6eb9ff127a6cdd290dfeb85ca2729699a15eece7cbc13cd504e2f02b",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/editors-letter.md",
+ "kind": "artifact-page"
+}

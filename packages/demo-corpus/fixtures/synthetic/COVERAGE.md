@@ -99,3 +99,11 @@ new `overrides/the-borrowed-commons/convert-overrides.json` holds one `minor-fin
 219 authors the real `corpus/<slug>/convert-overrides.json`. `disposition`/`move-link` override
 kinds are exercised by synthesized rows in-test: the fixture's only mixed cell sits on a
 raw-table-only row (`CL C7b`), and no spec amendment authorizes a hand-authored move map.
+
+**218_R7DEM.3 (added 2026-11-04):** additive only — `snapshots/` is the projector's committed
+output (canonical-JSON `SnapshotFile` chunks + per-essay `index.json` + `projects.json`),
+byte-pinned by the drift leg of `src/project/project.test.ts`; regenerate with
+`RHEMA_REGEN_SNAPSHOTS=1` (or `tools/demo-corpus/project.mjs`, the corpus→convert→project
+command 218a extends and 219 reuses). `snapshots/_rules/line-allowlist.json` covers the
+published-mirror line embedded verbatim (source row `la-published-mirror`); positions are
+regenerated-file positions — a moved hit or stale entry fails `check:demo-corpus` by design.

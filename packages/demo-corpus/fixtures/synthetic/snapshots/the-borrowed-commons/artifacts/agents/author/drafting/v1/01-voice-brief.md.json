@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "voice_brief",
+  "artifactPath": "agents/author/drafting/v1/01-voice-brief.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4fbaf0aca7da8bfd",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "d3b3310b93da3f16",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "4b0504b10edb3d71",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/author/drafting/v1/01-voice-brief.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Voice brief — drafting pass\n\nRegister: plain-spoken, concrete nouns, one aphorism per section at most.\n\nThe drafting agent loaded `the persona profile` for the persona\npositions — measured style targets only, no biography. Persona positions are quoted from the\npublished S. J. Sebastian essays.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 44
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "040310d024fca661d4a57d7c81f6704d88de064dcaa56f0cfb4d91e6c0e07399",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/drafting/v1/01-voice-brief.md",
+ "kind": "artifact-page"
+}

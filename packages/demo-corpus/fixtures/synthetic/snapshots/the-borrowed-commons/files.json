@@ -1,0 +1,541 @@
+{
+ "dto": {
+  "demo": {
+   "fragmentsNote": "3 working fragments not shown"
+  },
+  "sections": [
+   {
+    "advancedRows": [],
+    "key": "drafts",
+    "rows": [
+     {
+      "artifactId": "v1",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "draftRef": {
+       "n": 1,
+       "state": "frozen"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 550
+     },
+     {
+      "artifactId": "v2",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "draftRef": {
+       "n": 2,
+       "state": "frozen"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 565
+     },
+     {
+      "artifactId": "v3",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "draftRef": {
+       "n": 3,
+       "state": "frozen"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "you"
+      },
+      "readOnly": false,
+      "words": 570
+     },
+     {
+      "artifactId": "published",
+      "createdAt": "2026-09-01T00:00:00.000Z",
+      "draftRef": {
+       "n": 4,
+       "state": "working"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "editable",
+      "provenance": {
+       "actor": "you"
+      },
+      "readOnly": false,
+      "words": 54
+     },
+     {
+      "artifactId": "drafts/taxonomy_reference_sheet.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "form",
+      "kind": "companion_doc",
+      "label": "Companion doc",
+      "level": "SE",
+      "lock": "editable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 30
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [],
+    "key": "rounds",
+    "rows": [
+     {
+      "artifactId": "agents/author/drafting/v1/03-claim-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "claim_ledger",
+      "label": "Claim ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 44
+     },
+     {
+      "artifactId": "agents/author/ledgers/v1-response-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_ledger",
+      "label": "Response ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 234
+     },
+     {
+      "artifactId": "agents/author/ledgers/v2-response-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_ledger",
+      "label": "Response ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 81
+     },
+     {
+      "artifactId": "correspondence/v1-drafting-note.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "drafting_note",
+      "label": "Drafting note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 45
+     },
+     {
+      "artifactId": "correspondence/v1-response.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_letter",
+      "label": "Response letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 91
+     },
+     {
+      "artifactId": "correspondence/v1-review/01-claim-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "claim_ledger",
+      "label": "Claim ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 372
+     },
+     {
+      "artifactId": "correspondence/v1-review/02-discourse-report.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "discourse_report",
+      "label": "Discourse report",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 43
+     },
+     {
+      "artifactId": "correspondence/v1-review/05-second-read.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "second_read",
+      "label": "Second read",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 115
+     },
+     {
+      "artifactId": "correspondence/v1-review/editors-letter.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "editors_letter",
+      "label": "Editors letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 391
+     },
+     {
+      "artifactId": "correspondence/v2-response.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_letter",
+      "label": "Response letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 51
+     },
+     {
+      "artifactId": "correspondence/v2-review/01-claim-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "claim_ledger",
+      "label": "Claim ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 94
+     },
+     {
+      "artifactId": "correspondence/v2-review/editors-letter.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "editors_letter",
+      "label": "Editors letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 92
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [],
+    "key": "research",
+    "rows": [
+     {
+      "artifactId": "agents/author/research/index.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "research_note",
+      "label": "Research note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 25
+     },
+     {
+      "artifactId": "agents/author/research/sources/ekwueme-commons-2019.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 28
+     },
+     {
+      "artifactId": "agents/author/research/sources/marsh-viscosity-2021.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 33
+     },
+     {
+      "artifactId": "agents/author/research/sources/ondatje-ledger-2024.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 30
+     },
+     {
+      "artifactId": "agents/editor/research/index.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "research_note",
+      "label": "Research note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 19
+     },
+     {
+      "artifactId": "agents/editor/research/sources/freeform-gazette-note.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 45
+     },
+     {
+      "artifactId": "agents/editor/research/sources/workdocs-log-note.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 45
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [],
+    "key": "assets",
+    "rows": [
+     {
+      "artifactId": "drafts/figures/figure_1_signal_map.png",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "form",
+      "kind": "figure",
+      "label": "Figure",
+      "level": "SE",
+      "lock": "editable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": null
+     },
+     {
+      "artifactId": "drafts/figures/figure_2_load_curve.png",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "form",
+      "kind": "figure",
+      "label": "Figure",
+      "level": "SE",
+      "lock": "editable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": null
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [
+     {
+      "artifactId": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "commissioning_brief",
+      "label": "Commissioning brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 73
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/01-voice-brief.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "voice_brief",
+      "label": "Voice brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 44
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/04-draft-ledger.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "draft_ledger",
+      "label": "Draft ledger",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 55
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "fidelity_audit",
+      "label": "Fidelity audit",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 36
+     },
+     {
+      "artifactId": "correspondence/v1-review/00-piece-brief.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "piece_brief",
+      "label": "Piece brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 50
+     },
+     {
+      "artifactId": "correspondence/v1-review/03-argument-notes.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "argument_notes",
+      "label": "Argument notes",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 34
+     },
+     {
+      "artifactId": "correspondence/v1-review/04-craft-notes.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "craft_notes",
+      "label": "Craft notes",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 33
+     }
+    ],
+    "key": "advanced",
+    "rows": [
+     {
+      "artifactId": "agents/author/drafting/v1/02-structure-plan.md",
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "editMode": "guidance_only",
+      "kind": "structure_plan",
+      "label": "Structure plan",
+      "level": "SR",
+      "lock": "inspect",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 81
+     }
+    ],
+    "sealedCount": 0
+   }
+  ]
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "",
+ "kind": "files"
+}

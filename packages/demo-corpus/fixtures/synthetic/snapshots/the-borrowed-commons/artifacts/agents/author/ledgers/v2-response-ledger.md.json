@@ -1,0 +1,47 @@
+{
+ "dto": {
+  "artifactKind": "response_ledger",
+  "artifactPath": "agents/author/ledgers/v2-response-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "38d233ceb46550f0",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "093f1ad471e6465f",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "58d71e5bd3dd2377",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "f60f94fed9c0ba43",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "2d8bf2b7bc0d1f74",
+    "ordinal": 5
+   }
+  },
+  "draftId": "agents/author/ledgers/v2-response-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# v2 response ledger — The Borrowed Commons\n\n| Row | Source | Disposition | Status | Note |\n|---|---|---|---|---|\n| G1 | L Minor 1 | accept | done | Scope narrowed to water boards. |\n| G2 | CL VII3-scope | accept | done | Comparison record cited. |\n| G3 | self | no change needed | done | Title kept for this round. |\n\n## Revision plan\n\n| Move | Title | Type | Status |\n|---|---|---|---|\n| M1 | Scope \"smallest unit first\" to water boards | edit | done |\n| M2 | §V closing cadence tightened | edit | done |\n| M3 | roster table retitled | structure | done |\n\n(No `Discharges` column — the POV shape R2 §1 records.)\n",
+  "meters": {
+   "readMin": 1,
+   "words": 81
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1cbc03dccab0fa75572998683ec9f20767d2ac2c92edfbeff63a8675587817af",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/ledgers/v2-response-ledger.md",
+ "kind": "artifact-page"
+}

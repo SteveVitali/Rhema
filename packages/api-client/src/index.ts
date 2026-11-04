@@ -758,6 +758,22 @@ export interface RebuttedCardDto {
   readonly rationale: string;
 }
 
+// ---- R7DEM.3 — the demo snapshot markers (REQ-CONV-14, REQ-CORPUS-4; ADR-126). Optional and
+// additive: carried on document-side DTOs so the demo renderer (220a/221) can show import-rule
+// labels and "not published" non-links without inventing product fields. Absent on prod reads. ----
+
+/** The marker block a demo snapshot DTO may carry. */
+export interface DemoMarkersDto {
+  /** REQ-CONV-14 — converter-assigned field → its "assigned by import rule" note (labels.json). */
+  readonly importRule?: Readonly<Record<string, string>>;
+  /** S-10 role vocabulary for any generated label ("author" is the human only). */
+  readonly roles?: Readonly<Record<string, string>>;
+  /** REQ-CORPUS-4 — excluded-file references inside this body: "not published" non-links. */
+  readonly notPublishedRefs?: readonly { readonly line: number; readonly path: string }[];
+  /** The Files tree's working-fragments note ("N working fragments not shown"). */
+  readonly fragmentsNote?: string;
+}
+
 /** The summary strip counts + the move/hunk tallies ("7 obligations addressed · 1 rebutted · 2 still open"). */
 export interface WhatChangedStripDto {
   readonly addressed: number;
@@ -774,6 +790,8 @@ export interface WhatChangedDto {
   readonly reviewId: string | null;
   readonly beforeN: number;
   readonly afterN: number | null;
+  /** R7DEM.3 — demo snapshot markers (absent on prod reads). */
+  readonly demo?: DemoMarkersDto;
   readonly view: {
     readonly strip: WhatChangedStripDto;
     readonly moves: MoveCardDto[];
@@ -822,6 +840,8 @@ export interface VersionDiffDto {
   readonly after: VersionDraftMetaDto;
   readonly diff: BlockDiffDto;
   readonly view: WhatChangedDto["view"];
+  /** R7DEM.3 — demo snapshot markers (absent on prod reads). */
+  readonly demo?: DemoMarkersDto;
 }
 
 /** GET /projects/:id/versions — the version rail read model (§5.8). */
@@ -847,7 +867,12 @@ export interface VersionRailDto {
     readonly answered: boolean;
     readonly claimsPendingVerification: boolean;
     readonly obligations: { readonly open: number; readonly addressed: number };
+    /** R7DEM.3 — the corpus-declared version label the demo rail renders (e.g.
+     *  "Writer-directed edit (not reviewed)", "Published · <host> · fetched <date>"). */
+    readonly label?: string;
   }[];
+  /** R7DEM.3 — demo snapshot markers (absent on prod reads). */
+  readonly demo?: DemoMarkersDto;
 }
 
 /** One Files-pane row (§5.13) — SE/SR/I only; H kinds arrive as a section's `sealedCount`. */
@@ -885,6 +910,8 @@ export interface FileSectionDto {
 /** GET /projects/:id/files — the Files pane. */
 export interface FilesDto {
   readonly sections: FileSectionDto[];
+  /** R7DEM.3 — demo snapshot markers (absent on prod reads). */
+  readonly demo?: DemoMarkersDto;
 }
 
 /** A restore point in the §5.8 grouped dropdown. */
@@ -1045,6 +1072,15 @@ export interface EditorDocDto {
     origin: string;
     label?: string;
   }[];
+  /** R7DEM.3 — demo snapshot markers (absent on prod reads). */
+  readonly demo?: DemoMarkersDto;
+  /** The version's display label the demo Page renders ("Writer-directed edit (not reviewed)",
+   *  "Published · <host> · fetched <date>"); absent on prod reads. */
+  readonly versionLabel?: string;
+  /** Formalizes the fields `/projects/:id/artifacts/:artifactId/page` already returns: the
+   *  artifact's kind and its mirror path (absent on draft reads). */
+  readonly artifactKind?: string;
+  readonly artifactPath?: string;
 }
 
 /** `?exact=1` — read THIS draft's bytes (a frozen vN stays vN); the default follows a frozen head to

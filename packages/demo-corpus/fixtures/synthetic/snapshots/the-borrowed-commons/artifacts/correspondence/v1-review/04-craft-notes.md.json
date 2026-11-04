@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "craft_notes",
+  "artifactPath": "correspondence/v1-review/04-craft-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9cf19ff28d7cb7a1",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "0cdc75b4c51195b0",
+    "ordinal": 2
+   }
+  },
+  "draftId": "correspondence/v1-review/04-craft-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Craft notes (rendered raw)\n\nSentence rhythm holds; the \"machine-cadence discount\" risk is the balanced triples (\"who maintains,\nwith what account, checked by whom\" — keep it once, don't repeat). Vary the closing image.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 33
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3964dc97173b112db2f680fa315d9bb232006700f715e5263f762f9f1bbaccd4",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/04-craft-notes.md",
+ "kind": "artifact-page"
+}

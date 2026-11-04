@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "response_letter",
+  "artifactPath": "correspondence/v2-response.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "97a658ab6d84a342",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "eca9e5f429709f01",
+    "ordinal": 2
+   }
+  },
+  "draftId": "correspondence/v2-response.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Response letter — v2 (the revising agent)\n\nThe scope claim is narrowed to water boards, which is what the comparison record supports. The\nwriter then made a further unreviewed pass (retitle, header pass, roster table) recorded as\nv3 — shown in the demo as a writer-directed edit, not a reviewed revision.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 51
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0dffab696138db64957a0f3409cce35e0e3efea1b7ae9e2b61a054ddfbc78a61",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v2-response.md",
+ "kind": "artifact-page"
+}

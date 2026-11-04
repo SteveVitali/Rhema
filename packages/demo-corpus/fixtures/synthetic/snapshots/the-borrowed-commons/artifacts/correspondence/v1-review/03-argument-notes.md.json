@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "argument_notes",
+  "artifactPath": "correspondence/v1-review/03-argument-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d5b6221a6b400a16",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "16fb1e4678fc4eb7",
+    "ordinal": 2
+   }
+  },
+  "draftId": "correspondence/v1-review/03-argument-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Argument notes (rendered raw)\n\nThe ordering claim is the load-bearing wall. If grammar does not precede budget, the essay is a\nmaintenance manual with better prose. The Averly funded-but-unwritten fact is the crux evidence.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 34
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8339d9fe6b97876d1600e104129b648a05461f33358f8571eec0325460c71a68",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/03-argument-notes.md",
+ "kind": "artifact-page"
+}

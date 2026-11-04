@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "claim_ledger",
+  "artifactPath": "agents/author/drafting/v1/03-claim-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6778f8855e84d5f3",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fad107d0766d0374",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "e3be1ec7b6d7b5fe",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/author/drafting/v1/03-claim-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Drafter claim ledger — v1 (H3 bullets shape)\n\n### C1\n- Claim: the pump log had eleven entries over nine years.\n- Verdict: carried to review; source note ekwueme-commons-2019.\n\n### C2\n- Claim: toll ledgers kept in three hands over forty years.\n- Verdict: carried to review; source note marsh-viscosity-2021.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 44
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9e362f78028f702070d0845dab33a27520af578234731a06f2c106c684a025b0",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/drafting/v1/03-claim-ledger.md",
+ "kind": "artifact-page"
+}

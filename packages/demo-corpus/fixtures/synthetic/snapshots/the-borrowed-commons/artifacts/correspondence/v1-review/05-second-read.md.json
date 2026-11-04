@@ -1,0 +1,79 @@
+{
+ "dto": {
+  "artifactKind": "second_read",
+  "artifactPath": "correspondence/v1-review/05-second-read.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6969e19541f816f3",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "ecb98ac3d630788a",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "9c0fb0defd03de71",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "4c7a6bc802c0c122",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "772ecba55e98bd58",
+    "ordinal": 13
+   },
+   "b2": {
+    "contentHash": "2ad46d00988159a5",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "e830b5ed0e8c1751",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "3a91002136c4c323",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "8c8f35e5ed28c1f7",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "34a3e1cb8db48240",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "f03005a0cd537422",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "05f0669dafa8cfbd",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "b62d6ddbbedefdf1",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v1-review/05-second-read.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Second read (blind) — The Borrowed Commons v1\n\nThesis: the piece argues commons failure is recorded in its grammar before it is visible.\n\n## Objections\n\n### 1. The hinge is one example deep\n\nAverly is the only parish on the table. One case can carry \"grammar precedes budget\" only if the\ncounterfactual is argued, and it isn't.\n\n### 2. The roster could be a symptom\n\nA lost roster might follow abandonment, not cause it; the essay never rules that out.\n\n## Strengths\n\n- The figure's missing edge is the piece's best piece of showing.\n- The two objections section is honest.\n\n## Smaller notes\n\n- \"municipal equivalent of a shrug\" — fine once.\n\n## Verdict\n\nMajor revisions; the hinge is fixable and worth fixing.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 115
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ff121b53c66059f117c6d706b482816356a9eb5296da1e2a52476a71af3b0134",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/05-second-read.md",
+ "kind": "artifact-page"
+}

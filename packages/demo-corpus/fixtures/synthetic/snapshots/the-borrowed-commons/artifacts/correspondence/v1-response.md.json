@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "response_letter",
+  "artifactPath": "correspondence/v1-response.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "158f0dc8b6e672d9",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "ebf4e9d537973770",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "6fd59cf260cc528e",
+    "ordinal": 3
+   }
+  },
+  "draftId": "correspondence/v1-response.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Response letter — v1 (the revising agent)\n\n49 findings in the editor's table: 28 accepted, 12 adapted, 3 rebutted, 1 declined, 2 escalated —\nthe summary is illustrative in the fixture.\n\nThe grammar/budget hinge is argued in a new §IV (\"Why the roster, and not the budget\") built on\nthe funded-but-unwritten Averly record. C7b's overclaim is fixed; the \"eleven times\" quotation is\ndropped to a count. The second read's symptom objection is answered in the same section: a lost\nroster that follows abandonment predicts the reserve line spent, and it wasn't.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 91
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "522290ce8323567f2b436f0010d6c4ba1a341cb9da4651e40990dd5e59eebd23",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-response.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,323 @@
+{
+ "dto": {
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bdeb0ac908711381",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "2ec83b25dfb24726",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "1f7f9f88638b16b9",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "b87693fa7ff77493",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "28bdf8607e909abc",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "14f890bb26ee1d02",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "66c4e51bed7917e6",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "50587756a89c6cda",
+    "ordinal": 16
+   },
+   "b2": {
+    "contentHash": "82feef6fb6626a2f",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "802911f974f0a2b2",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "60a137deec876dea",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "a567f228081b3f6a",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "d1d3f4626283a8cd",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "bd5b81ef59591f17",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "d4dfcfbe2fde661f",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "e217bdac830052b6",
+    "ordinal": 9
+   }
+  },
+  "demo": {
+   "importRule": {
+    "claims[].accessedAt": "assigned by import rule",
+    "claims[].sources[].accessedAt": "assigned by import rule",
+    "claims[].sources[].stance": "assigned by import rule",
+    "findings[].evidence.urls[].accessed": "assigned by import rule",
+    "findings[].kind": "assigned by import rule",
+    "findings[].origin": "assigned by import rule",
+    "findings[].reconciliation": "assigned by import rule",
+    "findings[].severity": "assigned by import rule"
+   },
+   "notPublishedRefs": [
+    {
+     "line": 21,
+     "path": "agents/author/outline/01-outline.md"
+    },
+    {
+     "line": 27,
+     "path": "manifest.md"
+    }
+   ],
+   "roles": {
+    "drafting": "the drafting agent",
+    "editor": "the editor (agent)",
+    "revising": "the revising agent",
+    "writer": "the writer"
+   }
+  },
+  "draftId": "v1",
+  "draftN": 1,
+  "findings": [
+   {
+    "anchor": {
+     "blockId": "b16",
+     "confidence": 1,
+     "endOffset": 257,
+     "quote": "the grammar precedes the budget",
+     "startOffset": 226
+    },
+    "findingId": "The one thing",
+    "kind": "argument",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The one thing"
+   },
+   {
+    "anchor": {
+     "blockId": "b16",
+     "confidence": 1,
+     "endOffset": 63,
+     "quote": "For the commons to be kept, three sentences have to be writable",
+     "startOffset": 0
+    },
+    "findingId": "Major 1",
+    "kind": "argument",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The grammar/budget hinge is asserted, not earned"
+   },
+   {
+    "anchor": {
+     "blockId": "b8",
+     "confidence": 0.8,
+     "endOffset": 200,
+     "quote": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it ",
+     "startOffset": 0
+    },
+    "findingId": "Major 2",
+    "kind": "structure",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "major",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The roster is named but never shown failing"
+   },
+   {
+    "anchor": null,
+    "findingId": "Strength 1",
+    "kind": "craft",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The pump/bridge/ledger braid is the essay at its best."
+   },
+   {
+    "anchor": {
+     "blockId": "b5",
+     "confidence": 1,
+     "endOffset": 449,
+     "quote": "silent nominative",
+     "startOffset": 432
+    },
+    "findingId": "Strength 2",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The Ondatje \"silent nominative\" framing is borrowed cleanly and credited honestly."
+   },
+   {
+    "anchor": null,
+    "findingId": "Strength 3",
+    "kind": "craft",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The two objections are real objections, not straw men."
+   },
+   {
+    "anchor": null,
+    "findingId": "Strength 4",
+    "kind": "craft",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "Prose is clean at the sentence level throughout."
+   },
+   {
+    "anchor": null,
+    "findingId": "Strength 5",
+    "kind": "craft",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The close lands without overclaiming."
+   },
+   {
+    "anchor": {
+     "blockId": "b5",
+     "confidence": 1,
+     "endOffset": 250,
+     "quote": "none that named a party",
+     "startOffset": 227
+    },
+    "findingId": "Minor 1",
+    "kind": "claim",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "Ledger C7b is right that \"none that named a party\" overclaims (ref [1])."
+   },
+   {
+    "anchor": {
+     "blockId": "b9",
+     "confidence": 1,
+     "endOffset": 196,
+     "quote": "eleven times",
+     "startOffset": 184
+    },
+    "findingId": "Minor 2",
+    "kind": "claim",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "The \"eleven times\" count needs the minute cited or the quotation dropped."
+   },
+   {
+    "anchor": {
+     "blockId": "b9",
+     "confidence": 1,
+     "endOffset": 138,
+     "quote": "the municipal equivalent of a shrug",
+     "startOffset": 103
+    },
+    "findingId": "Line note 1",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "§II: \"the municipal equivalent of a shrug\" — keep."
+   },
+   {
+    "anchor": {
+     "blockId": "b15",
+     "confidence": 0.4,
+     "endOffset": 29,
+     "quote": "## What would have to be true",
+     "startOffset": 0
+    },
+    "findingId": "Line note 2",
+    "kind": "craft",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "§IV: \"a habit is not restored by resolution\" — borderline aphorism, tolerable."
+   },
+   {
+    "anchor": null,
+    "findingId": "CaR 1",
+    "kind": "argument",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "Moving the figure to §I: rejected — the edge needs the roster vocabulary first."
+   },
+   {
+    "anchor": null,
+    "findingId": "OQ 1",
+    "kind": "argument",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v1",
+    "suggestion": null,
+    "title": "Open questions for the writer: is the county board record quotable?"
+   }
+  ],
+  "lock": null,
+  "markdown": "# The Borrowed Commons\n\nShared infrastructure fails quietly, then all at once.\n\nThe commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material. We misread the commons because the sentence we reach for — \"someone should fix this\" — has no subject the record can name.\n\n## A pump, a bridge, a ledger\n\nConsider the lifting pump at Averly Quay, maintained by a parish council that had stopped writing down who last serviced it. When the seal failed in March of a wet year, the repair log showed eleven entries over nine years and none that named a party. The pump did not fail because iron is faithless; it failed because the ledger had no grammatical subject. Mirella Ondatje, in her study of Fenland drainage boards, calls this \"the silent nominative\": the doer the sentence omits because everyone presumed the doing.\n\nThe same omission appears in richer places. Steven Marsh's history of the Averly footbridge — a real bridge, in this invented county — shows toll ledgers kept in three hands over forty years, each assuming the previous hand had ordered the ironwork. The bridge held. The record did not.\n\n## The shape of the failure\n\nWhat fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost. A council that cannot say who maintains the pump cannot say why the seal went unmended for six months, and so it says the weather was unusual.\n\nThis is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times.\n\n![The maintenance map](figures/figure_1_signal_map.png)\n\nThe figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument.\n\n## Two objections\n\nThe first objection is that commons failure is a funding story: parishes lose revenue, seals go unreplaced. It is not wrong, but it is incomplete — the Averly parish was funded through the failure year and the money sat in a reserve line while the roster stayed unwritten.\n\nThe second is that the problem is scale: a pump is small, a network is large. The record of the county water board, described in the round log (`manifest.md`), suggests the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision.\n\n## What would have to be true\n\nFor the commons to be kept, three sentences have to be writable: who maintains, with what account, checked by whom. These are not engineering requirements. They are the grammar of a ledger, and the claim of this essay is that the grammar precedes the budget. Where the three sentences cannot be written, the seal has already failed; the water just has not arrived yet.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 550
+  },
+  "origin": "drafted_from_outline",
+  "proposals": [],
+  "provenance": null,
+  "sha256": "d4af4af4a5170b1be7ded2558558d1928625927437bde1f63c6fc18498115d77",
+  "state": "frozen",
+  "venueCap": null,
+  "versionLabel": "v1"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v1",
+ "kind": "editor-doc"
+}

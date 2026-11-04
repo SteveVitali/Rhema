@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/workdocs-log-note.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ed5759a393932723",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "7d55a21134fed0e5",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "a40beba0e39f2ff9",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/workdocs-log-note.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Source note — WorkDocs audit-log page\n\n- **URL:** https://workdocs.example.org/audit-logs\n- **Accessed:** 2026-08-01\n\nEstablishes: the example log line carries an actor address — quoted as `alice@example.com`\nfrom the vendor docs — the point being that a log that cannot name an actor is a ledger with\nno subject.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 45
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "68856009dd0434a16ec515efb8be2b0222d797b847ca4d09c724f4ea27f37c9a",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/editor/research/sources/workdocs-log-note.md",
+ "kind": "artifact-page"
+}

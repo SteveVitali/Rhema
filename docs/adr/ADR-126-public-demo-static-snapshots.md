@@ -41,3 +41,39 @@ insert-only role vs application-role insert (REQ-TOUR-9).)_
 
 A demo path needs a second write, a signed-in variant, or a live (non-snapshot) read; the S-1
 spike fails and the fallback ships permanently; or the metrics carve-out outgrows its enum.
+
+---
+
+**Dated note — 2026-11-04, R7DEM.3 (snapshot layout, per-essay index, harness seam).** The
+owned decisions this ticket records under this ADR:
+
+- **Layout.** `snapshots/<essay>/index.json` (an `EssayIndex` — `resolve` table +
+  `kind → key → file` chunk map), `versions.json`, `files.json`, `drafts/<draftId>.json`,
+  `diffs/<n>-<m>.json`, `what-changed/<from>-<to>.json`, `artifacts/<corpus-path>.json`, plus
+  root `projects.json`. Every chunk is a `{format:1, kind, essay, key, dto}` envelope of
+  canonical JSON; keys use the corpus essay key — the projector never mints `demo~` slugs
+  (220's registry maps `slug` at serve time).
+- **Ids.** `draftId` = the corpus version key (`v1`…) or `published` (n = versions+1, the
+  `working` head). `artifactId` = the corpus-relative path — stable, registry-free (prod's
+  artifact read already stands the artifact id in as `draftId`). Diff keys `n:m`; what-changed
+  keys `<from>-<to>`; `responseId`/`reviewId` set only when the after-version is the response's
+  product (a writer-directed or imported after-version breaks the link).
+- **Derived fields (declared, never invented).** origin: imported / writerDirected→
+  `human_revision` / prior `<v>-response`→`response_to_review` / drafting dossier→
+  `drafted_from_outline` / else `human_upload`. reviewed = `<v>-review/` exists; answered =
+  response exists; `claimsPendingVerification` = !reviewed; createdAt = export-manifest
+  `exportDate` (Published: its recorded `fetched`); the ⚑ chip derives blocking/major findings
+  split by response-disposition (prod's closed-state set); `meters`/`words` via the shared
+  `statusMeters`; `blockIdMap` via `buildBlockIdMap`; `provenance` null (the corpus records
+  none); `dischargeLines: []` (no obligation rows exist).
+- **Markers.** REQ-CONV-14 import-rule map + S-10 roles ride `dto.demo.importRule`/`roles`
+  (from `labels.json`); REQ-CORPUS-4 excluded refs ride `demo.notPublishedRefs`; the
+  fragments note rides `demo.fragmentsNote` on `FilesDto`. Additive DTO carries:
+  `DemoMarkersDto` + `demo` on EditorDoc/VersionRail/VersionDiff/WhatChanged/Files,
+  `drafts[].label`, `EditorDocDto.versionLabel`, and `artifactKind`/`artifactPath` (which
+  formalize fields the api already returns).
+- **Harness seam.** `src/project/harness.ts`: `registerSnapshotKind` + `validateSnapshot`;
+  compile-time `satisfies` at each projection site; `indexViolations`/`resolveViolations`/
+  `snapshotEnvelopes` are the drift legs 218a reuses without forking.
+- **Envelope.** `ENVELOPE_BYTES` per kind declares the AC3 bound — a chunk carries its one
+  artifact plus that envelope.

@@ -43,4 +43,11 @@ regexes = [
   # its synthetic stand-in. Both only ever appear as test literals.
   '''fX3QvxfHSOajReFRMpe2VpaX0gQqOc7y''',
   '''betterAuthTestNanoid000000000000''',
+  # R7DEM.3 (2026-11-04) — generated demo snapshot ids, e.g.
+  # packages/demo-corpus/fixtures/synthetic/snapshots/the-borrowed-commons/what-changed/v3-published.json:
+  # `"key": "v3-published"` is the snapshot's own `<from>-<to>` version-pair key (it equals the
+  # file's basename; siblings are `v1-v2`, `v2-v3`), not a credential. It reads as
+  # generic-api-key only because its entropy (3.58) clears the 3.5 floor. Pinned in history by
+  # 244498c. Anchored: the whole secret must be exactly `v<N>-published`.
+  '''^v[0-9]+-published$''',
 ]

@@ -1,0 +1,75 @@
+{
+ "dto": {
+  "artifactKind": "claim_ledger",
+  "artifactPath": "correspondence/v2-review/01-claim-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fee0e2f39cf47e46",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "d61171fe425c765c",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "b75018dee4679c57",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "89fb14a9bef213b1",
+    "ordinal": 12
+   },
+   "b2": {
+    "contentHash": "2a8439566742a637",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "ac4b41ff10be9c9f",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "be8b60f3f38b8e53",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "16430d11cd0d92af",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "6d7c217e09a05ef3",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "cf3bf77c19e20c11",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "769afef8ccf0829d",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "5c8ae70f97616300",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v2-review/01-claim-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Claim ledger — The Borrowed Commons (v2, merged)\n\nClaims inventoried: 31 · Checked 2026-08-20\n\n### II6 · Tier 1 · Verified\n\n> \"The parish was funded; the roster was unwritten; the seal failed.\" (§IV)\n\nThe three-part summary matches the accounts note and the minutes index.\n\n- Source: https://records.example.org/averly/accounts-2001 (checked 2026-08-20)\n\n### VII3-scope · Tier 2 · Misleading in context\n\n> \"the grammar fails at the smallest unit first\" (§V)\n\nSmallest-first holds for water boards but not libraries in this invented record; scoped to\nwater boards in v3.\n\n- Source: https://records.example.org/county/board-comparison (checked 2026-08-20)\n\n## Summary\n\nVerified 1 · Misleading in context 1\n",
+  "meters": {
+   "readMin": 1,
+   "words": 94
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ee35ff06abe060d527eb95857101b9f3b07745ae7041461c067d10401c0523e9",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v2-review/01-claim-ledger.md",
+ "kind": "artifact-page"
+}

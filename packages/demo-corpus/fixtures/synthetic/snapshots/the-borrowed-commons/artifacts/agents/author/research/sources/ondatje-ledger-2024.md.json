@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ondatje-ledger-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5ca97e465d832f58",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fe2c5c15971dfe41",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/ondatje-ledger-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Source note — Ondatje, Fenland drainage boards (2024)\n\n- **URL:** https://journal.example.org/ondatje/drainage-boards\n- **Accessed:** 2026-07-30 (read via https://journal.example.org/ondatje/drainage-boards proxy; direct fetch 403)\n- **Key passages:** \"the silent nominative\" coinage; two boards that kept ledgers.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 30
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "22f549a305baa1fc2c21433597c210215e95ea330d0afabb228cc27fe15e82c2",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/research/sources/ondatje-ledger-2024.md",
+ "kind": "artifact-page"
+}
