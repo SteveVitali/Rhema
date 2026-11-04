@@ -1,0 +1,23 @@
+{
+ "files": {
+  "agents/author/ledgers/v1-response-ledger.md": {
+   "exact": 3,
+   "exact-multi": 0,
+   "fuzzy": 0,
+   "line": 0,
+   "none": 3,
+   "normalized": 0,
+   "section": 0
+  },
+  "agents/author/ledgers/v2-response-ledger.md": {
+   "exact": 0,
+   "exact-multi": 0,
+   "fuzzy": 0,
+   "line": 0,
+   "none": 1,
+   "normalized": 0,
+   "section": 0
+  }
+ },
+ "version": 1
+}

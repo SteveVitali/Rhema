@@ -9,7 +9,7 @@
 ### Source identity
 - Source tree: the untracked agent-discourse scratch projects root, project `the-borrowed-commons`
 - agent-discourse HEAD (context): synthetic fixture (invented; no upstream HEAD)
-- Allowlisted input tree digest (sha256): `34e83ecb7f93aa11bbdac918118d9bfa8fa5fc51f0a03991b62781e78b4f35fe`
+- Allowlisted input tree digest (sha256): `627c78f4684b06d2c6b88cc80ab04eef1f846fc8b941f9b70f1144764cafad8e`
 - Export date: 2026-11-03
 
 ### Allowlist (keep rules → admitted files)

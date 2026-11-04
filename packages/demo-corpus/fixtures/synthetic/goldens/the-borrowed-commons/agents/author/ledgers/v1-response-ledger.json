@@ -1,0 +1,88 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b13",
+    "confidence": 1,
+    "endOffset": 97,
+    "quote": "is this a funding story wearing a grammar's clothes",
+    "startOffset": 46
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b11",
+    "confidence": 1,
+    "endOffset": 105,
+    "quote": "The pump has no edge",
+    "startOffset": 85
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 3,
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "disposition": {
+    "kind": "rebut",
+    "rationale": "rebut with evidence",
+    "status": "done"
+   },
+   "findingOrdinal": 8
+  },
+  {
+   "anchor": {
+    "blockId": "b9",
+    "confidence": 1,
+    "endOffset": 209,
+    "quote": "eleven times in two years",
+    "startOffset": 184
+   },
+   "disposition": {
+    "kind": "rebut",
+    "moveOrdinal": 2,
+    "rationale": "decline",
+    "status": "done"
+   },
+   "findingOrdinal": 9
+  },
+  {
+   "disposition": {
+    "kind": "escalate",
+    "rationale": "escalate",
+    "status": "escalated"
+   },
+   "findingOrdinal": 13
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "done",
+   "title": "New §IV \"Why the roster, and not the budget\"",
+   "type": "insert"
+  },
+  {
+   "ordinal": 2,
+   "status": "done",
+   "title": "Drop the \"eleven times\" quotation to a count",
+   "type": "edit"
+  },
+  {
+   "ordinal": 3,
+   "status": "done",
+   "title": "Let the figure's missing edge carry §II",
+   "type": "reorder"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

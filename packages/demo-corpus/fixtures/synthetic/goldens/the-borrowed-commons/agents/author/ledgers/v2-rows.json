@@ -1,0 +1,32 @@
+{
+ "rows": [
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 0,
+   "id": "G1",
+   "note": "Scope narrowed to water boards.",
+   "source": "L Minor 1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "G2",
+   "note": "Comparison record cited.",
+   "source": "CL VII3-scope",
+   "status": "done"
+  },
+  {
+   "disposition": "no change needed",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "G3",
+   "note": "Title kept for this round.",
+   "source": "self",
+   "status": "done"
+  }
+ ],
+ "version": 1
+}

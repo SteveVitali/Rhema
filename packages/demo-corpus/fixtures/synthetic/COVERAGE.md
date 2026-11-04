@@ -89,3 +89,13 @@ heading, which is what the row's grammar exercises), and the `Tier … (epigraph
 as stated. `verdict-rescore` overrides are exercised by synthesized rows in-test: the synthetic
 ledgers reconcile, so no `convert-overrides.json` is needed here; 219 authors the real
 `corpus/<slug>/convert-overrides.json`.
+
+**217_R7DEM.2c (added 2026-11-04):** additive extension only — `source/` and `corpus/` copies of
+`agents/author/ledgers/v1-response-ledger.md` gained a trailing `## Discharge evidence` section
+(`- **F1/F2/F5:**` quotes verbatim from `drafts/v2.md`; every pre-existing byte untouched, the
+exporter regenerated `corpus/`, `index.json`, `PROVENANCE.md` and `export-manifest.json`). The
+new `overrides/the-borrowed-commons/convert-overrides.json` holds one `minor-finding` row (G1 →
+"The one thing") — it lives outside `corpus/` because that tree is the exporter's own golden;
+219 authors the real `corpus/<slug>/convert-overrides.json`. `disposition`/`move-link` override
+kinds are exercised by synthesized rows in-test: the fixture's only mixed cell sits on a
+raw-table-only row (`CL C7b`), and no spec amendment authorizes a hand-authored move map.
