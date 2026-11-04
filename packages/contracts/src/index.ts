@@ -65,6 +65,8 @@ export * from "./legal.js";
 
 // R7RO.1 (REQ-DWEB-14; spec §3.3 S-3) — the client read-only mechanism's shared type + reasons.
 export * from "./read-only-project.js";
+// R7DEM.4 (REQ-DWEB-1; ADR-126) — the demo slug/registry/route-id vocabulary (guard + SPA share it).
+export * from "./demo.js";
 
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";

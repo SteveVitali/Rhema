@@ -130,6 +130,7 @@ describe("spaRouteFor — the route → surface map (SPA.3; REQ-BND-4/11)", () =
       "/refunds",
       "/acceptable-use",
       "/contact",
+      "/demo",
     ]) {
       const m = spaRouteFor(path);
       expect(m.surfaces, path).toBeNull();

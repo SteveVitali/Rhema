@@ -19,6 +19,12 @@ RUN pnpm --filter @rhema/web... build
 # means `vite build` silently skipped — refuse the image.
 RUN find /repo/apps/web/public/spa -name '*.map' -type f -delete
 RUN pnpm --filter @rhema/web --prod deploy --legacy /bundle
+# R7DEM.4 (REQ-DOPS-2) — the demo corpus + snapshots must ride the runtime image: `pnpm deploy`
+# copies the whole @rhema/demo-corpus package only while it stays a prod dep with no `files`
+# field. Fail the image build here if either data dir ever goes missing.
+RUN test -s /bundle/node_modules/@rhema/demo-corpus/corpus/PROVENANCE.md \
+  && test -s /bundle/node_modules/@rhema/demo-corpus/snapshots/projects.json \
+  && test -s /bundle/node_modules/@rhema/demo-corpus/snapshots/structure-of-political-difference/index.json
 
 # ---- runtime: non-root, minimal ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime

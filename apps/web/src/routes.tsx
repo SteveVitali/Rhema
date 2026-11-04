@@ -3,6 +3,7 @@ import { matchRoutes } from "react-router";
 import { InvitePage, LoginPage, ProjectPage, RevisionPage, PagePage, ComparePage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.js";
 import { legalElements } from "./legal.js";
+import { DemoHubPage, DemoReadOnlyPage } from "./demo-page.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. P1.17 lands the public funnel: `/` is the §15.1 landing, `/pricing` renders
@@ -37,6 +38,10 @@ export const signupElement = <SignupPage />;
 // viewer WITHOUT a showcase project renders the same static sample with app-flavored chrome).
 export const showcaseElement = <ShowcasePage />;
 export const showcaseSignedInElement = <ShowcasePage signedIn />;
+// R7DEM.4 (REQ-DWEB-9/2) — the public demo hub frame + the terminal read-only notice a demo
+// write gets when the caller is not a JSON client.
+export const demoHubElement = <DemoHubPage />;
+export const demoReadOnlyElement = <DemoReadOnlyPage />;
 export const projectElement = <ProjectPage />;
 // P1.08 — the §5.8 generalized compare (/p/:project/v/:n/diff/:m; three read-only layouts).
 export const compareElement = <ComparePage />;
@@ -57,6 +62,9 @@ export const routes: readonly AppRoute[] = [
   { path: "/signup", public: true, element: signupElement },
   { path: "/login", public: true, element: loginElement },
   { path: "/showcase", public: true, element: showcaseElement },
+  // R7DEM.4 (REQ-DWEB-9) — the public demo hub: SSR forever like the funnel; `/demo/<essay>/…`
+  // documents are the demo guard's business (the demo shell), not manifest rows.
+  { path: "/demo", public: true, element: demoHubElement },
   // R6LGL.1 (REQ-LCH-1) — the legal/trust documents: public SSR forever like the rest of the
   // funnel (REQ-BND-5). Elements come from `legalElements` so the census row + the emitted
   // element can never drift apart; `approved: false` rides `LEGAL_PAGES` until HUMAN-H11.

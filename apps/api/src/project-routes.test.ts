@@ -68,6 +68,13 @@ describe("slugify", () => {
     expect(slugify("The Politics of Visibility!")).toBe("the-politics-of-visibility");
     expect(slugify("   ")).toBe("untitled");
     expect(slugify("a".repeat(80)).length).toBeLessThanOrEqual(60);
+    // R7DEM.4 (REQ-DWEB-1) — the `demo~` slug namespace can never collide with a tenant slug:
+    // the api's slug grammar emits only [a-z0-9-], so `~` is impossible by construction.
+    for (const t of ["demo~x", "a~b", "tilde~~~", "demo~the-governable-mind", " x ~ y "]) {
+      const s = slugify(t);
+      expect(s.includes("~"), `${t} → ${s}`).toBe(false);
+      expect(/^[a-z0-9-]+$/.test(s), `${t} → ${s}`).toBe(true);
+    }
   });
 });
 

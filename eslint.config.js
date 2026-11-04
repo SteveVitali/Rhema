@@ -91,6 +91,37 @@ export default tseslint.config(
     },
   },
   {
+    // R7DEM.4 (REQ-DWEB-3) — `demoDataSource`'s runtime graph: no api-client/db/live-clients
+    // (the api stays unreachable on the demo path — DTO types only), and no demo-corpus code
+    // (snapshot JSON is read from disk, never imported into a bundle). The twin forward in
+    // demo.ts owns the ApiError adaptation at the seam.
+    files: ["apps/web/src/demo-data.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@rhema/api-client",
+              allowTypeImports: true,
+              message: "REQ-DWEB-3: no runtime api-client import — types only.",
+            },
+            { name: "@rhema/db", message: "REQ-DWEB-3: demoDataSource never touches the DB." },
+            {
+              name: "@rhema/live-clients",
+              message: "REQ-DWEB-3: no live service adapters on the demo path.",
+            },
+            {
+              name: "@rhema/demo-corpus",
+              allowTypeImports: true,
+              message: "REQ-DWEB-3: snapshot JSON is read from disk, never imported.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The banned/reserved-string DATA file and test files legitimately contain banned strings (as the
     // Appendix D.2 bedrock, or as rule assertions). The no-banned-strings rule targets user-facing COPY, not
     // the vocabulary definition itself, so it is off for those files.

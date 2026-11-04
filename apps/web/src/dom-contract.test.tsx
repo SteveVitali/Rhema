@@ -19,10 +19,11 @@ import {
 import { expectManifestEmission } from "./spa/testkit.js";
 import { COPY } from "./copy.js";
 
-const BUCKETS: readonly DomContractSurface[] = ["shell", "public", "shared"];
+// R7DEM.4 — "demo" joins the non-flip buckets (the demo serving path's hook vocabulary; 221+ fills it).
+const BUCKETS: readonly DomContractSurface[] = ["demo", "public", "shared", "shell"];
 
 describe("dom-contract manifest structure", () => {
-  it("keys every flip surface plus the three non-flip buckets", () => {
+  it("keys every flip surface plus the four non-flip buckets", () => {
     const keys = Object.keys(DOM_CONTRACT).sort();
     expect(keys).toEqual([...SPA_SURFACES, ...BUCKETS].sort());
   });

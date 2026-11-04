@@ -28,7 +28,7 @@
 
 import type { SpaSurface } from "@rhema/contracts";
 
-export type DomContractSurface = SpaSurface | "shell" | "public" | "shared";
+export type DomContractSurface = SpaSurface | "shell" | "public" | "shared" | "demo";
 
 export type DomContractKind =
   | "attr" // a literal data-* attribute name
@@ -1602,6 +1602,13 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("menuitemradio", "ui/ide-shell + spa chrome", "view/theme menu radio rows"),
     u("q", "conditional", "palette-search GET query"),
     u("after", "conditional", "SSE ?after= resume cursor"),
+  ],
+  // R7DEM.4 (REQ-DWEB-12 feeds 221) — the demo bucket: hooks the demo serving path emits.
+  // `data-demo-root` marks the `/demo` hub frame's mount point (221a fills it); the read-only
+  // notice marks the terminal document a demo write renders. 220a/221/221a/222 extend the bucket.
+  demo: [
+    a("data-demo-root", "required", "demo-page.tsx", "the /demo hub frame's mount root"),
+    a("data-demo-readonly-notice", "required", "demo-page.tsx", "terminal SSR notice for a demo write (405)"),
   ],
 };
 

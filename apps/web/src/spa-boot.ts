@@ -32,4 +32,16 @@ export interface SpaBoot {
    * `readOnlyProjectFor` merges both carriers.
    */
   readonly readOnlyProject?: ReadOnlyProject;
+  /**
+   * R7DEM.4 (REQ-DWEB-6; ADR-126) — the demo boot fact: set on every demo document's shell, at
+   * both `/demo/<essay>/…` and `/p/demo~<essay>/…`. `signedIn` is cosmetic (cookie PRESENCE only,
+   * never an API call — it picks the banner's exit copy and feeds no authorization). `build` is
+   * the deploy SHA the client appends to demo twin fetches as `?b=<sha>` (S-13).
+   */
+  readonly demo?: {
+    readonly essay: string;
+    readonly slug: string;
+    readonly signedIn: boolean;
+    readonly build: string | null;
+  };
 }

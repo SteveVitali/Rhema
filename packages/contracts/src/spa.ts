@@ -126,6 +126,9 @@ export const SPA_PUBLIC_ROUTES = [
   "/refunds",
   "/acceptable-use",
   "/contact",
+  // R7DEM.4 (REQ-DWEB-9; ADR-126) — the public demo hub: SSR forever like the funnel. `/demo/<essay>`
+  // documents are the demo shell's business (the guard serves them), not SPA_PUBLIC rows.
+  "/demo",
 ] as const;
 
 /**

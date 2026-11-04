@@ -71,6 +71,7 @@ import {
   wantsJson,
 } from "./bff.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument } from "./spa-shell.js";
+import { mountDemo } from "./demo.js";
 import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
@@ -218,6 +219,17 @@ export interface WebDeps {
    * `GOOGLE_CLOUD_PROJECT`). Unset ⇒ the trace field is omitted; requestId still propagates.
    */
   readonly gcpProject?: string;
+  /**
+   * R7DEM.4 (ADR-126) — the demo corpus data dir (`snapshots/` + `corpus/`). Unset ⇒
+   * `defaultDemoCorpusRoot()` resolves the installed `@rhema/demo-corpus` package; tests pass
+   * the committed synthetic fixture. The demo guard + nested app mount only on the OUTER app.
+   */
+  readonly demoCorpusRoot?: string;
+  /**
+   * R7DEM.4 — set on the NESTED demo app only (demo.ts builds it): twins carry `readOnly:true`
+   * + `ReadOnlyProject{demo}`, `ideContext` drops its out-of-demo palette rows and write URLs.
+   */
+  readonly demo?: boolean;
 }
 
 /**
@@ -437,6 +449,11 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   const signupOpen = deps.signupMode === "open";
+
+  // R7DEM.4 (REQ-DWEB-2/4; ADR-126) — the demo guard: claims `/demo`, `/demo/<essay>/…`,
+  // `/p/demo~*` and `/bff/p/demo~*` before `/session` and every /p handler. A non-demo path
+  // falls through to the ordinary routes unchanged. The nested app is skipped on itself.
+  if (deps.demo !== true) mountDemo(app, deps);
 
   /** PRB.12 — mint a client-whitelisted analytics event through the api intake (POST /analytics/events).
    *  Fire-and-forget: telemetry NEVER breaks a page render, and an opted-out user simply records nothing. */
@@ -1453,11 +1470,16 @@ export function createWebApp(deps: WebDeps): Hono {
         })),
         // P1.07 — REQ-OBJ-10: the palette's free-form obligation lands on the row-creation form
         // (`source: 'user'`, standing — the same write "Add to obligations" takes).
-        {
-          label: "New obligation…",
-          path: `/p/${row.slug}/obligations/new`,
-          keywords: ["obligation", "new", "add", "track"],
-        },
+        // R7DEM.4 — the row is a write surface outside the demo allowlist; the nested app drops it.
+        ...(deps.demo === true
+          ? []
+          : [
+              {
+                label: "New obligation…",
+                path: `/p/${row.slug}/obligations/new`,
+                keywords: ["obligation", "new", "add", "track"],
+              },
+            ]),
       ],
       recentRuns: (opts.timelineView?.rounds ?? [])
         .flatMap((r) => r.runs)
@@ -1468,15 +1490,20 @@ export function createWebApp(deps: WebDeps): Hono {
           path: `/p/${row.slug}/r/${run.runId}`,
           keywords: [run.workflow, run.state],
         })),
-      settings: [
-        // P1.20 — the §4.2 project-settings page + the §14.7 account tree.
-        { label: "Project settings", path: `/p/${row.slug}/settings` },
-        { label: "Account settings", path: "/app/settings/account" },
-        { label: "Usage", path: "/usage" },
-        // P1.16 — the plan card + the §14.5 level-2 rollup ride the IDE settings list too.
-        { label: "Billing", path: "/app/settings/billing" },
-        { label: "Project usage", path: `/p/${row.slug}/usage` },
-      ],
+      // R7DEM.4 — every settings row points outside the demo allowlist; the nested app drops
+      // the section rather than deep-linking a 404 (R3 §2's out-of-demo palette rows).
+      settings:
+        deps.demo === true
+          ? []
+          : [
+              // P1.20 — the §4.2 project-settings page + the §14.7 account tree.
+              { label: "Project settings", path: `/p/${row.slug}/settings` },
+              { label: "Account settings", path: "/app/settings/account" },
+              { label: "Usage", path: "/usage" },
+              // P1.16 — the plan card + the §14.5 level-2 rollup ride the IDE settings list too.
+              { label: "Billing", path: "/app/settings/billing" },
+              { label: "Project usage", path: `/p/${row.slug}/usage` },
+            ],
     };
     return {
       ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
@@ -1497,12 +1524,16 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(opts.timeline ? { timeline: opts.timeline } : {}),
         ...(opts.timelineView ? { timelineView: opts.timelineView } : {}),
         ...(opts.feed ? { feed: opts.feed } : {}),
-        ...(opts.runNextHref ? { runNextHref: opts.runNextHref } : {}),
+        // R7DEM.4 — `run-next` targets the run sheet (outside the demo allowlist) and the
+        // theme/paperTheme URLs are write endpoints the guard 405s; the nested app drops all
+        // three. `paletteSearchUrl` stays: the demo answers it (`{results:[]}`).
+        ...(opts.runNextHref && deps.demo !== true ? { runNextHref: opts.runNextHref } : {}),
         ...(opts.status ? { status: opts.status } : {}),
         palette: JSON.stringify(paletteData),
         paletteSearchUrl: `/p/${row.slug}/palette-search`,
-        themeUrl: "/ide/theme",
-        paperThemeUrl: `/p/${row.slug}/paper-theme`,
+        ...(deps.demo === true
+          ? {}
+          : { themeUrl: "/ide/theme", paperThemeUrl: `/p/${row.slug}/paper-theme` }),
         ...(files ? { files } : {}),
         ...(chat ? { chat } : {}),
       },
@@ -5424,7 +5455,12 @@ export function createWebApp(deps: WebDeps): Hono {
           pill: "",
           slug,
           // R7RO.1 — the read-only carrier (the dossier surfaces withhold their write controls).
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5515,7 +5551,12 @@ export function createWebApp(deps: WebDeps): Hono {
           title: row.title,
           pill: row.state.pill,
           slug,
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5853,7 +5894,12 @@ export function createWebApp(deps: WebDeps): Hono {
           projectTitle: row.title,
           back,
           // R7RO.1 — a read-only project withholds the create form (hidden before any request).
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
       });
     }),
@@ -6036,9 +6082,11 @@ export function createWebApp(deps: WebDeps): Hono {
           readOnlyProject:
             row.showcase === true
               ? { reason: "showcase" as const }
-              : pageLoad?.doc.lock != null
-                ? { reason: "run_lock" as const }
-                : null,
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : pageLoad?.doc.lock != null
+                  ? { reason: "run_lock" as const }
+                  : null,
         },
         gates: comp.gates,
         decisions: comp.decisions,
@@ -6052,7 +6100,7 @@ export function createWebApp(deps: WebDeps): Hono {
                 slug,
                 projectId: row.id,
                 doc: pageLoad.doc,
-                ...(phone || row.showcase ? { readOnly: true } : {}),
+                ...(phone || row.showcase || deps.demo === true ? { readOnly: true } : {}),
                 ...(deps.collabWsUrl && !(phone || row.showcase)
                   ? { collabWsUrl: deps.collabWsUrl }
                   : {}),
@@ -6098,7 +6146,7 @@ export function createWebApp(deps: WebDeps): Hono {
           slug,
           projectId: row.id,
           doc,
-          ...(phone || row.showcase ? { readOnly: true } : {}),
+          ...(phone || row.showcase || deps.demo === true ? { readOnly: true } : {}),
           ...(deps.collabWsUrl && !(phone || row.showcase)
             ? { collabWsUrl: deps.collabWsUrl }
             : {}),
@@ -6116,9 +6164,11 @@ export function createWebApp(deps: WebDeps): Hono {
           readOnlyProject:
             row.showcase === true
               ? { reason: "showcase" as const }
-              : doc.lock != null
-                ? { reason: "run_lock" as const }
-                : null,
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : doc.lock != null
+                  ? { reason: "run_lock" as const }
+                  : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -6151,7 +6201,12 @@ export function createWebApp(deps: WebDeps): Hono {
           slug,
           headDraftId: row.headDraftId,
           ...(row.showcase === true ? { showcase: true } : {}),
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -6189,7 +6244,12 @@ export function createWebApp(deps: WebDeps): Hono {
           slug,
           headDraftId: row.headDraftId,
           ...(row.showcase === true ? { showcase: true } : {}),
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -6221,7 +6281,12 @@ export function createWebApp(deps: WebDeps): Hono {
           slug,
           headDraftId: row.headDraftId,
           ...(row.showcase === true ? { showcase: true } : {}),
-          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
         },
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -6376,7 +6441,7 @@ export function createWebApp(deps: WebDeps): Hono {
             // EDIT.1 — the Showcase Page is read-only too (§15.4): the guard 409s its HTTP saves and
             // the collab attach is read-only, so the SSR must carry the same posture (the read-only
             // note + banner, no editable affordance).
-            ...(phone || row.showcase ? { readOnly: true } : {}),
+            ...(phone || row.showcase || deps.demo === true ? { readOnly: true } : {}),
             // a read-only SSR page gets NO collab wire: the island mounts the static view and nothing
             // connects, types, or forks (locks mid-session still attach read-only + the rhema.readonly
             // stateless flips the pill — the socket stays for pages that were writable at render).
