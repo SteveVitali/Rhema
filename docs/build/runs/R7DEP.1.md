@@ -245,4 +245,6 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
 - **CI:** first boundary read FAILED on the journeys census pins (`registry.test.ts` +
   `runner.test.ts` assert every R7 leg `expected:"red"` / reports `owed`) — the five
   sanctioned flips changed the census; the tests were updated in place (the pinned green
-  set gained the five; the owed census dropped them), 28/28 local. Re-read on the fix head.
+  set gained the five; the owed census dropped them), 28/28 local.
+- **CI final: pass #259@`6bb1901`** (run 41925840062 — all seven legs + ci-pass anchor;
+  `logs/ci-R7DEP.1.json`).
