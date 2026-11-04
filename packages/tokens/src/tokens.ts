@@ -29,6 +29,12 @@ export const DARK_VARS: VarMap = {
   "--paper-fg": "#e8e4dc",
   "--paper-fg-muted": "#b8b2a7",
   "--paper-rule": "#2b2a2e",
+  // R7KIT.1 (REQ-KIT-1; UXC-32) — the compare/what-changed diff tints, previously UNDEFINED (every
+  // consumer fell back to a light-tuned rgba that was invisible on the dark sheet). Opaque paper-
+  // adjacent hues: the sheet's body text keeps ≥10:1 AAA reading contrast on them and the tint is
+  // perceivable against `--paper-bg` (contrast.test.ts computes both floors).
+  "--paper-diff-add": "#223222",
+  "--paper-diff-del": "#3a2320",
   // severity
   "--sev-blocking": "#ff7b72",
   "--sev-major": "#f0b24a",
@@ -49,6 +55,9 @@ export const DARK_VARS: VarMap = {
   "--state-needs-you": "#f0b24a",
   "--state-ready": "#6cc4a1",
   "--state-failed": "#ff7b72",
+  // R7KIT.1 (UXC-32) — the affirmative "ok" state (saved notes, inserted chips); consumers read
+  // `var(--state-ok)` directly. Same green as --state-ready: one hue for one semantic.
+  "--state-ok": "#6cc4a1",
 };
 
 /**
@@ -74,6 +83,10 @@ export const LIGHT_VARS: VarMap = {
   "--paper-fg": "#1d1c1a",
   "--paper-fg-muted": "#6d6558",
   "--paper-rule": "#e8e4dc",
+  // R7KIT.1 (UXC-32) — the same diff tints re-tuned onto the light sheet: body text keeps ≥10:1,
+  // the tint stays perceivable against `--paper-bg` (contrast.test.ts).
+  "--paper-diff-add": "#d7e8d0",
+  "--paper-diff-del": "#f0d8d4",
   // severity — re-tuned dark enough for ≥4.5:1 on the light grounds
   "--sev-blocking": "#bd352c",
   "--sev-major": "#8a5d0b",
@@ -92,10 +105,22 @@ export const LIGHT_VARS: VarMap = {
   "--state-needs-you": "#8a5d0b",
   "--state-ready": "#1e7a55",
   "--state-failed": "#bd352c",
+  "--state-ok": "#1e7a55",
 };
 
-/** The `paper-*` token names — the subset `[data-paper]` pinning rewrites (§5.9 theme policy). */
-export const PAPER_KEYS = ["--paper-bg", "--paper-fg", "--paper-fg-muted", "--paper-rule"] as const;
+/**
+ * The `paper-*` token names — the subset `[data-paper]` pinning rewrites (§5.9 theme policy).
+ * R7KIT.1: the diff tints ride the same pin — a pinned-light paper inside the dark shell keeps
+ * ITS theme's `--paper-diff-add/del`, not the shell's.
+ */
+export const PAPER_KEYS = [
+  "--paper-bg",
+  "--paper-fg",
+  "--paper-fg-muted",
+  "--paper-rule",
+  "--paper-diff-add",
+  "--paper-diff-del",
+] as const;
 
 /** The paper palette for a pinned mode: `light` = the light theme's paper, `dark` = the dark theme's. */
 export function paperVars(mode: "light" | "dark"): VarMap {
@@ -146,6 +171,7 @@ export function paperScopeVars(mode: "light" | "dark"): VarMap {
     "--state-needs-you": src["--state-needs-you"]!,
     "--state-ready": src["--state-ready"]!,
     "--state-failed": src["--state-failed"]!,
+    "--state-ok": src["--state-ok"]!,
   };
 }
 
@@ -160,11 +186,27 @@ export const SPACING: Readonly<Record<string, number>> = {
   "--s12": 48,
 };
 
-/** Corner radii (§5.9). */
+/** Corner radii (§5.9). R7KIT.1 (UXC-31): `--radius-pill` is the named step for the 999-px
+ *  pill shape the surfaces hand-wrote 18 times; the 6/7/10-px literals resolve onto the scale. */
 export const RADIUS: Readonly<Record<string, number>> = {
   "--radius-1": 4,
   "--radius-2": 8,
   "--radius-3": 12,
+  "--radius-pill": 999,
+};
+
+/**
+ * Shell font-size scale as tokens (R7KIT.1, REQ-KIT-1; UXC-31). `--fs-body/dense/micro` name the
+ * §5.9 TYPOGRAPHY shell sizes; `--fs-caption` covers the 10.5–11-px label band R6 §8 counted ×55
+ * and `--fs-lead` the 15–16-px band ×28 — the off-scale literals resolve onto these steps when the
+ * R7KIT.3 migrations reach them.
+ */
+export const FONT_SIZE: Readonly<Record<string, number>> = {
+  "--fs-caption": 11,
+  "--fs-micro": 12,
+  "--fs-dense": 13,
+  "--fs-body": 14,
+  "--fs-lead": 16,
 };
 
 /**

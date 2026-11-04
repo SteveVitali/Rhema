@@ -8,6 +8,7 @@
 
 import {
   DARK_VARS,
+  FONT_SIZE,
   LIGHT_VARS,
   MOTION,
   RADIUS,
@@ -53,10 +54,16 @@ function fontFaceCss(): string {
 export function themeCss(): string {
   return [
     fontFaceCss(),
+    // R7KIT.1 (REQ-KIT-1) — `color-scheme` is THE mechanism that kills the "white system control
+    // on a dark shell" class at once: UA widgets (checkbox/radio marks, select glyphs, file-picker
+    // buttons, scrollbars) render dark under it. Dark is the default theme; `auto` is resolved to
+    // dark|light by the boot script before paint, so the resolved `data-theme` carries it through.
     ":root {",
+    "  color-scheme: dark;",
     declarations(DARK_VARS),
     declarations(SPACING, "px"),
     declarations(RADIUS, "px"),
+    declarations(FONT_SIZE, "px"),
     // typography vars — the paper font preset + the reader stepper's live size
     `  --font-paper: ${TYPOGRAPHY.paperSerifStack};`,
     `  --font-shell: ${TYPOGRAPHY.shellStack};`,
@@ -70,6 +77,7 @@ export function themeCss(): string {
     `  --dur-caret: ${MOTION.caretPulseMs}ms;`,
     "}",
     '[data-theme="light"] {',
+    "  color-scheme: light;",
     declarations(LIGHT_VARS),
     "}",
     // Paper pinning (REQ-IDE-38 amended): a pinned paper rewrites the paper-* tokens inside EITHER shell
@@ -96,6 +104,12 @@ export function themeCss(): string {
     '[data-paper="dark"] .paper {',
     declarations(paperScopeVars("dark")),
     "}",
+    // UA-owned widget parts inside the sheet follow the PAPER theme, not the shell's — a pinned-light
+    // paper in the dark shell renders light controls (the same split paperScopeVars applies to the palette).
+    ".paper { color-scheme: dark; }",
+    '[data-theme="light"] .paper { color-scheme: light; }',
+    '[data-paper="light"] .paper { color-scheme: light; }',
+    '[data-paper="dark"] .paper { color-scheme: dark; }',
     // The sans paper preset — the only other choice (REQ-IDE-39). Set on the paper root or the document.
     '[data-font="sans"] {',
     `  --font-paper: ${TYPOGRAPHY.paperSansStack};`,
@@ -114,6 +128,26 @@ export function themeCss(): string {
     "a { color: var(--accent); }",
     // WCAG 2.2 AA chrome: a 2-px accent focus ring on every keyboard-focused control (REQ-IDE-42).
     ":focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    // ---- R7KIT.1 (REQ-KIT-1; UXC-14; R6 §0 root cause 1) — the native-control base layer ----
+    // Every selector stays at element-level specificity and wraps each refinement in :where() so the
+    // IDE-region rules in ide-css.ts (`.ide-rail button`, `.ide-palette input`, `.ide-statusbar
+    // button`, …) and any inline style ALWAYS win the cascade: this layer reaches only the previously
+    // raw OS controls — which stay the permanent no-JS/SSR fallback (RV-36; REQ-KIT-2's primitives
+    // build on these tokens later). `:invalid` keeps its real pseudo-class specificity so it still
+    // wins over this layer's own hover state. `color-scheme` above owns the UA-rendered parts
+    // (check marks, select glyphs, file-picker chrome, scrollbars) in every theme incl. Auto.
+    "button, input, select, textarea { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); }",
+    "button, select, textarea, input:where(:not([type='checkbox']):not([type='radio'])) { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); padding: var(--s1) var(--s3); line-height: 1.4; }",
+    "input:where([type='checkbox'], [type='radio']) { width: 14px; height: 14px; margin: 0; padding: 0; accent-color: var(--accent); vertical-align: -2px; }",
+    "input[type='file']::file-selector-button { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1) var(--s2); margin-right: var(--s2); cursor: pointer; }",
+    "button:where(:not(:disabled)) { cursor: pointer; }",
+    "input[type='file']::file-selector-button:hover, button:where(:not(:disabled)):hover, input:where(:not(:disabled)):hover, select:where(:not(:disabled)):hover, textarea:where(:not(:disabled)):hover { border-color: var(--shell-fg-faint); }",
+    "button:where(:not(:disabled)):active, input:where(:not(:disabled)):active, select:where(:not(:disabled)):active { background: var(--shell-border); }",
+    "button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }",
+    "button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }",
+    "input:invalid, select:invalid, textarea:invalid, input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--sev-blocking); }",
+    "input::placeholder, textarea::placeholder { color: var(--shell-fg-faint); }",
+    "textarea { resize: vertical; }",
     // UX.2 — the labelled, keyboard-scrollable container a too-wide data table scrolls inside
     // (/pricing's matrix): the PAGE never scrolls horizontally (WCAG 1.4.10); the region is
     // focusable so keyboard users can reach the clipped cells.
