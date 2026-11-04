@@ -9,8 +9,10 @@
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7). Synthetic fixture only — the real
   export (HUMAN-H14 SIGNED 2026-11-03) is never an input here (REQ-CORPUS-14; S-12). Size budget
   ~600 changed lines excl. fixtures and goldens.
-- **Closed:** (open)
-- **ci:** (unread — read at closeout on the pushed head)
+- **Closed:** 2026-11-04T03:20Z
+- **ci:** pass #249@`e8872f0` — run 41761856129, all seven legs + `ci-pass` anchor; the first attempt's
+  unit leg hit a tinypool worker flake (`Worker exited unexpectedly`, 5,459/6,478 pass pre-crash) —
+  rerun `--failed` at the same head went green (`logs/ci-R7DEM.2c.json`)
 
 ## Deferrals read
 
