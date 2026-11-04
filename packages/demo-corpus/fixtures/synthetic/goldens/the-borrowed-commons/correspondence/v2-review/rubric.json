@@ -1,0 +1,38 @@
+{
+ "dimensions": [
+  {
+   "dimension": "thesis_contribution",
+   "score": 5
+  },
+  {
+   "dimension": "argument_rigor",
+   "score": 4
+  },
+  {
+   "dimension": "evidence_accuracy",
+   "score": 4
+  },
+  {
+   "dimension": "originality_situatedness",
+   "score": 4
+  },
+  {
+   "dimension": "structure",
+   "score": 4
+  },
+  {
+   "dimension": "prose",
+   "score": 4
+  },
+  {
+   "dimension": "voice_audience_fit",
+   "score": 4
+  },
+  {
+   "dimension": "intellectual_honesty",
+   "score": 4
+  }
+ ],
+ "sidecar": "rubric",
+ "version": 1
+}

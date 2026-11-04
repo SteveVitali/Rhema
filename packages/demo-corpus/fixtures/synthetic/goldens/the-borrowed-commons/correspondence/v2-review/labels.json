@@ -9,5 +9,27 @@
    "ordinal": 1
   }
  ],
+ "findings": [
+  {
+   "id": "The one thing",
+   "ordinal": 0
+  }
+ ],
+ "importRule": {
+  "claims[].accessedAt": "assigned by import rule",
+  "claims[].sources[].accessedAt": "assigned by import rule",
+  "claims[].sources[].stance": "assigned by import rule",
+  "findings[].evidence.urls[].accessed": "assigned by import rule",
+  "findings[].kind": "assigned by import rule",
+  "findings[].origin": "assigned by import rule",
+  "findings[].reconciliation": "assigned by import rule",
+  "findings[].severity": "assigned by import rule"
+ },
+ "roles": {
+  "drafting": "the drafting agent",
+  "editor": "the editor (agent)",
+  "revising": "the revising agent",
+  "writer": "the writer"
+ },
  "version": 1
 }

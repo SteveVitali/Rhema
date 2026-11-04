@@ -1,0 +1,215 @@
+{
+ "findings": [
+  {
+   "anchor": {
+    "blockId": "b16",
+    "confidence": 1,
+    "endOffset": 257,
+    "quote": "the grammar precedes the budget",
+    "startOffset": 226
+   },
+   "body": "the essay's hinge — \"the grammar precedes the budget\" — is asserted, not\nearned. The Averly record supports \"the roster failed\"; the leap to grammar-first needs the\nfunding counterfactual argued, not gestured at.",
+   "kind": "argument",
+   "letterSection": "one_thing",
+   "ordinal": 0,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "major",
+   "title": "The one thing"
+  },
+  {
+   "anchor": {
+    "blockId": "b16",
+    "confidence": 1,
+    "endOffset": 63,
+    "quote": "For the commons to be kept, three sentences have to be writable",
+    "startOffset": 0
+   },
+   "body": "- **The problem:** the essay's central claim is stated where its proof should be.\n- **Why it matters here:** the whole piece stands or falls on ordering.\n- **Direction:** argue the funded-but-unwritten case explicitly; Averly supplies it.",
+   "kind": "argument",
+   "letterSection": "major",
+   "ordinal": 1,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [
+    "thesis_contribution",
+    "argument_rigor"
+   ],
+   "severity": "major",
+   "title": "The grammar/budget hinge is asserted, not earned"
+  },
+  {
+   "anchor": {
+    "blockId": "b8",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it ",
+    "startOffset": 0
+   },
+   "body": "- **The problem:** the essay describes a roster-shaped hole without showing the hole.\n- **Why it matters here:** the reader has to take the mechanism on faith.\n- **Direction:** the figure already carries it — let the missing edge do the work.",
+   "kind": "structure",
+   "letterSection": "major",
+   "ordinal": 2,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [
+    "structure"
+   ],
+   "severity": "major",
+   "title": "The roster is named but never shown failing"
+  },
+  {
+   "anchor": null,
+   "body": "The pump/bridge/ledger braid is the essay at its best.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 3,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "The pump/bridge/ledger braid is the essay at its best."
+  },
+  {
+   "anchor": {
+    "blockId": "b5",
+    "confidence": 1,
+    "endOffset": 449,
+    "quote": "silent nominative",
+    "startOffset": 432
+   },
+   "body": "The Ondatje \"silent nominative\" framing is borrowed cleanly and credited honestly.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 4,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "The Ondatje \"silent nominative\" framing is borrowed cleanly and credited honestly."
+  },
+  {
+   "anchor": null,
+   "body": "The two objections are real objections, not straw men.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 5,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "The two objections are real objections, not straw men."
+  },
+  {
+   "anchor": null,
+   "body": "Prose is clean at the sentence level throughout.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 6,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "Prose is clean at the sentence level throughout."
+  },
+  {
+   "anchor": null,
+   "body": "The close lands without overclaiming.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 7,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "The close lands without overclaiming."
+  },
+  {
+   "anchor": {
+    "blockId": "b5",
+    "confidence": 1,
+    "endOffset": 250,
+    "quote": "none that named a party",
+    "startOffset": 227
+   },
+   "body": "Ledger C7b is right that \"none that named a party\" overclaims (ref [1]).",
+   "evidence": {
+    "urls": [],
+    "verdict": "contradicted"
+   },
+   "kind": "claim",
+   "ordinal": 8,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "Ledger C7b is right that \"none that named a party\" overclaims (ref [1])."
+  },
+  {
+   "anchor": {
+    "blockId": "b9",
+    "confidence": 1,
+    "endOffset": 196,
+    "quote": "eleven times",
+    "startOffset": 184
+   },
+   "body": "The \"eleven times\" count needs the minute cited or the quotation dropped.",
+   "kind": "claim",
+   "ordinal": 9,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "The \"eleven times\" count needs the minute cited or the quotation dropped."
+  },
+  {
+   "anchor": {
+    "blockId": "b9",
+    "confidence": 1,
+    "endOffset": 138,
+    "quote": "the municipal equivalent of a shrug",
+    "startOffset": 103
+   },
+   "body": "§II: \"the municipal equivalent of a shrug\" — keep.",
+   "kind": "craft",
+   "ordinal": 10,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "§II: \"the municipal equivalent of a shrug\" — keep."
+  },
+  {
+   "anchor": {
+    "blockId": "b15",
+    "confidence": 0.4,
+    "endOffset": 29,
+    "quote": "## What would have to be true",
+    "startOffset": 0
+   },
+   "body": "§IV: \"a habit is not restored by resolution\" — borderline aphorism, tolerable.",
+   "kind": "craft",
+   "ordinal": 11,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "§IV: \"a habit is not restored by resolution\" — borderline aphorism, tolerable."
+  },
+  {
+   "anchor": null,
+   "body": "Moving the figure to §I: rejected — the edge needs the roster vocabulary first.",
+   "kind": "argument",
+   "letterSection": "considered_rejected",
+   "ordinal": 12,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "Moving the figure to §I: rejected — the edge needs the roster vocabulary first."
+  },
+  {
+   "anchor": null,
+   "body": "Open questions for the writer: is the county board record quotable?",
+   "kind": "argument",
+   "letterSection": "roadmap",
+   "ordinal": 13,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "Open questions for the writer: is the county board record quotable?"
+  }
+ ],
+ "sidecar": "findings",
+ "version": 1
+}

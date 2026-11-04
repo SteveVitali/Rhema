@@ -71,6 +71,16 @@ Denylist negative controls are synthesized in-test (`src/denylist.test.ts`), nev
 with `RHEMA_REGEN_GOLDENS=1 pnpm exec vitest run packages/demo-corpus/src/convert/claim-ledger.test.ts`
 and byte-compared in the same test.
 
+**216_R7DEM.2b (added 2026-11-04):** `correspondence/{v1,v2}-review/` gains `findings.json` +
+`rubric.json` (the `findingsSidecar`/`rubricSidecar` the real `parseSidecar` accepts — letter +
+second read through the R2 §2.2/§2.3 rules), `findings-anchor-histogram.json` (per-review
+finding anchor-rung counts), and `labels.json` grows to the review-level file
+`{version, claims, findings, importRule, roles}` — `findings[]` carries the corpus source ids
+(`Major n`, `Strength n`, `Minor n`, `Line note n`, `CaR n`, `OQ n`, `SR n` with `SR` aliases on
+merged majors), `importRule` the per-field "assigned by import rule" markers (REQ-CONV-14), and
+`roles` the S-10 role vocabulary. Regenerated with
+`RHEMA_REGEN_GOLDENS=1 pnpm exec vitest run packages/demo-corpus/src/convert/findings.test.ts`.
+
 Two dated corrections to the table above, recorded 2026-11-04 at converter build time (the rows
 overclaimed): the v1 ledger's H2 appendices are `## Reuse confirmations`, `## References checked`
 and `## Summary` (there is no `## Skipped`; the skip variant is the `### X11 · Tier 3 · Skipped`
