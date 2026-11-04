@@ -83,7 +83,8 @@ describe("REQ-TOUR-1 — the filled hub on the real snapshots", () => {
     expect(html).toContain(`Retitled from “${spd.retitle!.from}”`);
     expect(html).toContain(spd.retitle!.atLabel);
     expect(html.match(/Retitled/g)?.length).toBe(1);
-    // the hero carries the exported tour-entry href
+    // the arc chip row + the hero's tour-entry CTA
+    expect(html.match(/data-demo-card-arc/g)?.length).toBe(4);
     expect(html).toContain(`data-demo-tour-entry`);
     expect(html).toContain(`href="${DEMO_TOUR_ENTRY_HREF}"`);
     // provenance paragraph: agent-discourse + repo link + S-10 roles + the byline
