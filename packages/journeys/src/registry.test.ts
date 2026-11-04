@@ -125,7 +125,8 @@ describe("the journey step registry", () => {
     // owed-loudly.
     // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies; R7DEM.5 landed `D3.readonly` — same arm (red until 224, but the
     // impl is a real body whose offline throw is its own error, never the stub message).
-    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo", "D3.readonly"]);
+    // R7DEM.5b landed the real `D1.hub` body — same arm.
+    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo", "D3.readonly", "D1.hub"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

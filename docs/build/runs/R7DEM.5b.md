@@ -95,18 +95,55 @@ See the ticket's AC block — tracked one row per AC in the gap table below.
 
 ## Progress
 
-- 12:03Z — branch `stevevitali/r7dem-5b-hub` off `a25c73e7`; Load docs read; anchors confirmed
-  (219's real corpus + card-facts committed; `demoCardFacts` sole owner; `DEMO_ESSAYS` registry;
-  `data-demo-*` bucket; `R7_LEGS_IMPLS` wiring; recording-proxy entry points).
+- 12:03Z — branch `stevevitali/r7dem-5b-hub` off `a25c73e7`; Load docs read; anchors confirmed.
+- 12:05Z — contracts: `DEMO_HUB_ESSAYS`, `demoDeepLink`, `DEMO_TOUR_ENTRY_HREF` + tests.
+- 12:08Z — web: `demoHubCards` reader, `COPY.demo.hub.*`/`demo.cards.*`, filled `DemoHubPage`,
+  six `demo` DOM-contract hooks, guard wiring (`demoHubDocument`).
+- 12:13Z — `demo-hub.test.ts` (8 legs); first run: 2 red — cookie-invariance must strip the
+  per-request CSP nonce (documents are per-request; twin byte-identity is the other test's job);
+  grep ban list matched the file's own comments — narrowed to call forms. Both fixed, 8/8.
+- 12:14Z — `D1.hub` + R11/P1 hub extensions + `/demo` seeded into the recording-proxy crawl.
+- 12:15Z — `demo-hub-legs.local.test.ts` first run: `assertActionable` failed on below-fold cards
+  (`elementFromPoint` is null off-viewport) — the leg now scrolls each card into view, as a
+  visitor does. Second failure: CoR's `""`-route bullet shares href `/demo/constitution-of-reason`
+  with its "Open in Rhēma" link → ambiguity; selector now excludes `data-demo-look-at`. Green:
+  D1.hub + R11.demo + P1.demo vs local `dist/main.js` at 1440/1024/390 + phone 390/320.
+- 12:20Z — `check:dom-contract`, `check:spa-budget`, package lints — green.
+- 12:22Z — recording-proxy re-run (`demo-side-effects.local.test.ts`, 3 tests, 218 s): the crawl
+  now visits `/demo` in every walk — zero violations, route coverage intact, `/a/dwell` negative
+  leg detected; committed table regenerated.
+- 12:24Z — DEFERRALS `D-R7DEM.5b-1` appended; PR body `docs/build/pr/R7DEM.5b.md`; BUILD_INDEX
+  row 257; commit `707dc77`; push; PR #256 (`--base stevevitali/r7dem-5-side-effects`).
+- 12:27Z — LEDGER advance (lastCompleted `R7DEM.5b`, nextTicket `222_R7DEM.6a`, chainTip
+  `stevevitali/r7dem-5b-hub`) + PHASE LOG row; `check-build-memory.sh` 0 violations (pre-existing
+  warnings only); `check-append-only.mjs --base stevevitali/r7dem-5-side-effects` OK.
 
 ## Gap table
 
-(pending — Phase 4)
+| # | criterion | status |
+|---|---|---|
+| 1 | Four cards SPD(hero)→GM→POV→CoR; facts equal `demoCardFacts`; no count computed | met — `demo-hub.test.ts` equality leg renders each committed `card-facts.json` dto vs served HTML; grep leg bans counting machinery in `demo-page.tsx` |
+| 2 | Retitle note / publish date / words / arc row / RV-30 counts / Substack + Open links / hero tour CTA | met — same leg, per-fact assertions; `DEMO_TOUR_ENTRY_HREF` exported from contracts for 222 |
+| 3 | "What to look at" GM/POV/CoR, 3–5 bullets, deep links, S-10, counts interpolated | met — COPY leaves + `LOOK_AT` table; positional-parity + range (3–5) tests; bullets attribute to the record (writer / editor (agent) / revising agent) |
+| 4 | `demoDeepLink` → `/demo/<essay>…#hook`, allowlisted routes + declared hooks only | met — builder throws on unregistered essay / non-allowlisted route; test resolves every `LOOK_AT` link through `demoInternalPath`→`spaRouteFor`→`DEMO_ROUTE_IDS` + `domContractMatch` |
+| 5 | Hub hooks declared/emitted/asserted in `demo` bucket | met — six entries; `check:dom-contract` green |
+| 6 | Recording proxy re-run over `/demo` zero violations | met — crawl seeds `/demo`; local re-run 3/3, regenerated table committed |
+| 7 | `D1.hub` + R*/P1 extensions green locally ≥3 widths; rows stay red | met — `demo-hub-legs.local.test.ts` (1440/1024/390 + phone 390/320, anon + planted cookie); registry untouched (`expected:"red"`) |
+| 8 | `D-R7DEM.5b-1` opened | met — DEFERRALS.md appended |
+| 9 | Copy: `demo.hub.*`/`demo.cards.*` in COPY; no "author"; no efficacy claims | met — `copy.test.ts` lintCopy clean; banned-string scan clean |
 
 ## Evidence log
 
-(pending — Phase 5)
+- `apps/web/src/demo-hub.test.ts` — 8/8 green (order, equality, grep, deep links, cookie-invariance, N10, honest-empty fixture, bullet parity).
+- Focused suites: `demo.test.ts`, `copy.test.ts`, `demo.dom.test.tsx`, `demo-effects.dom.test.tsx`, `demo-bundle.test.ts`, `demo-dossier-snapshot.test.ts`, `contracts/demo.test.ts` — 89 pass.
+- `packages/journeys/src/demo-hub-legs.local.test.ts` — `D1.hub` + `R11.demo` + `P1.demo` green locally; screenshots `docs/build/reports/2026-11-04_r7dem-5b-legs/` (d1-hub-{1440,1024,390}, p1-demo-hub-{390,320}, r11-demo, p1-demo-{390,320}).
+- `packages/journeys/src/demo-side-effects.local.test.ts` — 3/3; zero out-of-allowlist requests incl. the `/demo` walk; regenerated `docs/demo-side-effects.md` + per-walk JSONs/screenshots committed.
+- `pnpm check:dom-contract`, `pnpm check:spa-budget` — green; package lints green.
+- Not run: root `pnpm test` sweep (CI unit job covers it; focused suites cover the touched surface). ci-boundary read pending at `707dc77` (`logs/ci-R7DEM.5b.json`).
 
 ## Evidence report
 
-(pending — Phase 6)
+- Layer: **fixture-verified + local-live** (local server + bundled Chromium on the real committed corpus; no deployed provenance claimed). Staging layer = `D-R7DEM.5b-1` → 224.
+- REQ-TOUR-1/3/8 engineered+fixture-verified; REQ-DWEB-12 contributed (hub hooks); REQ-DACC-1/4/5 contributed (`D1.hub` real body green locally, held `expected:"red"` ready-to-flip).
+- Carries: none. Deviations: none beyond the owned decisions in the PR body.
+
