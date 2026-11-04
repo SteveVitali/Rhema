@@ -114,10 +114,18 @@ describe("step mechanics — counter, controls, keys, Esc", () => {
     expect(ov.querySelector("[data-demo-tour-prev]")).toBeNull(); // step 1 has no Back
   });
 
-  it("step 6 carries the GM aside + step 8 the response-letter hop; step 11 carries the CTA", () => {
+  it("step 6 renders the GM aside hop + step 8 the response-letter hop; step 11 carries the CTA", () => {
     const byId = (id: string) => DEMO_TOUR_STEPS.find((s) => s.id === id)!;
     expect(byId("claims").aside!.href).toContain("/demo/the-governable-mind/review/v2-review");
     expect(byId("responses").aside!.href).toContain("correspondence--v1-response.md");
+    // the aside emits data-demo-tour-aside inside the coach mark (the declared hook, emitted+asserted).
+    window.history.replaceState(null, "", "/demo/structure-of-political-difference/review/v1-review?tour=claims");
+    document.body.innerHTML += '<div data-claim="22"></div>';
+    dispose = mountDemoTour();
+    const aside = overlay()!.querySelector<HTMLAnchorElement>("[data-demo-tour-aside]");
+    expect(aside).not.toBeNull();
+    expect(aside!.getAttribute("href")).toBe(byId("claims").aside!.href);
+    expect(aside!.hasAttribute("data-spa-native")).toBe(true);
     window.history.replaceState(null, "", "/demo/structure-of-political-difference?tour=cta");
     document.body.innerHTML += '<div data-page-root></div>';
     dispose = mountDemoTour();

@@ -30,7 +30,7 @@
 // for snapshot bytes): every quoted fragment is a pinned COPY literal asserted verbatim
 // against the committed corpus by demo-tour-steps.test.ts.
 
-import { DEMO_TOUR_PARAM, demoInternalPath } from "@rhema/contracts";
+import { demoInternalPath } from "@rhema/contracts";
 import { COPY } from "../copy.js";
 import { demoBootNow } from "./demo.js";
 
@@ -219,7 +219,7 @@ export function tourStepFor(value: string | null): DemoTourStep | null {
 /** The public-path href for a step (`?tour=<id>` carried verbatim). */
 export function tourStepHref(step: DemoTourStep): string {
   const q = step.search != null ? `${step.search}&` : "";
-  return `/demo/${TOUR_ESSAY}${step.route}?${q}${DEMO_TOUR_PARAM}=${step.id}`;
+  return `/demo/${TOUR_ESSAY}${step.route}?${q}tour=${step.id}`;
 }
 
 /** The CSS selector a step's target resolves to. */
@@ -270,7 +270,7 @@ export function mountDemoTour(events?: DemoTourEvents): () => void {
 
   const stepForLocation = (): DemoTourStep | null => {
     const url = new URL(window.location.href);
-    const step = tourStepFor(url.searchParams.get(DEMO_TOUR_PARAM));
+    const step = tourStepFor(url.searchParams.get("tour"));
     if (step == null) return null;
     // The coach mark renders only on the step's own route — a `?tour=` that outlives its page
     // (free roam) renders nothing; reaching the step's route is the nav's job, never ours.
@@ -363,7 +363,7 @@ export function mountDemoTour(events?: DemoTourEvents): () => void {
     const exit = document.createElement("a");
     exit.setAttribute("data-demo-tour-close", "");
     exit.href = `${window.location.pathname}${window.location.search
-      .replace(new RegExp(`([?&])${DEMO_TOUR_PARAM}=[^&]*&?`), "$1")
+      .replace(/([?&])tour=[^&]*&?/, "$1")
       .replace(/[?&]$/, "") || ""}`;
     exit.style.cssText = "display:inline-block;padding:4px 2px;";
     exit.textContent = COPY.demo.tour.exit;
