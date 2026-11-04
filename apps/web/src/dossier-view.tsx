@@ -125,7 +125,10 @@ export interface DossierViewData {
   /** PRB.06 — the prior round's rubric when this dossier is a re-review (the round-summary delta renders
    *  per-dimension before/after, never an aggregate — REQ-IDE-30). */
   readonly priorRubric?: readonly RubricRowInput[];
-  readonly accessReport: AccessReportFacts;
+  /** 222 R7DEM.6a — `null`/absent on a replayed record: the demo's dossier twin has no live
+   *  access report (fetch log "not recorded"), so the letter renders no trust chip rather than
+   *  a fabricated one. */
+  readonly accessReport?: AccessReportFacts | null;
   /** PRB.16 — finding id → its revision obligation's state, for the per-finding state chip (REQ-OBJ-6). */
   readonly findingObligations?: Readonly<Record<string, ObligationState>>;
   /** P1.17 (§15.4) — this dossier is the workspace's read-only Showcase (the banner + the
@@ -773,7 +776,7 @@ export function DossierArticle({
       : {}),
   }));
 
-  const trustChip = buildTrustChip(dossier.accessReport, trustLabels);
+  const trustChip = dossier.accessReport == null ? null : buildTrustChip(dossier.accessReport, trustLabels);
   // P1.07 — ONE list powers the body, the Margin, and the Desk: the Quick severity budget caps the
   // rendered set first, then the shared GET-param filters narrow every surface together (§5.7).
   const visible = visibleDossierFindings(dossier, dossierView?.filters);

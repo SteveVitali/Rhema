@@ -1,0 +1,277 @@
+<!doctype html><html lang="en" data-theme="dark" data-renderer="ssr" data-route="/showcase" data-mounted data-nav-count="0"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><title>Showcase · Rhēma</title><meta name="description" content="The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings."><meta property="og:type" content="website"><meta property="og:site_name" content="Rhēma"><meta property="og:title" content="Showcase · Rhēma"><meta property="og:description" content="The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Showcase · Rhēma"><meta name="twitter:description" content="The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings."><link rel="canonical" href="http://127.0.0.1:43989/showcase"><meta property="og:url" content="http://127.0.0.1:43989/showcase"><script nonce="OyjEzClhDRaREcap3po8jw==">!function(){try{var d=document.documentElement;var pref=d.getAttribute('data-app-theme');if(!pref){try{pref=localStorage.getItem('rhema:theme:v1')}catch(e){}}if(pref!=='dark'&&pref!=='light'&&pref!=='auto')pref='dark';d.setAttribute('data-app-theme',pref);var apply=function(){var res=pref;if(pref==='auto'){res=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',res)};apply();if(pref==='auto'&&window.matchMedia){var q=window.matchMedia('(prefers-color-scheme: light)');var on=function(e){if(d.getAttribute('data-app-theme')==='auto'){d.setAttribute('data-theme',e.matches?'light':'dark')}};q.addEventListener?q.addEventListener('change',on):q.addListener&&q.addListener(on)};try{localStorage.setItem('rhema:theme:v1',pref)}catch(e){}var slug=d.getAttribute('data-project');if(slug){if(!d.getAttribute('data-paper')){try{var p=localStorage.getItem('rhema:paper:v1:'+slug);if(p==='light'||p==='follow'||p==='dark')d.setAttribute('data-paper',p)}catch(e){}if(!d.getAttribute('data-paper'))d.setAttribute('data-paper','light')}try{localStorage.setItem('rhema:paper:v1:'+slug,d.getAttribute('data-paper'))}catch(e){}}try{var f=localStorage.getItem('rhema:font:v1');if(f==='sans')d.setAttribute('data-font','sans');var s=localStorage.getItem('rhema:reader-step:v1');if(s&&s!=='0'){var n=parseInt(s,10);if(n>0&&n<=3)d.style.setProperty('--paper-size',(f==='sans'?16:17)+2*n+'px')}}catch(e){}}catch(e){}}();</script><style>@font-face { font-family: 'Literata'; font-style: normal; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Literata'; font-style: italic; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-italic.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900; src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-display: swap; font-weight: 100 800; src: url('/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  color-scheme: dark;
+  --shell-bg: #0f1114;
+  --shell-surface: #161a1f;
+  --shell-raised: #1d2229;
+  --shell-border: #2a3039;
+  --shell-fg: #e6e8eb;
+  --shell-fg-muted: #9aa3ad;
+  --shell-fg-faint: #868d97;
+  --accent: #8ab4f8;
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --radius-pill: 999px;
+  --fs-caption: 11px;
+  --fs-micro: 12px;
+  --fs-dense: 13px;
+  --fs-body: 14px;
+  --fs-lead: 16px;
+  --font-paper: "Literata", "Lora", Georgia, serif;
+  --font-shell: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --paper-size: 17px;
+  --dur-stream: 120ms;
+  --dur-phase: 160ms;
+  --dur-finding: 200ms;
+  --dur-pane: 160ms;
+  --dur-caret: 1200ms;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --shell-bg: #f6f7f9;
+  --shell-surface: #fdfdfe;
+  --shell-raised: #f0f2f6;
+  --shell-border: #e3e6ea;
+  --shell-fg: #1a1d21;
+  --shell-fg-muted: #5c6670;
+  --shell-fg-faint: #646b74;
+  --accent: #2b63c9;
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] {
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+}
+[data-paper="dark"] {
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+}
+.paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+[data-theme="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="dark"] .paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+.paper { color-scheme: dark; }
+[data-theme="light"] .paper { color-scheme: light; }
+[data-paper="light"] .paper { color-scheme: light; }
+[data-paper="dark"] .paper { color-scheme: dark; }
+[data-font="sans"] {
+  --font-paper: "Inter", system-ui, sans-serif;
+  --paper-size: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: var(--font-shell);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, input, select, textarea { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); }
+button, select, textarea, input:where(:not([type='checkbox']):not([type='radio'])) { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); padding: var(--s1) var(--s3); line-height: 1.4; }
+input:where([type='checkbox'], [type='radio']) { width: 14px; height: 14px; margin: 0; padding: 0; accent-color: var(--accent); vertical-align: -2px; }
+input[type='file']::file-selector-button { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1) var(--s2); margin-right: var(--s2); cursor: pointer; }
+button:where(:not(:disabled)) { cursor: pointer; }
+input[type='file']::file-selector-button:hover, button:where(:not(:disabled)):hover, input:where(:not(:disabled)):hover, select:where(:not(:disabled)):hover, textarea:where(:not(:disabled)):hover { border-color: var(--shell-fg-faint); }
+button:where(:not(:disabled)):active, input:where(:not(:disabled)):active, select:where(:not(:disabled)):active { background: var(--shell-border); }
+button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+input:invalid, select:invalid, textarea:invalid, input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--sev-blocking); }
+input::placeholder, textarea::placeholder { color: var(--shell-fg-faint); }
+textarea { resize: vertical; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.tnum { font-variant-numeric: tabular-nums; }
+.paper {
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--font-paper);
+  font-size: var(--paper-size);
+  line-height: 1.55;
+}
+.paper h1, .paper h2, .paper h3, .paper h4 { font-weight: 600; line-height: 1.25; }
+.paper h1 { font-size: 2em; }
+.paper h2 { font-size: 1.625em; }
+.paper h3 { font-size: 1.375em; }
+.paper h4 { font-size: 1.125em; }
+.paper p { margin: 0 0 1em; text-indent: 0; }
+.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: 13px; }
+.paper a { color: var(--accent); }
+.paper .muted, .muted-paper { color: var(--paper-fg-muted); }
+@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }
+details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }
+details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }
+details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .paper { font-size: 11pt; line-height: 1.4; max-width: 6.5in; color: #1d1c1a; background: #fffdf8; }
+  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }
+}</style></head><body><div style="min-height:100vh;display:flex;flex-direction:column"><header style="display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;padding:12px 16px;border-bottom:1px solid var(--shell-border);background:var(--shell-surface)"><a href="/" style="font-weight:600;font-size:16px;color:var(--shell-fg);text-decoration:none">Rhēma</a><span style="color:var(--shell-fg-muted);font-size:13px">A serious editor for serious writing.</span><nav style="margin-left:auto;display:flex;gap:12px;align-items:center"><a href="/pricing" style="font-size:13px">See pricing</a><a href="/signup" style="font-size:13px">Create your account</a></nav></header><main style="flex:1;width:100%;max-width:880px;margin:0 auto;padding:24px 16px;box-sizing:border-box"><h1 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Showcase</h1><p style="font-size:16px;line-height:1.6;color:var(--shell-fg);max-width:68ch">A read-only worked example — the dossier Rhēma hands back on a real essay: the editor&#x27;s letter, the claims ledger, and the findings.</p><p style="color:var(--shell-fg-muted);font-size:14px;max-width:68ch">Every account ships this same example in its workspace. Sign in to see yours — it stays read-only so the sample never changes.</p><article data-dossier="true" data-readonly="true" style="background:var(--paper-bg);color:var(--paper-fg);border:1px solid var(--paper-rule);border-radius:12px;padding:24px;box-shadow:0 1px 0 var(--shell-border)"><div role="note" style="font-size:12px;color:var(--paper-fg-muted);border-bottom:1px solid var(--paper-rule);padding-bottom:12px;margin-bottom:16px">Read-only sample. In your projects, each finding is something you can act on.</div><h2 style="font-size:22px;font-weight:600;margin:0 0 16px">The Extinction of Man</h2><section aria-label="The Editor&#x27;s letter"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">The Editor&#x27;s letter</h3><p style="font-size:16px;line-height:1.55;margin:0 0 12px;max-width:68ch">This is a real 1897 essay arguing a real thesis — that humanity&#x27;s tenure is not guaranteed — and it earns the reader&#x27;s attention. The argument is honest; its evidence is not. The load-bearing natural-history claims are a century stale, and one is wrong by a factor of two on the axis the essay builds the horror on.</p><p style="font-size:16px;line-height:1.55;margin:0 0 12px;max-width:68ch">The piece also deserves credit where due: the central wager — dominant taxa fall without warning — survives contact with modern paleontology. The ledger below separates what survives from what does not, with the sources the review actually fetched.</p></section><section aria-label="Claim ledger" style="margin-top:24px"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">Claim ledger</h3><ul style="margin:8px 0 0;padding:0;border:1px solid var(--paper-rule);border-radius:8px;overflow:hidden"><li data-verdict="contradicted" data-tier="1" data-contradicted-tier1="true" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid var(--sev-blocking)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[9]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--sev-blocking);font-weight:600">Contradicted</span><span style="font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--sev-blocking);color:var(--shell-bg)">Contradicted · Tier 1</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">The evidence of the fossil Paradoxides shows creatures of this kind may attain a length of six feet.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">Paradoxides&#x27; largest specimen is 37 cm (15 in); the largest complete trilobite ever found (Isotelus rex) is 72 cm — under 2.5 ft, not six. Paradoxides is also a trilobite, not a crustacean &#x27;of this kind.&#x27; Wrong on the scale and the group.</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a href="https://en.wikipedia.org/wiki/Paradoxides" rel="noreferrer" title="https://en.wikipedia.org/wiki/Paradoxides" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>wikipedia.org</span></a><a href="https://en.wikipedia.org/wiki/Isotelus" rel="noreferrer" title="https://en.wikipedia.org/wiki/Isotelus" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>wikipedia.org</span></a></div></li><li data-verdict="misleading_in_context" data-tier="1" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid transparent"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[12]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--paper-fg-muted);font-weight:400">Misleading in context</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">Man has swept away auk, bison, and dodo during the last two hundred years.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">The bison was hunted to under 1,000 but never extinguished — today ~11,000 DOI-managed in 19 herds, designated the US national mammal in 2016; the dodo fell ~1681, outside the essay&#x27;s own 200-year window; only the great auk (1844) fits.</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a href="https://www.nps.gov/subjects/bison" rel="noreferrer" title="https://www.nps.gov/subjects/bison" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>nps.gov</span></a></div></li><li data-verdict="substantially_accurate" data-tier="1" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid transparent"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[3]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--paper-fg-muted);font-weight:400">Substantially accurate</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">In no case does the record of the fossils show a really dominant species succeeded by its own descendants.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">The pattern holds in the mass-extinction literature — dominant clades are replaced by previously marginal competitors — though modern reviewers soften &#x27;in no case&#x27; (post-extinction radiations do include survivor lineages).</div></li><li data-verdict="unverifiable" data-tier="3" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid transparent"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[31]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 3</span><span style="font-size:12px;color:var(--paper-fg-muted);font-weight:400">Unverifiable</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">We may be unwittingly evolving some new and more terrible plague.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">Speculative thesis claim — argued, not checked.</div></li></ul></section><section aria-label="Findings" style="margin-top:24px"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">Findings</h3><ul style="margin:8px 0 0;padding:0;list-style:none"><li style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--paper-rule)"><span aria-hidden="true" style="margin-top:6px;width:8px;height:8px;border-radius:999px;background:var(--sev-blocking);flex-shrink:0"></span><div><div style="font-weight:600;font-size:14px">The six-foot crab is the essay&#x27;s hinge — and it is wrong on the fossil record.</div><div style="color:var(--paper-fg-muted);font-size:13px;margin-top:2px">The nightmare scenario that sells the thesis is scaled off Paradoxides. The real genus tops out at 37 cm, and no complete trilobite has ever exceeded 72 cm. The essay&#x27;s scariest object shrinks by half — the correction must be visible, because the fear is built on the number.</div></div></li><li style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--paper-rule)"><span aria-hidden="true" style="margin-top:6px;width:8px;height:8px;border-radius:999px;background:var(--sev-major);flex-shrink:0"></span><div><div style="font-weight:600;font-size:14px">The essay&#x27;s own timeline contradicts one of its three extinctions.</div><div style="color:var(--paper-fg-muted);font-size:13px;margin-top:2px">Within &#x27;the last two hundred years&#x27; Wells lists auk, bison, and dodo as swept away. The bison survives (a conservation success, not an extinction) and the dodo predates the window. A second read, given only the draft, flags the same trio — the essay argues harder than its record.</div></div></li></ul></section></article></main><footer style="padding:16px;border-top:1px solid var(--shell-border);color:var(--shell-fg-faint);font-size:12px;text-align:center"><span>Rhēma</span><span aria-hidden="true"> · </span><nav data-legal-nav="true" aria-label="Legal" style="display:inline"><span><a href="/terms" style="color:inherit">Terms</a></span><span><span aria-hidden="true"> · </span><a href="/privacy" style="color:inherit">Privacy</a></span><span><span aria-hidden="true"> · </span><a href="/refunds" style="color:inherit">Refunds</a></span><span><span aria-hidden="true"> · </span><a href="/acceptable-use" style="color:inherit">Acceptable use</a></span><span><span aria-hidden="true"> · </span><a href="/contact" style="color:inherit">Contact</a></span></nav></footer></div></body></html>

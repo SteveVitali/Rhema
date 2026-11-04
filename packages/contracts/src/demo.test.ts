@@ -163,7 +163,7 @@ describe("221a R7DEM.5b — the hub order + stable deep links (REQ-TOUR-1/8)", (
     }
   });
 
-  it("DEMO_TOUR_ENTRY_HREF is the SPD essay root (the tour's opening surface)", () => {
-    expect(DEMO_TOUR_ENTRY_HREF).toBe("/demo/structure-of-political-difference");
+  it("DEMO_TOUR_ENTRY_HREF opens the tour on SPD's essay root (222's ?tour= start)", () => {
+    expect(DEMO_TOUR_ENTRY_HREF).toBe("/demo/structure-of-political-difference?tour=published");
   });
 });

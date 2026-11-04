@@ -1,0 +1,277 @@
+<!doctype html><html lang="en" data-theme="dark" data-renderer="ssr" data-route="/pricing" data-mounted data-nav-count="0"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><title>Pricing · Rhēma</title><meta name="description" content="Rhēma pricing — plans, credits, and the per-workflow cost cards."><meta property="og:type" content="website"><meta property="og:site_name" content="Rhēma"><meta property="og:title" content="Pricing · Rhēma"><meta property="og:description" content="Rhēma pricing — plans, credits, and the per-workflow cost cards."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Pricing · Rhēma"><meta name="twitter:description" content="Rhēma pricing — plans, credits, and the per-workflow cost cards."><link rel="canonical" href="http://127.0.0.1:43988/pricing"><meta property="og:url" content="http://127.0.0.1:43988/pricing"><script nonce="cnKNkXwVStLVE99DpJKQWQ==">!function(){try{var d=document.documentElement;var pref=d.getAttribute('data-app-theme');if(!pref){try{pref=localStorage.getItem('rhema:theme:v1')}catch(e){}}if(pref!=='dark'&&pref!=='light'&&pref!=='auto')pref='dark';d.setAttribute('data-app-theme',pref);var apply=function(){var res=pref;if(pref==='auto'){res=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',res)};apply();if(pref==='auto'&&window.matchMedia){var q=window.matchMedia('(prefers-color-scheme: light)');var on=function(e){if(d.getAttribute('data-app-theme')==='auto'){d.setAttribute('data-theme',e.matches?'light':'dark')}};q.addEventListener?q.addEventListener('change',on):q.addListener&&q.addListener(on)};try{localStorage.setItem('rhema:theme:v1',pref)}catch(e){}var slug=d.getAttribute('data-project');if(slug){if(!d.getAttribute('data-paper')){try{var p=localStorage.getItem('rhema:paper:v1:'+slug);if(p==='light'||p==='follow'||p==='dark')d.setAttribute('data-paper',p)}catch(e){}if(!d.getAttribute('data-paper'))d.setAttribute('data-paper','light')}try{localStorage.setItem('rhema:paper:v1:'+slug,d.getAttribute('data-paper'))}catch(e){}}try{var f=localStorage.getItem('rhema:font:v1');if(f==='sans')d.setAttribute('data-font','sans');var s=localStorage.getItem('rhema:reader-step:v1');if(s&&s!=='0'){var n=parseInt(s,10);if(n>0&&n<=3)d.style.setProperty('--paper-size',(f==='sans'?16:17)+2*n+'px')}}catch(e){}}catch(e){}}();</script><style>@font-face { font-family: 'Literata'; font-style: normal; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Literata'; font-style: italic; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-italic.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900; src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-display: swap; font-weight: 100 800; src: url('/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  color-scheme: dark;
+  --shell-bg: #0f1114;
+  --shell-surface: #161a1f;
+  --shell-raised: #1d2229;
+  --shell-border: #2a3039;
+  --shell-fg: #e6e8eb;
+  --shell-fg-muted: #9aa3ad;
+  --shell-fg-faint: #868d97;
+  --accent: #8ab4f8;
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --radius-pill: 999px;
+  --fs-caption: 11px;
+  --fs-micro: 12px;
+  --fs-dense: 13px;
+  --fs-body: 14px;
+  --fs-lead: 16px;
+  --font-paper: "Literata", "Lora", Georgia, serif;
+  --font-shell: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --paper-size: 17px;
+  --dur-stream: 120ms;
+  --dur-phase: 160ms;
+  --dur-finding: 200ms;
+  --dur-pane: 160ms;
+  --dur-caret: 1200ms;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --shell-bg: #f6f7f9;
+  --shell-surface: #fdfdfe;
+  --shell-raised: #f0f2f6;
+  --shell-border: #e3e6ea;
+  --shell-fg: #1a1d21;
+  --shell-fg-muted: #5c6670;
+  --shell-fg-faint: #646b74;
+  --accent: #2b63c9;
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] {
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+}
+[data-paper="dark"] {
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+}
+.paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+[data-theme="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="dark"] .paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+.paper { color-scheme: dark; }
+[data-theme="light"] .paper { color-scheme: light; }
+[data-paper="light"] .paper { color-scheme: light; }
+[data-paper="dark"] .paper { color-scheme: dark; }
+[data-font="sans"] {
+  --font-paper: "Inter", system-ui, sans-serif;
+  --paper-size: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: var(--font-shell);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, input, select, textarea { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); }
+button, select, textarea, input:where(:not([type='checkbox']):not([type='radio'])) { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); padding: var(--s1) var(--s3); line-height: 1.4; }
+input:where([type='checkbox'], [type='radio']) { width: 14px; height: 14px; margin: 0; padding: 0; accent-color: var(--accent); vertical-align: -2px; }
+input[type='file']::file-selector-button { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1) var(--s2); margin-right: var(--s2); cursor: pointer; }
+button:where(:not(:disabled)) { cursor: pointer; }
+input[type='file']::file-selector-button:hover, button:where(:not(:disabled)):hover, input:where(:not(:disabled)):hover, select:where(:not(:disabled)):hover, textarea:where(:not(:disabled)):hover { border-color: var(--shell-fg-faint); }
+button:where(:not(:disabled)):active, input:where(:not(:disabled)):active, select:where(:not(:disabled)):active { background: var(--shell-border); }
+button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+input:invalid, select:invalid, textarea:invalid, input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--sev-blocking); }
+input::placeholder, textarea::placeholder { color: var(--shell-fg-faint); }
+textarea { resize: vertical; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.tnum { font-variant-numeric: tabular-nums; }
+.paper {
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--font-paper);
+  font-size: var(--paper-size);
+  line-height: 1.55;
+}
+.paper h1, .paper h2, .paper h3, .paper h4 { font-weight: 600; line-height: 1.25; }
+.paper h1 { font-size: 2em; }
+.paper h2 { font-size: 1.625em; }
+.paper h3 { font-size: 1.375em; }
+.paper h4 { font-size: 1.125em; }
+.paper p { margin: 0 0 1em; text-indent: 0; }
+.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: 13px; }
+.paper a { color: var(--accent); }
+.paper .muted, .muted-paper { color: var(--paper-fg-muted); }
+@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }
+details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }
+details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }
+details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .paper { font-size: 11pt; line-height: 1.4; max-width: 6.5in; color: #1d1c1a; background: #fffdf8; }
+  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }
+}</style></head><body><div style="min-height:100vh;display:flex;flex-direction:column"><header style="display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;padding:12px 16px;border-bottom:1px solid var(--shell-border);background:var(--shell-surface)"><a href="/" style="font-weight:600;font-size:16px;color:var(--shell-fg);text-decoration:none">Rhēma</a><span style="color:var(--shell-fg-muted);font-size:13px">A serious editor for serious writing.</span><nav style="margin-left:auto;display:flex;gap:12px;align-items:center"><a href="/" style="margin-right:16px">Rhēma</a><a href="/login" style="margin-right:16px">Sign in</a></nav></header><main style="flex:1;width:100%;max-width:880px;margin:0 auto;padding:24px 16px;box-sizing:border-box"><h1 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Pricing</h1><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Credits pay for runs; plans bundle them. Every number on this page is derived from the published rate card.</p><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Annual billing saves 15% — shown in dollars on the card.</p><p style="font-size:14px"><a href="/pricing">Monthly</a> · <a href="/pricing?cycle=annual">Annual</a></p><div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));gap:12px;margin-top:20px"><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:15px">Free</strong><div style="font-size:26px;margin-top:8px">$0<span style="font-size:13px;color:var(--shell-fg-muted)">/mo</span></div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">—</div><div style="font-size:12px;color:var(--shell-fg-muted);margin-top:8px"><div>One Review of up to 2,800 words, Standard rigor, Base — on us, plus a 150-credit pocket.</div><div style="margin-top:4px">10 credits/day for chat, expiring nightly; no runs.</div></div><div style="margin-top:14px"><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">Start free</a></div></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:15px">Writer</strong><div style="font-size:26px;margin-top:8px">$20<span style="font-size:13px;color:var(--shell-fg-muted)">/mo</span></div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">2,000 included credits / mo</div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">≈0.7 essay Reviews on Base · ≈0.3 on Balanced · ≈0.1 on Frontier</div><div style="margin-top:14px"><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">Start Writer</a></div></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:15px">Studio</strong><div style="font-size:26px;margin-top:8px">$100<span style="font-size:13px;color:var(--shell-fg-muted)">/mo</span></div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">12,000 included credits / mo</div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">≈4.6 essay Reviews on Base · ≈2 on Balanced · ≈1 on Frontier</div><div style="margin-top:14px"><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">Start Studio</a></div></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:15px">Studio Max</strong><div style="font-size:26px;margin-top:8px">$200<span style="font-size:13px;color:var(--shell-fg-muted)">/mo</span></div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">26,000 included credits / mo</div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">≈9.9 essay Reviews on Base · ≈4.5 on Balanced · ≈2.2 on Frontier</div><div style="margin-top:14px"><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">Start Studio Max</a></div></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:15px">Team</strong><div style="font-size:26px;margin-top:8px">$40<span style="font-size:13px;color:var(--shell-fg-muted)">/seat/mo</span></div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">4,000 included credits / mo</div><div style="font-size:13px;color:var(--shell-fg-muted);margin-top:8px">Pooled credits across the team.</div><div style="margin-top:14px"><a href="/signup?intent=team" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">Join the waitlist</a></div></div></div><p style="color:var(--shell-fg-muted);font-size:12px;line-height:1.6;max-width:68ch;margin-top:10px">One trial per person — 14 days, one included Review, no card.</p><section style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">What a run costs</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Modeled figures at Standard rigor, across model tiers — the live estimate on the run sheet is authoritative for a real run.</p><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">How a run charges: it shows its estimate and cap before it starts, you pay the run&#x27;s actual cost as each phase completes, and it can never cost more than the cap you confirm.</p><div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px"><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)" data-cost-card="essay" data-words="5000" data-claims="20"><strong>Essay</strong><div style="font-size:12px;color:var(--shell-fg-muted);margin-top:4px">5,000 words · 20 claims</div><dl style="font-size:13px;margin-top:10px"><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Draft</dt><dd style="margin:0">2,310 – 10,410 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review</dt><dd style="margin:0">2,600 – 11,730 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review (fact-check off)</dt><dd style="margin:0">1,230 – 5,550 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Revise</dt><dd style="margin:0">1,120 – 5,070 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Full round</dt><dd style="margin:0">6,050 – 27,200 cr</dd></div></dl><details style="font-size:12px;color:var(--shell-fg-muted);margin-top:8px"><summary>Full round by tier</summary><div><span>Base ≈ 6,050</span><span> · Balanced ≈ 13,300</span><span> · Frontier ≈ 27,200</span></div></details></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)" data-cost-card="academic" data-words="8000" data-claims="45"><strong>Academic paper</strong><div style="font-size:12px;color:var(--shell-fg-muted);margin-top:4px">8,000 words · 45 claims</div><dl style="font-size:13px;margin-top:10px"><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Draft</dt><dd style="margin:0">3,340 – 15,050 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review</dt><dd style="margin:0">3,940 – 17,750 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review (fact-check off)</dt><dd style="margin:0">1,310 – 5,930 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Revise</dt><dd style="margin:0">1,230 – 5,570 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Full round</dt><dd style="margin:0">8,520 – 38,360 cr</dd></div></dl><details style="font-size:12px;color:var(--shell-fg-muted);margin-top:8px"><summary>Full round by tier</summary><div><span>Base ≈ 8,520</span><span> · Balanced ≈ 18,750</span><span> · Frontier ≈ 38,360</span></div></details></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)" data-cost-card="book_chapter" data-words="12000" data-claims="60"><strong>Book chapter</strong><div style="font-size:12px;color:var(--shell-fg-muted);margin-top:4px">12,000 words · 60 claims</div><dl style="font-size:13px;margin-top:10px"><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Draft</dt><dd style="margin:0">4,100 – 18,450 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review</dt><dd style="margin:0">4,800 – 21,640 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Review (fact-check off)</dt><dd style="margin:0">1,430 – 6,450 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Revise</dt><dd style="margin:0">1,380 – 6,250 cr</dd></div><div style="display:flex;justify-content:space-between;margin-top:4px"><dt style="color:var(--shell-fg-muted)">Full round</dt><dd style="margin:0">10,300 – 46,320 cr</dd></div></dl><details style="font-size:12px;color:var(--shell-fg-muted);margin-top:8px"><summary>Full round by tier</summary><div><span>Base ≈ 10,300</span><span> · Balanced ≈ 22,650</span><span> · Frontier ≈ 46,320</span></div></details></div><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)" data-cost-card="voice"><strong>Voice profile</strong><div style="font-size:12px;color:var(--shell-fg-muted);margin-top:4px">A profile built from a 50,000-word corpus</div><div style="font-size:13px;margin-top:10px">— cr</div></div></div><p style="color:var(--shell-fg-muted);font-size:12px;line-height:1.6;max-width:68ch;margin-top:10px">A ≤3,000-word piece on Base: Quick ≈ 730 cr · Standard ≈ 1,950 cr · Full board ≈ 2,340 cr</p></section><section style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">The ladder, compared</h2><div class="table-scroll" role="region" aria-label="The ladder, compared" tabindex="0"><table style="border-collapse:collapse;font-size:13px;margin-top:8px;width:100%;min-width:560px"><thead><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border)"></th><th style="text-align:left;padding:6px 12px;border-bottom:1px solid var(--shell-border)">Free</th><th style="text-align:left;padding:6px 12px;border-bottom:1px solid var(--shell-border)">Writer</th><th style="text-align:left;padding:6px 12px;border-bottom:1px solid var(--shell-border)">Studio</th><th style="text-align:left;padding:6px 12px;border-bottom:1px solid var(--shell-border)">Studio Max</th><th style="text-align:left;padding:6px 12px;border-bottom:1px solid var(--shell-border)">Team</th></tr></thead><tbody><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Price (monthly)</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$0</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$20/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$100/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$200/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$40/seat/mo</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Price (annual, per month)</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$0/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$17/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$85/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">$170/mo</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Included credits / mo</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">2,000</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">12,000</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">26,000</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">4,000</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Model tiers</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Base</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Base · Balanced · Frontier</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Base · Balanced · Frontier</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Base · Balanced · Frontier</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Base · Balanced · Frontier</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Concurrency</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">2</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">5</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">8</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">3/seat</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Daily chat credits</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">10</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Top-ups</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Admin</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Rollover</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">≤2× monthly · expires at reset</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">≤2× monthly · expires at reset</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">≤2× monthly · expires at reset</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">≤2× monthly · expires at reset</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">≤2× monthly · expires at reset</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Run word cap</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">2,800</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Daily run ceiling</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">40</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Research tools</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">—</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Yes</td></tr><tr><th style="text-align:left;padding:6px 12px 6px 0;border-bottom:1px solid var(--shell-border);color:var(--shell-fg-muted);font-weight:500">Support</th><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Standard</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Standard</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Priority</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Priority</td><td style="padding:6px 12px;border-bottom:1px solid var(--shell-border)">Standard</td></tr></tbody></table></div></section><section style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Top-up packs</h2><ul style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;padding-left:18px"><li>$10 → 1,000 credits</li><li>$50 → 5,250 credits</li><li>$200 → 22,000 credits</li></ul><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Never expire for 12 months.</p></section><section style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Questions</h2><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Why does a review of my 8,000-word paper cost about $39?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">A review reads the draft several times and fetches the sources behind every checkable claim — each verified claim costs roughly 69 credits on Base and 309 on Frontier inside a Review (41 and 183 in a stand-alone Fact-check); fact-check off drops that paper from ≈3,940 to ≈1,320 credits.</p></details><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">What if I run out of credits?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">Top-ups never expire for 12 months, and the 150-credit trial pocket is yours to spend. Nothing auto-bills — auto-reload is opt-in with your own monthly cap.</p></details><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Do unused credits roll over?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">Included credits roll over up to 2× your monthly amount; the excess expires at reset with a 7-day warning.</p></details><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">What happens after the trial?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">After day 14 the account is Free: 10 credits/day for chat, expiring nightly; no runs.</p></details><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Is my text used to train models?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">No. Drafts, letters, and telemetry never train models, and providers are bound by the same zero-retention terms.</p></details><details style="margin-bottom:8px;max-width:72ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">What&#x27;s not included yet?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">The Team plan is a waitlist; single sign-on, retention controls, and mobile editing are on the roadmap — everything on this page works today.</p></details></section></main><footer style="padding:16px;border-top:1px solid var(--shell-border);color:var(--shell-fg-faint);font-size:12px;text-align:center"><span>Rhēma</span><span aria-hidden="true"> · </span><nav data-legal-nav="true" aria-label="Legal" style="display:inline"><span><a href="/terms" style="color:inherit">Terms</a></span><span><span aria-hidden="true"> · </span><a href="/privacy" style="color:inherit">Privacy</a></span><span><span aria-hidden="true"> · </span><a href="/refunds" style="color:inherit">Refunds</a></span><span><span aria-hidden="true"> · </span><a href="/acceptable-use" style="color:inherit">Acceptable use</a></span><span><span aria-hidden="true"> · </span><a href="/contact" style="color:inherit">Contact</a></span></nav><span aria-hidden="true"> · </span><a href="/demo" data-spa-native="true" data-demo-entry="footer" style="color:inherit">Demo</a></footer></div></body></html>

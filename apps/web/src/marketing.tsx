@@ -119,6 +119,13 @@ export function LandingPage(): ReactNode {
           {" · "}
           <a href="/signup?entry=scratch">{COPY.landing.hero.ctaScratch}</a>
         </p>
+        {/* 222 R7DEM.6a (REQ-TOUR-4; S-14) — the hero's secondary CTA into /demo: a document
+            navigation (data-spa-native), never a client hop. */}
+        <p style={{ marginTop: "10px", fontSize: "14px" }}>
+          <a href="/demo" data-spa-native data-demo-entry="landing" style={{ color: "var(--accent)", fontWeight: 600 }}>
+            {COPY.landing.hero.demoCta}
+          </a>
+        </p>
       </section>
 
       {/* 2 — the dossier (the real sample board read; REQ-POS-11) */}
@@ -588,6 +595,11 @@ export function ShowcasePage({ signedIn = false }: { signedIn?: boolean } = {}):
       <PageTitle>{C.pageHeading}</PageTitle>
       <p style={{ fontSize: "16px", lineHeight: 1.6, color: "var(--shell-fg)", maxWidth: "68ch" }}>{C.pageLede}</p>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{C.readOnlyNote}</p>
+      {/* 222 R7DEM.6a (REQ-TOUR-4; S-14) — the /showcase → /demo entry: a document navigation. */}
+      <p style={{ fontSize: "14px", maxWidth: "68ch" }}>
+        {C.demoLead}{" "}
+        <a href="/demo" data-spa-native data-demo-entry="showcase" style={{ color: "var(--accent)" }}>{C.demoLink}</a>
+      </p>
       <DossierView
         title={SAMPLE_DOSSIER.projectTitle}
         letter={SAMPLE_DOSSIER.letter}

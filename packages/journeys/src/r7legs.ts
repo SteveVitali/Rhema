@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
-import { gotoOk, settleClientNav } from "./settle.js";
+import { gotoOk, settleClientNav, settleDocumentNav } from "./settle.js";
 import {
   assertBundleParity,
   assertNoOverflow,
@@ -598,8 +598,183 @@ const D1_HUB: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+
+/**
+ * 222 R7DEM.6a (REQ-TOUR-2/-4, REQ-DACC-1/2; GD-PREVIEW.R7) — `D2.tour`: the full guided tour
+ * on Structure of Political Difference, walked as a new visitor. Landing hero CTA → /demo is a
+ * DOCUMENT navigation (S-14; this carries TOUR-4's B evidence R4 had put in D1.hub); the hub's
+ * hero tour CTA is a document navigation onto the essay root with `?tour=published`; every
+ * in-demo step hop is a CLIENT navigation (settleClientNav); the final CTA → /signup?src=demo
+ * is a document navigation. Per step: the coach mark is visible with non-empty text, its
+ * declared DOM-contract target is visible and never intersected by the coach mark, and
+ * Next/Back are actionable. Sub-assertion: the /showcase + footer entry links resolve to
+ * /demo. Stays `expected:"red"` — 224 flips it with preview evidence.
+ */
+const TOUR_ESSAY = "structure-of-political-difference";
+const TOUR_STEPS: readonly { id: string; route: string; search?: string; target: string }[] = [
+  { id: "published", route: "", target: "[data-page-root]" },
+  { id: "v1", route: "/v/1", target: "[data-page-host]" },
+  { id: "verdict", route: "/review/v1-review", target: '[data-letter-section="verdict"]' },
+  { id: "one-thing", route: "/review/v1-review", target: '[data-finding="The one thing"]' },
+  { id: "two-readers", route: "/review/v1-review", target: '[data-finding="Major 1"]' },
+  { id: "claims", route: "/review/v1-review", target: '[data-claim="22"]' },
+  { id: "figure", route: "/figures", target: '[data-figure-row="figure_2_ches_correlations_v2"]' },
+  {
+    id: "responses",
+    route: "/a/agents--author--ledgers--v1-response-ledger.md",
+    target: "[data-page-host]",
+  },
+  { id: "what-changed", route: "/v/1/diff/2", search: "layout=moves", target: '[data-move-card="M2"]' },
+  { id: "writer-edit", route: "/v/2/diff/3", search: "layout=moves", target: "[data-what-changed]" },
+  { id: "cta", route: "", target: "[data-page-root]" },
+];
+
+const D2_TOUR: StepFn = async (ctx) => {
+  const { page } = await ctx.anon();
+  const origin = new URL(ctx.webBaseUrl).origin;
+  const collect = attachDemoRecord(page, origin);
+  // the entry walk happens once at desktop; the per-step coach-mark evidence repeats at the
+  // three widths by re-entering the tour URL directly at each width.
+  // "un-occluded" = the coach mark does not cover the target's visible rect's center point.
+  // A container target (the page root) tolerates a mark floating at its edges; a pointed target
+  // (a finding card, claim row, move card, figure row, letter section) fails the moment the mark
+  // sits over its center.
+  const coversCenter = async (targetSel: string): Promise<boolean> =>
+    page.evaluate((sel) => {
+      const t = document.querySelector(sel);
+      const o = document.querySelector("[data-demo-tour]") as HTMLElement | null;
+      if (t == null || o == null || o.hidden) return false;
+      const r = t.getBoundingClientRect();
+      const cx = Math.min(Math.max(r.left + r.width / 2, 1), innerWidth - 1);
+      const cy = Math.min(Math.max(r.top + r.height / 2, 1), innerHeight - 1);
+      const hit = document.elementFromPoint(cx, cy);
+      return hit != null && o.contains(hit);
+    }, targetSel);
+
+  // — landing → /demo (document nav; carries the landing entry CTA evidence).
+  await gotoOk(page, `${ctx.webBaseUrl}/`, ctx);
+  const landingEntry = page.locator('[data-demo-entry="landing"]');
+  if ((await landingEntry.count()) === 0) throw new Error("landing hero has no data-demo-entry");
+  await settleDocumentNav(page, ctx, async () => {
+    await landingEntry.first().click();
+  });
+  if (!page.url().endsWith("/demo")) throw new Error(`landing CTA landed on ${page.url()}`);
+  await page.locator("[data-demo-hub]").waitFor({ timeout: 30_000 });
+  // — /showcase + footer sub-assertions (both resolve to /demo).
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+  const scEntry = page.locator('[data-demo-entry="showcase"]');
+  if ((await scEntry.count()) === 0) throw new Error("/showcase has no data-demo-entry");
+  await settleDocumentNav(page, ctx, async () => {
+    await scEntry.first().click();
+  });
+  if (!page.url().endsWith("/demo")) throw new Error(`/showcase entry landed on ${page.url()}`);
+  await gotoOk(page, `${ctx.webBaseUrl}/`, ctx);
+  const footerEntry = page.locator('[data-demo-entry="footer"]').first();
+  if ((await footerEntry.count()) === 0) throw new Error("the public footer has no data-demo-entry");
+  if ((await footerEntry.getAttribute("href")) !== "/demo") {
+    throw new Error("the footer's data-demo-entry does not resolve to /demo");
+  }
+  if ((await footerEntry.getAttribute("data-spa-native")) == null) {
+    throw new Error("the footer entry is missing data-spa-native");
+  }
+  await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+
+  for (const w of [1440, 1024, 390] as const) {
+    await page.setViewportSize({ width: w, height: 900 });
+    if (w === 1440) {
+      // the hub's hero CTA — a DOCUMENT navigation into the demo SPA (S-14).
+      await settleDocumentNav(page, ctx, async () => {
+        await page.locator("[data-demo-tour-entry]").first().click();
+      });
+    } else {
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${TOUR_ESSAY}?tour=published`, ctx);
+    }
+    for (const [i, step] of TOUR_STEPS.entries()) {
+      // 1024 walks each step via its own URL (fresh document per step — the mount + placement +
+      // target contract at width); 1440 and 390 walk via the Next control (the declared
+      // client-nav mechanism, proven once per width that exercises it).
+      if (w === 1024 && i > 0) {
+        await gotoOk(
+          page,
+          `${ctx.webBaseUrl}/demo/${TOUR_ESSAY}${step.route}?${step.search != null ? `${step.search}&` : ""}tour=${step.id}`,
+          ctx,
+        );
+      }
+      const mark = page.locator(`[data-demo-tour-step="${step.id}"]`);
+      try {
+        await mark.waitFor({ timeout: 30_000 });
+      } catch {
+        const diag = await page.evaluate((sel) => ({
+          url: location.href,
+          overlay: document.querySelector("[data-demo-tour]") != null,
+          hidden: (document.querySelector("[data-demo-tour]") as HTMLElement | null)?.hidden,
+          target: document.querySelector(sel) != null,
+          targetCount: document.querySelectorAll(sel).length,
+          spaError: document.querySelector("[data-spa-error]")?.textContent?.slice(0, 160),
+          markIds: Array.from(document.querySelectorAll("[data-demo-tour-step]")).map((e) => e.getAttribute("data-demo-tour-step")),
+          navCount: document.documentElement.getAttribute("data-nav-count"),
+        }), step.target);
+        throw new Error(`step ${step.id} @${w}: coach mark never rendered — ${JSON.stringify(diag)}`);
+      }
+      if (!(await mark.isVisible())) throw new Error(`step ${step.id} @${w}: coach mark hidden`);
+      const text = (await mark.textContent()) ?? "";
+      if (text.trim().length === 0) throw new Error(`step ${step.id} @${w}: empty coach mark`);
+      const target = page.locator(step.target).first();
+      await target.waitFor({ timeout: 30_000 }).catch(() => undefined);
+      if ((await target.count()) === 0) {
+        throw new Error(`step ${step.id} @${w}: target ${step.target} absent`);
+      }
+      if (await coversCenter(step.target)) {
+        throw new Error(`step ${step.id} @${w}: coach mark occludes its target ${step.target}`);
+      }
+      if (step.id !== "cta") {
+        await assertActionable(page.locator("[data-demo-tour-next]"), `D2.tour ${step.id} next @${w}`);
+      }
+      if (i > 0) {
+        await assertActionable(page.locator("[data-demo-tour-prev]"), `D2.tour ${step.id} back @${w}`);
+      }
+      await page.screenshot({ path: join(ctx.outDir, `d2-tour-${String(i + 1).padStart(2, "0")}-${step.id}-${w}.png`), fullPage: true });
+      if (step.id === "cta") {
+        const cta = page.locator("[data-demo-tour-cta]");
+        if ((await cta.getAttribute("href")) !== "/signup?src=demo") {
+          throw new Error(`final CTA href ${await cta.getAttribute("href")} — want /signup?src=demo`);
+        }
+        if (w === 1440) {
+          await settleDocumentNav(page, ctx, async () => {
+            await cta.first().click();
+          });
+          if (!page.url().includes("/signup")) throw new Error(`CTA landed on ${page.url()}`);
+          if (!page.url().includes("src=demo")) throw new Error(`CTA lost src=demo (${page.url()})`);
+        }
+      } else if (w === 1440 || w === 390) {
+        // the declared mechanism: in-demo step hops are CLIENT navigations.
+        const nextId = TOUR_STEPS[i + 1]!.id;
+        await settleClientNav(page, ctx, async () => {
+          await page.locator("[data-demo-tour-next]").first().click();
+        });
+        if (!page.url().includes(`tour=${nextId}`)) {
+          throw new Error(`step ${step.id} → ${nextId}: url ${page.url()} lost the tour param`);
+        }
+      }
+    }
+    if (w !== 1440) {
+      // re-enter cleanly for the next width — the tour state rides the URL, so a fresh GET suffices.
+      await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+    }
+  }
+  const violations = [
+    ...collect.violations,
+    ...collect.badResponses.map((b) => `${b.status} on ${b.url}`),
+  ];
+  if (violations.length > 0) {
+    throw new Error(`D2.tour side-effect/fault(s):\n  ${violations.slice(0, 10).join("\n  ")}`);
+  }
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
+  "D2.tour": D2_TOUR,
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
   "R11.demo": R11_DEMO,

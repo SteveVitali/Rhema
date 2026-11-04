@@ -51,6 +51,10 @@ export function publicFooter(): ReactNode {
           </span>
         ))}
       </nav>
+      {/* 222 R7DEM.6a (REQ-TOUR-4; S-14) — the shared footer's /demo entry: a document
+          navigation on every public SSR page. */}
+      <span aria-hidden="true">{" · "}</span>
+      <a href="/demo" data-spa-native data-demo-entry="footer" style={{ color: "inherit" }}>{COPY.footerDemo}</a>
     </>
   );
 }

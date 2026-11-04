@@ -1,0 +1,277 @@
+<!doctype html><html lang="en" data-theme="dark" data-renderer="ssr" data-route="/signup" data-mounted data-nav-count="0"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><title>Create your account · Rhēma</title><meta name="description" content="Create a Rhēma account — Google or a magic link, no password."><meta property="og:type" content="website"><meta property="og:site_name" content="Rhēma"><meta property="og:title" content="Create your account · Rhēma"><meta property="og:description" content="Create a Rhēma account — Google or a magic link, no password."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Create your account · Rhēma"><meta name="twitter:description" content="Create a Rhēma account — Google or a magic link, no password."><link rel="canonical" href="http://127.0.0.1:43988/signup"><meta property="og:url" content="http://127.0.0.1:43988/signup"><script nonce="lDXIiqpWciBBbCgX771Ntw==">!function(){try{var d=document.documentElement;var pref=d.getAttribute('data-app-theme');if(!pref){try{pref=localStorage.getItem('rhema:theme:v1')}catch(e){}}if(pref!=='dark'&&pref!=='light'&&pref!=='auto')pref='dark';d.setAttribute('data-app-theme',pref);var apply=function(){var res=pref;if(pref==='auto'){res=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',res)};apply();if(pref==='auto'&&window.matchMedia){var q=window.matchMedia('(prefers-color-scheme: light)');var on=function(e){if(d.getAttribute('data-app-theme')==='auto'){d.setAttribute('data-theme',e.matches?'light':'dark')}};q.addEventListener?q.addEventListener('change',on):q.addListener&&q.addListener(on)};try{localStorage.setItem('rhema:theme:v1',pref)}catch(e){}var slug=d.getAttribute('data-project');if(slug){if(!d.getAttribute('data-paper')){try{var p=localStorage.getItem('rhema:paper:v1:'+slug);if(p==='light'||p==='follow'||p==='dark')d.setAttribute('data-paper',p)}catch(e){}if(!d.getAttribute('data-paper'))d.setAttribute('data-paper','light')}try{localStorage.setItem('rhema:paper:v1:'+slug,d.getAttribute('data-paper'))}catch(e){}}try{var f=localStorage.getItem('rhema:font:v1');if(f==='sans')d.setAttribute('data-font','sans');var s=localStorage.getItem('rhema:reader-step:v1');if(s&&s!=='0'){var n=parseInt(s,10);if(n>0&&n<=3)d.style.setProperty('--paper-size',(f==='sans'?16:17)+2*n+'px')}}catch(e){}}catch(e){}}();</script><style>@font-face { font-family: 'Literata'; font-style: normal; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Literata'; font-style: italic; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-italic.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900; src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-display: swap; font-weight: 100 800; src: url('/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  color-scheme: dark;
+  --shell-bg: #0f1114;
+  --shell-surface: #161a1f;
+  --shell-raised: #1d2229;
+  --shell-border: #2a3039;
+  --shell-fg: #e6e8eb;
+  --shell-fg-muted: #9aa3ad;
+  --shell-fg-faint: #868d97;
+  --accent: #8ab4f8;
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --radius-pill: 999px;
+  --fs-caption: 11px;
+  --fs-micro: 12px;
+  --fs-dense: 13px;
+  --fs-body: 14px;
+  --fs-lead: 16px;
+  --font-paper: "Literata", "Lora", Georgia, serif;
+  --font-shell: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --paper-size: 17px;
+  --dur-stream: 120ms;
+  --dur-phase: 160ms;
+  --dur-finding: 200ms;
+  --dur-pane: 160ms;
+  --dur-caret: 1200ms;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --shell-bg: #f6f7f9;
+  --shell-surface: #fdfdfe;
+  --shell-raised: #f0f2f6;
+  --shell-border: #e3e6ea;
+  --shell-fg: #1a1d21;
+  --shell-fg-muted: #5c6670;
+  --shell-fg-faint: #646b74;
+  --accent: #2b63c9;
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] {
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --paper-diff-add: #d7e8d0;
+  --paper-diff-del: #f0d8d4;
+}
+[data-paper="dark"] {
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --paper-diff-add: #223222;
+  --paper-diff-del: #3a2320;
+}
+.paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+[data-theme="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+  --state-ok: #1e7a55;
+}
+[data-paper="dark"] .paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --state-ok: #6cc4a1;
+}
+.paper { color-scheme: dark; }
+[data-theme="light"] .paper { color-scheme: light; }
+[data-paper="light"] .paper { color-scheme: light; }
+[data-paper="dark"] .paper { color-scheme: dark; }
+[data-font="sans"] {
+  --font-paper: "Inter", system-ui, sans-serif;
+  --paper-size: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: var(--font-shell);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, input, select, textarea { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); }
+button, select, textarea, input:where(:not([type='checkbox']):not([type='radio'])) { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); padding: var(--s1) var(--s3); line-height: 1.4; }
+input:where([type='checkbox'], [type='radio']) { width: 14px; height: 14px; margin: 0; padding: 0; accent-color: var(--accent); vertical-align: -2px; }
+input[type='file']::file-selector-button { font-family: var(--font-shell); font-size: var(--fs-dense); color: var(--shell-fg); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1) var(--s2); margin-right: var(--s2); cursor: pointer; }
+button:where(:not(:disabled)) { cursor: pointer; }
+input[type='file']::file-selector-button:hover, button:where(:not(:disabled)):hover, input:where(:not(:disabled)):hover, select:where(:not(:disabled)):hover, textarea:where(:not(:disabled)):hover { border-color: var(--shell-fg-faint); }
+button:where(:not(:disabled)):active, input:where(:not(:disabled)):active, select:where(:not(:disabled)):active { background: var(--shell-border); }
+button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+input:invalid, select:invalid, textarea:invalid, input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--sev-blocking); }
+input::placeholder, textarea::placeholder { color: var(--shell-fg-faint); }
+textarea { resize: vertical; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.tnum { font-variant-numeric: tabular-nums; }
+.paper {
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--font-paper);
+  font-size: var(--paper-size);
+  line-height: 1.55;
+}
+.paper h1, .paper h2, .paper h3, .paper h4 { font-weight: 600; line-height: 1.25; }
+.paper h1 { font-size: 2em; }
+.paper h2 { font-size: 1.625em; }
+.paper h3 { font-size: 1.375em; }
+.paper h4 { font-size: 1.125em; }
+.paper p { margin: 0 0 1em; text-indent: 0; }
+.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: 13px; }
+.paper a { color: var(--accent); }
+.paper .muted, .muted-paper { color: var(--paper-fg-muted); }
+@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }
+details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }
+details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }
+details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .paper { font-size: 11pt; line-height: 1.4; max-width: 6.5in; color: #1d1c1a; background: #fffdf8; }
+  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }
+}</style></head><body><div style="min-height:100vh;display:flex;flex-direction:column"><header style="display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;padding:12px 16px;border-bottom:1px solid var(--shell-border);background:var(--shell-surface)"><a href="/" style="font-weight:600;font-size:16px;color:var(--shell-fg);text-decoration:none">Rhēma</a></header><main style="flex:1;width:100%;max-width:880px;margin:0 auto;padding:24px 16px;box-sizing:border-box"><div style="max-width:380px;margin:0 auto"><h1 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Create your account</h1><p style="color:var(--shell-fg-muted);font-size:13px">Google or a magic link — no password, no questionnaire, no card.</p><form action="/signup" method="post"><input type="hidden" name="entry" value=""/><input type="hidden" name="src" value=""/><input type="hidden" name="held" value=""/><label style="font-size:13px;color:var(--shell-fg-muted)">Invitation code<input required="" style="display:block;width:100%;padding:8px 10px;margin-top:4px;border-radius:8px;border:1px solid var(--shell-border);background:var(--shell-bg);color:var(--shell-fg);font-size:14px;box-sizing:border-box" name="code" value=""/></label><label style="font-size:13px;color:var(--shell-fg-muted);margin-top:12px;display:block">Email<input type="email" required="" placeholder="you@example.com" style="display:block;width:100%;padding:8px 10px;margin-top:4px;border-radius:8px;border:1px solid var(--shell-border);background:var(--shell-bg);color:var(--shell-fg);font-size:14px;box-sizing:border-box" name="email" value=""/></label><div style="margin-top:16px"><button type="submit" value="magic_link" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--accent);color:var(--shell-bg);font-weight:600;font-size:14px;text-decoration:none;border:none;cursor:pointer;width:100%" name="method">Email me a sign-in link</button></div><div style="text-align:center;color:var(--shell-fg-faint);font-size:12px;margin:12px 0">or</div><div><button type="submit" value="google" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border);cursor:pointer;width:100%" name="method">Continue with Google</button></div></form><p style="font-size:12px;color:var(--shell-fg-faint);margin-top:20px">Or choose your first step: <a href="/signup?entry=scratch">Start from scratch</a> · <a href="/signup?entry=outline">Upload an outline</a> · <a href="/signup?entry=draft">Upload a draft</a></p></div></main><footer style="padding:16px;border-top:1px solid var(--shell-border);color:var(--shell-fg-faint);font-size:12px;text-align:center"><span>Rhēma</span><span aria-hidden="true"> · </span><nav data-legal-nav="true" aria-label="Legal" style="display:inline"><span><a href="/terms" style="color:inherit">Terms</a></span><span><span aria-hidden="true"> · </span><a href="/privacy" style="color:inherit">Privacy</a></span><span><span aria-hidden="true"> · </span><a href="/refunds" style="color:inherit">Refunds</a></span><span><span aria-hidden="true"> · </span><a href="/acceptable-use" style="color:inherit">Acceptable use</a></span><span><span aria-hidden="true"> · </span><a href="/contact" style="color:inherit">Contact</a></span></nav><span aria-hidden="true"> · </span><a href="/demo" data-spa-native="true" data-demo-entry="footer" style="color:inherit">Demo</a></footer></div></body></html>
