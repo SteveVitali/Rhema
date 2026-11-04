@@ -61,3 +61,21 @@ Converter goldens and synthetic snapshots (215–218a) land beside `corpus/` add
 | Excluded-ref markers                                                                                          | `drafts/v1.md` → outline + `manifest.md` refs; `v1-drafting-note.md` → outline ref                                     |
 
 Denylist negative controls are synthesized in-test (`src/denylist.test.ts`), never committed.
+
+## Converter goldens (215_R7DEM.2a, added 2026-11-04)
+
+`goldens/the-borrowed-commons/` holds the converter's committed outputs for both review rounds:
+`correspondence/{v1,v2}-review/01-claim-ledger.json` (the `claimLedgerSidecar` the real
+`parseSidecar` accepts) + `labels.json` (0-based ordinal → source id, REQ-CONV-4), and
+`anchor-histogram.json` (per-file anchor-rung counts, REQ-CONV-11). Canonical JSON — regenerated
+with `RHEMA_REGEN_GOLDENS=1 pnpm exec vitest run packages/demo-corpus/src/convert/claim-ledger.test.ts`
+and byte-compared in the same test.
+
+Two dated corrections to the table above, recorded 2026-11-04 at converter build time (the rows
+overclaimed): the v1 ledger's H2 appendices are `## Reuse confirmations`, `## References checked`
+and `## Summary` (there is no `## Skipped`; the skip variant is the `### X11 · Tier 3 · Skipped`
+heading, which is what the row's grammar exercises), and the `Tier … (epigraph)` qualifier reads
+`Tier 2 (epigraph)` on `P4`, not Tier 1 — its sibling row (`escalated:` on `IV2-scope`) is Tier 2
+as stated. `verdict-rescore` overrides are exercised by synthesized rows in-test: the synthetic
+ledgers reconcile, so no `convert-overrides.json` is needed here; 219 authors the real
+`corpus/<slug>/convert-overrides.json`.

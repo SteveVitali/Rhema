@@ -17,11 +17,15 @@
 - `snapshots/`, `goldens/` — real derived data, withheld the same way.
 - `fixtures/synthetic/` — committed. `source/<slug>/` is the invented source tree (with
   excluded-file decoys); `corpus/` is the exporter's own committed golden (its `_rules/` exercises
-  the real reader); `COVERAGE.md` maps every artifact shape and parse variant to its fixture file.
+  the real reader); `goldens/` is the converter's committed output goldens (215+);
+  `COVERAGE.md` maps every artifact shape and parse variant to its fixture file.
   215–218a may add files additively and update COVERAGE.md; they never edit a source file's
   existing bytes.
 - `src/` — exporter modules (allowlist, sanitize, rules reader, denylist gate, png, provenance,
-  versions, export orchestrator). Pure Node; no network, no clock (the export date is an input).
+  versions, export orchestrator) plus `src/convert/` — the corpus→sidecar converter (215+): pure
+  `(markdown, ctx) → {sidecar, labels, diagnostics}` functions, no I/O, no clock; every emitted
+  sidecar passes `parseSidecar` or the conversion fails closed. Pure Node; no network, no clock
+  (the export date is an input).
 - `denylist-patterns.json` — single pattern source shared by `src/denylist.ts` and
   `tools/demo-corpus/check-corpus.mjs` (self-contained so `check:demo-corpus` is always-run in CI).
 

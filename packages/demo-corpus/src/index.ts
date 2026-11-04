@@ -1,4 +1,5 @@
 export { classifyFile, allowlistCounts, type FileRuling, type Ruling } from "./allowlist.js";
+export * as convert from "./convert/index.js";
 export {
   gateDir,
   gateFiles,

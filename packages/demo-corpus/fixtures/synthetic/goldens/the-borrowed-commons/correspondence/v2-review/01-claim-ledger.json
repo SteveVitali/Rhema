@@ -1,0 +1,57 @@
+{
+ "claims": [
+  {
+   "accessedAt": "2026-08-20T00:00:00Z",
+   "anchor": {
+    "blockId": "b13",
+    "confidence": 1,
+    "endOffset": 242,
+    "quote": "The parish was funded; the roster was unwritten; the seal failed.",
+    "startOffset": 177
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+   "ordinal": 0,
+   "sources": [
+    {
+     "accessedAt": "2026-08-20T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+     "stance": "supports",
+     "url": "https://records.example.org/averly/accounts-2001"
+    }
+   ],
+   "text": "\"The parish was funded; the roster was unwritten; the seal failed.\"",
+   "tier": 1,
+   "url": "https://records.example.org/averly/accounts-2001",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-20T00:00:00Z",
+   "anchor": {
+    "blockId": "b16",
+    "confidence": 1,
+    "endOffset": 191,
+    "quote": "the grammar fails at the smallest unit first",
+    "startOffset": 147
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/county/board-comparison",
+   "ordinal": 1,
+   "sources": [
+    {
+     "accessedAt": "2026-08-20T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/county/board-comparison",
+     "stance": "contextualizes",
+     "url": "https://records.example.org/county/board-comparison"
+    }
+   ],
+   "text": "\"the grammar fails at the smallest unit first\"",
+   "tier": 2,
+   "url": "https://records.example.org/county/board-comparison",
+   "verdict": "misleading_in_context"
+  }
+ ],
+ "inventoryCount": 31,
+ "sidecar": "claim_ledger",
+ "version": 1
+}
