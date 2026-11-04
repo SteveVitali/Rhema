@@ -79,6 +79,17 @@ as $$
   insert into public.demo_events (event, essay, step, src)
   values (p_event, p_essay, p_step, p_src);
 $$;
+
+-- 223b R7DEM.6c (proven on pr-259's AlloyDB via the IAP-tunnel reproduction, rolled back):
+-- `ALTER FUNCTION … OWNER TO` checks that the NEW OWNER holds CREATE on the containing
+-- schema — `public` is owned by `alloydbsuperuser` on AlloyDB, and the migration user can
+-- grant on it (it owns the database) but `rhema_demo_writer` holds only USAGE. Grant CREATE
+-- for the single statement that needs it and revoke it immediately — the role's durable
+-- surface stays exactly `usage`+`insert`; both statements carry `ON <object>` so the lint's
+-- role_change rule is untouched.
+grant create on schema public to rhema_demo_writer;
 alter function public.rhema_demo_event_insert(text, text, integer, text) owner to rhema_demo_writer;
+revoke create on schema public from rhema_demo_writer;
+
 revoke all on function public.rhema_demo_event_insert(text, text, integer, text) from public;
 grant execute on function public.rhema_demo_event_insert(text, text, integer, text) to rhema_app;

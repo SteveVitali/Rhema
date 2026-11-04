@@ -29,12 +29,16 @@ create role rhema_demo_writer nologin nobypassrls nosuperuser nocreatedb nocreat
 ```
 
 `ROLE postgres` adds `postgres` — the bootstrap migration user on every stage (dev/preview/
-prod system DSNs all connect as `postgres`) — as a member of the new role **at creation**.
-`postgres` can then `SET ROLE rhema_demo_writer` and `OWNER TO` succeeds on AlloyDB,
-Cloud SQL PG15–18, and PGlite. This produces the same end state PG16's
-`createrole_self_grant` yields on prod: the creating user holds the new minimal role. It
-does **not** widen any existing user-facing role — `postgres` already holds broader
-privileges than `rhema_demo_writer` (whose only grant is `INSERT ON demo_events`).
+prod system DSNs all connect as `postgres`) — as a member of the new role **at creation**
+(the SET-ROLE half of `ALTER OWNER`'s check). **Second live finding:** `ALTER FUNCTION …
+OWNER TO` also requires the *new owner* to hold `CREATE` on the containing schema, and on
+AlloyDB `public` is owned by `alloydbsuperuser` while `rhema_demo_writer` holds only USAGE —
+proven by a rolled-back reproduction through the preview's IAP tunnel
+(`permission denied for schema public` at the `ALTER FUNCTION` statement; every other
+statement green). So `grant create on schema public` is issued **transiently**, revoked
+immediately after `OWNER TO` — verified end-state on the real engine:
+`create=false, usage=true, owner=rhema_demo_writer` — the durable surface stays
+`usage`+`insert` and both extra statements carry `ON <object>` (lint-clean).
 
 Lint posture: the membership is declared inside `CREATE ROLE` (the `ROLE` option), not a
 `GRANT <role> TO <role>` statement — `check-additive-migrations.mjs` classifies by

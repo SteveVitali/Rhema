@@ -166,9 +166,19 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
   below; the preview DB's orphaned role (from the partially-applied first attempts) is
   dropped manually before the re-run so the amended file's `if not exists` path creates the
   membered role.
-- Next: insert `223b` (manifest row + ticket file + the one-word fix) → drop orphan role on
-  the preview DB (IAP tunnel) → re-execute migrate Job → `up` (roll real images) →
-  `seed-invite` → the leg walk.
+- 2026-11-04T20:2xZ — **insert `223b` landed** (commit `c4c21c5e`): manifest row +
+  `tickets/223b_R7DEM.6c__demo-events-owner-portability.md` + the `role postgres` clause in
+  `0061` + portability comment. `applyMigrations` runs each file as ONE implicit-transaction
+  query → the failed attempts rolled back atomically; **no orphan role/table** on the preview
+  DB (manual cleanup not needed). Lint: `check-additive-migrations --files 0061` PASS;
+  `demo-events.test.ts` PGlite legs 5/5 + lint test 15/15 green (owner/prosecdef/NOLOGIN pins
+  hold with the creation-time membership). **Deploy SHA decision (ticket-owned):**
+  `c4c21c5e363b495b4a82841489461895879dc3a8` — the R7a chain tip *including* insert `223b`
+  (the deploy payload must contain the fixed migration; the operator has not merged, so no
+  post-merge `main` arm applies). The earlier `@8f6ef478` image set is retired; the all-10
+  set is rebuilt at `c4c21c5e` (`_TAG=r7dep-1b`).
+- Next: `up` (roll real images @ `c4c21c5e`) → re-execute migrate Job (proves `0061` on
+  AlloyDB under the real migration role) → `seed-invite` → the leg walk.
 
 ## Gap table
 
