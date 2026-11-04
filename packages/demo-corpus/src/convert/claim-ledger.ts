@@ -153,7 +153,10 @@ export function convertClaimLedger(
   if (checkDate === null) diagnostics.push(warn("no_check_date", "no `Checked|Verified` date or header ISO date — sources[] omitted"));
 
   const sections = headingSections(markdown, 3);
-  const summaryCounts = parseSummaryCounts(markdown, diagnostics);
+  const { counts: summaryCounts, skippedIds: summarySkipped } = parseSummaryCounts(
+    markdown,
+    diagnostics,
+  );
 
   interface Parsed {
     row: Record<string, unknown>;
@@ -161,6 +164,10 @@ export function convertClaimLedger(
     ev: readonly Evidence[];
     rung: AnchorRung;
     verdict: ClaimVerdict;
+    /** verdict text was a non-score (`Skipped`, `(not scored …)`) — emits `unverifiable`; the
+     *  summary's `- Skipped (with reason): <ids>` declarations count only these ids (a skipped
+     *  bullet may name checked claims in its reason prose — POV's `C17–C26, C45, C46`). */
+    skipped: boolean;
   }
   const parsed: Parsed[] = [];
   const byId = new Map<string, Parsed>();
@@ -310,6 +317,7 @@ export function convertClaimLedger(
       ev: evidence,
       rung,
       verdict,
+      skipped: /^(skipped\b|\(not scored)/i.test(verdictText),
       row: {
         ordinal: parsed.length,
         text,
@@ -333,12 +341,27 @@ export function convertClaimLedger(
   }
 
   // Summary reconciliation — a diagnostic, never a gate (R2 §2.1 "the summary-count check").
+  // Summary zero-counts (`Contradicted: 0`) are stripped for the comparison — emitted maps only
+  // carry verdicts that occurred. (`Skipped`-verdict headings emit `unverifiable`, and the
+  // summary's own `- Skipped (with reason): <ids>` bullets are counted into `unverifiable` by
+  // parseSummaryCounts — both sides count skipped claims the same way.)
   const emittedCounts: Record<string, number> = {};
   for (const p of parsed) emittedCounts[p.verdict] = (emittedCounts[p.verdict] ?? 0) + 1;
+  // A skipped declaration counts into `unverifiable` only when its id is an emitted claim whose
+  // verdict was itself skipped (headed, like GM's C71/C75 — appendix skipped bullets like CoR's
+  // C37/C39 are never emitted, and checked claims named in the reason prose are not skipped).
+  const reconciledSummary = { ...summaryCounts };
+  for (const id of summarySkipped)
+    if (byId.get(id)?.skipped === true)
+      reconciledSummary.unverifiable = (reconciledSummary.unverifiable ?? 0) + 1;
+  const nonzeroSummary = Object.fromEntries(
+    Object.entries(reconciledSummary).filter(([, n]) => n > 0),
+  );
   let summaryReconciled: boolean | null = null;
   if (Object.keys(summaryCounts).length > 0) {
     summaryReconciled =
-      JSON.stringify(sortedCounts(emittedCounts)) === JSON.stringify(sortedCounts(summaryCounts));
+      JSON.stringify(sortedCounts(emittedCounts)) ===
+      JSON.stringify(sortedCounts(nonzeroSummary));
     if (!summaryReconciled)
       diagnostics.push(
         warn(
@@ -399,22 +422,66 @@ function sortedCounts(counts: Record<string, number>): Record<string, number> {
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-/** `## Summary` → `{verdict: n}` through the same canonicalization table (R2 §5 (ii)). */
-function parseSummaryCounts(markdown: string, diagnostics: Diagnostic[]): Record<string, number> {
+// A `label: n` (colon form) or `label n` (space form) count candidate inside a `·`-part line.
+const COUNT_COLON_RE = /([A-Za-z][A-Za-z ]*?)\s*:\s*(\d+)/g;
+const COUNT_SPACE_RE = /([A-Za-z][A-Za-z ]*?)\s+(\d+)/g;
+
+/** `## Summary` → `{verdict: n}` through the same canonicalization table (R2 §5 (ii)). Real
+ *  ledgers wrap the `·`-item line before `Verified:`/`Unverifiable:` and annotate counts
+ *  (`Misleading in context: 1 (C15, …)`), so each `·`-part is scanned line by line for the FIRST
+ *  count candidate whose label canonicalizes — leading non-verdict labels (`Claims inventoried`,
+ *  `Checked`, tier counts) are skipped. A part carrying a colon-form candidate no verdict claims
+ *  warns (`summary_label_unmapped`). */
+function parseSummaryCounts(
+  markdown: string,
+  diagnostics: Diagnostic[],
+): { counts: Record<string, number>; skippedIds: readonly string[] } {
   const summary = headingSections(markdown, 2).find((s) => /^summary\b/i.test(s.heading));
-  if (!summary) return {};
+  if (!summary) return { counts: {}, skippedIds: [] };
   const counts: Record<string, number> = {};
   for (const part of summary.body.split("·")) {
-    const m = /^\s*(.+?)\s+(\d+)\s*$/.exec(part);
-    if (!m) continue;
-    const label = (m[1] ?? "").trim();
-    const n = Number(m[2]);
-    const { verdict } = canonicalizeVerdict(label);
-    if (verdict === null) {
-      diagnostics.push(warn("summary_label_unmapped", `Summary label "${label}" is not a canonical verdict`));
-      continue;
+    let counted = false;
+    let colonCandidate: string | null = null;
+    for (const line of part.split("\n")) {
+      if (counted) continue; // a `·`-part carries at most one verdict-count item
+      for (const re of [COUNT_COLON_RE, COUNT_SPACE_RE]) {
+        re.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while (!counted && (m = re.exec(line)) !== null) {
+          const label = (m[1] ?? "").trim();
+          const n = Number(m[2]);
+          if (re === COUNT_COLON_RE && colonCandidate === null) colonCandidate = label;
+          const { verdict } = canonicalizeVerdict(label);
+          if (verdict === null) continue;
+          counts[verdict] = (counts[verdict] ?? 0) + n;
+          counted = true;
+        }
+      }
     }
-    counts[verdict] = (counts[verdict] ?? 0) + n;
+    if (!counted && colonCandidate !== null)
+      diagnostics.push(
+        warn("summary_label_unmapped", `Summary label "${colonCandidate}" is not a canonical verdict`),
+      );
   }
-  return counts;
+  return { counts, skippedIds: summarySkippedIds(summary.body) };
+}
+
+/** `- Skipped (with reason): C71 (…); C75 (…)` — a skipped declaration is an id list (possibly
+ *  spanning wrapped lines), not a `label: n` item. The ids are returned for the reconciliation
+ *  to count into `unverifiable` ONLY when the id is an emitted (headed) claim: CoR's skipped
+ *  claims live in a `### Skipped` appendix and are never emitted, while GM v1's C71/C75 are
+ *  headed claims emitted `unverifiable`. */
+function summarySkippedIds(body: string): readonly string[] {
+  const ids: string[] = [];
+  const lines = body.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const m = /skipped[^:：]*:\s*(.+)$/i.exec(lines[i]!);
+    if (m === null || /^\s*\d/.test(m[1]!)) continue; // `Skipped: n` stays a normal count item
+    let j = i;
+    while (j < lines.length && (j === i || /^\s+\S/.test(lines[j]!))) {
+      ids.push(...(lines[j]!.match(/\b[A-Z]+\d+[a-z]?\b/g) ?? []));
+      j++;
+    }
+  }
+  return ids;
 }

@@ -41,6 +41,12 @@ type SourceClass =
   | { readonly type: "major" | "minor" | "second_read" | "roadmap" | "line_note" | "considered" | "strength"; readonly n: number | null; readonly label?: string }
   | { readonly type: "unrepresentable"; readonly n: null };
 
+/** An override row belongs to the ledger whose corpus-relative path its `cite` names
+ *  (`<file>:<line>`); row ids repeat across a project's ledgers, so takes and the stale-row
+ *  check are file-scoped. Absent `file` (direct unit calls), every row is in scope. */
+const inThisLedger = (file: string | undefined, cite: string): boolean =>
+  file === undefined || cite === file || cite.startsWith(`${file}:`);
+
 const INT = (s: string | undefined): number | null =>
   s !== undefined && /^\d+$/.test(s) ? Number(s) : null;
 
@@ -287,6 +293,11 @@ export interface ResponseLedgerContext {
   /** The per-project overrides; `minor-finding`, `disposition` and `move-link` rows are consumed
    *  here (REQ-CONV-6). */
   readonly overrides?: OverrideBook;
+  /** This ledger's corpus-relative path (`agents/<role>/ledgers/v<n>-response-ledger.md`). Row
+   *  ids repeat across a project's ledgers (every file restarts at F1 — GM's v1 and v2 both
+   *  carry F42–F61), so an override is taken/scoped only when its `cite` names this file; when
+   *  absent (direct unit calls) every row is in scope, the pre-219 behaviour. */
+  readonly file?: string;
 }
 
 /** `rows.json` — every findings-table row verbatim plus its resolution, for the raw ledger view
@@ -396,30 +407,42 @@ export function convertResponseLedger(
     let findingOrdinal: number | null = null;
 
     if (src.type !== "unrepresentable") {
-      // Rule resolution first; the `minor-finding` override is the escape for minors positional
-      // matching cannot reach (the override names the labels.json id/alias, never an ordinal).
-      let targetId: string | null = null;
-      if (src.type === "major") targetId = src.n === null ? "The one thing" : `Major ${src.n}`;
-      else if (src.type === "second_read") targetId = `SR ${src.label ?? ""}`;
-      else {
-        const n = src.n ?? nextPositional(src.type);
-        targetId = `${POSITIONAL_ID[src.type]} ${n}`;
-      }
-      findingOrdinal = findOrdinal(targetId);
-      if (findingOrdinal === null) {
-        const ov = ctx.overrides?.take(
+      // For minor-source rows a `minor-finding` override is AUTHORITATIVE (REQ-CONV-6/8's
+      // override-first posture): positional matching assigns sequential ordinals that silently
+      // misjoin when the ledger's minor rows don't follow the letter's order one-for-one (GM
+      // v2's merged "Minor issues, line notes, and the claim ledger" table — 20 rows against 12
+      // minors, several consecutive rows answering the same "Ledger fixes" minor). The override
+      // names the labels.json id/alias, never an ordinal; positional still fills rows it does
+      // not name.
+      let ov: MinorFindingOverride | undefined;
+      if (src.type === "minor")
+        ov = ctx.overrides?.take(
           "minor-finding",
-          (r) => (r as MinorFindingOverride).row === row.id,
+          (r) =>
+            (r as MinorFindingOverride).row === row.id &&
+            inThisLedger(ctx.file, (r as MinorFindingOverride).cite),
         ) as MinorFindingOverride | undefined;
-        if (ov) {
-          findingOrdinal = findOrdinal(ov.finding);
-          if (findingOrdinal === null)
-            diagnostics.push(
-              fail(
-                "override_target_missing",
-                `minor-finding override for row ${row.id} names "${ov.finding}", which is not a labels.json id/alias (cite ${ov.cite})`,
-              ),
-            );
+      if (ov) {
+        findingOrdinal = findOrdinal(ov.finding);
+        if (findingOrdinal === null)
+          diagnostics.push(
+            fail(
+              "override_target_missing",
+              `minor-finding override for row ${row.id} names "${ov.finding}", which is not a labels.json id/alias (cite ${ov.cite})`,
+            ),
+          );
+      } else {
+        let targetId: string | null = null;
+        if (src.type === "major") targetId = src.n === null ? "The one thing" : `Major ${src.n}`;
+        else if (src.type === "second_read") targetId = `SR ${src.label ?? ""}`;
+        else {
+          const n = src.n ?? nextPositional(src.type);
+          targetId = `${POSITIONAL_ID[src.type]} ${n}`;
+        }
+        findingOrdinal = findOrdinal(targetId);
+        if (findingOrdinal === null && src.type === "minor") {
+          // Positional exhausted the letter's minors — stay raw-table-only (an unnamed row
+          // simply fails to resolve; the override above is the sanctioned correction).
         }
       }
     }
@@ -442,7 +465,9 @@ export function convertResponseLedger(
     else if (disp.mapped === "mixed") {
       const ov = ctx.overrides?.take(
         "disposition",
-        (r) => (r as DispositionOverride).row === row.id,
+        (r) =>
+          (r as DispositionOverride).row === row.id &&
+          inThisLedger(ctx.file, (r as DispositionOverride).cite),
       ) as DispositionOverride | undefined;
       if (!ov) {
         unmappedDispositions.push(row.id);
@@ -456,14 +481,25 @@ export function convertResponseLedger(
       }
       kind = ov.disposition;
     } else {
-      unmappedDispositions.push(row.id);
-      diagnostics.push(
-        fail(
-          "disposition_unmapped",
-          `row ${row.id}: no canonical disposition for "${row.disposition}"`,
-        ),
-      );
-      continue;
+      // Unmapped cells (e.g. GM v2 F61 "awaiting the author") resolve the same way as mixed
+      // ones: only an explicit, cited `disposition` ruling decides the canonical kind.
+      const ov = ctx.overrides?.take(
+        "disposition",
+        (r) =>
+          (r as DispositionOverride).row === row.id &&
+          inThisLedger(ctx.file, (r as DispositionOverride).cite),
+      ) as DispositionOverride | undefined;
+      if (!ov) {
+        unmappedDispositions.push(row.id);
+        diagnostics.push(
+          fail(
+            "disposition_unmapped",
+            `row ${row.id}: no canonical disposition for "${row.disposition}"`,
+          ),
+        );
+        continue;
+      }
+      kind = ov.disposition;
     }
 
     const status = mapStatus(row.status);
@@ -480,7 +516,9 @@ export function convertResponseLedger(
     let moveOrdinal = dischargeByRow.get(row.id);
     const link = ctx.overrides?.take(
       "move-link",
-      (r) => (r as MoveLinkOverride).row === row.id,
+      (r) =>
+        (r as MoveLinkOverride).row === row.id &&
+        inThisLedger(ctx.file, (r as MoveLinkOverride).cite),
     ) as MoveLinkOverride | undefined;
     if (link) moveOrdinal = link.move;
 
@@ -549,7 +587,8 @@ export function convertResponseLedger(
   for (const u of ctx.overrides?.unconsumed() ?? [])
     if (
       (u.kind === "minor-finding" || u.kind === "disposition" || u.kind === "move-link") &&
-      rowIds.has(u.row)
+      rowIds.has(u.row) &&
+      inThisLedger(ctx.file, u.cite)
     )
       diagnostics.push(
         fail("override_unconsumed", `stale override row (cite ${u.cite}) was never consumed`),

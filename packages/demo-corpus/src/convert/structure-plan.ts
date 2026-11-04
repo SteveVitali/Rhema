@@ -47,9 +47,11 @@ export function convertStructurePlan(
     for (const t of tables(mapSec.body)) {
       const [head, ...body] = t;
       if (head === undefined) continue;
-      const iRef = head.findIndex((h) => /^(§|ref|section)$/i.test(h.trim()));
+      // Header spellings seen in the corpus: `§ | Title | …` (fixture, POV/GM) and GM's
+      // `# | Header | Function (claim) | Entry state | Exit state | Material | Budget`.
+      const iRef = head.findIndex((h) => /^(§|ref|section|#)$/i.test(h.trim()));
       if (iRef < 0) continue;
-      const iTitle = head.findIndex((h) => /^title/i.test(h.trim()));
+      const iTitle = head.findIndex((h) => /^(title|header)$/i.test(h.trim()));
       const iBudget = head.findIndex((h) => /^budget/i.test(h.trim()));
       const iFn = head.findIndex((h) => /^(function|purpose)/i.test(h.trim()));
       body.forEach((r, i) => {
@@ -57,6 +59,9 @@ export function convertStructurePlan(
         const title = ((r[iTitle] ?? "") || "")
           .replace(BOLD_RE, "$1")
           .trim();
+        // Totals/separator rows (ref and title both blank, e.g. GM's `| |…| Total | 12,100 |`)
+        // are not sections.
+        if (ref === "" && title === "") return;
         const words = Number((r[iBudget] ?? "").replace(/[^\d]/g, ""));
         sections.push({
           ref: ref === "" || ref === "—" ? `S${i + 1}` : ref,

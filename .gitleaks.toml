@@ -19,6 +19,10 @@ paths = [
   # `SnapshotFile` envelopes); `generic-api-key` false-fires on the `"key": "<word>"` envelope
   # field (e.g. `figure_1_signal_map`, `v3-published`). check:demo-corpus is the corpus gate.
   '''packages/demo-corpus/fixtures/synthetic/snapshots/.*''',
+  # R7DATA.1 (2026-11-04): same generated-snapshot class on the REAL derived tree — canonical-JSON
+  # SnapshotFile envelopes false-firing `generic-api-key` on `"key": "<word>"` fields
+  # (figure keys, `vN-published` pair keys). The corpus gate is check:demo-corpus.
+  '''packages/demo-corpus/snapshots/.*''',
 ]
 
 # P1.22 sweep — the only committed-tree hits are these three pinned TEST fixtures (a Better-Auth test
