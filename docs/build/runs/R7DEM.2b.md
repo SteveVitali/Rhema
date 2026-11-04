@@ -9,8 +9,8 @@
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7). Synthetic fixture only — the real
   export (HUMAN-H14 SIGNED 2026-11-03, digest `19861a06…`) is never an input here (REQ-CORPUS-14;
   S-12). Size budget ~650 changed lines excl. fixtures and goldens.
-- **Closed:** —
-- **ci:** —
+- **Closed:** 2026-11-04T02:02Z
+- **ci:** pending #248@`62aac82` (bounded read: `fast-path` pass 50 s, `typecheck / lint / unit` running at closeout; the next boundary read decides — same posture as R7DEM.2a)
 
 ## Deferrals read
 
