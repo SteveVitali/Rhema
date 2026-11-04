@@ -48,11 +48,15 @@ export interface IdeLabels {
     fontSans: string;
     readerBigger: string;
     readerSmaller: string;
+    /** R7FIX.1 (REQ-PANE-0) — the Timeline's on-demand open row in the View menu. */
+    timeline: string;
   };
   themes: { dark: string; light: string; auto: string; paperLight: string; paperFollow: string; paperDark: string };
   /** P1.06 (§5.12) — the ⌘K palette's + the `?` cheat sheet's chrome labels (COPY-owned). */
   palette: { dialogLabel: string; placeholder: string; emptyLabel: string; sectionLabels: Record<string, string> };
   cheatsheet: { heading: string; closeLabel: string };
+  /** R7FIX.1 (REQ-WRITE-4) — the focus-view exit pill's copy ("Exit focus · Esc"). */
+  focusExit: string;
 }
 
 export interface IdeShellProps {
@@ -169,7 +173,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.userId ? { "data-user": props.userId } : {})}
       data-view={view}
       data-files="strip"
-      data-timeline="open"
+      // R7FIX.1 (REQ-PANE-0) — SSR emits the Timeline CLOSED: the controller derives the effective
+      // open state from paneLayout(viewport) at bind, so a document can never paint an
+      // un-scrimmed overlay (or a sheet) over the draft before script runs. At ≥1280 the pane
+      // opens on bind per the stored intent — a delayed docked open, never an open-then-close
+      // flash.
+      data-timeline="closed"
       data-desk={deskOpen ? "open" : "closed"}
       data-desk-tab={deskOpen ? "feed" : "chat"}
       data-margin={marginMode}
@@ -260,7 +269,10 @@ export function IdeShell(props: IdeShellProps): ReactNode {
 
         {/* Timeline — the round log (§5.1); overlay/sheet below the breakpoints. */}
         <button type="button" className="ide-handle" data-ide-handle="timeline" aria-hidden="true" tabIndex={-1} />
-        <aside className="ide-timeline" data-pane="timeline" data-open aria-label={L.timeline.heading}>
+        {/* R7FIX.1 (REQ-PANE-0) — the scrim an open overlay/sheet draws over the Page region;
+            CSS shows it only while a pane is open in an overlay/sheet mode. */}
+        <div className="ide-scrim" data-ide-scrim aria-hidden="true" />
+        <aside className="ide-timeline" data-pane="timeline" aria-label={L.timeline.heading}>
           <div className="ide-pane-head">
             <span>{L.timeline.heading}</span>
             <button type="button" data-ide-timeline-toggle aria-label={L.timeline.close} style={{ marginLeft: "auto" }}>×</button>
@@ -390,10 +402,14 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <div className="ide-menu-sep" />
         {viewMenuModel(view).map((t) => (
           <button key={t.id} type="button" role="menuitemcheckbox"
-                  aria-checked={t.id === "advanced" || t.id === "authorship" ? "false" : "true"}
+                  aria-checked={t.id === "advanced" || t.id === "authorship" || t.id === "timeline" ? "false" : "true"}
                   {...(t.id === "authorship" ? { "data-tier": "advanced" } : {})}
-                  data-ide-toggle={t.id} className="ide-menu-row">
-            {t.id === "findingCards" ? L.viewMenu.findingCards
+                  // R7FIX.1 (REQ-PANE-0) — the Timeline row rides `data-ide-timeline-toggle`
+                  // (the island's overlay-aware path) rather than the boolean-pane toggle.
+                  {...(t.id === "timeline" ? { "data-ide-timeline-toggle": true } : { "data-ide-toggle": t.id })}
+                  className="ide-menu-row">
+            {t.id === "timeline" ? L.viewMenu.timeline
+              : t.id === "findingCards" ? L.viewMenu.findingCards
               : t.id === "suggestionsInline" ? L.viewMenu.suggestionsInline
               : t.id === "authorship" ? L.viewMenu.authorship
               : L.viewMenu.advanced}
@@ -426,6 +442,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           </button>
         ))}
       </div>
+
+      {/* R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed
+          (CSS shows it only under data-view='focus'); Esc always exits too. */}
+      <button type="button" className="ide-focus-exit" data-ide-focus-exit>
+        {L.focusExit}
+      </button>
 
       {/* P1.06 (§5.12) — the ⌘K command palette. SSR renders the skeleton + the embedded PaletteData
           JSON; the ide.js island drives open/close, filtering, the /-command structured row, and

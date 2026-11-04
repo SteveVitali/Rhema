@@ -22,6 +22,7 @@ import {
   controlVisible,
 } from "./index.js";
 import type { LayoutInput, PaneState } from "./index.js";
+import { ideCss, LAYOUT } from "@rhema/tokens";
 
 const input = (over: Partial<LayoutInput> = {}): LayoutInput => ({
   ...DEFAULT_PANE_STATE,
@@ -39,12 +40,12 @@ describe("paneLayout() — the §5.1 yield order", () => {
     expect(l.statusBar).toBe("visible");
     expect(l.desk).toBe("closed");
   });
-  it("1600px with Files open: Margin → ticks and Timeline → overlay", () => {
+  it("1600px with Files open: Margin → ticks but the Timeline stays docked (R7FIX.1 — the Page reflows, B1)", () => {
     const l = paneLayout(1600 - 1, input({ filesOpen: true }));
     expect(l.files).toBe("open");
     expect(l.margin).toBe("ticks");
-    expect(l.timeline).toBe("overlay");
-    // but at ≥1600 with files open, margin stays cards and timeline stays a pane
+    expect(l.timeline).toBe("pane");
+    // …and at ≥1600 with files open, margin stays cards and timeline stays a pane
     const wide = paneLayout(1600, input({ filesOpen: true }));
     expect(wide.margin).toBe("cards");
     expect(wide.timeline).toBe("pane");
@@ -126,6 +127,55 @@ describe("paneDrag() — the Page clamp collapses the adjacent pane", () => {
   });
 });
 
+describe("REQ-PANE-0 — the emitted CSS stays in parity with paneLayout() at every boundary", () => {
+  // The ideCss() media blocks render paneLayout()'s yield order with zero JS. This pins each arm
+  // against the function's own verdict at that width, so the two can never drift (R7FIX.1 AC).
+  const css = ideCss();
+  const mediaBlock = (maxWidth: number): string => {
+    const start = css.indexOf(`@media (max-width: ${maxWidth}px) {`);
+    if (start < 0) return "";
+    const rest = css.slice(start);
+    const end = rest.indexOf("\n}");
+    return end < 0 ? rest : rest.slice(0, end);
+  };
+  it("the media-query breakpoints ARE the LAYOUT tokens (no magic numbers)", () => {
+    for (const bp of [LAYOUT.bpFilesTicksMarginPx, LAYOUT.bpNarrowPx, LAYOUT.bpSingleColumnPx, LAYOUT.bpPhonePx]) {
+      expect(css).toContain(`max-width: ${bp - 1}px`);
+    }
+  });
+  it("<1600 + Files open: Margin → ticks and NO timeline overlay arm (the Page reflows, B1)", () => {
+    expect(paneLayout(1600 - 1, input({ filesOpen: true })).timeline).toBe("pane");
+    const block = mediaBlock(1600 - 1);
+    expect(block).toContain(".ide-margin");
+    expect(block).not.toContain(".ide-timeline");
+  });
+  it("<1280: Margin → ticks and Timeline → overlay regardless of Files", () => {
+    expect(paneLayout(1280 - 1, input()).timeline).toBe("overlay");
+    const block = mediaBlock(1280 - 1);
+    expect(block).toContain(".ide-margin");
+    expect(block).toContain(".ide-timeline[data-open] { position: absolute");
+  });
+  it("<1024: Files → overlay drawer and Timeline → bottom sheet", () => {
+    expect(paneLayout(1024 - 1, input({ filesOpen: true })).files).toBe("overlay");
+    expect(paneLayout(1024 - 1, input({ filesOpen: true })).timeline).toBe("sheet");
+    const block = mediaBlock(1024 - 1);
+    expect(block).toContain(".ide-files { position: absolute");
+    expect(block).toContain(".ide-timeline[data-open] { position: absolute");
+    expect(block).toContain("height: 55%");
+  });
+  it("<768: phone — every region display:none", () => {
+    expect(paneLayout(767, input()).mode).toBe("phone");
+    const block = mediaBlock(768 - 1);
+    expect(block).toContain("display: none !important");
+  });
+  it("the overlay/sheet scrim arms only under an open overlay-mode pane", () => {
+    expect(css).toContain(".ide-scrim");
+    expect(css).toContain("[data-timeline='open'][data-timeline-mode='overlay'] .ide-scrim");
+    expect(css).toContain("[data-timeline='open'][data-timeline-mode='sheet'] .ide-scrim");
+    expect(css).toContain("[data-files='open'][data-files-mode='overlay'] .ide-scrim");
+  });
+});
+
 describe("pane persistence (per user + project, never the URL)", () => {
   it("round-trips the codec and keys storage by user+project", () => {
     const s = { ...DEFAULT_PANE_STATE, filesOpen: true, deskTab: "feed" as const, advanced: true };
@@ -140,6 +190,20 @@ describe("pane persistence (per user + project, never the URL)", () => {
     // partial keys merge over defaults
     expect(parsePaneState('{"v":1,"filesOpen":true}').filesOpen).toBe(true);
     expect(parsePaneState('{"v":1,"filesOpen":true}').timelineOpen).toBe(true);
+  });
+  it("REQ-WRITE-4 — view:\"focus\" is session-scoped: never serialized, never restored (R7FIX.1)", () => {
+    // a stored blob carrying focus (written by pre-R7FIX.1 code or by ?focus=1) coerces to write —
+    // the rest of the arrangement survives.
+    const stored = serializePaneState({ ...DEFAULT_PANE_STATE, view: "focus", deskOpen: true });
+    expect(JSON.parse(stored)).toMatchObject({ view: "write", deskOpen: true });
+    expect(parsePaneState('{"v":1,"view":"focus","filesOpen":true}')).toMatchObject({
+      view: "write",
+      filesOpen: true,
+    });
+    // write/read round-trip unchanged.
+    for (const view of ["write", "read"] as const) {
+      expect(parsePaneState(serializePaneState({ ...DEFAULT_PANE_STATE, view })).view).toBe(view);
+    }
   });
 });
 
@@ -177,11 +241,12 @@ describe("theme policy (REQ-IDE-38 amended)", () => {
 });
 
 describe("the View menu (§5.1 — exact contents; Source absent)", () => {
-  it("is Write/Read/Focus + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
+  it("is Write/Read/Focus + Timeline (R7FIX.1 on-demand path) + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
     expect(viewMenuIds("write")).toEqual([
       "view.write",
       "view.read",
       "view.focus",
+      "timeline",
       "findingCards",
       "suggestionsInline",
       "authorship",

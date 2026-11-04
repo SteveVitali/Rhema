@@ -10,6 +10,7 @@
 import type { StepFn } from "./runner.js";
 import { gotoOk, settleClientNav } from "./settle.js";
 import { assertBundleParity } from "./steps.js";
+import { assertActionable } from "./occlusion.js";
 
 /** The leg's full assert contract, kept next to the stub so the owner's real body has the
  *  checklist in-tree (the registry `asserts` line is the one-line summary). */
@@ -125,8 +126,100 @@ const R8_SHOWCASE_SPA: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/** R7FIX.1 (REQ-PANE-0) — the real `U3.stopgap` body: the stopgap geometry probe at the four
+ *  reference sizes on a signed-in IDE surface. Asserts no open un-scrimmed overlay/sheet ever
+ *  intersects the Page text column or the finding ticks (nor the dossier letter column when
+ *  walked), the Timeline is closed by default below 1280, an opened overlay/sheet carries a
+ *  scrim and Esc closes it, the Desk tabs stay actionable, and focus view shows the exit pill
+ *  and Esc leaves it. Stays `expected:"red"` at head — 224 flips at the phase preview. */
+const U3_STOPGAP: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+  // Deterministic pane defaults — the leg must not depend on a prior leg's stored arrangement.
+  await page.evaluate(() => {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith("rhema:panes:")) localStorage.removeItem(k);
+    }
+  });
+  const overlayCheck = (): Promise<string | null> =>
+    page.evaluate(() => {
+      const box = (el: Element | null): { x: number; y: number; w: number; h: number } | null => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return r.width === 0 && r.height === 0 ? null : { x: r.left, y: r.top, w: r.width, h: r.height };
+      };
+      const hit = (a: { x: number; y: number; w: number; h: number } | null, b: typeof a): boolean =>
+        a != null && b != null && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+      const scrim = document.querySelector<HTMLElement>("[data-ide-scrim]");
+      const scrimShown = scrim != null && getComputedStyle(scrim).display !== "none";
+      const paper = box(document.querySelector(".ide-page .paper"));
+      const ticks = box(document.querySelector(".ide-margin"));
+      const letter = box(document.querySelector("article .paper"));
+      for (const sel of [".ide-timeline", ".ide-files"]) {
+        const el = document.querySelector<HTMLElement>(sel);
+        if (!el) continue;
+        const pos = getComputedStyle(el).position;
+        if ((pos !== "absolute" && pos !== "fixed") || scrimShown) continue;
+        const r = box(el);
+        if (hit(r, paper) || hit(r, ticks) || hit(r, letter)) {
+          return `${sel} sits un-scrimmed over the page/dossier column or the finding ticks`;
+        }
+      }
+      return null;
+    });
+  const ideAttr = async (name: string): Promise<string | null> =>
+    page.locator("[data-ide]").getAttribute(name);
+  for (const [w, h] of [[1440, 900], [1280, 800], [1024, 768], [820, 1180]] as const) {
+    await page.setViewportSize({ width: w, height: h });
+    await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+    await page.locator("[data-ide][data-pane-mode]").waitFor({ state: "attached" });
+    if (w < 1280 && (await ideAttr("data-timeline")) === "open") {
+      throw new Error(`the Timeline auto-opened as an overlay/sheet at ${w}×${h}`);
+    }
+    const bad = await overlayCheck();
+    if (bad) throw new Error(`${bad} at ${w}×${h}`);
+    // the Desk head stays actionable — the status bar may never cover it (B2).
+    await page.keyboard.press("Control+j");
+    for (const tab of ["chat", "feed", "findings", "claims"] as const) {
+      await assertActionable(page.locator(`[data-ide-desk-tab='${tab}']`), `Desk tab ${tab} @${w}×${h}`);
+    }
+    await page.keyboard.press("Control+j");
+    if (w < 1280) {
+      // on demand → scrimmed; Esc closes it again.
+      await page.keyboard.press("Control+2");
+      if ((await ideAttr("data-timeline")) !== "open") {
+        throw new Error(`the Timeline did not open on demand at ${w}×${h}`);
+      }
+      const scrimmed = await page.evaluate(() => {
+        const s = document.querySelector<HTMLElement>("[data-ide-scrim]");
+        return s != null && getComputedStyle(s).display !== "none";
+      });
+      if (!scrimmed) throw new Error(`the open overlay/sheet has no scrim at ${w}×${h}`);
+      await page.keyboard.press("Escape");
+      if ((await ideAttr("data-timeline")) !== "closed") {
+        throw new Error(`Esc did not close the overlay/sheet at ${w}×${h}`);
+      }
+    }
+    // focus view: the exit pill mounts, Esc leaves (REQ-WRITE-4).
+    await page.keyboard.press("Control+Shift+f");
+    if ((await ideAttr("data-view")) !== "focus") {
+      throw new Error(`focus view did not engage at ${w}×${h}`);
+    }
+    if ((await page.locator("[data-ide-focus-exit]").count()) === 0) {
+      throw new Error(`no focus-exit pill at ${w}×${h}`);
+    }
+    await page.keyboard.press("Escape");
+    if ((await ideAttr("data-view")) !== "write") {
+      throw new Error(`Esc did not leave focus view at ${w}×${h}`);
+    }
+    await page.screenshot({ path: `${ctx.outDir}/u3-stopgap-${w}x${h}.png` });
+  }
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "R8.showcase.spa": R8_SHOWCASE_SPA,
+  "U3.stopgap": U3_STOPGAP,
 };
 
 export const R7_LEGS_IMPLS: Readonly<Record<string, StepFn>> = Object.fromEntries(

@@ -154,6 +154,16 @@ class MemStorage {
 
 const mounted: Root[] = [];
 
+/** R7FIX.1 — the controller derives pane geometry from window.innerWidth; happy-dom's default
+ *  is 1024 (narrow — overlays by design). Tests set the width they mean BEFORE mount. */
+const setWidth = (px: number): void => {
+  try {
+    (window as { innerWidth: number }).innerWidth = px;
+  } catch {
+    Object.defineProperty(window, "innerWidth", { value: px, configurable: true, writable: true });
+  }
+};
+
 function publishLeaf(bag: IdeChromeData | null): () => ReactNode {
   return function TestLeaf() {
     const data = useMemo(() => bag ?? {}, [bag]);
@@ -236,6 +246,10 @@ const click = (el: Element | null | undefined): void => {
 beforeEach(() => {
   FakeEventSource.instances = [];
   vi.stubGlobal("localStorage", new MemStorage());
+  setWidth(1440); // the desktop-default every pre-R7FIX.1 leg assumes
+  act(() => {
+    window.dispatchEvent(new Event("resize"));
+  });
   document.documentElement.removeAttribute("data-app-theme");
   document.documentElement.removeAttribute("data-theme");
   document.documentElement.removeAttribute("data-paper");
@@ -341,12 +355,110 @@ describe("panes + the verbatim pane codec (REQ-ISL-9, REQ-SEQ-11)", () => {
 });
 
 describe("?focus=1 — applied once, then stripped (REQ-SEQ-11)", () => {
-  it("view=focus lands and the param leaves the URL", async () => {
+  it("view=focus lands for the session and the param leaves the URL — storage keeps 'write' (REQ-WRITE-4)", async () => {
     const { router } = await mount("/p/alpha?focus=1");
     expect(ide()?.dataset["view"]).toBe("focus");
     expect(router.state.location.searchStr).not.toContain("focus");
+    // R7FIX.1 — the seeded session view is never persisted: the blob reads 'write'.
     const raw = JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha"))!) as { view?: string };
-    expect(raw.view).toBe("focus");
+    expect(raw.view).toBe("write");
+  });
+});
+
+describe("R7FIX.1 — the pane stopgap (REQ-PANE-0)", () => {
+  it("paneLayout() is the runtime geometry source: data-pane-mode/timeline-mode track the width", async () => {
+    setWidth(1440);
+    await mount();
+    expect(ide()?.dataset["paneMode"]).toBe("wide");
+    expect(ide()?.dataset["timelineMode"]).toBe("pane");
+    expect(ide()?.dataset["timeline"]).toBe("open"); // the wide default still docks
+    setWidth(1100);
+    act(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(ide()?.dataset["paneMode"]).toBe("narrow");
+    expect(ide()?.dataset["timelineMode"]).toBe("overlay");
+    // REQ-PANE-0 — the persisted wide-mode open intent does NOT auto-open the overlay.
+    expect(ide()?.dataset["timeline"]).toBe("closed");
+  });
+
+  it("the Timeline is closed by default at 1024–1279 and <1024 — on mount, even with stored open intent", async () => {
+    localStorage.setItem(
+      paneStorageKey("u1", "p-alpha"),
+      serializePaneState({ ...DEFAULT_PANE_STATE, timelineOpen: true }),
+    );
+    for (const w of [1100, 900]) {
+      document.body.innerHTML = "";
+      setWidth(w);
+      await mount();
+      expect(ide()?.dataset["timeline"], `timeline at ${w}`).toBe("closed");
+      expect(ide()?.dataset["timelineMode"], `mode at ${w}`).toBe(w < 1024 ? "sheet" : "overlay");
+      for (const r of mounted.splice(0)) act(() => r.unmount());
+    }
+  });
+
+  it("opening the overlay shows the scrim; Esc and outside-click dismiss without persisting", async () => {
+    setWidth(1100);
+    await mount();
+    // open on demand — the View-menu row is the pointer path at this width.
+    click(document.querySelector("[data-ide-view-menu]"));
+    click(document.querySelector("[data-ide-menu='view'] [data-ide-timeline-toggle]"));
+    expect(ide()?.dataset["timeline"]).toBe("open");
+    expect(ide()?.dataset["timelineMode"]).toBe("overlay");
+    expect(document.querySelector("[data-ide-scrim]")).not.toBeNull();
+    expect(document.querySelector("[data-ide-menu='view'] [data-ide-timeline-toggle]")?.getAttribute("aria-checked")).toBe("true");
+    // REQ-PANE-0 — nothing about the overlay's open state reaches pane storage.
+    const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
+    expect(raw == null || !raw.includes('"timelineOpen":true')).toBe(true);
+    // Esc closes it.
+    key({ key: "Escape" });
+    expect(ide()?.dataset["timeline"]).toBe("closed");
+    // reopen, then an outside click (the scrim) closes it too.
+    key({ key: "2", metaKey: true });
+    expect(ide()?.dataset["timeline"]).toBe("open");
+    act(() => {
+      document.querySelector<HTMLElement>("[data-ide-scrim]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(ide()?.dataset["timeline"]).toBe("closed");
+  });
+
+  it("the <1024 drawer: Files opens as a session overlay (scrimmed) and never persists", async () => {
+    setWidth(820);
+    await mount();
+    expect(ide()?.dataset["filesMode"]).toBe("overlay");
+    expect(ide()?.dataset["files"]).toBe("strip"); // closed by default
+    click(document.querySelector("[data-ide-files-toggle]"));
+    expect(ide()?.dataset["files"]).toBe("open");
+    const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
+    expect(raw == null || !raw.includes('"filesOpen":true')).toBe(true);
+  });
+});
+
+describe("R7FIX.1 — Focus mode is never a trap (REQ-WRITE-4)", () => {
+  it("the exit pill renders; a click leaves focus; Esc leaves focus with no menu open", async () => {
+    await mount();
+    expect(document.querySelector("[data-ide-focus-exit]")).not.toBeNull();
+    expect(document.querySelector("[data-ide-focus-exit]")?.textContent).toBe(COPY.ide.focusExit);
+    key({ key: "f", metaKey: true, shiftKey: true });
+    expect(ide()?.dataset["view"]).toBe("focus");
+    click(document.querySelector("[data-ide-focus-exit]"));
+    expect(ide()?.dataset["view"]).toBe("write");
+    key({ key: "f", metaKey: true, shiftKey: true });
+    expect(ide()?.dataset["view"]).toBe("focus");
+    key({ key: "Escape" });
+    expect(ide()?.dataset["view"]).toBe("write");
+  });
+
+  it("a reload after entering focus restores write — the stored view never carries focus", async () => {
+    await mount();
+    key({ key: "f", metaKey: true, shiftKey: true });
+    expect(ide()?.dataset["view"]).toBe("focus");
+    const raw = JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha"))!) as { view?: string };
+    expect(raw.view).toBe("write");
+    for (const r of mounted.splice(0)) act(() => r.unmount());
+    document.body.innerHTML = "";
+    await mount();
+    expect(ide()?.dataset["view"]).toBe("write");
   });
 });
 

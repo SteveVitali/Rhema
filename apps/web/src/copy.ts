@@ -1799,7 +1799,11 @@ export const COPY = {
       fontSans: "Sans paper",
       readerBigger: "Bigger text",
       readerSmaller: "Smaller text",
+      // R7FIX.1 (REQ-PANE-0) — the Timeline's on-demand row: below 1280 it is closed by default.
+      timeline: "Timeline",
     },
+    // R7FIX.1 (REQ-WRITE-4) — the focus-view exit pill (hover/keyboard revealed; Esc also exits).
+    focusExit: "Exit focus · Esc",
     themes: {
       dark: "Dark",
       light: "Light",

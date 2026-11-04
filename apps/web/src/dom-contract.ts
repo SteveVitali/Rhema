@@ -1527,6 +1527,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-margin", "conditional", "ui/ide-shell.tsx", "margin mode state"),
     a("data-timeline", "conditional", "ui/ide-shell.tsx", "timeline open state"),
     a("data-files", "conditional", "ui/ide-shell.tsx", "files pane mode state"),
+    // R7FIX.1 (REQ-PANE-0) — the controller's paneLayout() verdicts on the shell.
+    a("data-pane-mode", "conditional", "spa ide controller", "paneLayout() viewport mode (wide|narrow|single|phone)"),
+    a("data-timeline-mode", "conditional", "spa ide controller", "paneLayout() timeline presentation (pane|overlay|sheet|hidden)"),
+    a("data-files-mode", "conditional", "spa ide controller", "paneLayout() files presentation (open|strip|overlay|hidden)"),
+    a("data-ide-scrim", "conditional", "ui/ide-shell.tsx", "overlay/sheet scrim (outside-click dismiss target)"),
+    a("data-ide-focus-exit", "conditional", "ui/ide-shell.tsx", "REQ-WRITE-4 focus-view exit pill"),
     a("data-finding-cards", "conditional", "ui/ide-shell.tsx", "finding-cards view state"),
     a("data-ide-view-menu", "conditional", "ui/ide-shell.tsx", "axe subset — View menu button"),
     a("data-ide-theme-menu", "conditional", "ui/ide-shell.tsx", "axe subset — Theme menu button"),
