@@ -121,7 +121,15 @@ See the ticket's AC block — tracked one row per AC in the gap table below.
   `registry.test.ts` + `runner.test.ts`: `D1.hub` now throws its own offline error, not the
   owed-stub message. Fix per the established convention (R7DEM.4b/`D3.readonly` precedent):
   `D1.hub` joins the `REAL_BODIES` set in both tests — it still classifies `owed` (red until 224),
-  only the error-message arm differs. Commit `223f2134`; bounded re-read follows.
+  only the error-message arm differs. Commit `223f2134`.
+- 13:16Z — second ci-boundary read: **fail** run 41832355062 — `check:dom-contract` step:
+  `data-demo-card-arc` emitted but unasserted (all 558 vitest files passed). Fix: the equality
+  test asserts the arc row ×4. Local `check:dom-contract` green. Commit `b404dc52`.
+- 13:37Z — third ci-boundary read: **fail** run 41836460648 — `packages/live-clients/src/ingest.test.ts`
+  "a retried preview JOINS the marker's execution" (timing flake, unrelated to this diff — same
+  flake class prior runs reran green). `gh run rerun --failed` on the same head → green.
+- 14:10Z — fourth ci-boundary read: **pass #256@`b404dc5`** (run 41836460648 — all seven legs +
+  `ci-pass` anchor; record `logs/ci-R7DEM.5b.json`).
 
 ## Gap table
 
