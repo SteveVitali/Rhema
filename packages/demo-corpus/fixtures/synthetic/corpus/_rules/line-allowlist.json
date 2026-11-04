@@ -1,0 +1,11 @@
+{
+  "$comment": "Denylist line-allowlist — file:line only, no quoted text (the S-11 Published-credit-line precedent). Each entry must cover a real hit at exactly that line; a stale entry fails the gate.",
+  "entries": [
+    {
+      "id": "la-published-mirror",
+      "file": "the-borrowed-commons/published.md",
+      "line": 12,
+      "reason": "Published credit/mirror line stays verbatim and is never altered (S-11)"
+    }
+  ]
+}

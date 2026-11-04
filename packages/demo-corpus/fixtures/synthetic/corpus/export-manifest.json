@@ -1,0 +1,170 @@
+{
+  "exportDate": "2026-11-03",
+  "files": {
+    "PROVENANCE.md": {
+      "sha256": "1fe152735f5bf5ae7e50c726f5c0cfabe9f1c612d769bfa443341c14e3c34090",
+      "bytes": 4615
+    },
+    "_rules/facts.json": {
+      "sha256": "fcf7adfdf57e0734d22d6ac7dd5da1bcd1cc34ae19423c4ab43cf01f07852680",
+      "bytes": 609
+    },
+    "_rules/line-allowlist.json": {
+      "sha256": "113def16f0fa35f53824f643d0c6491bfbcedb9ce08ab4ac6c8debd5d1e28f1c",
+      "bytes": 434
+    },
+    "_rules/rewrites.json": {
+      "sha256": "b29721f8a06462b5e51ace8d973bca481d3a7722070c37cfd47a16a8bc1744d9",
+      "bytes": 1290
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/00-commissioning-brief.md": {
+      "sha256": "bea87a15cca6e4726083a2e8139b2c6cfc95faf48e1320d4cccd7f83fa53515e",
+      "bytes": 531
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/01-voice-brief.md": {
+      "sha256": "040310d024fca661d4a57d7c81f6704d88de064dcaa56f0cfb4d91e6c0e07399",
+      "bytes": 301
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/02-structure-plan.md": {
+      "sha256": "9e2b6915e87891f83ee44928fb9ee33832d7cf5089a6b36541669c79efee36ee",
+      "bytes": 550
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/03-claim-ledger.md": {
+      "sha256": "9e362f78028f702070d0845dab33a27520af578234731a06f2c106c684a025b0",
+      "bytes": 311
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/04-draft-ledger.md": {
+      "sha256": "0a7f38ac6c01951280ee6fcad372504b6aa0a18499a70f2dd86edd58d3c19c29",
+      "bytes": 408
+    },
+    "the-borrowed-commons/agents/author/drafting/v1/06-fidelity-audit.md": {
+      "sha256": "ce9e9d0445314ccd30c88c88462549fdf0c93336ee63010f406cd4decde65e30",
+      "bytes": 238
+    },
+    "the-borrowed-commons/agents/author/ledgers/v1-response-ledger.md": {
+      "sha256": "0f8ebad21019c9333e0eb40b9b65fed5765350589647b5068efd3ffadfeb0cc5",
+      "bytes": 1462
+    },
+    "the-borrowed-commons/agents/author/ledgers/v2-response-ledger.md": {
+      "sha256": "1cbc03dccab0fa75572998683ec9f20767d2ac2c92edfbeff63a8675587817af",
+      "bytes": 620
+    },
+    "the-borrowed-commons/agents/author/research/index.md": {
+      "sha256": "d291329998b1877dc436f6408e40b6c12c2314026b9e0d0a5a0e57fce05b277b",
+      "bytes": 264
+    },
+    "the-borrowed-commons/agents/author/research/sources/ekwueme-commons-2019.md": {
+      "sha256": "8c2fdcf8962d457c9ec908a896f485e0619dd7b3bb0975a7e9963cd525ddca75",
+      "bytes": 263
+    },
+    "the-borrowed-commons/agents/author/research/sources/marsh-viscosity-2021.md": {
+      "sha256": "6340770edb050635c16174849a22b56dbf7f15c9715956294744ed34210cca8f",
+      "bytes": 297
+    },
+    "the-borrowed-commons/agents/author/research/sources/ondatje-ledger-2024.md": {
+      "sha256": "22f549a305baa1fc2c21433597c210215e95ea330d0afabb228cc27fe15e82c2",
+      "bytes": 319
+    },
+    "the-borrowed-commons/agents/editor/research/index.md": {
+      "sha256": "59db17c0878f496037b3d24b9ccf1094ec6d2e9447f2577d3eaab1217e21d220",
+      "bytes": 192
+    },
+    "the-borrowed-commons/agents/editor/research/sources/freeform-gazette-note.md": {
+      "sha256": "10fb50f2c6342ce4b1568ca424db70e3f9495789379dd4a64e86cd9a3311ad7f",
+      "bytes": 344
+    },
+    "the-borrowed-commons/agents/editor/research/sources/workdocs-log-note.md": {
+      "sha256": "68856009dd0434a16ec515efb8be2b0222d797b847ca4d09c724f4ea27f37c9a",
+      "bytes": 322
+    },
+    "the-borrowed-commons/correspondence/v1-drafting-note.md": {
+      "sha256": "e6c13bdb5597062244c2fb74d3d4432d016985c253e41c6b1dbc058b9968374a",
+      "bytes": 303
+    },
+    "the-borrowed-commons/correspondence/v1-response.md": {
+      "sha256": "522290ce8323567f2b436f0010d6c4ba1a341cb9da4651e40990dd5e59eebd23",
+      "bytes": 563
+    },
+    "the-borrowed-commons/correspondence/v1-review/00-piece-brief.md": {
+      "sha256": "b33f732798d6523ab4e81c090a9e5cceea36bcedd57aae0df94ff1713924f50b",
+      "bytes": 395
+    },
+    "the-borrowed-commons/correspondence/v1-review/01-claim-ledger.md": {
+      "sha256": "706e4c6cee57a065a0010acae99e2c62d8630551e546864224c456f388544900",
+      "bytes": 2669
+    },
+    "the-borrowed-commons/correspondence/v1-review/02-discourse-report.md": {
+      "sha256": "32e85931b412bd83e2342dc0054c6afe461ef277abddb93e535bf0fff1c73112",
+      "bytes": 324
+    },
+    "the-borrowed-commons/correspondence/v1-review/03-argument-notes.md": {
+      "sha256": "8339d9fe6b97876d1600e104129b648a05461f33358f8571eec0325460c71a68",
+      "bytes": 226
+    },
+    "the-borrowed-commons/correspondence/v1-review/04-craft-notes.md": {
+      "sha256": "3964dc97173b112db2f680fa315d9bb232006700f715e5263f762f9f1bbaccd4",
+      "bytes": 223
+    },
+    "the-borrowed-commons/correspondence/v1-review/05-second-read.md": {
+      "sha256": "ff121b53c66059f117c6d706b482816356a9eb5296da1e2a52476a71af3b0134",
+      "bytes": 717
+    },
+    "the-borrowed-commons/correspondence/v1-review/editors-letter.md": {
+      "sha256": "e867395f6eb9ff127a6cdd290dfeb85ca2729699a15eece7cbc13cd504e2f02b",
+      "bytes": 2648
+    },
+    "the-borrowed-commons/correspondence/v2-response.md": {
+      "sha256": "0dffab696138db64957a0f3409cce35e0e3efea1b7ae9e2b61a054ddfbc78a61",
+      "bytes": 311
+    },
+    "the-borrowed-commons/correspondence/v2-review/01-claim-ledger.md": {
+      "sha256": "ee35ff06abe060d527eb95857101b9f3b07745ae7041461c067d10401c0523e9",
+      "bytes": 716
+    },
+    "the-borrowed-commons/correspondence/v2-review/editors-letter.md": {
+      "sha256": "418b139b91e707dadf1ddc40408625a457f7115344b77d01d2b87a6dc6fabd47",
+      "bytes": 630
+    },
+    "the-borrowed-commons/drafts/figures/figure_1_signal_map.png": {
+      "sha256": "3a17c0502cfb2958d34d38f147ed7d305dceea8f5be5b2918336ab5109614331",
+      "bytes": 161
+    },
+    "the-borrowed-commons/drafts/figures/figure_2_load_curve.png": {
+      "sha256": "52c5084f4e93459ab8f00164a5853dcaebaed7fb9e66e2be5874043ba009cd3f",
+      "bytes": 123
+    },
+    "the-borrowed-commons/drafts/taxonomy_reference_sheet.md": {
+      "sha256": "c1dcf3024dd98f6933960790745c3878c864c745fc1562363ccd7e804a520bec",
+      "bytes": 221
+    },
+    "the-borrowed-commons/drafts/v1.md": {
+      "sha256": "d4af4af4a5170b1be7ded2558558d1928625927437bde1f63c6fc18498115d77",
+      "bytes": 3258
+    },
+    "the-borrowed-commons/drafts/v2.md": {
+      "sha256": "6ec25cf8d384d471b8ceafe5e17bbf265a8d49c275dc8c5ba329f98eb8f55c4e",
+      "bytes": 3308
+    },
+    "the-borrowed-commons/drafts/v3.md": {
+      "sha256": "d8f14ca531b9eae3985645e77f320c41e1ebec402c5aee91435f3062b14a6bf5",
+      "bytes": 3335
+    },
+    "the-borrowed-commons/excluded-refs.json": {
+      "sha256": "cd100ef0f8b8e0669361c2ed7a2b9e2425ced0874528a6f7706809e9473b5729",
+      "bytes": 367
+    },
+    "the-borrowed-commons/index.json": {
+      "sha256": "a354f4784d69cf352a192bf4dc6cb52eef2d3ba082b800c5f5f938a3f1a4eee0",
+      "bytes": 6825
+    },
+    "the-borrowed-commons/published.md": {
+      "sha256": "38b5136408400f858a674b09791d1f0d1db8e7b4181b50468f04fafb72a51a3b",
+      "bytes": 528
+    },
+    "the-borrowed-commons/versions.json": {
+      "sha256": "1e7d94eae2a28e94c93848b9d35774a333a4d437146e10a94cee33febe891b6c",
+      "bytes": 1295
+    }
+  },
+  "digest": "5747d7e7d285a1d33f6e6c59a74ada0f4592676c9b73134825715bad751211ac"
+}

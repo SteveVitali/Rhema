@@ -1,0 +1,39 @@
+{
+  "slug": "the-borrowed-commons",
+  "versions": [
+    {
+      "version": "v1",
+      "file": "drafts/v1.md",
+      "label": "v1",
+      "title": "The Borrowed Commons",
+      "subtitle": "Shared infrastructure fails quietly, then all at once.",
+      "origin": "source"
+    },
+    {
+      "version": "v2",
+      "file": "drafts/v2.md",
+      "label": "v2",
+      "title": "The Borrowed Commons",
+      "subtitle": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible.",
+      "origin": "source"
+    },
+    {
+      "version": "v3",
+      "file": "drafts/v3.md",
+      "label": "v3",
+      "title": "The Borrowed Commons: a Grammar of Shared Decay",
+      "subtitle": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible.",
+      "origin": "source",
+      "writerDirected": true,
+      "provenanceLabel": "Writer-directed edit (not reviewed)"
+    }
+  ],
+  "published": {
+    "file": "published.md",
+    "url": "https://sjsebastian.example.org/p/the-borrowed-commons",
+    "fetched": "2026-09-01",
+    "sha256": "20383d0d9f4c9a3948dc1fe829eaa17e91bd69169fd37124bad9bbfc8575508c",
+    "label": "Published · sjsebastian.example.org · fetched 2026-09-01",
+    "origin": "imported"
+  }
+}

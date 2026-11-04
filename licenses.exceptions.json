@@ -86,6 +86,11 @@
       "license": "OFL-1.1 / vendor-specific",
       "rationale": "Bundled font files (SIL Open Font License and vendor licences) shipped as assets in export/marketing containers. Redistribution terms honored per font; enumerated in LICENSES.md as fonts are added."
     },
+    "demo-corpus": {
+      "type": "asset",
+      "license": "CC-BY-NC-ND-4.0",
+      "rationale": "The demo corpus (packages/demo-corpus/corpus/** plus derived snapshots/goldens) is licensed content by 'S. J. Sebastian', not source: CC BY-NC-ND 4.0 per GD-DEMO-LICENSE.R7 / ADR-127 / REQ-DOPS-3. Code in the package stays MIT; enumerated in LICENSES.md 'Content outside the MIT grant'."
+    },
     "duck": {
       "type": "npm",
       "license": "BSD",
