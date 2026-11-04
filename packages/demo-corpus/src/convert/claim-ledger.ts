@@ -205,7 +205,10 @@ export function convertClaimLedger(
     }
 
     // A summary-level re-score overrides the heading parse (REQ-CONV-6; consumption-tracked).
-    const rescore = ctx.overrides?.take("verdict-rescore", (r) => r.claim === id);
+    const rescore = ctx.overrides?.take(
+      "verdict-rescore",
+      (r) => r.kind === "verdict-rescore" && r.claim === id,
+    );
     if (rescore) verdict = rescore.verdict;
 
     const quoteLines = sec.body
@@ -345,11 +348,15 @@ export function convertClaimLedger(
       );
   }
 
-  // REQ-CONV-6: an unconsumed override row fails the conversion.
+  // REQ-CONV-6: an unconsumed override row of THIS pass's kinds fails the conversion. (Kind-
+  // scoped so one OverrideBook can flow through the pipeline's passes — 216's findings pass owns
+  // the `reconciliation` rows; a book carrying them must not trip this pass. The pipeline's own
+  // end-of-run check still fails any row no pass consumed.)
   for (const row of ctx.overrides?.unconsumed() ?? [])
-    diagnostics.push(
-      fail("override_unconsumed", `stale override row (cite ${row.cite}) was never consumed`),
-    );
+    if (row.kind === "verdict-rescore")
+      diagnostics.push(
+        fail("override_unconsumed", `stale override row (cite ${row.cite}) was never consumed`),
+      );
 
   if (diagnostics.some((d) => d.severity === "error")) return bad(diagnostics);
 

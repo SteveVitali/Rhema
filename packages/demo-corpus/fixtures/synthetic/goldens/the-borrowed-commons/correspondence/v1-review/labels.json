@@ -29,5 +29,85 @@
    "ordinal": 6
   }
  ],
+ "findings": [
+  {
+   "id": "The one thing",
+   "ordinal": 0
+  },
+  {
+   "aliases": [
+    "SR 1"
+   ],
+   "id": "Major 1",
+   "ordinal": 1
+  },
+  {
+   "aliases": [
+    "SR 2"
+   ],
+   "id": "Major 2",
+   "ordinal": 2
+  },
+  {
+   "id": "Strength 1",
+   "ordinal": 3
+  },
+  {
+   "id": "Strength 2",
+   "ordinal": 4
+  },
+  {
+   "id": "Strength 3",
+   "ordinal": 5
+  },
+  {
+   "id": "Strength 4",
+   "ordinal": 6
+  },
+  {
+   "id": "Strength 5",
+   "ordinal": 7
+  },
+  {
+   "id": "Minor 1",
+   "ordinal": 8
+  },
+  {
+   "id": "Minor 2",
+   "ordinal": 9
+  },
+  {
+   "id": "Line note 1",
+   "ordinal": 10
+  },
+  {
+   "id": "Line note 2",
+   "ordinal": 11
+  },
+  {
+   "id": "CaR 1",
+   "ordinal": 12
+  },
+  {
+   "id": "OQ 1",
+   "ordinal": 13
+  }
+ ],
+ "importRule": {
+  "claims[].accessedAt": "assigned by import rule",
+  "claims[].sources[].accessedAt": "assigned by import rule",
+  "claims[].sources[].stance": "assigned by import rule",
+  "findings[].evidence.urls[].accessed": "assigned by import rule",
+  "findings[].kind": "assigned by import rule",
+  "findings[].origin": "assigned by import rule",
+  "findings[].reconciliation": "assigned by import rule",
+  "findings[].severity": "assigned by import rule"
+ },
+ "roles": {
+  "drafting": "the drafting agent",
+  "editor": "the editor (agent)",
+  "revising": "the revising agent",
+  "writer": "the writer"
+ },
  "version": 1
 }

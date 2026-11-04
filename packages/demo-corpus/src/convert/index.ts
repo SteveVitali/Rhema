@@ -50,8 +50,53 @@ export {
   type ConvertOverridesFile,
   type OverrideKind,
   type OverridesParse,
+  type ReconciliationOverride,
   type VerdictRescoreOverride,
 } from "./overrides.js";
+export {
+  parseLetter,
+  verbatimItems,
+  leadSplit,
+  RUBRIC_NAME_MAP,
+  type ConsideredItem,
+  type LetterMajor,
+  type ParsedLetter,
+  type ScorecardDim,
+  type VerbatimItem,
+} from "./letter.js";
+export {
+  parseSecondRead,
+  type ParsedSecondRead,
+  type SecondReadObjection,
+} from "./second-read.js";
+export {
+  reconcileSecondRead,
+  textOverlap,
+  OVERLAP_FLOOR,
+  MARGIN_RATIO,
+  type Reconciliation,
+  type ReconciliationOutcome,
+} from "./reconcile.js";
+export {
+  convertFindings,
+  BODY_CAP,
+  TRUNCATED_LEN,
+  type FindingsContext,
+  type FindingsMeta,
+  type FindingsOutput,
+} from "./findings.js";
+export { convertRubric, type RubricContext, type RubricOutput } from "./rubric.js";
+export { DEMO_DEFAULTS } from "./demo-defaults.js";
+export { RAW_ONLY, isRawOnly } from "./raw-only.js";
+export {
+  reviewLabels,
+  lintGeneratedLabels,
+  CONVERTER_ASSIGNED_FIELDS,
+  IMPORT_RULE_NOTE,
+  ROLES,
+  type FindingLabel,
+  type ReviewLabels,
+} from "./labels.js";
 
 /**
  * The canonical-JSON writer the goldens compare byte-for-byte (REQ-CONV-12): object keys sorted

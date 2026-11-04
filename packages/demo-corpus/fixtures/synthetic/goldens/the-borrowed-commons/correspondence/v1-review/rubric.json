@@ -1,0 +1,42 @@
+{
+ "dimensions": [
+  {
+   "dimension": "thesis_contribution",
+   "score": 4
+  },
+  {
+   "dimension": "argument_rigor",
+   "score": 3
+  },
+  {
+   "cap": {
+    "at": 3,
+    "reason": "two ledger flags cap it (Minor 1–2)"
+   },
+   "dimension": "evidence_accuracy",
+   "score": 3
+  },
+  {
+   "dimension": "originality_situatedness",
+   "score": 4
+  },
+  {
+   "dimension": "structure",
+   "score": 3
+  },
+  {
+   "dimension": "prose",
+   "score": 4
+  },
+  {
+   "dimension": "voice_audience_fit",
+   "score": 4
+  },
+  {
+   "dimension": "intellectual_honesty",
+   "score": 4
+  }
+ ],
+ "sidecar": "rubric",
+ "version": 1
+}

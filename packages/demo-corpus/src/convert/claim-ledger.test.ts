@@ -197,12 +197,17 @@ describe("anchors (REQ-CONV-11)", () => {
 });
 
 describe("goldens (REQ-CONV-12, synthetic claims part)", () => {
-  it("sidecars and labels are canonical-JSON byte-equal on re-run", () => {
+  it("sidecars are canonical-JSON byte-equal on re-run", () => {
     for (const c of converted) {
       if (!c.r.ok) throw new Error("conversion failed");
       const dir = `correspondence/${c.round}-review`;
       golden(`${dir}/01-claim-ledger.json`, c.r.value.sidecar);
-      golden(`${dir}/labels.json`, c.r.value.labels);
+      // `labels.json` is the REVIEW-level file (216: findings + importRule markers join the
+      // claims map) — its golden writer is findings.test.ts; this pass asserts its own slice.
+      expect(c.r.value.labels.version).toBe(1);
+      expect(c.r.value.labels.claims.map((l) => l.ordinal)).toEqual(
+        c.r.value.sidecar.claims.map((x) => x.ordinal),
+      );
     }
   });
 });

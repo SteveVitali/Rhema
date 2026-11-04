@@ -1,0 +1,17 @@
+{
+ "findings": [
+  {
+   "anchor": null,
+   "body": "the scope sentence promises more than the record shows — limit it to water\nboards and the piece is done.",
+   "kind": "argument",
+   "letterSection": "one_thing",
+   "ordinal": 0,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "major",
+   "title": "The one thing"
+  }
+ ],
+ "sidecar": "findings",
+ "version": 1
+}

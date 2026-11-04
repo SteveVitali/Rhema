@@ -31,6 +31,21 @@ describe("readConvertOverrides", () => {
     expect(r.ok).toBe(true);
   });
 
+  it("accepts a reconciliation row (216 — REQ-CONV-8)", () => {
+    const r = readConvertOverrides({
+      version: 1,
+      overrides: [
+        { kind: "reconciliation", objection: "2.4", outcome: "merged", major: 3, cite: "x.md:12" },
+        { kind: "reconciliation", objection: "1", outcome: "rejected", cite: "x.md:31" },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.overrides[0]).toMatchObject({ kind: "reconciliation", major: 3 });
+      expect(r.value.overrides[1]).toMatchObject({ kind: "reconciliation", outcome: "rejected" });
+    }
+  });
+
   it.each([
     [{ version: 2, overrides: [] }, "version"],
     [{ version: 1 }, "overrides must be an array"],
@@ -66,6 +81,29 @@ describe("readConvertOverrides", () => {
       },
       "claim",
     ],
+    [
+      {
+        version: 1,
+        overrides: [{ kind: "reconciliation", objection: "1", outcome: "merged", cite: "x.md:1" }],
+      },
+      "major",
+    ],
+    [
+      {
+        version: 1,
+        overrides: [
+          { kind: "reconciliation", objection: "1", outcome: "folded", major: 1, cite: "x.md:1" },
+        ],
+      },
+      "outcome",
+    ],
+    [
+      {
+        version: 1,
+        overrides: [{ kind: "reconciliation", outcome: "kept", cite: "x.md:1" }],
+      },
+      "objection",
+    ],
   ])("rejects malformed input %#", (json, needle) => {
     const r = readConvertOverrides(json);
     expect(r.ok).toBe(false);
@@ -94,10 +132,17 @@ describe("OverrideBook consumption", () => {
 
   it("take consumes the first matching row; unconsumed() lists the rest", () => {
     const book = OverrideBook.from(file);
-    const hit = book.take("verdict-rescore", (r) => r.claim === "C15");
+    const hit = book.take(
+      "verdict-rescore",
+      (r) => r.kind === "verdict-rescore" && r.claim === "C15",
+    );
     expect(hit?.verdict).toBe("misleading_in_context");
-    expect(book.unconsumed().map((r) => r.claim)).toEqual(["C16"]);
-    expect(book.take("verdict-rescore", (r) => r.claim === "C15")).toBeUndefined();
+    expect(
+      book.unconsumed().map((r) => (r.kind === "verdict-rescore" ? r.claim : r.kind)),
+    ).toEqual(["C16"]);
+    expect(
+      book.take("verdict-rescore", (r) => r.kind === "verdict-rescore" && r.claim === "C15"),
+    ).toBeUndefined();
   });
 
   it("an empty book has no unconsumed rows", () => {
