@@ -100,4 +100,17 @@
 
 ## Evidence report
 
-(filled at closeout — CI read pending)
+- **CI at head `f0dfdd7b`:** `ci-boundary` records **pass #254@f0dfdd7** — run 41805825235, all
+  seven legs (fast-path 37s; typecheck/lint/unit 23m1s; contracts 17s; integration 2m47s;
+  images 7m12s; public-safe 25s; ci-pass anchor 9s). First attempt 41802366492 failed on
+  `registry.test.ts` expecting the owed-stub message for the now-real demo legs — fixed
+  (`REAL_BODIES` arm), rerun green. `logs/ci-R7DEM.4b.json`.
+- **Commits:** `6228653` (implementation + demo DOM/contract tests + legs + local driver +
+  DEFERRALS row + ADR addendum), `8d453dd` (PR body, BUILD_INDEX 255, LEDGER advance),
+  `6ce5ff9` (run ledger), `f0dfdd7` (registry.test arm).
+- **Stage-B owed:** `D-R7DEM.4b-1` — deployed legs + entry/exit + S-1 behaviour + the joint
+  D-R7DEM.4-1 capture list at 224. The rows stay `expected:"red"`; the local run is
+  ready-to-flip evidence, never green.
+- **Carries:** none introduced. The CSP `img-src` blocks external corpus images on the real
+  essay Page (pre-existing corpus-media fact — a 221/221a concern, not this ticket's scope:
+  the ticket's image arm renders through `/bff/demo/asset/`).
