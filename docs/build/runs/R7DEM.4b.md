@@ -6,9 +6,9 @@
 - **Harness:** `devin-desktop/swe-2-high/subagent`
 - **Skills:** implement-spec (siblings build-memory, self-review)
 - **Started:** 2026-11-04T08:31:29Z
-- **Closed:** —
+- **Closed:** 2026-11-04
 - **Config:** Stage A only ($0) — repo-only + a local web server serving `demoDataSource`; no preview (GD-PREVIEW.R7); no production mutations; no API/DB needed on the demo path.
-- **ci:** —
+- **ci:** read at head — see Evidence report below.
 
 ## Deferrals read
 
@@ -74,15 +74,30 @@
 ## Progress
 
 - 2026-11-04 — Ledger seeded; load + anchors read.
+- 2026-11-04 — Implemented: contracts path map (`demoInternalPath`/`demoPublicPath`/`isDemoNamespacePath` + tests); `spa/demo.ts` (boot fact, gate predicate, `?b=` arm); `main.tsx` (`rewrite`, demo QueryClient, session-expired no-op); `_authenticated` gate skip; `p.$project` demo feed-labels; `chrome.tsx` sessionQuery off + `userId="demo"`; handoff beforeLoad no-op; `readSpaBoot` `demo` decode; `nav-intercept` boundary predicate (both directions); `DemoBanner` + `IdeShell.banner` slot + `IdeProjectLayout` mount; `figures.tsx` image row/card arms; `dom-contract` demo bucket ×3; `run-card`/`runLineLabel` null guards (real-corpus index crash — replayed runs carry null credit/time fields); `R11_DEMO`/`P1_DEMO` real bodies; `demo-legs.local.test.ts` driver.
+- 2026-11-04 — `demo.dom.test.tsx` 12 legs green: rewrite resolution, both P7 answers, all three /login-breakers, `?b=`, boundary predicate both directions, exits `data-spa-native`, phone-UA no-handoff + PM not editable, image card no-spec/SVG.
+- 2026-11-04 — `demo-legs.local.test.ts` GREEN against `dist/main.js` serving `demoDataSource` (both real leg bodies, planted cookie + logged out, 1440/390/320) — screenshots committed `docs/build/reports/2026-11-04_r7dem-4b-legs/`.
+- 2026-11-04 — Found + fixed during leg bring-up: `runLineLabel` `createdAt.slice` and `RunCard` `creditsLabel`/`estimateLabel` crashed on the replayed runs' null fields (S-9 "not recorded") — a real data-shape gap, not a harness artifact.
+- 2026-11-04 — Records: `D-R7DEM.4b-1` appended; ADR-126 dated addendum (S-1 outcome + P7 answers); PR #254 created; BUILD_INDEX row 255; LEDGER advanced (nextTicket `221_R7DEM.5`, chainTip this branch).
 
 ## Gap table
 
-(filled at Phase 4)
+| Requirement | Required layer | Achieved | Status |
+|---|---|---|---|
+| S-1 rewrite or fallback + P7 answers + ADR + test | engineered | engineered | met — `rewrite` arm chosen; both answers pinned in `demo.dom.test.tsx`; ADR-126 addendum |
+| Boot fixes (gate skip / feed-labels / session off / handoff / QueryClient / `?b=`) | engineered | engineered + local-browser | met — DOM legs + the local-server legs both run the real path |
+| Doc-nav entry/exit (predicate + data-spa-native + data-demo-exit) + 2 DOM tests | engineered | engineered | met — 4 boundary legs in `demo.dom.test.tsx` |
+| Imported-figure card + DOM test | engineered | engineered | met — row + card arms in `demo.dom.test.tsx` |
+| `R11.demo`/`P1.demo` bodies, local runs, screenshots, expected-red | fixture-verified | fixture-verified | met — `demo-legs.local.test.ts` drives the real `R7_LEGS_IMPLS` bodies |
+| `D-R7DEM.4b-1` open | staging-verified (owed) | appended OPEN | met |
+| Universal phase-gate AC | agentic | met | turbo build/lint/typecheck, vitest (1,852 web+contracts+ui), all check:* gates, build-memory 0 viol, append-only pending final push read |
 
 ## Evidence log
 
-(filled at Phase 5)
+- DOM legs: `apps/web/src/spa/demo.dom.test.tsx` (12), contracts `demo.test.ts` path-map block, `runner.test.ts` real-body special-case.
+- Local leg run: `demo-legs.local.test.ts` 34s — both bodies pass; PNGs `p1-demo-390.png`, `p1-demo-320.png`, `r11-demo.png`.
+- Checks: `check:dom-contract` / `check:spa-env` / `check:spa-budget` (no ceiling raised) / `check:protocol-markers` / build-memory 0 violations.
 
 ## Evidence report
 
-(filled at Phase 6)
+(filled at closeout — CI read pending)
