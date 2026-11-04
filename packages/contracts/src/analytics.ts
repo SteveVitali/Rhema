@@ -196,6 +196,16 @@ export const ANALYTICS_EVENTS = {
   // P1.17 — REQ-CHAT-30's scratch-cohort activation event: the outline-approval gate (the scratch
   // onboarding path's first gate) resolved approve. Server-owned — emitted at the gate-decision seam.
   "outline.approved": z.object({}),
+
+  // ---- 223 R7DEM.6b (REQ-TOUR-9; ADR-126) — the anonymous demo funnel ----
+  // Registered for the catalogue + emission audit ONLY. Their envelope differs from every
+  // other event: these NEVER ride `recordAnalyticsEvent`/`analytics_events` (the user/
+  // workspace envelope cannot apply — the demo has no principal). They are anonymous rows in
+  // `demo_events`, written only through `rhema_demo_event_insert` behind `POST /a/demo` →
+  // `POST /analytics/demo`. Payload = the bounded {essay slug, tour step, ?src=} fields.
+  "demo.hub_viewed": z.object({}),
+  "demo.tour_started": z.object({}),
+  "demo.tour_completed_or_cta": z.object({}),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

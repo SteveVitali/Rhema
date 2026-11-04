@@ -4261,6 +4261,68 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.body(null, 204);
   });
 
+  // 223 R7DEM.6b (REQ-TOUR-9; ADR-126; REQ-DACC-3) — THE ONE SANCTIONED DEMO NON-GET. The demo
+  // beacon's relay → `POST /analytics/demo` → `rhema_demo_event_insert` → `demo_events`. It
+  // sits OUTSIDE the demo guard (the guard only claims /demo, /p/demo~*, /bff/p/demo~*).
+  //  - accepts sendBeacon `text/plain` JSON ≤ 256 B;
+  //  - the abuse bound is a per-INSTANCE token bucket (60/min refill) — in-memory, never
+  //    persisted, and never keyed on any stored identity (a shared ceiling, not a tracker);
+  //  - the forward carries NO session: `recordDemoEvent` is built on the headerless client,
+  //    so the visitor's cookie/authorization can never reach the api — a signed-in demo
+  //    visitor stays anonymous;
+  //  - always 204, never a Set-Cookie; the event validates server-side against the enum.
+  const demoBucket = { tokens: 60, at: Date.now() };
+  const demoBucketTake = (): boolean => {
+    const now = Date.now();
+    demoBucket.tokens = Math.min(60, demoBucket.tokens + ((now - demoBucket.at) / 1000) | 0);
+    demoBucket.at = now;
+    if (demoBucket.tokens <= 0) return false;
+    demoBucket.tokens -= 1;
+    return true;
+  };
+  const DEMO_EVENT_NAMES = new Set([
+    "demo.hub_viewed",
+    "demo.tour_started",
+    "demo.tour_completed_or_cta",
+  ]);
+  app.post("/a/demo", async (c) => {
+    if (!demoBucketTake()) return c.body(null, 204);
+    const raw = await c.req.text().catch(() => "");
+    const body = (() => {
+      try {
+        return raw.length <= 256 ? (JSON.parse(raw) as Record<string, unknown>) : null;
+      } catch {
+        return null;
+      }
+    })();
+    const event = typeof body?.event === "string" ? body.event : null;
+    if (body != null && event != null && DEMO_EVENT_NAMES.has(event)) {
+      const essay =
+        typeof body.essay === "string" && body.essay.length <= 80 ? body.essay : undefined;
+      const step =
+        typeof body.step === "number" && Number.isInteger(body.step) && body.step >= 1 && body.step <= 99
+          ? body.step
+          : undefined;
+      const src = typeof body.src === "string" && body.src.length <= 40 ? body.src : undefined;
+      try {
+        void deps.dataSource
+          .recordDemoEvent?.({
+            event: event as
+              | "demo.hub_viewed"
+              | "demo.tour_started"
+              | "demo.tour_completed_or_cta",
+            ...(essay ? { essay } : {}),
+            ...(step ? { step } : {}),
+            ...(src ? { src } : {}),
+          })
+          ?.catch(() => undefined);
+      } catch {
+        /* unbound seam — drop the event; the demo renders either way */
+      }
+    }
+    return c.body(null, 204);
+  });
+
   // Auth-gated: the flat project view (canonical /p/:project) + the Needs-you surface (PRB.05: the open
   // gate cards) and the Decisions list (the beta Inbox stand-in, §5.7).
   /** SPA.23 — the `/p/:slug` composition both renderers share (REQ-BFF-2's one-composition rule):

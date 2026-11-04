@@ -113,6 +113,7 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0058_pgboss_purge_probe.sql",
       "packages/db/migrations/0059_live_docs_y_epoch.sql",
       "packages/db/migrations/0060_stripe_event_redrive.sql",
+      "packages/db/migrations/0061_demo_events.sql",
     ]);
   });
 
@@ -129,5 +130,21 @@ describe("collectFiles — the base selection", () => {
     expect(violations).toHaveLength(1);
     expect(violations[0].file).toBe(f);
     expect(violations[0].rule).toBe("rename");
+  });
+});
+
+// 223 R7DEM.6b (REQ-TOUR-9; P4-2) — the exact committed file is lint-clean, and the rule the
+// SECURITY-DEFINER design avoids is LIVE: a `GRANT rhema_demo_writer TO rhema_app` variant reads
+// role_change (the grantee predates the file, no ON object) — that shape would PAUSE 224 Part B.
+describe("0061_demo_events — the committed file + the avoided shape", () => {
+  it("the committed migration is additive", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync("packages/db/migrations/0061_demo_events.sql", "utf8");
+    expect(violationsInSql(sql)).toEqual([]);
+  });
+  it("GRANT rhema_demo_writer TO rhema_app is a role_change — the live rule", () => {
+    const variant =
+      "create role rhema_demo_writer nologin;\ngrant rhema_demo_writer to rhema_app;\n";
+    expect(violationsInSql(variant).some((v) => v.rule === "role_change")).toBe(true);
   });
 });

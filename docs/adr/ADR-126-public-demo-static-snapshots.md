@@ -232,3 +232,40 @@ paths resolve to `/bff/demo/asset/...`; any remaining `https?://` image src rewr
 corpus copy by basename or becomes a " (not published)" text node. The real corpus' published
 essays carry Substack-hosted URLs — the recording proxy caught 25 such fetches on the first
 green walk.
+
+### Addendum — 2026-11-04 (R7DEM.6b): the carve-out as built — one sanctioned write
+
+**Decision (the channel, REQ-TOUR-9):** the anonymous demo funnel (`demo.hub_viewed`,
+`demo.tour_started`, `demo.tour_completed_or_cta`) writes to a new append-only `demo_events`
+table through a `SECURITY DEFINER` insert function `public.rhema_demo_event_insert(text,
+text, integer, text)` owned by a new `NOLOGIN` insert-only role `rhema_demo_writer`
+(`GRANT INSERT ON demo_events` only). `rhema_app` holds `EXECUTE` on the function and NO
+table privilege (rls-catalog `USER_ROLE_GRANTS` pins `demo_events: "-"`). The web relay is
+`POST /a/demo` → api `POST /analytics/demo` on the user-serving `deps.db` — the ONLY non-GET
+the demo surface may emit (REQ-DACC-3's amended zero). The lint rule it satisfies
+(check-additive-migrations, ADR-018 §8): `CREATE ROLE … NOLOGIN` is additive, every
+GRANT/REVOKE in 0061 carries `ON <object>` (a privilege grant, never a role-membership
+change), and `ALTER FUNCTION … OWNER TO` is not ALTER ROLE/USER — the PG16
+`createrole_self_grant` covers the owner assignment since the role is created in the same
+file (D-R7DEM.6b-1 carries the Cloud SQL proof to 224).
+
+**Decision (abuse bound + anonymity):** payload ≤ 256 B validated against the three-name
+enum with bounded fields (`essay ≤80`, `step 1–99`, `src ≤40`); a per-instance token bucket
+(60/min shared, never persisted, never keyed on identity); 204 always; no `Set-Cookie`;
+the web forward is built on the headerless api client so `cookie`/`authorization` can never
+reach the api. The table carries no IP, IP-hash, user, cookie or UA column — anonymous by
+construction, matching the "no tracking cookies" privacy promise.
+
+**Decision (the anonymous-event catalogue representation):** the three `demo.*` names enter
+`ANALYTICS_EVENTS` with payload-only schemas and are classified `emitted` in
+`emission-audit.ts` (source `apps/web/src/spa/demo-beacon.ts`). They are registered for
+catalogue completeness + the audit sweep ONLY — they never ride `recordAnalyticsEvent` /
+`analytics_events` (the user/workspace envelope cannot apply to an anonymous funnel);
+their rows live in `demo_events` with the bounded {event, essay, step, src} shape.
+`src=jrn` tags journey traffic (D-leg navigations carry `?src=jrn`).
+
+**Decision (REQ-DOPS-5 — suppression, not just non-emission):** every reused-surface
+`CLIENT_ANALYTICS_EVENTS` path is demo-suppressed at the single `isDemo()` seam
+(beacon hooks) or at the `demoDataSource` seam (`postAnalyticsEvent` → `{recorded:false}`
+no-op; `postAcquisitionEvent` → `DemoUnsupported`). `demo-analytics.test.ts` +
+`demo-analytics.dom.test.tsx` iterate the catalogue and fail on any unsuppressed emitter.

@@ -26,7 +26,23 @@ export function DemoEffects(): ReactNode {
   useEffect(() => {
     // The lazy tour seam — the boundary now, the module at 222. `import()` lives here so the
     // emitted chunk splits off the entry graph under `otherAsyncGzipBytes` (REQ-DWEB-13).
-    void import("./demo-tour.js").then((m) => m.mountDemoTour()).catch(() => undefined);
+    // 223 (REQ-TOUR-9) — the lifecycle callbacks mint the two anonymous funnel events;
+    // `emitDemoEvent` is itself demo-boot armed, so this file stays demo-inert elsewhere.
+    void import("./demo-tour.js")
+      .then(async (m) => {
+        const { emitDemoEvent } = await import("./demo-beacon.js");
+        const { demoBootNow } = await import("./demo.js");
+        m.mountDemoTour({
+          onStart: () =>
+            emitDemoEvent("demo.tour_started", { essay: demoBootNow()?.essay }),
+          onCompleteOrCta: () =>
+            emitDemoEvent("demo.tour_completed_or_cta", {
+              essay: demoBootNow()?.essay,
+              step: 11,
+            }),
+        });
+      })
+      .catch(() => undefined);
 
     const onSubmit = (e: Event): void => {
       const form = e.target;

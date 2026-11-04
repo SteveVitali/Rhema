@@ -1341,6 +1341,18 @@ export interface LandingEventRequestDto {
   readonly token?: string;
 }
 
+/**
+ * 223 R7DEM.6b (REQ-TOUR-9; ADR-126) — POST /analytics/demo: the anonymous demo funnel
+ * beacon (the ONE sanctioned demo write). No session, no identity of any kind — `essay`
+ * is a corpus slug, `step` a tour ordinal, `src` the `?src=` acquisition label.
+ */
+export interface DemoEventRequestDto {
+  readonly event: "demo.hub_viewed" | "demo.tour_started" | "demo.tour_completed_or_cta";
+  readonly essay?: string;
+  readonly step?: number;
+  readonly src?: string;
+}
+
 /** GET/POST /settings/privacy — the account's analytics opt-out flag. */
 export interface PrivacySettingsDto {
   readonly analyticsOptOut: boolean;
@@ -3240,6 +3252,10 @@ export interface ApiClient {
   /** P1.17 — the pre-auth landing beacon (POST /analytics/landing → acquisition_events). The caller
    *  MAY forward the client IP in `init.headers["x-forwarded-for"]` — the api hashes it for dedupe. */
   recordLandingEvent(req: LandingEventRequestDto, init?: RequestInitLite): Promise<{ ok: boolean }>;
+  /** R7DEM.6b — the anonymous demo funnel beacon (POST /analytics/demo → demo_events). Pre-auth;
+   *  the caller never forwards a session or client IP — the api writes through
+   *  `rhema_demo_event_insert` and always answers 204. */
+  recordDemoEvent(req: DemoEventRequestDto, init?: RequestInitLite): Promise<{ ok: boolean }>;
   /**
    * P1.17 (§15.4) — GET /showcase: the workspace's Showcase entry (slug/dossier run/opened flag)
    * + the recorded signup intent — the `GET /app` precedence redirect's read.
@@ -4430,6 +4446,17 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async recordLandingEvent(req, init): Promise<{ ok: boolean }> {
       // Pre-auth by design — no session headers; the api hashes the forwarded IP itself.
       return json<{ ok: boolean }>("/analytics/landing", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
+        body: JSON.stringify(req),
+      });
+    },
+    async recordDemoEvent(req, init): Promise<{ ok: boolean }> {
+      // Anonymous by construction — no session headers, no forwarded IP (REQ-TOUR-9).
+      return json<{ ok: boolean }>("/analytics/demo", {
         method: "POST",
         headers: {
           "content-type": "application/json",

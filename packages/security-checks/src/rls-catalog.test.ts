@@ -121,6 +121,9 @@ const NON_TENANT = new Set([
   "inbox_items", "notification_devices", "notification_prefs",
   // system stores / registries / internals
   "_migrations", "agent_types", "protocols", "deployments", "acquisition_events",
+  // R7DEM.6b (0061; REQ-TOUR-9) — the anonymous demo funnel; the user-serving role reaches it
+  // only through the SECURITY DEFINER insert (USER_ROLE_GRANTS pins it `-`).
+  "demo_events",
   "estimate_cache", "estimator_config", "estimator_fits", "stripe_events",
   "stripe_event_redrives",
   // ECON.1 (0049) — the calibration aggregates/cells are cross-tenant platform data (no tenant key);
@@ -310,6 +313,10 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   deployments: "-",
   estimator_config: "-",
   estimator_fits: "-",
+  // R7DEM.6b (0061; REQ-TOUR-9) — the one sanctioned demo write: the user role holds NO table
+  // privilege; inserts ride only the definer function owned by `rhema_demo_writer` (EXECUTE is
+  // the group's whole channel).
+  demo_events: "-",
   // ECON.1 (0049) — the calibration store is read-only for the user role: the API serves cost cards /
   // estimator cells override-first; only the system pool writes (system-owned tables, no insert grant).
   cost_card_cells: "s",

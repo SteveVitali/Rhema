@@ -50,6 +50,8 @@ export interface RecordedRequest {
   readonly method: string;
   readonly url: string;
   readonly resourceType: string;
+  /** R7DEM.6b — the body of a non-GET request (the carve-out's event shape is asserted on it). */
+  readonly postData?: string | null;
 }
 
 export interface BadResponse {
@@ -146,6 +148,9 @@ export interface DemoCollect {
   readonly websockets: string[];
   readonly badResponses: BadResponse[];
   readonly violations: string[];
+  /** R7DEM.6b — bodies of `POST /a/demo` captured via route interception (Chromium does not
+   *  surface sendBeacon bodies on the request event). */
+  readonly demoPostBodies: string[];
 }
 
 /**
@@ -155,9 +160,28 @@ export interface DemoCollect {
  * immediately (same-origin 4xx/5xx land in `badResponses` for `walkViolations`).
  */
 export function attachDemoRecord(page: Page, origin: string): DemoCollect {
-  const collect: DemoCollect = { requests: [], websockets: [], badResponses: [], violations: [] };
+  const collect: DemoCollect = {
+    requests: [],
+    websockets: [],
+    badResponses: [],
+    violations: [],
+    demoPostBodies: [],
+  };
+  // R7DEM.6b — capture the carve-out's bodies: the Fetch-domain interception DOES surface a
+  // sendBeacon payload where `request.postData()` returns null (ping requests).
+  void page.route(`${origin}/a/demo`, (route) => {
+    collect.demoPostBodies.push(route.request().postData() ?? "");
+    void route.continue();
+  });
   page.on("request", (req) => {
-    const row = { method: req.method(), url: req.url(), resourceType: req.resourceType() };
+    const row = {
+      method: req.method(),
+      url: req.url(),
+      resourceType: req.resourceType(),
+      // R7DEM.6b — non-GET bodies are recorded so the leg can prove the one sanctioned write
+      // carries only the {event, essay, step, src} shape.
+      ...(req.method() !== "GET" && req.method() !== "HEAD" ? { postData: req.postData() } : {}),
+    };
     collect.requests.push(row);
     if (row.resourceType === "eventsource") {
       collect.violations.push(`EventSource opened: ${row.url}`);
