@@ -6,7 +6,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Spend:** $0 — Stage A only (GD-PREVIEW.R7: no per-ticket preview; D-R7DEM.6a-1 carries Stage B → 224)
 - **Opened:** 2026-11-04 (UTC, `date -u`)
-- **Closed:** pending the CI boundary read
+- **Closed:** run record + boundary read complete
 
 ## Phase status
 
@@ -120,7 +120,7 @@ it because the recording proxy asserts coverage/non-4xx, never surface content.
 - `registry.test.ts`/`runner.test.ts` — `D2.tour` joined the REAL_BODIES arm; still `expected:"red"`.
 
 **Commits:** `e3d60228` (implementation+evidence), `5a185883` (records), `62934efc` (dom-contract fix), `02f5a3f7` (aside/cta test fix).
-**CI at head `02f5a3f7`:** run `41869030183` in progress at record time — prior reads: `41852045588` canceled (superseded by records push), `41852315133` fail at `check:dom-contract` (two violations — literal `tour` urlparam token + `data-demo-tour-aside` unasserted — fixed in `62934efc`, locally re-verified), `41857215112` fail at `pnpm test` on `demo-tour.dom.test.tsx` (double-mount of the engine in one test — fixed in `02f5a3f7`, locally 11/11). Boundary record `logs/ci-R7DEM.6a.json` written on conclusion.
+**CI:** reads at the boundary — `41852045588` canceled (superseded by the records push), `41852315133` fail at `check:dom-contract` (literal `tour` urlparam token + `data-demo-tour-aside` unasserted — fixed `62934efc`), `41857215112` fail at `pnpm test` (`demo-tour.dom.test.tsx` double-mount — fixed `02f5a3f7`). **`41869030183` canceled** by the docs-record push. **pass #257@`8feeadb` — run `41870010889`** (all seven legs + `ci-pass` anchor: fast-path, typecheck/lint/unit, contracts, public-safe, integration, images; boundary record `logs/ci-R7DEM.6a.json`).
 
 **Deferrals:** opened `D-R7DEM.6a-1` (Stage-B → 224). Closed none. `D-P1.17-2` stays open per
 the ticket note. **Operator asks:** none beyond the ordinary OPERATOR merge gate.
