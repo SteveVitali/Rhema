@@ -6,6 +6,8 @@
   "description": "Operator-run CLIs for the demo corpus: deterministic export and the always-run denylist gate (REQ-CORPUS-2/11).",
   "license": "MIT",
   "dependencies": {
-    "@rhema/demo-corpus": "workspace:*"
+    "@rhema/demo-corpus": "workspace:*",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
   }
 }

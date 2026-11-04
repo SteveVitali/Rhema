@@ -99,11 +99,14 @@ export function sanitizeMarkdown(
   relPath: string,
   text: string,
   rewrites: readonly FileRewrite[],
+  slug?: string,
 ): SanitizedText {
   const lines = text.split("\n");
   const redactions: Redaction[] = [];
 
-  const targeted = rewrites.filter((r) => r.file === relPath);
+  const targeted = rewrites.filter(
+    (r) => r.file === relPath && (r.slug === undefined || r.slug === slug),
+  );
   for (const row of targeted) applyRow(lines, row);
   for (const row of targeted) {
     redactions.push({

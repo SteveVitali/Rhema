@@ -19,6 +19,12 @@ export interface FileRewrite {
   readonly pattern: string;
   readonly replacement: string;
   readonly reason: string;
+  /**
+   * Optional project slug the row is scoped to (2026-11-04 real-data fix): projects share
+   * project-relative paths (`correspondence/v1-response.md` exists in several), and a row must
+   * apply to exactly one. Absent means the row applies to every project carrying the path.
+   */
+  readonly slug?: string;
 }
 
 /** A denylist line-allowlist row: names file:line only — no quoted text (S-11 credit lines). */
@@ -96,6 +102,7 @@ export function readCorpusRules(corpusRoot: string): CorpusRules {
           ? r.replacement
           : fail(`rewrites[${i}].replacement must be a string`),
       reason: str(r.reason, `rewrites[${i}].reason`),
+      ...(typeof r.slug === "string" && r.slug.length > 0 ? { slug: r.slug } : {}),
     }),
   );
 

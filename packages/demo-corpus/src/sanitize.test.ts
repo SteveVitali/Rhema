@@ -88,6 +88,30 @@ describe("sanitizer (REQ-CORPUS-3)", () => {
     expect(commissioning.text).not.toContain("utm_source");
   });
 
+  it("a slug-scoped row applies only to its project (real-data fix: shared project paths)", () => {
+    // Projects share project-relative paths (e.g. `correspondence/v1-response.md` exists in
+    // several); a row must target exactly one project or a same-named file elsewhere hard-fails.
+    const row = {
+      id: "rw-scoped",
+      file: "f.md",
+      line: 1,
+      pattern: "hit",
+      replacement: "done",
+      reason: "r",
+      slug: "essay-a",
+    };
+    const a = sanitizeMarkdown("f.md", "a hit here\n", [row], "essay-a");
+    expect(a.text).toContain("a done here");
+    expect(a.redactions[0]?.rule).toBe("rw-scoped");
+    // same path in another project: the scoped row does not fire, no stale-row error
+    const b = sanitizeMarkdown("f.md", "a hit here\n", [row], "essay-b");
+    expect(b.text).toContain("a hit here");
+    expect(b.redactions).toHaveLength(0);
+    // an unscoped row still applies to every project carrying the path
+    const c = sanitizeMarkdown("f.md", "a hit here\n", [{ ...row, slug: undefined }], "essay-b");
+    expect(c.text).toContain("a done here");
+  });
+
   it("a stale rewrite row (pattern absent at file:line) fails", () => {
     expect(() =>
       sanitizeMarkdown("x.md", "no target here\n", [
