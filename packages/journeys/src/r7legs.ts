@@ -7,10 +7,198 @@
 // screenshot). Flips happen only in the phase deploys — 224_R7DEP.1 (R7a) and 250_R7DEP.2 (R7b)
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
+import { join } from "node:path";
+import { DEMO_ESSAYS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { gotoOk, settleClientNav } from "./settle.js";
-import { assertBundleParity } from "./steps.js";
+import {
+  assertBundleParity,
+  assertNoOverflow,
+  AXE_SOURCE,
+  IPHONE_USER_AGENT,
+} from "./steps.js";
 import { assertActionable } from "./occlusion.js";
+
+// R7DEM.4b — helpers shared by the two demo legs. Assertions derive every expectation from
+// the contracts registry (DEMO_ESSAYS / DEMO_ROUTE_IDS) or the served document's own
+// vocabulary — never from hard-coded essay text (the ticket's data discipline).
+
+/** The first non-fixture essay — the public corpus, never the synthetic mini-corpus. */
+const FIRST_ESSAY = DEMO_ESSAYS.find((e) => e.fixture !== true)!;
+
+/** The served shell's boot JSON (the `<script data-spa-boot>` embed), decoded. */
+async function bootJson(page: import("playwright").Page): Promise<Record<string, unknown> | null> {
+  const raw = await page
+    .locator("script[data-spa-boot]")
+    .first()
+    .textContent()
+    .catch(() => null);
+  if (raw == null) return null;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/** The demo boot fact inside the embed, or null when the shell isn't a demo shell. */
+async function demoBoot(page: import("playwright").Page): Promise<{
+  essay: string;
+  slug: string;
+  signedIn: boolean;
+  build: string | null;
+} | null> {
+  const boot = await bootJson(page);
+  const d = boot?.demo;
+  if (d == null || typeof d !== "object") return null;
+  return d as { essay: string; slug: string; signedIn: boolean; build: string | null };
+}
+
+/** The visible content the two session arms must share: the rendered surface's text. */
+async function demoContentText(page: import("playwright").Page): Promise<string> {
+  const sel = "[data-page-root], [data-spa-surface], [data-demo-banner]";
+  return (await page.locator(sel).allTextContents()).join("\n");
+}
+
+/**
+ * R7DEM.4b (REQ-DACC-1, REQ-DACC-5) — `R11.demo`: a signed-in walk of the demo renders the
+ * same content as the logged-out walk. The legs compare the FIRST registry essay's page
+ * surface plus every registered essay's document GET (200 + a demo boot), across
+ * `ctx.anon()` and `ctx.returningUser("a")` — the boot's `signedIn` is cookie PRESENCE
+ * only, so a planted-cookie stand-in exercises the identical code path locally. Stays
+ * `expected:"red"` at head — 224 flips with real returningUser evidence.
+ */
+const R11_DEMO: StepFn = async (ctx) => {
+  const signedIn = await ctx.returningUser("a");
+  const anon = await ctx.anon();
+  // The hub: same public SSR document for both cookie states.
+  for (const [page, want] of [
+    [signedIn.page, true],
+    [anon.page, false],
+  ] as const) {
+    await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+    const h1 = await page.locator("h1").count();
+    if (h1 !== 1) throw new Error(`signedIn=${want} /demo hub rendered ${h1} h1s (want 1)`);
+  }
+  const [hubSignedIn, hubAnon] = await Promise.all([
+    signedIn.page.locator("main").first().textContent(),
+    anon.page.locator("main").first().textContent(),
+  ]);
+  if (hubSignedIn !== hubAnon) {
+    throw new Error("signed-in /demo renders a different hub than logged-out — a session-only variant");
+  }
+  // Every PUBLIC essay's document: 200 + a demo boot + the SAME visible content; the only
+  // permitted difference is `demo.signedIn` (cosmetic) and the banner's exit set. The
+  // synthetic fixture row is skipped — it is not a public hub card and the deployed corpus
+  // does not serve it (its snapshot lives only in the fixture corpus root).
+  for (const essay of DEMO_ESSAYS.filter((e) => e.fixture !== true)) {
+    for (const [page, want] of [
+      [signedIn.page, true],
+      [anon.page, false],
+    ] as const) {
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${essay.essay}`, ctx);
+      const renderer = await page.locator("html").getAttribute("data-renderer");
+      if (renderer !== "spa") {
+        throw new Error(`/demo/${essay.essay} signedIn=${want} served data-renderer=${renderer ?? "(absent)"}`);
+      }
+      await page.locator("[data-demo-banner], [data-spa-surface], [data-page-root]").first().waitFor({ timeout: 30_000 });
+      const demo = await demoBoot(page);
+      if (demo == null || demo.slug !== essay.slug) {
+        throw new Error(`/demo/${essay.essay} signedIn=${want} boot.demo missing or wrong slug (${JSON.stringify(demo)})`);
+      }
+      if (demo.signedIn !== want) {
+        throw new Error(`/demo/${essay.essay} boot.demo.signedIn=${demo.signedIn} — cookie presence misread`);
+      }
+      const exits = await page.locator("[data-demo-exit]").all();
+      if (exits.length === 0) throw new Error(`/demo/${essay.essay} has no data-demo-exit`);
+      for (const exit of exits) {
+        if ((await exit.getAttribute("data-spa-native")) == null) {
+          throw new Error("a data-demo-exit is missing data-spa-native — an exit would share the demo client");
+        }
+      }
+    }
+    const [inText, outText] = [await demoContentText(signedIn.page), await demoContentText(anon.page)];
+    // The banner exits differ by session — compare the CONTENT surface only.
+    const strip = (t: string) => t.replace(/Create your account|Sign in|Back to your projects/g, "").trim();
+    if (strip(inText) !== strip(outText)) {
+      throw new Error(`/demo/${essay.essay} content differs signed-in vs logged-out`);
+    }
+  }
+  // The signed-in walk continues inside the demo — a demo-namespace link is a CLIENT nav
+  // (never a document reload), by the boundary predicate.
+  await signedIn.page
+    .locator(`a[href="/demo/${FIRST_ESSAY.essay}/figures"], a[href="/p/${FIRST_ESSAY.slug}/figures"]`)
+    .first()
+    .waitFor({ timeout: 30_000 })
+    .catch(() => undefined);
+  await gotoOk(signedIn.page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}/figures`, ctx);
+  await signedIn.page.locator("[data-demo-banner]").first().waitFor({ timeout: 30_000 });
+  await signedIn.page.screenshot({ path: join(ctx.outDir, "r11-demo.png"), fullPage: true });
+  assertBundleParity(ctx);
+};
+
+/**
+ * R7DEM.4b (REQ-DACC-4 restated; D-FIX.1-2's real-UA pattern) — `P1.demo`: demo Pages render
+ * SPA-compact at 390 and 320 px — a REAL mobile-UA context (Chromium's own UA-CH, never a
+ * header shim), `data-renderer="spa"` + `data-device="phone"` (ADR-126's REQ-ED-12
+ * amendment), no horizontal overflow, axe clean, and no desktop-capability subtree (no
+ * editable PM, no bulk/apply affordances). Stays `expected:"red"` — 224 flips.
+ */
+const P1_DEMO: StepFn = async (ctx) => {
+  for (const w of [390, 320] as const) {
+    const phone = await ctx.browser.newContext({
+      baseURL: ctx.webBaseUrl,
+      userAgent: IPHONE_USER_AGENT,
+      viewport: { width: w, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      const page = await phone.newPage();
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}`, ctx);
+      const html = page.locator("html");
+      const [renderer, device] = await Promise.all([
+        html.getAttribute("data-renderer"),
+        html.getAttribute("data-device"),
+      ]);
+      // the demo verdict is SPA on EVERY device class — the REQ-ED-12 forced-SSR arm must
+      // not fire (a demo Page has no SSR document to hand off to).
+      if (renderer !== "spa" || device !== "phone") {
+        throw new Error(
+          `phone demo Page @${w} classified renderer=${renderer ?? "(absent)"} device=${device ?? "(absent)"} — expected spa/phone`,
+        );
+      }
+      await page.locator("[data-page-root], [data-spa-surface]").first().waitFor({ timeout: 30_000 });
+      // SPA-compact: the PM view never mounts editable, and no desktop-capability subtree
+      // (bulk/apply affordances, the editable ProseMirror) renders.
+      const editable = await page.locator('.ProseMirror[contenteditable="true"]').count();
+      if (editable > 0) throw new Error(`phone demo Page @${w} mounts an editable ProseMirror`);
+      for (const sel of ["[data-bulk-controls]", "[data-apply]"]) {
+        if ((await page.locator(sel).count()) > 0) {
+          throw new Error(`phone demo Page @${w} mounts the desktop-capability affordance ${sel}`);
+        }
+      }
+      await assertNoOverflow(page, `demo Page @${w}`);
+      // axe clean — injected via Runtime.evaluate (CSP-safe), the P1-family pattern.
+      await page.evaluate(AXE_SOURCE);
+      const violations = await page.evaluate(async () => {
+        const w2 = globalThis as unknown as {
+          axe?: { run(d: Document, o: object): Promise<{ violations: { id: string }[] }> };
+        };
+        if (!w2.axe) throw new Error("axe-core did not inject");
+        const res = await w2.axe.run(document, {
+          runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
+        });
+        return res.violations.map((v) => v.id);
+      });
+      if (violations.length > 0) throw new Error(`axe violations @${w}: ${violations.join(", ")}`);
+      await page.screenshot({ path: join(ctx.outDir, `p1-demo-${w}.png`), fullPage: true });
+    } finally {
+      await phone.close();
+    }
+  }
+  assertBundleParity(ctx);
+};
 
 /** The leg's full assert contract, kept next to the stub so the owner's real body has the
  *  checklist in-tree (the registry `asserts` line is the one-line summary). */
@@ -220,6 +408,8 @@ const U3_STOPGAP: StepFn = async (ctx) => {
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
+  "R11.demo": R11_DEMO,
+  "P1.demo": P1_DEMO,
 };
 
 export const R7_LEGS_IMPLS: Readonly<Record<string, StepFn>> = Object.fromEntries(

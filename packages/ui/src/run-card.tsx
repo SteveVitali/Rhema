@@ -274,17 +274,21 @@ export function RunCard({
         <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--shell-fg)" }}>
           {labels.stateLabel(view.state)}
         </span>
-        <span
-          data-credits
-          {...(view.provisional ? { "data-provisional": "true" } : {})}
-          style={{
-            fontSize: "12px",
-            color: "var(--shell-fg-muted)",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {labels.creditsLabel(view.spentCredits, view.capCredits, view.provisional)}
-        </span>
+        {/* R7DEM.4b — the demo twin's replayed runs carry null credit fields ("not recorded",
+            S-9); a row without a meter reading renders no credit line, never a crash. */}
+        {view.spentCredits != null && view.capCredits != null ? (
+          <span
+            data-credits
+            {...(view.provisional ? { "data-provisional": "true" } : {})}
+            style={{
+              fontSize: "12px",
+              color: "var(--shell-fg-muted)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {labels.creditsLabel(view.spentCredits, view.capCredits, view.provisional)}
+          </span>
+        ) : null}
       </div>
       {view.paused && labels.pausedLabel ? (
         <p
@@ -351,7 +355,7 @@ export function RunCard({
           <PhaseRow key={p.key} phase={p} labels={labels} />
         ))}
       </ul>
-      {view.estimateCredits != null && labels.estimateLabel ? (
+      {view.estimateCredits != null && view.spentCredits != null && labels.estimateLabel ? (
         <p
           data-estimate
           style={{

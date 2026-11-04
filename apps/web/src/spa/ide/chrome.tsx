@@ -15,6 +15,7 @@ import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
 import { IdeShell } from "@rhema/ui";
 import { COPY, IDE_CHROME_LABELS, IDE_FEED_LABELS } from "../../copy.js";
 import { getSpaBoot, isSpaEnabled } from "../boot.js";
+import { DemoBanner } from "../demo-banner.js";
 import { feedLabelsQuery, sessionQuery } from "../queries.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
 import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
@@ -31,15 +32,22 @@ const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
 export function IdeProjectLayout({ project }: { project: string }): ReactNode {
   const pathname = useLocation({ select: (l) => l.pathname });
   const { routeId } = spaRouteFor(pathname);
-  const framed = routeId != null && FRAMED.has(routeId) && isSpaEnabled(getSpaBoot(), routeId);
+  const boot = getSpaBoot();
+  const demo = boot?.demo ?? null;
+  const framed = routeId != null && FRAMED.has(routeId) && isSpaEnabled(boot, routeId);
   return (
     <IdeChromeDataProvider>
       {framed ? (
-        <IdeChrome slug={project}>
+        <IdeChrome slug={project} banner={demo != null ? <DemoBanner demo={demo} /> : undefined}>
           <Outlet />
         </IdeChrome>
       ) : (
-        <Outlet />
+        <>
+          {/* R7DEM.4b — the unframed demo leaves (figures) carry the banner in flow; framed
+              leaves receive it through IdeShell's `banner` slot inside `.ide`. */}
+          {demo != null ? <DemoBanner demo={demo} /> : null}
+          <Outlet />
+        </>
       )}
     </IdeChromeDataProvider>
   );
@@ -50,17 +58,20 @@ export function IdeProjectLayout({ project }: { project: string }): ReactNode {
  * shell + the controller/feed effects. `slug` is the route param; the surface-published bag
  * supplies everything else.
  */
-export function IdeChrome({ slug, children }: { slug: string; children?: ReactNode }): ReactNode {
+export function IdeChrome({ slug, children, banner }: { slug: string; children?: ReactNode; banner?: ReactNode }): ReactNode {
   const hostRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
   const loc = useLocation();
-  const session = useQuery(sessionQuery);
+  const boot = getSpaBoot();
+  // R7DEM.4b (R3 P3) — the session read is DISABLED in a demo boot (a `/session` GET is one of
+  // the three /login breakers); the demo principal is cosmetic — `userId` reads "demo".
+  const demo = boot?.demo != null;
+  const session = useQuery({ ...sessionQuery, enabled: !demo });
   const maps = useQuery(feedLabelsQuery);
   const { data, published } = useIdeChromePublished();
-  const boot = getSpaBoot();
 
-  const userId = session.data?.userId ?? boot?.principal?.userId ?? "local";
+  const userId = demo ? "demo" : (session.data?.userId ?? boot?.principal?.userId ?? "local");
   const projectId = data.projectId ?? slug;
   const hasFindings =
     (data.findings?.length ?? 0) > 0 || data.marginBody != null || data.deskFindingsBody != null;
@@ -161,6 +172,7 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           paperThemeUrl={`/p/${slug}/paper-theme`}
           {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}
           {...(data.status != null ? { status: data.status } : {})}
+          {...(banner != null ? { banner } : {})}
           labels={IDE_CHROME_LABELS}
         >
           {children}

@@ -5,11 +5,17 @@
 // (the React shell + controller); everything else stays a bare `<Outlet>`.
 
 import { createFileRoute } from "@tanstack/react-router";
-import { feedLabelsQuery } from "../../queries.js";
+import { demoFeedLabelsQuery, feedLabelsQuery } from "../../queries.js";
 import { IdeProjectLayout } from "../../ide/chrome.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(feedLabelsQuery),
+  // R7DEM.4b (R3 P2) — the demo warms the same `["feed-labels"]` key from the PUBLIC
+  // `/bff/demo/feed-labels`; the sessioned `/bff/feed-labels` GET (a 401 → /login breaker)
+  // never fires in a demo boot.
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(
+      context.boot?.demo != null ? demoFeedLabelsQuery : feedLabelsQuery,
+    ),
   component: function ProjectLayout() {
     const { project } = Route.useParams();
     return <IdeProjectLayout project={project} />;

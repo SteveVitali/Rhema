@@ -31,6 +31,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
   }),
   beforeLoad: async ({ context, params, search }) => {
     if (!isSpaEnabled(context.boot, "/p/$project")) return;
+    // R7DEM.4b (R3 §4 row 11) — the handoff POST is a no-op in a demo boot: the twin can never
+    // carry an unread run_finished row and a demo path never issues a write.
+    if (context.boot?.demo != null) return;
     // REQ-BFF-22 — the hand-off is a side effect, so it is POST-only and server-decided: the twin
     // answers `{handoff:{href}}` only when an unread run_finished row exists (the same find the
     // document ran inline); `?focus=1` suppresses it verbatim. The href is already workflow-shaped

@@ -42,6 +42,22 @@ export function readSpaBoot(doc: Document = document): SpaBoot | null {
     ...(readOnlyProjectOf(o.readOnlyProject) != null
       ? { readOnlyProject: readOnlyProjectOf(o.readOnlyProject)! }
       : {}),
+    // R7DEM.4b (REQ-DWEB-6) — the demo fact decodes field-by-field (a malformed `demo` slot is
+    // absent, never a partial truth the boundary predicates could misread).
+    ...(demoOf(o.demo) != null ? { demo: demoOf(o.demo)! } : {}),
+  };
+}
+
+/** A structurally-valid `demo` slot → the typed fact (unknown shapes decode null, fail-closed). */
+function demoOf(raw: unknown): SpaBoot["demo"] | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const d = raw as Record<string, unknown>;
+  if (typeof d.essay !== "string" || typeof d.slug !== "string") return null;
+  return {
+    essay: d.essay,
+    slug: d.slug,
+    signedIn: d.signedIn === true,
+    build: typeof d.build === "string" ? d.build : null,
   };
 }
 

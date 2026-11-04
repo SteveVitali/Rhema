@@ -41,7 +41,7 @@ import {
 import axeCore from "axe-core";
 
 /** The injectable axe build (UMD — `page.addScriptTag({content})`, not an import in the page). */
-const AXE_SOURCE = axeCore.source;
+export const AXE_SOURCE = axeCore.source;
 
 /** The committed ≤300-word paid fixture (one planted false claim for N6). Loaded at module init. */
 const PAID_FIXTURE = readFileSync(
@@ -1663,12 +1663,12 @@ async function rectsOverlap(a: { x: number; y: number; w: number; h: number } | 
  *  proven live 2026-10-15 (`data-device="desktop"` under `?1`). A real mobile `userAgent` makes
  *  Chromium emit the hint natively AND satisfies `isPhoneRequest`'s `/Mobi|iPhone|Android/i`
  *  fallback, so `data-device="phone"` is the leg's own classification seam. */
-const IPHONE_USER_AGENT =
+export const IPHONE_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 const PHONE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 
-const assertNoOverflow = async (page: Page, label: string): Promise<void> => {
+export const assertNoOverflow = async (page: Page, label: string): Promise<void> => {
   const px = await pageOverflowPx(page);
   if (px > 1) throw new Error(`${label}: horizontal overflow ${px}px`);
 };

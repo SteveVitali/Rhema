@@ -92,7 +92,8 @@ describe("runJourneys — the expected-flag semantics", () => {
       // R7RO.1 / R7FIX.1 landed the real `R8.showcase.spa` / `U3.stopgap` bodies — they still
       // classify `owed` on the offline path (a red step failing), but their errors are the
       // bodies' own, never the stub's.
-      if (res.id === "R8.showcase.spa" || res.id === "U3.stopgap") {
+      // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies too — same classification arm.
+      if (["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo"].includes(res.id)) {
         expect(res.error, res.id).not.toContain("owed — owner");
       } else {
         expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);

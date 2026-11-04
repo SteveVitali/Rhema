@@ -179,3 +179,31 @@ seam, `demo-data.ts` and its Pick change together; a wrong answer is impossible 
 `DemoUnsupported` throws. Public anonymous JSON answers identical bytes under a session cookie
 because the strip happens before the nested app runs. The Stage-B surface (deployed `/demo`
 plus twin/asset behavior, and 220a's URL spike) is deferred to 224 as `D-R7DEM.4-1`.
+
+### Addendum — 2026-11-04 (R7DEM.4b): the S-1 URL spike lands the TanStack `rewrite` arm
+
+**Decision:** the SPA carries the `/demo/<essay>/…` ↔ `/p/demo~<essay>/…` mapping through
+TanStack Router's `rewrite` option on `createRouter` (input + output, registered-essay gated
+via `demoInternalPath`/`demoPublicPath` in `@rhema/contracts`). The 302 fallback is NOT
+needed: both of R3 P7's open questions resolved positively and are pinned by
+`apps/web/src/spa/demo.dom.test.tsx` — (1) `router.navigate({href})` applies the output
+rewrite to a raw `/p/demo~…` href, so the ~120 hand-built `/p/${slug}` anchors emit
+`/demo/<essay>/…` in the address bar unmodified; (2) `router.getMatchedRoutes(pathname)` is
+rewrite-agnostic — raw public-form hrefs don't match, so `nav-intercept` feeds the
+input-rewritten path for its in-tree test while `navigate` still receives the original href.
+`/demo` itself is excluded (the SSR hub, no client route); an unregistered `/demo/<essay>`
+falls through the input rewrite to the server's terminal 404.
+
+**Boot discipline:** the `_authenticated` gate skips the session read when `boot.demo` AND
+the path predicate hold (an in-SPA hop to `/app` still gates); `sessionQuery` is disabled in
+the demo chrome and `feed-labels` warms from public `/bff/demo/feed-labels`; the demo
+QueryClient is `staleTime: Infinity` + no refetch-on-focus (immutable snapshots); demo twin
+reads carry `?b=<build>` (S-13); `onSessionExpired` is a no-op inside a demo boot. Crossing
+the demo namespace in either direction is a document navigation BY PREDICATE in
+`nav-intercept` — the demo never shares the workspace QueryClient and every `data-demo-exit`
+carries `data-spa-native` (S-14 / REQ-DWEB-11/16).
+
+**Legs:** `R11.demo` and `P1.demo` have real bodies; at this head they report
+`ready-to-flip` on the local server (`docs/build/reports/2026-11-04_r7dem-4b-legs/`) and
+stay `expected:"red"` — the nightly must not redden while prod serves pre-R7a code. The
+deployed verification rides D-R7DEM.4b-1 to 224.

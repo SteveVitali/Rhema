@@ -1609,6 +1609,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   demo: [
     a("data-demo-root", "required", "demo-page.tsx", "the /demo hub frame's mount root"),
     a("data-demo-readonly-notice", "required", "demo-page.tsx", "terminal SSR notice for a demo write (405)"),
+    // 220a (REQ-DWEB-11/12/16) — the demo banner + its document-navigation exits, and the
+    // imported-figure image card (S-7). `data-demo-exit` is a value-carrying hook (signup /
+    // signin / back), so it rides the attr family.
+    a("data-demo-banner", "conditional", "spa/demo-banner.tsx", "the demo banner strip + read-only notice on every demo surface"),
+    a("data-demo-exit", "conditional", "spa/demo-banner.tsx", "a demo exit link — document navigation, carries data-spa-native"),
+    a("data-figure-image", "conditional", "spa/surfaces/figures.tsx", "an imported-image figure row/card (S-7's specKind=image variant)"),
   ],
 };
 
