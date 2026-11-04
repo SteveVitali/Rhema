@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/stationers-company-history.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8c20be605529b206",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/stationers-company-history.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# stationers-company-history\n- **URL:** https://www.stationers.org/history/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C45: charter granted 1557 by Mary I and Philip II; control of printing and publishing; right to seize pirated works and register titles. Silent on 1566, 1662, 1695.\n- **Key passages:** 'Mary I and Philip II granted the Company a royal Charter in 1557. This gave the Stationers control of printing and publishing, with the right to seize pirated works and register new titles.'\n- **Reliability:** Institutional self-history; interested party but uncontroversial on these facts.\n- **Relevance to this project:** C45\n",
+  "meters": {
+   "readMin": 1,
+   "words": 94
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d9ebe29224e46788d91c834a853d8f3d12cca66e28be5aad21db2530dea54dab",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/stationers-company-history.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# Véliz, Schneier, Snyder — adjacent trade-book predecessors
+
+- **URLs:** Véliz interview per https://www.publicbooks.org/carissa-veliz-on-privacy-and-ending-data-surveillance/ and review https://academic.oup.com/idpl/article/12/3/255/6545822 (search-level); Schneier, Data and Goliath per publisher/review pages incl. https://www.schneier.com/books/data-and-goliath (blocked) and https://fas.org/publication/data-and-goliath/ (search-level); Snyder, On Tyranny "do not obey in advance" quoted verbatim at https://2ndbreakfast.audreywatters.com/do-not-obey-in-advance/ (read).
+- **Accessed:** 2026-08-21
+
+**Establishes:** Véliz: privacy as *collective* good and power relation ("whoever has the data has the power"; if the state has it, "some form of authoritarianism") — the collective-good framing strengthens §XIII and deserves a cite. Schneier: "public-private surveillance partnership," wholesale surveillance, chilling — the draft's "public-private assemblage" has this popular ancestor. Snyder: "Most of the power of authoritarianism is freely given... individuals think ahead about what a more repressive government will want, and then offer themselves without being asked" — anticipatory obedience is the draft's coda citizen, named in 2017; On Tyranny also contains a "private life" lesson (not verified this session).

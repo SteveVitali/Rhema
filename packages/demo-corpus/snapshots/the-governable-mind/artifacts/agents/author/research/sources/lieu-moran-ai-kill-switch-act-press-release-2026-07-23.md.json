@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/lieu-moran-ai-kill-switch-act-press-release-2026-07-23.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a7db0d2b3bbe5c15",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/lieu-moran-ai-kill-switch-act-press-release-2026-07-23.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# lieu-moran-ai-kill-switch-act-press-release-2026-07-23\n- **URL:** https://lieu.house.gov/media-center/press-releases/reps-lieu-and-moran-introduce-bill-require-kill-switch-ai-systems-can · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding H\n- **What it establishes:** July 23, 2026 press release for the AI Kill Switch Act (H.R. 9917). Requires \"covered developers\" to maintain the technical ability to \"throttle, suspend, or fully shut down a covered AI system,\" incident reporting and forensic-record preservation, and authorizes DHS (with Commerce and DNI) to order a slowdown or shutdown of a system \"that can cause catastrophic harm.\" The release does not define \"covered developers\" or any threshold and says nothing about users, consumers, devices, or open-weight models. Links the bill PDF.\n- **Key passages:**\n  - \"Require covered developers to maintain the technical ability to throttle, suspend, or fully shut down a covered AI system.\"\n  - \"authorizes the Secretary of the Department of Homeland Security, in consultation with the Secretary of Commerce and the Director of National Intelligence, to order a slow down or shutdown of an AI system that can cause catastrophic harm.\"\n  - Lieu: \"We are moving from AI that answers questions to AI that takes actions ... It is imperative that these AI systems have kill switches\"\n  - Moran: \"Stewardship means making sure humans keep the capability to control the technology we build.\"\n- **Reliability:** Primary (sponsor's release); promotional.\n- **Relevance to this project:** Confirms the editor's list of requirements; thresholds and user-facing provisions must come from the bill text (see hr9917 note).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 225
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bbb0bf94296bec10043b0ec348c1ba8e74eb2b737cbff61c57d7d760247d6589",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/lieu-moran-ai-kill-switch-act-press-release-2026-07-23.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/venable-chatrie-jul-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "66676032e37c45eb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/venable-chatrie-jul-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# venable-chatrie-jul-2026\n- **URL:** https://www.venable.com/insights/publications/2026/07/supreme-court-holds-geofence-warrant-access · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Chatrie v. United States, June 29, 2026 (Kagan, J., 6–3): geofence acquisition of Google Location History is a search; third-party custody does not remove Fourth Amendment protection; two-hour window does not defeat expectation; warrant validity remanded.\n- **Key passages:** \"law enforcement access to Location History is not outside the scope of the Fourth Amendment just because the data is held by a third party\"\n- **Reliability:** Secondary (law-firm client alert) on a primary opinion; independent.\n- **Relevance to this project:** Report §4, §6; draft omission of Carpenter/third-party doctrine.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce4fa21bb79e8291785cf73dc2908c1aee77b83b9dfdd1a4c5fead3564772c52",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/venable-chatrie-jul-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gc22-hrlibrary-umn.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d5c39684c90d06c4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/gc22-hrlibrary-umn.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gc22-hrlibrary-umn\n- **URL:** https://hrlibrary.umn.edu/gencomm/hrcom22.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** General Comment 22 text: para. 3 'does not permit any limitations whatsoever on the freedom of thought and conscience'; 'no one can be compelled to reveal his thoughts'; the phrase 'forum internum' does not appear.\n- **Key passages:** \"It does not permit any limitations whatsoever on the freedom of thought and conscience or on the freedom to have or adopt a religion or belief of one's choice.\"\n- **Reliability:** Primary text.\n- **Relevance to this project:** Report §5 item 16; draft l.74 (C33, C66) confirmed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c973419dc57f45f8a2d5f5106ac74f22faf99b929a606ce3b72f8478c4fae40b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/gc22-hrlibrary-umn.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hrw-2019-china-how-mass-surveillance-works-xinjiang-ecoi-mirror.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e33aa0c7602151b1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hrw-2019-china-how-mass-surveillance-works-xinjiang-ecoi-mirror.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hrw-2019-china-how-mass-surveillance-works-xinjiang-ecoi-mirror\n- **URL:** https://www.ecoi.net/en/document/2007755.html (mirror of https://www.hrw.org/news/2019/05/01/china-how-mass-surveillance-works-xinjiang — hrw.org returned 403 on every attempt) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C38\n- **What it establishes:** HRW news release 'China: How Mass Surveillance Works in Xinjiang' (dated May 1–2, 2019), read via the Austrian Red Cross's ecoi.net full-text mirror. IJOP aggregates data and flags 'potentially threatening' people; it targets 36 person types including ordinary lawful behaviour; it generates lists for officials to evaluate for detention.\n- **Key passages:** \"aggregates data about people and flags those deemed potentially threatening\". \"targets 36 types of people for data collection. Those include people who have stopped using smart phones, those who fail to 'socialize with neighbors,' and those who 'collected money or materials for mosques with enthusiasm.'\" Also flags those who \"used an 'unusual' amount of electricity\". \"Based on these broad and dubious criteria, the system generates lists of people to be evaluated by officials for detention\"\n- **Reliability:** Secondary (HRW, advocacy NGO) but the underlying research is a technical reverse-engineering with Cure53; mirror is faithful full text. Verify wording against hrw.org before publication if access is restored.\n- **Relevance to this project:** C38: verified; quote the aggregation/flagging line.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 191
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fe4b80ea9ff0ec0c5691a2bb93dbbfe5c7d17aba8f3108c64eda099919e2d8ea",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/hrw-2019-china-how-mass-surveillance-works-xinjiang-ecoi-mirror.md",
+ "kind": "artifact-page"
+}

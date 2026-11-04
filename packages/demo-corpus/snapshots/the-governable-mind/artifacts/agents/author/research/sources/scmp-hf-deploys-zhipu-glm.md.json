@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/scmp-hf-deploys-zhipu-glm.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "be53aa4c1997cb6f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/scmp-hf-deploys-zhipu-glm.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# scmp-hf-deploys-zhipu-glm\n- **URL:** https://www.scmp.com/tech/tech-trends/article/3361450/hugging-face-deploys-zhipus-glm-52-model-contain-autonomous-openai-cyberattack · **Accessed:** 2026-09-16 (article partially truncated for non-subscribers) · **For:** v1 drafting, claim C54\n- **What it establishes:** Secondary (July 22, 2026; Xinmei Shen). Headline and visible text identify GLM 5.2 as \"a flagship model from China's Zhipu AI.\"\n- **Key passages:**\n  - \"a flagship model from China's Zhipu AI\"\n- **Reliability:** Secondary; Hong Kong/China-focused mainstream press. Only the top of the article was readable.\n- **Relevance to this project:** Corroborates the Zhipu AI identity for C54 alongside the Z.ai model card.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 80
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0af3134a05de4bf35b7428e0c67e69d3c61b11bdec8fec54cc182a578744ae4c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/scmp-hf-deploys-zhipu-glm.md",
+ "kind": "artifact-page"
+}

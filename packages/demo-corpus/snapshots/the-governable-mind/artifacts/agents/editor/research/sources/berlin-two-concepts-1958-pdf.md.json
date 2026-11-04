@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/berlin-two-concepts-1958-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f15520ad182670e7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/berlin-two-concepts-1958-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# berlin-two-concepts-1958-pdf\n- **URL:** https://berlin.wolf.ox.ac.uk/published_works/tcl/tcl-e.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** 1958 lecture text (PDF extracted): negative question reads 'what he wants to do or be'; 'bully, oppress, torture them in the name of their real selves' verified.\n- **Key passages:** \"is or should be left to do or be what he wants to do or be, without interference by other persons?\" · \"to bully, oppress, torture them in the name of their 'real' selves\"\n- **Reliability:** Primary text (1958 edition; 1969 revision differs: 'is able').\n- **Relevance to this project:** Report §5 item 6; draft l.100 (C40), l.300 (C44).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "26681c46f3acb1773e435319b9234fb13b7b718d5e10566ba0aabd0b94c343f2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/berlin-two-concepts-1958-pdf.md",
+ "kind": "artifact-page"
+}

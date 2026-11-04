@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-claude-mythos.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "58d509d36705391d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-claude-mythos.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-claude-mythos\n- **URL:** https://en.wikipedia.org/wiki/Claude_Mythos · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (timeline cross-check)\n- **What it establishes:** Tertiary timeline: June 12 letter \"prohibiting access to both Mythos 5 and Fable 5 to any non-U.S. national whatsoever, regardless of their location\" (citing CNBC); June 26 partial restoration for U.S. organizations; June 30 lifting; July 1 full restoration; Mythos 5.1 and Fable 5.1 released September 2026; Project Glasswing expanded to 150+ organizations in 15+ countries by June 2, 2026. Contains no nationality-verification-rationale sentence and no Persona mention.\n- **Key passages:**\n  - \"prohibiting access to both Mythos 5 and Fable 5 to any non-U.S. national whatsoever, regardless of their location\" (attributed to CNBC)\n- **Reliability:** Tertiary; use only for cross-checking dates.\n- **Relevance to this project:** Date cross-check; note 19-day full-shutdown count.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 126
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6cced634e64a84806f3583e51e6b0d1c89e96078c09bb7f59d625b38f5280550",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-claude-mythos.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,49 @@
+{
+  "slug": "structure-of-political-difference",
+  "versions": [
+    {
+      "version": "v1",
+      "file": "drafts/v1.md",
+      "label": "v1",
+      "title": "Politics Has Five Questions",
+      "subtitle": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.",
+      "origin": "source"
+    },
+    {
+      "version": "v2",
+      "file": "drafts/v2.md",
+      "label": "v2",
+      "title": "Politics Has Five Questions",
+      "subtitle": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.",
+      "origin": "source"
+    },
+    {
+      "version": "v3",
+      "file": "drafts/v3.md",
+      "label": "v3",
+      "title": "The Structure of Political Difference",
+      "subtitle": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.",
+      "origin": "source",
+      "writerDirected": true,
+      "provenanceLabel": "Writer-directed edit (not reviewed)"
+    },
+    {
+      "version": "v4",
+      "file": "drafts/v4.md",
+      "label": "v4",
+      "title": "The Structure of Political Difference",
+      "subtitle": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.",
+      "origin": "source",
+      "writerDirected": true,
+      "provenanceLabel": "Writer-directed edit (not reviewed)"
+    }
+  ],
+  "published": {
+    "file": "published.md",
+    "url": "https://sjsebastian.substack.com/p/the-structure-of-political-difference",
+    "fetched": "2026-11-04",
+    "sha256": "f99c4ef3c6d3b2505e53af10358b09df07734eb7dbce8f4370ed0225adad2975",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "origin": "imported"
+  }
+}

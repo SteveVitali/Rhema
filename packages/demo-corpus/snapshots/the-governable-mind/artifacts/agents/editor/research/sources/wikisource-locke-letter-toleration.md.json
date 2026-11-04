@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikisource-locke-letter-toleration.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b8ada47045542dd6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikisource-locke-letter-toleration.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikisource-locke-letter-toleration\n- **URL:** https://en.wikisource.org/wiki/A_Letter_Concerning_Toleration · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Popple translation, 1689; all seven Locke quotations in C23 verbatim; the Mufti of Constantinople sentence immediately follows the \"another prince\" passage; atheists excluded.\n- **Key passages:** \"bound to yield blind obedience to the Mufti of Constantinople, who himself is entirely obedient to the Ottoman Emperor\"; \"Promises, covenants, and oaths, which are the bonds of human society, can have no hold upon an atheist.\"\n- **Reliability:** Primary text (transcription).\n- **Relevance to this project:** C23; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 87
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3627ac7a65a7c4af469c7c1062c753f38ff2f67a228e517623292bc0afafaaa4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikisource-locke-letter-toleration.md",
+ "kind": "artifact-page"
+}

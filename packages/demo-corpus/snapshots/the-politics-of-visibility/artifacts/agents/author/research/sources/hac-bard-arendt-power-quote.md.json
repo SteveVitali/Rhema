@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hac-bard-arendt-power-quote.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c52b6269ad7821af",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hac-bard-arendt-power-quote.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hac-bard-arendt-power-quote\n- **URL:** https://hac.bard.edu/amor-mundi/quote-of-the-week-2011-11-14 · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C36(a)\n- **What it establishes:** Hannah Arendt Center (Bard College) \"Quote of the Week\" feature (commentary by Patchen Markell) reproducing the key *Human Condition* sentence on power with page citation.\n- **Key passages:**\n  - \"While strength is the natural quality of an individual seen in isolation, power springs up between men when they act together and vanishes the moment they disperse.\" — Hannah Arendt, *The Human Condition* (University of Chicago Press, 1958), p. 200.\n- **Reliability:** Secondary but authoritative on Arendt (the Arendt Center's own quotation with page cite); consistent with SEP's quotation of HC 200.\n- **Relevance to this project:** C36(a): political freedom/power as acting in concert — the quotable primary formulation.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 119
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ffa8cd0b84f280934f0c04110165cc2df7a665e0a1c988f180d0350bed2baaa4",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/hac-bard-arendt-power-quote.md",
+ "kind": "artifact-page"
+}

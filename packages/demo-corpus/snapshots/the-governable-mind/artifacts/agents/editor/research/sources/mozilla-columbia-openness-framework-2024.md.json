@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mozilla-columbia-openness-framework-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6c88156fa68c84da",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mozilla-columbia-openness-framework-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mozilla-columbia-openness-framework-2024\n- **URL:** https://arxiv.org/abs/2405.15802 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Basdevant, François, Storchan, Bankston, LeCun, Kapoor, Lambert et al., May 2024 (abstract read): openness varies across the model and system stack; gradient rather than binary; descriptive framework.\n- **Key passages:** \"openness varies in different parts of the AI stack, both at the model and at the system level.\"\n- **Reliability:** Primary; multi-stakeholder; openness-sympathetic.\n- **Relevance to this project:** §2 layers verdict (component decomposition without the persons criterion).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fab9c2a9045dca87260cd0ff390a7c431690b420d164b663573c15d7428a05f4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mozilla-columbia-openness-framework-2024.md",
+ "kind": "artifact-page"
+}

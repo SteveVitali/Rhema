@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/zuckerberg-x-post-coverage-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0f4905d6ff0c2fca",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/zuckerberg-x-post-coverage-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zuckerberg-x-post-coverage-2026\n- **URL:** https://www.cnbc.com/2026/09/15/meta-mark-zuckerberg-with-nvidia-huang-ai-safety-slowdown.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** CNBC (captured) and RTÉ Sept 16 (captured) and Boston Globe/AP Sept 16 (read): Zuckerberg's X post Sept 15, three days after Amodei; quotes on responsibility and incentive, alignment as differentiator, liability; Altman and Musk endorsed Amodei; Huang called AI rules 'just completely unnecessary'; Amodei sought antitrust permission to coordinate.\n- **Key passages:** \"Every lab has the responsibility and incentive to move at the pace required to train its models safely, and the ability to take its own actions to ensure that happens.\" · \"Any lab that doesn't focus on alignment will fall behind.\"\n- **Reliability:** Secondary; mainstream press; three outlets agree.\n- **Relevance to this project:** C12 confirmed on every particular.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 123
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aa116b211e004175a5d3818e93780ef94e69ebf3314024315ac1b1e8af188dae",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/zuckerberg-x-post-coverage-2026.md",
+ "kind": "artifact-page"
+}

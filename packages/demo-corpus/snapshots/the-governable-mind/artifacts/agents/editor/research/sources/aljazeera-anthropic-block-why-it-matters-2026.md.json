@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/aljazeera-anthropic-block-why-it-matters-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fbd6721f9aef6008",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/aljazeera-anthropic-block-why-it-matters-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aljazeera-anthropic-block-why-it-matters-2026\n- **URL:** https://www.aljazeera.com/news/2026/6/14/us-asks-anthropic-to-block-global-access-to-top-ai-models-why-it-matters · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Al Jazeera, June 14, 2026: directive citing national security authorities; scope (all foreign nationals incl. employees); Sacks on jailbreak; Anthropic calls it 'a narrow potential jailbreak'; no OpenAI restriction mentioned; Anthropic cites a 'misunderstanding'.\n- **Key passages:** Anthropic: \"a narrow potential jailbreak\" should not justify recalling \"a commercial model deployed to hundreds of millions.\"\n- **Reliability:** Secondary; international press.\n- **Relevance to this project:** §4(d) corroboration.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f0bb95bad73c28fd1f8881e1e44dc13a5576f9a20eb45cc567cd56f9fcf9455c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/aljazeera-anthropic-block-why-it-matters-2026.md",
+ "kind": "artifact-page"
+}

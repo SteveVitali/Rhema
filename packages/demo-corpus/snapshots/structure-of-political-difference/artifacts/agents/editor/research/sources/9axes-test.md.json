@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/9axes-test.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fe2e7bfa24c6b8e3",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "9b835ab3e412a047",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/9axes-test.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# 9axes-test\n\n- **URL:** https://9axes.github.io/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** A successor test \"building upon the 8values framework\" with nine axes: Federal↔Unitary, Democratic↔Authoritarian, Globalist↔Isolationist, Militarist↔Pacifist, Security↔Freedom, Equality↔Markets, Secular↔Religious, Progressive↔Traditional, Assimilationist↔Multiculturalist.\n- **Key passages:** \"Democratic tends to favour elections and popular opinion, Authoritarian tends to prefer the judgement of the government\"; \"Federal tends to favour stronger local governments…\"\n- **Reliability:** Primary source for the test itself; hobbyist.\n- **Relevance to this project:** Shows the hobbyist tradition has already explored the draft's \"modules\": Federal↔Unitary ≈ the draft's centralization tag; Democratic↔Authoritarian ≈ the draft's regime-type tag; Militarist↔Pacifist ≈ the Restraint↔Intervention module; Secular↔Religious ≈ the religion-of-belonging tag. The draft's §X \"exclusions\" architecture (core five + optional modules) recapitulates, in disciplined form, what axis-proliferating tests did indiscriminately. Also a cautionary example the draft can use: nine undifferentiated axes with no salience or naming discipline is exactly the \"coordinate string written in Latin\" failure the draft warns against.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 154
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b38cf7cea393de288b75c2dd3af8f64ad20953672c8c3aa1003265c9afca03d7",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/9axes-test.md",
+ "kind": "artifact-page"
+}

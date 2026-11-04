@@ -1,0 +1,93 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ]
+  },
+  "kind": "ok",
+  "projectSlug": "structure-of-political-difference",
+  "report": {
+   "approvals": [
+    {
+     "decision": "major revisions",
+     "round": "v1 review"
+    }
+   ],
+   "claims": {
+    "checked": 27,
+    "verified": 22
+   },
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ],
+   "phases": [
+    {
+     "key": "intake",
+     "ordinal": 1,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "verification",
+     "ordinal": 2,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "discourse",
+     "ordinal": 3,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "argument",
+     "ordinal": 4,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "craft",
+     "ordinal": 5,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "second_read",
+     "ordinal": 6,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "letter",
+     "ordinal": 7,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    }
+   ],
+   "replayed": true,
+   "runId": "v1-review",
+   "state": "completed",
+   "workflow": "review"
+  }
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "v1-review",
+ "kind": "run-report"
+}

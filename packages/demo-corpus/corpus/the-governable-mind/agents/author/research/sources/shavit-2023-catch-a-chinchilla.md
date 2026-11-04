@@ -1,0 +1,11 @@
+# shavit-2023-catch-a-chinchilla
+- **URL:** https://arxiv.org/abs/2303.11341 (PDF v2, last revised 30 May 2023; 22 pp., text extracted locally) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice N (item N3c)
+- **What it establishes:** Shavit expressly scopes his compute-monitoring framework to specialised datacenter ML chips and says it leaves personal devices alone — with an appendix caveat that consumer chips might be retrofitted if training on them becomes feasible.
+- **Key passages:**
+  - Abstract (p. 1): "At the same time, the system does not curtail the use of consumer computing devices, and maintains the privacy and confidentiality of ML practitioners' models, data, and hyperparameters."
+  - §1.1 Contributions (p. 3, the sentence immediately BEFORE the "1.2 Limitations" heading — so §1.1, not §1.2): "Also, as its focus is restricted to specialized data-center chips, the system does not affect individuals' use of their personal computing devices."
+  - §1 (p. 1): "We refer to these specialized accelerators as ML chips, which we distinguish from consumer-oriented GPUs with lower interconnect bandwidth (e.g., the NVIDIA RTX 4090, used in gaming computers)."
+  - §1.2 Limitations (p. 3): "More generally, the framework does not apply to small-scale ML training, which can often be done with small quantities of consumer GPUs."
+  - Appendix A.2 (p. 18): "Still, recent work has suggested it may be possible to do large-scale training on consumer chips with low interconnect, though with substantial cost and speed penalties. If such methods become feasible for bad actors, then we may need to adjust to a different regulatory model ... So long as they can be detected, it may be possible to retrofit consumer chips (e.g. with a permanently-mated host CPU, see Section 4) to enable similar monitoring capabilities."
+- **Reliability:** Primary; single-author arXiv preprint (Harvard), the founding paper of the hardware-verification literature.
+- **Relevance to this project:** Exact wording confirmed; section pinpoint corrected to §1.1 (p. 3). Even this paper's exclusion is contingent (App. A.2). Citation: Yonadav Shavit, "What does it take to catch a Chinchilla? Verifying Rules on Large-Scale Neural Network Training via Compute Monitoring," arXiv:2303.11341 (v2, 30 May 2023).

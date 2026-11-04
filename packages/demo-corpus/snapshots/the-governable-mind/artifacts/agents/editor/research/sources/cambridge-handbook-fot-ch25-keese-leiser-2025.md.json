@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cambridge-handbook-fot-ch25-keese-leiser-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "35c2b6a6f5f50d46",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cambridge-handbook-fot-ch25-keese-leiser-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cambridge-handbook-fot-ch25-keese-leiser-2025\n- **URL:** https://www.cambridge.org/core/books/abs/cambridge-handbook-of-the-right-to-freedom-of-thought/online-manipulation-as-a-potential-interference-with-the-right-to-freedom-of-thought/47C21E9D2B8FF1834E1AED4A0CB22EF8 (DOI 10.1017/9781009539616.032) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 4)\n- **What it establishes:** Keese & Leiser, ch. 25 (pp. 321-334) of O'Callaghan & Shiner (eds.), The Cambridge Handbook of the Right to Freedom of Thought (CUP, March 6, 2025). Thesis: \"manipulative online practices interfere with freedom of thought when they affect one's mental autonomy in a sufficiently global manner,\" with factors of concealment, vulnerability and power asymmetry, the importance of the targeted thoughts, and frequency/duration. Part VI neighbours: ch. 24 \"What Is Thought and What Makes It Free?\" (McCarthy-Jones & Walmsley); ch. 26 \"Neurorights\"; ch. 27 \"Freedom of Thought\" [in criminal justice] (Ligthart & Van De Pol); ch. 28 \"Realising the Societal Dimensions of the Right to Freedom of Thought in the Digital Age through Strategic Litigation\"; ch. 29 \"Non-ideal Theory and Protecting Freedom of Thought.\" The chapter is about manipulation (dark patterns, targeting), not about records, retention, or state access.\n- **Key passages:** \"sufficiently global manner.\"\n- **Reliability:** Primary abstract (publisher page); full text paywalled.\n- **Relevance to this project:** Agenda 4; ref [22]. Confirms that the Handbook's digital chapter is manipulation-centred, like Alegre and Farahany; the observation-and-permission axis is the draft's.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 196
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fb0c064ec499cffc79df11e0293d4c2e0d0e0dc9ef7298a21680d2e6135b6f7d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cambridge-handbook-fot-ch25-keese-leiser-2025.md",
+ "kind": "artifact-page"
+}

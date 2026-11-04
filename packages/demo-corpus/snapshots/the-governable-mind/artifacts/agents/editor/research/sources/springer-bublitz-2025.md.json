@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/springer-bublitz-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "da2be0a41ed60594",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/springer-bublitz-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# springer-bublitz-2025\n- **URL:** https://link.springer.com/article/10.1007/s12142-025-00751-0 (reached via Springer's idp cookie redirect; metadata https://api.crossref.org/works/10.1007/s12142-025-00751-0) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Both C34 fragments verbatim; the impossibility reason covers both altering and reading thought, and names \"force or coercion\" (C67). Human Rights Review 26(4):313–336, 2025, CC-BY.\n- **Key passages:** \"Freedom of thought is among the strongest human rights, yet it is largely devoid of practical legal application.\"; \"changing thought, belief, and desires against someone's will without such overwhelming means seemed largely impossible.\"; \"For a long time, this was largely impossible and required the use of force or coercion\".\n- **Reliability:** Primary (peer-reviewed article, open access).\n- **Relevance to this project:** C34, C67; §III.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 112
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9dc7a574e75b1d807f6eec8c4d5e479b591740228127bb02142a79ac56196987",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/springer-bublitz-2025.md",
+ "kind": "artifact-page"
+}

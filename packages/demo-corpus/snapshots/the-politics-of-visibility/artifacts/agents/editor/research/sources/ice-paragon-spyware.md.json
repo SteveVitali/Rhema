@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ice-paragon-spyware.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8088ed49ee365322",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "646314153800e16e",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "d5a23c62cfb11987",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/ice-paragon-spyware.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ICE / Paragon spyware acknowledgment and denial (Apr–May 2026)\n\n- TechCrunch: https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases/\n- NPR (via member stations): https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions ; https://www.iowapublicradio.org/news-from-npr/2026-05-22/dhs-says-ice-has-no-relationship-with-spyware-maker-paragon-solutions ; https://www.wunc.org/2026-04-07/ice-acknowledges-it-is-using-powerful-spyware\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: Lyons letter (Apr. 1, 2026) verbatim: \"I approved HSI's procurement and\noperational use of cutting-edge technological tools that address the specific challenges\nposed by the Foreign Terrorist Organizations' thriving exploitation of encrypted\ncommunication platforms\"; fentanyl framing; no vendor named; DHS (May 22): \"ICE has no\nrelationship with Paragon Solutions, Inc. or with the company that acquired them\";\nprocurement notice: contract \"closed out Jan. 20\"; DHS declined to address third-party\naccess; Rep. Lee: no substantive answers on who could be targeted or domestic legal\nbasis.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 109
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4b8c1117c146e28ffd2c4204930449df02e845c13675a2c29a265325e3e4c971",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/ice-paragon-spyware.md",
+ "kind": "artifact-page"
+}

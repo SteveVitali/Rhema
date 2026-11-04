@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/physorg-berkeley-hrc-llm-report-sep-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1a7eb6ec72e25724",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/physorg-berkeley-hrc-llm-report-sep-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# physorg-berkeley-hrc-llm-report-sep-2026\n- **URL:** https://phys.org/news/2026-09-llm-threaten-freedom-thought-equality.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** UC Berkeley Human Rights Center, 'An International Analysis of the Human Rights Impacts of Large Language Models' (Sept. 9, 2026): 56 stakeholders, 24 countries; cross-cutting risks to freedom of thought from over-reliance in law, journalism, education.\n- **Key passages:** \"cross-cutting risks to freedom of thought\"\n- **Reliability:** Secondary (science-news aggregator) on a primary report; independent.\n- **Relevance to this project:** Report §1.9, §2; draft l.196.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 77
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "442a32420342cf164a498a86140379784e6192d2ad8013466ce40889f1024d54",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/physorg-berkeley-hrc-llm-report-sep-2026.md",
+ "kind": "artifact-page"
+}

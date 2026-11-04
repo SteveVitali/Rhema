@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/petrie-flexheg-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b3cb80562cbcc60e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/petrie-flexheg-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# petrie-flexheg-2025\n- **URL:** https://arxiv.org/abs/2506.15093 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Petrie, Aarne, Ammann, Dalrymple, June 2025 (abstract read; 2024 interim-report summary via search): open-source guarantee processor plus secure enclosure on datacenter accelerators; privacy-preserving verification and enforcement; original vision needs no information sent to authorities and no knowledge of device ownership.\n- **Key passages:** \"trustworthy, privacy-preserving verification and enforcement of claims about AI development.\" · interim vision: \"no need for devices to send information to any authority or for authorities to know who owns each device.\"\n- **Reliability:** Primary; technical proposal; safety-aligned.\n- **Relevance to this project:** §2 (§XIV composes what flexHEG designed apart); §4(c); §7 compute-governance reception.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 109
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "790d87e9c53b14a71624226ba4324f13486d989123706d59e4d65a97f0f4ce4d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/petrie-flexheg-2025.md",
+ "kind": "artifact-page"
+}

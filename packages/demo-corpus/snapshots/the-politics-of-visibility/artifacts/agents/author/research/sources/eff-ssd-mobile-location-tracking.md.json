@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eff-ssd-mobile-location-tracking.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1d5e4b80c6f75df1",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "0466be260b610db7",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/eff-ssd-mobile-location-tracking.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-ssd-mobile-location-tracking\n\n- **URL:** https://ssd.eff.org/module/mobile-phones-location-tracking · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** EFF Surveillance Self-Defense module \"Mobile Phones: Location Tracking\" (last updated Nov 5, 2024) identifies four distinct location-exposure vectors, each with its own section heading: \"Mobile Signal Tracking — Towers\"; \"Mobile Signal Tracking — Cell Site Simulator\"; \"Wi-Fi and Bluetooth Tracking\"; \"Location Information Leaks From Apps and Web Browsing.\"\n- **Key passages:** Towers: \"There is no way to hide from this kind of tracking as long as your mobile phone is powered on, with a registered SIM card, and transmitting signals.\" Wi-Fi/Bluetooth: devices broadcast MAC addresses in probe requests; \"These identifiers have traditionally been valuable tools for passive trackers in retail stores and coffee shops to gather data.\" Apps: \"location tracking could be used to suggest when people are in a romantic relationship by following who they visit.\"\n- **Reliability:** Secondary/advocacy but technically authoritative; EFF's canonical security-education resource.\n- **Relevance to this project:** C10(b) (Bluetooth/Wi-Fi as tracking/fingerprinting vectors) and C10(c) (cellular vs. Wi-Fi/Bluetooth vs. apps as distinct exposure channels).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 170
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1bc77c5ad2d82b08f2b74663863dccd9ee2efbcbcf39886ec22e538de26ff106",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/eff-ssd-mobile-location-tracking.md",
+ "kind": "artifact-page"
+}

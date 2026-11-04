@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nextgov-anthropic-export-order-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1ae90f57768878cf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nextgov-anthropic-export-order-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nextgov-anthropic-export-order-2026\n- **URL:** https://www.nextgov.com/artificial-intelligence/2026/06/anthropic-suspends-top-ai-models-after-us-export-control-order/414173/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Nextgov (DiMolfetta), June 13, 2026: Commerce export-control directive restricting foreign-national access inside and outside the US; global disablement; trigger per Axios a reported jailbreak; no reference to OpenAI in the order; DoD CIO and ARI reactions.\n- **Key passages:** Carson (ARI): \"The decision to block Anthropic's latest AI model fails that test, and risks America's edge in AI innovation.\"\n- **Reliability:** Secondary; federal-tech press.\n- **Relevance to this project:** §4(d) corroboration; Headline 1.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "82432acd1332724dc4e45ec43aaa6d5648afb15bfbfbab7d6e84367b2059b9f9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nextgov-anthropic-export-order-2026.md",
+ "kind": "artifact-page"
+}

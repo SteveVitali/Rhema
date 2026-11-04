@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5362907cae7287dd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# dandigam-decision-logging-hackernoon-2026-09-09\n- **URL:** https://hackernoon.com/decision-logging-the-observability-pattern-that-actually-helps-ai-agents · **Accessed:** 2026-09-16 (direct curl, 200) · **For:** v2→v3 response round, slice N (item N2)\n- **What it establishes:** A practitioner article (Raju Dandigam, Staff Software Engineer at Navan; HackerNoon, September 9th, 2026) recommending structured \"decision\" events instead of prompt/completion capture. Its AgentDecision schema has NO user field at all (decisionId, traceId, spanId, runId, agent, kind, occurredAt, reasonCode, reasonSummary, inputFacts, proposedTools, executedTools, confidence, costUsd, latencyMs, status). A user identifier is treated as optional and, if needed, pseudonymised with a keyed HMAC.\n- **Key passages:**\n  - Under \"Pseudonymous Is Not Anonymous\": \"Decision logging can become a privacy risk if identifiers are handled casually. Do not record raw prompts, full completions, email addresses, access tokens, payment details, or private chat history by default.\"\n  - \"If you need a stable pseudonymous identifier, use a keyed HMAC rather than a plain unsalted hash or a public salt\" (followed by a pseudonymizeUserId function); \"the result is still pseudonymous data. Access controls, key rotation, purpose limitation, and retention rules still apply.\"\n  - \"Do not ask a model to dump its private reasoning into logs and treat that text as ground truth. Free-form rationale may expose sensitive content, be unfaithful to the behavior, and create a much larger security surface. Log the evidence and policy rule the application actually used.\"\n  - Under \"Log the Boundary, Not the Entire Runtime\": the anti-pattern is logging {user, prompt, toolResults, modelResponse}; \"In production, it can copy personal data, secrets, proprietary documents, and long model content into an observability system.\"\n  - \"collect the minimum evidence needed for a defined debugging or measurement purpose.\"\n- **Reliability:** Single practitioner's how-to on a self-publishing platform; illustrative of practice, not authoritative. Purpose is debugging/observability, not accountability or attribution — which is why it can drop the user.\n- **Relevance to this project:** Answer to \"do both keep a user ID?\": WorkOS yes (mandatory, with email in the example); Dandigam no (absent from the schema; optional HMAC pseudonym). The two sources together show the action/prompt separation is real practice, and that whether the actor is identified depends on whether the log's purpose is accountability (WorkOS) or debugging (Dandigam).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 345
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e418e9bd7698a7037a4a07f935c1592bd107422b7c93f8fb55bec25abf523402",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+ "kind": "artifact-page"
+}

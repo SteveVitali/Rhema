@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/register-sharwood-regulatory-capture-2026-09-14.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b142e489408a6dae",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/register-sharwood-regulatory-capture-2026-09-14.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# register-sharwood-regulatory-capture-2026-09-14\n- **URL:** https://www.theregister.com/ai-and-ml/2026/09/14/big-ai-sets-out-its-terms-for-regulatory-capture-and-calls-it-pace-the-frontier/5296067 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Simon Sharwood, The Register, Sept 14, 2026: 'Pace the Frontier' as regulatory capture; four billionaires signing the same rules; Gartner's Plummer skeptical; Johnson and Trump opposed.\n- **Key passages:** 'Amodei's ideas read like an attempt at \"regulatory capture\" – the situation in which vested interests find a way to define the rules their regulators impose.'\n- **Reliability:** Secondary; trade press; skeptical.\n- **Relevance to this project:** Q5; Q7 (two-condition version of the complex).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 86
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "26978ea5fb55c26a2ab21aa81a378dc564719aa5519bfcfc556c709a2a8bd234",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/register-sharwood-regulatory-capture-2026-09-14.md",
+ "kind": "artifact-page"
+}

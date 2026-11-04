@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/arendt-1967-truth-and-politics-new-yorker.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dc1f35c1fc57c84a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/arendt-1967-truth-and-politics-new-yorker.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# arendt-1967-truth-and-politics-new-yorker\n- **URL:** https://www.newyorker.com/magazine/1967/02/25/truth-and-politics (publisher's page; full text served in HTML) · also opened https://idanlandau.com/wp-content/uploads/2014/12/arendt-truth-and-politics.pdf, which is ABRIDGED (contains \"[. . .]\" and omits the \"farce\" sentence) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C42\n- **What it establishes:** Exact wording of the \"farce\" sentence, the factual/rational-truth distinction, \"political by nature,\" and both \"stubborn(ness)\" passages, in the New Yorker printing (Feb. 25, 1967). *Between Past and Future* (1968) pagination not checked.\n- **Key passages (New Yorker text):** \"Freedom of opinion is a farce unless factual information is guaranteed and the facts themselves are not in dispute. In other words, factual truth informs political thought just as rational truth informs philosophical speculation.\" · \"Factual truth, on the contrary, is always related to other people: it concerns events and circumstances in which many are involved; it is established by witnesses and depends upon testimony; it exists only to the extent that it is spoken about, even if it occurs in the domain of privacy. It is political by nature.\" · \"Unwelcome opinion can be argued with, rejected, or compromised upon, but unwelcome facts possess an infuriating stubbornness that nothing can move except plain lies.\" · \"the intractable, unreasonable stubbornness of sheer factuality\" · \"Leibniz assigned mathematical, scientific, and philosophical truths to the common species of rational truth as distinguished from factual truth.\"\n- **Reliability:** Primary; publisher's own archive page.\n- **Relevance to this project:** C42 — factual truth vs opinion; facts as political by nature.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 239
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d1c3b857a31efffa2e5f742315168dfcaa7954750da2889ef7cfafb385279dca",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/arendt-1967-truth-and-politics-new-yorker.md",
+ "kind": "artifact-page"
+}

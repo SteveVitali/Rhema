@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/volkov-anthropic-export-controls-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "432e232292e3f04e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/volkov-anthropic-export-controls-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# volkov-anthropic-export-controls-2026\n- **URL:** https://blog.volkovlaw.com/2026/06/when-the-government-pulls-the-plug-anthropic-export-controls-and-the-future-of-ai-governance/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Volkov (compliance counsel), June 14, 2026: statutory basis not publicly identified with precision; access suspension; no Federal Register notice mentioned; governance gap; BIS expanding focus on AI.\n- **Key passages:** \"There is no clear, comprehensive statutory framework governing government authority to restrict commercial AI model access on national security grounds.\"\n- **Reliability:** Secondary; practitioner blog.\n- **Relevance to this project:** §4(d); Q6 contestability of an unpublished instrument.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "035ad36ef5ad9df488293d0676c4e8a9fc76517ee77bc2a2653a8030e0ae9c4a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/volkov-anthropic-export-controls-2026.md",
+ "kind": "artifact-page"
+}

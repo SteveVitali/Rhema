@@ -1,0 +1,285 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b30",
+    "confidence": 1,
+    "endOffset": 773,
+    "quote": "the junction her distinction did not anticipate",
+    "startOffset": 726
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b88",
+    "confidence": 1,
+    "endOffset": 630,
+    "quote": "most strongly among those who accept the monitoring as justified",
+    "startOffset": 566
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "anchor": {
+    "blockId": "b8",
+    "confidence": 1,
+    "endOffset": 838,
+    "quote": "Everything the filings describe is, for now, allegation",
+    "startOffset": 783
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 3
+  },
+  {
+   "anchor": {
+    "blockId": "b99",
+    "confidence": 1,
+    "endOffset": 164,
+    "quote": "Republican political theory, in Philip Pettit's and Quentin Skinner's hands",
+    "startOffset": 89
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 4
+  },
+  {
+   "anchor": {
+    "blockId": "b70",
+    "confidence": 1,
+    "endOffset": 147,
+    "quote": "Checks operate on episodes; capacity is a stock.",
+    "startOffset": 99
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 5
+  },
+  {
+   "anchor": {
+    "blockId": "b59",
+    "confidence": 1,
+    "endOffset": 1674,
+    "quote": "The assurance and the arrest ledger are the same year's documents.",
+    "startOffset": 1608
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 6
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 12
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 13
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 14
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 15
+  },
+  {
+   "disposition": {
+    "kind": "rebut",
+    "rationale": "rebut with evidence (`fbi-centennial-history-2008`: Wayback capture of the book PDF reads \"was questionable\" verbatim; web page differs) — no change",
+    "status": "done"
+   },
+   "findingOrdinal": 16
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 17
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 18
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 19
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 20
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 21
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 22
+  },
+  {
+   "disposition": {
+    "kind": "rebut",
+    "rationale": "rebut with evidence (`fraenkel-dual-state-oup-2017-preview`: publisher preview confirms p. xxiii, Introduction to the 1941 Edition) + ref tweak",
+    "status": "done"
+   },
+   "findingOrdinal": 23
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 24
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 25
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 26
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 27
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 28
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 29
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "done",
+   "title": "structure: §XIV↔§XV swap + tighten"
+  },
+  {
+   "ordinal": 2,
+   "status": "done",
+   "title": "Minnesota ruling-proofing"
+  },
+  {
+   "ordinal": 3,
+   "status": "done",
+   "title": "compressions"
+  },
+  {
+   "ordinal": 4,
+   "status": "done",
+   "title": "positioning program"
+  },
+  {
+   "ordinal": 5,
+   "status": "done",
+   "title": "§XI rebuild"
+  },
+  {
+   "ordinal": 6,
+   "status": "done",
+   "title": "§XIII rebuild"
+  },
+  {
+   "ordinal": 7,
+   "status": "done",
+   "title": "§XII repair"
+  },
+  {
+   "ordinal": 8,
+   "status": "done",
+   "title": "§VI UK repairs"
+  },
+  {
+   "ordinal": 9,
+   "status": "done",
+   "title": "§V repairs"
+  },
+  {
+   "ordinal": 10,
+   "status": "done",
+   "title": "§X/coda evidence"
+  },
+  {
+   "ordinal": 11,
+   "status": "done",
+   "title": "corrections + refs"
+  },
+  {
+   "ordinal": 12,
+   "status": "done",
+   "title": "craft pass"
+  },
+  {
+   "ordinal": 13,
+   "status": "done",
+   "title": "coherence read + invariants"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

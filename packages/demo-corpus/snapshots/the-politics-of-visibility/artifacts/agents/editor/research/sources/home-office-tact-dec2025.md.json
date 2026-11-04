@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/home-office-tact-dec2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d228379303d8141b",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "73c191a4b314339b",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "4951e228886e012b",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/home-office-tact-dec2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Home Office — TACT quarterly statistics, YE Dec 2025 (pinned URL)\n\n- https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u\n- Published 2026-03-12. Accessed 2026-08-21 (Phase 1). PRIMARY.\n\nEstablishes: 3,034 terrorism-related arrests YE 31 Dec 2025 (GB); 2,779 (92%) linked to\nsupporting Palestine Action; of those, 412 charged incl. 8 under s.12 and 404 under s.13;\noverall 486 (16%) of all arrests charged. Recompute: 2779/3034 = 91.6%, release rounds to\n92%. This is the exact release the draft's ref [22] should pin.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e01762e629cc4f8afabf643dd1df790f78acc0a1586ff4f7439b06e8c460d805",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/home-office-tact-dec2025.md",
+ "kind": "artifact-page"
+}

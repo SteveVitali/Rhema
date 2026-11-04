@@ -1,0 +1,53 @@
+{
+ "dto": {
+  "arc": [
+   {
+    "draftId": "v2",
+    "kind": "draft",
+    "label": "v2",
+    "n": 1
+   },
+   {
+    "kind": "review",
+    "runId": "v2-review",
+    "subjectN": 1
+   },
+   {
+    "draftId": "v3",
+    "kind": "draft",
+    "label": "v3",
+    "n": 2
+   },
+   {
+    "draftId": "v4",
+    "kind": "draft",
+    "label": "Writer-directed edit (not reviewed)",
+    "n": 3
+   },
+   {
+    "draftId": "published",
+    "kind": "draft",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "n": 4
+   }
+  ],
+  "counts": {
+   "claimsChecked": 37,
+   "major": 7,
+   "minor": 15,
+   "strengths": 5
+  },
+  "essay": "constitution-of-reason",
+  "publishedLabel": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+  "publishedOn": "2026-11-04",
+  "publishedUrl": "https://sjsebastian.substack.com/p/the-constitution-of-reason",
+  "retitle": null,
+  "subtitle": "*S. J. Sebastian*",
+  "title": "The Constitution of Reason",
+  "words": 11224
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "",
+ "kind": "card-facts"
+}

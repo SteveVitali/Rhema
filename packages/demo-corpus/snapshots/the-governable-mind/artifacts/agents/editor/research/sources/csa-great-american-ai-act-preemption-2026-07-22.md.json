@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/csa-great-american-ai-act-preemption-2026-07-22.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c1aefc2325162f96",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/csa-great-american-ai-act-preemption-2026-07-22.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# csa-great-american-ai-act-preemption-2026-07-22\n- **URL:** https://labs.cloudsecurityalliance.org/research/csa-research-note-great-american-ai-act-preemption-20260722/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** CSA note, July 22, 2026: Obernolte–Trahan Great American AI Act discussion draft (June 4); three-year preemption of state laws 'specifically regulating the development of an artificial intelligence model'; SB 53, RAISE, Illinois SB 315 most exposed; not introduced as of early July.\n- **Key passages:** 'As of early July 2026, the bill remains a discussion draft that has not been formally introduced.'\n- **Reliability:** Secondary; industry research note.\n- **Relevance to this project:** Q5: the preemption vehicle; no September movement found on RAISE/SB 53.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f592b9fd9666629c8c47ac26e5fe195b1b21ee155941c78c922f8a64d1d44c48",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/csa-great-american-ai-act-preemption-2026-07-22.md",
+ "kind": "artifact-page"
+}

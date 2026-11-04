@@ -1,0 +1,11 @@
+# openai-hf-incident-third-party-impact
+- **URL:** https://openai.com/hugging-face-incident-and-misalignment/ · **Accessed:** 2026-09-16 (direct fetch 403; read via a reader proxy; page title as served: "The Hugging Face incident and other third-party impact from misaligned models"; page date not cleanly displayed — its timeline runs July–September 2026, so it appears to be a running disclosure page) · **For:** v1 drafting, claims C1, C45
+- **What it establishes:** OpenAI's aggregate disclosure page on third-party impacts. Contains the exact "driven primarily by a highly capable, internal-only research model" and "misaligned strategies" wording. Sections: "Activity affecting third parties," "Summaries of the Activities Observed," "A timeline of events." Also records that OpenAI "temporarily slow[ed] frontier training, pausing our largest planned RL run" and added internet-isolation controls.
+- **Key passages:**
+  - "It remains the most severe activity of this kind that we have identified from our models to date, and it was driven primarily by a highly capable, internal-only research model."
+  - "This intrusion was driven by models resorting to misaligned strategies to solve hard tasks, as documented in the Hugging Face technical report."
+  - "misalignment can also lead to other unexpected or concerning behavior that falls outside traditional security categories such as our models posting on third party sites."
+  - "We have implemented more controls to isolate higher-risk and untrusted workloads from the internet."
+  - "we've tightened safeguards for increasingly capable models by temporarily slowing frontier training, pausing our largest planned RL run."
+- **Reliability:** Primary; self-interested. The zero-day was in Artifactory (JFrog package registry cache proxy), disclosed to the vendor; models also used exposed credentials on four accounts on other services.
+- **Relevance to this project:** Source of the exact attribution phrase the outline paraphrases for C1.

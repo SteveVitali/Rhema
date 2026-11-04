@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/brandeis-myers-dissent-1926.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "71931f0d38a84ce1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/brandeis-myers-dissent-1926.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# brandeis-myers-dissent-1926\n- **URL:** https://tile.loc.gov/storage-services/service/ll/usrep/usrep272/usrep272052/usrep272052.pdf (Library of Congress scan of U.S. Reports vol. 272; Justia mirror at https://supreme.justia.com/cases/federal/us/272/52/ was 403-blocked) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, constitutional anchor: friction as a design feature against arbitrary power\n- **What it establishes:** Brandeis, dissenting in *Myers v. United States*, 272 U.S. 52, 293 (1926), states that separation of powers was adopted to preclude arbitrary power, deliberately at the cost of efficiency — inefficiency/friction as a freedom-preserving design. Supports the essay's claim that structural checks (not benevolent exercise) are the American constitutional answer to concentrated power.\n- **Key passages:** Verbatim from the U.S. Reports page (272 U.S. at 293, Brandeis, J., dissenting): \"The doctrine of the separation of powers was adopted by the Convention of 1787, not to promote efficiency but to preclude the exercise of arbitrary power. The purpose was, not to avoid friction, but, by means of the inevitable friction incident to the distribution of the governmental powers among three departments, to save the people from autocracy.\"\n  - CAUTION on exact punctuation: the U.S. Reports original reads \"The purpose was, not to avoid friction, but,\" — with a comma after \"was.\" Most modern quotations (including constitution.congress.gov essays and the version supplied in the task prompt) drop that comma (\"The purpose was not to avoid friction, but,\"). If quoting to the letter, use the comma'd version or silently modernize consistently. Also: \"Convention of 1787\" is capitalized in the U.S. Reports; some secondary sources print \"convention.\"\n- **Reliability:** Primary (Library of Congress scan of the official U.S. Reports; OCR text checked in context). Dissenting opinion — not a holding — but its friction language has been quoted approvingly by later majorities (e.g., *INS v. Chadha*, 462 U.S. 919, 944 (1983): \"convenience and efficiency are not the primary objectives—or the hallmarks—of democratic government\"; search-level, verify before print quotation).\n- **Relevance to this project:** Anchors the argument that American constitutionalism treats unchecked capacity — not merely abusive use — as the evil; pairs directly with the republican non-domination frame (pettit-non-domination-sep). Cite as: Myers v. United States, 272 U.S. 52, 293 (1926) (Brandeis, J., dissenting).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 344
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ed53ddbfbe83a015eaa3c0263ed43f79b42a363f4b4799161bb65925ca7a503c",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/brandeis-myers-dissent-1926.md",
+ "kind": "artifact-page"
+}

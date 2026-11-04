@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/british-history-1643-ordinance.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8695b3dc38dd8864",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/british-history-1643-ordinance.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# british-history-1643-ordinance\n- **URL:** https://www.british-history.ac.uk/no-series/acts-ordinances-interregnum/pp184-186 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** The June 14, 1643 Ordinance authorizes \"the Master and Wardens of the said Company\" (Stationers) with others \"to make diligent search in all places\" and seize unlicensed presses — the basis for \"licensing administered through a guild\" (C24; Part C's C47).\n- **Key passages:** \"the Master and Wardens of the said Company ... are hereby Authorized and required, from time to time, to make diligent search in all places\".\n- **Reliability:** Primary (Firth & Rait 1911 edition of the Ordinance).\n- **Relevance to this project:** C24, C47; §I, §VI.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f9791e86bf4808056bafb7cc37fd61f15cd82507aa21edbe50a4355ca8ec2ce0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/british-history-1643-ordinance.md",
+ "kind": "artifact-page"
+}

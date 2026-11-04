@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/forbes-brewster-first-chatgpt-warrant-2025-10-20.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "42f8963a5228050d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/forbes-brewster-first-chatgpt-warrant-2025-10-20.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# forbes-brewster-first-chatgpt-warrant-2025-10-20\n- **URL:** https://cdn.lawreportgroup.com/acuris/files/Law-Report-Group-Files-New/AI%20Warrants%20Pt%201%20Forbes%20article.pdf (reprint of https://www.forbes.com/sites/thomasbrewster/2025/10/20/openai-ordered-to-unmask-writer-of-prompts/, which served a CAPTCHA) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Forbes (Brewster), Oct. 20, 2025: first known federal search warrant to OpenAI for user data, unsealed in Maine; HSI undercover chats with a CSAM-site administrator who described two prompts; the warrant sought the account behind them; OpenAI's data was not needed to identify him — biographical details given to the agent, matched to military records, identified Drew Hoehner, 36; OpenAI returned one Excel spreadsheet. Defeats \"identified a suspect … from the content of two prompts\" (III16, VII3).\n- **Key passages:** \"In the first known federal search warrant asking OpenAI for user data, reviewed by Forbes after it was unsealed in Maine last week, Homeland Security Investigations revealed…\" · \"A document showed the search had been completed and OpenAI had provided agents with one Excel spreadsheet of information.\" · prompts: \"What would happen if Sherlock Holmes met Q from Star Trek?\" and a 200,000-word-poem request.\n- **Reliability:** Secondary (investigative press) working from the unsealed warrant; the fullest public account.\n- **Relevance to this project:** l.84, l.152; ref [33].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 188
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "27f3410d2d6cd58437232850a22ba62911cd7fdec7004406a2842d81439a8f8b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/forbes-brewster-first-chatgpt-warrant-2025-10-20.md",
+ "kind": "artifact-page"
+}

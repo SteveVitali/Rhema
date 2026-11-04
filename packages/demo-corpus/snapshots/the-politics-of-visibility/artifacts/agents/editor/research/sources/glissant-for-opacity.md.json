@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/glissant-for-opacity.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1e17b15d97b7928a",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "e05268a8f07c76aa",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "d0458f32978a5e6a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/glissant-for-opacity.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Glissant, \"For Opacity\" (Poetics of Relation, 1990/1997)\n\n- **URL:** chapter PDF read at https://sites.evergreen.edu/politicalshakespeares/wp-content/uploads/sites/226/2015/12/Glissant-For-Opacity.pdf\n- **Accessed:** 2026-08-21 (full chapter read)\n\n**Establishes:** The term collision. \"We clamor for the right to opacity for everyone.\" Glissant's opacity is epistemic and anti-colonial — \"it is impossible to reduce anyone, no matter who, to a truth he would not have generated on his own\"; \"widespread consent to specific opacities is the most straightforward equivalent of nonbarbarism.\" It is about the irreducibility of persons to Western categories of understanding, not about state surveillance — but it has ALREADY been imported into surveillance discourse (e.g., Zach Blas, \"Informatic Opacity,\" per https://archive2.bakonline.org/prospections/informatic-opacity-by-zach-blas/, found in search). The draft's title-concept \"democratic right to opacity\" will read, to humanities-literate readers, as either homage or ignorance; one clause of acknowledgment converts a liability into depth.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 132
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "927fa352cf14397dbafb090840cdbae4620f038f9e778bf87576d4b49a26741d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/glissant-for-opacity.md",
+ "kind": "artifact-page"
+}

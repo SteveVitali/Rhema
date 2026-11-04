@@ -1,0 +1,14 @@
+{
+ "files": {
+  "correspondence/v2-review/01-claim-ledger.md": {
+   "exact": 35,
+   "exact-multi": 0,
+   "fuzzy": 1,
+   "line": 0,
+   "none": 0,
+   "normalized": 1,
+   "section": 0
+  }
+ },
+ "version": 1
+}

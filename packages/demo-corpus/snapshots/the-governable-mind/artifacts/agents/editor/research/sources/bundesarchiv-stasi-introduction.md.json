@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bundesarchiv-stasi-introduction.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7c49ee720b70cdfd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bundesarchiv-stasi-introduction.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bundesarchiv-stasi-introduction\n- **URL:** https://www.bundesarchiv.de/en/stasi-records-archive/education/what-was-the-state-security/introduction/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C55: about 91,000 full-time employees by 1989.\n- **Key passages:** 'By 1989 the State Security had about 91,000 full-time employees.'\n- **Reliability:** Primary-adjacent (official archive).\n- **Relevance to this project:** C55\n",
+  "meters": {
+   "readMin": 1,
+   "words": 44
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e8bde8ab989fd1c565c8e720a991fd2f3774492830abf3462757c646c5f617f8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bundesarchiv-stasi-introduction.md",
+ "kind": "artifact-page"
+}

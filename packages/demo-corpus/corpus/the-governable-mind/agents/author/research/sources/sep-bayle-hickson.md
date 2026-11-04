@@ -1,0 +1,12 @@
+# sep-bayle-hickson
+- **URL:** https://plato.stanford.edu/entries/bayle/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C5
+- **What it establishes:** Michael Hickson, "Pierre Bayle," *Stanford Encyclopedia of Philosophy* (revision dated 12 January 2023). Gives Bayle's doctrine of conscience from the *Philosophical Commentary* (Commentaire philosophique, 1686): an error that appears as truth "acquires all rights over us"; and frames the sincere persecutor as an *objection* to Bayle ("Persecutor Paradox"), not as Bayle's own argument. Also lists the nine arguments against persecution in Part I and the "integrity" reading of Baylean morality.
+- **Key passages:**
+  - "if the truth is unknown to us, it loses all its rights over us; and that, if error appears to us in the form of the truth, then it acquires all rights over us." (Hickson's rendering of Bayle's doctrine, in the section on conscience)
+  - "The first argument that Bayle offers against persecution in Part 1, chapter 2, of the Philosophical Commentary is also the best. Persecutors wish to bring people into the one true Church, presumably because they want these people to love God properly."
+  - "the actions of persecutors in Bayle's day, like 'threats, imprisonment, exile, beatings, torture' (OD II: 371), cannot possibly give rise to true knowledge and sincere love of God"
+  - "What if there was a sincere persecutor who ... came to the conscientious conviction that God wished him to use force ... Then does it not follow from Bayle's doctrine of the freedom of conscience that the persecutor must persecute?"
+  - "This is known as the 'Persecutor Paradox' or 'Sincere Persecutor Aporia' (see Solère 2016). Some scholars believe that this objection undermines the foundation of Bayle's moral argument for toleration"
+  - Bibliography note: the 1708 English translation is "A quaint but reliable and unabridged translation of the Commentaire Philosophique."
+- **Reliability:** Secondary, scholarly (SEP; peer-reviewed reference work). The entry never uses the phrase "rights of the erring conscience" (droits de la conscience errante), though that is the standard scholarly label for the doctrine it describes.
+- **Relevance to this project:** C5 — supports the erring-conscience doctrine; warns against presenting the sincere persecutor as Bayle's own proof (it is the classic difficulty for him).

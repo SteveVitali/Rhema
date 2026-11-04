@@ -1,0 +1,69 @@
+{
+  "refs": [
+    {
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 4,
+      "excluded": "agents/author/outline/the-governable-mind-pass-iii-article-spec.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/03-claim-ledger.md",
+      "line": 9,
+      "excluded": "agents/author/research/index-sliceA.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/04-draft-ledger.md",
+      "line": 3,
+      "excluded": "agents/author/outline/the-governable-mind-pass-iii-article-spec.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "line": 4,
+      "excluded": "the-governable-mind-pass-iii-article-spec.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "line": 344,
+      "excluded": "manifest.md"
+    },
+    {
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 5,
+      "excluded": "agents/author/voice-charter.md"
+    },
+    {
+      "file": "agents/author/ledgers/v2-response-ledger.md",
+      "line": 5,
+      "excluded": "agents/author/voice-charter.md"
+    },
+    {
+      "file": "agents/author/research/index.md",
+      "line": 125,
+      "excluded": "index-sliceG.md"
+    },
+    {
+      "file": "agents/editor/research/index.md",
+      "line": 281,
+      "excluded": "correspondence/v2-review/01-claim-ledger-B.md"
+    },
+    {
+      "file": "agents/editor/research/sources/crossref-bibliographic-checks-v2B.md",
+      "line": 6,
+      "excluded": "correspondence/v2-review/01-claim-ledger-B.md"
+    },
+    {
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 5,
+      "excluded": "agents/author/outline/the-governable-mind-pass-iii-article-spec.md"
+    },
+    {
+      "file": "correspondence/v1-response.md",
+      "line": 5,
+      "excluded": "agents/author/voice-charter.md"
+    },
+    {
+      "file": "correspondence/v2-response.md",
+      "line": 5,
+      "excluded": "agents/author/voice-charter.md"
+    }
+  ]
+}

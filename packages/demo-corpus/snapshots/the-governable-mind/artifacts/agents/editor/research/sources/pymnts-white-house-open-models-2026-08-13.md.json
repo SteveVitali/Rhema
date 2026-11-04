@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6668bcdc9ddc98d6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pymnts-white-house-open-models-2026-08-13\n- **URL:** https://www.pymnts.com/news/artificial-intelligence/2026/white-house-ai-testing-shift-could-put-open-models-back-in-the-risk-file/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** PYMNTS, Aug. 13, 2026: reports the WIRED-described shift toward testing open models; no verbatim official quotation (X11).\n- **Key passages:** \"The reported change, detailed by WIRED\"\n- **Reliability:** Secondary; derivative.\n- **Relevance to this project:** ref [77] corroboration of substance only.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 55
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ebefaf99eeb8f02694ff2bde23d36d9fe16591df2db910d01d812f466694baaf",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+ "kind": "artifact-page"
+}

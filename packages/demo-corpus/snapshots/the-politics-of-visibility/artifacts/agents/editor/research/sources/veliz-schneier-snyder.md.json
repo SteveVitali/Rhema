@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/veliz-schneier-snyder.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c899d8a25986c1f5",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "de8b723d44f9c78a",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "c907e2c76f604f4c",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/veliz-schneier-snyder.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Véliz, Schneier, Snyder — adjacent trade-book predecessors\n\n- **URLs:** Véliz interview per https://www.publicbooks.org/carissa-veliz-on-privacy-and-ending-data-surveillance/ and review https://academic.oup.com/idpl/article/12/3/255/6545822 (search-level); Schneier, Data and Goliath per publisher/review pages incl. https://www.schneier.com/books/data-and-goliath (blocked) and https://fas.org/publication/data-and-goliath/ (search-level); Snyder, On Tyranny \"do not obey in advance\" quoted verbatim at https://2ndbreakfast.audreywatters.com/do-not-obey-in-advance/ (read).\n- **Accessed:** 2026-08-21\n\n**Establishes:** Véliz: privacy as *collective* good and power relation (\"whoever has the data has the power\"; if the state has it, \"some form of authoritarianism\") — the collective-good framing strengthens §XIII and deserves a cite. Schneier: \"public-private surveillance partnership,\" wholesale surveillance, chilling — the draft's \"public-private assemblage\" has this popular ancestor. Snyder: \"Most of the power of authoritarianism is freely given... individuals think ahead about what a more repressive government will want, and then offer themselves without being asked\" — anticipatory obedience is the draft's coda citizen, named in 2017; On Tyranny also contains a \"private life\" lesson (not verified this session).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 146
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e71792805b75abf26079d3c7077b5e57431c22fb8209c949637e58f8501ca90d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/veliz-schneier-snyder.md",
+ "kind": "artifact-page"
+}

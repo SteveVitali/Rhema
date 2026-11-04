@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/anthropic-multi-agent-figures.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b0914dad85c8c9ba",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/anthropic-multi-agent-figures.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-multi-agent-figures\n- **URL:** https://www.anthropic.com/engineering/built-multi-agent-research-system · **Accessed:** 2026-07-30 · **For:** v2→v3; exact figures behind draft's hedged phrasing (claim C3)\n- **What it establishes:** Verbatim: \"Token usage by itself explains 80% of the variance, with the number of tool calls and the model choice as the two other explanatory factors\" (three factors → 95%); \"multi-agent systems use about 15× more tokens than chats\"; \"multi-agent research systems excel especially for breadth-first queries\"; \"a multi-agent system with Claude Opus 4 as the lead agent and Claude Sonnet 4 subagents outperformed single-agent Claude Opus 4 by 90.2% on our internal research eval.\"\n- **Reliability:** primary (Anthropic engineering post).\n- **Relevance:** v3 cites the exact 80% figure when stating the deflationary null hypothesis (per claim-ledger C3's \"could cite the exact figures for force\"). The 90.2% figure available if needed; not currently used.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 132
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7b47d3856d058dd7d5676ac9cc81068d9faa79d3f4a7802396fdb7d7c9a830bb",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/anthropic-multi-agent-figures.md",
+ "kind": "artifact-page"
+}

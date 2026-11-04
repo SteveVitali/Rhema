@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/damn-arraignment-pleas-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3b8b75c88e158a36",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/damn-arraignment-pleas-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# damn-arraignment-pleas-2026\n- **URL:** https://minnesotareformer.com/2026/07/01/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges/ (live page 403; read in full via Wayback snapshot http://web.archive.org/web/20260727152114/...; defendant name corroborated at https://kstp.com/kstp-news/top-news/anti-ice-protesters-plead-not-guilty-to-charges-in-federal-conspiracy-case/) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, citable source for the DAMN arraignment pleas\n- **What it establishes:** Michelle Griffith and Ria Gupta, \"14 Minnesota anti-ICE protesters plead not guilty to federal charges,\" Minnesota Reformer, July 1, 2026. At the July 1, 2026 arraignment in Minneapolis federal court (before U.S. District Judge David Schultz), fourteen of the fifteen indicted \"Direct Action Minnesota\"/\"DAMN\" defendants individually pleaded not guilty to conspiracy to impede or injure federal agents; four face additional charges (interstate stalking, assault on a federal officer, destruction of federal property). The fifteenth defendant did not appear because he is in custody in Michigan on separate federal charges; KSTP names him as Kyle Wagner (\"Absent during Wednesday's hearing was Kyle Wagner, who is facing federal charges in two other cases\").\n- **Key passages:** \"Fourteen Minnesota anti-ICE protesters pleaded not guilty Wednesday to federal charges alleging they engaged in a conspiracy to impede or injure federal agents in Minneapolis...\" / \"One defendant didn't appear in court Wednesday because he's in custody in Michigan based on separate federal charges.\" / \"The 14 defendants appeared in the Minneapolis federal courtroom alongside their attorneys and individually entered their not guilty pleas.\" / Also useful: Schultz on the 20 TB of government data: \"I'm inferring that not every bit of evidence was necessarily gathered pursuant to a warrant.\"\n- **Reliability:** secondary (nonprofit statehouse newsroom, States Newsroom network; contemporaneous courtroom reporting)\n- **Relevance to this project:** Settles the missing-citation correction for the \"fourteen pleaded not guilty\" claim, and supplies the fifteenth defendant's status (in custody elsewhere, arraigned separately).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 276
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bd150ecdd3a4a880bfd6293824e5de44746bac9d1ecdb6bd11f8c0db42a12003",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/damn-arraignment-pleas-2026.md",
+ "kind": "artifact-page"
+}

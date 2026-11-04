@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/perkins-coie-iapp-panel-may-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c5fddfdb7eafc0d1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/perkins-coie-iapp-panel-may-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# perkins-coie-iapp-panel-may-2026\n- **URL:** https://www.ashurstperkinscoie.com/en/insights/old-doctrines-new-terrain-the-fourth-amendment-the-stored-communications-act-and-law-enforcement-dem/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** May 6, 2026 IAPP Global Summit panel: AI chats 'indispensable' under Carpenter; reasonable expectation of privacy; providers are SCA ECS providers so content needs a § 2703 warrant; Chatrie pending.\n- **Key passages:** \"Law enforcement must generally obtain a search warrant to access a user's stored communications with an AI chatbot.\" · \"Users have a reasonable expectation of privacy in their communications with an AI chatbot.\"\n- **Reliability:** Secondary (law-firm summary of practitioner panel); industry orientation.\n- **Relevance to this project:** Report §4, §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 96
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4fc6040d22d2a4e00787ff1fd8b3847bf703a08abbe1984c97e75717ceff041b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/perkins-coie-iapp-panel-may-2026.md",
+ "kind": "artifact-page"
+}

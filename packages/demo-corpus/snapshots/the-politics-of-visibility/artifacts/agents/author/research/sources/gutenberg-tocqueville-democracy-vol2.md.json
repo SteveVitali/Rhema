@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gutenberg-tocqueville-democracy-vol2.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "87ff9b1e6721b5bd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/gutenberg-tocqueville-democracy-vol2.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gutenberg-tocqueville-democracy-vol2\n- **URL:** https://www.gutenberg.org/cache/epub/816/pg816.txt (Project Gutenberg EBook #816) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C35\n- **What it establishes:** Full text of Tocqueville, *Democracy in America*, Volume 2, Henry Reeve translation (translator confirmed on title page). The \"science of association\" passage located and verified verbatim in Section 2 (Second Book), Chapter V: \"Of The Use Which The Americans Make Of Public Associations In Civil Life.\"\n- **Key passages (verbatim, Reeve translation):**\n  - \"Nothing, in my opinion, is more deserving of our attention than the intellectual and moral associations of America.\"\n  - \"In democratic countries the science of association is the mother of science; the progress of all the rest depends upon the progress it has made.\"\n  - \"If men are to remain civilized, or to become so, the art of associating together must grow and improve in the same ratio in which the equality of conditions is increased.\"\n- **Reliability:** Primary (standard public-domain translation, opened in full).\n- **Relevance to this project:** C35. CRITICAL WORDING NOTE: Reeve reads \"the mother of science ... the progress of all the rest depends upon the progress it has made\" — NOT the outline's \"mother science; the progress of all the others depends upon the progress of it\" (that rendering resembles other translations, none opened this session). The essay must quote the Reeve wording exactly and may cite: Tocqueville, *Democracy in America*, vol. 2 (1840), trans. Henry Reeve, Second Book, ch. V.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 232
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ec4ade0c1aa3efdf7a07c936390f1491cd0b67b64ca4819335a2fe032b499ea1",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/gutenberg-tocqueville-democracy-vol2.md",
+ "kind": "artifact-page"
+}

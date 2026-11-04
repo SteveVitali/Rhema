@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rcfp-natanson-quote-verification.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ee02cb8b700b6f45",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rcfp-natanson-quote-verification.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rcfp-natanson-quote-verification\n- **URL:** https://www.rcfp.org/natanson-post-search-ruling/ · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, verifying the exact wording of Judge Porter's \"henhouse\" quotation\n- **What it establishes:** The full quotation from Magistrate Judge William B. Porter's ruling (E.D. Va., decision issued Feb. 24, 2026; reported Feb. 25) in the Hannah Natanson device-search matter ends \"...the Washington Post's henhouse,\" NOT the generic \"...the henhouse.\" An essay rendering of \"the equivalent of leaving the government's fox in charge of the henhouse\" is a truncation; the accurate quotation must include \"the Washington Post's henhouse\" (or mark the elision).\n- **Key passages:** \"Given the documented reporting on government leak investigations and the government's well-chronicled efforts to stop them, allowing the government's filter team to search a reporter's work product — most of which consists of unrelated information from confidential sources — is the equivalent of leaving the government's fox in charge of the Washington Post's henhouse.\" Also: \"The concern that a filter team may err by neglect, by malice, or by honest difference of opinion is heightened where its institutional interests are so directly at odds with the press freedom values at stake.\"\n- **Reliability:** secondary (Reporters Committee for Freedom of the Press coverage quoting the court order; RCFP is counsel-adjacent and reliable on quotation accuracy)\n- **Relevance to this project:** Settles the truncated-quotation correction: the essay's shorter version drops \"the Washington Post's\" and must be fixed or ellipsized.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 228
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2e506865f0f4ddb9d187c297d1e25d5d69b8bd49bf63263c9c3a79e9af421612",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/rcfp-natanson-quote-verification.md",
+ "kind": "artifact-page"
+}

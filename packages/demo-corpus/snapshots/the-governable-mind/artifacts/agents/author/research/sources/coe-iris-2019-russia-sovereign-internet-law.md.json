@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/coe-iris-2019-russia-sovereign-internet-law.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dea889a7f39b6dae",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/coe-iris-2019-russia-sovereign-internet-law.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# coe-iris-2019-russia-sovereign-internet-law\n- **URL:** https://merlin.obs.coe.int/article/8603 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C37\n- **What it establishes:** Andrei Richter, 'Sovereign Internet Law adopted', IRIS 2019-6:1/22 (European Audiovisual Observatory, Council of Europe): Federal Law No. 90-FZ signed by Putin on 1 May 2019, in force 1 November 2019; ISPs must install DPI-capable devices; Roskomnadzor to monitor threats and issue instructions through them.\n- **Key passages:** \"signed by President Vladimir Putin on 1 May 2019\"; \"enters into force on 1 November 2019 (with the exception of some provisions)\"; \"requires ISPs to install devices enabling DPI ('Deep Packet Inspection'...in their networks\"; \"Roskomnadzor will monitor threats to Russia's Internet access and transmit (via special devices) instructions to ISPs about the countering of such threats\"\n- **Reliability:** Secondary but institutional (Council of Europe legal observatory), written by a media-law scholar; neutral.\n- **Relevance to this project:** C37: the law number and dates.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 142
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b5ecc789119bfee444ee6933c0160bb9d60e3cd1e3bba37673af6323b0d2292e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/coe-iris-2019-russia-sovereign-internet-law.md",
+ "kind": "artifact-page"
+}

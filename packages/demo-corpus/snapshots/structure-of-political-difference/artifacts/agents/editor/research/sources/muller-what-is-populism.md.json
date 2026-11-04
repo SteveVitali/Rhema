@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/muller-what-is-populism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "63002a5bcc3fa26f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "a83a9ae6432b4dfe",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/muller-what-is-populism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# muller-what-is-populism\n\n- **URL:** https://blogs.lse.ac.uk/lsereviewofbooks/2016/12/14/book-review-what-is-populism-by-jan-werner-muller/ (review read); publisher/interview corroboration via https://booksandideas.net/Populism-is-a-Form-of-Anti-Pluralism and https://jwmueller.princeton.edu/publications/what-populism (search results) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Müller's *What Is Populism?* (2016): anti-elitism is necessary but not sufficient; the defining criterion is **anti-pluralism** — populists \"claim that they, and they alone, represent the people,\" a moral monopoly of representation excluding others from \"the people.\" Populism is \"a specific form of identity politics that is critical of elites, anti-pluralist and has a moral claim of representation\"; the claims are \"moral and symbolic rather than empirically testable.\" Reviewer criticisms: weak operationalization, reliance on hypotheticals.\n- **Key passages:** As quoted.\n- **Reliability:** Secondary (LSE review) plus consistent search-level corroboration; book itself not read this session.\n- **Relevance to this project:** The draft's facets \"moral dualism,\" \"unitarism,\" and \"pluralism: are opposition and competing interests permanently legitimate?\" are Müller's exclusive-representation/anti-pluralism apparatus in all but name, and Müller appears nowhere in the draft. This is the clearest attribution gap in the populism section — easily fixed with one citation, and dangerous unfixed because *What Is Populism?* is the single best-known trade book on the subject among the draft's likely readers.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 189
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9423524f62bb49239134e134dc8f6eac65cab75033185294092f889580929013",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/muller-what-is-populism.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/sep-liberalism-presumption-of-liberty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9392d9049a47df55",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/sep-liberalism-presumption-of-liberty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-liberalism-presumption-of-liberty\n- **URL:** https://plato.stanford.edu/entries/liberalism/ · **Accessed:** 2026-09-16 · **For:** v1 response round, ledger C68 (the presumption in favour of liberty, uncited)\n- **What it establishes:** SEP \"Liberalism\" (Shane D. Courtland, Gerald Gaus, David Schmidtz; substantive revision Feb. 25, 2026), §1.1 \"The Presumption in Favor of Liberty\": liberalism starts from the premise that political authority and legal constraint must be justified; the burden lies with those who would restrict.\n- **Key passages:** \"Liberalism is a philosophy that starts from a premise that political authority must be justified. Legal constraints must be justified.\" · Mill, as quoted in the entry: \"the burden of proof is supposed to be with those who are against liberty; who contend for any restriction or prohibition\" (Mill 1963, vol. 21: 262).\n- **Reliability:** Secondary, peer-reviewed reference work.\n- **Relevance to this project:** Citation for §IV's \"contemporary liberal accounts keep the presumption.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 139
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "de0dc1f39abfab74aa8614010466e61a6a06c23f202ebed5d4d9219ab04a6177",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/sep-liberalism-presumption-of-liberty.md",
+ "kind": "artifact-page"
+}

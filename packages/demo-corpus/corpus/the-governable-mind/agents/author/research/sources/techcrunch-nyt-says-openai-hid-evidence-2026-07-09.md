@@ -1,0 +1,9 @@
+# techcrunch-nyt-says-openai-hid-evidence-2026-07-09
+- **URL:** https://techcrunch.com/2026/07/09/new-york-times-says-openai-hid-evidence-in-chatgpt-copyright-trial/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L
+- **What it establishes:** Rebecca Bellan, TechCrunch, July 9, 2026. The NYT and Daily News moved for sanctions. On the 20M sample: TechCrunch says OpenAI "finally submitted that sample to the courts last December" with redactions that rendered it "unusable," and that plaintiffs now ask the court to bar OpenAI from using the 20M sample as evidence as unreliable. Plaintiffs also allege OpenAI deleted billions of outputs in violation of the preservation order and substituted millions of logs in the sample; OpenAI denies. No source I read says production of the 20 million logs was COMPLETED in January 2026; the Jan 5, 2026 Stein order (stein-order-20m-logs-2026-01-05; same text re-read from https://cdn.arstechnica.net/wp-content/uploads/2026/01/NYT-v-OpenAI-Order-1-5-26.pdf, Dkt. 1087 in 23-cv-11195) only denies objections and affirms Wang's orders to produce.
+- **Key passages:**
+  - "OpenAI finally submitted that sample to the courts last December, but it had allegedly included so many redactions as to render the sample “unusable,” in the court’s words."
+  - "They are asking the court to prevent OpenAI from using the 20 million chat log sample as evidence, claiming it is unreliable"
+  - Stein order, p. 3–4: "Accordingly, OpenAI's objections are denied and Judge Wang's orders are affirmed."
+- **Reliability:** Secondary, reporting allegations in a party's motion; "last December" is loose and sits oddly with a Jan 5 affirmance, so do not build a date on it.
+- **Relevance to this project:** L4: the essay may say the court AFFIRMED an order to produce 20 million de-identified logs (Jan 5, 2026). It should NOT say production was completed in January; the state of production is contested as of July 2026.

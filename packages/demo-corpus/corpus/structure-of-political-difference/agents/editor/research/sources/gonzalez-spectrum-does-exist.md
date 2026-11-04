@@ -1,0 +1,7 @@
+# gonzalez-spectrum-does-exist
+
+- **URL:** https://heterodoxacademy.org/blog/the-political-spectrum-does-exist-a-reply-to-hyrum-lewis/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Christian Alejandro Gonzalez's substantive (non-coordination) defense of left-right: "the left advances a politics of egalitarianism, while the right opposes the left and attempts to defend some other value—tradition, for example, or individual freedom, or public order." Left ideologies aim at "eradicating some system of power that is deemed to be unequal"; right ideologies are united only by ranking something above equality. He concedes the model works "at the level of theory, as an ideal-type representation" and that some alignments (gun control) are "partisanship (i.e. tribalism) rather than political ideology."
+- **Key passages:** As above.
+- **Reliability:** Primary (opinion essay, Heterodox Academy blog); representative of the Bobbio-style substantive defense.
+- **Relevance to this project:** The draft's §VIII treats left/right purely as coalition names and never engages the live claim (Bobbio, Gonzalez) that the spectrum tracks one real master attitude — toward equality/hierarchy. If that claim is right, the five questions are five theaters of a single war, and the draft's "coalition name" demotion is under-argued. The draft needs a paragraph answering the equality-essentialist, not just the coordination defense it already concedes.

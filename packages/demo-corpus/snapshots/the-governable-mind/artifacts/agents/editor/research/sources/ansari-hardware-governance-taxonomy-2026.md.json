@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ansari-hardware-governance-taxonomy-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8909b7e143c5ed7e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ansari-hardware-governance-taxonomy-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ansari-hardware-governance-taxonomy-2026\n- **URL:** https://arxiv.org/abs/2604.04712 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Ansari, Apr 2026 (abs and HTML read): taxonomy of 20 hardware mechanisms; treaty-verification mechanisms least mature; civil-liberties line (citing Sastry); sovereignty objection; multiparty licensing; datacenter accelerators only.\n- **Key passages:** \"the mechanisms most needed for treaty verification, including on-chip compute metering, cryptographic proof-of-training, and hardware-embedded enforcement, are also the least mature.\" · \"intrusive compute governance measures risk infringing on civil liberties.\"\n- **Reliability:** Primary preprint; single author; survey.\n- **Relevance to this project:** C17 verbatim; l.240 fair; civil-liberties line is Sastry's.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 93
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b36e6d5a0aa61e7703045d5a5d1195056f3e83cb8d16208f0af84223172b53e4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ansari-hardware-governance-taxonomy-2026.md",
+ "kind": "artifact-page"
+}

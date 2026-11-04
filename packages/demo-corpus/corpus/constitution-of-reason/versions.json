@@ -1,0 +1,39 @@
+{
+  "slug": "constitution-of-reason",
+  "versions": [
+    {
+      "version": "v2",
+      "file": "drafts/v2.md",
+      "label": "v2",
+      "title": "The Constitution of Reason",
+      "subtitle": "*S. J. Sebastian*",
+      "origin": "source"
+    },
+    {
+      "version": "v3",
+      "file": "drafts/v3.md",
+      "label": "v3",
+      "title": "The Constitution of Reason",
+      "subtitle": "*S. J. Sebastian*",
+      "origin": "source"
+    },
+    {
+      "version": "v4",
+      "file": "drafts/v4.md",
+      "label": "v4",
+      "title": "The Constitution of Reason",
+      "subtitle": "*S. J. Sebastian*",
+      "origin": "source",
+      "writerDirected": true,
+      "provenanceLabel": "Writer-directed edit (not reviewed)"
+    }
+  ],
+  "published": {
+    "file": "published.md",
+    "url": "https://sjsebastian.substack.com/p/the-constitution-of-reason",
+    "fetched": "2026-11-04",
+    "sha256": "572a0636a0471525cd3551dc4e4088f5a6b17c6423b890762a14869d08fc11dc",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "origin": "imported"
+  }
+}

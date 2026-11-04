@@ -1,0 +1,11 @@
+# sjs-politics-of-visibility
+- **URL:** https://sjsebastian.substack.com/p/the-politics-of-visibility · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C51(c)
+- **What it establishes:** Live. S. J. Sebastian, "The Politics of Visibility," subtitle "Surveillance and the Conditions of Democratic Freedom," displayed date August 25, 2026. Defines "behavioral legibility" as an extension of James C. Scott's term; contains "The machinery can precede the regime." as a standalone paragraph in Section II; the two-questions formulation; "information architecture is constitutional architecture"; closing two sentences on legibility and freedom. Does not explicitly cite or link any other essay by the author.
+- **Key passages:**
+  - "Call this behavioral legibility, an extension of Scott's term: the state's capacity to know not just who a person is but where they have been, who repeatedly appears beside them, which places they frequent, which devices travel together"
+  - "The machinery can precede the regime."
+  - "The liberal question is not only 'may I speak?' It is 'what must I reasonably fear if I do?'"
+  - "In an age of behavioral legibility, information architecture is constitutional architecture, and it is being designed right now, mostly in procurement documents."
+  - (closing) "Legibility is a condition of manipulation. Its limits are a condition of freedom, and they do not defend themselves."
+- **Reliability:** Primary (author's own prior publication). Self-citation.
+- **Relevance to this project:** C51(c). Note the full "information architecture" sentence continues "...and it is being designed right now, mostly in procurement documents." Cross-reference check: no explicit citation of the other two essays found.

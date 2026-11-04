@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/biometricupdate-openai-hardware-passkeys-2026-07-14.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "538c5f65bdca262c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/biometricupdate-openai-hardware-passkeys-2026-07-14.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# biometricupdate-openai-hardware-passkeys-2026-07-14\n- **URL:** https://www.biometricupdate.com/202607/openai-requires-hardware-backed-passkeys-for-trusted-cyber-access · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D (what identity is required)\n- **What it establishes:** July 14, 2026. Quotes OpenAI: TAC individual verification involves a \"government ID check, know-your-customer (KYC) identity checks, and additional trust signals such as device health,\" \"conducted via Persona to help OpenAI determine whether an account belongs to a real user engaged in legitimate cybersecurity work.\" From Sept 1, 2026 TAC members must \"authenticate with a hardware-backed passkey to retain access to frontier models\"; non-compliant accounts \"return to the standard level of model access.\"\n- **Key passages:**\n  - \"government ID check, know-your-customer (KYC) identity checks, and additional trust signals such as device health\"\n  - \"conducted via Persona to help OpenAI determine whether an account belongs to a real user engaged in legitimate cybersecurity work\"\n- **Reliability:** Secondary trade press quoting OpenAI's own text.\n- **Relevance to this project:** Establishes that OpenAI's TAC requires a government ID via Persona, the same vendor Anthropic uses.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 157
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "abcd427d9d00fded05562ad022c0df7675aefe740c44ae738c7d2f480b112b7d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/biometricupdate-openai-hardware-passkeys-2026-07-14.md",
+ "kind": "artifact-page"
+}

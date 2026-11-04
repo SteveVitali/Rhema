@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/radsch-2026-battle-for-cognitive-liberty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7b0478c4743de786",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/radsch-2026-battle-for-cognitive-liberty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# radsch-2026-battle-for-cognitive-liberty\n- **URL:** https://www.techpolicy.press/the-battle-for-cognitive-liberty-in-the-age-of-corporate-ai/ (via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M10)\n- **Citation:** Courtney C. Radsch, \"The Battle for Cognitive Liberty in the Age of Corporate AI,\" *Tech Policy Press*, Jan. 6, 2026. (Radsch directs the Center for Journalism & Liberty at Open Markets Institute; serves on the Tech Policy Press board.)\n- **What it establishes:** \"opting out becomes functionally impossible\" is verbatim. The phrase \"public foundation models\" is NOT in the piece; her remedy is foundation models \"as public utilities,\" plus legal limits on cognitive manipulation, fiduciary-style duties for AI agents, and antimonopoly action.\n- **Key passages:**\n  - \"And because these corporations monopolize their markets, they don't need our permission. Integration becomes inevitability when opting out becomes functionally impossible.\"\n  - \"Imagine foundation models treated not as corporate assets but as public utilities, subject to democratic oversight and public interest obligations. Imagine a technological environment where we can freely interact with AI chatbots and companions without worrying that what we share will be used to manipulate us.\"\n  - \"Without laws to protect freedom of thought, prohibit cognitive manipulation and require AI agents to act in the best interest of users; a market designed to make it unprofitable if not impossible to do otherwise; and competition to develop alternative right[s-respecting …]\"\n  - \"Because no matter how advanced these tools become, we must retain the ability to opt out and the right to mental privacy, cognitive liberty and freedom of thought.\"\n- **Reliability:** Advocacy commentary (antimonopoly perspective); primary for her position only. Threat model is corporate, not state.\n- **Relevance to this project:** Exit/opt-out argument. Quote \"public utilities,\" not \"public foundation models.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 268
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "af228b3efd449d6344c44b9bb9c467213b622e702f16794f86405174d1dba8d9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/radsch-2026-battle-for-cognitive-liberty.md",
+ "kind": "artifact-page"
+}

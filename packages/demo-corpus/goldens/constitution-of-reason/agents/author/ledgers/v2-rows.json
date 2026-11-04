@@ -1,0 +1,341 @@
+{
+ "rows": [
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 1,
+   "id": "F1",
+   "source": "L Major 1 / SR i / AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 2,
+   "id": "F2",
+   "source": "L Major 2 / DR §1–2",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 3,
+   "id": "F3",
+   "source": "L Major 3 / SR iv",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 4,
+   "id": "F4",
+   "source": "L Major 4 / SR ii",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 5,
+   "id": "F5",
+   "source": "L Major 5 / SR iii / AN",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 6,
+   "id": "F6",
+   "source": "L Major 6 / SR v",
+   "status": "partial (see appended note)"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 12,
+   "id": "F7",
+   "source": "L minor / CL C9",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 13,
+   "id": "F8",
+   "source": "L minor / CL C17",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 14,
+   "id": "F9",
+   "source": "L minor / CL C14",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 15,
+   "id": "F10",
+   "source": "L minor / DR §4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 16,
+   "id": "F11",
+   "source": "L minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 17,
+   "id": "F12",
+   "source": "L minor / DR §5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 18,
+   "id": "F13",
+   "source": "L minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 19,
+   "id": "F14",
+   "source": "L minor / CL C6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 20,
+   "id": "F15",
+   "source": "L minor / AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 21,
+   "id": "F16",
+   "source": "L minor / DR §5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F17",
+   "source": "AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F18",
+   "source": "AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F19",
+   "source": "AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F20",
+   "source": "AN",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F21",
+   "source": "AN / DR §4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F22",
+   "source": "CN P1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F23",
+   "source": "CN P2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F24",
+   "source": "CN P3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F25",
+   "source": "CN P4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F26",
+   "source": "CN Voice 2",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut",
+   "entry": false,
+   "findingOrdinal": 6,
+   "id": "F27",
+   "source": "SR verdict",
+   "status": "done"
+  },
+  {
+   "disposition": "defer",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F28",
+   "source": "CL C1",
+   "status": "deferred"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F29",
+   "source": "CL C3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F30",
+   "source": "DR §3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F31",
+   "source": "DR §1.5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F32",
+   "source": "DR §1.7",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F33",
+   "source": "DR §1.7",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (in)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F34",
+   "source": "DR §1.7 / RM 3",
+   "status": "done"
+  },
+  {
+   "disposition": "defer",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F35",
+   "source": "DR §1.4",
+   "status": "deferred"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F36",
+   "source": "DR §1.6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (in)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F37",
+   "source": "RM 3",
+   "status": "done (= F34)"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F38",
+   "source": "S",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "E1",
+   "source": "OQ a",
+   "status": "**deferred to author** (conservative interim; relabeled per gap walk 1 — \"resolved\" overstated it)"
+  },
+  {
+   "disposition": "escalate",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "E2",
+   "source": "OQ b",
+   "status": "resolved: conservative default (earn)"
+  },
+  {
+   "disposition": "escalate",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "E3",
+   "source": "OQ c",
+   "status": "awaiting author"
+  },
+  {
+   "disposition": "escalate→E3",
+   "entry": false,
+   "findingOrdinal": 6,
+   "id": "F39",
+   "source": "L Major 6 / CN Voice 1",
+   "status": "awaiting author (added per gap walk 1; an agent cannot truthfully write \"I\" anecdotes for this byline)"
+  }
+ ],
+ "version": 1
+}

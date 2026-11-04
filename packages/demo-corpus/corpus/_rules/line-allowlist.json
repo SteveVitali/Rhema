@@ -1,0 +1,23 @@
+{
+  "$comment": "Denylist line-allowlist — file:line only, no quoted text (the S-11 Published-credit-line rule: the agent-discourse credit lines in fetched Published text are allowlisted line-by-line, never altered). Each entry must cover a real hit at exactly that line; a stale entry fails the gate.",
+  "entries": [
+    {
+      "id": "la-pub-credit-cor",
+      "file": "constitution-of-reason/published.md",
+      "line": 8,
+      "reason": "Published credit line stays verbatim and is never altered (S-11; GD-DEMO-BYLINE-SCOPE.R7)"
+    },
+    {
+      "id": "la-pub-credit-gm",
+      "file": "the-governable-mind/published.md",
+      "line": 8,
+      "reason": "Published credit line stays verbatim and is never altered (S-11; GD-DEMO-BYLINE-SCOPE.R7)"
+    },
+    {
+      "id": "la-pub-credit-pov",
+      "file": "the-politics-of-visibility/published.md",
+      "line": 8,
+      "reason": "Published credit line stays verbatim and is never altered (S-11; GD-DEMO-BYLINE-SCOPE.R7)"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hassan-v-nyc-3d-cir-2015.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a9ce4da562ca3674",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hassan-v-nyc-3d-cir-2015.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hassan-v-nyc-3d-cir-2015\n- **URL:** https://www2.ca3.uscourts.gov/opinarch/141688p.pdf (full 60-page precedential opinion downloaded and read) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C31\n- **What it establishes:** *Hassan v. City of New York*, No. 14-1688 (3d Cir., opinion filed Oct. 13, 2015; Ambro, Fuentes, Roth): New Jersey Muslim plaintiffs challenging NYPD's post-9/11 surveillance program HAVE standing and stated valid First and Fourteenth Amendment claims; reversal of dismissal. (Case later settled, 2018 — settlement not in this document.)\n- **Key passages:**\n  - \"Do Plaintiffs—themselves allegedly subject to a discriminatory surveillance program—have standing to sue in federal court to vindicate their religious-liberty and equal-protection rights? If so ... have they stated valid claims under the First and Fourteenth Amendments to our Constitution? Both of these questions ... we answer yes.\"\n  - On historical echoes: \"...we failed to recognize that the discriminatory treatment of approximately 120,000 persons of Japanese ancestry was fueled not by military necessity but unfounded fears... the past should not preface yet again bending our constitutional principles merely because an interest in national security is invoked.\" (citing Hirabayashi, Korematsu)\n- **Reliability:** Primary (federal appellate opinion, court's own server).\n- **Relevance to this project:** C31 — Hassan litigation element; also usable for the essay's precedent-echo theme (court itself invokes internment).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 199
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "90bbe0518d066de5162ef7146805062d44550ee9039442fa28bf800d96043160",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/hassan-v-nyc-3d-cir-2015.md",
+ "kind": "artifact-page"
+}

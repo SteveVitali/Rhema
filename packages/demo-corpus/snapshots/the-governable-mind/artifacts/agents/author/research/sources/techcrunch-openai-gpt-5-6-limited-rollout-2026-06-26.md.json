@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techcrunch-openai-gpt-5-6-limited-rollout-2026-06-26.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "354c8e32628ca757",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techcrunch-openai-gpt-5-6-limited-rollout-2026-06-26.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-openai-gpt-5-6-limited-rollout-2026-06-26\n- **URL:** https://techcrunch.com/2026/06/26/openai-limits-gpt-5-6-rollout-after-government-request-says-restrictions-shouldnt-be-the-norm/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding B (GPT-5.6 hold)\n- **What it establishes:** Rebecca Bellan, June 26, 2026. The U.S. government (Trump administration) asked; the authority referenced is Trump's recent executive order that \"asks certain AI companies to voluntarily submit their most advanced models for government review up to 30 days before release.\" Rollout limited to \"a small group of trusted partners\" whose \"participation has been shared with the government\"; no partner count given. Described as a \"short-term step\" with \"broader availability in the coming weeks.\" Contains the OpenAI quote. Also notes the administration \"effectively banned\" Mythos 5 that month.\n- **Key passages:**\n  - \"We don't believe this kind of government access process should become the long-term default. It keeps the best tools from users, developers, enterprises, cyber defenders, and global partners who need them.\"\n  - the order \"asks certain AI companies to voluntarily submit their most advanced models for government review up to 30 days before release\"\n- **Reliability:** Secondary, mainstream tech press.\n- **Relevance to this project:** Confirms the \"voluntary channel\" framing and OpenAI's quoted objection; does NOT supply the \"about twenty partners\" or \"two weeks\" figures (see techtimes-gpt-5-6 and wikipedia-gpt-5-6 notes).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 194
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4a382ab13694a625a8fc6d0ab46a619f0dd32a6ab1a572b87ab537abe6d747f2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techcrunch-openai-gpt-5-6-limited-rollout-2026-06-26.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kembery-governing-ai-proliferation-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bd65002b8fed12de",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/kembery-governing-ai-proliferation-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kembery-governing-ai-proliferation-2024\n- **URL:** https://arxiv.org/abs/2412.13821 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Kembery, Dec 2024 (abstract read): 'Big Compute' paradigm will not persist; 'Proliferation' paradigm of small, decentralized, open models; access governance, decentralized compute oversight, information security.\n- **Key passages:** \"smaller, decentralized, open-sourced AI models.\"\n- **Reliability:** Primary preprint; single author.\n- **Relevance to this project:** Safety-side anticipation of layer 4 becoming ungovernable by layer-1 tools.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 66
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "dd38372cc39b1a7d2dd8c28645cdf4afafc21acfa7fbbf5848ab253f14f7015c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/kembery-governing-ai-proliferation-2024.md",
+ "kind": "artifact-page"
+}

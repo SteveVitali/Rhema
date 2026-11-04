@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hlr-kumar-heppner.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2b61d7d53f930eb6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hlr-kumar-heppner.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hlr-kumar-heppner\n- **URL:** https://harvardlawreview.org/blog/2026/03/united-states-v-heppner/ · **Accessed:** 2026-09-16 · **For:** v1 response round, item 6\n- **What it establishes:** Harvard Law Review Blog, Mar. 23, 2026 (author per editor: Mira Kumar; byline not in extracted text). United States v. Heppner, No. 25-cr-503 (JSR) (S.D.N.Y.), Judge Jed Rakoff. Chronology: indictment Oct. 28, 2025; arrest early Nov. 2025; FBI seized devices containing \"approximately thirty-one documents\" of exchanges with Claude; Government moved Feb. 6, 2026; oral argument Feb. 10; motion granted; written opinion issued Feb. 17, 2026 (12 pp.; Dkt. 27), calling it \"a question of first impression nationwide.\" Holding: not privileged because (1) not a communication with an attorney; (2) not confidential (third-party AI platform; Anthropic's privacy policy collects inputs/outputs, uses them to train, and reserves disclosure to third parties including regulators and in litigation); (3) not for the purpose of obtaining legal advice from Claude; and no work product (not by or at behest of counsel). Kumar's critique: courts do not ask whether Gmail, Google Docs, Google Slides, or iCloud defeat privilege; the SaaS-provider access and disclosure terms are common (Google, Slack); consumer users can opt out of training; the touchstone should be reasonable expectation of confidentiality, not the provider's technical or contractual access; a Katz/Kyllo analogy; AI should be treated as a tool within the attorney-client workflow.\n- **Key passages:** Rakoff (op. at 5): \"Because Claude is not an attorney, that alone disposes of Heppner's claim of privilege.\" / Rakoff (op. at 6): Anthropic's policy \"provides that Anthropic collects data on both users' 'inputs' and Claude's 'outputs,' that it uses such data to 'train' Claude, and that Anthropic reserves the right to disclose such data to a host of 'third parties,' including 'governmental regulatory authorities'\". / Kumar: \"When clients use Google Docs ..., Gmail to send emails, and iCloud to store materials to communicate with counsel, courts seemingly do not ask whether the use of those intermediary tools defeats claims of privilege.\" / Kumar: \"it may seem odd that the existence of attorney-client privilege ... would turn on something as variable and elusive as a private AI company's privacy policy.\" / Kumar: \"The touchstone here should remain the user's reasonable expectation of confidentiality — not an AI company's technical or contractual ability to access user data.\"\n- **Reliability:** Secondary scholarly commentary with pinpoint links to the opinion (CourtListener Dkt. 27). The opinion PDF itself is a scanned image without a text layer, so quotations are taken from HLR's pinned citations. Reported citation (per DOJ's Kim letter): 820 F. Supp. 3d 292, 296–98 (S.D.N.Y. 2026).\n- **Relevance to this project:** Item 6; the first adjudication of privilege in a consumer AI record, and the argument that the provider's retention/training terms were load-bearing.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 445
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "09315735f3aac90a7b7baa41e4afaded8c6736a293f23fb7623df02679aa44cb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/hlr-kumar-heppner.md",
+ "kind": "artifact-page"
+}

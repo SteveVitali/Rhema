@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rollcall-guard-act-committee-vote-2026-04-30.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5b2212f3f10da5cf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rollcall-guard-act-committee-vote-2026-04-30.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rollcall-guard-act-committee-vote-2026-04-30\n- **URL:** https://rollcall.com/2026/04/30/ban-on-kids-companion-chatbots-advanced-by-senate-committee/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Roll Call, April 30, 2026. Source for the 22–0 Senate Judiciary vote AND for the fact that an amendment adopted at markup narrowed the age-verification requirements to companion chatbots. Also notes the amendment softened the criminal prohibition and removed the 30-minute re-disclosure requirement. Corroborated by Senator Hawley's press release of the same day (https://www.hawley.senate.gov/senator-hawleys-guard-act-to-protect-kids-from-ai-chatbots-passes-committee-unanimously/ : \"the Senate Judiciary Committee unanimously passed Senator Hawley’s GUARD Act\"; it \"bans AI companions for minors and mandates AI chatbots to disclose their non-human and non-professional status\").\n- **Key passages:**\n  - \"The Judiciary Committee voted 22-0 to approve the bill, which would make it a crime to knowingly provide a chatbot that engages minors in sexually explicit behavior or coerces them to die by suicide.\"\n  - \"An amendment was adopted during the markup and released afterwards that made the bill’s age-verification requirements apply only to companion chatbots, rather than more general models, and softened the criminal prohibition on chatbots engaging in sexual conversations with minors.\"\n  - \"The bill, after the amendment, would require companion chatbot providers to verify ages using government-issued identification, other forms of identification corroborated by documentation, or similar information provided to a financial institution, a device operating system or app store.\"\n- **Reliability:** Congressional trade press; independent; consistent with the GPO text.\n- **Relevance to this project:** L5: the 22–0 vote (April 30, 2026) is CONFIRMED; the narrowing amendment is the nuance the review's summary missed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 244
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8905650f52997d8aa76c02d8da093b98b638353b6d91c03e2bb129c10988b971",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/rollcall-guard-act-committee-vote-2026-04-30.md",
+ "kind": "artifact-page"
+}

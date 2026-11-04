@@ -1,0 +1,199 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate"
+   ]
+  },
+  "nextStep": {
+   "estimateCredits": null,
+   "headDraftN": 5,
+   "label": null,
+   "verb": "none"
+  },
+  "originChip": {
+   "kind": "imported_draft"
+  },
+  "project": {
+   "id": "structure-of-political-difference",
+   "slug": "structure-of-political-difference",
+   "title": "The Structure of Political Difference"
+  },
+  "rounds": [
+   {
+    "anchor": {
+     "draftId": "v1",
+     "n": 1,
+     "origin": "human_upload"
+    },
+    "n": 1,
+    "parts": [
+     {
+      "kind": "version",
+      "n": 1
+     },
+     {
+      "count": 26,
+      "kind": "run",
+      "workflow": "review"
+     },
+     {
+      "kind": "version",
+      "n": 2
+     }
+    ],
+    "producedN": 2,
+    "runs": [
+     {
+      "card": {
+       "actions": [
+        "open_deliverable",
+        "report"
+       ],
+       "approvals": [
+        {
+         "decision": "major revisions",
+         "round": "v1 review"
+        }
+       ],
+       "artifacts": [
+        "correspondence/v1-review/00-piece-brief.md",
+        "correspondence/v1-review/01-claim-ledger.md",
+        "correspondence/v1-review/02-discourse-report.md",
+        "correspondence/v1-review/03-argument-notes.md",
+        "correspondence/v1-review/04-craft-notes.md",
+        "correspondence/v1-review/05-second-read.md",
+        "correspondence/v1-review/editors-letter.md"
+       ],
+       "decisions": [],
+       "deliverables": [
+        {
+         "key": "letter"
+        },
+        {
+         "count": 26,
+         "key": "findings"
+        },
+        {
+         "count": 6,
+         "key": "strengths"
+        },
+        {
+         "count": 27,
+         "key": "claims"
+        },
+        {
+         "key": "piece_brief"
+        },
+        {
+         "key": "claim_ledger"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "argument_notes"
+        },
+        {
+         "key": "craft_notes"
+        },
+        {
+         "key": "second_read"
+        }
+       ],
+       "delivered": {
+        "counts": {
+         "claims": 27,
+         "findings": 26,
+         "strengths": 6
+        },
+        "links": [
+         "dossier",
+         "letter",
+         "ledger"
+        ],
+        "verdict": "**Major revisions.** This is a serious, intelligent, unusually honest piece of conceptual construction whose factual substrate is close to impeccable — the fact-check came back cleaner than any draft of this ambition I have seen (zero contradicted claims; your own statistical exercise *reproduces from the raw data*). It is not yet publishable, for three structural reasons, none cosmetic: it never argues for its central number or names the predecessors that make that omission fatal; its empirical showpiece rediscovers the design dimension of its own dataset and frames the result unfalsifiably; and it is two documents in a trench coat — an essay and a user manual — at a venue that publishes only essays. The independent second read, given nothing but the draft, reached the same verdict for substantially the same reasons, which should give you confidence that these are properties of the text, not of one reader."
+       },
+       "deliveryLabel": null,
+       "done": 7,
+       "failureCode": null,
+       "notRecorded": [
+        "time",
+        "credits",
+        "model",
+        "estimate"
+       ],
+       "phases": [
+        {
+         "key": "intake",
+         "ordinal": 1,
+         "status": "done"
+        },
+        {
+         "key": "verification",
+         "ordinal": 2,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 3,
+         "status": "done"
+        },
+        {
+         "key": "argument",
+         "ordinal": 4,
+         "status": "done"
+        },
+        {
+         "key": "craft",
+         "ordinal": 5,
+         "status": "done"
+        },
+        {
+         "key": "second_read",
+         "ordinal": 6,
+         "status": "done"
+        },
+        {
+         "key": "letter",
+         "ordinal": 7,
+         "status": "done"
+        }
+       ],
+       "phaseSource": "inferred_from_delivered_files",
+       "recordSource": "agent-discourse",
+       "replayed": true,
+       "runId": "v1-review",
+       "running": 0,
+       "state": "completed",
+       "total": 7
+      },
+      "createdAt": null,
+      "producedN": 2,
+      "runId": "v1-review",
+      "state": "completed",
+      "subjectN": 1,
+      "workflow": "review"
+     }
+    ]
+   }
+  ],
+  "state": {
+   "key": "accepted",
+   "overlay": null,
+   "pill": "Accepted",
+   "suggested": {
+    "action": "open",
+    "label": null
+   }
+  },
+  "ungrouped": []
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "",
+ "kind": "timeline"
+}

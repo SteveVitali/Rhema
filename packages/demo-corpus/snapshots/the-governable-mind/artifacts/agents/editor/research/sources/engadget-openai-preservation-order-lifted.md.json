@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/engadget-openai-preservation-order-lifted.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0334ac04e76267bb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/engadget-openai-preservation-order-lifted.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# engadget-openai-preservation-order-lifted\n- **URL:** https://www.engadget.com/ai/openai-no-longer-has-to-preserve-all-of-its-chatgpt-data-with-some-exceptions-192422093.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** May 13, 2025 order required OpenAI to 'preserve and segregate all output log data that would otherwise be deleted'; Oct. 9, 2025 order (Wang) ended the forward obligation as of Sept. 26; already-preserved logs and NYT-flagged accounts still retained.\n- **Key passages:** \"preserve and segregate all output log data that would otherwise be deleted on a going forward basis\"\n- **Reliability:** Secondary (tech press), reporting a court order; independent.\n- **Relevance to this project:** Report §6; draft l.20, l.88, l.254, l.286.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 93
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "deeb3bfbc812919c74a1a89d4e2ea67492cc5cf6c1cdfb8828015d26eb918ed8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/engadget-openai-preservation-order-lifted.md",
+ "kind": "artifact-page"
+}

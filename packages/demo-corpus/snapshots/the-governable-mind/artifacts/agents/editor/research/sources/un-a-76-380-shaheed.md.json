@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/un-a-76-380-shaheed.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "34f184a2343ba81c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/un-a-76-380-shaheed.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# un-a-76-380-shaheed\n- **URL:** https://documents.un.org/api/symbol/access?s=A/76/380&l=en (the draft's docs.un.org link returned only a header page) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Dated 5 Oct 2021; four attributes verbatim (para. 25); \"Surveillance that infers thought\" (sect. B, paras. 52–54); search histories as possible \"thought\" relayed from stakeholder submissions (para. 16); the chilling sentence (para. 54) with fn. 102 a Berkeley lawcat URL, pp. 164 and 169 — consistent with Penney but not opened (C36).\n- **Key passages:** \"(a) not being forced to reveal one's thoughts; (b) no punishment and/or sanctions for one's thoughts; (c) no impermissible alteration of one's thoughts; and (d) States fostering an enabling environment for freedom of thought.\"; \"they not only censor what they write, but also censor with whom they associate, what they read and, ultimately, alter what they think.\"\n- **Reliability:** Primary (UN document).\n- **Relevance to this project:** C36; §III.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 145
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "25ca99be721438df2bcdf6c9a4715d260ba0d3dde7b4d17de5627ed5f89cfd94",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/un-a-76-380-shaheed.md",
+ "kind": "artifact-page"
+}

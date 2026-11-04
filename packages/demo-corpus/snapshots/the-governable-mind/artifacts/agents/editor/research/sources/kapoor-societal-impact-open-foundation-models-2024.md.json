@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kapoor-societal-impact-open-foundation-models-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4640bf868e5aefbb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/kapoor-societal-impact-open-foundation-models-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kapoor-societal-impact-open-foundation-models-2024\n- **URL:** https://arxiv.org/abs/2403.07918 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Kapoor, Bommasani et al., Mar 2024 (abstract read): five properties (broader access, customizability, local inference, inability to rescind, inability to monitor); benefits include distribution of decision-making power, transparency, competition, research; marginal-risk framework.\n- **Key passages:** \"current research is insufficient to effectively characterize the marginal risk of open foundation models relative to pre-existing technologies.\"\n- **Reliability:** Primary; Princeton/Stanford; open-weights-sympathetic but rigorous.\n- **Relevance to this project:** §2 layers verdict; §3 item 10; l.230.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 84
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "dc04f87f27e710310774fa141260039e40218c87ec647b813d262daddc2937bb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/kapoor-societal-impact-open-foundation-models-2024.md",
+ "kind": "artifact-page"
+}

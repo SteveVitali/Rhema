@@ -1,0 +1,11 @@
+# sep-arendt
+- **URL:** https://plato.stanford.edu/entries/arendt/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C36
+- **What it establishes:** Stanford Encyclopedia of Philosophy entry on Hannah Arendt. Confirms the claim's characterizations: action requires appearing in public and exists only in a context defined by plurality; freedom is rooted in natality (beginning something new); power arises from acting in concert; totalitarian domination aims to reduce plurality and eliminate spontaneity through terror.
+- **Key passages (as given by the entry, with the entry's citations to Arendt):**
+  - Action requires "appearing in public, making oneself known through words and deeds" and "can only exist in a context defined by plurality."
+  - "The fact that man is capable of action means that the unexpected can be expected from him, that he is able to perform what is infinitely improbable" (HC, 177–8).
+  - "power springs up whenever people get together and act in concert, but it derives its legitimacy from the initial getting together" (CR — *Crises of the Republic* — 151).
+  - "Power is what keeps the public realm, the potential space of appearance between acting and speaking men, in existence" (HC, 200).
+  - Totalitarianism reduces "the infinite plurality" of humans to "one interchangeable bundle of reactions," eliminating "spontaneity itself" (OT, 438), with terror in the camps as its instrument.
+- **Reliability:** Secondary (authoritative reference work; passages relayed via fetch — for load-bearing quotation prefer the primary-text scans in arendt-origins-total-domination-scan.md and hac-bard-arendt-power-quote.md).
+- **Relevance to this project:** C36(a) and C36(b) framing and citations.

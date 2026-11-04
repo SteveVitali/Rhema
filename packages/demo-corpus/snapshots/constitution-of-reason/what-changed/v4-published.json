@@ -1,0 +1,2167 @@
+{
+ "dto": {
+  "afterN": 4,
+  "beforeN": 3,
+  "ok": true,
+  "responseId": "v4-published",
+  "reviewId": null,
+  "view": {
+   "moves": [],
+   "rebutted": [],
+   "strip": {
+    "addressed": 0,
+    "hunks": 47,
+    "moves": 0,
+    "rebutted": 0,
+    "stillOpen": 0
+   },
+   "unlinked": {
+    "entries": [],
+    "hunks": [
+     {
+      "after": [
+       {
+        "blockId": "b1",
+        "endOffset": 116,
+        "index": 1,
+        "startOffset": 0,
+        "text": "> _“Although the logos is common, the many live as though they had a private understanding.”_ — Heraclitus, DK 22 B2"
+       },
+       {
+        "blockId": "b2",
+        "endOffset": 213,
+        "index": 2,
+        "startOffset": 118,
+        "text": "_Edited with_ **[SteveVitali/agent-discourse](https://github.com/SteveVitali/agent-discourse)**"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b1",
+        "endOffset": 28,
+        "index": 1,
+        "startOffset": 0,
+        "text": "# The Constitution of Reason"
+       },
+       {
+        "blockId": "b2",
+        "endOffset": 127,
+        "index": 2,
+        "startOffset": 30,
+        "text": "### The Logos, the Limits of the Individual Mind, and the Rise of Artificial Societies of Thought"
+       },
+       {
+        "blockId": "b3",
+        "endOffset": 146,
+        "index": 3,
+        "startOffset": 129,
+        "text": "*S. J. Sebastian*"
+       },
+       {
+        "blockId": "b4",
+        "endOffset": 266,
+        "index": 4,
+        "startOffset": 148,
+        "text": "> *\"Although the logos is common, the many live as though they had a private understanding.\"*\n> — Heraclitus, DK 22 B2"
+       },
+       {
+        "blockId": "b5",
+        "endOffset": 271,
+        "index": 5,
+        "startOffset": 268,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 474,
+      "id": "h1",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b4",
+        "endOffset": 816,
+        "index": 4,
+        "startOffset": 238,
+        "text": "In 2023, researchers studying whether language models can correct their own reasoning posed a small arithmetic problem: Terry eats two yogurts a day; yogurts are on sale at four for five dollars; how much does he spend in thirty days? The model answered correctly: sixty yogurts, fifteen packs, seventy-five dollars. The researchers then asked it to review its previous answer and find problems. It obliged. It discovered a subtlety in the pricing that did not exist, reasoned carefully through the phantom correction, and revised its correct answer to a wrong one: $37.50.\\[1\\]"
+       },
+       {
+        "blockId": "b5",
+        "endOffset": 1948,
+        "index": 5,
+        "startOffset": 818,
+        "text": "The incident is documented, and the failure it names runs in both directions. Anyone who works closely with these systems knows the other direction better: you give a powerful model a difficult problem, and it produces an answer that is fluent, detailed, and wrong — the error somewhere beneath the surface, an assumption smuggled into the framing, a source misread, a chain of reasoning turned imperceptibly at the wrong premise. Asked to reconsider, the model obliges. It restates the problem more carefully, adds qualifications, performs the gestures of self-criticism. But the decisive error remains. Or, as with Terry’s yogurt, a phantom error is invented and a sound answer destroyed. Re-examining its own work, the model becomes neither harsher nor wiser, only more articulate about the path already taken. In the same study, the strongest model’s accuracy on the arithmetic benchmark fell from 95.5 to 89.0 percent after two rounds of prompted self-review.\\[1\\] The competence was not missing; approached fresh, the model solved these problems. Re-reading its own answers, it talked itself out of some it had gotten right."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b7",
+        "endOffset": 872,
+        "index": 7,
+        "startOffset": 296,
+        "text": "In 2023, researchers studying whether language models can correct their own reasoning posed a small arithmetic problem: Terry eats two yogurts a day; yogurts are on sale at four for five dollars; how much does he spend in thirty days? The model answered correctly: sixty yogurts, fifteen packs, seventy-five dollars. The researchers then asked it to review its previous answer and find problems. It obliged. It discovered a subtlety in the pricing that did not exist, reasoned carefully through the phantom correction, and revised its correct answer to a wrong one: $37.50.[1]"
+       },
+       {
+        "blockId": "b8",
+        "endOffset": 2002,
+        "index": 8,
+        "startOffset": 874,
+        "text": "The incident is documented, and the failure it names runs in both directions. Anyone who works closely with these systems knows the other direction better: you give a powerful model a difficult problem, and it produces an answer that is fluent, detailed, and wrong — the error somewhere beneath the surface, an assumption smuggled into the framing, a source misread, a chain of reasoning turned imperceptibly at the wrong premise. Asked to reconsider, the model obliges. It restates the problem more carefully, adds qualifications, performs the gestures of self-criticism. But the decisive error remains. Or, as with Terry's yogurt, a phantom error is invented and a sound answer destroyed. Re-examining its own work, the model becomes neither harsher nor wiser, only more articulate about the path already taken. In the same study, the strongest model's accuracy on the arithmetic benchmark fell from 95.5 to 89.0 percent after two rounds of prompted self-review.[1] The competence was not missing; approached fresh, the model solved these problems. Re-reading its own answers, it talked itself out of some it had gotten right."
+       }
+      ],
+      "charsChanged": 3412,
+      "id": "h2",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b10",
+        "endOffset": 4178,
+        "index": 10,
+        "startOffset": 3413,
+        "text": "This phenomenon has become an explicit principle of artificial-intelligence engineering. Contemporary systems divide research among parallel agents with separate context windows; assign different processes to generation, criticism, retrieval, verification, and synthesis; and place powerful generators opposite weaker but specialized verifiers. Anthropic’s research system uses a lead agent to delegate different searches to subagents operating in their own contexts, then compresses their findings into a final synthesis.\\[2\\] Google’s AI co-scientist organizes specialized agents around generation, reflection, ranking, evolution, and meta-review.\\[3\\] The underlying models have not merely been made to think longer. They have been placed inside an organization."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b13",
+        "endOffset": 4228,
+        "index": 13,
+        "startOffset": 3467,
+        "text": "This phenomenon has become an explicit principle of artificial-intelligence engineering. Contemporary systems divide research among parallel agents with separate context windows; assign different processes to generation, criticism, retrieval, verification, and synthesis; and place powerful generators opposite weaker but specialized verifiers. Anthropic's research system uses a lead agent to delegate different searches to subagents operating in their own contexts, then compresses their findings into a final synthesis.[2] Google's AI co-scientist organizes specialized agents around generation, reflection, ranking, evolution, and meta-review.[3] The underlying models have not merely been made to think longer. They have been placed inside an organization."
+       }
+      ],
+      "charsChanged": 1526,
+      "id": "h3",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b16",
+        "endOffset": 6586,
+        "index": 16,
+        "startOffset": 6042,
+        "text": "Philosophy has been organized around some version of this question from the beginning. Long before reason became a faculty attributed to a sovereign individual subject, the Greeks used _logos_ to signify speech, account, explanation, proportion, measure, and intelligible articulation. A major strand of early Greek philosophy placed its confidence in the possibility that reality possessed an order to which human speech could become answerable, and discovered almost immediately that no speaker could be trusted to speak for that order alone."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b19",
+        "endOffset": 6636,
+        "index": 19,
+        "startOffset": 6092,
+        "text": "Philosophy has been organized around some version of this question from the beginning. Long before reason became a faculty attributed to a sovereign individual subject, the Greeks used *logos* to signify speech, account, explanation, proportion, measure, and intelligible articulation. A major strand of early Greek philosophy placed its confidence in the possibility that reality possessed an order to which human speech could become answerable, and discovered almost immediately that no speaker could be trusted to speak for that order alone."
+       }
+      ],
+      "charsChanged": 1088,
+      "id": "h4",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b19",
+        "endOffset": 6933,
+        "index": 19,
+        "startOffset": 6928,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b22",
+        "endOffset": 6981,
+        "index": 22,
+        "startOffset": 6978,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h5",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b22",
+        "endOffset": 7358,
+        "index": 22,
+        "startOffset": 7040,
+        "text": "His fragments are sparse, their transmission uncertain, their language compressed, and the meaning of _logos_ in them remains contested.\\[4\\] It would be an error to transform him into an ancient theorist of collective intelligence. Yet the fragments preserve a tension that will govern the whole history that follows."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b25",
+        "endOffset": 7404,
+        "index": 25,
+        "startOffset": 7088,
+        "text": "His fragments are sparse, their transmission uncertain, their language compressed, and the meaning of *logos* in them remains contested.[4] It would be an error to transform him into an ancient theorist of collective intelligence. Yet the fragments preserve a tension that will govern the whole history that follows."
+       }
+      ],
+      "charsChanged": 634,
+      "id": "h6",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b24",
+        "endOffset": 7873,
+        "index": 24,
+        "startOffset": 7739,
+        "text": "We might compress the problem in a formulation that is ours rather than Heraclitus’s: _reason is common; access to reason is divided._"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b27",
+        "endOffset": 7919,
+        "index": 27,
+        "startOffset": 7785,
+        "text": "We might compress the problem in a formulation that is ours rather than Heraclitus's: *reason is common; access to reason is divided.*"
+       }
+      ],
+      "charsChanged": 268,
+      "id": "h7",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b27",
+        "endOffset": 9913,
+        "index": 27,
+        "startOffset": 8750,
+        "text": "That last clause is the one a modern reader is most tempted to discard as theology, so its function should be stated without the Greek. Suppose procedures are all there is: that truth simply is whatever the reigning method of settling disputes certifies. Then a procedural verdict cannot, strictly, be wrong; it can only be superseded, and the choice between procedures becomes a matter of taste or power. But the history this essay tells is a catalogue of procedures being wrong (juries misled, judges captured, communities reasoning flawlessly from a shared false premise), and of that wrongness being _discovered_, which means it was there to discover. Whenever we say a verdict was mistaken although the rules were followed, we appeal to something the rules do not exhaust. The Logos, throughout this essay, names that something: not a doctrine about what exceeds our articulations, but the standing commitment that something does; a reader allergic to metaphysics may hold it as a regulative postulate. Drop it, though, and “the procedure failed” could never be said at all. The relativist gives up the appeal; the proceduralist forgets that it is an appeal."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b30",
+        "endOffset": 9959,
+        "index": 30,
+        "startOffset": 8796,
+        "text": "That last clause is the one a modern reader is most tempted to discard as theology, so its function should be stated without the Greek. Suppose procedures are all there is: that truth simply is whatever the reigning method of settling disputes certifies. Then a procedural verdict cannot, strictly, be wrong; it can only be superseded, and the choice between procedures becomes a matter of taste or power. But the history this essay tells is a catalogue of procedures being wrong (juries misled, judges captured, communities reasoning flawlessly from a shared false premise), and of that wrongness being *discovered*, which means it was there to discover. Whenever we say a verdict was mistaken although the rules were followed, we appeal to something the rules do not exhaust. The Logos, throughout this essay, names that something: not a doctrine about what exceeds our articulations, but the standing commitment that something does; a reader allergic to metaphysics may hold it as a regulative postulate. Drop it, though, and \"the procedure failed\" could never be said at all. The relativist gives up the appeal; the proceduralist forgets that it is an appeal."
+       }
+      ],
+      "charsChanged": 2326,
+      "id": "h8",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b33",
+        "endOffset": 11280,
+        "index": 33,
+        "startOffset": 11275,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b36",
+        "endOffset": 11324,
+        "index": 36,
+        "startOffset": 11321,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h9",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b39",
+        "endOffset": 13188,
+        "index": 39,
+        "startOffset": 12672,
+        "text": "Often that event is not knowledge but _aporia_: puzzlement, impasse, the newly recognized inability to answer. Modern intellectual culture treats such endings as failures. But aporia is one of philosophy’s first discoveries about the shape of progress. A mind that confidently held a false answer and now understands that it does not know has not reached truth. It has nevertheless become more accurate: it has exchanged counterfeit completeness for a truthful boundary, knowledge of the limits of its own knowledge."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b42",
+        "endOffset": 13232,
+        "index": 42,
+        "startOffset": 12716,
+        "text": "Often that event is not knowledge but *aporia*: puzzlement, impasse, the newly recognized inability to answer. Modern intellectual culture treats such endings as failures. But aporia is one of philosophy's first discoveries about the shape of progress. A mind that confidently held a false answer and now understands that it does not know has not reached truth. It has nevertheless become more accurate: it has exchanged counterfeit completeness for a truthful boundary, knowledge of the limits of its own knowledge."
+       }
+      ],
+      "charsChanged": 1032,
+      "id": "h10",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b41",
+        "endOffset": 13944,
+        "index": 41,
+        "startOffset": 13653,
+        "text": "Plato also gives us the inverse idea: thought as internal conversation. In the _Sophist_, thought is described as a silent dialogue of the soul with itself.\\[5\\] What appears outwardly as one mind may already contain the capacity to divide into question and answer, proposal and reservation."
+       },
+       {
+        "blockId": "b42",
+        "endOffset": 14599,
+        "index": 42,
+        "startOffset": 13946,
+        "text": "This internal division is a profound human achievement, and it has a developmental history. Vygotsky argued that practices of regulation, explanation, and problem-solving occur first _between_ people (child and caregiver) and are only later internalized as private and inner speech; the child gradually takes over functions once performed by another person.\\[6\\] Solitary reasoning may be dialogue sedimented into the self. The mature thinker carries an internalized teacher, critic, rival, and audience; rehearses judgments before an internal tribunal; becomes capable of saying, against desire, that the evidence does not support the hoped-for belief."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b44",
+        "endOffset": 13986,
+        "index": 44,
+        "startOffset": 13697,
+        "text": "Plato also gives us the inverse idea: thought as internal conversation. In the *Sophist*, thought is described as a silent dialogue of the soul with itself.[5] What appears outwardly as one mind may already contain the capacity to divide into question and answer, proposal and reservation."
+       },
+       {
+        "blockId": "b45",
+        "endOffset": 14639,
+        "index": 45,
+        "startOffset": 13988,
+        "text": "This internal division is a profound human achievement, and it has a developmental history. Vygotsky argued that practices of regulation, explanation, and problem-solving occur first *between* people (child and caregiver) and are only later internalized as private and inner speech; the child gradually takes over functions once performed by another person.[6] Solitary reasoning may be dialogue sedimented into the self. The mature thinker carries an internalized teacher, critic, rival, and audience; rehearses judgments before an internal tribunal; becomes capable of saying, against desire, that the evidence does not support the hoped-for belief."
+       }
+      ],
+      "charsChanged": 1884,
+      "id": "h11",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b46",
+        "endOffset": 15958,
+        "index": 46,
+        "startOffset": 15259,
+        "text": "Aristotle moves the problem from dramatic encounter toward procedural differentiation. His logical works distinguish forms of reasoning that later readers are tempted to collapse.\\[7\\] Demonstration aims at knowledge from premises of the appropriate kind; dialectic proceeds from reputable opinions and tests their implications. A process can generate a compelling argument without demonstrating its conclusion, or defeat an opponent while leaving the deeper question unresolved. The differentiation is philosophically decisive: reasoning is not one undivided act. One process proposes; another tests. One searches for an answer; another searches for a counterexample. One advocates; another judges."
+       },
+       {
+        "blockId": "b47",
+        "endOffset": 16005,
+        "index": 47,
+        "startOffset": 15960,
+        "text": "We can call this _epistemic role separation_."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b49",
+        "endOffset": 15996,
+        "index": 49,
+        "startOffset": 15299,
+        "text": "Aristotle moves the problem from dramatic encounter toward procedural differentiation. His logical works distinguish forms of reasoning that later readers are tempted to collapse.[7] Demonstration aims at knowledge from premises of the appropriate kind; dialectic proceeds from reputable opinions and tests their implications. A process can generate a compelling argument without demonstrating its conclusion, or defeat an opponent while leaving the deeper question unresolved. The differentiation is philosophically decisive: reasoning is not one undivided act. One process proposes; another tests. One searches for an answer; another searches for a counterexample. One advocates; another judges."
+       },
+       {
+        "blockId": "b50",
+        "endOffset": 16043,
+        "index": 50,
+        "startOffset": 15998,
+        "text": "We can call this *epistemic role separation*."
+       }
+      ],
+      "charsChanged": 1486,
+      "id": "h12",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b51",
+        "endOffset": 16784,
+        "index": 51,
+        "startOffset": 16779,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b54",
+        "endOffset": 16820,
+        "index": 54,
+        "startOffset": 16817,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h13",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b55",
+        "endOffset": 17791,
+        "index": 55,
+        "startOffset": 17367,
+        "text": "In the disputed question (the literary fossil of a live institutional practice, the oral _disputatio_, in which real opponents held assigned roles) and in the familiar structure of Aquinas’s articles, the question is posed. Arguments are presented against the position the author will defend. A contrary consideration is introduced. The author gives a determination. Then the initial objections are answered one by one.\\[8\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b58",
+        "endOffset": 17825,
+        "index": 58,
+        "startOffset": 17403,
+        "text": "In the disputed question (the literary fossil of a live institutional practice, the oral *disputatio*, in which real opponents held assigned roles) and in the familiar structure of Aquinas's articles, the question is posed. Arguments are presented against the position the author will defend. A contrary consideration is introduced. The author gives a determination. Then the initial objections are answered one by one.[8]"
+       }
+      ],
+      "charsChanged": 846,
+      "id": "h14",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b65",
+        "endOffset": 21475,
+        "index": 65,
+        "startOffset": 20595,
+        "text": "One story from mathematics compresses the distinction. In 1879 Alfred Kempe published a proof of the four-color theorem.\\[9\\] It was acclaimed, examined, and accepted; for eleven years the mathematical community lived with a theorem it believed proved. In 1890 Percy Heawood, an unpersuaded reader working through the cases, exposed a flaw no one had seen, and salvaged from the wreck a genuine five-color theorem.\\[10\\] When the theorem was finally proved in 1976 by Appel and Haken, with essential computer assistance, mathematicians balked at a proof no human could check by hand, an unease not discharged until 2005, when the proof was formalized in the Coq proof assistant, whose checking depends on trusting no particular reader.\\[11\\] A community’s assurance, a dissenting reader, a mechanical verifier: three constitutions of confidence, each catching what another missed."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b68",
+        "endOffset": 21503,
+        "index": 68,
+        "startOffset": 20629,
+        "text": "One story from mathematics compresses the distinction. In 1879 Alfred Kempe published a proof of the four-color theorem.[9] It was acclaimed, examined, and accepted; for eleven years the mathematical community lived with a theorem it believed proved. In 1890 Percy Heawood, an unpersuaded reader working through the cases, exposed a flaw no one had seen, and salvaged from the wreck a genuine five-color theorem.[10] When the theorem was finally proved in 1976 by Appel and Haken, with essential computer assistance, mathematicians balked at a proof no human could check by hand, an unease not discharged until 2005, when the proof was formalized in the Coq proof assistant, whose checking depends on trusting no particular reader.[11] A community's assurance, a dissenting reader, a mechanical verifier: three constitutions of confidence, each catching what another missed."
+       }
+      ],
+      "charsChanged": 1754,
+      "id": "h15",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b67",
+        "endOffset": 22520,
+        "index": 67,
+        "startOffset": 21811,
+        "text": "Peirce understood the social and external character of inquiry with unusual clarity. Unless we become hermits, he observed, the fixation of belief cannot remain an individual problem; our beliefs affect one another, and inquiry becomes the work of a community. Yet Peirce did not identify truth with whatever the community happened, at any given moment, to settle upon. The scientific method was superior because it sought beliefs determined by something external to any person’s opinion: by a reality whose characteristics did not depend on what anyone thought them to be.\\[12\\] The community of inquiry is necessary because the individual is finite; reality is necessary because the community is finite too."
+       },
+       {
+        "blockId": "b68",
+        "endOffset": 23030,
+        "index": 68,
+        "startOffset": 22522,
+        "text": "Helen Longino made the institutional requirements explicit. Objectivity, on her account, is not secured by the private virtue of an unbiased scientist. It depends on social processes of transformative criticism: recognized places where criticism can be offered, shared standards by which claims are evaluated, actual uptake through which criticism can alter inquiry, and what she calls a “tempered equality” of intellectual authority that prevents any position from insulating itself against challenge.\\[13\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b70",
+        "endOffset": 22546,
+        "index": 70,
+        "startOffset": 21839,
+        "text": "Peirce understood the social and external character of inquiry with unusual clarity. Unless we become hermits, he observed, the fixation of belief cannot remain an individual problem; our beliefs affect one another, and inquiry becomes the work of a community. Yet Peirce did not identify truth with whatever the community happened, at any given moment, to settle upon. The scientific method was superior because it sought beliefs determined by something external to any person's opinion: by a reality whose characteristics did not depend on what anyone thought them to be.[12] The community of inquiry is necessary because the individual is finite; reality is necessary because the community is finite too."
+       },
+       {
+        "blockId": "b71",
+        "endOffset": 23054,
+        "index": 71,
+        "startOffset": 22548,
+        "text": "Helen Longino made the institutional requirements explicit. Objectivity, on her account, is not secured by the private virtue of an unbiased scientist. It depends on social processes of transformative criticism: recognized places where criticism can be offered, shared standards by which claims are evaluated, actual uptake through which criticism can alter inquiry, and what she calls a \"tempered equality\" of intellectual authority that prevents any position from insulating itself against challenge.[13]"
+       }
+      ],
+      "charsChanged": 2430,
+      "id": "h16",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b74",
+        "endOffset": 24102,
+        "index": 74,
+        "startOffset": 24097,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b77",
+        "endOffset": 24124,
+        "index": 77,
+        "startOffset": 24121,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h17",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b77",
+        "endOffset": 25297,
+        "index": 77,
+        "startOffset": 24809,
+        "text": "John Stuart Mill’s defense of free discussion begins from fallibility. The opinion suppressed by authority may be true, or may contain the neglected part of a truth divided among opposing positions. Even when false, its serious contestation may prevent true belief from decaying into what Mill called “dead dogma,” a proposition repeated without living knowledge of its reasons. To silence an opinion because one is certain of its falsity is to confuse certainty with infallibility.\\[14\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b80",
+        "endOffset": 25317,
+        "index": 80,
+        "startOffset": 24831,
+        "text": "John Stuart Mill's defense of free discussion begins from fallibility. The opinion suppressed by authority may be true, or may contain the neglected part of a truth divided among opposing positions. Even when false, its serious contestation may prevent true belief from decaying into what Mill called \"dead dogma,\" a proposition repeated without living knowledge of its reasons. To silence an opinion because one is certain of its falsity is to confuse certainty with infallibility.[14]"
+       }
+      ],
+      "charsChanged": 974,
+      "id": "h18",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b82",
+        "endOffset": 27593,
+        "index": 82,
+        "startOffset": 27102,
+        "text": "Constitutional government generalizes this distrust. Madison’s famous claim that “ambition must be made to counteract ambition” does not assume that officeholders become wise by entering separate branches.\\[15\\] It treats concentrated power as an architectural danger: different functions receive distinct institutional bases, motives, and means of resistance. The system does not guarantee good government; it refuses to make good government depend on the virtue of one center of authority."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b85",
+        "endOffset": 27611,
+        "index": 85,
+        "startOffset": 27122,
+        "text": "Constitutional government generalizes this distrust. Madison's famous claim that \"ambition must be made to counteract ambition\" does not assume that officeholders become wise by entering separate branches.[15] It treats concentrated power as an architectural danger: different functions receive distinct institutional bases, motives, and means of resistance. The system does not guarantee good government; it refuses to make good government depend on the virtue of one center of authority."
+       }
+      ],
+      "charsChanged": 980,
+      "id": "h19",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b86",
+        "endOffset": 28940,
+        "index": 86,
+        "startOffset": 28289,
+        "text": "Some epistemic defenses of democracy emphasize the dispersion of information across citizens. The classic statement is Hayek’s: the knowledge a society must use “never exists in concentrated or integrated form but solely as the dispersed bits of incomplete and frequently contradictory knowledge which all the separate individuals possess.”\\[16\\] Inclusion does not merely add votes after the problem has been defined; it can change what the problem is understood to be. A policy that appears elegant from the center may reveal its failure only at the periphery. No centralized perspective contains all the local knowledge relevant to collective life."
+       },
+       {
+        "blockId": "b87",
+        "endOffset": 29443,
+        "index": 87,
+        "startOffset": 28942,
+        "text": "The Condorcet Jury Theorem gives this intuition a formal but highly conditional expression.\\[17\\] If individuals independently have a better-than-random probability of selecting the correct answer to a binary question, majority accuracy rises as the group grows. The conclusion is powerful because the assumptions are demanding. Competence matters. Independence matters. Correlated error can destroy the result. A thousand judgments produced by the same error are not a thousand independent judgments."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b89",
+        "endOffset": 28956,
+        "index": 89,
+        "startOffset": 28307,
+        "text": "Some epistemic defenses of democracy emphasize the dispersion of information across citizens. The classic statement is Hayek's: the knowledge a society must use \"never exists in concentrated or integrated form but solely as the dispersed bits of incomplete and frequently contradictory knowledge which all the separate individuals possess.\"[16] Inclusion does not merely add votes after the problem has been defined; it can change what the problem is understood to be. A policy that appears elegant from the center may reveal its failure only at the periphery. No centralized perspective contains all the local knowledge relevant to collective life."
+       },
+       {
+        "blockId": "b90",
+        "endOffset": 29457,
+        "index": 90,
+        "startOffset": 28958,
+        "text": "The Condorcet Jury Theorem gives this intuition a formal but highly conditional expression.[17] If individuals independently have a better-than-random probability of selecting the correct answer to a binary question, majority accuracy rises as the group grows. The conclusion is powerful because the assumptions are demanding. Competence matters. Independence matters. Correlated error can destroy the result. A thousand judgments produced by the same error are not a thousand independent judgments."
+       }
+      ],
+      "charsChanged": 2300,
+      "id": "h20",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b89",
+        "endOffset": 30486,
+        "index": 89,
+        "startOffset": 29937,
+        "text": "The theorems, moreover, are the shallowest layer of democracy’s epistemic case. Elizabeth Anderson’s comparison of the standard models (Condorcet aggregation, diversity-trumps-ability, Dewey’s experimentalism) concludes that Dewey’s is the deepest, because it captures what the theorems omit: discussion interacting with voting, and feedback institutions, from elections to protest, that keep collective decisions revisable in light of their consequences.\\[18\\] Reopenability, a criterion of the constitutional test below, enters the tradition here."
+       },
+       {
+        "blockId": "b90",
+        "endOffset": 30878,
+        "index": 90,
+        "startOffset": 30488,
+        "text": "Democratic legitimacy also cannot be reduced to collective accuracy. Political equality, autonomy, and consent matter independently of whether a more technocratic procedure could score higher — the boundary David Estlund made canonical: however real the experts’ expertise, it does not settle who is entitled to rule.\\[19\\] Here political and computational constitutions decisively diverge."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b92",
+        "endOffset": 30498,
+        "index": 92,
+        "startOffset": 29951,
+        "text": "The theorems, moreover, are the shallowest layer of democracy's epistemic case. Elizabeth Anderson's comparison of the standard models (Condorcet aggregation, diversity-trumps-ability, Dewey's experimentalism) concludes that Dewey's is the deepest, because it captures what the theorems omit: discussion interacting with voting, and feedback institutions, from elections to protest, that keep collective decisions revisable in light of their consequences.[18] Reopenability, a criterion of the constitutional test below, enters the tradition here."
+       },
+       {
+        "blockId": "b93",
+        "endOffset": 30888,
+        "index": 93,
+        "startOffset": 30500,
+        "text": "Democratic legitimacy also cannot be reduced to collective accuracy. Political equality, autonomy, and consent matter independently of whether a more technocratic procedure could score higher — the boundary David Estlund made canonical: however real the experts' expertise, it does not settle who is entitled to rule.[19] Here political and computational constitutions decisively diverge."
+       }
+      ],
+      "charsChanged": 1874,
+      "id": "h21",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b92",
+        "endOffset": 31895,
+        "index": 92,
+        "startOffset": 31179,
+        "text": "Habermas offers a different correction. Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding through claims that can be accepted, questioned, defended, and revised: communicative rather than strategic action.\\[20\\] The distinction becomes crucial wherever persuasion can diverge from truth: a model may revise because another agent presented better evidence, or because confident language triggered a learned tendency to agree. And the social exchange of reasons can be distorted by power: control over the forum matters, status affects uptake, participants learn the preferences of the judge, consensus can be manufactured."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b95",
+        "endOffset": 31903,
+        "index": 95,
+        "startOffset": 31189,
+        "text": "Habermas offers a different correction. Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding through claims that can be accepted, questioned, defended, and revised: communicative rather than strategic action.[20] The distinction becomes crucial wherever persuasion can diverge from truth: a model may revise because another agent presented better evidence, or because confident language triggered a learned tendency to agree. And the social exchange of reasons can be distorted by power: control over the forum matters, status affects uptake, participants learn the preferences of the judge, consensus can be manufactured."
+       }
+      ],
+      "charsChanged": 1430,
+      "id": "h22",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b95",
+        "endOffset": 32933,
+        "index": 95,
+        "startOffset": 32928,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b98",
+        "endOffset": 32939,
+        "index": 98,
+        "startOffset": 32936,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h23",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b99",
+        "endOffset": 34395,
+        "index": 99,
+        "startOffset": 33749,
+        "text": "Mercier and Sperber’s interactionist theory of reasoning offers one of the most provocative modern challenges to the sovereign-reasoner picture.\\[21\\] They argue that important functions of human reasoning are social: producing reasons for claims and evaluating reasons presented by others. The theory explains a familiar asymmetry: people are remarkably skilled at constructing support for positions they already hold and surprisingly poor at impartially searching for reasons against them. Under suitable interactive conditions, however, another person may detect the weakness precisely because they are not invested in the original conclusion."
+       },
+       {
+        "blockId": "b100",
+        "endOffset": 35326,
+        "index": 100,
+        "startOffset": 34397,
+        "text": "The theory should not be converted into a complete evolutionary history or a celebration of bias; persuasion and truth often diverge. But the deeper possibility matters: a tendency that makes the individual a poor universal reasoner may become a useful specialization inside a well-constituted group. One person searches intensely for a proposal’s strengths, another for its weaknesses, a third compares. The asymmetry is not eliminated; it is organized. Farrell and Shalizi saw this a decade before the current systems, comparing markets, hierarchies, and democracies as information-processing institutions and drawing on the same interactionist theory: institutionalized disagreement converts individual bias into collective cognition, and persistent dissenting minorities improve group problem-solving.\\[22\\] Nature supplied capacities for argument. It did not guarantee institutions capable of constituting them toward truth."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b102",
+        "endOffset": 34399,
+        "index": 102,
+        "startOffset": 33755,
+        "text": "Mercier and Sperber's interactionist theory of reasoning offers one of the most provocative modern challenges to the sovereign-reasoner picture.[21] They argue that important functions of human reasoning are social: producing reasons for claims and evaluating reasons presented by others. The theory explains a familiar asymmetry: people are remarkably skilled at constructing support for positions they already hold and surprisingly poor at impartially searching for reasons against them. Under suitable interactive conditions, however, another person may detect the weakness precisely because they are not invested in the original conclusion."
+       },
+       {
+        "blockId": "b103",
+        "endOffset": 35328,
+        "index": 103,
+        "startOffset": 34401,
+        "text": "The theory should not be converted into a complete evolutionary history or a celebration of bias; persuasion and truth often diverge. But the deeper possibility matters: a tendency that makes the individual a poor universal reasoner may become a useful specialization inside a well-constituted group. One person searches intensely for a proposal's strengths, another for its weaknesses, a third compares. The asymmetry is not eliminated; it is organized. Farrell and Shalizi saw this a decade before the current systems, comparing markets, hierarchies, and democracies as information-processing institutions and drawing on the same interactionist theory: institutionalized disagreement converts individual bias into collective cognition, and persistent dissenting minorities improve group problem-solving.[22] Nature supplied capacities for argument. It did not guarantee institutions capable of constituting them toward truth."
+       }
+      ],
+      "charsChanged": 3146,
+      "id": "h24",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b102",
+        "endOffset": 36738,
+        "index": 102,
+        "startOffset": 35957,
+        "text": "The cognitive-science literature widens the unit of analysis further. Hutchins’s study of ship navigation treats cognitive work as distributed across sailors, instruments, procedures, and representations: the relevant computation is accomplished by the organized system, not contained in any one skull.\\[23\\] Clark and Chalmers press further with their famous question (where does the mind stop and the rest of the world begin?), arguing that sufficiently integrated external resources can count as parts of a cognitive process rather than aids to it.\\[24\\] Artificial intelligence extends this history with a distinctive twist: the external resource now responds. It proposes, questions, reformulates, and surprises. It can occupy a dialogical position in the activity of thought."
+       },
+       {
+        "blockId": "b103",
+        "endOffset": 37279,
+        "index": 103,
+        "startOffset": 36740,
+        "text": "Minsky’s _Society of Mind_ proposed that what appears as unified intelligence might emerge from the interaction of many simpler agencies: no single internal agent possesses the whole mind; the mind is the organization.\\[25\\] Minsky placed a society inside the mind. Political history had spent centuries placing minds inside societies capable of functions no member could perform alone. The analogy runs in both directions: institutions are mind-like because they integrate partial operations into judgments, and minds may be society-like."
+       },
+       {
+        "blockId": "b104",
+        "endOffset": 38117,
+        "index": 104,
+        "startOffset": 37281,
+        "text": "Contemporary language models make one part of this hidden plurality configurable. Engineers can divide contexts, allocate memory, isolate evidence, preserve alternatives, install judges, and decide what kind of failure has authority to stop the process. The social architecture of cognition becomes executable. (Some in this conversation resist the vocabulary of agents altogether: Farrell, Gopnik, Shalizi, and Evans argue that large models are best understood not as minds but as cultural and social technologies, like print or markets, for reorganizing human-generated information at scale.\\[26\\] The disagreement is smaller than the labels suggest: to call the architecture executable is not to populate it with citizens, only to say that the design questions social epistemology asked about institutions now have runnable answers.)"
+       },
+       {
+        "blockId": "b105",
+        "endOffset": 38124,
+        "index": 105,
+        "startOffset": 38119,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b105",
+        "endOffset": 36736,
+        "index": 105,
+        "startOffset": 35959,
+        "text": "The cognitive-science literature widens the unit of analysis further. Hutchins's study of ship navigation treats cognitive work as distributed across sailors, instruments, procedures, and representations: the relevant computation is accomplished by the organized system, not contained in any one skull.[23] Clark and Chalmers press further with their famous question (where does the mind stop and the rest of the world begin?), arguing that sufficiently integrated external resources can count as parts of a cognitive process rather than aids to it.[24] Artificial intelligence extends this history with a distinctive twist: the external resource now responds. It proposes, questions, reformulates, and surprises. It can occupy a dialogical position in the activity of thought."
+       },
+       {
+        "blockId": "b106",
+        "endOffset": 37275,
+        "index": 106,
+        "startOffset": 36738,
+        "text": "Minsky's *Society of Mind* proposed that what appears as unified intelligence might emerge from the interaction of many simpler agencies: no single internal agent possesses the whole mind; the mind is the organization.[25] Minsky placed a society inside the mind. Political history had spent centuries placing minds inside societies capable of functions no member could perform alone. The analogy runs in both directions: institutions are mind-like because they integrate partial operations into judgments, and minds may be society-like."
+       },
+       {
+        "blockId": "b107",
+        "endOffset": 38111,
+        "index": 107,
+        "startOffset": 37277,
+        "text": "Contemporary language models make one part of this hidden plurality configurable. Engineers can divide contexts, allocate memory, isolate evidence, preserve alternatives, install judges, and decide what kind of failure has authority to stop the process. The social architecture of cognition becomes executable. (Some in this conversation resist the vocabulary of agents altogether: Farrell, Gopnik, Shalizi, and Evans argue that large models are best understood not as minds but as cultural and social technologies, like print or markets, for reorganizing human-generated information at scale.[26] The disagreement is smaller than the labels suggest: to call the architecture executable is not to populate it with citizens, only to say that the design questions social epistemology asked about institutions now have runnable answers.)"
+       },
+       {
+        "blockId": "b108",
+        "endOffset": 38116,
+        "index": 108,
+        "startOffset": 38113,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 4312,
+      "id": "h25",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b109",
+        "endOffset": 39020,
+        "index": 109,
+        "startOffset": 38467,
+        "text": "The simplest method is to let one process do more: generate intermediate steps, search additional sources, spend more tokens before answering. Chain-of-thought prompting demonstrated that eliciting intermediate reasoning artifacts could improve performance on many multi-step tasks.\\[27\\] The word _artifact_ matters: a generated chain of thought is an external representation — text that can be continued, compared, criticized, or checked. A conclusion need no longer be the terminal expression of thought; it can become material for another operation."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b112",
+        "endOffset": 39010,
+        "index": 112,
+        "startOffset": 38459,
+        "text": "The simplest method is to let one process do more: generate intermediate steps, search additional sources, spend more tokens before answering. Chain-of-thought prompting demonstrated that eliciting intermediate reasoning artifacts could improve performance on many multi-step tasks.[27] The word *artifact* matters: a generated chain of thought is an external representation — text that can be continued, compared, criticized, or checked. A conclusion need no longer be the terminal expression of thought; it can become material for another operation."
+       }
+      ],
+      "charsChanged": 1104,
+      "id": "h26",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b112",
+        "endOffset": 39563,
+        "index": 112,
+        "startOffset": 39260,
+        "text": "Self-consistency generates several reasoning paths and aggregates their answers rather than trusting the first completion.\\[28\\] The technique improved performance across reasoning benchmarks and established an important principle: a model’s first articulation does not exhaust its available competence."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b115",
+        "endOffset": 39551,
+        "index": 115,
+        "startOffset": 39250,
+        "text": "Self-consistency generates several reasoning paths and aggregates their answers rather than trusting the first completion.[28] The technique improved performance across reasoning benchmarks and established an important principle: a model's first articulation does not exhaust its available competence."
+       }
+      ],
+      "charsChanged": 604,
+      "id": "h27",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b115",
+        "endOffset": 40366,
+        "index": 115,
+        "startOffset": 40084,
+        "text": "A model can be shown its answer and asked to improve it. Sometimes this works: feedback from a compiler, test suite, or external evaluator can guide revision, and Reflexion-style systems convert feedback from prior attempts into textual memory that alters subsequent behavior.\\[29\\]"
+       },
+       {
+        "blockId": "b116",
+        "endOffset": 40979,
+        "index": 116,
+        "startOffset": 40368,
+        "text": "But intrinsic self-correction (revision without new evidence or external feedback) has often proved unreliable. Models may preserve the original error or change correct answers into incorrect ones. This is the yogurt problem from the opening: asked to find fault with a correct answer, the model manufactured a fault, because the instruction demanded one and the context supplied nothing else to see.\\[1\\] Research separating error detection from error correction sharpens the diagnosis: models can often repair a mistake once its location is supplied while remaining poor at discovering it independently.\\[30\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b118",
+        "endOffset": 40352,
+        "index": 118,
+        "startOffset": 40072,
+        "text": "A model can be shown its answer and asked to improve it. Sometimes this works: feedback from a compiler, test suite, or external evaluator can guide revision, and Reflexion-style systems convert feedback from prior attempts into textual memory that alters subsequent behavior.[29]"
+       },
+       {
+        "blockId": "b119",
+        "endOffset": 40961,
+        "index": 119,
+        "startOffset": 40354,
+        "text": "But intrinsic self-correction (revision without new evidence or external feedback) has often proved unreliable. Models may preserve the original error or change correct answers into incorrect ones. This is the yogurt problem from the opening: asked to find fault with a correct answer, the model manufactured a fault, because the instruction demanded one and the context supplied nothing else to see.[1] Research separating error detection from error correction sharpens the diagnosis: models can often repair a mistake once its location is supplied while remaining poor at discovering it independently.[30]"
+       }
+      ],
+      "charsChanged": 1780,
+      "id": "h28",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b120",
+        "endOffset": 42214,
+        "index": 120,
+        "startOffset": 41711,
+        "text": "A fresh context begins elsewhere. It may receive the same question without the original answer; use another prompt, evidence set, or model family; be asked to solve independently before seeing any proposed conclusion. Recall the numbers from the opening study: the model that lost ground re-reading its own answers solved the problems at 95.5 percent when approached fresh.\\[1\\] The competence a first answer suppresses is often still in the weights; the fresh context is how an architecture reaches it."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b123",
+        "endOffset": 42194,
+        "index": 123,
+        "startOffset": 41693,
+        "text": "A fresh context begins elsewhere. It may receive the same question without the original answer; use another prompt, evidence set, or model family; be asked to solve independently before seeing any proposed conclusion. Recall the numbers from the opening study: the model that lost ground re-reading its own answers solved the problems at 95.5 percent when approached fresh.[1] The competence a first answer suppresses is often still in the weights; the fresh context is how an architecture reaches it."
+       }
+      ],
+      "charsChanged": 1004,
+      "id": "h29",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b122",
+        "endOffset": 43161,
+        "index": 122,
+        "startOffset": 42474,
+        "text": "Context separation is a computational technique for manufacturing epistemic distance. This distance has several dimensions. _Contextual_ independence means not inheriting the same conversational history. _Informational_ independence means seeing different evidence or searching different sources. _Inferential_ independence means developing a solution before encountering another answer. _Model heterogeneity_ means using systems with meaningfully different capabilities, training, or failure modes. _Functional_ independence means assigning different objectives or tools. _Authoritative_ independence means giving one process the power to block, overrule, or reopen the work of another."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b125",
+        "endOffset": 43141,
+        "index": 125,
+        "startOffset": 42454,
+        "text": "Context separation is a computational technique for manufacturing epistemic distance. This distance has several dimensions. *Contextual* independence means not inheriting the same conversational history. *Informational* independence means seeing different evidence or searching different sources. *Inferential* independence means developing a solution before encountering another answer. *Model heterogeneity* means using systems with meaningfully different capabilities, training, or failure modes. *Functional* independence means assigning different objectives or tools. *Authoritative* independence means giving one process the power to block, overrule, or reopen the work of another."
+       }
+      ],
+      "charsChanged": 1374,
+      "id": "h30",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b125",
+        "endOffset": 44391,
+        "index": 125,
+        "startOffset": 43419,
+        "text": "Anthropic’s research architecture demonstrates a mechanism often mistaken for debate. A lead agent decomposes a broad question and delegates directions to subagents with separate context windows; the subagents search independently, compress their findings, and return them for synthesis. Anthropic reports that the architecture excels on breadth-first research questions, but also that token use by itself explained 80 percent of performance variance in one analysis, and that multi-agent research consumed roughly fifteen times the tokens of ordinary chat.\\[2\\] The architecture is powerful partly because it creates a disciplined way to spend much more inference-time computation. This qualification does not diminish the achievement; it clarifies it. The system is not mainly a parliament. It is a federated research organization, and it can expand effective cognition without producing disagreement: more capable simply because it can search more of the world at once."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b128",
+        "endOffset": 44369,
+        "index": 128,
+        "startOffset": 43399,
+        "text": "Anthropic's research architecture demonstrates a mechanism often mistaken for debate. A lead agent decomposes a broad question and delegates directions to subagents with separate context windows; the subagents search independently, compress their findings, and return them for synthesis. Anthropic reports that the architecture excels on breadth-first research questions, but also that token use by itself explained 80 percent of performance variance in one analysis, and that multi-agent research consumed roughly fifteen times the tokens of ordinary chat.[2] The architecture is powerful partly because it creates a disciplined way to spend much more inference-time computation. This qualification does not diminish the achievement; it clarifies it. The system is not mainly a parliament. It is a federated research organization, and it can expand effective cognition without producing disagreement: more capable simply because it can search more of the world at once."
+       }
+      ],
+      "charsChanged": 1942,
+      "id": "h31",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b127",
+        "endOffset": 44951,
+        "index": 127,
+        "startOffset": 44422,
+        "text": "Other systems divide epistemic labor by function. Google’s AI co-scientist assigns specialized roles (generation, reflection, ranking, evolution, proximity, meta-review) with tournament-like evaluation.\\[3\\] The important fact is not the theatrical presence of several “scientists” but the decomposition of cognitive work: generation and evaluation are different tasks; finding a counterexample is different from proposing a theory; producing a solution is different from producing a solution another process can readily inspect."
+       },
+       {
+        "blockId": "b128",
+        "endOffset": 45402,
+        "index": 128,
+        "startOffset": 44953,
+        "text": "OpenAI’s work on model-written critiques found that critique assistance helped human evaluators notice flaws in summaries they would otherwise miss.\\[31\\] Prover–verifier systems make the separation explicit: a prover produces an answer, a verifier determines whether it is acceptable, and training can reward the prover not only for correctness but for producing reasoning that weaker verifiers (and, indirectly, humans) can inspect reliably.\\[32\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b130",
+        "endOffset": 44927,
+        "index": 130,
+        "startOffset": 44400,
+        "text": "Other systems divide epistemic labor by function. Google's AI co-scientist assigns specialized roles (generation, reflection, ranking, evolution, proximity, meta-review) with tournament-like evaluation.[3] The important fact is not the theatrical presence of several \"scientists\" but the decomposition of cognitive work: generation and evaluation are different tasks; finding a counterexample is different from proposing a theory; producing a solution is different from producing a solution another process can readily inspect."
+       },
+       {
+        "blockId": "b131",
+        "endOffset": 45374,
+        "index": 131,
+        "startOffset": 44929,
+        "text": "OpenAI's work on model-written critiques found that critique assistance helped human evaluators notice flaws in summaries they would otherwise miss.[31] Prover–verifier systems make the separation explicit: a prover produces an answer, a verifier determines whether it is acceptable, and training can reward the prover not only for correctness but for producing reasoning that weaker verifiers (and, indirectly, humans) can inspect reliably.[32]"
+       }
+      ],
+      "charsChanged": 1950,
+      "id": "h32",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b131",
+        "endOffset": 47287,
+        "index": 131,
+        "startOffset": 46666,
+        "text": "A mathematical proof, a method section, an audit trail, and a code review all impose versions of this obligation. It is why Kempe’s error, unlike a private conviction, could eventually be found: the proof was public, stepwise, answerable to any reader willing to work the cases; legibility kept the door open for eleven years until Heawood walked through it.\\[10\\] Correctness and checkability are not identical: a powerful reasoner can produce an answer that weaker judges cannot distinguish from a convincing fraud. Oversight must therefore shape not only what conclusions are reached, but how they are made answerable."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b134",
+        "endOffset": 47257,
+        "index": 134,
+        "startOffset": 46638,
+        "text": "A mathematical proof, a method section, an audit trail, and a code review all impose versions of this obligation. It is why Kempe's error, unlike a private conviction, could eventually be found: the proof was public, stepwise, answerable to any reader willing to work the cases; legibility kept the door open for eleven years until Heawood walked through it.[10] Correctness and checkability are not identical: a powerful reasoner can produce an answer that weaker judges cannot distinguish from a convincing fraud. Oversight must therefore shape not only what conclusions are reached, but how they are made answerable."
+       }
+      ],
+      "charsChanged": 1240,
+      "id": "h33",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b133",
+        "endOffset": 48079,
+        "index": 133,
+        "startOffset": 47301,
+        "text": "Debate is one possible constitution of plurality: agents generate answers, inspect one another’s reasoning, exchange criticism, revise, and submit a conclusion to a vote or judge. The original proposals for AI debate hoped opposing systems could expose decisive information to a human unable to evaluate a complex answer directly,\\[33\\] and early experiments reported improvements on factual and reasoning tasks.\\[34\\] The appeal is obvious: an agent attached to one conclusion has an incentive to find weaknesses in the alternative. But debate is not the principle. Debate is a high-variance communication protocol whose value depends on the competence of the participants, the independence of their initial work, the quality of the judge, the task, and the available evidence."
+       },
+       {
+        "blockId": "b134",
+        "endOffset": 48862,
+        "index": 134,
+        "startOffset": 48081,
+        "text": "Systematic evaluations have complicated the early optimism. Popular debate methods do not reliably outperform strong chain-of-thought or self-consistency baselines despite consuming additional computation, though heterogeneity among models can help.\\[35\\]\\[36\\] Controlled work disentangling debate’s ingredients finds that intrinsic reasoning strength and genuine diversity matter more than most structural protocol choices, and that majority pressure can suppress correct minority judgments.\\[37\\] Even the decision rule matters: in one systematic comparison, voting and consensus protocols favored different task types (voting helped on reasoning problems, consensus on knowledge retrieval), and the gains of newly designed protocols came from increasing answer diversity.\\[38\\]"
+       },
+       {
+        "blockId": "b135",
+        "endOffset": 49439,
+        "index": 135,
+        "startOffset": 48864,
+        "text": "These results discriminate between explanations, and the constitutional view should be read as staking predictions on them: that differentiation and adjudication (who is genuinely different, and who can tell) matter more than conversational choreography,\\[37\\] and that communication among non-independent agents destroys information rather than adding it, a prediction realized when identical models in unguided debate abandon correct answers to join a confident majority.\\[39\\] The question is never merely whether agents communicated. It is what the communication changed."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b136",
+        "endOffset": 48045,
+        "index": 136,
+        "startOffset": 47271,
+        "text": "Debate is one possible constitution of plurality: agents generate answers, inspect one another's reasoning, exchange criticism, revise, and submit a conclusion to a vote or judge. The original proposals for AI debate hoped opposing systems could expose decisive information to a human unable to evaluate a complex answer directly,[33] and early experiments reported improvements on factual and reasoning tasks.[34] The appeal is obvious: an agent attached to one conclusion has an incentive to find weaknesses in the alternative. But debate is not the principle. Debate is a high-variance communication protocol whose value depends on the competence of the participants, the independence of their initial work, the quality of the judge, the task, and the available evidence."
+       },
+       {
+        "blockId": "b137",
+        "endOffset": 48820,
+        "index": 137,
+        "startOffset": 48047,
+        "text": "Systematic evaluations have complicated the early optimism. Popular debate methods do not reliably outperform strong chain-of-thought or self-consistency baselines despite consuming additional computation, though heterogeneity among models can help.[35][36] Controlled work disentangling debate's ingredients finds that intrinsic reasoning strength and genuine diversity matter more than most structural protocol choices, and that majority pressure can suppress correct minority judgments.[37] Even the decision rule matters: in one systematic comparison, voting and consensus protocols favored different task types (voting helped on reasoning problems, consensus on knowledge retrieval), and the gains of newly designed protocols came from increasing answer diversity.[38]"
+       },
+       {
+        "blockId": "b138",
+        "endOffset": 49393,
+        "index": 138,
+        "startOffset": 48822,
+        "text": "These results discriminate between explanations, and the constitutional view should be read as staking predictions on them: that differentiation and adjudication (who is genuinely different, and who can tell) matter more than conversational choreography,[37] and that communication among non-independent agents destroys information rather than adding it, a prediction realized when identical models in unguided debate abandon correct answers to join a confident majority.[39] The question is never merely whether agents communicated. It is what the communication changed."
+       }
+      ],
+      "charsChanged": 4252,
+      "id": "h34",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b137",
+        "endOffset": 49995,
+        "index": 137,
+        "startOffset": 49474,
+        "text": "“Single agent” and “multi-agent” are not the deepest categories. A system may be enlarged through time, multiplied trajectories, federated search, differentiated functions, or adversarial communication. The most important level concerns the rules by which these mechanisms are organized, a question posed in engineering vocabulary almost as soon as the systems existed, when the first “societies of mind” assembled from language models asked whether such a society should be structured as a monarchy or a democracy.\\[40\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b140",
+        "endOffset": 49947,
+        "index": 140,
+        "startOffset": 49428,
+        "text": "\"Single agent\" and \"multi-agent\" are not the deepest categories. A system may be enlarged through time, multiplied trajectories, federated search, differentiated functions, or adversarial communication. The most important level concerns the rules by which these mechanisms are organized, a question posed in engineering vocabulary almost as soon as the systems existed, when the first \"societies of mind\" assembled from language models asked whether such a society should be structured as a monarchy or a democracy.[40]"
+       }
+      ],
+      "charsChanged": 1040,
+      "id": "h35",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b141",
+        "endOffset": 51787,
+        "index": 141,
+        "startOffset": 50636,
+        "text": "The deflationary reading now deserves its full force, because it is the strongest objection this essay faces and its proponents are serious. Vote-based compound systems can be modeled as a non-monotonic function of the number of model calls, predictable from the difficulty mix of the queries: sampling statistics, no institutional vocabulary required.\\[41\\] Multi-agent debate does not reliably beat self-consistency at comparable cost, and where it wins, tuning explains much of the win.\\[36\\] Anthropic’s own analysis found token use explaining 80 percent of performance variance.\\[2\\] And the most experienced practitioners have drawn the operational conclusion: share full context, default to a single thread.\\[42\\] Assembled into a null hypothesis: multi-agent gains reduce to more inference-time computation plus variance reduction over decorrelated samples; “independence,” the load-bearing concept of this essay, is just _decorrelation_ (a statistical property with an engineering fix, not a political achievement), and the constitutional vocabulary is vivid redescription that generates no prediction the ablations had not already generated."
+       },
+       {
+        "blockId": "b142",
+        "endOffset": 53615,
+        "index": 142,
+        "startOffset": 51789,
+        "text": "The redescription charge is answerable with predictions, and the first is this: if organization is real, how computation is structured should matter in ways that how much is spent cannot explain. That is now measured. When researchers implemented seven historical governance systems (Tang China’s three departments, American federalism, the Athenian assembly, and others) as executable architectures over identical models and identical tasks, the same model spanned roughly sixty percentage points between its best and worst constitution.\\[43\\] More telling than the spread: token expenditure and performance came apart. The most expensive institutions were not the best, and the most instructive failure was a “gate-loop” in which a review layer rejected and re-rejected proposals, consuming the most computation of any architecture for nearly the worst score: structure actively wasting compute, which a pure compute-accounting cannot describe, let alone predict. The same decoupling appears at smaller scale: decision rules redistribute performance across task types at a given budget,\\[38\\] and homogeneous agents in unguided debate spend two to three times the tokens of a single model correcting itself, for equal or lower accuracy.\\[39\\] The constitutional view predicts the pattern (differentiation pays where work can be divided and checked; integration wins where a task needs one unified chain of state), and the same study shows the flip side: on long sequential tasks, the institutional spread compresses sharply.\\[43\\] It is exposed accordingly: if well-differentiated architectures with competent judges reliably failed to beat their matched-compute single-thread baselines, the frame defended here would be in real trouble. Structure is not a way of spending more. It determines whether spending buys anything."
+       },
+       {
+        "blockId": "b143",
+        "endOffset": 54369,
+        "index": 143,
+        "startOffset": 53617,
+        "text": "Where capability gains are genuinely confounded with compute, the constitutional claims should retreat (deliberately, not tactically) to the ground they actually hold: _error structure_. Which mistakes can be caught; which failures become visible, and to whom; whether a wrong answer can be reopened, and by what. A federated searcher and a chain-of-thought at matched tokens may score alike on a benchmark while differing completely in whether a fabricated citation can be discovered, or a dissenting finding survives synthesis. The next section is about exactly this, and the essay’s thesis should be read at this level: the constitution of a reasoning system determines less how often it is right than _which of its errors can encounter resistance_."
+       },
+       {
+        "blockId": "b144",
+        "endOffset": 54376,
+        "index": 144,
+        "startOffset": 54371,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b144",
+        "endOffset": 51731,
+        "index": 144,
+        "startOffset": 50588,
+        "text": "The deflationary reading now deserves its full force, because it is the strongest objection this essay faces and its proponents are serious. Vote-based compound systems can be modeled as a non-monotonic function of the number of model calls, predictable from the difficulty mix of the queries: sampling statistics, no institutional vocabulary required.[41] Multi-agent debate does not reliably beat self-consistency at comparable cost, and where it wins, tuning explains much of the win.[36] Anthropic's own analysis found token use explaining 80 percent of performance variance.[2] And the most experienced practitioners have drawn the operational conclusion: share full context, default to a single thread.[42] Assembled into a null hypothesis: multi-agent gains reduce to more inference-time computation plus variance reduction over decorrelated samples; \"independence,\" the load-bearing concept of this essay, is just *decorrelation* (a statistical property with an engineering fix, not a political achievement), and the constitutional vocabulary is vivid redescription that generates no prediction the ablations had not already generated."
+       },
+       {
+        "blockId": "b145",
+        "endOffset": 53551,
+        "index": 145,
+        "startOffset": 51733,
+        "text": "The redescription charge is answerable with predictions, and the first is this: if organization is real, how computation is structured should matter in ways that how much is spent cannot explain. That is now measured. When researchers implemented seven historical governance systems (Tang China's three departments, American federalism, the Athenian assembly, and others) as executable architectures over identical models and identical tasks, the same model spanned roughly sixty percentage points between its best and worst constitution.[43] More telling than the spread: token expenditure and performance came apart. The most expensive institutions were not the best, and the most instructive failure was a \"gate-loop\" in which a review layer rejected and re-rejected proposals, consuming the most computation of any architecture for nearly the worst score: structure actively wasting compute, which a pure compute-accounting cannot describe, let alone predict. The same decoupling appears at smaller scale: decision rules redistribute performance across task types at a given budget,[38] and homogeneous agents in unguided debate spend two to three times the tokens of a single model correcting itself, for equal or lower accuracy.[39] The constitutional view predicts the pattern (differentiation pays where work can be divided and checked; integration wins where a task needs one unified chain of state), and the same study shows the flip side: on long sequential tasks, the institutional spread compresses sharply.[43] It is exposed accordingly: if well-differentiated architectures with competent judges reliably failed to beat their matched-compute single-thread baselines, the frame defended here would be in real trouble. Structure is not a way of spending more. It determines whether spending buys anything."
+       },
+       {
+        "blockId": "b146",
+        "endOffset": 54305,
+        "index": 146,
+        "startOffset": 53553,
+        "text": "Where capability gains are genuinely confounded with compute, the constitutional claims should retreat (deliberately, not tactically) to the ground they actually hold: *error structure*. Which mistakes can be caught; which failures become visible, and to whom; whether a wrong answer can be reopened, and by what. A federated searcher and a chain-of-thought at matched tokens may score alike on a benchmark while differing completely in whether a fabricated citation can be discovered, or a dissenting finding survives synthesis. The next section is about exactly this, and the essay's thesis should be read at this level: the constitution of a reasoning system determines less how often it is right than *which of its errors can encounter resistance*."
+       },
+       {
+        "blockId": "b147",
+        "endOffset": 54310,
+        "index": 147,
+        "startOffset": 54307,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 7450,
+      "id": "h36",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b150",
+        "endOffset": 55814,
+        "index": 150,
+        "startOffset": 55299,
+        "text": "A third is sycophancy. Models trained to be cooperative may treat convergence as social success. A correct agent abandons its answer when surrounded by a confident but mistaken majority. A recent study of unguided debate among identical models found precisely this kind of semantic contagion: agents frequently discarded independently correct reasoning to adopt the modal answer, producing high consensus alongside lower accuracy and substantial communication cost, consensus increasing while truth decreases.\\[39\\]"
+       },
+       {
+        "blockId": "b151",
+        "endOffset": 56238,
+        "index": 151,
+        "startOffset": 55816,
+        "text": "Another failure is expertise dilution. A group may contain an agent with superior knowledge yet fail to weight it. Recent experiments with self-organizing model teams found that teams often failed to match their strongest member even when explicitly told which agent was the expert; the systems tended toward integrative compromise (averaging expert and non-expert positions), and the problem worsened as teams grew.\\[44\\]"
+       },
+       {
+        "blockId": "b152",
+        "endOffset": 56832,
+        "index": 152,
+        "startOffset": 56240,
+        "text": "This reveals a deep tension. Equal consideration protects a system against domination; equal weighting suppresses differential competence. The presence of the correct answer inside a group does not imply the group can select it. A constitution of reason must decide how to assign epistemic authority without allowing authority to become self-certifying, and how much difference to _maintain_ over time: Kitcher showed long ago that a rational scientific community must keep researchers distributed across rival programs even when every individual, choosing alone, would join the leader.\\[45\\]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b153",
+        "endOffset": 55746,
+        "index": 153,
+        "startOffset": 55233,
+        "text": "A third is sycophancy. Models trained to be cooperative may treat convergence as social success. A correct agent abandons its answer when surrounded by a confident but mistaken majority. A recent study of unguided debate among identical models found precisely this kind of semantic contagion: agents frequently discarded independently correct reasoning to adopt the modal answer, producing high consensus alongside lower accuracy and substantial communication cost, consensus increasing while truth decreases.[39]"
+       },
+       {
+        "blockId": "b154",
+        "endOffset": 56168,
+        "index": 154,
+        "startOffset": 55748,
+        "text": "Another failure is expertise dilution. A group may contain an agent with superior knowledge yet fail to weight it. Recent experiments with self-organizing model teams found that teams often failed to match their strongest member even when explicitly told which agent was the expert; the systems tended toward integrative compromise (averaging expert and non-expert positions), and the problem worsened as teams grew.[44]"
+       },
+       {
+        "blockId": "b155",
+        "endOffset": 56760,
+        "index": 155,
+        "startOffset": 56170,
+        "text": "This reveals a deep tension. Equal consideration protects a system against domination; equal weighting suppresses differential competence. The presence of the correct answer inside a group does not imply the group can select it. A constitution of reason must decide how to assign epistemic authority without allowing authority to become self-certifying, and how much difference to *maintain* over time: Kitcher showed long ago that a rational scientific community must keep researchers distributed across rival programs even when every individual, choosing alone, would join the leader.[45]"
+       }
+      ],
+      "charsChanged": 3052,
+      "id": "h37",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b155",
+        "endOffset": 58432,
+        "index": 155,
+        "startOffset": 57467,
+        "text": "Task structure matters as well. A large controlled study of agent architectures found multi-agent systems producing large improvements on decomposable tasks while severely degrading sequential planning; no architecture dominated across tasks.\\[46\\] This is the coordination tax. A single context preserves integration; multiple processes create parallelism and independence but fragment context, and each boundary can preserve difference or lose meaning. The most experienced practitioners of production agents take the tax seriously enough to invert the default (share full traces, stay single-threaded unless the task forces otherwise\\[42\\]), and the constitutional view does not disagree so much as bound the advice: it predicts where that default wins (wherever unified state is the scarce good) and where it forfeits errors only an outside could catch. A badly designed society of minds is not merely expensive. It is less intelligent than the mind it divided."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b158",
+        "endOffset": 58356,
+        "index": 158,
+        "startOffset": 57395,
+        "text": "Task structure matters as well. A large controlled study of agent architectures found multi-agent systems producing large improvements on decomposable tasks while severely degrading sequential planning; no architecture dominated across tasks.[46] This is the coordination tax. A single context preserves integration; multiple processes create parallelism and independence but fragment context, and each boundary can preserve difference or lose meaning. The most experienced practitioners of production agents take the tax seriously enough to invert the default (share full traces, stay single-threaded unless the task forces otherwise[42]), and the constitutional view does not disagree so much as bound the advice: it predicts where that default wins (wherever unified state is the scarce good) and where it forfeits errors only an outside could catch. A badly designed society of minds is not merely expensive. It is less intelligent than the mind it divided."
+       }
+      ],
+      "charsChanged": 1926,
+      "id": "h38",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b163",
+        "endOffset": 60726,
+        "index": 163,
+        "startOffset": 60566,
+        "text": "First: _compute normalization_. Does the architecture outperform a strong single-process method using comparable tokens, time, tool calls, and model capability?"
+       },
+       {
+        "blockId": "b164",
+        "endOffset": 60820,
+        "index": 164,
+        "startOffset": 60728,
+        "text": "Second: _causal differentiation_. What does one component possess or do that another cannot?"
+       },
+       {
+        "blockId": "b165",
+        "endOffset": 60921,
+        "index": 165,
+        "startOffset": 60822,
+        "text": "Third: _prior independence_. Were alternatives allowed to form before exposure to social influence?"
+       },
+       {
+        "blockId": "b166",
+        "endOffset": 61039,
+        "index": 166,
+        "startOffset": 60923,
+        "text": "Fourth: _critical uptake_. Can an objection change the answer, plan, evidence, memory, or distribution of authority?"
+       },
+       {
+        "blockId": "b167",
+        "endOffset": 61141,
+        "index": 167,
+        "startOffset": 61041,
+        "text": "Fifth: _adjudicative competence_. Can the judge distinguish a valid objection from persuasive noise?"
+       },
+       {
+        "blockId": "b168",
+        "endOffset": 61240,
+        "index": 168,
+        "startOffset": 61143,
+        "text": "Sixth: _external constraint_. Can evidence, execution, experiment, or reality overrule agreement?"
+       },
+       {
+        "blockId": "b169",
+        "endOffset": 61356,
+        "index": 169,
+        "startOffset": 61242,
+        "text": "Seventh: _reopenability_. Can minority reports, failed predictions, or later evidence reopen a settled conclusion?"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b166",
+        "endOffset": 60650,
+        "index": 166,
+        "startOffset": 60490,
+        "text": "First: *compute normalization*. Does the architecture outperform a strong single-process method using comparable tokens, time, tool calls, and model capability?"
+       },
+       {
+        "blockId": "b167",
+        "endOffset": 60744,
+        "index": 167,
+        "startOffset": 60652,
+        "text": "Second: *causal differentiation*. What does one component possess or do that another cannot?"
+       },
+       {
+        "blockId": "b168",
+        "endOffset": 60845,
+        "index": 168,
+        "startOffset": 60746,
+        "text": "Third: *prior independence*. Were alternatives allowed to form before exposure to social influence?"
+       },
+       {
+        "blockId": "b169",
+        "endOffset": 60963,
+        "index": 169,
+        "startOffset": 60847,
+        "text": "Fourth: *critical uptake*. Can an objection change the answer, plan, evidence, memory, or distribution of authority?"
+       },
+       {
+        "blockId": "b170",
+        "endOffset": 61065,
+        "index": 170,
+        "startOffset": 60965,
+        "text": "Fifth: *adjudicative competence*. Can the judge distinguish a valid objection from persuasive noise?"
+       },
+       {
+        "blockId": "b171",
+        "endOffset": 61164,
+        "index": 171,
+        "startOffset": 61067,
+        "text": "Sixth: *external constraint*. Can evidence, execution, experiment, or reality overrule agreement?"
+       },
+       {
+        "blockId": "b172",
+        "endOffset": 61280,
+        "index": 172,
+        "startOffset": 61166,
+        "text": "Seventh: *reopenability*. Can minority reports, failed predictions, or later evidence reopen a settled conclusion?"
+       }
+      ],
+      "charsChanged": 1556,
+      "id": "h39",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b173",
+        "endOffset": 62182,
+        "index": 173,
+        "startOffset": 62177,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b176",
+        "endOffset": 62104,
+        "index": 176,
+        "startOffset": 62101,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h40",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b178",
+        "endOffset": 63883,
+        "index": 178,
+        "startOffset": 63113,
+        "text": "Readers from AI safety will recognize the lineage: Drexler argued, before the current systems existed, that advanced machine intelligence would arrive as structured systems of services whose capability is a property of the organization, not of any unitary agent.\\[47\\] The same holds, within limits, of human beings: minds are psychologically constituted through language and internalized dialogue, institutionally constituted when communities distribute cognition across roles and records, computationally constituted when artificial processes are organized across contexts and tests. “Constituted” here carries a deliberate double sense, constitutive and constitutional at once: organization is what reason is made of, and organization is a matter of allocated powers."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b181",
+        "endOffset": 63803,
+        "index": 181,
+        "startOffset": 63035,
+        "text": "Readers from AI safety will recognize the lineage: Drexler argued, before the current systems existed, that advanced machine intelligence would arrive as structured systems of services whose capability is a property of the organization, not of any unitary agent.[47] The same holds, within limits, of human beings: minds are psychologically constituted through language and internalized dialogue, institutionally constituted when communities distribute cognition across roles and records, computationally constituted when artificial processes are organized across contexts and tests. \"Constituted\" here carries a deliberate double sense, constitutive and constitutional at once: organization is what reason is made of, and organization is a matter of allocated powers."
+       }
+      ],
+      "charsChanged": 1538,
+      "id": "h41",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b180",
+        "endOffset": 64829,
+        "index": 180,
+        "startOffset": 64014,
+        "text": "A system reasons well when it can generate meaningful alternatives, preserve them long enough to develop, expose them to criticism, distinguish criticism from noise, transform valid criticism into revision, and remain answerable to the world it attempts to understand or change. We might call this _organized corrigibility under conditions of incomplete knowledge_. The phrase generalizes Popper, and should say so: knowledge grows by conjecture and refutation, and open societies are the ones that keep their own institutions criticizable.\\[48\\] What the present argument adds is the machinery question. Refutation is not free. Someone must build the positions from which refuting evidence can arrive, and give them standing. And that construction, not the willingness to admit error, is where corrigibility lives."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b183",
+        "endOffset": 64747,
+        "index": 183,
+        "startOffset": 63934,
+        "text": "A system reasons well when it can generate meaningful alternatives, preserve them long enough to develop, expose them to criticism, distinguish criticism from noise, transform valid criticism into revision, and remain answerable to the world it attempts to understand or change. We might call this *organized corrigibility under conditions of incomplete knowledge*. The phrase generalizes Popper, and should say so: knowledge grows by conjecture and refutation, and open societies are the ones that keep their own institutions criticizable.[48] What the present argument adds is the machinery question. Refutation is not free. Someone must build the positions from which refuting evidence can arrive, and give them standing. And that construction, not the willingness to admit error, is where corrigibility lives."
+       }
+      ],
+      "charsChanged": 1628,
+      "id": "h42",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b182",
+        "endOffset": 66462,
+        "index": 182,
+        "startOffset": 65405,
+        "text": "The nearest neighbor of this argument in recent letters is Jonathan Rauch’s _The Constitution of Knowledge_, which defends the liberal epistemic order (peer review, journalism, law) as a Madisonian arrangement whose two rules are that no one gets the final say and no one has personal authority.\\[49\\] This essay is written in that tradition and departs from it at two points. Rauch defends an existing human constitution under attack; here the constitution of knowledge is a design problem, being solved again from scratch in artificial cognition, where every allocation of epistemic power is an explicit engineering decision. And the present argument declines proceduralism at the final step: the procedures themselves remain judgeable, which is what the Logos has named since section I. What the essay ventures in return are instruments the tradition did not have: the diagnosis of low-distance criticism, the dimensions of independence, the constitutional test — middle-level concepts built for architectures the older constitutions never had to govern."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b185",
+        "endOffset": 66378,
+        "index": 185,
+        "startOffset": 65323,
+        "text": "The nearest neighbor of this argument in recent letters is Jonathan Rauch's *The Constitution of Knowledge*, which defends the liberal epistemic order (peer review, journalism, law) as a Madisonian arrangement whose two rules are that no one gets the final say and no one has personal authority.[49] This essay is written in that tradition and departs from it at two points. Rauch defends an existing human constitution under attack; here the constitution of knowledge is a design problem, being solved again from scratch in artificial cognition, where every allocation of epistemic power is an explicit engineering decision. And the present argument declines proceduralism at the final step: the procedures themselves remain judgeable, which is what the Logos has named since section I. What the essay ventures in return are instruments the tradition did not have: the diagnosis of low-distance criticism, the dimensions of independence, the constitutional test — middle-level concepts built for architectures the older constitutions never had to govern."
+       }
+      ],
+      "charsChanged": 2112,
+      "id": "h43",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b190",
+        "endOffset": 68542,
+        "index": 190,
+        "startOffset": 68537,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b193",
+        "endOffset": 68456,
+        "index": 193,
+        "startOffset": 68453,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h44",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b197",
+        "endOffset": 70118,
+        "index": 197,
+        "startOffset": 70050,
+        "text": "Artificial intelligence calls one version of this _another context_."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b200",
+        "endOffset": 70032,
+        "index": 200,
+        "startOffset": 69964,
+        "text": "Artificial intelligence calls one version of this *another context*."
+       }
+      ],
+      "charsChanged": 136,
+      "id": "h45",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b205",
+        "endOffset": 71544,
+        "index": 205,
+        "startOffset": 71539,
+        "text": "* * *"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b208",
+        "endOffset": 71456,
+        "index": 208,
+        "startOffset": 71453,
+        "text": "---"
+       }
+      ],
+      "charsChanged": 8,
+      "id": "h46",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b207",
+        "endOffset": 71790,
+        "index": 207,
+        "startOffset": 71561,
+        "text": "\\[1\\] Huang, J., et al., “Large Language Models Cannot Self-Correct Reasoning Yet,” arXiv:2310.01798 (2023). The yogurt example is the paper’s Figure 4; 95.5%→89.0% is GPT-4 on GSM8K after two rounds of intrinsic self-correction."
+       },
+       {
+        "blockId": "b208",
+        "endOffset": 71875,
+        "index": 208,
+        "startOffset": 71792,
+        "text": "\\[2\\] “How We Built Our Multi-Agent Research System,” Anthropic Engineering (2025)."
+       },
+       {
+        "blockId": "b209",
+        "endOffset": 72040,
+        "index": 209,
+        "startOffset": 71877,
+        "text": "\\[3\\] Gottweis, J., et al., “Accelerating Scientific Discovery with Co-Scientist” (originally circulated as “Towards an AI Co-Scientist”), arXiv:2502.18864 (2025)."
+       },
+       {
+        "blockId": "b210",
+        "endOffset": 72143,
+        "index": 210,
+        "startOffset": 72042,
+        "text": "\\[4\\] Heraclitus, fragments DK 22 B1–B2, in H. Diels and W. Kranz, _Die Fragmente der Vorsokratiker_."
+       },
+       {
+        "blockId": "b211",
+        "endOffset": 72201,
+        "index": 211,
+        "startOffset": 72145,
+        "text": "\\[5\\] Plato, _Sophist_ 263e; cf. _Theaetetus_ 189e–190a."
+       },
+       {
+        "blockId": "b212",
+        "endOffset": 72273,
+        "index": 212,
+        "startOffset": 72203,
+        "text": "\\[6\\] Vygotsky, L. S., _Thought and Language_ (1934; MIT Press, 1986)."
+       },
+       {
+        "blockId": "b213",
+        "endOffset": 72336,
+        "index": 213,
+        "startOffset": 72275,
+        "text": "\\[7\\] Aristotle, _Posterior Analytics_ I.1–2; _Topics_ I.1–2."
+       },
+       {
+        "blockId": "b214",
+        "endOffset": 72451,
+        "index": 214,
+        "startOffset": 72338,
+        "text": "\\[8\\] Thomas Aquinas, _Summa Theologiae_, on the structure of the article; cf. the medieval _quaestio disputata_."
+       },
+       {
+        "blockId": "b215",
+        "endOffset": 72567,
+        "index": 215,
+        "startOffset": 72453,
+        "text": "\\[9\\] Kempe, A. B., “On the Geographical Problem of the Four Colours,” _American Journal of Mathematics_ 2 (1879)."
+       },
+       {
+        "blockId": "b216",
+        "endOffset": 72676,
+        "index": 216,
+        "startOffset": 72569,
+        "text": "\\[10\\] Heawood, P. J., “Map-Colour Theorem,” _Quarterly Journal of Pure and Applied Mathematics_ 24 (1890)."
+       },
+       {
+        "blockId": "b217",
+        "endOffset": 72824,
+        "index": 217,
+        "startOffset": 72678,
+        "text": "\\[11\\] Gonthier, G., “Formal Proof—The Four-Color Theorem,” _Notices of the AMS_ 55:11 (2008); the Coq formalization is Werner and Gonthier, 2005."
+       },
+       {
+        "blockId": "b218",
+        "endOffset": 72910,
+        "index": 218,
+        "startOffset": 72826,
+        "text": "\\[12\\] Peirce, C. S., “The Fixation of Belief,” _Popular Science Monthly_ 12 (1877)."
+       },
+       {
+        "blockId": "b219",
+        "endOffset": 73043,
+        "index": 219,
+        "startOffset": 72912,
+        "text": "\\[13\\] Longino, H., _Science as Social Knowledge: Values and Objectivity in Scientific Inquiry_ (Princeton University Press, 1990)."
+       },
+       {
+        "blockId": "b220",
+        "endOffset": 73093,
+        "index": 220,
+        "startOffset": 73045,
+        "text": "\\[14\\] Mill, J. S., _On Liberty_ (1859), ch. II."
+       },
+       {
+        "blockId": "b221",
+        "endOffset": 73239,
+        "index": 221,
+        "startOffset": 73095,
+        "text": "\\[15\\] _The Federalist_, No. 51 (1788), conventionally attributed to Madison; the documentary record marks the authorship “Hamilton or Madison.”"
+       },
+       {
+        "blockId": "b222",
+        "endOffset": 73336,
+        "index": 222,
+        "startOffset": 73241,
+        "text": "\\[16\\] Hayek, F. A., “The Use of Knowledge in Society,” _American Economic Review_ 35:4 (1945)."
+       },
+       {
+        "blockId": "b223",
+        "endOffset": 73465,
+        "index": 223,
+        "startOffset": 73338,
+        "text": "\\[17\\] Condorcet, _Essai sur l’application de l’analyse à la probabilité des décisions rendues à la pluralité des voix_ (1785)."
+       },
+       {
+        "blockId": "b224",
+        "endOffset": 73545,
+        "index": 224,
+        "startOffset": 73467,
+        "text": "\\[18\\] Anderson, E., “The Epistemology of Democracy,” _Episteme_ 3:1–2 (2006)."
+       },
+       {
+        "blockId": "b225",
+        "endOffset": 73652,
+        "index": 225,
+        "startOffset": 73547,
+        "text": "\\[19\\] Estlund, D., _Democratic Authority: A Philosophical Framework_ (Princeton University Press, 2008)."
+       },
+       {
+        "blockId": "b226",
+        "endOffset": 73760,
+        "index": 226,
+        "startOffset": 73654,
+        "text": "\\[20\\] Habermas, J., _The Theory of Communicative Action_ (1981), trans. T. McCarthy (Beacon Press, 1984)."
+       },
+       {
+        "blockId": "b227",
+        "endOffset": 73854,
+        "index": 227,
+        "startOffset": 73762,
+        "text": "\\[21\\] Mercier, H., and D. Sperber, _The Enigma of Reason_ (Harvard University Press, 2017)."
+       },
+       {
+        "blockId": "b228",
+        "endOffset": 73921,
+        "index": 228,
+        "startOffset": 73856,
+        "text": "\\[22\\] Farrell, H., and C. Shalizi, “Cognitive Democracy” (2012)."
+       },
+       {
+        "blockId": "b229",
+        "endOffset": 73986,
+        "index": 229,
+        "startOffset": 73923,
+        "text": "\\[23\\] Hutchins, E., _Cognition in the Wild_ (MIT Press, 1995)."
+       },
+       {
+        "blockId": "b230",
+        "endOffset": 74067,
+        "index": 230,
+        "startOffset": 73988,
+        "text": "\\[24\\] Clark, A., and D. Chalmers, “The Extended Mind,” _Analysis_ 58:1 (1998)."
+       },
+       {
+        "blockId": "b231",
+        "endOffset": 74135,
+        "index": 231,
+        "startOffset": 74069,
+        "text": "\\[25\\] Minsky, M., _The Society of Mind_ (Simon & Schuster, 1986)."
+       },
+       {
+        "blockId": "b232",
+        "endOffset": 74271,
+        "index": 232,
+        "startOffset": 74137,
+        "text": "\\[26\\] Farrell, H., A. Gopnik, C. Shalizi, and J. Evans, “Large AI Models Are Cultural and Social Technologies,” _Science_ 387 (2025)."
+       },
+       {
+        "blockId": "b233",
+        "endOffset": 74394,
+        "index": 233,
+        "startOffset": 74273,
+        "text": "\\[27\\] Wei, J., et al., “Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,” arXiv:2201.11903 (2022)."
+       },
+       {
+        "blockId": "b234",
+        "endOffset": 74520,
+        "index": 234,
+        "startOffset": 74396,
+        "text": "\\[28\\] Wang, X., et al., “Self-Consistency Improves Chain of Thought Reasoning in Language Models,” arXiv:2203.11171 (2022)."
+       },
+       {
+        "blockId": "b235",
+        "endOffset": 74637,
+        "index": 235,
+        "startOffset": 74522,
+        "text": "\\[29\\] Shinn, N., et al., “Reflexion: Language Agents with Verbal Reinforcement Learning,” arXiv:2303.11366 (2023)."
+       },
+       {
+        "blockId": "b236",
+        "endOffset": 74777,
+        "index": 236,
+        "startOffset": 74639,
+        "text": "\\[30\\] Tyen, G., et al., “LLMs Cannot Find Reasoning Errors, but Can Correct Them Given the Error Location,” arXiv:2311.08516 (2023/2024)."
+       },
+       {
+        "blockId": "b237",
+        "endOffset": 74889,
+        "index": 237,
+        "startOffset": 74779,
+        "text": "\\[31\\] Saunders, W., et al., “Self-Critiquing Models for Assisting Human Evaluators,” arXiv:2206.05802 (2022)."
+       },
+       {
+        "blockId": "b238",
+        "endOffset": 75006,
+        "index": 238,
+        "startOffset": 74891,
+        "text": "\\[32\\] Kirchner, J. H., et al., “Prover-Verifier Games Improve Legibility of LLM Outputs,” arXiv:2407.13692 (2024)."
+       },
+       {
+        "blockId": "b239",
+        "endOffset": 75105,
+        "index": 239,
+        "startOffset": 75008,
+        "text": "\\[33\\] Irving, G., P. Christiano, and D. Amodei, “AI Safety via Debate,” arXiv:1805.00899 (2018)."
+       },
+       {
+        "blockId": "b240",
+        "endOffset": 75237,
+        "index": 240,
+        "startOffset": 75107,
+        "text": "\\[34\\] Du, Y., et al., “Improving Factuality and Reasoning in Language Models through Multiagent Debate,” arXiv:2305.14325 (2023)."
+       },
+       {
+        "blockId": "b241",
+        "endOffset": 75387,
+        "index": 241,
+        "startOffset": 75239,
+        "text": "\\[35\\] “Multi-LLM-Agents Debate: Performance, Efficiency, and Scaling Challenges,” ICLR 2025 Blogposts Track (published without author attribution)."
+       },
+       {
+        "blockId": "b242",
+        "endOffset": 75510,
+        "index": 242,
+        "startOffset": 75389,
+        "text": "\\[36\\] Smit, A., et al., “Should We Be Going MAD? A Look at Multi-Agent Debate Strategies for LLMs,” ICML 2024, PMLR 235."
+       },
+       {
+        "blockId": "b243",
+        "endOffset": 75664,
+        "index": 243,
+        "startOffset": 75512,
+        "text": "\\[37\\] Wu, H., Z. Li, and L. Li, “Can LLM Agents Really Debate? A Controlled Study of Multi-Agent Debate in Logical Reasoning,” arXiv:2511.07784 (2025)."
+       },
+       {
+        "blockId": "b244",
+        "endOffset": 75822,
+        "index": 244,
+        "startOffset": 75666,
+        "text": "\\[38\\] Kaesberg, L. B., J. Becker, J. P. Wahle, T. Ruas, and B. Gipp, “Voting or Consensus? Decision-Making in Multi-Agent Debate,” arXiv:2502.19130 (2025)."
+       },
+       {
+        "blockId": "b245",
+        "endOffset": 75992,
+        "index": 245,
+        "startOffset": 75824,
+        "text": "\\[39\\] Bertalanič, B., and C. Fortuna, “The Cost of Consensus: Isolated Self-Correction Prevails Over Unguided Homogeneous Multi-Agent Debate,” arXiv:2605.00914 (2026)."
+       },
+       {
+        "blockId": "b246",
+        "endOffset": 76102,
+        "index": 246,
+        "startOffset": 75994,
+        "text": "\\[40\\] Zhuge, M., et al., “Mindstorms in Natural Language-Based Societies of Mind,” arXiv:2305.17066 (2023)."
+       },
+       {
+        "blockId": "b247",
+        "endOffset": 76247,
+        "index": 247,
+        "startOffset": 76104,
+        "text": "\\[41\\] Chen, L., et al., “Are More LLM Calls All You Need? Towards Scaling Laws of Compound Inference Systems,” NeurIPS 2024, arXiv:2403.02419."
+       },
+       {
+        "blockId": "b248",
+        "endOffset": 76327,
+        "index": 248,
+        "startOffset": 76249,
+        "text": "\\[42\\] Yan, W., “Don’t Build Multi-Agents,” Cognition Engineering Blog (2025)."
+       },
+       {
+        "blockId": "b249",
+        "endOffset": 76433,
+        "index": 249,
+        "startOffset": 76329,
+        "text": "\\[43\\] Fei, C., H. Guo, and Y. Xiao, “When Agents Evolve, Institutions Follow,” arXiv:2604.27691 (2026)."
+       },
+       {
+        "blockId": "b250",
+        "endOffset": 76557,
+        "index": 250,
+        "startOffset": 76435,
+        "text": "\\[44\\] Pappu, A., et al., “Multi-Agent Teams Hold Experts Back,” Apple Machine Learning Research, arXiv:2602.01011 (2026)."
+       },
+       {
+        "blockId": "b251",
+        "endOffset": 76650,
+        "index": 251,
+        "startOffset": 76559,
+        "text": "\\[45\\] Kitcher, P., “The Division of Cognitive Labor,” _Journal of Philosophy_ 87:1 (1990)."
+       },
+       {
+        "blockId": "b252",
+        "endOffset": 76746,
+        "index": 252,
+        "startOffset": 76652,
+        "text": "\\[46\\] Kim, Y., et al., “Towards a Science of Scaling Agent Systems,” arXiv:2512.08296 (2025)."
+       },
+       {
+        "blockId": "b253",
+        "endOffset": 76881,
+        "index": 253,
+        "startOffset": 76748,
+        "text": "\\[47\\] Drexler, K. E., _Reframing Superintelligence: Comprehensive AI Services as General Intelligence_, FHI Technical Report (2019)."
+       },
+       {
+        "blockId": "b254",
+        "endOffset": 76982,
+        "index": 254,
+        "startOffset": 76883,
+        "text": "\\[48\\] Popper, K., _Conjectures and Refutations_ (1963); _The Open Society and Its Enemies_ (1945)."
+       },
+       {
+        "blockId": "b255",
+        "endOffset": 77090,
+        "index": 255,
+        "startOffset": 76984,
+        "text": "\\[49\\] Rauch, J., _The Constitution of Knowledge: A Defense of Truth_ (Brookings Institution Press, 2021)."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b210",
+        "endOffset": 71700,
+        "index": 210,
+        "startOffset": 71473,
+        "text": "[1] Huang, J., et al., \"Large Language Models Cannot Self-Correct Reasoning Yet,\" arXiv:2310.01798 (2023). The yogurt example is the paper's Figure 4; 95.5%→89.0% is GPT-4 on GSM8K after two rounds of intrinsic self-correction."
+       },
+       {
+        "blockId": "b211",
+        "endOffset": 71783,
+        "index": 211,
+        "startOffset": 71702,
+        "text": "[2] \"How We Built Our Multi-Agent Research System,\" Anthropic Engineering (2025)."
+       },
+       {
+        "blockId": "b212",
+        "endOffset": 71946,
+        "index": 212,
+        "startOffset": 71785,
+        "text": "[3] Gottweis, J., et al., \"Accelerating Scientific Discovery with Co-Scientist\" (originally circulated as \"Towards an AI Co-Scientist\"), arXiv:2502.18864 (2025)."
+       },
+       {
+        "blockId": "b213",
+        "endOffset": 72047,
+        "index": 213,
+        "startOffset": 71948,
+        "text": "[4] Heraclitus, fragments DK 22 B1–B2, in H. Diels and W. Kranz, *Die Fragmente der Vorsokratiker*."
+       },
+       {
+        "blockId": "b214",
+        "endOffset": 72103,
+        "index": 214,
+        "startOffset": 72049,
+        "text": "[5] Plato, *Sophist* 263e; cf. *Theaetetus* 189e–190a."
+       },
+       {
+        "blockId": "b215",
+        "endOffset": 72173,
+        "index": 215,
+        "startOffset": 72105,
+        "text": "[6] Vygotsky, L. S., *Thought and Language* (1934; MIT Press, 1986)."
+       },
+       {
+        "blockId": "b216",
+        "endOffset": 72234,
+        "index": 216,
+        "startOffset": 72175,
+        "text": "[7] Aristotle, *Posterior Analytics* I.1–2; *Topics* I.1–2."
+       },
+       {
+        "blockId": "b217",
+        "endOffset": 72347,
+        "index": 217,
+        "startOffset": 72236,
+        "text": "[8] Thomas Aquinas, *Summa Theologiae*, on the structure of the article; cf. the medieval *quaestio disputata*."
+       },
+       {
+        "blockId": "b218",
+        "endOffset": 72461,
+        "index": 218,
+        "startOffset": 72349,
+        "text": "[9] Kempe, A. B., \"On the Geographical Problem of the Four Colours,\" *American Journal of Mathematics* 2 (1879)."
+       },
+       {
+        "blockId": "b219",
+        "endOffset": 72568,
+        "index": 219,
+        "startOffset": 72463,
+        "text": "[10] Heawood, P. J., \"Map-Colour Theorem,\" *Quarterly Journal of Pure and Applied Mathematics* 24 (1890)."
+       },
+       {
+        "blockId": "b220",
+        "endOffset": 72714,
+        "index": 220,
+        "startOffset": 72570,
+        "text": "[11] Gonthier, G., \"Formal Proof—The Four-Color Theorem,\" *Notices of the AMS* 55:11 (2008); the Coq formalization is Werner and Gonthier, 2005."
+       },
+       {
+        "blockId": "b221",
+        "endOffset": 72798,
+        "index": 221,
+        "startOffset": 72716,
+        "text": "[12] Peirce, C. S., \"The Fixation of Belief,\" *Popular Science Monthly* 12 (1877)."
+       },
+       {
+        "blockId": "b222",
+        "endOffset": 72929,
+        "index": 222,
+        "startOffset": 72800,
+        "text": "[13] Longino, H., *Science as Social Knowledge: Values and Objectivity in Scientific Inquiry* (Princeton University Press, 1990)."
+       },
+       {
+        "blockId": "b223",
+        "endOffset": 72977,
+        "index": 223,
+        "startOffset": 72931,
+        "text": "[14] Mill, J. S., *On Liberty* (1859), ch. II."
+       },
+       {
+        "blockId": "b224",
+        "endOffset": 73121,
+        "index": 224,
+        "startOffset": 72979,
+        "text": "[15] *The Federalist*, No. 51 (1788), conventionally attributed to Madison; the documentary record marks the authorship \"Hamilton or Madison.\""
+       },
+       {
+        "blockId": "b225",
+        "endOffset": 73216,
+        "index": 225,
+        "startOffset": 73123,
+        "text": "[16] Hayek, F. A., \"The Use of Knowledge in Society,\" *American Economic Review* 35:4 (1945)."
+       },
+       {
+        "blockId": "b226",
+        "endOffset": 73343,
+        "index": 226,
+        "startOffset": 73218,
+        "text": "[17] Condorcet, *Essai sur l'application de l'analyse à la probabilité des décisions rendues à la pluralité des voix* (1785)."
+       },
+       {
+        "blockId": "b227",
+        "endOffset": 73421,
+        "index": 227,
+        "startOffset": 73345,
+        "text": "[18] Anderson, E., \"The Epistemology of Democracy,\" *Episteme* 3:1–2 (2006)."
+       },
+       {
+        "blockId": "b228",
+        "endOffset": 73526,
+        "index": 228,
+        "startOffset": 73423,
+        "text": "[19] Estlund, D., *Democratic Authority: A Philosophical Framework* (Princeton University Press, 2008)."
+       },
+       {
+        "blockId": "b229",
+        "endOffset": 73632,
+        "index": 229,
+        "startOffset": 73528,
+        "text": "[20] Habermas, J., *The Theory of Communicative Action* (1981), trans. T. McCarthy (Beacon Press, 1984)."
+       },
+       {
+        "blockId": "b230",
+        "endOffset": 73724,
+        "index": 230,
+        "startOffset": 73634,
+        "text": "[21] Mercier, H., and D. Sperber, *The Enigma of Reason* (Harvard University Press, 2017)."
+       },
+       {
+        "blockId": "b231",
+        "endOffset": 73789,
+        "index": 231,
+        "startOffset": 73726,
+        "text": "[22] Farrell, H., and C. Shalizi, \"Cognitive Democracy\" (2012)."
+       },
+       {
+        "blockId": "b232",
+        "endOffset": 73852,
+        "index": 232,
+        "startOffset": 73791,
+        "text": "[23] Hutchins, E., *Cognition in the Wild* (MIT Press, 1995)."
+       },
+       {
+        "blockId": "b233",
+        "endOffset": 73931,
+        "index": 233,
+        "startOffset": 73854,
+        "text": "[24] Clark, A., and D. Chalmers, \"The Extended Mind,\" *Analysis* 58:1 (1998)."
+       },
+       {
+        "blockId": "b234",
+        "endOffset": 73997,
+        "index": 234,
+        "startOffset": 73933,
+        "text": "[25] Minsky, M., *The Society of Mind* (Simon & Schuster, 1986)."
+       },
+       {
+        "blockId": "b235",
+        "endOffset": 74131,
+        "index": 235,
+        "startOffset": 73999,
+        "text": "[26] Farrell, H., A. Gopnik, C. Shalizi, and J. Evans, \"Large AI Models Are Cultural and Social Technologies,\" *Science* 387 (2025)."
+       },
+       {
+        "blockId": "b236",
+        "endOffset": 74252,
+        "index": 236,
+        "startOffset": 74133,
+        "text": "[27] Wei, J., et al., \"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,\" arXiv:2201.11903 (2022)."
+       },
+       {
+        "blockId": "b237",
+        "endOffset": 74376,
+        "index": 237,
+        "startOffset": 74254,
+        "text": "[28] Wang, X., et al., \"Self-Consistency Improves Chain of Thought Reasoning in Language Models,\" arXiv:2203.11171 (2022)."
+       },
+       {
+        "blockId": "b238",
+        "endOffset": 74491,
+        "index": 238,
+        "startOffset": 74378,
+        "text": "[29] Shinn, N., et al., \"Reflexion: Language Agents with Verbal Reinforcement Learning,\" arXiv:2303.11366 (2023)."
+       },
+       {
+        "blockId": "b239",
+        "endOffset": 74629,
+        "index": 239,
+        "startOffset": 74493,
+        "text": "[30] Tyen, G., et al., \"LLMs Cannot Find Reasoning Errors, but Can Correct Them Given the Error Location,\" arXiv:2311.08516 (2023/2024)."
+       },
+       {
+        "blockId": "b240",
+        "endOffset": 74739,
+        "index": 240,
+        "startOffset": 74631,
+        "text": "[31] Saunders, W., et al., \"Self-Critiquing Models for Assisting Human Evaluators,\" arXiv:2206.05802 (2022)."
+       },
+       {
+        "blockId": "b241",
+        "endOffset": 74854,
+        "index": 241,
+        "startOffset": 74741,
+        "text": "[32] Kirchner, J. H., et al., \"Prover-Verifier Games Improve Legibility of LLM Outputs,\" arXiv:2407.13692 (2024)."
+       },
+       {
+        "blockId": "b242",
+        "endOffset": 74951,
+        "index": 242,
+        "startOffset": 74856,
+        "text": "[33] Irving, G., P. Christiano, and D. Amodei, \"AI Safety via Debate,\" arXiv:1805.00899 (2018)."
+       },
+       {
+        "blockId": "b243",
+        "endOffset": 75081,
+        "index": 243,
+        "startOffset": 74953,
+        "text": "[34] Du, Y., et al., \"Improving Factuality and Reasoning in Language Models through Multiagent Debate,\" arXiv:2305.14325 (2023)."
+       },
+       {
+        "blockId": "b244",
+        "endOffset": 75229,
+        "index": 244,
+        "startOffset": 75083,
+        "text": "[35] \"Multi-LLM-Agents Debate: Performance, Efficiency, and Scaling Challenges,\" ICLR 2025 Blogposts Track (published without author attribution)."
+       },
+       {
+        "blockId": "b245",
+        "endOffset": 75350,
+        "index": 245,
+        "startOffset": 75231,
+        "text": "[36] Smit, A., et al., \"Should We Be Going MAD? A Look at Multi-Agent Debate Strategies for LLMs,\" ICML 2024, PMLR 235."
+       },
+       {
+        "blockId": "b246",
+        "endOffset": 75502,
+        "index": 246,
+        "startOffset": 75352,
+        "text": "[37] Wu, H., Z. Li, and L. Li, \"Can LLM Agents Really Debate? A Controlled Study of Multi-Agent Debate in Logical Reasoning,\" arXiv:2511.07784 (2025)."
+       },
+       {
+        "blockId": "b247",
+        "endOffset": 75658,
+        "index": 247,
+        "startOffset": 75504,
+        "text": "[38] Kaesberg, L. B., J. Becker, J. P. Wahle, T. Ruas, and B. Gipp, \"Voting or Consensus? Decision-Making in Multi-Agent Debate,\" arXiv:2502.19130 (2025)."
+       },
+       {
+        "blockId": "b248",
+        "endOffset": 75826,
+        "index": 248,
+        "startOffset": 75660,
+        "text": "[39] Bertalanič, B., and C. Fortuna, \"The Cost of Consensus: Isolated Self-Correction Prevails Over Unguided Homogeneous Multi-Agent Debate,\" arXiv:2605.00914 (2026)."
+       },
+       {
+        "blockId": "b249",
+        "endOffset": 75934,
+        "index": 249,
+        "startOffset": 75828,
+        "text": "[40] Zhuge, M., et al., \"Mindstorms in Natural Language-Based Societies of Mind,\" arXiv:2305.17066 (2023)."
+       },
+       {
+        "blockId": "b250",
+        "endOffset": 76077,
+        "index": 250,
+        "startOffset": 75936,
+        "text": "[41] Chen, L., et al., \"Are More LLM Calls All You Need? Towards Scaling Laws of Compound Inference Systems,\" NeurIPS 2024, arXiv:2403.02419."
+       },
+       {
+        "blockId": "b251",
+        "endOffset": 76155,
+        "index": 251,
+        "startOffset": 76079,
+        "text": "[42] Yan, W., \"Don't Build Multi-Agents,\" Cognition Engineering Blog (2025)."
+       },
+       {
+        "blockId": "b252",
+        "endOffset": 76259,
+        "index": 252,
+        "startOffset": 76157,
+        "text": "[43] Fei, C., H. Guo, and Y. Xiao, \"When Agents Evolve, Institutions Follow,\" arXiv:2604.27691 (2026)."
+       },
+       {
+        "blockId": "b253",
+        "endOffset": 76381,
+        "index": 253,
+        "startOffset": 76261,
+        "text": "[44] Pappu, A., et al., \"Multi-Agent Teams Hold Experts Back,\" Apple Machine Learning Research, arXiv:2602.01011 (2026)."
+       },
+       {
+        "blockId": "b254",
+        "endOffset": 76472,
+        "index": 254,
+        "startOffset": 76383,
+        "text": "[45] Kitcher, P., \"The Division of Cognitive Labor,\" *Journal of Philosophy* 87:1 (1990)."
+       },
+       {
+        "blockId": "b255",
+        "endOffset": 76566,
+        "index": 255,
+        "startOffset": 76474,
+        "text": "[46] Kim, Y., et al., \"Towards a Science of Scaling Agent Systems,\" arXiv:2512.08296 (2025)."
+       },
+       {
+        "blockId": "b256",
+        "endOffset": 76699,
+        "index": 256,
+        "startOffset": 76568,
+        "text": "[47] Drexler, K. E., *Reframing Superintelligence: Comprehensive AI Services as General Intelligence*, FHI Technical Report (2019)."
+       },
+       {
+        "blockId": "b257",
+        "endOffset": 76798,
+        "index": 257,
+        "startOffset": 76701,
+        "text": "[48] Popper, K., *Conjectures and Refutations* (1963); *The Open Society and Its Enemies* (1945)."
+       },
+       {
+        "blockId": "b258",
+        "endOffset": 76904,
+        "index": 258,
+        "startOffset": 76800,
+        "text": "[49] Rauch, J., *The Constitution of Knowledge: A Defense of Truth* (Brookings Institution Press, 2021)."
+       }
+      ],
+      "charsChanged": 10768,
+      "id": "h47",
+      "kind": "mixed"
+     }
+    ]
+   }
+  }
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "v4-published",
+ "kind": "what-changed"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/sententia-2004-neuroethical-considerations.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ce16ed57f18087b5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/sententia-2004-neuroethical-considerations.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sententia-2004-neuroethical-considerations\n- **URL:** https://pubmed.ncbi.nlm.nih.gov/15194617/ (abstract only; Wiley full text 403) · **Accessed:** 2026-09-16 · **For:** v1 response round, finding (c) coinage of \"cognitive liberty\"\n- **Citation:** Wrye Sententia, \"Neuroethical Considerations: Cognitive Liberty and Converging Technologies for Improving Human Cognition,\" *Annals of the New York Academy of Sciences* 1013 (2004): 221–228, doi:10.1196/annals.1305.014.\n- **What it establishes:** Primary abstract confirms the article frames cognitive liberty as a tool for assessing NBIC/cognitive-enhancement developments, protecting \"values of personhood\" and \"individual decision-making\" against the growing ability \"to manipulate cognitive processes.\" It is a self-determination/enhancement framing, not a privacy-of-records framing. The two principles (no compulsion; no prohibition) are attested only through secondary sources (Wikipedia; Sommaggio et al. 2017) — full text not opened.\n- **Key passages (abstract):**\n  - \"in view of the rapidly expanding purview of neuroscience and the growing array of technologic developments capable of affecting or monitoring cognition, the emerging field of neuroethics calls for a consideration of the social and ethical implications…\"\n  - \"We need analytical models that protect values of personhood at the heart of a functional democracy—values that allow, as much as possible, for individual decision-making, despite transformations in our understanding and ability to manipulate cognitive processes. Addressing cognitive enhancement from the legal and ethical notion of 'cognitive liberty' provides a powerful tool for assessing and encouraging NBIC developments.\"\n  - Secondary (Sommaggio, Mazzocca et al., \"Cognitive liberty. A first step towards a human neuro-rights declaration,\" BioLaw Journal 3/2017, p. 27ff, quoting Sententia): cognitive liberty is \"a conceptual update of freedom of thought that takes 'into account the power we now have, and increasingly will have to monitor and manipulate cognitive function.'\"\n- **Reliability:** Primary abstract; secondary paraphrase of the principles. Sententia was CCLE co-director (advocacy origin).\n- **Relevance to this project:** Cite for the coinage; note that its concern is enhancement/self-determination. Boire 2000: Richard Glen Boire, \"On Cognitive Liberty (Part I),\" *Journal of Cognitive Liberties* 1:1 (2000): 7–13 (not opened; quoted via Bublitz 2013).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 314
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5af06646e437561402078312e3e15eef4a2296ab833de34a41f593ce88bde0a2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/sententia-2004-neuroethical-considerations.md",
+ "kind": "artifact-page"
+}

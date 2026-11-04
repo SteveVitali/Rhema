@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gizmodo-ropek-dhs-openai-warrant-2025-10-20.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "70f15f93d8b6987e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/gizmodo-ropek-dhs-openai-warrant-2025-10-20.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gizmodo-ropek-dhs-openai-warrant-2025-10-20\n- **URL:** https://gizmodo.com/dhs-asks-openai-to-unmask-user-behind-chatgpt-prompts-possibly-the-first-such-case-2000674472 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Gizmodo (Ropek), Oct. 20, 2025: records unsealed in Maine; undercover conversations July–Aug. 2025; agents built a profile from context clues; claims DHS \"has not asked OpenAI for any identifying information\" — inconsistent with Forbes/CRS/Pfefferkorn on the warrant's terms, but consistent on the outcome that the suspect was identified independently (III16).\n- **Key passages:** \"the DHS has not asked OpenAI for any identifying information, as the government already believes it has identified the criminal in question.\" · \"undercover agents used context clues pieced together from ongoing conversations with the user to put together a profile on who he might be.\"\n- **Reliability:** Secondary; partly at odds with the primary-based accounts on what the warrant sought.\n- **Relevance to this project:** l.84, l.152 (outcome corroboration only).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 138
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "91e59b869a5e6b2f58847f88c571aa1f72660062d3ca50624bb0ed8ec4a3b944",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/gizmodo-ropek-dhs-openai-warrant-2025-10-20.md",
+ "kind": "artifact-page"
+}

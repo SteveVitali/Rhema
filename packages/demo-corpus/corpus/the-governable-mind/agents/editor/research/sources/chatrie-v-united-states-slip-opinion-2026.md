@@ -1,0 +1,6 @@
+# chatrie-v-united-states-slip-opinion-2026
+- **URL:** https://www.supremecourt.gov/opinions/25pdf/25-112_0am4.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (PDF downloaded, text extracted)
+- **What it establishes:** Chatrie v. United States, No. 25–112, argued Apr. 27, decided June 29, 2026. Holding: accessing Google Location History is a Fourth Amendment search; third-party custody does not matter. The draft's fragment is verbatim at slip op. 29 (PDF p. 34) (III14; ref [32]).
+- **Key passages:** slip op. 29: "For all those reasons, we hold that police officers invade a cell-phone user's reasonable expectation of privacy when they access his Location History. It does not matter if the time period scrutinized was only two hours. Nor does it matter that the materials obtained were handed over by a third-party tech company. When the government 'accesses historical cell phone' location information—Location History as much as CSLI—it 'conducts a search under the Fourth Amendment.' Carpenter, 585 U. S., at 300." · slip op. 2: "even though for only a limited time, and from a third-party tech company."
+- **Reliability:** Primary; official slip opinion.
+- **Relevance to this project:** l.80; ref [32].

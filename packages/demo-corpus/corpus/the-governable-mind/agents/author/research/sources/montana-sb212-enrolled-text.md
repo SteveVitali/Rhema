@@ -1,0 +1,10 @@
+# montana-sb212-enrolled-text
+- **URL:** https://archive.legmt.gov/content/Sessions/69th/Contractor_index/CH0150.pdf (enrolled bill, Chapter 150; PDF downloaded and text-extracted) · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding J (primary)
+- **What it establishes:** Sec. 1 short title "Right to Compute Act". Sec. 2 findings ground the right in Montana Const. Art. II secs. 3 and 7. Sec. 3 states the operative right. Sec. 7(2) defines "compelling government interest" narrowly, with an enumerated list. Sec. 4 requires only a risk-management policy for critical infrastructure controlled by a "critical artificial intelligence system." Sec. 10: "effective on passage and approval" (signed April 16, 2025). The enrolled bill's rear title page still shows the struck original title words "REQUIRING SHUTDOWN CAPABILITIES" replaced by "A RISK MANAGEMENT POLICY", confirming the removal.
+- **Key passages:**
+  - Sec. 3: "Government actions that restrict the ability to privately own or make use of computational resources for lawful purposes, which infringes on citizens' fundamental rights to property and free expression, must be limited to those demonstrably necessary and narrowly tailored to fulfill a compelling government interest."
+  - Sec. 7(2): "'Compelling government interest' means a government interest of the highest order in protecting the public that cannot be achieved through less restrictive means."
+  - Sec. 7(3): "'Computational resources' means any tools, technologies, systems, or infrastructure ... that facilitate any form of computation" including "hardware, software, algorithms ... machine learning, or quantum applications."
+  - Sec. 10: "[This act] is effective on passage and approval."
+- **Reliability:** Primary (enrolled statute).
+- **Relevance to this project:** Exact statutory wording; note the phrase is "demonstrably necessary and narrowly tailored" (MultiState's paraphrase drops "demonstrably necessary"). The statute never uses the words "strict scrutiny"; that is a characterization.

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ball-what-comes-after-sb1047-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "181552c7a7d48afa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ball-what-comes-after-sb1047-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ball-what-comes-after-sb1047-2024\n- **URL:** https://www.hyperdimensional.co/p/what-comes-after-sb-1047 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Dean Ball, Sept 30, 2024: SB 1047's KYC for datacenters, liability, auditing, whistleblower, public compute; bill 'biting off more than it could chew'; fear of use-based bureaucracy.\n- **Key passages:** \"government becomes obsessed with documenting, assessing, risk-mitigating, and writing best practices for AI uses, regardless of whether it is valuable.\"\n- **Reliability:** Secondary; policy Substack.\n- **Relevance to this project:** §1A; note that datacenter KYC 'barely warranted discussion' in the SB 1047 fight.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "73d3d72360c21b7ad3cb5d1f67fa30f29d06b7947469610acebe2d4c459ec631",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ball-what-comes-after-sb1047-2024.md",
+ "kind": "artifact-page"
+}

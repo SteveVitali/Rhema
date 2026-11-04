@@ -1,0 +1,382 @@
+{
+ "rows": [
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 1,
+   "id": "F1",
+   "moveOrdinal": 2,
+   "source": "Letter MI1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 2,
+   "id": "F2",
+   "moveOrdinal": 3,
+   "source": "Letter MI2",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 3,
+   "id": "F3",
+   "moveOrdinal": 1,
+   "source": "Letter MI3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 4,
+   "id": "F4",
+   "moveOrdinal": 4,
+   "source": "Letter MI4 / C23a/d",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 5,
+   "id": "F5",
+   "moveOrdinal": 6,
+   "source": "Letter MI5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 6,
+   "id": "F6",
+   "moveOrdinal": 5,
+   "source": "Letter MI6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 13,
+   "id": "F7",
+   "moveOrdinal": 8,
+   "source": "Minor / self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 14,
+   "id": "F8",
+   "moveOrdinal": 1,
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 15,
+   "id": "F9",
+   "moveOrdinal": 8,
+   "source": "Minor / self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 16,
+   "id": "F10",
+   "moveOrdinal": 8,
+   "source": "Minor (C6)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 17,
+   "id": "F11",
+   "moveOrdinal": 9,
+   "source": "Minor (C4) / self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 18,
+   "id": "F12",
+   "moveOrdinal": 6,
+   "source": "Minor (C14)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 19,
+   "id": "F13",
+   "moveOrdinal": 8,
+   "source": "Minor (C9)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 20,
+   "id": "F14",
+   "moveOrdinal": 4,
+   "source": "Minor (C18)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 21,
+   "id": "F15",
+   "moveOrdinal": 8,
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 22,
+   "id": "F16",
+   "moveOrdinal": 8,
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 23,
+   "id": "F17",
+   "moveOrdinal": 9,
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 24,
+   "id": "F18",
+   "moveOrdinal": 9,
+   "source": "Minor + guidance",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 25,
+   "id": "F19",
+   "moveOrdinal": 8,
+   "source": "Line notes P1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 26,
+   "id": "F20",
+   "moveOrdinal": 1,
+   "source": "Line notes P2",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 27,
+   "id": "F21",
+   "moveOrdinal": 8,
+   "source": "Line notes P3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 28,
+   "id": "F22",
+   "moveOrdinal": 1,
+   "source": "Line notes",
+   "status": "done"
+  },
+  {
+   "disposition": "constraint",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F23",
+   "source": "Line notes",
+   "status": "honored"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F24",
+   "source": "Craft",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F25",
+   "source": "Craft",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F26",
+   "source": "Craft P4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 30,
+   "id": "F27",
+   "moveOrdinal": 7,
+   "source": "A5 / 2nd read Obj 4",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 30,
+   "id": "F28",
+   "moveOrdinal": 2,
+   "source": "2nd read Obj 4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F29",
+   "source": "C8 note / A2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F30",
+   "source": "Discourse 1a",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate→resolved",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F31",
+   "source": "Open question (a)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F32",
+   "source": "Open question (b)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (flagged)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F33",
+   "source": "Open question (c)",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate→resolved",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F34",
+   "source": "Open question (d)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (letter's version)",
+   "entry": true,
+   "findingOrdinal": 29,
+   "id": "F35",
+   "moveOrdinal": 4,
+   "source": "2nd read Obj 3 full",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F36",
+   "source": "Reception",
+   "status": "done"
+  },
+  {
+   "disposition": "constraint",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F37",
+   "source": "Guidance",
+   "status": "honored"
+  },
+  {
+   "disposition": "constraint",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F38",
+   "source": "Guidance",
+   "status": "honored"
+  },
+  {
+   "disposition": "operational",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F39",
+   "source": "Guidance",
+   "status": "open"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F40",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F41",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "defer (flagged)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F42",
+   "source": "Craft notes (Substack-mechanical)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (logged)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F43",
+   "source": "Self (gap-analysis Walk 1)",
+   "status": "done"
+  },
+  {
+   "disposition": "no change needed",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F44",
+   "source": "Discourse §4 (mild flag)",
+   "status": "done"
+  }
+ ],
+ "version": 1
+}

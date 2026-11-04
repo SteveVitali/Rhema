@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gutenberg-34901-mill-on-liberty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f5d056f6bf3e15e4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/gutenberg-34901-mill-on-liberty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gutenberg-34901-mill-on-liberty\n- **URL:** https://www.gutenberg.org/cache/epub/34901/pg34901.txt · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** All four Mill ch. II quotations verbatim (C26).\n- **Key passages:** \"All silencing of discussion is an assumption of infallibility.\"; \"that opinion may, for aught we can certainly know, be true\"; \"if it is not fully, frequently, and fearlessly discussed, it will be held as a dead dogma, not a living truth\"; \"the clearer perception and livelier impression of truth, produced by its collision with error.\"\n- **Reliability:** Primary text.\n- **Relevance to this project:** C26; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "84b7a2959a1a771382d12937cc2304540898a48cbc9b12b289dc0c0d1f0fcc0d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/gutenberg-34901-mill-on-liberty.md",
+ "kind": "artifact-page"
+}

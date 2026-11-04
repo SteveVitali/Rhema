@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-transparency-2025h2.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d60290dc4c2d41d6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-transparency-2025h2.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-transparency-2025h2\n- **URL:** https://cdn.openai.com/trust-and-transparency/report-2025h2-government-requests-for-user-data.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Jul–Dec 2025: 224 non-content (146 disclosed, 307 accounts); 75 content (62 disclosed, 84 accounts); 10 emergency (1 disclosed).\n- **Key passages:** same definitions as H1; FISA/NSL reported separately in ranges\n- **Reliability:** Primary (company report); interested party.\n- **Relevance to this project:** Report §6: content warrants roughly tripled half-on-half.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 61
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5a9e47eb1813d67a6d20e55921d046b15f9d3179334ba34e0686c7bd71bad219",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-transparency-2025h2.md",
+ "kind": "artifact-page"
+}

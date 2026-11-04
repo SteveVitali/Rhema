@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/smit-going-mad.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ecc34b208a57909e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/smit-going-mad.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# smit-going-mad\n- **URL:** https://arxiv.org/abs/2311.17371; venue confirmed via https://proceedings.mlr.press/v235/smit24a.html and https://icml.cc/virtual/2024/poster/34657 · **Accessed:** 2026-07-30 · **For:** v2→v3; peer-reviewed anchor beside ref [27] (minor issue) + named deflationist\n- **What it establishes:** Smit, Grinsztajn, Duckworth, Barrett, Pretorius, \"Should we be going MAD? A Look at Multi-Agent Debate Strategies for LLMs,\" ICML 2024 (PMLR v235, pp. 45883–45905). \"Multi-agent debating systems, in their current form, do not reliably outperform other proposed prompting strategies, such as self-consistency and ensembling\"; with hyperparameter tuning (esp. agent agreement levels) some MAD protocols can surpass non-debate protocols — i.e., wins are tuning-sensitive, not inherent sociality.\n- **Reliability:** primary (arXiv abstract + PMLR record).\n- **Relevance:** Added to v3's references alongside the anonymous ICLR blogpost (per letter minor issue on ref [27]); also one of the named proponents when v3 states the deflationary null hypothesis.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 131
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "be488ad216acb43503759afbe26e987f0b56f8d81ffec728430425dcb0a5801e",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/smit-going-mad.md",
+ "kind": "artifact-page"
+}

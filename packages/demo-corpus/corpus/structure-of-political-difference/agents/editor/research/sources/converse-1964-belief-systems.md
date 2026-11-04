@@ -1,0 +1,7 @@
+# converse-1964-belief-systems
+
+- **URL:** https://web.ics.purdue.edu/~hoganr/Soc%20312/The%20nature%20of%20belief%20systems%20in%20mass%20publics%201964.pdf (PDF read) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Converse 1964: a belief system is a configuration of attitudes "bound together by some form of constraint or functional interdependence." Mass publics show little constraint: only a tiny minority (on the order of a few percent) genuinely use liberal-conservative abstractions as organizing principles; most reason via group benefits or "nature of the times"; panel reinterviews reveal "non-attitudes" — unstable, near-random responses. "The mass public does not appear to have developed a capacity for utilizing the ideological abstractions frequently found in elite political discourse."
+- **Key passages:** As quoted.
+- **Reliability:** Primary (full text); foundational and contested-but-durable in public-opinion research.
+- **Relevance to this project:** The strongest objection to the draft's ambition of a *public* five-axis vocabulary: if most citizens cannot deploy one dimension with constraint, five dimensions plus metadata is a vocabulary for analysts, not publics. The draft's §VIII citation of heuristic left-right inference implicitly concedes Converse's world but never confronts the implication for its own proposal's audience. Mitigation available: the draft's real users are discourse producers (journalists, essayists, analysts), and vocabularies trickle down; but the draft should say so.

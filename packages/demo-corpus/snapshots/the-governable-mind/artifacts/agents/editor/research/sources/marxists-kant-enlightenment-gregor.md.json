@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/marxists-kant-enlightenment-gregor.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d8ac1d95a799a001",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/marxists-kant-enlightenment-gregor.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# marxists-kant-enlightenment-gregor\n- **URL:** https://www.marxists.org/reference/subject/ethics/kant/enlightenment.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Transcription of Gregor 1996 (\"Gregor, 1996; Transcribed by Andy Blunden\"). Confirms Gregor's \"self-incurred minority\" and \"those guardians who have kindly taken it upon themselves to supervise them\"; Gregor's public/private-use sentences differ from the draft's (\"before the entire public of the world of readers\"; \"in a certain civil post or office\").\n- **Key passages:** \"Enlightenment is the human being's emergence from his self-incurred minority.\"; \"as a scholar before the entire public of the world of readers.\"\n- **Reliability:** Transcription of a copyrighted translation on a third-party site; treated as reliable for wording, cross-checked against the Beck text for divergence.\n- **Relevance to this project:** C25; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 117
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3a7b081a21e922f743090d7e17ebee206fd86ca422abfde43a2b8358b41a340a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/marxists-kant-enlightenment-gregor.md",
+ "kind": "artifact-page"
+}

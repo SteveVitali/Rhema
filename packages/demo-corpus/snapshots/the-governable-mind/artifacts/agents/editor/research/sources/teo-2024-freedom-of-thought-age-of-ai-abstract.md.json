@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/teo-2024-freedom-of-thought-age-of-ai-abstract.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bd11cdd82677789f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/teo-2024-freedom-of-thought-age-of-ai-abstract.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# teo-2024-freedom-of-thought-age-of-ai-abstract\n- **URL:** https://www.sciencedirect.com/science/article/abs/pii/S0267364924000360 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Abstract only (SSRN/ScienceDirect refused): freedoms of thought and opinion have three elements; AI-driven platforms tailor choice architectures to what is inferred about individuals.\n- **Key passages:** AI systems \"facilitate the granular targeting and tailoring of choice architectures to the particularities of each individual, according to what is revealed or inferred\"\n- **Reliability:** Primary scholarly abstract; independent. Full text not read.\n- **Relevance to this project:** Report §1.9.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b20b13022e0d1ef103d36f79c996080360125434fbeb4b4824490af6d6838b24",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/teo-2024-freedom-of-thought-age-of-ai-abstract.md",
+ "kind": "artifact-page"
+}

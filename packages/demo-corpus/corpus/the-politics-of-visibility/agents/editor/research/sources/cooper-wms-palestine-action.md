@@ -1,0 +1,6 @@
+# Cooper, Written Ministerial Statement HCWS729 on proscribing Palestine Action (June 23, 2025)
+
+- **URL:** https://questions-statements.parliament.uk/written-statements/detail/2025-06-23/hcws729 (read in full via web.archive.org mirror)
+- **Accessed:** 2026-08-21 (primary text read)
+
+**Establishes (misrepresentation check):** The government's own case is broader than "sprayed paint into engines": a five-year "nationwide campaign of direct criminal action" against defence firms and national infrastructure; "its methods have become more aggressive, with its members demonstrating a willingness to use violence"; Thales Glasgow 2022 (over GBP 1M damage, staff "who feared for their safety"); "The Underground Manual" (cells, targets, operational security); and an explicit assurance: "This decision is specific to Palestine Action and does not affect lawful protest groups and other organisations campaigning on issues around Palestine" — plus "The right to peaceful protest is a cornerstone of our democracy. Should Parliament vote to proscribe, that right will be unaffected." The draft's §VI should acknowledge the violence/intimidation claims and the assurance — the 92%/s.13 arrest statistics then land harder as the empirical answer to that assurance, not as an omission.

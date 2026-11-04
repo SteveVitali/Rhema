@@ -1,0 +1,11 @@
+# benson-2026-evidence-frame-integrity
+- **URL:** https://neuralhorizons.substack.com/p/evidence-frame-integrity-when-summaries · **Accessed:** 2026-09-16 (direct curl, 200; JSON-LD datePublished 2026-09-07) · **For:** v2→v3 response round, slice N (item N5)
+- **What it establishes:** A records-management argument that an AI summary stored in a durable system can displace its source as the operative record; recommends that summaries never overwrite sources by default.
+- **Key passages:**
+  - Section heading (it is a HEADING, not a body sentence): "A summary can become the memory without becoming the truth"
+  - "Even a factually good summary can change organisational memory if it is promoted, silently, from a temporary aid into tomorrow's record of what happened."
+  - "The source survives physically and loses practical authority."
+  - "The danger is not deletion alone: a derived representation becomes the default evidentiary object while its derived status fades from view."
+  - Recommendation: "Distinguish the primary source, the derived summary, any human interpretation and the final decision as separate record objects. Do not allow the summary to overwrite the source by default. Require source identity and version, creation time, material transformations and the purpose for which the summary was approved."
+- **Reliability:** Secondary/commentary; a single practitioner's Substack (Peter Benson, CEO Neural Horizons Ltd). Useful for the formulation, not as evidence of prevalence. It cites Archives New Zealand and NARA guidance (not opened here).
+- **Relevance to this project:** Eighth question. Citation: Peter Benson, "Evidence Frame Integrity – When Summaries Become Records," Neural Horizons (Substack), Sep 07, 2026.

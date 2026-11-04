@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techcrunch-altman-no-legal-confidentiality.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c9c9908c78c43dd0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/techcrunch-altman-no-legal-confidentiality.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-altman-no-legal-confidentiality\n- **URL:** https://techcrunch.com/2025/07/25/sam-altman-warns-theres-no-legal-confidentiality-when-using-chatgpt-as-a-therapist/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Altman on Theo Von's podcast (July 2025): no legal privilege for ChatGPT conversations; they are producible in litigation; calls for therapist-like privacy.\n- **Key passages:** \"People talk about the most personal sh** in their lives to ChatGPT.\" · \"OpenAI would be legally required to produce those conversations today.\" · \"the same concept of privacy for your conversations with AI that we do with a therapist\"\n- **Reliability:** Secondary (press) quoting a primary statement; independent.\n- **Relevance to this project:** Report §6, §4′(D); draft l.20, l.88.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "86584981938a0f5dce4e09aef2353b093367ff3146515fb385293eaac555f998",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/techcrunch-altman-no-legal-confidentiality.md",
+ "kind": "artifact-page"
+}

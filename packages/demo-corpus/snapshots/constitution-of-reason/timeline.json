@@ -1,0 +1,199 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate"
+   ]
+  },
+  "nextStep": {
+   "estimateCredits": null,
+   "headDraftN": 4,
+   "label": null,
+   "verb": "none"
+  },
+  "originChip": {
+   "kind": "imported_draft"
+  },
+  "project": {
+   "id": "constitution-of-reason",
+   "slug": "constitution-of-reason",
+   "title": "The Constitution of Reason"
+  },
+  "rounds": [
+   {
+    "anchor": {
+     "draftId": "v2",
+     "n": 1,
+     "origin": "human_upload"
+    },
+    "n": 1,
+    "parts": [
+     {
+      "kind": "version",
+      "n": 1
+     },
+     {
+      "count": 22,
+      "kind": "run",
+      "workflow": "review"
+     },
+     {
+      "kind": "version",
+      "n": 2
+     }
+    ],
+    "producedN": 2,
+    "runs": [
+     {
+      "card": {
+       "actions": [
+        "open_deliverable",
+        "report"
+       ],
+       "approvals": [
+        {
+         "decision": "major revisions",
+         "round": "v2 review"
+        }
+       ],
+       "artifacts": [
+        "correspondence/v2-review/00-piece-brief.md",
+        "correspondence/v2-review/01-claim-ledger.md",
+        "correspondence/v2-review/02-discourse-report.md",
+        "correspondence/v2-review/03-argument-notes.md",
+        "correspondence/v2-review/04-craft-notes.md",
+        "correspondence/v2-review/05-second-read.md",
+        "correspondence/v2-review/editors-letter.md"
+       ],
+       "decisions": [],
+       "deliverables": [
+        {
+         "key": "letter"
+        },
+        {
+         "count": 22,
+         "key": "findings"
+        },
+        {
+         "count": 5,
+         "key": "strengths"
+        },
+        {
+         "count": 37,
+         "key": "claims"
+        },
+        {
+         "key": "piece_brief"
+        },
+        {
+         "key": "claim_ledger"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "argument_notes"
+        },
+        {
+         "key": "craft_notes"
+        },
+        {
+         "key": "second_read"
+        }
+       ],
+       "delivered": {
+        "counts": {
+         "claims": 37,
+         "findings": 22,
+         "strengths": 5
+        },
+        "links": [
+         "dossier",
+         "letter",
+         "ledger"
+        ],
+        "verdict": "**Major revisions.** This is a serious, learned, unusually honest essay whose scholarship is close to impeccable — the fact-check returned 35 Verified out of 37 checked claims, zero contradicted, a result almost no draft at this ambition level achieves — and whose middle-level conceptual work (low-distance criticism, the six dimensions of independence, the constitutional test) is genuinely original. What stands between this draft and publication at the top of its venue is not evidence and not fairness; it is that the essay never answers the strongest objection it itself reports, never situates itself in a conversation whose founding book its title nearly repeats, and delivers ten thousand words of principle without one paragraph of case. The independent second read, conducted cold, reached the same verdict for the same reasons. The revision is substantial but well-defined: this is a draft with a known fix-list, not a draft with an unknown disease."
+       },
+       "deliveryLabel": null,
+       "done": 7,
+       "failureCode": null,
+       "notRecorded": [
+        "time",
+        "credits",
+        "model",
+        "estimate"
+       ],
+       "phases": [
+        {
+         "key": "intake",
+         "ordinal": 1,
+         "status": "done"
+        },
+        {
+         "key": "verification",
+         "ordinal": 2,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 3,
+         "status": "done"
+        },
+        {
+         "key": "argument",
+         "ordinal": 4,
+         "status": "done"
+        },
+        {
+         "key": "craft",
+         "ordinal": 5,
+         "status": "done"
+        },
+        {
+         "key": "second_read",
+         "ordinal": 6,
+         "status": "done"
+        },
+        {
+         "key": "letter",
+         "ordinal": 7,
+         "status": "done"
+        }
+       ],
+       "phaseSource": "inferred_from_delivered_files",
+       "recordSource": "agent-discourse",
+       "replayed": true,
+       "runId": "v2-review",
+       "running": 0,
+       "state": "completed",
+       "total": 7
+      },
+      "createdAt": null,
+      "producedN": 2,
+      "runId": "v2-review",
+      "state": "completed",
+      "subjectN": 1,
+      "workflow": "review"
+     }
+    ]
+   }
+  ],
+  "state": {
+   "key": "accepted",
+   "overlay": null,
+   "pill": "Accepted",
+   "suggested": {
+    "action": "open",
+    "label": null
+   }
+  },
+  "ungrouped": []
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "",
+ "kind": "timeline"
+}

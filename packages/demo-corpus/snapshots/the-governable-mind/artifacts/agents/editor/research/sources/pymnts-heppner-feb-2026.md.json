@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/pymnts-heppner-feb-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ed2e67c60cea076c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/pymnts-heppner-feb-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pymnts-heppner-feb-2026\n- **URL:** https://www.pymnts.com/cpi-posts/federal-judge-rules-ai-chatbot-conversations-can-be-seized-as-evidence-in-fraud-cases/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Feb. 10, 2026 report on Heppner: ~31 Claude prompts/outputs seized; three grounds; caveat that lawyer-supervised enterprise use might differ.\n- **Key passages:** \"An AI chatbot is not a lawyer\"\n- **Reliability:** Secondary (trade press); independent.\n- **Relevance to this project:** Report §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 54
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "278a147ee8f9ee0fd3242a9b9006d6934c78800f1318c9ad7c845c067c05bd9c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/pymnts-heppner-feb-2026.md",
+ "kind": "artifact-page"
+}

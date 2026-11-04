@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-liberalism-gaus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "43251c0b3d8544de",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-liberalism-gaus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-liberalism-gaus\n- **URL:** https://plato.stanford.edu/entries/liberalism/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** §1.1 \"The Presumption in Favor of Liberty\" — the uncited presumption at l.100 is a standard statement (C68); the entry also notes Brennan & Freiman (2025) on public-reason liberalism's \"tenuous grip\" on that presumption.\n- **Key passages:** Mill: \"the burden of proof is supposed to be with those who are against liberty; who contend for any restriction or prohibition.\"\n- **Reliability:** Secondary, scholarly (Gaus, Courtland, Schmidtz; rev. Feb 25 2026).\n- **Relevance to this project:** C68; §IV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4afceae60ac31f099b1f3c85ff18249476b0cdfb0c28e0bc5b7eed5a4d5c757d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-liberalism-gaus.md",
+ "kind": "artifact-page"
+}

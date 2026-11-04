@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/luitel-buy-the-evidence-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e7699390f29257b9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/luitel-buy-the-evidence-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# luitel-buy-the-evidence-2026\n- **URL:** https://www.theregreview.org/2026/08/25/luitel-buy-the-evidence-do-not-license-the-model/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Aashis Luitel, Regulatory Review, Aug 25, 2026: licensing is technically unfit and constitutionally suspect (prior restraint); condition federal procurement on independent safety evidence instead; no Milton/Areopagitica/Stationers; open-weight projects mentioned once.\n- **Key passages:** \"Conditioning public release on prior government clearance implicates the prior restraint doctrine.\" · \"Congress should condition federal acquisition of high-risk AI models on independent evidence of model safety.\"\n- **Reliability:** Secondary; legal commentary.\n- **Relevance to this project:** §1D; §2 Stationers verdict (prior restraint without Milton).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 91
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2a1a6b210a347a8731660accc9878ee7e0a5e4356dabc3a8b0e6e532157653fc",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/luitel-buy-the-evidence-2026.md",
+ "kind": "artifact-page"
+}

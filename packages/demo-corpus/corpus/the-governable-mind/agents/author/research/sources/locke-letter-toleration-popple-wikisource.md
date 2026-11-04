@@ -1,0 +1,18 @@
+# locke-letter-toleration-popple-wikisource
+- **URL:** https://en.wikisource.org/wiki/A_Letter_Concerning_Toleration · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C7
+- **What it establishes:** Full English text of Locke's *A Letter Concerning Toleration* in William Popple's 1689 translation (the Wikisource page does not name the translator; the wording is Popple's standard text, and Wikipedia's article confirms the 1689 English version is Popple's). Contains the civil interests / care of souls distinction and the two exclusions.
+- **Key passages:**
+  - "The commonwealth seems to me to be a society of men constituted only for the procuring, preserving, and advancing their own civil interests."
+  - "Civil interests I call life, liberty, health, and indolency of body; and the possession of outward things, such as money, lands, houses, furniture, and the like."
+  - "First, because the care of souls is not committed to the civil magistrate, any more than to other men. It is not committed unto him, I say, by God"
+  - "the care of souls cannot belong to the civil magistrate, because his power consists only in outward force; but true and saving religion consists in the inward persuasion of the mind"
+  - "Confiscation of estate, imprisonment, torments, nothing of that nature can have any such efficacy as to make men change the inward judgement that they have framed of things."
+  - "all the power of civil government relates only to men's civil interests, is confined to the care of the things of this world, and hath nothing to do with the world to come."
+  - Foreign-prince exclusion: "That Church can have no right to be tolerated by the magistrate which is constituted upon such a bottom that all those who enter into it do thereby ipso facto deliver themselves up to the protection and service of another prince."
+  - "It is ridiculous for any one to profess himself to be a Mahometan only in his religion, but in everything else a faithful subject to a Christian magistrate, whilst at the same time he acknowledges himself bound to yield blind obedience to the Mufti of Constantinople"
+  - Atheist exclusion: "Lastly, those are not at all to be tolerated who deny the being of a God. Promises, covenants, and oaths, which are the bonds of human society, can have no hold upon an atheist."
+  - "The taking away of God, though but even in thought, dissolves all"
+  - Catholic doctrine per se tolerable: "If a Roman Catholic believe that to be really the body of Christ which another man calls bread, he does no injury thereby to his neighbour."
+  - "the religion of every prince is orthodox to himself."
+- **Reliability:** Primary text (public-domain translation). Locke never names Catholics in the foreign-prince passage; the example given is a Muslim bound to the Mufti of Constantinople. The Catholic reading is the standard scholarly inference (Forst, SEP), contested in detail by Goldie and Sowerby (see the Wikipedia note).
+- **Relevance to this project:** C7; also the "inward persuasion" / "outward force" language is close to the essay's theme of the mind's inaccessibility.

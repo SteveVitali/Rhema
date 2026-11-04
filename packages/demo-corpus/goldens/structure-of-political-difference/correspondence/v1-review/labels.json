@@ -1,0 +1,265 @@
+{
+ "claims": [
+  {
+   "id": "C1",
+   "ordinal": 0
+  },
+  {
+   "id": "C2",
+   "ordinal": 1
+  },
+  {
+   "id": "C3",
+   "ordinal": 2
+  },
+  {
+   "id": "C4",
+   "ordinal": 3
+  },
+  {
+   "id": "C5",
+   "ordinal": 4
+  },
+  {
+   "id": "C6",
+   "ordinal": 5
+  },
+  {
+   "id": "C7",
+   "ordinal": 6
+  },
+  {
+   "id": "C8",
+   "ordinal": 7
+  },
+  {
+   "id": "C9",
+   "ordinal": 8
+  },
+  {
+   "id": "C10",
+   "ordinal": 9
+  },
+  {
+   "id": "C11",
+   "ordinal": 10
+  },
+  {
+   "id": "C12",
+   "ordinal": 11
+  },
+  {
+   "id": "C13",
+   "ordinal": 12
+  },
+  {
+   "id": "C14",
+   "ordinal": 13
+  },
+  {
+   "id": "C15",
+   "ordinal": 14
+  },
+  {
+   "id": "C16",
+   "ordinal": 15
+  },
+  {
+   "id": "C17",
+   "ordinal": 16
+  },
+  {
+   "id": "C18",
+   "ordinal": 17
+  },
+  {
+   "id": "C19",
+   "ordinal": 18
+  },
+  {
+   "id": "C20",
+   "ordinal": 19
+  },
+  {
+   "id": "C21",
+   "ordinal": 20
+  },
+  {
+   "id": "C22",
+   "ordinal": 21
+  },
+  {
+   "id": "C23a",
+   "ordinal": 22
+  },
+  {
+   "id": "C23b",
+   "ordinal": 23
+  },
+  {
+   "id": "C23c",
+   "ordinal": 24
+  },
+  {
+   "id": "C23d",
+   "ordinal": 25
+  },
+  {
+   "id": "C24",
+   "ordinal": 26
+  }
+ ],
+ "findings": [
+  {
+   "id": "The one thing",
+   "ordinal": 0
+  },
+  {
+   "aliases": [
+    "SR 1"
+   ],
+   "id": "Major 1",
+   "ordinal": 1
+  },
+  {
+   "aliases": [
+    "SR 2"
+   ],
+   "id": "Major 2",
+   "ordinal": 2
+  },
+  {
+   "id": "Major 3",
+   "ordinal": 3
+  },
+  {
+   "id": "Major 4",
+   "ordinal": 4
+  },
+  {
+   "id": "Major 5",
+   "ordinal": 5
+  },
+  {
+   "id": "Major 6",
+   "ordinal": 6
+  },
+  {
+   "id": "Strength 1",
+   "ordinal": 7
+  },
+  {
+   "id": "Strength 2",
+   "ordinal": 8
+  },
+  {
+   "id": "Strength 3",
+   "ordinal": 9
+  },
+  {
+   "id": "Strength 4",
+   "ordinal": 10
+  },
+  {
+   "id": "Strength 5",
+   "ordinal": 11
+  },
+  {
+   "id": "Strength 6",
+   "ordinal": 12
+  },
+  {
+   "id": "Minor 1",
+   "ordinal": 13
+  },
+  {
+   "id": "Minor 2",
+   "ordinal": 14
+  },
+  {
+   "id": "Minor 3",
+   "ordinal": 15
+  },
+  {
+   "id": "Minor 4",
+   "ordinal": 16
+  },
+  {
+   "id": "Minor 5",
+   "ordinal": 17
+  },
+  {
+   "id": "Minor 6",
+   "ordinal": 18
+  },
+  {
+   "id": "Minor 7",
+   "ordinal": 19
+  },
+  {
+   "id": "Minor 8",
+   "ordinal": 20
+  },
+  {
+   "id": "Minor 9",
+   "ordinal": 21
+  },
+  {
+   "id": "Minor 10",
+   "ordinal": 22
+  },
+  {
+   "id": "Minor 11",
+   "ordinal": 23
+  },
+  {
+   "id": "Minor 12",
+   "ordinal": 24
+  },
+  {
+   "id": "Line note 1",
+   "ordinal": 25
+  },
+  {
+   "id": "Line note 2",
+   "ordinal": 26
+  },
+  {
+   "id": "Line note 3",
+   "ordinal": 27
+  },
+  {
+   "id": "Line note 4",
+   "ordinal": 28
+  },
+  {
+   "id": "SR 3",
+   "ordinal": 29
+  },
+  {
+   "id": "SR 4",
+   "ordinal": 30
+  },
+  {
+   "id": "SR 5",
+   "ordinal": 31
+  }
+ ],
+ "importRule": {
+  "claims[].accessedAt": "assigned by import rule",
+  "claims[].sources[].accessedAt": "assigned by import rule",
+  "claims[].sources[].stance": "assigned by import rule",
+  "findings[].evidence.urls[].accessed": "assigned by import rule",
+  "findings[].kind": "assigned by import rule",
+  "findings[].origin": "assigned by import rule",
+  "findings[].reconciliation": "assigned by import rule",
+  "findings[].severity": "assigned by import rule"
+ },
+ "roles": {
+  "drafting": "the drafting agent",
+  "editor": "the editor (agent)",
+  "revising": "the revising agent",
+  "writer": "the writer"
+ },
+ "version": 1
+}

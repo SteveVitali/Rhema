@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "alt": "figure_1_five_questions",
+  "assetUri": "/bff/demo/asset/structure-of-political-difference/drafts/figures/figure_1_five_questions.png",
+  "caption": "",
+  "demo": {
+   "notRecorded": [
+    "spec",
+    "svg",
+    "run_provenance",
+    "caption",
+    "source_line"
+   ]
+  },
+  "id": "figure_1_five_questions",
+  "provenance": "imported",
+  "sourceLine": "",
+  "specKind": "image",
+  "title": "figure_1_five_questions",
+  "versions": [
+   {
+    "label": "imported",
+    "n": 1
+   }
+  ]
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "figure_1_five_questions",
+ "kind": "figure-image"
+}

@@ -1,0 +1,6 @@
+# firth-rait-1643-ordinance-regulating-printing
+- **URL:** https://www.british-history.ac.uk/no-series/acts-ordinances-interregnum/pp184-186 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C28
+- **What it establishes:** Text of 'An Ordinance for the Regulating of Printing', 14 June 1643, from Acts and Ordinances of the Interregnum, 1642–1660, ed. Firth & Rait (1911), via British History Online. Confirms licensing, Stationers' Register entry, and search-and-seize powers vested in the Company's Master and Wardens.
+- **Key passages:** Register: "entred in the Register Book of the Company of Stationers, according to ancient custom, and the Printer thereof to put his name thereto". Search: "Master and Wardens of the said Company ... are hereby Authorized and required, from time to time, to make diligent search in all places ... and to seize and cary away such Printing Presses".
+- **Reliability:** Primary (statute text in a standard scholarly edition, hosted by the Institute of Historical Research).
+- **Relevance to this project:** C28: the 1643 Order is correctly named and dated; quote for the Parliament-reuses-the-Company beat (Milton's Areopagitica, 1644, answers this ordinance).

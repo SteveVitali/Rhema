@@ -1,0 +1,385 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b143",
+    "confidence": 1,
+    "endOffset": 419,
+    "quote": "They do not buy exit above the line",
+    "startOffset": 384
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 4,
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b44",
+    "confidence": 1,
+    "endOffset": 878,
+    "quote": "the government identified him by other means",
+    "startOffset": 834
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 6,
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "anchor": {
+    "blockId": "b144",
+    "confidence": 1,
+    "endOffset": 851,
+    "quote": "The shutdown order is not reviewable in court within days",
+    "startOffset": 794
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 5,
+    "status": "done"
+   },
+   "findingOrdinal": 3
+  },
+  {
+   "anchor": {
+    "blockId": "b38",
+    "confidence": 1,
+    "endOffset": 938,
+    "quote": "What does not descend is immunity from process",
+    "startOffset": 892
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 7,
+    "status": "done"
+   },
+   "findingOrdinal": 4
+  },
+  {
+   "anchor": {
+    "blockId": "b125",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "There is no technological law requiring AI safety to become cognitive surveillance. Whether it does depends on which layer a government attempts to govern. A rule aimed at the first layer needs to kno",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 5
+  },
+  {
+   "anchor": {
+    "blockId": "b151",
+    "confidence": 1,
+    "endOffset": 58,
+    "quote": "Run the eight questions on the record as it already stands",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 6
+  },
+  {
+   "anchor": {
+    "blockId": "b31",
+    "confidence": 0.4,
+    "endOffset": 39,
+    "quote": "## III. The Externalized Forum Internum",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 7
+  },
+  {
+   "anchor": {
+    "blockId": "b10",
+    "confidence": 1,
+    "endOffset": 788,
+    "quote": "Within one month of 2026 a liberal state gated two capable models by nationality",
+    "startOffset": 708
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 32
+  },
+  {
+   "anchor": {
+    "blockId": "b112",
+    "confidence": 1,
+    "endOffset": 1292,
+    "quote": "for thirteen days",
+    "startOffset": 1275
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 17
+  },
+  {
+   "anchor": {
+    "blockId": "b112",
+    "confidence": 1,
+    "endOffset": 999,
+    "quote": "the directive stood for eighteen days, and access was restored on the nineteenth",
+    "startOffset": 919
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 18
+  },
+  {
+   "anchor": {
+    "blockId": "b122",
+    "confidence": 1,
+    "endOffset": 1729,
+    "quote": "their lever this essay's hazard",
+    "startOffset": 1698
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 19
+  },
+  {
+   "anchor": {
+    "blockId": "b111",
+    "confidence": 1,
+    "endOffset": 518,
+    "quote": "a ban on Chinese open-weight models",
+    "startOffset": 483
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 20
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 21
+  },
+  {
+   "anchor": {
+    "blockId": "b110",
+    "confidence": 1,
+    "endOffset": 183,
+    "quote": "catalogues user vetting and Know-Your-Customer screening",
+    "startOffset": 127
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 22
+  },
+  {
+   "anchor": {
+    "blockId": "b102",
+    "confidence": 1,
+    "endOffset": 1058,
+    "quote": "the maxim is the records manager's before it is this essay's",
+    "startOffset": 998
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 23
+  },
+  {
+   "anchor": {
+    "blockId": "b56",
+    "confidence": 0.4,
+    "endOffset": 55,
+    "quote": "## V. The State, the Corporation, and the Right of Exit",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 24
+  },
+  {
+   "anchor": {
+    "blockId": "b66",
+    "confidence": 1,
+    "endOffset": 1423,
+    "quote": "Ollama, LM Studio, and Open WebUI, signed the July letter",
+    "startOffset": 1366
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 25
+  },
+  {
+   "disposition": {
+    "kind": "escalate",
+    "rationale": "escalated in round 1; stands",
+    "status": "escalated"
+   },
+   "findingOrdinal": 27
+  },
+  {
+   "disposition": {
+    "kind": "defer",
+    "status": "escalated"
+   },
+   "findingOrdinal": 28
+  },
+  {
+   "anchor": {
+    "blockId": "b31",
+    "confidence": 0.4,
+    "endOffset": 39,
+    "quote": "## III. The Externalized Forum Internum",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 11,
+    "status": "done"
+   },
+   "findingOrdinal": 29
+  },
+  {
+   "anchor": {
+    "blockId": "b87",
+    "confidence": 0.4,
+    "endOffset": 34,
+    "quote": "## VIII. The Authoritarian Archive",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 11,
+    "status": "done"
+   },
+   "findingOrdinal": 31
+  },
+  {
+   "anchor": {
+    "blockId": "b146",
+    "confidence": 0.4,
+    "endOffset": 54,
+    "quote": "## XIII. The Public-Private Cognitive-Security Complex",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "rebut",
+    "rationale": "rebut (length target, round-1 disposition stands, editor concurs); decline (XIII–XV); partial via F33",
+    "status": "done"
+   },
+   "findingOrdinal": 33
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "done",
+   "title": "Move 1",
+   "type": "structure"
+  },
+  {
+   "ordinal": 2,
+   "status": "done",
+   "title": "Move 2",
+   "type": "structure"
+  },
+  {
+   "ordinal": 3,
+   "status": "done",
+   "title": "Move 3",
+   "type": "structure"
+  },
+  {
+   "ordinal": 4,
+   "status": "done",
+   "title": "Move 4",
+   "type": "argument"
+  },
+  {
+   "ordinal": 5,
+   "status": "done",
+   "title": "Move 5",
+   "type": "argument"
+  },
+  {
+   "ordinal": 6,
+   "status": "done",
+   "title": "Move 6",
+   "type": "argument"
+  },
+  {
+   "ordinal": 7,
+   "status": "done",
+   "title": "Move 7",
+   "type": "argument"
+  },
+  {
+   "ordinal": 8,
+   "status": "done",
+   "title": "Move 8",
+   "type": "argument"
+  },
+  {
+   "ordinal": 9,
+   "status": "done",
+   "title": "Move 9",
+   "type": "argument"
+  },
+  {
+   "ordinal": 10,
+   "status": "done",
+   "title": "Move 10",
+   "type": "evidence"
+  },
+  {
+   "ordinal": 11,
+   "status": "done",
+   "title": "Move 11",
+   "type": "craft"
+  },
+  {
+   "ordinal": 12,
+   "status": "done (length unresolved; see the letter)",
+   "title": "Move 12",
+   "type": "coherence"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

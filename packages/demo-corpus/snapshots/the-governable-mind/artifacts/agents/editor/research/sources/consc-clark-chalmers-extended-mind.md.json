@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/consc-clark-chalmers-extended-mind.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6fc13ae455e2754d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/consc-clark-chalmers-extended-mind.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# consc-clark-chalmers-extended-mind\n- **URL:** https://consc.net/papers/extended.html (metadata at https://api.crossref.org/works/10.1093/analys/58.1.7) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Parity principle and the Otto sentence verbatim (C30); *Analysis* 58(1):7–19, 1998.\n- **Key passages:** \"If, as we confront some task, a part of the world functions as a process which, were it done in the head, we would have no hesitation in recognizing as part of the cognitive process, then that part of the world is (so we claim) part of the cognitive process.\"; \"For Otto, his notebook plays the role usually played by a biological memory.\"\n- **Reliability:** Primary (author-hosted text).\n- **Relevance to this project:** C30; §II.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cf1d7b890559cea5108bd5f9f40fb2e09e497c9b61311223cb5dbac8ee8ddebe",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/consc-clark-chalmers-extended-mind.md",
+ "kind": "artifact-page"
+}

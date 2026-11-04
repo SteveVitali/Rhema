@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/apsa-riaz-bermeo-definition.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d2b46f0548afd62d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/apsa-riaz-bermeo-definition.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# apsa-riaz-bermeo-definition\n- **URL:** https://preprints.apsanet.org/engage/api-gateway/apsa/assets/orp/resource/item/5f7233ce7abea500192690e6/original/how-democracy-backslides-tracing-the-pathway-in-six-countries.pdf · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C21\n- **What it establishes:** APSA preprint (Ali Riaz, \"How Democracy Backslides: Tracing the Pathway in Six Countries\") quotes Bermeo's definition of democratic backsliding verbatim with page citation.\n- **Key passages:**\n  - Quoting Bermeo: democratic backsliding is \"the state-led debilitation or elimination of any of the political institutions that sustain an existing democracy\" (Bermeo 2016, 5).\n- **Reliability:** Secondary (scholarly preprint quoting the primary text with page cite).\n- **Relevance to this project:** C21 (Bermeo's definition of backsliding, quotable at Bermeo 2016, 5).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "549d2d9475c02f8ff28835fc1f06395b324da2d4f723e3b709269faae619668d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/apsa-riaz-bermeo-definition.md",
+ "kind": "artifact-page"
+}

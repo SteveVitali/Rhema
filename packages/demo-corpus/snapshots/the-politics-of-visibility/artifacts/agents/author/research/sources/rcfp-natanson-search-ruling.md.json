@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rcfp-natanson-search-ruling.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d8a5c7c169fc0d53",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rcfp-natanson-search-ruling.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rcfp-natanson-search-ruling\n- **URL:** https://www.rcfp.org/natanson-post-search-ruling/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C38\n- **What it establishes:** In the Hannah Natanson matter (E.D. Va.), Magistrate Judge William B. Porter rejected DOJ's request to have its own filter team search the reporter's seized phone, laptops, and other devices, ruling the court — not the government — would control review, and faulting the government for omitting the Privacy Protection Act of 1980 from its warrant application. Porter said he would consult both parties to develop an independent review process (hearing set March 4, 2026). Legal bases: PPA plus First and Fourth Amendments.\n- **Key passages:** Allowing the government's filter team to search a reporter's work product \"is the equivalent of leaving the government's fox in charge of the henhouse.\"\n- **Reliability:** Secondary; Reporters Committee for Freedom of the Press — press-freedom advocacy org, but was amicus/participant and precise on procedure.\n- **Relevance to this project:** C38 — the mechanism is court-controlled review (independent/judicial review process), NOT a DOJ filter team; \"special master\" language should be avoided unless a later order used it. Subsequent history (WaPo, May 4, 2026): District Judge Anthony J. Trenga overruled DOJ's objections and affirmed, holding the PPA \"bars the Government from searching in this particular case the PPA-protected materials that were seized.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 209
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "75489d5e4dd80296e9b45bcb5903921512c400b03b921e63d00018ede7820752",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/rcfp-natanson-search-ruling.md",
+ "kind": "artifact-page"
+}

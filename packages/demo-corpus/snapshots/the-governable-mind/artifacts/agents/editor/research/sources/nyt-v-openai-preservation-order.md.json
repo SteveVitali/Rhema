@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nyt-v-openai-preservation-order.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "eb62ccc44f108f06",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nyt-v-openai-preservation-order.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nyt-v-openai-preservation-order\n- **URL:** https://openai.com/index/response-to-nyt-data-demands/ (via a reader proxy; updated Oct. 22, 2025) ; https://www.engadget.com/ai/openai-no-longer-has-to-preserve-all-of-its-chatgpt-data-with-some-exceptions-192422093.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** A court order (May 2025) required OpenAI to retain consumer ChatGPT (Free/Plus/Pro/Team) and non-ZDR API logs indefinitely; lifted effective Sept. 26, 2025 by order of Oct. 9, 2025; a locked-down April–Sept. 2025 set remains. The closest liberal-state instance of court-mandated chat-log retention; litigation discovery, not regulation; no longer in force (C15).\n- **Key passages:** \"we are no longer under a legal order to retain consumer ChatGPT and API content indefinitely. Our obligations under the earlier order ended on September 26, 2025.\" / Engadget: order freed OpenAI of the obligation to \"preserve and segregate all output log data that would otherwise be deleted on a going forward basis.\"\n- **Reliability:** Primary (party statement) + secondary (tech press); the court order itself not opened.\n- **Relevance to this project:** C15; Phase 2 (the cognitive record as a litigated object).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 159
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "db2aceb6e5b1c8377fd27008084a1cc000b67ad1cbf57e952dbd512fd3c85407",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nyt-v-openai-preservation-order.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nyt-v-openai-stein-order-2026-01-05.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a082e146964a00d0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nyt-v-openai-stein-order-2026-01-05.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nyt-v-openai-stein-order-2026-01-05\n- **URL:** https://cdn.arstechnica.net/wp-content/uploads/2026/01/NYT-v-OpenAI-Order-1-5-26.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** Order of Jan. 5, 2026 (Stein, J.), 25-md-3143: affirms Judge Wang's orders to produce 20 million de-identified logs; the \"voluntarily disclosed\" and wiretap-comparison language at p. 3 (III15, XIII1).\n- **Key passages:** p. 3: conversations \"users voluntarily disclosed to OpenAI and which OpenAI retains in the normal course of its business\" · p. 3: \"privacy interests in the wiretapped recordings of private phone conversations in Rajaratnam are stronger than the privacy interests in users' conversations with ChatGPT\" · p. 4: \"Accordingly, OpenAI's objections are denied and Judge Wang's orders are affirmed.\"\n- **Reliability:** Primary; court order (press-hosted copy).\n- **Relevance to this project:** l.84, l.272; ref [34].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 125
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1b6b11e8e72f07467c200df08b7d7c13d8655658e8c7d5329d5b9c447c2bccf3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nyt-v-openai-stein-order-2026-01-05.md",
+ "kind": "artifact-page"
+}

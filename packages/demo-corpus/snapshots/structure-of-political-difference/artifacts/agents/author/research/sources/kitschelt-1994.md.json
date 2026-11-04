@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/kitschelt-1994.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "067bf3021d1b647d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/kitschelt-1994.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kitschelt-1994\n- **URL:** https://www.cambridge.org/core/books/transformation-of-european-social-democracy/C92F284FC17302253C3B5B14123BBA80 (verified via search + publisher page) · **Accessed:** 2026-07-31 · **For:** v1-response — MI2 (standard explanation of the bundling)\n- **What it establishes:** Herbert Kitschelt, *The Transformation of European Social Democracy*, Cambridge University Press, 1994. Claims postindustrial party competition shifted to a left-libertarian ↔ right-authoritarian axis (a diagonal in the 2D economic × sociocultural space) — the standard published explanation for why economic and cultural positions bundle in European party systems.\n- **Key passages:** (search-summary level) \"traditional patterns of party competition had progressively shifted to… left-libertarian versus right-authoritarian.\"\n- **Reliability:** Secondary access (publisher page + summaries); canonical attribution is safe; do not quote from the book text.\n- **Relevance:** One clause in v2 §IV: the bundling has a name and an explanation in the literature (Kitschelt's diagonal), which the draft previously attributed generically to \"history.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 134
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a59de0c50b995199e12a07afbf6949c0eaf4ad29062ece1b4f405e88ad40a9c5",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/kitschelt-1994.md",
+ "kind": "artifact-page"
+}

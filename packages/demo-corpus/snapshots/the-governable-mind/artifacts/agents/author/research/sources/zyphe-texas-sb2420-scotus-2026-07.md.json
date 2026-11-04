@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/zyphe-texas-sb2420-scotus-2026-07.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "beba53e4cac83dd4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/zyphe-texas-sb2420-scotus-2026-07.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zyphe-texas-sb2420-scotus-2026-07\n- **URL:** https://www.zyphe.com/resources/news/texas-app-store-age-verification-scotus-july-2026 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Zyphe (an identity-verification vendor) explainer, July 2026. SB 2420 took effect Jan 1, 2026; sorts users into four age categories; SCOTUS denied the applications July 6, 2026 without ruling on the merits; Fifth Circuit expedited argument \"set for early August 2026\"; Utah's parallel App Store Accountability Act carries \"a compliance deadline of 6 May 2026\".\n- **Key passages:**\n  - \"The justices did not rule on the merits, so the constitutional fight moves to an expedited Fifth Circuit hearing set for early August 2026.\"\n  - \"Texas follows Utah, whose parallel App Store Accountability Act carries a compliance deadline of 6 May 2026\"\n- **Reliability:** Vendor marketing content with a commercial interest in age verification; use only for leads. The Utah date is unverified against a Utah source.\n- **Relevance to this project:** L8 supporting only; prefer SCOTUSblog.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 147
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4b1a5c99560b1cbb623b0771c08fd3cbb11c0904a7e24bd30e1c0491636f22d9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/zyphe-texas-sb2420-scotus-2026-07.md",
+ "kind": "artifact-page"
+}

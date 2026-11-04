@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ca-sb1119-assembly-privacy-analysis-2026-07-01.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f37a73e493c7cedc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ca-sb1119-assembly-privacy-analysis-2026-07-01.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ca-sb1119-assembly-privacy-analysis-2026-07-01\n- **URL:** https://apcp.assembly.ca.gov/media/1209 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Assembly Committee on Privacy and Consumer Protection analysis of SB 1119 (Padilla), \"As Amended June 25, 2026\", hearing July 1, 2026 (26 pp., read locally; prepared by Josh Tosney). Senate vote 39–0. For THAT version: \"ephemeral mode\" defined with 48-hour deletion; ephemeral mode is a DEFAULT FOR CHILD USERS changeable only by a parent, who may consent to \"persistent conversational memory\"; age assurance by compliance with AB 1043 (Ch. 675, Stats. 2025) and its \"non-identifying age bracket signal – under 13, between 13 and 16, between 16 and 18, or at least 18\" from operating systems/app stores beginning 2027; general-purpose models are expressly in scope. Background: OpenAI and Common Sense Media's ballot measure was halted; the bill builds on it. WARNING: the bill was amended twice more (Aug 17, Aug 28, 2026) and the CHAPTERED text contains neither \"ephemeral mode\" nor \"48 hours\" (see ca-sb1119-leginfo-chaptered-2026-09-10).\n- **Key passages:**\n  - p. 3: \"“Ephemeral mode” means a setting by which any conversational history, interaction log, or user-provided personal input is permanently deleted from the operator’s systems within 48 hours after the interaction.\"\n  - p. 4: default settings \"that can be changed only by a parent that include ... Setting the chatbot to ephemeral mode, unless the parent provides affirmative consent for persistent conversational memory.\"\n  - p. 3: \"“Persistent conversational memory” means a companion chatbot’s use of information or analysis from prior conversations or interactions, user inputs, and interaction logs in subsequent conversations.\"\n  - p. 17: \"Operators would have to comply with AB 1043 (Wicks, Ch. 675, Stats. 2025), which establishes an age verification system for users of mobile devices and computers. Beginning in 2027, parents who allow their children to be the main users of such devices will be able to configure the device to send a non-identifying age bracket signal – under 13, between 13 and 16, between 16 and 18, or at least 18 – that operating systems and application stores must send to application developers.\"\n  - p. 8: \"General purpose models such as ChatGPT and Gemini can also be companion chatbots.\"\n  - Opposition letter quoted at p. ~24: \"this legislation’s use of SB 243’s definition of companion chatbot, which scopes in general-purpose AI systems.\"\n- **Reliability:** Primary legislative-history document, authoritative for the June 25 version only.\n- **Relevance to this project:** L6: confirms the review's descriptions AS OF JULY 1, 2026, but two of them (ephemeral mode; 48 hours) did not survive into law. Also note the ephemeral default was for children, never for adults.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 423
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bf6648e34188fbb84ee99b2056a6732f9cd38f8253ca035e70435c38de4e521c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/ca-sb1119-assembly-privacy-analysis-2026-07-01.md",
+ "kind": "artifact-page"
+}

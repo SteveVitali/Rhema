@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gao-facial-recognition.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "96607b112fdbba44",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "97ef39d8f4133d4b",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "87f01b0dc240a96d",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/gao-facial-recognition.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# GAO — federal law enforcement use of commercial facial recognition\n\n- GAO-24-107372: https://www.gao.gov/products/gao-24-107372 ; GAO-23-105607: https://www.gao.gov/products/gao-23-105607\n- Accessed 2026-08-21 (Phase 1). PRIMARY.\n\nEstablishes: seven DOJ/DHS agencies used commercial FRT (FBI and ICE-HSI among them);\n\"about 60,000 searches... when they did not have training requirements in place\"\n(Oct. 2019–Mar. 2022 = 2.5 years); all seven initially used the services without staff\ntraining requirements.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 60
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "02418189100099cd37439443139c5e54c0cce44b6a38a8940a2b42300fce9b0d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/gao-facial-recognition.md",
+ "kind": "artifact-page"
+}

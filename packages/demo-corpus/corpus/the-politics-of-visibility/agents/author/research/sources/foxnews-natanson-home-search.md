@@ -1,0 +1,6 @@
+# foxnews-natanson-home-search
+- **URL:** https://www.foxnews.com/media/washington-post-reporters-home-searched-by-fbi.print · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C38
+- **What it establishes:** FBI searched Washington Post national-security reporter Hannah Natanson's home (reported Jan. 14, 2026), seizing electronic devices, in a leak investigation tied to Aurelio Perez-Lugones, a government contractor/systems administrator with top-secret clearance arrested for allegedly retaining and leaking national-defense material. (Later court coverage puts total seized at six devices: phone, work computer, personal laptop, smartwatch, etc.)
+- **Key passages:** AG Pamela Bondi: "The Trump Administration will not tolerate illegal leaks of classified information." Post Executive Editor Matt Murray: "We are told Hannah, and The Post, are not a target," but the search is "deeply concerning and raises profound questions...around the constitutional protections for our work."
+- **Reliability:** Secondary; Fox News — administration-sympathetic outlet, useful precisely because it confirms the search facts from the other flank; contemporaneous.
+- **Relevance to this project:** C38 — search date, context (first known DOJ search of a journalist's home in a leak probe, per NBC/WaPo coverage), official statements.

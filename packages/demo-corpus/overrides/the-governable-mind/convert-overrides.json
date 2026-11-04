@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "overrides": [
+    {
+      "kind": "verdict-rescore",
+      "claim": "C15",
+      "verdict": "misleading_in_context",
+      "cite": "correspondence/v1-review/01-claim-ledger.md:9"
+    },
+    {
+      "kind": "reconciliation",
+      "objection": "i",
+      "outcome": "merged",
+      "major": 6,
+      "cite": "agents/author/ledgers/v1-response-ledger.md:45"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F42",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:110"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F43",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:111"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F44",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:112"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F45",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:113"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F46",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:114"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F47",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:115"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F48",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:116"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F49",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:117"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F50",
+      "finding": "Minor 1",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:118"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F51",
+      "finding": "Minor 2",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:119"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F52",
+      "finding": "Minor 3",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:120"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F53",
+      "finding": "Minor 4",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:121"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F54",
+      "finding": "Minor 5",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:122"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F55",
+      "finding": "Minor 6",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:123"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F56",
+      "finding": "Minor 7",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:124"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F57",
+      "finding": "Minor 7",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:125"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F58",
+      "finding": "Minor 8",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:126"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F59",
+      "finding": "Minor 9",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:127"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F60",
+      "finding": "Minor 11",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:128"
+    },
+    {
+      "kind": "minor-finding",
+      "row": "F61",
+      "finding": "Minor 12",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:129"
+    },
+    {
+      "kind": "disposition",
+      "row": "F49",
+      "disposition": "rebut",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:117"
+    },
+    {
+      "kind": "disposition",
+      "row": "F58",
+      "disposition": "accept",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:126"
+    },
+    {
+      "kind": "disposition",
+      "row": "F61",
+      "disposition": "defer",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:129"
+    }
+  ]
+}

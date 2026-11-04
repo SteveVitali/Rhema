@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/liang-et-al-2018-policy-internet-social-credit.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cb9c762e7d0f2b38",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/liang-et-al-2018-policy-internet-social-credit.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# liang-et-al-2018-policy-internet-social-credit\n- **URL:** https://onlinelibrary.wiley.com/doi/full/10.1002/poi3.183 (Wiley returned 403; metadata and abstract read from https://api.crossref.org/works/10.1002/poi3.183 and Semantic Scholar) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C39\n- **What it establishes:** Fan Liang, Vishnupriya Das, Nadiya Kostyuk & Muzammil M. Hussain, 'Constructing a Data-Driven Society: China's Social Credit System as a State Surveillance Infrastructure', Policy & Internet 10(4), 2018, pp. 415–453 (online Aug 2, 2018). The abstract frames the SCS as a *centralizing* big-data surveillance infrastructure focused mainly on financial/commercial trustworthiness; it does not describe the system as fragmented or deny a unified score.\n- **Key passages:** Abstract: \"The SCS aims to centralize data platforms into a big data–enabled surveillance infrastructure to manage, monitor, and predict the trustworthiness of citizens, firms, organizations, and governments in China.\" \"A punishment/reward system based on credit scores will determine whether citizens and organizations are able to access things like education, markets, and tax deductions.\" \"we find that it is a complicated system that focuses primarily on financial and commercial activities rather than political ones.\" \"exploring how various government agencies are cooperating to establish this centralized data infrastructure with the aim of scoring credit\"\n- **Reliability:** Secondary, peer-reviewed. Body text not read (paywall/403); verdict rests on the publisher-deposited abstract.\n- **Relevance to this project:** C39: wrong citation for the 'fragmented, not one score' point; right citation for 'complicated, primarily commercial rather than political'.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 221
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e5be8cbfb4bbb0e4a76cb20ad4cf265aed96adbe122b6e837adf26e80a4305ba",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/liang-et-al-2018-policy-internet-social-credit.md",
+ "kind": "artifact-page"
+}

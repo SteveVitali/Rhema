@@ -1,0 +1,6 @@
+# saferai-glm-5-2-evaluation-report-2026
+- **URL:** https://www.safer-ai.org/research/glm-5-2-evaluation-report · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A
+- **What it establishes:** SaferAI, "GLM-5.2 Risk Evaluation Report," Aug. 2, 2026. GLM-5.2 refused no offensive-security or biological task; Claude Opus 4.7 declined SaferAI's CyberGym evaluations; SaferAI self-describes as a non-profit and worked from the public API without developer cooperation (P7, XII3).
+- **Key passages:** "Beyond capability, it refused none of the offensive-security or biological tasks" · "Closed-weight frontier models are more likely to be gated by content filters such as Claude Opus 4.7 which declined our CyberGym evaluations and there is no option to self-serve and bypass the filters." · "no model refused a task on either LAB-Bench or BioMysteryBench." · "SaferAI is a non-profit organisation aiming to incentivize the development and deployment of safer AI systems through a better risk management." · "worked from the public API, with no developer cooperation"
+- **Reliability:** Primary (the evaluator's own report); independent of both labs; safety-aligned nonprofit.
+- **Relevance to this project:** l.14 (P7) quotations verbatim; l.260 "near-frontier."

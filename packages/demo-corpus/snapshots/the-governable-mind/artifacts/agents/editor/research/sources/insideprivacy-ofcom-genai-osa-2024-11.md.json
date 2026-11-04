@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/insideprivacy-ofcom-genai-osa-2024-11.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bfd67391554d7acd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/insideprivacy-ofcom-genai-osa-2024-11.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# insideprivacy-ofcom-genai-osa-2024-11\n- **URL:** https://www.insideprivacy.com/artificial-intelligence/ofcom-explains-how-the-uk-online-safety-act-will-apply-to-generative-ai/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Covington summary of Ofcom's open letter of Nov. 8, 2024: chatbots enabling users to share generated content with other users are \"user-to-user services\"; services whose generative tools can produce pornographic material must implement \"highly effective age assurance\" by Jan. 17, 2025; no identity, logging, or retention duty; standalone chatbots not addressed. (Ofcom's 2026 explainer and the RPC summary returned 403 today; search results say the 2026 explainer repeats the conditional-scope position and notes the Crime and Policing Act's power to extend the OSA to chatbots.)\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (law-firm summary).\n- **Relevance to this project:** Agenda 3: UK age assurance reaches chatbots only for the porn-capable or user-to-user subset; no identity gate.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 130
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "299dbcadfa350a7fb3e0f3c12c1a69915ac87075594cb8baee3d125a1f27d2d9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/insideprivacy-ofcom-genai-osa-2024-11.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# iasr-2026-pdf
+- **URL:** https://internationalaisafetyreport.org/sites/default/files/2026-02/international-ai-safety-report-2026.pdf · **Accessed:** 2026-09-16 (PDF downloaded, 221 pp., text-extracted) · **For:** v1 review, Phase 1
+- **What it establishes:** Cover "February 2026" — precedes July (C10). All six C10 quotations verbatim at printed pp. 10, 12, 13, 134 (PDF 11, 13, 14, 135); draft's ref pages are PDF indices. Supports C73's catalogue as live categories. Against interest in the draft's favour: says fully autonomous end-to-end attacks had not been reported (p. 57).
+- **Key passages:** "Current systems lack the capabilities to pose such risks, but they are improving in relevant areas such as autonomous operation" (p. 12). / "In the case of models that are not capable enough to be dangerous, these benefits may outweigh the additional risk of releasing weights openly, though this depends on relevant decision-makers' risk tolerance" (p. 134). / "Fully autonomous end-to-end attacks, however, have not been reported" (p. 57). / "Current models cannot reliably complete key steps required for self-replication" (p. 80).
+- **Reliability:** Primary; multilateral expert report (Bengio, chair); consensus document.
+- **Relevance to this project:** C10, C73; §X; ref [43].

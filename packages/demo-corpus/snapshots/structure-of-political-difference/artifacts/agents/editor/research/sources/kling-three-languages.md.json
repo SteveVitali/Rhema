@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kling-three-languages.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d82ca9e8f015f07c",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "37529a547ab04993",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/kling-three-languages.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kling-three-languages\n\n- **URL:** https://quillette.com/2018/08/08/the-three-languages-of-politics-a-review/ (review, read); overview results via https://www.econtalk.org/kling-on-the-three-languages-of-politics/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Arnold Kling's *Three Languages of Politics* (2013; 3rd ed. 2019): progressives, conservatives, and libertarians speak along three moral axes — oppressor↔oppressed, civilization↔barbarism, liberty↔coercion. Crucially these are *languages/heuristics for framing issues*, not positions: \"each tribe is simply focused on a different set of concerns\" which \"can also be compatible.\"\n- **Key passages:** Kling: \"treating people who use other heuristics as reasonable is likely to prove a less stressful\" approach. The three tribes are \"like tribes speaking different languages… most political commentary serves to increase polarization.\"\n- **Reliability:** Secondary (favorable review); consistent with Kling's own summaries across sources.\n- **Relevance to this project:** Nearest popular predecessor for the draft's *grammar* framing (\"We do not need a more complicated compass. We need a grammar\"). Kling's axes map loosely onto the draft's poles (oppressor↔oppressed ≈ Progress/Equality-pole moral logic; civilization↔barbarism ≈ Tradition/Authority-pole; liberty↔coercion ≈ Liberty pole). Key difference the draft can exploit: Kling describes rhetorical heuristics of three American tribes; the draft describes positional coordinates plus naming conventions. But the draft's \"charitable pole definitions\" table (each pole = a good pursued + a failure feared) is very close to Kling's method of steelmanning each language, and should cite him.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 212
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d1fbc5709e9d1fd7e0331472664bec1c6fb6727e91c5b9535ff0acf82de7b5e5",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/kling-three-languages.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "017b7bbccba10ec2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pymnts-white-house-open-models-2026-08-13\n- **URL:** https://www.pymnts.com/news/artificial-intelligence/2026/white-house-ai-testing-shift-could-put-open-models-back-in-the-risk-file/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding C (reversal context)\n- **What it establishes:** Aug 13, 2026. WIRED reported the White House is preparing to include \"powerful open-weight AI models\" in the voluntary pre-release cybersecurity testing framework once they reach \"frontier-level capabilities\" — reversing a position \"reportedly shared with AI companies earlier this month\" that \"the voluntary review process would not apply to U.S. open-weight models.\" Framework established by the June EO; White House fact sheet says developers of \"covered frontier models\" may \"provide the federal government with early access for cybersecurity evaluation before broader release.\"\n- **Key passages:**\n  - \"administration officials said the voluntary review process would not apply to U.S. open-weight models\" (earlier August position)\n  - \"provide the federal government with early access for cybersecurity evaluation before broader release\" (White House fact sheet, as quoted)\n- **Reliability:** Secondary, relaying WIRED and Washington Post.\n- **Relevance to this project:** Establishes that the extension is a reversal of an early-August exemption; the essay should present it as a shifting, unpublished, voluntary framework.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 171
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a4a746cea9d5298ceefef1d60864f898ce1cec8de9e0e5d008a69c1e305bb57e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+ "kind": "artifact-page"
+}

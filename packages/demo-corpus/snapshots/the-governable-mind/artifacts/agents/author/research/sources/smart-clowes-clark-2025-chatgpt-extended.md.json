@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/smart-clowes-clark-2025-chatgpt-extended.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3844784c6d6e11e6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/smart-clowes-clark-2025-chatgpt-extended.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# smart-clowes-clark-2025-chatgpt-extended\n- **URL:** https://api.crossref.org/works/10.1007/s11229-025-05046-y (publisher-deposited metadata and abstract) ; publisher page https://link.springer.com/article/10.1007/s11229-025-05046-y returned a bot \"Client Challenge\" to every fetch; ePrints Soton, PhilPapers and Sussex Figshare copies all returned 403 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C15\n- **What it establishes:** Paul Smart, Robert Clowes & Andy Clark, \"ChatGPT, extended: large language models and the extended mind,\" *Synthese* 205(6), article 242 (published 6 June 2025), doi 10.1007/s11229-025-05046-y, CC BY. Authors, title, journal, DOI confirmed from the DOI registration. I read only the abstract, not the body. Important scope note: the paper is about whether an *LLM* (a retrieval-augmented \"Digital Andy\") is itself an extended cognitive/computational system; it is not primarily a paper about humans extending their minds with ChatGPT.\n- **Key passages:** \"Applying this technique to the works of the contemporary philosopher Andy Clark yields Digital Andy: an LLM that is able to respond to questions about the extended mind.\" / \"But Digital Andy's reliance on extra-systemic resources also raises questions about the scope of active externalist theorizing, encouraging us to consider Digital Andy's status as an extended cognitive/computational system.\" / \"some interesting points of convergence between the philosophical effort to understand the extended mind and the technological effort to build the next generation of LLMs.\"\n- **Reliability:** Primary metadata (Crossref deposit by Springer); abstract only. Peer-reviewed philosophy journal.\n- **Relevance to this project:** C15. Safe to cite as \"exists; Clark and colleagues have begun applying the extended-mind framework to LLMs.\" Do not cite it as evidence that ChatGPT extends *users'* minds; that is not what the abstract claims.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 256
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8ed86b005ceaa7b6728f1613ecf6709684a05aca3484bdd5db634aefe19f7ab5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/smart-clowes-clark-2025-chatgpt-extended.md",
+ "kind": "artifact-page"
+}

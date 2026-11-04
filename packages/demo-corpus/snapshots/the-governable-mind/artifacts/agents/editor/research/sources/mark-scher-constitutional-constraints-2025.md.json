@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mark-scher-constitutional-constraints-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1d503c7fce8f8115",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mark-scher-constitutional-constraints-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mark-scher-constitutional-constraints-2025\n- **URL:** https://arxiv.org/abs/2509.05361 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Mark & Scher, Sept 2025 (abstract read): constitutional constraints on model licensing and research classification; First Amendment protection does not foreclose regulation; administrative and due-process constraints; no Milton.\n- **Key passages:** \"The First Amendment may provide some degree of protection for model algorithms or outputs, this protection does not foreclose regulation.\"\n- **Reliability:** Primary preprint.\n- **Relevance to this project:** §1D; §2 Stationers verdict.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 76
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "27b1e0731020bbbb757d03e388b9ea6d1b32078d5cb67b2691a7ac04b204bc9e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mark-scher-constitutional-constraints-2025.md",
+ "kind": "artifact-page"
+}

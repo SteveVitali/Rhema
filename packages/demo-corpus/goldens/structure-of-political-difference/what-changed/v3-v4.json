@@ -1,0 +1,615 @@
+{
+ "from": "v3",
+ "hunks": [
+  {
+   "after": [
+    {
+     "blockId": "b4",
+     "text": "The stranger fact is that American politics keeps producing alliances the line cannot parse. A democratic socialist from Vermont and a national-conservative Republican from Missouri co-sponsor a bill to cap credit-card interest rates. The progressive chair of the Federal Trade Commission draws her most conspicuous praise from the populist right. A decade earlier, libertarian Republicans and progressive Democrats came within a dozen votes of defunding the bulk collection of Americans’ phone records, against the unified opposition of both parties’ leaderships and the White House. In each case the spectrum’s farthest-apart actors converge, and its nearest neighbors, the institutional center-left and center-right, stand together against them. Commentators reach for horseshoe theory: the ends of the line bend until they touch. The metaphor concedes the failure while keeping the ruler."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b4",
+     "text": "The stranger fact is that American politics keeps producing alliances the line cannot parse. A democratic socialist from Vermont and a national-conservative Republican from Missouri co-sponsor a bill to cap credit-card interest rates. The progressive chair of the Federal Trade Commission draws her most conspicuous praise from the populist right. A decade earlier, libertarian Republicans and progressive Democrats came within a dozen votes of defunding the bulk collection of Americans’ phone records, against the unified opposition of both parties’ leaderships and the White House. In each case the spectrum’s farthest-apart actors converge, and its nearest neighbors—the institutional center-left and center-right—stand together against them. Commentators reach for horseshoe theory: the ends of the line bend until they touch. The metaphor concedes the failure while keeping the ruler."
+    }
+   ],
+   "charsChanged": 1782,
+   "id": "h1",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b6",
+     "text": "This is not a small defect. Our political vocabulary determines which similarities we can perceive, which disagreements we can name, and which alliances appear natural. To describe every movement as left, center, or right is to take several recurring conflicts (over economic power, coercion, social inheritance, political belonging, and the mediation of authority) and project them onto one line. The result is useful in the way a compressed image is useful. It is portable, recognizable, and rapidly transmitted. It is also lossy."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b6",
+     "text": "This is not a small defect. Our political vocabulary determines which similarities we can perceive, which disagreements we can name, and which alliances appear natural. To describe every movement as left, center, or right is to take several recurring conflicts—over economic power, coercion, social inheritance, political belonging, and the mediation of authority—and project them onto one line. The result is useful in the way a compressed image is useful. It is portable, recognizable, and rapidly transmitted. It is also lossy."
+    }
+   ],
+   "charsChanged": 1062,
+   "id": "h2",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b15",
+     "text": "Michael Freeden’s morphological theory begins from this fact. Ideologies draw from a common field of contested political concepts (liberty, equality, authority, community, democracy, order) and give them determinate meaning by placing them into characteristic configurations.[2] Liberty means something different when equality is made its condition than when property is made its condition. Community means something different when organized around citizenship than when organized around ancestry. Democracy means something different when understood as plural contestation than when understood as the undivided will of a people."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b15",
+     "text": "Michael Freeden’s morphological theory begins from this fact. Ideologies draw from a common field of contested political concepts—liberty, equality, authority, community, democracy, order—and give them determinate meaning by placing them into characteristic configurations.[2] Liberty means something different when equality is made its condition than when property is made its condition. Community means something different when organized around citizenship than when organized around ancestry. Democracy means something different when understood as plural contestation than when understood as the undivided will of a people."
+    }
+   ],
+   "charsChanged": 1254,
+   "id": "h3",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b21",
+     "text": "The solution (and it, rather than the axes, is what this essay is actually proposing) is to separate two functions that ordinary ideological labels are forced to perform at once. **Coordinates describe a position. Family names identify a neighborhood.** Coordinates are exact enough for analysis. Names are short enough for speech. Ordinary labels fail because they are made to do both jobs with one word."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b21",
+     "text": "The solution—and it, rather than the axes, is what this essay is actually proposing—is to separate two functions that ordinary ideological labels are forced to perform at once. **Coordinates describe a position. Family names identify a neighborhood.** Coordinates are exact enough for analysis. Names are short enough for speech. Ordinary labels fail because they are made to do both jobs with one word."
+    }
+   ],
+   "charsChanged": 808,
+   "id": "h4",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b25",
+     "text": "Two warnings before the questions. First, these are not five natural dimensions discovered in politics. They are recurrent disagreements, and the framework that follows is a convention proposed, not a geometry uncovered. Second, and the essay owes this concession to its own first section, the pole-words below are themselves contested concepts. On Freeden’s account, “liberty” and “equality” have no ideology-independent meanings; a framework that fixes them, including this one, is performing a decontestation of its own. The axes are historical artifacts, revisable exactly as the family names are. What follows is a proposal about which fixings are useful, not a claim to have escaped the condition it describes."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b25",
+     "text": "Two warnings before the questions. First, these are not five natural dimensions discovered in politics. They are recurrent disagreements, and the framework that follows is a convention proposed, not a geometry uncovered. Second—and the essay owes this concession to its own first section—the pole-words below are themselves contested concepts. On Freeden’s account, “liberty” and “equality” have no ideology-independent meanings; a framework that fixes them, including this one, is performing a decontestation of its own. The axes are historical artifacts, revisable exactly as the family names are. What follows is a proposal about which fixings are useful, not a claim to have escaped the condition it describes."
+    }
+   ],
+   "charsChanged": 1430,
+   "id": "h5",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b49",
+     "text": "This is the most difficult axis, because ordinary political language bundles several different things into the word *populism*: a bundle Section V will take apart."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b49",
+     "text": "This is the most difficult axis, because ordinary political language bundles several different things into the word *populism*—a bundle Section V will take apart."
+    }
+   ],
+   "charsChanged": 325,
+   "id": "h6",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b54",
+     "text": "That language should be retained. It already exists in the culture, it names a conflict people recognize, and it captures a real dimension that can cut across left and right. Research on anti-establishment orientations finds precisely such a cross-cutting structure, though it should be said that the dimension those researchers measure carries conspiracist and antisocial freight that the charitable pole definition used here deliberately strips away; that normative reconstruction is this essay’s, not theirs.[5] Contemporary expert surveys, meanwhile, separately measure anti-elite rhetoric and preferences for direct popular decision."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b54",
+     "text": "That language should be retained. It already exists in the culture, it names a conflict people recognize, and it captures a real dimension that can cut across left and right. Research on anti-establishment orientations finds precisely such a cross-cutting structure—though it should be said that the dimension those researchers measure carries conspiracist and antisocial freight that the charitable pole definition used here deliberately strips away; that normative reconstruction is this essay’s, not theirs.[5] Contemporary expert surveys, meanwhile, separately measure anti-elite rhetoric and preferences for direct popular decision."
+    }
+   ],
+   "charsChanged": 1275,
+   "id": "h7",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b59",
+     "text": "Multi-axis correctives to the spectrum are nearly as old as the complaint against it. The lineage runs from the Nolan chart through the Political Compass to the open-source 8values test and its axis-multiplying successors. The convergence with 8values in particular should be stated plainly: it measures four axes (Equality against Markets, Liberty against Authority, Tradition against Progress, Nation against Globe), and three of them carry, verbatim, the pole names used here.[6] The convergence is better read as evidence than as embarrassment. Independent attempts to decompress the spectrum keep finding the same questions, because these are the questions politics keeps returning to."
+    },
+    {
+     "blockId": "b60",
+     "text": "But the overlap must be named, because the difference lies in what is done with the answers. A test scores people: it asks its taker a battery of questions and returns a self. That is the wrong form for a political vocabulary. The objects that need describing are claims, laws, manifestos, parties, and governments—things that argue and act in public—not the private souls of quiz-takers. And a test has no discipline for its names. 8values contains, in embryo, this essay’s central move: after computing your coordinates it names your “closest match” ideology (coordinates first, family second) and then disowns the naming layer as “much less accurate than the values and axes,” advising users not to take it too seriously.[6] The disclaimer is the tell. The naming layer is not noise to be apologized for; it is where political language actually lives. What the test tradition lacks is not axes. It is a semantics for the names, which is what the rest of this essay builds."
+    },
+    {
+     "blockId": "b61",
+     "text": "The deeper challenge comes from the positions flanking any such framework. On one side stands the pragmatic defense of the single line: Bryan Caplan’s argument that the spectrum earns its keep because it tracks the political identities and conflicts that actually exist. On the other stand the eliminativists: Hyrum and Verlan Lewis, whose *The Myth of Left and Right* is the strongest published version of this essay’s own opening move (left and right are tribal bundles, not philosophies), and also its standing refutation.[7] If bundling is the sin, the Lewises ask, why re-bundle at any scale? “There is more than one issue in politics.” Keep issues unbundled, as biology keeps species: “Why not just say ‘anti-market’ instead of ‘left-wing’?”"
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b59",
+     "text": "Multi-axis correctives to the spectrum are nearly as old as the complaint against it. The lineage runs from the Nolan chart through the Political Compass to the open-source 8values test and its axis-multiplying successors. The convergence with 8values in particular should be stated plainly: it measures four axes—Equality against Markets, Liberty against Authority, Tradition against Progress, Nation against Globe—and three of them carry, verbatim, the pole names used here.[6] The convergence is better read as evidence than as embarrassment. Independent attempts to decompress the spectrum keep finding the same questions, because these are the questions politics keeps returning to."
+    },
+    {
+     "blockId": "b60",
+     "text": "But the overlap must be named, because the difference lies in what is done with the answers. A test scores people: it asks its taker a battery of questions and returns a self. That is the wrong form for a political vocabulary. The objects that need describing are claims, laws, manifestos, parties, and governments—things that argue and act in public—not the private souls of quiz-takers. And a test has no discipline for its names. 8values contains, in embryo, this essay’s central move: after computing your coordinates it names your “closest match” ideology—coordinates first, family second—and then disowns the naming layer as “much less accurate than the values and axes,” advising users not to take it too seriously.[6] The disclaimer is the tell. The naming layer is not noise to be apologized for; it is where political language actually lives. What the test tradition lacks is not axes. It is a semantics for the names—which is what the rest of this essay builds."
+    },
+    {
+     "blockId": "b61",
+     "text": "The deeper challenge comes from the positions flanking any such framework. On one side stands the pragmatic defense of the single line: Bryan Caplan’s argument that the spectrum earns its keep because it tracks the political identities and conflicts that actually exist. On the other stand the eliminativists: Hyrum and Verlan Lewis, whose *The Myth of Left and Right* is the strongest published version of this essay’s own opening move—left and right are tribal bundles, not philosophies—and also its standing refutation.[7] If bundling is the sin, the Lewises ask, why re-bundle at any scale? “There is more than one issue in politics.” Keep issues unbundled, as biology keeps species: “Why not just say ‘anti-market’ instead of ‘left-wing’?”"
+    }
+   ],
+   "charsChanged": 4815,
+   "id": "h8",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b63",
+     "text": "The answer is that compression is not the sin; compression is the price of speech. A vocabulary that refuses to bundle at all already exists: it is called a policy database, and no one can think in it. The choice is never whether to compress but where compression stops paying. One line pays for mass coordination and bankrupts analysis. Fifty issues pay for precision and bankrupt conversation. The claim of this essay is that five is roughly where the marginal distinction stops covering its cost in speech: a pragmatic optimum, not a fact of nature, and therefore a claim that owes its criteria."
+    },
+    {
+     "blockId": "b64",
+     "text": "A question earns a core axis, on the account proposed here, when it passes three tests: it has recurred across polities and centuries rather than decades; its answers form and break coalitions rather than merely sorting opinions; and it cannot be inferred from the other axes. The five questions pass all three. The exclusions show the tests doing real work. Ecology is a genuine political question with its own theory of limits, time, and intergenerational obligation, and it cannot be reduced to economy or culture, but as mass politics it is two generations old, and its stable place in coalition-building is still being negotiated. It fails the first test, so it gets a module (Growth against Ecology), not because it matters less but because the historical record has not yet taught us where it settles. Foreign policy fails the second: restraint and intervention have divided every family from within (universalists split into doves and humanitarian hawks, nationalists into isolationists and expansionists), cutting across the families without ever forming durable ones of its own. It, too, is a module: Restraint against Intervention."
+    },
+    {
+     "blockId": "b65",
+     "text": "Five, then, is a defended budget, not a discovery. Anyone who thinks a sixth question passes the three tests is invited to argue it in: that is what it means for a framework to be a convention rather than a geometry."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b63",
+     "text": "The answer is that compression is not the sin; compression is the price of speech. A vocabulary that refuses to bundle at all already exists—it is called a policy database, and no one can think in it. The choice is never whether to compress but where compression stops paying. One line pays for mass coordination and bankrupts analysis. Fifty issues pay for precision and bankrupt conversation. The claim of this essay is that five is roughly where the marginal distinction stops covering its cost in speech—a pragmatic optimum, not a fact of nature, and therefore a claim that owes its criteria."
+    },
+    {
+     "blockId": "b64",
+     "text": "A question earns a core axis, on the account proposed here, when it passes three tests: it has recurred across polities and centuries rather than decades; its answers form and break coalitions rather than merely sorting opinions; and it cannot be inferred from the other axes. The five questions pass all three. The exclusions show the tests doing real work. Ecology is a genuine political question with its own theory of limits, time, and intergenerational obligation, and it cannot be reduced to economy or culture—but as mass politics it is two generations old, and its stable place in coalition-building is still being negotiated. It fails the first test, so it gets a module—Growth against Ecology—not because it matters less but because the historical record has not yet taught us where it settles. Foreign policy fails the second: restraint and intervention have divided every family from within—universalists split into doves and humanitarian hawks, nationalists into isolationists and expansionists—cutting across the families without ever forming durable ones of its own. It, too, is a module: Restraint against Intervention."
+    },
+    {
+     "blockId": "b65",
+     "text": "Five, then, is a defended budget, not a discovery. Anyone who thinks a sixth question passes the three tests is invited to argue it in—that is what it means for a framework to be a convention rather than a geometry."
+    }
+   ],
+   "charsChanged": 3902,
+   "id": "h9",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b72",
+     "text": "The empirical bundles remain important, and here precision matters, because the data below were built by the tradition this essay is trying to decompress. The 2024 Chapel Hill Expert Survey, completed by 609 political scientists assessing 279 European parties, is organized around a two-dimensional model: economic left–right, plus the dimension Hooghe, Marks, and Wilson named GAL/TAN (green/alternative/libertarian against traditionalism/authority/nationalism).[9][10] TAN welds together three of this essay’s questions by design: culture, coercion, and belonging. And Herbert Kitschelt supplied the standard explanation for why the weld holds: postindustrial party competition runs along a left-libertarian/right-authoritarian diagonal in that two-dimensional space.[11]"
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b72",
+     "text": "The empirical bundles remain important—and here precision matters, because the data below were built by the tradition this essay is trying to decompress. The 2024 Chapel Hill Expert Survey, completed by 609 political scientists assessing 279 European parties, is organized around a two-dimensional model: economic left–right, plus the dimension Hooghe, Marks, and Wilson named GAL/TAN—green/alternative/libertarian against traditionalism/authority/nationalism.[9][10] TAN welds together three of this essay’s questions by design: culture, coercion, and belonging. And Herbert Kitschelt supplied the standard explanation for why the weld holds: postindustrial party competition runs along a left-libertarian/right-authoritarian diagonal in that two-dimensional space.[11]"
+    }
+   ],
+   "charsChanged": 1543,
+   "id": "h10",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b76",
+     "text": "What the exercise can show is where the weld is failing. Milei joins radically market-oriented, anti-statist economics to cultural traditionalism and insurgency, off Kitschelt’s diagonal. The welfare nationalists of Europe are egalitarian toward members and exclusionary at the boundary, off the diagonal in the other direction. The framework’s empirical claim is not that politics secretly has five factor-analytic axes. It is that the reigning two-dimensional settlement welds together questions that current politics is visibly unwelding, and a vocabulary should be able to describe the unwelding while it happens."
+    },
+    {
+     "blockId": "b77",
+     "text": "That claim is falsifiable. If no politically consequential actors occupied the off-diagonal cells (if traditionalists were reliably authoritarian, nationalist, and anti-market; if egalitarians were reliably universalist and progressive), the extra questions would be idle machinery, and the two-dimensional compression would deserve to keep its monopoly. The cases just named, like the alliances of this essay’s opening, are the evidence that the cells are occupied, and increasingly by winners."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b76",
+     "text": "What the exercise can show is where the weld is failing. Milei joins radically market-oriented, anti-statist economics to cultural traditionalism and insurgency—off Kitschelt’s diagonal. The welfare nationalists of Europe are egalitarian toward members and exclusionary at the boundary—off the diagonal in the other direction. The framework’s empirical claim is not that politics secretly has five factor-analytic axes. It is that the reigning two-dimensional settlement welds together questions that current politics is visibly unwelding, and a vocabulary should be able to describe the unwelding while it happens."
+    },
+    {
+     "blockId": "b77",
+     "text": "That claim is falsifiable. If no politically consequential actors occupied the off-diagonal cells—if traditionalists were reliably authoritarian, nationalist, and anti-market; if egalitarians were reliably universalist and progressive—the extra questions would be idle machinery, and the two-dimensional compression would deserve to keep its monopoly. The cases just named, like the alliances of this essay’s opening, are the evidence that the cells are occupied, and increasingly by winners."
+    }
+   ],
+   "charsChanged": 2219,
+   "id": "h11",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b91",
+     "text": "The public axis remains **Insurgent ↔ Institutional**, with **Populist ↔ Establishment** as its familiar, deliberately approximate gloss. Underneath it, a rigorous profile records four facets: anti-establishment orientation (how captured or illegitimate are incumbent elites?); directism (should citizens decide directly or through representatives?); pluralism (are opposition and competing interests permanently legitimate?); and legitimation (is authority justified by popular will, expertise, law, tradition, or some combination?). None of these facets is an invention (political science already measures populist, pluralist, and elitist attitudes as separate scales[15]), but assembling them under a public gloss, rather than a score, is the point of the architecture."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b91",
+     "text": "The public axis remains **Insurgent ↔ Institutional**, with **Populist ↔ Establishment** as its familiar, deliberately approximate gloss. Underneath it, a rigorous profile records four facets: anti-establishment orientation (how captured or illegitimate are incumbent elites?); directism (should citizens decide directly or through representatives?); pluralism (are opposition and competing interests permanently legitimate?); and legitimation (is authority justified by popular will, expertise, law, tradition, or some combination?). None of these facets is an invention—political science already measures populist, pluralist, and elitist attitudes as separate scales[15]—but assembling them under a public gloss, rather than a score, is the point of the architecture."
+    }
+   ],
+   "charsChanged": 1541,
+   "id": "h12",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b100",
+     "text": "One rule of interpretation before anything else: coordinates describe commitments and conduct, not souls. The natural first question (*what’s my number?*) is the quiz tradition’s question, and it is the wrong one. The objects worth scoring are arguments, programs, parties, and governments; a person is scored, if at all, only as the author of positions taken in public."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b100",
+     "text": "One rule of interpretation before anything else: coordinates describe commitments and conduct, not souls. The natural first question—*what’s my number?*—is the quiz tradition’s question, and it is the wrong one. The objects worth scoring are arguments, programs, parties, and governments; a person is scored, if at all, only as the author of positions taken in public."
+    }
+   ],
+   "charsChanged": 738,
+   "id": "h13",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b110",
+     "text": "But the names must be disciplined. The periodic-table fantasy (one unique label for every possible combination) should be abandoned. Some logical vertices correspond to durable ideological traditions; others are rare, unstable, internally contradictory, or simply unnamed. The public vocabulary should therefore consist of **prototype families**."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b110",
+     "text": "But the names must be disciplined. The periodic-table fantasy—one unique label for every possible combination—should be abandoned. Some logical vertices correspond to durable ideological traditions; others are rare, unstable, internally contradictory, or simply unnamed. The public vocabulary should therefore consist of **prototype families**."
+    }
+   ],
+   "charsChanged": 690,
+   "id": "h14",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b113",
+     "text": "The **socdem** and the **demsoc** are a minimal pair the single spectrum cannot even express. The socdem pursues an equality-leaning mixed economy through labor institutions, welfare states, parliamentary bargaining, and gradual reform; the characteristic wager is that markets can be politically embedded without abolishing either pluralism or enterprise. The demsoc insists that economic hierarchy itself limits effective freedom, while rejecting, against state socialism, any one-party or bureaucratic ownership of political life. The difference is a matter of depth on Economy and of destination; on a left–right line the two names collapse into a smear."
+    },
+    {
+     "blockId": "b114",
+     "text": "The **welfare nationalist** demonstrates why left and right fail. Economic protection and social provision, bounded primarily by national membership: egalitarian within the community, exclusionary at its boundary, frequently paternalist in government, traditional in culture, and insurgent in rhetoric. Political science has studied the phenomenon for three decades under the name welfare chauvinism;[17] the family name used here is chosen to say what the position is for rather than only what it is against. Viktor Orbán’s Hungary sat near this neighborhood for sixteen years, with the caveat that its provision was workfare-flavored and flat-taxed: “welfare” in this family means provision bounded by membership, not redistributive generosity."
+    },
+    {
+     "blockId": "b115",
+     "text": "The **natcon** (national conservative) names the contemporary synthesis of bounded political identity, inherited moral order, authority, and national restoration, and is useful precisely because it distinguishes that synthesis from generic conservatism. The family can be market-oriented or protectionist, populist or increasingly institutional, civic or ethnocultural. Donald Trump, Giorgia Meloni, Jair Bolsonaro, and Narendra Modi are not interchangeable (Modi’s Hindu-nationalist project has a religious specificity the label flattens, which is what the secondary tags are for), but the label identifies a real shared neighborhood."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b113",
+     "text": "The **socdem** and the **demsoc** are a minimal pair the single spectrum cannot even express. The socdem pursues an equality-leaning mixed economy through labor institutions, welfare states, parliamentary bargaining, and gradual reform; the characteristic wager is that markets can be politically embedded without abolishing either pluralism or enterprise. The demsoc insists that economic hierarchy itself limits effective freedom—while rejecting, against state socialism, any one-party or bureaucratic ownership of political life. The difference is a matter of depth on Economy and of destination; on a left–right line the two names collapse into a smear."
+    },
+    {
+     "blockId": "b114",
+     "text": "The **welfare nationalist** demonstrates why left and right fail. Economic protection and social provision, bounded primarily by national membership: egalitarian within the community, exclusionary at its boundary, frequently paternalist in government, traditional in culture, and insurgent in rhetoric. Political science has studied the phenomenon for three decades under the name welfare chauvinism;[17] the family name used here is chosen to say what the position is for rather than only what it is against. Viktor Orbán’s Hungary sat near this neighborhood for sixteen years—with the caveat that its provision was workfare-flavored and flat-taxed: “welfare” in this family means provision bounded by membership, not redistributive generosity."
+    },
+    {
+     "blockId": "b115",
+     "text": "The **natcon**—national conservative—names the contemporary synthesis of bounded political identity, inherited moral order, authority, and national restoration, and is useful precisely because it distinguishes that synthesis from generic conservatism. The family can be market-oriented or protectionist, populist or increasingly institutional, civic or ethnocultural. Donald Trump, Giorgia Meloni, Jair Bolsonaro, and Narendra Modi are not interchangeable—Modi’s Hindu-nationalist project has a religious specificity the label flattens, which is what the secondary tags are for—but the label identifies a real shared neighborhood."
+    }
+   ],
+   "charsChanged": 4071,
+   "id": "h15",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b118",
+     "text": "The fuller lexicon (left populist, progressive, green, Christian democrat, conservative, developmentalist, state socialist) is drawn in the figure and defined in a companion reference sheet; the essay needs only the families that argue in it."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b118",
+     "text": "The fuller lexicon—left populist, progressive, green, Christian democrat, conservative, developmentalist, state socialist—is drawn in the figure and defined in a companion reference sheet; the essay needs only the families that argue in it."
+    }
+   ],
+   "charsChanged": 482,
+   "id": "h16",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b122",
+     "text": "The lexicon becomes expressive through a small set of modifiers (populist, technocratic, progressive, traditionalist, welfare, market, civic, ethnonational, heterodox), used at most one at a time in ordinary prose: *populist libertarian*, *technocratic liberal*, *civic natcon*, *welfare nationalist*. When a third word seems necessary, stop naming and show the coordinates. This rule is more important than it appears. Labels gain explanatory power by excluding detail. Once a label attempts to encode all five dimensions, it becomes a coordinate string written in Latin."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b122",
+     "text": "The lexicon becomes expressive through a small set of modifiers—populist, technocratic, progressive, traditionalist, welfare, market, civic, ethnonational, heterodox—used at most one at a time in ordinary prose: *populist libertarian*, *technocratic liberal*, *civic natcon*, *welfare nationalist*. When a third word seems necessary, stop naming and show the coordinates. This rule is more important than it appears. Labels gain explanatory power by excluding detail. Once a label attempts to encode all five dimensions, it becomes a coordinate string written in Latin."
+    }
+   ],
+   "charsChanged": 1141,
+   "id": "h17",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b124",
+     "text": "The profiles that follow are illustrations of the grammar, not verdicts. Each is dated, each is disputable, and one of them (deliberately, because his case is the hardest) gets the full treatment the rules of use demand."
+    },
+    {
+     "blockId": "b125",
+     "text": "**Sanders** (in the Senate, 2007–; presidential campaigns 2016 and 2020) gives Section VII’s minimal pair a live case: a demsoc in self-description and a socdem in program, strongly egalitarian in economy, liberty-leaning on coercion, culturally progressive, universal-leaning in belonging, and insurgent toward the establishments of both parties. The word *socialist* files him with the last profile on this list; the coordinates make them adjacent on one question and opposed on the other four."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b124",
+     "text": "The profiles that follow are illustrations of the grammar, not verdicts. Each is dated, each is disputable, and one of them—deliberately, because his case is the hardest—gets the full treatment the rules of use demand."
+    },
+    {
+     "blockId": "b125",
+     "text": "**Trump** (second term, 2025–2026) is a populist natcon: authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features—and, on Economy, the best current argument for splitting rhetoric from practice. The rhetoric is market: deregulation, tax cuts, the language of enterprise. The practice is protectionist and state-directive: after the Supreme Court struck down the IEEPA tariffs in February 2026, the tariff program continued under other statutory authorities, with sectoral rates of 10 to 50 percent across metals, autos, lumber, and furniture—up to 100 percent on patented pharmaceuticals—a weighted average applied rate near 12 percent, and an estimated tax increase of roughly $900 per household in a single year.[18] *Market-rhetorical, protectionist-statist in practice* is not a complication the framework tolerates; it is what the framework is for."
+    }
+   ],
+   "charsChanged": 1846,
+   "id": "h18",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b127",
+     "text": "**Macron** (in office 2017–) is a technocratic liberal: market-leaning in economy, authority-leaning in coercion (emergency powers folded into ordinary law), culturally progressive with a republican inflection, universalist in belonging (Europe, not the nation, as the operative project), and maximally institutional in preference despite an insurgent route to power that left neither of France’s governing parties in the 2017 runoff. Section V’s aside (an outsider can be institutionalist) governs a nuclear state."
+    }
+   ],
+   "before": [],
+   "charsChanged": 515,
+   "id": "h19",
+   "kind": "added",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b129",
+     "text": "**Trump** (second term, 2025–2026) is a populist natcon: authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features—and, on Economy, the best current argument for splitting rhetoric from practice. The rhetoric is market: deregulation, tax cuts, the language of enterprise. The practice is protectionist and state-directive: after the Supreme Court struck down the IEEPA tariffs in February 2026, the tariff program continued under other statutory authorities, with sectoral rates of 10 to 50 percent across metals, autos, lumber, and furniture (up to 100 percent on patented pharmaceuticals), a weighted average applied rate near 12 percent, and an estimated tax increase of roughly $900 per household in a single year.[18] *Market-rhetorical, protectionist-statist in practice* is not a complication the framework tolerates; it is what the framework is for."
+    },
+    {
+     "blockId": "b130",
+     "text": "**Orbán** (in office 2010–2026) was a welfare nationalist: economically mixed, authority-oriented, traditional, strongly communal, and populist in legitimation even while governing through a consolidated institutional apparatus—until April 2026, when an insurgent opposition won a two-thirds parliamentary majority and ended the sixteen-year system at the ballot box.[19] The fall carries its own System-axis lesson: institutional consolidation is a preference and a practice, not a guarantee, and insurgency is a position available against any incumbent, including a formerly insurgent one."
+    },
+    {
+     "blockId": "b131",
+     "text": "**Xi Jinping** (general secretary 2012–) is a state socialist in lineage and a party-state technocrat in operation: state-directive in economy, strongly authority-oriented, increasingly traditionalist in culture, communal-nationalist in belonging, and maximally institutional. The profile shows why Section XI’s regime tag is non-negotiable: institutional describes the depth of mediation, not its democratic character."
+    },
+    {
+     "blockId": "b132",
+     "text": "Each sentence says more than a position on a line while remaining possible to remember. And each now carries a date, because one of them had to be rewritten within months of its first drafting. The rules of use below are not ornaments."
+    },
+    {
+     "blockId": "b133",
+     "text": "![Illustrative profiles](figures/figure_5_illustrative_profiles.png)\n*Figure 5. The seven illustrative three-layer profiles, dated as of mid-2026.*"
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b128",
+     "text": "**Orbán** (in office 2010–2026) was a welfare nationalist: economically mixed, authority-oriented, traditional, strongly communal, and populist in legitimation even while governing through a consolidated institutional apparatus—until April 2026, when an insurgent opposition won a two-thirds parliamentary majority and ended the sixteen-year system at the ballot box.[19] The fall carries its own System-axis lesson: institutional consolidation is a preference and a practice, not a guarantee, and insurgency is a position available against any incumbent—including a formerly insurgent one."
+    },
+    {
+     "blockId": "b129",
+     "text": "Each sentence says more than a position on a line while remaining possible to remember. And each now carries a date, because the fourth had to be rewritten within months of its first drafting. The rules of use below are not ornaments."
+    },
+    {
+     "blockId": "b130",
+     "text": "![Illustrative profiles](figures/figure_5_illustrative_profiles.png)\n*Figure 5. Four illustrative three-layer profiles, dated as of mid-2026.*"
+    }
+   ],
+   "charsChanged": 3273,
+   "id": "h20",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b138",
+     "text": "There is also a deeper defense than coordination, and it deserves a named opponent rather than silence. Norberto Bobbio argued that left and right endure because they track a real and permanent divide: attitudes toward equality (a horizontal, egalitarian conception of society against a vertical, inegalitarian one).[20] If Bobbio is right, the five questions are one question wearing five masks, and this essay has multiplied entities without necessity. The framework’s answer is its cases. Equality-monism cannot score the welfare nationalist without remainder: egalitarian toward members, inegalitarian at the boundary is not a point on an equality line but an answer to two different questions—how much equality, and among whom. It cannot place Milei, whose radical anti-egalitarianism in economics arrives fused with an insurgent, anti-elite politics that speaks in the register Bobbio assigns to the left. The difficulty is not that Bobbio’s divide is unreal. It is that “equality” decomposes on contact: equality of what (economy), enforced how (coercion), against which inheritances (culture), among whom (belonging), decided by whom (system). Bobbio’s one question was five questions all along."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b135",
+     "text": "There is also a deeper defense than coordination, and it deserves a named opponent rather than silence. Norberto Bobbio argued that left and right endure because they track a real and permanent divide: attitudes toward equality—a horizontal, egalitarian conception of society against a vertical, inegalitarian one.[20] If Bobbio is right, the five questions are one question wearing five masks, and this essay has multiplied entities without necessity. The framework’s answer is its cases. Equality-monism cannot score the welfare nationalist without remainder: egalitarian toward members, inegalitarian at the boundary is not a point on an equality line but an answer to two different questions—how much equality, and among whom. It cannot place Milei, whose radical anti-egalitarianism in economics arrives fused with an insurgent, anti-elite politics that speaks in the register Bobbio assigns to the left. The difficulty is not that Bobbio’s divide is unreal. It is that “equality” decomposes on contact: equality of what (economy), enforced how (coercion), against which inheritances (culture), among whom (belonging), decided by whom (system). Bobbio’s one question was five questions all along."
+    }
+   ],
+   "charsChanged": 2404,
+   "id": "h21",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b143",
+     "text": "And this settles who the vocabulary is for. Not, primarily, voters: mass publics show little stable ideological structure of any dimensionality (the same survey research this essay leans on finds citizens’ attitudes far less constrained than elites’[8]), and a five-number address with metadata is no folk instrument. Pretending otherwise would repeat the quiz tradition’s mistake in a more demanding key, and it is part of why two decades of multi-axis tests have decorated the internet without displacing the spectrum: they addressed the wrong user. The vocabulary is for the people who produce political language (writers, analysts, editors, the arguing class), whose distinctions reach everyone else through the same cue-giving mechanism by which party positions reach voters in the first place.[1] The spectrum keeps the coordination job. The grammar works upstream, where the cues are written."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b140",
+     "text": "And this settles who the vocabulary is for. Not, primarily, voters: mass publics show little stable ideological structure of any dimensionality—the same survey research this essay leans on finds citizens’ attitudes far less constrained than elites’[8]—and a five-number address with metadata is no folk instrument. Pretending otherwise would repeat the quiz tradition’s mistake in a more demanding key, and it is part of why two decades of multi-axis tests have decorated the internet without displacing the spectrum: they addressed the wrong user. The vocabulary is for the people who produce political language—writers, analysts, editors, the arguing class—whose distinctions reach everyone else through the same cue-giving mechanism by which party positions reach voters in the first place.[1] The spectrum keeps the coordination job. The grammar works upstream, where the cues are written."
+    }
+   ],
+   "charsChanged": 1792,
+   "id": "h22",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b146",
+     "text": "Pew Research Center’s 2026 American political typology illustrates both the promise and the limit of cluster-based naming. Using responses to thirty questions, Pew identified nine groups with memorable names such as *Leftward Progressives*, *Loyal Liberals*, *Order and Opportunity Left*, *Unconventional Right*, and *Faith First Conservatives*.[21] These groups are valuable because they describe actual clusters in a particular electorate at a particular time. They are not universal ideological species. A typology rerun in another country (or after a war, recession, migration crisis, religious revival, or technological transformation) would find different coalitions and require different names."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b143",
+     "text": "Pew Research Center’s 2026 American political typology illustrates both the promise and the limit of cluster-based naming. Using responses to thirty questions, Pew identified nine groups with memorable names such as *Leftward Progressives*, *Loyal Liberals*, *Order and Opportunity Left*, *Unconventional Right*, and *Faith First Conservatives*.[21] These groups are valuable because they describe actual clusters in a particular electorate at a particular time. They are not universal ideological species. A typology rerun in another country—or after a war, recession, migration crisis, religious revival, or technological transformation—would find different coalitions and require different names."
+    }
+   ],
+   "charsChanged": 1400,
+   "id": "h23",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b152",
+     "text": "The most important exclusion is regime type. The five questions do not by themselves tell us whether an actor accepts competitive elections, opposition rights, independent courts, press freedom, civil society, or peaceful transfer of power. That commitment should be recorded as a separate, non-negotiable tag (liberal-democratic, majoritarian-democratic, competitive-authoritarian, closed-authoritarian), because an institutional actor can be authoritarian and an insurgent actor democratic; a party-state may possess formidable institutions; a constitutional reformer may oppose the incumbent establishment. The System axis describes political mediation, not democratic virtue."
+    },
+    {
+     "blockId": "b153",
+     "text": "The remaining exclusions have already appeared or can be stated briefly. Ecology and foreign policy are modules, for the reasons Section III gave. Centralization (federalism, subsidiarity, municipalism, separatism) needs its own institutional tag, as does the basis of belonging (civic, religious, linguistic, ethnonational: not morally or politically equivalent). And a preference for authority is not the possession of capacity: governments can be coercive and incompetent, ambitious and hollow, pluralist and effective. Capability is an empirical property, not an ideological coordinate. The five questions are a core language, not a theory of everything."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b149",
+     "text": "The most important exclusion is regime type. The five questions do not by themselves tell us whether an actor accepts competitive elections, opposition rights, independent courts, press freedom, civil society, or peaceful transfer of power. That commitment should be recorded as a separate, non-negotiable tag—liberal-democratic, majoritarian-democratic, competitive-authoritarian, closed-authoritarian—because an institutional actor can be authoritarian and an insurgent actor democratic; a party-state may possess formidable institutions; a constitutional reformer may oppose the incumbent establishment. The System axis describes political mediation, not democratic virtue."
+    },
+    {
+     "blockId": "b150",
+     "text": "The remaining exclusions have already appeared or can be stated briefly. Ecology and foreign policy are modules, for the reasons Section III gave. Centralization—federalism, subsidiarity, municipalism, separatism—needs its own institutional tag, as does the basis of belonging (civic, religious, linguistic, ethnonational: not morally or politically equivalent). And a preference for authority is not the possession of capacity: governments can be coercive and incompetent, ambitious and hollow, pluralist and effective. Capability is an empirical property, not an ideological coordinate. The five questions are a core language, not a theory of everything."
+    }
+   ],
+   "charsChanged": 2669,
+   "id": "h24",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b156",
+     "text": "A public taxonomy must govern its own application, and most of its discipline fits in one paragraph. Classify commitments and conduct, not aesthetics: enacted policy and governing practice outrank manifestos, manifestos outrank repeated commitments, and isolated quotations, vibes, and cultural association rank last. Separate position from salience: two parties can hold the same position while one organizes its identity around it and the other barely mentions it. Permit uncertainty: a 3 can mean moderation, conditionality, internal division, strategic ambiguity, or insufficient evidence; say which. Date every profile: ideologies move, parties transform, insurgents become incumbents, and the Orbán profile above had to be rewritten within months. And classify arguments, not only identities: a single person can make an equality-oriented economic argument, a liberty-oriented speech argument, a traditional cultural argument, a universal moral argument, and an institutional constitutional argument. The taxonomy is at its best when it illuminates the claim under dispute rather than merely assigning a type to the claimant."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b153",
+     "text": "A public taxonomy must govern its own application, and most of its discipline fits in one paragraph. Classify commitments and conduct, not aesthetics: enacted policy and governing practice outrank manifestos, manifestos outrank repeated commitments, and isolated quotations, vibes, and cultural association rank last. Separate position from salience: two parties can hold the same position while one organizes its identity around it and the other barely mentions it. Permit uncertainty: a 3 can mean moderation, conditionality, internal division, strategic ambiguity, or insufficient evidence—say which. Date every profile: ideologies move, parties transform, insurgents become incumbents, and the Orbán profile above had to be rewritten within months. And classify arguments, not only identities: a single person can make an equality-oriented economic argument, a liberty-oriented speech argument, a traditional cultural argument, a universal moral argument, and an institutional constitutional argument. The taxonomy is at its best when it illuminates the claim under dispute rather than merely assigning a type to the claimant."
+    }
+   ],
+   "charsChanged": 2261,
+   "id": "h25",
+   "kind": "edited",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b160",
+     "text": "The symmetry is not an assertion that every application is morally equal, nor that each fear is equally well founded in every decade. It is the minimum charity required to understand why intelligent people can be drawn toward either pole, and it is a precondition of the whole exercise, because a taxonomy whose poles are compliments and insults is a weapon, not a vocabulary.[22]"
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b157",
+     "text": "The symmetry is not an assertion that every application is morally equal, nor that each fear is equally well founded in every decade. It is the minimum charity required to understand why intelligent people can be drawn toward either pole—and it is a precondition of the whole exercise, because a taxonomy whose poles are compliments and insults is a weapon, not a vocabulary.[22]"
+    }
+   ],
+   "charsChanged": 759,
+   "id": "h26",
+   "kind": "edited",
+   "moveId": null
+  }
+ ],
+ "moves": [],
+ "rebutted": [],
+ "summary": {
+  "addressed": 0,
+  "hunks": 26,
+  "linkedHunks": 0,
+  "moves": 0,
+  "rebutted": 0,
+  "stillOpen": 0,
+  "unchanged": 183,
+  "unlinkedHunks": 26
+ },
+ "to": "v4",
+ "trace": [
+  {
+   "charsChanged": 45997,
+   "hunkCount": 26
+  }
+ ],
+ "unlinked": {
+  "entries": [],
+  "hunks": [
+   "h1",
+   "h2",
+   "h3",
+   "h4",
+   "h5",
+   "h6",
+   "h7",
+   "h8",
+   "h9",
+   "h10",
+   "h11",
+   "h12",
+   "h13",
+   "h14",
+   "h15",
+   "h16",
+   "h17",
+   "h18",
+   "h19",
+   "h20",
+   "h21",
+   "h22",
+   "h23",
+   "h24",
+   "h25",
+   "h26"
+  ]
+ },
+ "version": 1
+}

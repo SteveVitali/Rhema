@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/debevoise-heppner-written-opinion-2026-02-17.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3d450dfd269ca0ac",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/debevoise-heppner-written-opinion-2026-02-17.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# debevoise-heppner-written-opinion-2026-02-17\n- **URL:** https://www.debevoisedatablog.com/2026/02/17/update-judge-rakoff-issues-written-opinion-that-ai-generated-documents-are-not-protected-by-privilege/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Debevoise Data Blog, Feb. 17, 2026: summarizes and quotes the written opinion; gives the docket cite (No. 25-cr-00503-JSR, Dkt. 27) and links the PDF; notes Heppner shared the documents with counsel (III19).\n- **Key passages:** privileges require \"a trusting human relationship\" with \"a licensed professional who owes fiduciary duties and is subject to discipline.\" · Anthropic \"may disclose user data 'in connection with claims, disputes, or litigation.'\"\n- **Reliability:** Secondary (law firm); independent; accurate against the opinion.\n- **Relevance to this project:** ref [36].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 98
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c1bb9ea1548f7a5913690d6236ea043a0fcabda0f32536f08a4932e330d79421",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/debevoise-heppner-written-opinion-2026-02-17.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/berlin-two-concepts-1958-text.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5232bb9bc765fa4c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/berlin-two-concepts-1958-text.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# berlin-two-concepts-1958-text\n- **URL:** https://berlin.wolf.ox.ac.uk/published_works/tcl/tcl-e.pdf (context page https://berlin.wolf.ox.ac.uk/published_works/tcl/) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** The 1958 \"Text delivered to the Clarendon Press.\" Negative-liberty question reads \"what he wants to do or be\" (matches C40's wording); the positive-liberty passage reads \"to bully, oppress, torture them in the name of their 'real' selves\" (does NOT match C44's \"in the name, and on behalf, of\"). Bracketed page numbers ([169], [180]) are from a later edition, not *Four Essays*.\n- **Key passages:** \"is or should be left to do or be what he wants to do or be, without interference by other persons?\" [169]; \"to bully, oppress, torture them in the name of their 'real' selves\" [180].\n- **Reliability:** Primary (Isaiah Berlin Virtual Library, editor Henry Hardy).\n- **Relevance to this project:** C40, C44; §IV, §XV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c7396e88dea7baf544d93e71f817dda6dc615e73f892a1365c17cc1636cbd67c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/berlin-two-concepts-1958-text.md",
+ "kind": "artifact-page"
+}

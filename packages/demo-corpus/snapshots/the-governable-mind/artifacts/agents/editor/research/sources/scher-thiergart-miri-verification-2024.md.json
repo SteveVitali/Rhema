@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/scher-thiergart-miri-verification-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f00878cd235f64ed",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/scher-thiergart-miri-verification-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# scher-thiergart-miri-verification-2024\n- **URL:** https://intelligence.org/wp-content/uploads/2024/11/Mechanisms-to-Verify-International-Agreements-About-AI-Development-27-Nov-24.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Aaron Scher and Lisa Thiergart (MIRI), Nov 27, 2024, PDF via text proxy. Defers to export-control definitions of advanced chips; excludes non-datacenter GPUs and CPUs; state-actor threat model; no consumer-device mechanisms.\n- **Key passages:** 'we defer to the criteria for defining advanced (AI) chips as used by the current U.S. export controls' · 'most GPUs that are not intended for data center use and most CPUs ... can be excluded.'\n- **Reliability:** Primary; MIRI technical report.\n- **Relevance to this project:** Q4: confined; a neighbor not on the agenda.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 102
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fb82ba5b175688e841a510860b866134682ae9a0bf617b59cbe443f0ae7d6de7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/scher-thiergart-miri-verification-2024.md",
+ "kind": "artifact-page"
+}

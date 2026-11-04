@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/tnw-zuckerberg-incentive-2026-09-16.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2037907d3e51a03f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/tnw-zuckerberg-incentive-2026-09-16.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# tnw-zuckerberg-incentive-2026-09-16\n- **URL:** https://thenextweb.com/news/zuckerberg-ai-labs-incentive-build-safely · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Reproduces the X post's opening sentence as a direct quotation (C12); the X post itself could not be opened by this tool.\n- **Key passages:** \"Every lab has the responsibility and incentive to move at the pace required to train its models safely…\" / \"Meta delayed shipping Muse for several months to focus on safety and security.\"\n- **Reliability:** Secondary; independent.\n- **Relevance to this project:** C12.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9ee80ccd3bfb1f71122d9c79a09935a2c75d22da55f816c64ae34b8797af78ef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/tnw-zuckerberg-incentive-2026-09-16.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/aiweekly-white-house-open-models-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9223a5b2e59851d2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/aiweekly-white-house-open-models-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aiweekly-white-house-open-models-2026\n- **URL:** https://aiweekly.co/alerts/white-house-to-extend-ai-safety-framework-to-open-models · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** AI Weekly alert, Aug 17, 2026, reporting WIRED: White House will extend the EO 14409 pre-release framework to open-weight models once they reach Mythos/GPT-5.6-level capability; briefed to Meta, Nvidia, Microsoft, OpenAI, Anthropic in early August; 'expected in the coming months'; enforcement undefined.\n- **Key passages:** A White House official: expansion is \"expected in the coming months.\"\n- **Reliability:** Tertiary summary of WIRED reporting; WIRED itself not fetched; corroborated by Transformer Aug 14 and Axios Aug 4 headline.\n- **Relevance to this project:** §5 EO row; l.266 'for now'; §4(a).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4f32a68f4941a4b278b4c875e7bcda79949c9c7c0e0751b98b24c05c106f2f20",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/aiweekly-white-house-open-models-2026.md",
+ "kind": "artifact-page"
+}

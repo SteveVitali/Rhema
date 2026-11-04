@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nspm7-context-wikipedia.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ce6f271e277f4b4",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "9f4a626d5fe8b28d",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "cbc9201413f3f55c",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/nspm7-context-wikipedia.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# NSPM-7 context and implementation (Wikipedia)\n\n- **URL:** https://en.wikipedia.org/wiki/NSPM-7\n- **Accessed:** 2026-08-21\n\n**Establishes:** Context the draft omits: NSPM-7 was signed fifteen days after the Sept. 10, 2025 assassination of Charlie Kirk, amid administration framing (Stephen Miller: a \"vast domestic terror movement\") and three days after the EO purporting to designate \"Antifa\" a domestic terrorist organization. Implementation reportedly includes FBI investigations of anti-ICE activity, the DHS undercover operations (Operation Puppet Master / Project Whipple Shield are listed as implementation), material-support convictions of protesters (March 2026), and visa bans (July 2026). NB: this page asserts the Minnesota-NSPM-7 connection that the draft carefully declines to assert; flag for Phase 3.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0291466765fa15bf6f7c58d377f5fb5cca38d611257bb55b9bc509d52b3cc297",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/nspm7-context-wikipedia.md",
+ "kind": "artifact-page"
+}

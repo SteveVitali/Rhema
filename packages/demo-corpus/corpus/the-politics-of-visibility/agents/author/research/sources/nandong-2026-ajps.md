@@ -1,0 +1,10 @@
+# nandong-2026-ajps
+- **URL:** https://onlinelibrary.wiley.com/doi/full/10.1111/ajps.70057 (page blocks fetchers; metadata + publisher-deposited abstract verified verbatim via https://api.crossref.org/works/10.1111/ajps.70057) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C34
+- **What it establishes:** Gaétan Nandong, "State surveillance and collective dissent," *American Journal of Political Science*, published 2026-07-01. Formal model: surveillance both informs an uninformed government (creating fear via expected repression) and, when citizens have public information, provides a coordination device that can stimulate dissent.
+- **Key passages (abstract, verbatim from Crossref deposit):**
+  - "State surveillance facilitates the collection of intelligence on dissidents while simultaneously providing information about the value of the status quo. I study this trade‐off in a context where an uninformed government must decide whether to repress."
+  - "Because citizens expect more informed governments to enact greater repression, autocratic surveillance can create a climate of fear. However, surveillance can also stimulate dissent when citizens have access to public information. State surveillance gives citizens an opportunity to coordinate, even in the absence of a preference for such coordination."
+  - "Surveillance can amplify dissent by enhancing citizens' motivations for political activism aimed at drawing the government's attention to political and economic issues. Coordination distorts government learning, resulting in lower expected levels of repression."
+  - "...the effectiveness of advanced surveillance technology depends on expectations regarding repression, thereby underscoring a psychological aspect of state control."
+- **Reliability:** Secondary (peer-reviewed, top political-science journal); author single-named Gaétan Nandong — outline's "Nandong" is correct (surname).
+- **Relevance to this project:** C34 — the conditional/dual-effect model of surveillance and dissent.

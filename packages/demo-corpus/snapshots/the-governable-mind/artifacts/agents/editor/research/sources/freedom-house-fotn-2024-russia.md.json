@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/freedom-house-fotn-2024-russia.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b26bebf86bd3fdde",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/freedom-house-fotn-2024-russia.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# freedom-house-fotn-2024-russia\n- **URL:** https://freedomhouse.org/country/russia/freedom-net/2024 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C56: SORM plan with the FSB within six months of licence; sovereign internet law in effect Nov 2019; TSPU (Technical Measures to Combat Threats) DPI equipment lets Roskomnadzor restrict and block.\n- **Key passages:** 'Service providers must work with the FSB to build a plan for SORM implementation within six months of receiving a license.' / 'The installation of Technical Measures to Combat Threats (TSPU) equipment … allows Roskomnadzor to restrict access and block websites.'\n- **Reliability:** Secondary (annual NGO report).\n- **Relevance to this project:** C56\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3c37306454e9e4db1708b086ab0120342be498e117668853da041210c75f0984",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/freedom-house-fotn-2024-russia.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/benson-evidence-frame-integrity-2026-09-07.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "70f03bf9c90c03ab",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/benson-evidence-frame-integrity-2026-09-07.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# benson-evidence-frame-integrity-2026-09-07\n- **URL:** https://neuralhorizons.substack.com/p/evidence-frame-integrity-when-summaries · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Peter Benson, \"Evidence Frame Integrity – When Summaries Become Records,\" Sept. 7, 2026 (records-management frame): \"A summary can become the memory without becoming the truth\"; leaders should \"distinguish the primary source, the derived summary, any human interpretation and the final decision as separate record objects. Do not allow the summary to overwrite the source by default\"; the risk arises when summaries are easier to retrieve than sources, their derived status is invisible, and corrections do not propagate.\n- **Key passages:** as quoted.\n- **Reliability:** Secondary/opinion (Substack); practitioner.\n- **Relevance to this project:** Agenda 8: the closest published statement of \"a synthesis is not a record\" (l.194), nine days before the draft, in an organizational rather than constitutional frame; the three convergence conditions map onto the eighth question.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 140
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9a49fe989d9e40f02344c5e58ae1c7dcd19ce7a43b38fd9104f169f5afdb5276",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/benson-evidence-frame-integrity-2026-09-07.md",
+ "kind": "artifact-page"
+}

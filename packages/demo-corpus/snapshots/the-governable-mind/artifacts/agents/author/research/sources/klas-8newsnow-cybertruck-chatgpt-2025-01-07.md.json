@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/klas-8newsnow-cybertruck-chatgpt-2025-01-07.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cf1ac46a35a5fb55",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/klas-8newsnow-cybertruck-chatgpt-2025-01-07.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# klas-8newsnow-cybertruck-chatgpt-2025-01-07\n- **URL:** https://www.8newsnow.com/news/local-news/sheriff-to-hold-1-p-m-news-conference-with-latest-on-new-years-day-bombing-at-las-vegas-trump-hotel/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** KLAS 8 News Now on the same briefing, with LVMPD-provided screenshots of the ChatGPT entries. Gives verbatim prompts shown on the slides.\n- **Key passages:**\n  - \"A few of the entries posted in the application included “How much Tannerite is equivalent to 1 pound of TNT?” and “What pistol could set it off?”\"\n  - \"Other questions asked to ChatGPT included where to buy fireworks and the location of the largest gun store in Denver.\"\n  - \"“This investigation is far from over,” McMahill, adding there was a laptop, another phone, and a smartwatch to go through as of Tuesday.\"\n- **Reliability:** Local broadcast secondary; screenshots are LVMPD's.\n- **Relevance to this project:** L2(a). Verbatim prompt wording; again no explicit provenance statement.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 130
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c83de9a97bf957623b6f7fb996ee23486aefdd033bf6c686638e6530c2bbac46",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/klas-8newsnow-cybertruck-chatgpt-2025-01-07.md",
+ "kind": "artifact-page"
+}

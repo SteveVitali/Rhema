@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/register-chat-control-revival-2026-07-09.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ffc71ff89b722ebc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/register-chat-control-revival-2026-07-09.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# register-chat-control-revival-2026-07-09\n- **URL:** https://www.theregister.com/security/2026/07/09/meps-fail-to-prevent-chat-control-snoopfest-revival/5269379 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 3)\n- **What it establishes:** On July 9, 2026 the European Parliament failed to block the Council's position reviving the interim (voluntary-scanning) regulation, which \"expired on April 3, 2026\": \"314 politicians voted to scrap Chat Control, while 276 voted to keep it,\" short of the 360 needed to reject the Council position. If reapproved by the Council within three months, the interim regime runs \"until 2028, or until a permanent solution is passed.\" A separate amendment to limit scanning \"to accounts belonging only to individuals identified by the judiciary\" also failed. Parliament secured exclusion of end-to-end encrypted platforms. On the permanent regulation: \"Five rounds of negotiations, including what was supposed to be the final round on June 29, have passed without agreement.\"\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (trade press); reliable on votes and dates.\n- **Relevance to this project:** Agenda 3: the EU's scanning architecture is voluntary and at the provider's discretion, revived by procedural default rather than enacted; a better exhibit for \"architecture decided early\" than for identity-as-condition-of-inference.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 181
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "649b3ceb340b4ee9b25317cb69c135fccd3fff0d53dbe228e9ad50a667b0bd82",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/register-chat-control-revival-2026-07-09.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-edwin-hutchins.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "de4a7bd25a22a30b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-edwin-hutchins.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-edwin-hutchins\n- **URL:** https://en.wikipedia.org/wiki/Edwin_Hutchins · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** *Cognition in the Wild*, MIT Press, 1995; \"a detailed study of distributed cognitive processes in a navy ship\" (C29). MIT Press page returned 403.\n- **Key passages:** \"proposes an alternative which looks at cognitive systems that may be composed of multiple agents and the material world.\"\n- **Reliability:** Tertiary; sufficient for a Tier-3 characterization.\n- **Relevance to this project:** C29; §II.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d45b22b4b479a3311268929614f9171ad69712f0b4d4b9fd694ba6564eb33365",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-edwin-hutchins.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eu-ai-act-article-50.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d0e61d6ca4d2fdaa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eu-ai-act-article-50.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eu-ai-act-article-50\n- **URL:** https://artificialintelligenceact.eu/article/50/ ; secondary: https://www.traverssmith.com/knowledge/knowledge-container/is-it-a-bot-eu-ai-act-transparency-rules-take-effect-2-august-2026/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Art. 50 (applies 2 Aug. 2026) imposes disclosure and machine-readable marking; no identity verification, retention, attestation or signed-weights obligation (C15).\n- **Key passages:** \"Providers shall ensure that AI systems intended to interact directly with natural persons are designed and developed in such a way that the natural persons concerned are informed that they are interacting with an AI system.\" / \"outputs of the AI system are marked in a machine-readable format and detectable as artificially generated.\"\n- **Reliability:** Primary (statute text mirror) + secondary law-firm note.\n- **Relevance to this project:** C15.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f2184370c3fa6c2079e7d0cb0769e929bc610dc5c23648bc3320797442fc4bdd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eu-ai-act-article-50.md",
+ "kind": "artifact-page"
+}

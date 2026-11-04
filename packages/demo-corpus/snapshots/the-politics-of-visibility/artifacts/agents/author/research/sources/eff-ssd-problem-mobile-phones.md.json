@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eff-ssd-problem-mobile-phones.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d1278a9f2e399a92",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eff-ssd-problem-mobile-phones.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-ssd-problem-mobile-phones\n- **URL:** https://ssd.eff.org/module/problem-mobile-phones · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C43\n- **What it establishes:** EFF's SSD identifies distinct location-exposure channels: (1) cellular network signal tracking, (2) Wi-Fi/Bluetooth MAC-address tracking, (3) app/GPS location leaks — plus cell-site simulators as a separate direct-collection technique.\n- **Key passages:**\n  - Cellular: \"The operator can calculate where a particular subscriber's phone is located whenever the phone is powered on and registered with the network.\"\n  - Wi-Fi/Bluetooth: \"Both of these kinds of wireless signals include a unique serial number for the device, called a MAC address, which can be seen by anybody who can receive the signal.\"\n  - Apps/GPS: \"Some of these apps will then transmit your location over the network to a service provider, which, in turn, provides a way for other people to track you.\"\n- **Reliability:** Primary for EFF's guidance.\n- **Relevance to this project:** C43(b) — the distinct-channels claim.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 142
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4e90bdd9daa24cadf136f60adb4c5b15aea65e13cdf56dcf44a95fbc3cdee318",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/eff-ssd-problem-mobile-phones.md",
+ "kind": "artifact-page"
+}

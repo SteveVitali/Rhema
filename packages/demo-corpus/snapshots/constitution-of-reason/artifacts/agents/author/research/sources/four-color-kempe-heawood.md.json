@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/four-color-kempe-heawood.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e09836ee5208c2d8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/four-color-kempe-heawood.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# four-color-kempe-heawood\n- **URL:** https://en.wikipedia.org/wiki/Four_color_theorem · **Accessed:** 2026-07-30 · **For:** v2→v3; historical concrete case (Major issue 3)\n- **What it establishes:** Kempe published a proof of the four-color theorem in 1879 (*American Journal of Mathematics*), widely acclaimed and accepted for 11 years. Heawood (1890) exposed the flaw (the Kempe-chain argument fails on degree-5 vertices) and salvaged the five-color theorem from the wreck. Appel & Haken announced a computer-assisted proof June 21, 1976 — first major theorem proved with extensive computer assistance, \"infeasible for a human to check by hand,\" hence the checkability controversy. Werner & Gonthier formalized the proof in the Coq proof assistant in 2005, removing dependence on trusting individual verification programs.\n- **Reliability:** secondary (Wikipedia), but for undisputed textbook history; adequate.\n- **Relevance:** The human-institution thread of the concrete case: a legible proof error that an entire community failed to see for a decade until an unpersuaded reader looked; the salvage (five-color) as productive partial result; Appel–Haken and Coq as the verification/legibility chapter. Use in §III (verification), §VI (legibility), coda.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 167
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b57ced9eb728c7d8064448c0104be344d759d369c01f2aaa44c3a31ad16f616c",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/four-color-kempe-heawood.md",
+ "kind": "artifact-page"
+}

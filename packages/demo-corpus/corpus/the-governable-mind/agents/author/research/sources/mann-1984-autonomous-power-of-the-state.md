@@ -1,0 +1,12 @@
+# mann-1984-autonomous-power-of-the-state
+- **URL:** https://commons.princeton.edu/wp-content/uploads/sites/39/2017/09/Mann-Autonomous-Power.pdf (JSTOR scan, stable URL http://www.jstor.org/stable/23999270) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C53
+- **What it establishes:** Michael Mann, "The autonomous power of the state: its origins, mechanisms and results," European Journal of Sociology / Archives Européennes de Sociologie 25(2), 1984, pp. 185–213 (Cambridge University Press). Defines despotic power (p. 188) and infrastructural power (p. 189) as two analytically autonomous dimensions of state power. The UCLA URL supplied in the outline (soc.ucla.edu/.../ssp_vol_iii.chapter_1._final_printed.pdf) returned 404.
+- **Key passages:**
+  - p. 188: "The first sense concerns what we might term the despotic power of the state elite, the range of actions which the elite is empowered to undertake without routine, institutionalised negotiation with civil society groups."
+  - p. 189: "We might term this infrastructural power, the capacity of the state to actually penetrate civil society, and to implement logistically political decisions throughout the realm."
+  - p. 189: "once you were out of sight of the Red Queen, she had difficulty in getting at you. But it is powerfully developed in all industrial societies."
+  - p. 189: "The state can assess and tax our income and wealth at source, without our consent or that of our neighbours or kin"
+  - p. 190: "The second denotes the power of the state to penetrate and centrally co-ordinate the activities of civil society through its own infrastructure."
+  - p. 190: "The two are analytically autonomous dimensions of power."
+- **Reliability:** Primary (scan of the journal article; text extracted by pypdf from the JSTOR PDF, so hyphenation was rejoined but wording is the original). Canonical source for the distinction.
+- **Relevance to this project:** C53; "infrastructural vs despotic power" framing in the surveillance/compute-governance sections. Page numbers are from the journal pagination printed in the scan.

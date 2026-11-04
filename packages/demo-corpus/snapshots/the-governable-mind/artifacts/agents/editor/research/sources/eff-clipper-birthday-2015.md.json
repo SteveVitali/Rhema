@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eff-clipper-birthday-2015.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0a066da68befa8bc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eff-clipper-birthday-2015.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-clipper-birthday-2015\n- **URL:** https://www.eff.org/deeplinks/2015/04/clipper-chips-birthday-looking-back-22-years-key-escrow-failures · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C49's 'by 1996 … dead' in EFF's account (Parker Higgins, Apr 16, 2015).\n- **Key passages:** 'By 1996 the Clipper Chip proposal was dead'\n- **Reliability:** Secondary; advocacy organization.\n- **Relevance to this project:** C49\n",
+  "meters": {
+   "readMin": 1,
+   "words": 48
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "93eebcb2be51ec43434d96dade9a68327d62e9b549ca97883b52b6a69fced596",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eff-clipper-birthday-2015.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/aclu-2026-palantir-roundup.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "051ec76ac8c2ed1c",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "b9297aba64e59961",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/aclu-2026-palantir-roundup.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aclu-2026-palantir-roundup\n\n- **URL:** https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** ACLU, \"All the Ways Palantir is Assisting Trump's Abusive Removal Campaign\" (Sophie Feng & Jay Stanley, March 24, 2026). Documents the Palantir/ICE product stack: Investigative Case Management (ICM) — Palantir-built since 2014, sole-source deal ballooned to over $145 million, \"backbone\" of enforcement, spanning case lifecycle; FALCON (used since 2012, possibly superseded); ImmigrationOS — $30M contract entered April 2025 (prototype due Sept 25, 2025, runs through Sept 2027), AI augmentation of ICM for apprehension ops, monitoring \"self-deportations\" and visa overstays with \"near real-time visibility\"; ELITE (Enhanced Leads Identification and Targeting for Enforcement) — deportation-target prioritization with map interface and \"address confidence scores\"; AI tip processing. Data unified: schooling, family relationships, employment, phone records, immigration history, personal connections, biometric traits, criminal records, addresses; feeds from HHS, USCIS, FBI, DEA, ATF, SEVIS, and commercial brokers (Thomson Reuters CLEAR).\n- **Key passages:** \"U.S. Citizens are still subject to criminal prosecution and thus are a part of ICM.\"\n- **Reliability:** Secondary/advocacy, but heavily footnoted to 404 Media, The Intercept, WIRED, DHS Privacy Impact Assessments, EPIC litigation, and sam.gov contract records.\n- **Relevance to this project:** C11 — supplies the citable basis the outline lacked: case records, identity/immigration records, addresses, relationships, investigative leads, and geospatial/map targeting are all documented; continuous \"movement\" tracking is the one element to phrase carefully (location/address intelligence and map-based targeting, not a proven live movement feed).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 220
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8af1c5d47a9c73393a8e196636b9a83e1775a62ebbc5787accdceb35e9fe5c8b",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/aclu-2026-palantir-roundup.md",
+ "kind": "artifact-page"
+}

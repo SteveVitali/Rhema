@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/aclu-palantir-roundup.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c902e7c33b96917e",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "bdc2d1b99c9f4643",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "4234200e5bfeb259",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/aclu-palantir-roundup.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ACLU — Palantir's Deportation Roundup (2026)\n\n- https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: ICM Palantir-run since 2014, >$145M, sole-source through Apr. 2026; FALCON\ntip-synthesis for ICE since 2012; ImmigrationOS $30M (Apr. 2025), \"near real-time\nvisibility\" into self-deportations/overstays; ELITE \"address confidence score\" mapping of\ntargets; data classes: family, employment, phone records, biometrics, criminal records,\naddresses, schooling; feeds from FBI/DEA/ATF/SEVIS and commercial broker data (\"CLEAR,\"\nThomson Reuters).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 53
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cf2a9a951bd8044fa764783f9d92da44a7f16a4bd9c90f30caa6891bc1481989",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/aclu-palantir-roundup.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/clearinghouse-pym-45979.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ce92b2d69f6c6967",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/clearinghouse-pym-45979.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# clearinghouse-pym-45979\n- **URL:** https://clearinghouse.net/case/45979/ and https://clearinghouse.net/case/46097/ · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, confirming which Clearinghouse case IDs match which houses-of-worship enforcement case\n- **What it establishes:** Case 45979 IS *Philadelphia Yearly Meeting of the Religious Society of Friends v. U.S. Department of Homeland Security*, U.S. District Court for the District of Maryland, No. 8:25-cv-00243 (filed Jan. 27, 2025). On Feb. 24, 2025 Judge Theodore D. Chuang granted in part a limited preliminary injunction ordering DHS \"to abide by the 2021 Policy at Plaintiffs' place of worship\" while denying a nationwide injunction; DHS appealed the injunction to the Fourth Circuit as No. 25-1512, and the Fourth Circuit AFFIRMED on Aug. 18, 2026 (published, unanimous panel: Agee, Harris, Keenan, with Senior Judge Keenan writing; standing found on attendance-decline evidence; no abuse of discretion on the RFRA merits) — opinion at https://www.ca4.uscourts.gov/opinions/251512.P.pdf, see also https://law.justia.com/cases/federal/appellate-courts/ca4/25-1512/25-1512-2026-08-18.html. Case 46097 IS *Mennonite Church USA v. U.S. Department of Homeland Security*, U.S. District Court for the District of Columbia, No. 1:25-cv-00403 (filed Feb. 11, 2025); Judge Dabney L. Friedrich DENIED the preliminary injunction on Apr. 11, 2025 for lack of Article III standing; plaintiffs appealed to the D.C. Circuit (No. 25-5209).\n- **Key passages:** 45979: injunction \"order[ed] DHS to abide by the 2021 Policy at Plaintiffs' place of worship\"; denial of \"a mandatory nationwide injunction.\" 46097: plaintiffs \"failed to show standing under Article III\"; a plaintiff \"cannot manufacture standing by incurring costs in anticipation of non-imminent harm.\"\n- **Reliability:** secondary (Civil Rights Litigation Clearinghouse, U. Michigan — high-quality docket-tracking source)\n- **Relevance to this project:** Settles the case-ID cross-mapping: 45979 = Philadelphia Yearly Meeting (D. Md., injunction granted in part, 4th Cir. No. 25-1512); 46097 = Mennonite Church USA (D.D.C., PI denied). The essay's pairing is correct, including the Aug. 18, 2026 Fourth Circuit affirmance in No. 25-1512.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 298
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a517dd03624731038921f840ff76d9c2d1e7f439ae2a8b81355f046a0b2a8979",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/clearinghouse-pym-45979.md",
+ "kind": "artifact-page"
+}

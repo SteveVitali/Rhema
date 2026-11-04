@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/zwillgen-state-chatbot-laws-jun-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "79eca7788b858661",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/zwillgen-state-chatbot-laws-jun-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zwillgen-state-chatbot-laws-jun-2026\n- **URL:** https://www.zwillgen.com/publication/chatbot-laws-coming-to-a-state-near-you/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** As of June 2026, 12 states have chatbot laws (most effective Jan. 1, 2027): self-harm detection protocols and crisis referral universal; six states require annual reporting of referral counts; Colorado age estimation for all users; New York age confirmation for companion features; no logging/retention or identity-verification mandates.\n- **Key passages:** \"Each law requires the operator to maintain a protocol for detecting expressions of suicidal ideation or self-harm\"\n- **Reliability:** Secondary (law-firm survey); industry orientation.\n- **Relevance to this project:** Report §6; draft l.20 (C15), l.254.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "300cebcd1f18fd64ac2371ffdaa4015699b8a0dc65655a51ae70e4d0167957ef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/zwillgen-state-chatbot-laws-jun-2026.md",
+ "kind": "artifact-page"
+}

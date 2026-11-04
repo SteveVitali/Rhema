@@ -1,0 +1,7 @@
+# aclu-2026-dhs-location-data-update
+
+- **URL:** https://www.aclu.org/news/privacy-technology/dhs-is-circumventing-constitution-by-buying-data-it-would-normally-need-a-warrant-to-access · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** Follow-up release (Anika Venkatesh and Lauren Yu, Jan 12, 2026) of additional FOIA records from the ACLU's 2020 lawsuit against DHS: "In 2022, we posted thousands of pages of previously unreleased documents, but our litigation continued, and today we are publishing the additional records we've obtained over the last several years." Agencies: ICE, CBP, Secret Service. Vendors: Venntel, Babel Street, Penlink. Describes geofence capabilities (identify every device in a specified area) and historical tracking.
+- **Key passages:** Data broker marketing: "What you do and where you do it defines who you are." Secret Service investigators could identify "mobile devices carried near popular border crossing points into the U.S. and pull up the historical location data for those devices, viewing where they've been in the preceding months." CBP "tracked phones to 'locations of law enforcement interest' and monitored 'travel patterns.'"
+- **Reliability:** Secondary/advocacy quoting primary FOIA documents. NOTE: the exact phrase "pattern of life" does NOT appear on this page (checked); it is in the 2022 release.
+- **Relevance to this project:** C7 (agencies, vendors, geofencing/repeat-visit/historical capabilities; the outline's lead URL resolves here — cite alongside the 2022 piece).

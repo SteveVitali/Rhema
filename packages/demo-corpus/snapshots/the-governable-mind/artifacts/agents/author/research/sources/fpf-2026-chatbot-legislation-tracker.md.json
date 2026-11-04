@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f84476db704d6b8d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fpf-2026-chatbot-legislation-tracker\n- **URL:** https://fpf.org/2026-chatbot-legislation-tracker/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Future of Privacy Forum tracker (Justine Gluck, Rafal Fryc), live page as fetched 2026-09-16 (HTML table parsed locally; header colspans checked so columns are aligned). The \"Enacted Chatbot Legislation\" section lists 19 laws in 15 states: CA (SB 1119, SB 867, SB 243), CT SB 5, CO HB 1263, GA SB 540, HI SB 3001, IA SF 2417, ID SB 1297, ME LD 1727, NE LB 525, NH HB 143, NY (S 3008C, S 9008C), OR SB 1546, RI SB 2195, UT HB 452, WA HB 2225. The section is NOT limited to 2026 enactments: CA SB 243 is a 2025 statute (Ch. 677, Stats. 2025, per the SB 1119 committee analysis), and the tracker links UT HB 452 to Utah's 2025 session. In the \"Age Assurance\" column, enacted laws marked X are only FOUR: CA SB 1119, CO HB 1263, GA SB 540, NY S 9008C. The adjacent \"Parental Consent & Tools\" column is marked for nine states (CA, CT, CO, GA, HI, IA, ID, NE, NY); \"Minor Access Bans\" only CA SB 867. WA HB 2225 is marked in none of the three access-control columns. The federal GUARD Act (S. 3062) is not listed on the tracker at all (federal rows: S. 4199, S. 4407, H.R. 7757). Intro text: \"nearly 126 chatbot-specific bills introduced across 37 states in 2026\"; body text: \"currently tracking 98 chatbot-specific bills across 34 states\" (the page contradicts itself).\n- **Key passages:**\n  - \"With nearly 126 chatbot-specific bills introduced across 37 states in 2026, a complex and increasingly fragmented compliance landscape is quickly emerging.\"\n  - \"It includes bills that have passed at least one legislative chamber and is updated weekly to reflect movement and amendments.\"\n  - Row: \"CA | SB 1119 | Sen. Padilla (D) Asm. Bauer-Kahan (D) | Signed by Governor\" with X under Age Assurance.\n- **Reliability:** Reputable privacy think tank; a living page, so counts drift. An X is FPF's coding judgment, not statutory text.\n- **Relevance to this project:** L8 NOT CONFIRMED as stated: I cannot reproduce the review's \"fourteen states enacted in 2026, eight with age-assurance provisions (CA, CO, CT, GA, HI, ID, NE, WA)\" from this page. The tracker shows 15 states in its enacted section (some 2025 laws) and four states with an Age Assurance mark. The review's eight look like a blend of the age-assurance and parental-tools columns, and WA is in neither. Use a hedged formulation and cite the tracker with an access date.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 419
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "51d60424ccbae1eb8cdc485f7e9b1dce1ef00ee96858f2d46d131ad8cd0e5796",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+ "kind": "artifact-page"
+}

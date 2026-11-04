@@ -1,0 +1,6 @@
+# evangelista-2019-surveillance-society-review-zuboff
+- **URL:** https://ojs.library.queensu.ca/index.php/surveillance-and-society/article/download/13132/8501 (PDF extracted) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical
+- **What it establishes:** Rafael Evangelista, review of Zuboff, Surveillance & Society 17(1/2): 246-251 (2019). On China: "she identifies China's use of instrumentarian power for the constitution of a 'social credit.' Here, Big Other, the materialization of this instrumentarian power in action, would create stimuli for good behaviours in detriment of bad and the Chinese government defines which is which. Being a technology developed in the US, at home Big Other serves in the creation of profits; in China, it serves a government that wishes to control the social body." Notes Zuboff spends "many pages establishing parallels between it and fascism and Stalinism."
+- **Key passages:** as quoted.
+- **Reliability:** Secondary (academic review); independent.
+- **Relevance to this project:** Agenda 10 (l.288): Zuboff does say a state can wield instrumentarian power (China, ch. 13); the draft's "commercial and behavioral" is accurate for her definition and paradigm case but incomplete as a contrast with "sovereign."

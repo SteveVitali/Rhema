@@ -1,0 +1,12 @@
+# workos-agent-audit-logs-2026-06-03
+- **URL:** https://workos.com/blog/agent-audit-logs · **Accessed:** 2026-09-16 (direct curl, 200) · **For:** v2→v3 response round, slice N (item N2)
+- **What it establishes:** A vendor engineering post (Maria Paktiti, WorkOS, June 3, 2026) specifying an agent audit log as an ACTION record — tool, arguments, status, scopes, session, delegation chain — with no prompt or completion field. It KEEPS the user ID (and, in its example JSON, the user's email) in every record. Prompts appear only as an optional later addition, as hashes.
+- **Key passages:**
+  - "Who is the user? The human whose account authorized the session. Standard stuff, but it has to be present and consistent across every log entry in the session."
+  - "Who is the agent? The agent's own identity, separate from the user."
+  - "the minimum viable agent audit log has four fields that most application logs don't include:" Agent identity; Session context; "Delegation chain. A record of who authorized whom to do what. At minimum: user ID, agent ID, and whether the action was human-approved or autonomous."; "Tool-level detail. Not just "API call succeeded" but which tool, with which arguments, returning which status."
+  - "You can add more over time: sub-agent traces, policy evaluation results, prompt hashes for reproducibility."
+  - Example record fields: "user": {"id": "user_01HXKP2M", "email": "alice@example.com"}; "authorization": {... "session_type": "human_approved", "approved_by": "user_01HXKP2M" ...}; "action": {"type": "tool_invocation", "tool": "read_document", "arguments": {...}}; "delegation_chain": [{"actor": "user_01HXKP2M", "role": "initiator"}, ...]
+  - "Queryability by identity. When a user asks "what did the agent do to my account?" you need to be able to query by user ID, agent ID, and session ID quickly."
+- **Reliability:** Trade/vendor blog selling an audit-log product; evidence of engineering practice, not of law or research.
+- **Relevance to this project:** Supports the essay's claim that practice can log actions without logging prompts; cuts against any implication that action logs are user-anonymous. The user ID is mandatory here, and tool arguments (e.g. a document ID) can themselves be revealing.

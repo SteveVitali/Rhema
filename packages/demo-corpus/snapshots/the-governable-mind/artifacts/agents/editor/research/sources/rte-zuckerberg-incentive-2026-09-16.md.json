@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/rte-zuckerberg-incentive-2026-09-16.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "57e003b691e2ddbc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/rte-zuckerberg-incentive-2026-09-16.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rte-zuckerberg-incentive-2026-09-16\n- **URL:** https://www.rte.ie/news/business/2026/0916/1591713-ai-labs-mark-zuckerberg/ · **Accessed:** 2026-09-16 (direct and via a reader proxy) · **For:** v1 review, Phase 1\n- **What it establishes:** Carries the C12 sentence (as indirect speech), \"three days after\" Amodei, the \"fall behind\" quotation and \"significant\" liability.\n- **Key passages:** \"Mr Zuckerberg, in an X post, said that every lab has the responsibility and incentive to move at the pace required to train its models safely, and the ability to take its own actions to ensure that happens.\" / \"His remarks come three days after Anthropic CEO Dario Amodei urged AI companies to slow the pace at which they improve model capabilities.\" / \"Any lab that doesn't focus on alignment will fall behind.\"\n- **Reliability:** Secondary (Reuters-derived wire copy at RTÉ); independent.\n- **Relevance to this project:** C12; ref [45].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 129
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aa5aadef8bf4392f67aac1f80b2f5917cf4fc73fee44577397d00b5fd2f8ead5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/rte-zuckerberg-incentive-2026-09-16.md",
+ "kind": "artifact-page"
+}

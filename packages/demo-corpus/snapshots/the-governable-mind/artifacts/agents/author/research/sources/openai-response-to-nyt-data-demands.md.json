@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/openai-response-to-nyt-data-demands.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "862939d16850ca21",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/openai-response-to-nyt-data-demands.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-response-to-nyt-data-demands\n- **URL:** https://openai.com/index/response-to-nyt-data-demands/ (read via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v1 response round, item 1\n- **What it establishes:** OpenAI's own account (Brad Lightcap, COO; first published ~June 5, 2025 per Willison; updated Oct. 22, 2025). Scope: ChatGPT Free/Plus/Pro/Team and API users without a ZDR agreement are affected; ChatGPT Enterprise, ChatGPT Edu, and ZDR API endpoints are not. The order covered \"deleted ChatGPT chats and API content that would typically be automatically removed from our systems within 30 days.\" Data is held in a segregated system under legal hold, accessible to \"a small, audited OpenAI legal and security team.\" On May 27 the magistrate judge \"clarified that ChatGPT Enterprise is excluded.\" Oct. 22 update: obligations \"ended on September 26, 2025\"; the NYT \"continues to demand that OpenAI keep a specific set of user data from April-September 2025,\" which OpenAI will store but \"will not be turned over.\"\n- **Key passages:** \"we are no longer under a legal order to retain consumer ChatGPT and API content indefinitely. Our obligations under the earlier order ended on September 26, 2025.\" / \"The New York Times is demanding that we retain even deleted ChatGPT chats and API content that would typically be automatically removed from our systems within 30 days.\" / \"This does not impact API customers who are using Zero Data Retention endpoints under our ZDR amendment.\" / \"Only a small, audited OpenAI legal and security team would be able to access this data\".\n- **Reliability:** Primary for OpenAI's position and for the scope of affected accounts; an interested party (calls the demand \"baseless\" and an \"overreach\").\n- **Relevance to this project:** Confirms the enterprise/ZDR exemptions and the Sept. 26 end date; documents that a segregated, legally held archive of consumer conversations existed for ~4.5 months.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 292
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "87debb9480da51f210addb8bf461763389c9cf79e1556ebd6e32072f0f4260ef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/openai-response-to-nyt-data-demands.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nextgov-kelley-senate-testing-clash-2026-09-11.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6e7d6c67db93da05",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nextgov-kelley-senate-testing-clash-2026-09-11.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nextgov-kelley-senate-testing-clash-2026-09-11\n- **URL:** https://www.nextgov.com/artificial-intelligence/2026/09/lawmakers-clash-safety-testing-language-development-ai-legislation-people-familiar-say/415948/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Alexandra Kelley, Nextgov, Sept 11, 2026: Klobuchar–Thune self-testing-to-Commerce framework; Cantwell's federal-agency/national-lab alternative; Anthropic and safety groups 'refusing to play ball' per a source; August markup cancelled; bill unreleased.\n- **Key passages:** 'safety tests of AI models be conducted by the companies themselves, who would later present results to the Commerce secretary for deployment approval.'\n- **Reliability:** Secondary; government-tech press.\n- **Relevance to this project:** Q1(b); Q5.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c9e5a635295f7e8ae40f7699111b6c75b67b8bbe87d45a0c3dc6b106a99a0e64",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nextgov-kelley-senate-testing-clash-2026-09-11.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/flock-langley-defense.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8845256f89e108b8",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "c058d41bd6da2870",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "5bc5562658cb2207",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/flock-langley-defense.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Flock Safety's self-description and defense (Langley, 2026)\n\n- **URL:** https://www.newsweek.com/flock-ceo-says-goal-isnt-a-dystopian-future-12316078 (read); supporting search results: CNN https://www.cnn.com/2026/08/13/tech/flock-cameras-police-auditing-controls, SF Chronicle https://www.sfchronicle.com/crime/article/flock-cameras-ceo-surveillance-policy-22384139.php, TED talk https://www.flocksafety.com/blog/flock-safety-ceo-garrett-langley-ted2026\n- **Accessed:** 2026-08-21\n\n**Establishes (misrepresentation check):** Langley's own framing, Aug. 2026: \"End goal isn't a dystopian future of surveillance; it's one where we all feel safe\"; \"Data is a liability, not an asset\"; hard deletion claims; \"We got that one wrong\" (mandatory case codes/audits, effective Jan. 1); \"If Flock was pushing toward mass surveillance, why would this company... be so transparent?\"; cites ~30 court rulings upholding use, 1,000+ missing persons and 20,000+ stolen vehicles located in July alone. The draft's §III (cancellations, misuse allegations, 30-to-7-day retention change) is consistent with this record and is fair; the strongest company rebuttal it could face is the crime-clearance benefit, which §XV's design frame absorbs rather than denies.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 134
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8dacd0a0a403eb5f80545687b4fd04c32b3c6ef9d26d1b343f3dd1e471b44cc7",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/flock-langley-defense.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hf-glm-5-2-model-card.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "36a8b8a42d306049",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hf-glm-5-2-model-card.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hf-glm-5-2-model-card\n- **URL:** https://huggingface.co/zai-org/GLM-5.2 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** License MIT; organization Z.ai. Does not itself say \"Beijing\" (Fortune does). No mention of the incident.\n- **Key passages:** \"MIT open-source license — no regional limits, technical access without borders.\"\n- **Reliability:** Primary (publisher's model card).\n- **Relevance to this project:** C7; ref [3].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 56
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "66757840eb3473cad441ba114a0499e93f61cd3b5f751b4431e26353e65d05f3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hf-glm-5-2-model-card.md",
+ "kind": "artifact-page"
+}

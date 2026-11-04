@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hutchins-1995-cognition-in-the-wild.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "51ca6a4d820f85a6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hutchins-1995-cognition-in-the-wild.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hutchins-1995-cognition-in-the-wild\n- **URL:** https://openlibrary.org/isbn/9780262581462.json and https://openlibrary.org/search.json?title=cognition+in+the+wild&author=hutchins ; corroboration at https://plato.stanford.edu/entries/embodied-cognition/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C13\n- **What it establishes:** Edwin Hutchins, *Cognition in the Wild* (Cambridge, MA: MIT Press, 1995; Bradford Books paperback 1996, ISBN 9780262581462, 408 pp.). Exists. The MIT Press product page and MIT Press Direct both returned 403 to my fetches, so bibliographic data comes from Open Library (first publish year 1995) and the Stanford Encyclopedia of Philosophy, which cites it as the exemplar of cognition distributed across a crew and its instruments. I did not read the book text.\n- **Key passages:** SEP, \"Embodied Cognition\": \"The cognitive load required to navigate a large Navy vessel exceeds the capacity of any single individual, but can be distributed across a number of specialists, each with his or her own particular task (Hutchins 1996).\" SEP bibliography: \"Hutchins, Edwin, 1996, Cognition in the Wild (second printing), Cambridge, MA: MIT Press.\"\n- **Reliability:** Secondary confirmation only (library catalogue + SEP). Adequate for an existence/attribution claim at Tier 2; not adequate for quoting Hutchins.\n- **Relevance to this project:** C13; the \"people-plus-artifacts\" framing. \"Standard source\" is a fair characterization (SEP uses it as the canonical example) but is a judgment, not a fact; phrase it as \"the classic study\" rather than \"the standard source\".\n",
+  "meters": {
+   "readMin": 1,
+   "words": 211
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "12c6c3df29b1dae1dea093791fd4162af1c35e8b4f1f997919288613565d9401",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/hutchins-1995-cognition-in-the-wild.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# Flock Safety's self-description and defense (Langley, 2026)
+
+- **URL:** https://www.newsweek.com/flock-ceo-says-goal-isnt-a-dystopian-future-12316078 (read); supporting search results: CNN https://www.cnn.com/2026/08/13/tech/flock-cameras-police-auditing-controls, SF Chronicle https://www.sfchronicle.com/crime/article/flock-cameras-ceo-surveillance-policy-22384139.php, TED talk https://www.flocksafety.com/blog/flock-safety-ceo-garrett-langley-ted2026
+- **Accessed:** 2026-08-21
+
+**Establishes (misrepresentation check):** Langley's own framing, Aug. 2026: "End goal isn't a dystopian future of surveillance; it's one where we all feel safe"; "Data is a liability, not an asset"; hard deletion claims; "We got that one wrong" (mandatory case codes/audits, effective Jan. 1); "If Flock was pushing toward mass surveillance, why would this company... be so transparent?"; cites ~30 court rulings upholding use, 1,000+ missing persons and 20,000+ stolen vehicles located in July alone. The draft's §III (cancellations, misuse allegations, 30-to-7-day retention change) is consistent with this record and is fair; the strongest company rebuttal it could face is the crime-clearance benefit, which §XV's design frame absorbs rather than denies.

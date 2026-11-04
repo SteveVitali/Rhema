@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/doj-letter-us-v-kim-jun-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9aa3aeeed3a9ed2b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/doj-letter-us-v-kim-jun-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# doj-letter-us-v-kim-jun-2026\n- **URL:** https://fingfx.thomsonreuters.com/gfx/legaldocs/xmpjxkkompr/DOJ%20response%20Kim%20quash%20OpenAI%20records%202026.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** DOJ letter to Judge Schofield, June 17, 2026, U.S. v. Richard Kim, 25 Cr. 359: § 2703 warrants issued May 21, 2026 to OpenAI and Anthropic for seven accounts; prompts to ChatGPT on Kim's devices supplied probable cause; SCA gives customers no standing to quash; remedy is suppression.\n- **Key passages:** \"two warrants ... for electronic content and other information stored in seven accounts held by the defendant at two artificial intelligence companies, Anthropic PBC and OpenAI OpCo, LLC\" · \"numerous prompts Kim submitted to ChatGPT related to the development of Zero Edge\"\n- **Reliability:** Primary (court filing); government party; factual assertions are the prosecution's.\n- **Relevance to this project:** Report §6; draft l.232, l.276.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 127
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "884088095866fa3023ef7b948c183207e175af75a1af838058affb2a95d90ffa",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/doj-letter-us-v-kim-jun-2026.md",
+ "kind": "artifact-page"
+}

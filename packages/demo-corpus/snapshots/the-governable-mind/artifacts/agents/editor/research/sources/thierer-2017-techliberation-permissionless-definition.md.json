@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/thierer-2017-techliberation-permissionless-definition.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1d7618a735205a47",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/thierer-2017-techliberation-permissionless-definition.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thierer-2017-techliberation-permissionless-definition\n- **URL:** https://techliberation.com/2017/05/18/does-permissionless-innovation-even-mean-anything/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Adam Thierer, May 18, 2017: \"Permissionless innovation refers to the notion that experimentation with new technologies and business models should generally be permitted by default. Unless a compelling case can be made that a new invention will bring serious harm to society, innovation should be allowed to continue unabated and problems, if any develop, can be addressed later.\" Denies it is \"synonymous with anarchy\"; prefers \"flexible, bottom-up solutions of an ex post (responsive) nature.\"\n- **Key passages:** as quoted.\n- **Reliability:** Primary (author's own statement of his term; same wording as the 2016 book).\n- **Relevance to this project:** Agenda 10 (l.288): the quotation is verbatim; the draft's inversion is fair, and Thierer's own \"not anarchy\" gloss supports rather than undercuts it.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 135
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "de32bd32d1633e01465d97867d25cd63ce1d248aaf4c38bdb2cf545e28165871",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/thierer-2017-techliberation-permissionless-definition.md",
+ "kind": "artifact-page"
+}

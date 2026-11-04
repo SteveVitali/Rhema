@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/blaze-1994-eesproto.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d001eaba794ccb50",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/blaze-1994-eesproto.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# blaze-1994-eesproto\n- **URL:** https://www.mattblaze.org/papers/eesproto.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C49/C79: 42 minutes = 38 ms × 2^16 trials on a Mykotronx prototype PCMCIA EES card; what is forged is a random LEAF whose 16-bit checksum validates, so the wiretapper gets random bits instead of the session key. Caveat: too slow for real-time voice; parallelizable.\n- **Key passages:** 'a rogue PCMCIA application can search for a valid-looking LEAF in 38 ∗ 2^16 ms, or 2,490,368 ms, which is about 42 minutes.' / '42 minutes obviously adds too much latency … to be useful in real-time applications such as secure telephone calls.'\n- **Reliability:** Primary (author preprint, Aug 20, 1994; ACM CCS Nov 1994).\n- **Relevance to this project:** C49, C79\n",
+  "meters": {
+   "readMin": 1,
+   "words": 123
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "04977ee389ad3d9910add41c31b5e872e668a35ddff6ec55abfec57f26ff6158",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/blaze-1994-eesproto.md",
+ "kind": "artifact-page"
+}

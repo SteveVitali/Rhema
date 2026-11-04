@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/casper-open-technical-problems-open-weight-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0a6b5ad306db6dd1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/casper-open-technical-problems-open-weight-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# casper-open-technical-problems-open-weight-2026\n- **URL:** https://arxiv.org/html/2608.07514 and https://arxiv.org/abs/2608.07514 (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K3)\n- **What it establishes:** Casper, O'Brien, Longpre, Seger, Klyman, Bommasani, Nrusimha, Shumailov, Mindermann, Basart, Rudzicz, Pelrine, Ghosh, Strait, Kirk, Hendrycks, Henderson, Kolter, Irving, Gal, Bengio, Hadfield-Menell, \"Open Technical Problems in Open-Weight AI Model Risk Management.\" arXiv:2608.07514v1 [cs.CY]; abs page: \"[Submitted on 1 Jul 2026]\", \"Published in Transactions on Machine Learning Research (03/2026)\". (The 2608 identifier and the 1 Jul stamp do not match each other; cite as arXiv:2608.07514 / TMLR 2026 and avoid a day-level date.) The \"6 to 12 months\" figure is NOT the paper's own measurement; it is a citation to Cottier (2024) and Maslej et al. (2025). The paper is a research agenda (16 open technical challenges) and proposes NO capability or compute threshold for release; \"threshold\" appears only in the two Introduction sentences quoted below.\n- **Key passages:**\n  - Intro: \"Simultaneously, proprietary model developers have reported that their models are approaching critical risk thresholds (Google AI, 2025; Anthropic, 2025; OpenAI, 2025a). Meanwhile current work estimates that the capabilities of frontier open-weight models only lag 6 to 12 months behind (Cottier, 2024; Maslej et al., 2025). This suggests that open-weight models could soon cross critical capability thresholds.\"\n  - Later (staged deployment, \"Significance\"): \"research showing open-weight model capabilities to consistently be only 6-12 months behind frontier proprietary models (Cottier, 2024; Maslej et al., 2025).\"\n  - Abstract: \"managing their risks is also challenging because they can be modified arbitrarily, used without oversight, and spread irreversibly.\" · \"we present 16 open technical challenges for open-weight model safety involving training data, training algorithms, evaluations, deployment, and ecosystem monitoring.\"\n- **Reliability:** Primary, peer-reviewed (TMLR); authors include UK AISI staff and a Hugging Face researcher. The lag figure is secondhand and rests on 2024–25 data; AISI's July 2026 cyber measurement (4 to 7 months) is the fresher number.\n- **Relevance to this project:** Verifies the wording; the essay must attribute \"6 to 12 months\" to the estimates Casper et al. cite, not to a Casper et al. finding, and must not say the paper proposes a threshold.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 347
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "087cdca140d990b1f0c953de8627b4d03cce566263adfdcd4c126cd9646460cf",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/casper-open-technical-problems-open-weight-2026.md",
+ "kind": "artifact-page"
+}

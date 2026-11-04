@@ -1,0 +1,6 @@
+# petrie-flexheg-part-i-2025
+- **URL:** https://arxiv.org/abs/2506.15093 (PDF, 37 pp., text extracted locally) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice N (item N3, cross-check)
+- **What it establishes:** Part I is framed throughout around data centers ("Such a framework could cover all or nearly all relevant data center compute", PDF p. 14) but contains NO express exclusion of consumer devices. Its only mention of consumer hardware: "Occasionally rogue actors might attempt to stockpile non-flexHEG AI chips or consumer GPUs [24], but AI supported intelligence agencies could discover and stop them before they could do real harm." (PDF p. 14).
+- **Key passages:** as above; keyword search for "consumer" and "personal device/computing" returned only that sentence and the Grunewald reference.
+- **Reliability:** Primary; arXiv preprint (ARIA-commissioned report series).
+- **Relevance to this project:** The essay's "expressly not for the devices people own" is supported for Part I only by implication (datacenter framing), not by an express statement. Only Shavit 2023 and Sastry et al. 2024 state the exclusion expressly. Citation: James Petrie, Onni Aarne, Nora Ammann, David Dalrymple, "Flexible Hardware-Enabled Guarantees for AI Compute," arXiv:2506.15093 (18 June 2025).

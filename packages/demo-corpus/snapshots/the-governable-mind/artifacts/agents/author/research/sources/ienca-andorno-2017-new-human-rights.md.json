@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ienca-andorno-2017-new-human-rights.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "25801d8f01353270",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ienca-andorno-2017-new-human-rights.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ienca-andorno-2017-new-human-rights\n- **URL:** https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5447561/fullTextXML (open-access full text) and https://api.crossref.org/works/10.1186/s40504-017-0050-1 ; publisher page https://link.springer.com/article/10.1186/s40504-017-0050-1 blocked by bot challenge · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C20\n- **What it establishes:** Marcello Ienca & Roberto Andorno, \"Towards new human rights in the age of neuroscience and neurotechnology,\" *Life Sciences, Society and Policy* 13, article 5 (26 April 2017), doi 10.1186/s40504-017-0050-1, PMID 28444626, PMCID PMC5447561, CC BY. Proposes exactly the four rights named in the outline.\n- **Key passages:** Abstract: \"we identify four new rights that may become of great relevance in the coming decades: the right to cognitive liberty, the right to mental privacy, the right to mental integrity, and the right to psychological continuity.\" Body: \"The right to mental privacy is a neuro-specific privacy right which protects private or sensitive information in a person's mind from unauthorized collection, storage, use, or even deletion — in digital form or otherwise.\" / \"the right to mental privacy stands to protect information prior to any extra-cranial externalization (e.g. in verbal or printed format) as well as the generator of such information (a person's neural processing).\" / \"The right to psychological continuity can be seen as a special neuro-focused instance of the right to identity.\" Opening of section 2: \"For a long time, the boundaries of the skull have been generally considered the separation line between the observable and unobservable dimension of the living human being.\"\n- **Reliability:** Primary, peer-reviewed, open access. The paper is a normative proposal (\"towards\"), not a description of existing law; the four rights are the authors' proposals, and only \"cognitive liberty\" pre-dates them (Sententia, Boire).\n- **Relevance to this project:** C20; the neurorights section. The \"boundaries of the skull\" sentence is a good companion to Bublitz/Richards on the inaccessibility premise.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 286
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f390ea66f7bbd8939bb5368fc9f48bd3c9c726e77848b45ba8890dbe5a994dd5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/ienca-andorno-2017-new-human-rights.md",
+ "kind": "artifact-page"
+}

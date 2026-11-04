@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/orwell-1946-politics-and-the-english-language.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "40e492ab2944e963",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/orwell-1946-politics-and-the-english-language.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# orwell-1946-politics-and-the-english-language\n- **URL:** https://www.orwellfoundation.com/the-orwell-foundation/orwell/essays-and-other-works/politics-and-the-english-language/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C41\n- **What it establishes:** Full text of \"Politics and the English Language\" (*Horizon*, April 1946), reproduced by the Orwell Foundation with permission of the Orwell Estate. Confirms exact wording of the corruption line and the euphemism/ready-made-phrase passages.\n- **Key passages:** \"But if thought corrupts language, language can also corrupt thought. A bad usage can spread by tradition and imitation, even among people who should and do know better.\" · \"Defenceless villages are bombarded from the air, the inhabitants driven out into the countryside, the cattle machine-gunned, the huts set on fire with incendiary bullets: this is called pacification.\" · \"Such phraseology is needed if one wants to name things without calling up mental pictures of them.\" · \"In our time, political speech and writing are largely the defence of the indefensible.\" · \"It is easier – even quicker, once you have the habit – to say In my opinion it is not an unjustifiable assumption that than to say I think.\"\n- **Reliability:** Primary; authorized host.\n- **Relevance to this project:** C41 — language corrupting thought; euphemism.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 185
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "72c2cde3664bb75ce683af2adfb75e18664d0c9a7063d0c32352993c0f4ebe53",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/orwell-1946-politics-and-the-english-language.md",
+ "kind": "artifact-page"
+}

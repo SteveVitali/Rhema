@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gizmodo-anthropic-id-checks-2026-06-23.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3b629b7b1887c2dc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/gizmodo-anthropic-id-checks-2026-06-23.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gizmodo-anthropic-id-checks-2026-06-23\n- **URL:** https://gizmodo.com/anthropics-new-id-checks-for-claude-wont-save-fable-5-from-trumps-ban-2000776170 · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (why ID checks don't satisfy nationality control)\n- **What it establishes:** Webb Wright, June 23, 2026. Policy update announced June 8, effective July 8; \"applies only to a small subset of users\"; requires government ID plus \"a 'live selfie'\". Persona \"contractually limited\" in data use. Explains that a government ID does not prove citizenship, so the checks would not satisfy an export-control nationality requirement. Repeats Shihipar's \"unrelated to the Fable or Mythos rollout.\"\n- **Key passages:**\n  - \"uploading a government-issued ID doesn't always prove U.S. citizenship: In most states, driver's licenses don't include that information, and licenses can also be obtained by foreign nationals staying in the country on a visa.\"\n  - Anthropic: the update \"applies only to a small subset of users.\"\n- **Reliability:** Secondary, tech press.\n- **Relevance to this project:** Supports the point that identity verification and nationality verification are different problems; the labs' identity gates do not answer the Commerce directive's nationality key.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 164
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "58be19d7c0bee04d450ad6ca114308510934f4cb2ad838b90a7626f0d258bfe9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/gizmodo-anthropic-id-checks-2026-06-23.md",
+ "kind": "artifact-page"
+}

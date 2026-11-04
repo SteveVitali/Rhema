@@ -1,0 +1,123 @@
+{
+ "dto": {
+  "artifactKind": "drafting_note",
+  "artifactPath": "correspondence/v1-drafting-note.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8197dbdb1bf8d479",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "b2f3241838ed3f87",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "b5292e1949fda528",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "cf9de34a91c10642",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "e07044d0813c9968",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "232b5709ecf6b220",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "cb655e70ce04fbf6",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "0b029c1ae73f5f9a",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "1b01d55f438e7f97",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "6bca63266a27a541",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "b00504ff660106ad",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "b108f5d332cb4466",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "b0a8de085ef42dfa",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "d3bd596e1fc897ab",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "df5a4fb624660f66",
+    "ordinal": 22
+   },
+   "b3": {
+    "contentHash": "d5c2c6351a439f0c",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "a5205c2d226044c3",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "d2fa3f48272f5bb5",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "a3bc2c14a90490c7",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "e9560fb7a040e809",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "96801f878f76bfb6",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "c1f65fac0545ae45",
+    "ordinal": 9
+   }
+  },
+  "demo": {
+   "notPublishedRefs": [
+    {
+     "line": 5,
+     "path": "agents/author/outline/1_article_sketch_and_outline.md"
+    }
+   ]
+  },
+  "draftId": "correspondence/v1-drafting-note.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Drafting note — v1, 2026-08-20\n\n`draft-from-outline` run against persona `the S. J. Sebastian corpus` (profile built\n2026-08-20, verdict fresh; resolved via the workspace personas directory).\nSource: `agents/author/outline/1_article_sketch_and_outline.md`. The writer\napproved the structure plan at the Phase 2 gate (\"approved, proceed\"),\nconfirming title, length, appendix, and the Comey mention.\n\n## The piece as drafted\n\n- **Title:** *The Politics of Visibility* — *Surveillance and the Conditions\n  of Democratic Freedom* (the manifest's working title; the outline's\n  internal favorite, *The Architecture of Fear*, was declined as off the\n  corpus's title register).\n- **Thesis:** authoritarianism is a capacity as well as a regime type; a\n  democracy can accumulate the machinery of political control — legally,\n  largely through private infrastructure — long before its regime type\n  changes; the constitutional question this forces is what the state must be\n  structurally prevented from knowing.\n- **Length:** ~9,700 words body + coda, ~280-word appendix, 51 numbered\n  references (target 10,000–10,500 incl. appendix; corpus ceiling 10,400).\n- **Shape:** epigraph (Scott: \"Legibility is a condition of manipulation.\"),\n  unnumbered opening (\"The Conspiracy\"), fifteen roman-numeral sections,\n  unnumbered coda (\"Freedom Before the Knock\") that completes the epigraph\n  and title, compact security-baseline appendix.\n\n## Decisions among the outline's alternatives\n\n- Title and subtitle as above; appendix included (austere, links outward)\n  rather than spun off as a companion piece.\n- Epigraph: Scott rather than Fraenkel (whose definitional sentence is too\n  long for the venue's epigraph practice) or Shklar (quoted at full strength\n  in §XI instead).\n- Section titles adopt the outline's literary alternates where they fit the\n  declarative-title grammar (\"The Distance Between Danger and Dictatorship\").\n\n## Structural deviations from the outline (fidelity: adaptive; full log in the plan)\n\n1. Britain merged into the terrorism-law section; Hungary into the\n   calibration section; the standalone comparative ladder dissolved\n   (Russia/Hong Kong reduced to one boundary-condition sentence).\n2. Fraenkel and immigration merged into one section (the model and its\n   laboratory are one argument).\n3. \"What is actually new\" moved directly after the historical section, so the\n   steelman is answered when the reader raises it.\n4. The outline's last three theory sections (paradox / what-power-must-not-\n   know / friction) merged into one climax (§XV).\n5. The outline's second-person narrative opening recast as a documented\n   miniature built strictly from the AP/court record — the persona forbids\n   scene-setting and second person, and provenance rules forbid invented\n   scenes.\n6. Outline §XIII (the privatized security state) folded into §§III–IV; its\n   \"latent intelligence service\" slogan cut as over-claiming.\n7. NORMALIZATION, initially under-served, was installed as an explicit stage\n   (§IX close) after the fidelity audit flagged it — the one commitment the\n   first draft had missed.\n\n## Cuts (recoverable; recorded in the plan's cut list)\n\nOperational how-to detail (Signal settings, border procedures, Tor,\nSecureDrop deployment — companion-piece material; the appendix links to\nmaintained guides instead); the ten-item novelty and design-principle lists\ncompressed to prose; threat-model persona tiers compressed; extended Foucault\nexposition (outline's own warning); \"redundancy before crisis\" lesson (cut\nwith the tactical tier).\n\n## Verification: what changed under checking\n\nAll 48 inventoried claims were re-verified against fetched sources (six\nresearch subagents; ~90 source notes in `agents/author/research/`). Every\noutline citation carried a deep-research tracking parameter and started at zero trust.\nNothing was contradicted outright, but verification materially corrected:\n\n- **The Conspiracy diagram:** CWA and Sunrise Movement are financial-records\n  targets but not confirmed diagram entries; the draft keeps them off the\n  slide. \"Recorded conversations\" is Minnesota Reformer's report, attributed.\n- **Flock OS Investigate:** WIRED's story rests on code exposed through\n  Flock's own login pages (not \"obtained code\"); stated as such.\n- **UK litigation:** the outline's \"court upheld the ban\" concealed a seesaw\n  — the High Court found the proscription unlawful (\"ordinary criminal law\n  was available\"), the Court of Appeal reversed, the Supreme Court will\n  decide. The full posture is in the draft and strengthens its\n  checks-are-contested theme.\n- **The \"unconstitutional chilling\" finding** belongs to Judge Young in AAUP\n  v. Rubio, not to Khalil's own case; attributed accordingly.\n- **ICE/Paragon:** the acknowledgment letter names no vendor; DHS later\n  denied a relationship; a procurement notice recorded the contract closed\n  out — all three complications are carried, and the capability/use\n  distinction is explicit.\n- **Tocqueville:** the outline's quotation did not match any opened source;\n  the draft quotes the verified Reeve rendering (\"the mother of science\").\n- **Church Committee:** the famous five-part \"expose, disrupt…\" string is\n  Book III (unverified this round) and is not used; Book II wording is.\n- **ICE funding:** corrected to $75B/4yr, $45B detention, vs. a ~$9–10B prior\n  annual budget (Brennan Center).\n- **Churches:** the supporting case is Philadelphia Yearly Meeting v. DHS\n  (4th Cir., Aug. 18, 2026), not Mennonite (where the PI was denied).\n\n## Unverified-claims list\n\n**None shipped.** Zero `[unverified]` marks in the draft; every citation\nresolves to a Verified or Substantially-accurate ledger row. Three\nreport-level provenance flags for the next round:\n\n1. The UN experts' and High Commissioner's quoted language (C19b) was\n   verified via corroborated excerpts because ohchr.org blocks fetching —\n   re-verify against the live page before publication.\n2. The \"18 organizations\" count and \"The Conspiracy\" slide title trace to a\n   single origin (AP's reading of the court filings), though widely\n   syndicated; the draft attributes to the filings as reported.\n3. The Home Office arrest statistics reference cites the gov.uk statistics\n   portal generically; the specific quarterly release URL should be pinned\n   before publication.\n\n## What the audit left (report, not fix)\n\nFresh-context audit, two iterations; verdict **deliverable as-is**. Both\nmajors closed (normalization stage; correlational scoping of the Muslim-\nsurveillance turnout finding). Remaining, reported in the audit's own terms:\nparagraph median (~80 words) and single-sentence-paragraph share (~13%) sit\noutside the model piece's figures though inside the corpus's per-piece\nranges; semicolons 6.8/1k (corpus range 0–8, brief cap 6); parenthetical-\naside rate low for the long form; §XI is compact relative to its declared\nweight as the philosophical center; the ICE appropriation is framed inside\nthe classification argument (an interpretive choice, flagged); Palantir\nfacts are cited to the ACLU compilation without in-prose attribution; the\nopening paragraph deliberately carries no negation-then-correction (the\ndocumented miniature opens factually; the signature first lands in\nparagraph four). Reference count (51) is at the corpus ceiling (49), above\nthe plan's 30–40 estimate — the piece's factual density is the reason;\ntrimming citations would mean trimming claims.\n\n## Open questions for the human\n\n1. Whether to keep the appendix's bold tier labels (venue-borderline).\n2. Whether §XI should grow ~150 words to match its declared weight, at the\n   cost of the current pacing (the audit flags it; the author judges the\n   compression intentional).\n3. Pre-publication: re-verify the OHCHR quotations and pin the Home Office\n   release URL (flags 1 and 3 above).\n\n## Natural next step\n\nAn `editorial-review` round on `drafts/v1.md`.\n",
+  "meters": {
+   "readMin": 4,
+   "words": 1060
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c91f6f24b748386a585944f3e5f7038dba88893d76f892746d257400e18373be",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "correspondence/v1-drafting-note.md",
+ "kind": "artifact-page"
+}

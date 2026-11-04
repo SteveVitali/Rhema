@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hf-state-of-open-models-summer-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5bfb30ba7f6ea7d2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hf-state-of-open-models-summer-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hf-state-of-open-models-summer-2026\n- **URL:** https://huggingface.co/blog/state-of-open-models-summer-2026 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Hugging Face (Yakefu, Apolinário, Solaiman), Aug 14, 2026: empirical observations on releases, downloads, Chinese vs US frontier, Qwen derivatives, llama.cpp, agent traffic. No policy content.\n- **Key passages:** n/a\n- **Reliability:** Primary; interested platform.\n- **Relevance to this project:** Q1(c): negative result; HF's policy voice is the Nvidia letter and Delangue's posts.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 65
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "18272c8ef54cfd76a7cfd76027a740240d7750c5744714e01cc6bbdeac35156d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hf-state-of-open-models-summer-2026.md",
+ "kind": "artifact-page"
+}

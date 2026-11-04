@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/anthropic-claude-mythos-page.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "442f214cc295870f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/anthropic-claude-mythos-page.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-claude-mythos-page\n- **URL:** https://www.anthropic.com/claude/mythos · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D (Mythos 5.1 availability)\n- **What it establishes:** Anthropic's product page: \"Claude Mythos 5.1 is available to vetted cyberdefenders and life scientists through our trusted access programs.\" Two programs: Life Sciences Verification Program (\"invite-only beta ... reduced biology safeguards\") and the Cyber Verification Program (\"reduced cyber safeguards for defensive security work\"), which \"will include access to Mythos models in the near future.\" \"Currently, we're only able to make it available to a set of US organizations, though we're working to expand access.\" Project Glasswing extended to \"approximately 150 new organizations in more than fifteen countries.\"\n- **Key passages:**\n  - \"Claude Mythos 5.1 is available to vetted cyberdefenders and life scientists through our trusted access programs.\"\n  - \"Currently, we're only able to make it available to a set of US organizations, though we're working to expand access.\"\n- **Reliability:** Primary (company page; undated, live).\n- **Relevance to this project:** Direct support for the editor's Mythos 5.1 claim, plus the explicit US-organizations limitation, which links the trusted-access gate to the nationality question.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 176
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e5519d27582a5d4f915ac6f9796abfb8603bf52028b3b55c9747c3bc31072407",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/anthropic-claude-mythos-page.md",
+ "kind": "artifact-page"
+}

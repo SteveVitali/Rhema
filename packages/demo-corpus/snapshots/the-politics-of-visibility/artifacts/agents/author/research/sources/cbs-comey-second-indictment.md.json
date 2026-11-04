@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cbs-comey-second-indictment.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6e06d67f5ac59343",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cbs-comey-second-indictment.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cbs-comey-second-indictment\n- **URL:** https://www.cbsnews.com/news/james-comey-indicted-again-by-justice-dept/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C41\n- **What it establishes:** April 28, 2026: a federal grand jury in the Eastern District of North Carolina indicted James Comey on two counts over his May 2025 Instagram post of seashells arranged as \"86 47\": (1) knowingly and willfully threatening to take the life of / inflict bodily harm upon the President; (2) knowingly and willfully transmitting in interstate commerce a threat to kill the President. (Statutes, per DOJ OPA release and Volokh: 18 U.S.C. § 871(a) and § 875(c).) AUSA Matthew Petracca signed; Judge Louise Wood Flanagan assigned. Comey's FIRST indictment (late Sept. 2025, E.D. Va. — false statements to Congress and obstruction) was dismissed Nov. 2025 because prosecutor Lindsey Halligan was unlawfully appointed; DOJ appealed.\n- **Key passages:** Indictment: a \"reasonable recipient who is familiar with the circumstances\" would interpret the post \"as a serious expression of an intent to do harm to President Trump.\" Comey: \"this is not who we are as a country.\" Blanche: \"Threatening the life of the president of the United States will never be tolerated.\"\n- **Reliability:** Secondary; CBS News; contemporaneous; corroborated by DOJ press release (via search) and Volokh.\n- **Relevance to this project:** C41 — exact charges, indictment date, both-indictments history. Petracca later left the case (CBS, May 2026).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 217
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "279e543d36fe5d2f4092c60a5712ca592eb927fd9deb93bfb21f63231ebe7d0d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/cbs-comey-second-indictment.md",
+ "kind": "artifact-page"
+}

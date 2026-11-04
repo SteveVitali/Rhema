@@ -1,0 +1,7 @@
+# dewilde-cosmopolitan-communitarian
+
+- **URL:** https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA (abstract read; the draft's own [^6]) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** De Wilde, Langsæther & Özdemir: the cosmopolitanism-communitarianism divide is a globalization-era conflict (immigration, European integration; open borders/integration vs national sovereignty/cultural preservation). Their finding: "the globalization cleavage is significantly more developed in the UK than in Norway but **lacks a solidified normative component in both**."
+- **Key passages:** As quoted.
+- **Reliability:** Primary abstract.
+- **Relevance to this project:** Confirms the draft's terminology claim ("the academic literature often calls this the cosmopolitan–communitarian divide") — no strawman. Two caveats: (1) the canonical anchor is the broader de Wilde et al. *Struggle Over Borders* research program; citing this single article is a thin proxy; (2) the article's actual finding — the cleavage's normative foundations remain underdeveloped even in the UK — mildly cuts against treating Belonging as a fully crystallized public question; the draft cites it only for the label, which is defensible but slightly convenient.

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/blaze-1994-protocol-failure-ees.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ed93aa43fca43734",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/blaze-1994-protocol-failure-ees.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# blaze-1994-protocol-failure-ees\n- **URL:** https://www.mattblaze.org/papers/eesproto.pdf · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C31\n- **What it establishes:** Matt Blaze (AT&T Bell Laboratories), 'Protocol Failure in the Escrowed Encryption Standard', dated August 20, 1994; pre-print of a paper for the 2nd ACM Conference on Computer and Communications Security, Fairfax VA, November 1994. Shows the LEAF's 16-bit checksum can be brute-forced so devices interoperate without a valid LEAF, defeating escrow access.\n- **Key passages:** Abstract: \"This paper outlines various techniques that enable cryptographic communication among EES processors without transmission of the valid LEAF.\" Background: \"In April 1993, the Clinton Administration announced a proposed new federal standard symmetric-key encryption system\". \"The EES cipher algorithm, called 'Skipjack', is itself classified\". LEAF: \"a 32 bit unique unit identifier ... the current 80 bit session key (encrypted with the device's unit key) and a 16 bit LEAF checksum\". \"The LEAF checksum is, in fact, 16 bits. A brute-force search of the LEAF space for a valid LEAF requires about 2^16 operations.\" Timing: \"a rogue PCMCIA application can search for a valid-looking LEAF in 38 * 2^16 ms, or 2,490,368 ms, which is about 42 minutes.\" Also cites \"the two agencies holding the unit key database\".\n- **Reliability:** Primary (the paper itself, on the author's site).\n- **Relevance to this project:** C31: the technical claim is exactly right; note the attack was ~42 minutes per LEAF on the prototype (too slow for phone calls, fine for email/files), i.e., it defeated escrow rather than broke Skipjack.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 243
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "077dcbee30e49c0d88a4c2c4380068570eeaa9d6ca79e8ec365d34efe3bc4388",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/blaze-1994-protocol-failure-ees.md",
+ "kind": "artifact-page"
+}

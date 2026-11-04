@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/snowden-turnkey-tyranny.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "084c3d4017fdc022",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "a53ea8375a3335bf",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "a7e3bc4c41cb135f",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/snowden-turnkey-tyranny.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Snowden, June 2013 Guardian interview (\"turnkey tyranny\")\n\n- **URL:** full transcript read at https://www.mic.com/articles/47355/edward-snowden-interview-transcript-full-text-read-the-guardian-s-entire-interview-with-the-man-who-leaked-prism (orig. Guardian video interview with Greenwald, June 9, 2013)\n- **Accessed:** 2026-08-21\n\n**Establishes:** The popular ur-statement of the draft's thesis. Verbatim: the \"architecture of oppression\" extended by successive generations; and \"a new leader will be elected, they'll find the switch, say that 'Because of the crisis... we need more authority, we need more power.' And there will be nothing the people can do at that point to oppose it. And it will be turnkey tyranny.\" The capacity-precedes-regime idea in one sentence, thirteen years before the draft. See also Binney's earlier \"turnkey totalitarian state\" (Bamford, Wired, 2012; per search results incl. https://privacysos.org/blog/we-are-like-that-far-from-a-turnkey-totalitarian-state/).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 113
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f1c5cf317c49e2df413d7114e82df509fd6f3e7bb731f5e0324cead1749b66b8",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/snowden-turnkey-tyranny.md",
+ "kind": "artifact-page"
+}

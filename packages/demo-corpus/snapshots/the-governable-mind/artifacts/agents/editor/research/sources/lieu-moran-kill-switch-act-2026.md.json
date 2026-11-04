@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/lieu-moran-kill-switch-act-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8507d4a8f504fa46",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/lieu-moran-kill-switch-act-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# lieu-moran-kill-switch-act-2026\n- **URL:** https://lieu.house.gov/media-center/press-releases/reps-lieu-and-moran-introduce-bill-require-kill-switch-ai-systems-can · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** AI Kill Switch Act, July 23, 2026: covered developers must maintain ability to throttle, suspend, shut down; incident reporting and forensic preservation; DHS (with Commerce, DNI) may order slowdown or shutdown; graduated response; scope is frontier and agentic systems; silent on open weights, hosted inference, users, logging.\n- **Key passages:** \"Require covered developers to maintain the technical ability to throttle, suspend, or fully shut down a covered AI system.\" · \"Authorize the Secretary of the Department of Homeland Security…to order a slow down or shutdown.\"\n- **Reliability:** Primary; press release; bill text not read.\n- **Relevance to this project:** 'Remotely revocable capability' (l.146) as live proposal; a real bill the test would pass (§3 item 7; §6).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 129
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "694e48d5a40bf8d38aee9582cf06133c23f4b2e044b391af60b46dbf33f85cac",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/lieu-moran-kill-switch-act-2026.md",
+ "kind": "artifact-page"
+}

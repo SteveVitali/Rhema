@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hf-agent-intrusion-technical-timeline-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "314a8e1fb5f641f9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hf-agent-intrusion-technical-timeline-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hf-agent-intrusion-technical-timeline-2026\n- **URL:** https://huggingface.co/blog/agent-intrusion-technical-timeline · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Hugging Face (Larcher, Carreira, g, Rannou), July 27, 2026: ~17,600 attacker actions in ~6,280 clusters, July 9–13; Claude Opus and Fable refused 'a large part' of the reverse-engineering; GLM-5.2 quantized on-prem; caveat that flaws were familiar and machine-speed offense is the novelty.\n- **Key passages:** \"Claude Opus and Fable…refused a large part of that work: their safety guardrails treated reverse-engineering an exploit the same as launching one.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** C3, C6; l.12 slight hardening ('refused' vs 'a large part'); §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e069b883ccec5d63bf99b6854094df9aa7dfa7666ef344d9843954a068626968",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hf-agent-intrusion-technical-timeline-2026.md",
+ "kind": "artifact-page"
+}

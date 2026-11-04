@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/deazley-2008-commentary-stationers-charter-1557.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f5344683d66cdee3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/deazley-2008-commentary-stationers-charter-1557.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# deazley-2008-commentary-stationers-charter-1557\n- **URL:** https://www.copyrighthistory.org/cam/commentary/uk_1557/uk_1557_com_972007121517.html · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C28, C29\n- **What it establishes:** Ronan Deazley (2008), 'Commentary on the Stationers' Royal Charter 1557', in Primary Sources on Copyright (1450–1900), eds Bently & Kretschmer. Lays out the charter's grants, Mary's regulatory motive, and the Clegg-influenced view that Tudor censorship was ad hoc and not run primarily through the Company. The charter image itself on the site is not transcribed as text.\n- **Key passages:** Abstract: \"censorship of the press throughout the Tudor period remained an essentially ad hoc and reactive phenomenon, and that both Mary and Elizabeth relied, not primarily upon the Company of Stationers, but on the use of statutory instruments and royal proclamations\". Motive: \"Mary's purpose in chartering the 'mystery of Stationers' was to provide means of regulating the press.\" Grants (quoting Clegg): \"rights of property ownership, self-regulation, keeping apprentices, and engaging in searches to protect the trade from 'foreigners' (non-members) and poor workmanship.\" Note 24: \"at times the company did play an active role in searching for and confiscating printed material declared illegal by the state ... However it is equally true that these searches were often carried out by non-stationers\".\n- **Reliability:** Secondary, scholarly (AHRC-funded project, Cambridge/Bournemouth); Deazley is a leading copyright historian. Independent of the outline's sources.\n- **Relevance to this project:** Tempers C28: the Company was a trade body first; search/seizure was real but shared with High Commission agents. Supplies the Clegg thesis for C29 at second hand.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 243
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "07378823b65a0e1e066f0db4788d23aadfffc463bd53366c9fd996b61f7ad587",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/deazley-2008-commentary-stationers-charter-1557.md",
+ "kind": "artifact-page"
+}

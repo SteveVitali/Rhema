@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/blitz-2010-freedom-of-thought-extended-mind.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f81ef72bbd1abef0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/blitz-2010-freedom-of-thought-extended-mind.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# blitz-2010-freedom-of-thought-extended-mind\n- **URL:** https://scholarship.law.okcu.edu/downloads/d7kcg-2ck33/fulltext.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Blitz, 2010 Wis. L. Rev. 1049 (read in full). Freedom of thought protects 'activity that is the functional equivalent of thought' including journals and iPhones, built on Clark & Chalmers and the diary; concern is state prohibition of cognitive tools, not surveillance.\n- **Key passages:** \"activity that is either (1) the functional equivalent of thought, or (2) a reshaping of the self that does that thinking\" · \"If Otto receives First Amendment protection when he inscribes the information he perceives into a journal, why not ... a brain chip\" · \"someone's regular and automatic use of a journal or iPhone to recall information\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §1.1, §2, §3: the direct predecessor of the 'externalized forum internum' move (draft l.82–86).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7a3643f57cbe862b5811099cfc7e27bc35068bb26f6d36febe44a4daf3363e6f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/blitz-2010-freedom-of-thought-extended-mind.md",
+ "kind": "artifact-page"
+}

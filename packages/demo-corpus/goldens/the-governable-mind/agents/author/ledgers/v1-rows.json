@@ -1,0 +1,686 @@
+{
+ "rows": [
+  {
+   "disposition": "adapt (+escalation F73 resolved)",
+   "entry": true,
+   "findingOrdinal": 1,
+   "id": "F1",
+   "moveOrdinal": 15,
+   "source": "Letter §Major 1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 2,
+   "id": "F2",
+   "moveOrdinal": 6,
+   "source": "Letter §Major 2, part one; ledger C15",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 2,
+   "id": "F3",
+   "moveOrdinal": 8,
+   "source": "Letter §Major 2, part two; legal report §6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 3,
+   "id": "F4",
+   "moveOrdinal": 8,
+   "source": "Letter §Major 3(a); legal report §1.1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 3,
+   "id": "F5",
+   "moveOrdinal": 8,
+   "source": "Letter §Major 3(b); legal report §1.2, §1.3, §4′(A)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 3,
+   "id": "F6",
+   "moveOrdinal": 8,
+   "source": "Letter §Major 3(c)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 3,
+   "id": "F7",
+   "moveOrdinal": 8,
+   "source": "Letter §Major 3(d); second read (ii)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 4,
+   "id": "F8",
+   "moveOrdinal": 9,
+   "source": "Letter §Major 4(a); second read (i)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 4,
+   "id": "F9",
+   "moveOrdinal": 9,
+   "source": "Letter §Major 4(b)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 4,
+   "id": "F10",
+   "moveOrdinal": 9,
+   "source": "Letter §Major 4(c); policy report §4(b)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 4,
+   "id": "F11",
+   "moveOrdinal": 14,
+   "source": "Letter §Major 4(d); ledger C69",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 5,
+   "id": "F12",
+   "moveOrdinal": 16,
+   "source": "Letter §Major 5; second read (iii)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 6,
+   "id": "F13",
+   "moveOrdinal": 6,
+   "source": "Letter §Major 6(a); second read (i)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 6,
+   "id": "F14",
+   "moveOrdinal": 6,
+   "source": "Letter §Major 6(b); ledger C1, C5, C6",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 6,
+   "id": "F15",
+   "moveOrdinal": 15,
+   "source": "Letter §Major 6(c)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 7,
+   "id": "F16a",
+   "moveOrdinal": 1,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16b",
+   "moveOrdinal": 4,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16c",
+   "moveOrdinal": 2,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16d",
+   "moveOrdinal": 4,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16e",
+   "moveOrdinal": 5,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → conservative (F74)",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16f",
+   "source": "Letter §Major 7; second read (v); open question 2",
+   "status": "resolved"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F16g",
+   "source": "Roadmap 1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F16h",
+   "moveOrdinal": 17,
+   "source": "Letter §Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (per item, in the block)",
+   "entry": true,
+   "findingOrdinal": 19,
+   "id": "F17",
+   "moveOrdinal": 18,
+   "source": "Letter §Minor (uncited work)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 20,
+   "id": "F18",
+   "moveOrdinal": 1,
+   "source": "Letter §Minor; ledger C25, C40, C44",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 21,
+   "id": "F19",
+   "moveOrdinal": 1,
+   "source": "Letter §Minor; ledger C19, C69, C17, C55, C72",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 22,
+   "id": "F20",
+   "moveOrdinal": 3,
+   "source": "Letter §Minor; ledger C5, C47, C10",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (Williams: see F35)",
+   "entry": true,
+   "findingOrdinal": 23,
+   "id": "F21",
+   "moveOrdinal": 20,
+   "source": "Letter §Minor; ledger refs",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 24,
+   "id": "F22",
+   "moveOrdinal": 2,
+   "source": "Letter §Minor (continuity)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 25,
+   "id": "F23",
+   "moveOrdinal": 1,
+   "source": "Letter §Minor; second read",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 26,
+   "id": "F24",
+   "moveOrdinal": 9,
+   "source": "Letter §Minor; second read",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 27,
+   "id": "F25",
+   "moveOrdinal": 2,
+   "source": "Letter §Minor; second read",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → conservative for the title/subtitle (F76); adapt for §XV's title",
+   "entry": true,
+   "findingOrdinal": 28,
+   "id": "F26",
+   "moveOrdinal": 4,
+   "source": "Letter §Minor (title/subtitle); craft notes",
+   "status": "done (§XV) / resolved (title)"
+  },
+  {
+   "disposition": "escalate → awaiting author (F77)",
+   "entry": true,
+   "findingOrdinal": 29,
+   "id": "F27",
+   "source": "Letter §Minor (disclosure); open question 5",
+   "status": "escalated"
+  },
+  {
+   "disposition": "accept (→ F2)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F28",
+   "source": "Ledger C15 (Misleading in context)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (→ F14)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F29",
+   "source": "Ledger C1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (the first five; the sixth declined as unnecessary)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F30",
+   "source": "Ledger C2, C7, C9, C11, C12, C13",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F31",
+   "source": "Ledger C18, C24, C32, C46, C49, C68",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F32",
+   "source": "Ledger C36",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F33",
+   "source": "Ledger C43",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F34",
+   "source": "Ledger C65",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F35",
+   "source": "Ledger C63",
+   "status": "rebutted"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F36",
+   "source": "Legal report §1.8",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F37",
+   "source": "Legal report §4′(C), §7 (philosophers of mind)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (Palermos, one clause; Carter and Palermos declined as a fourth citation for one point)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F38",
+   "source": "Legal report §3 (10, 11)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (→ M8)",
+   "entry": false,
+   "findingOrdinal": 2,
+   "id": "F39",
+   "moveOrdinal": 8,
+   "source": "Legal report §4′(D); letter §Major 2 direction",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F40",
+   "source": "Letter §Considered and rejected (editor's own)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F41",
+   "source": "Policy report §5 (OpenAI row)",
+   "status": "done"
+  },
+  {
+   "disposition": "defer (not in my verified notes; a new claim I cannot verify this round without re-extracting the 221-page PDF)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F42",
+   "source": "Policy report §4(a) end",
+   "status": "deferred"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 30,
+   "id": "F43",
+   "moveOrdinal": 18,
+   "source": "Policy report §7 (compute-governance authors); line notes (§XIV unsourced)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (one clause, credited as an interlocutor)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F44",
+   "source": "Policy report §3 (15), §4(b)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 35,
+   "id": "F45",
+   "moveOrdinal": 17,
+   "source": "Second read (ii), last sentence",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut",
+   "entry": false,
+   "findingOrdinal": 7,
+   "id": "F46",
+   "source": "Second read verdict (\"about a third too long … near 8,000 words\")",
+   "status": "rebutted"
+  },
+  {
+   "disposition": "rebut (the chronology point within it is accepted as F14)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F47",
+   "source": "Second read (suspicious claims)",
+   "status": "rebutted"
+  },
+  {
+   "disposition": "adapt (fold the echoes only)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F48",
+   "source": "Second read (smaller notes)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F49",
+   "source": "Second read (smaller notes)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (→ F16a)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F50",
+   "source": "Craft notes §7 (quotation as argument)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 31,
+   "id": "F51",
+   "moveOrdinal": 10,
+   "source": "Line notes (terms before earned); craft notes §6",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 32,
+   "id": "F52",
+   "moveOrdinal": 19,
+   "source": "Line notes (coinage load); craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F53",
+   "source": "Craft notes (voice)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F54",
+   "source": "Craft notes (authority)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F55",
+   "source": "Craft notes (structure)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F56",
+   "source": "Craft notes (pacing)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": 30,
+   "id": "F57",
+   "moveOrdinal": 9,
+   "source": "Line note 1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 31,
+   "id": "F58",
+   "moveOrdinal": 7,
+   "source": "Line note 2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 32,
+   "id": "F59",
+   "moveOrdinal": 1,
+   "source": "Line note 3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 33,
+   "id": "F60",
+   "moveOrdinal": 4,
+   "source": "Line note 4",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 34,
+   "id": "F61",
+   "moveOrdinal": 13,
+   "source": "Line note 5",
+   "status": "done"
+  },
+  {
+   "disposition": "(causes are F2, F4, F1/F5/F8–F11, F16, F57–F61)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F62",
+   "source": "Scorecard caps",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (Phase 1)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F63",
+   "source": "Roadmap 3 (research follow-ups)",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → conservative default (see block)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F73",
+   "source": "Open question 1",
+   "status": "resolved"
+  },
+  {
+   "disposition": "escalate → conservative default (see block)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F74",
+   "source": "Open question 2",
+   "status": "resolved"
+  },
+  {
+   "disposition": "escalate → conservative default: keep (matches the editor's preference)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F75",
+   "source": "Open question 3",
+   "status": "resolved"
+  },
+  {
+   "disposition": "escalate → conservative default: title and subtitle kept as the writer's outline named them; the term defined and its origin credited in the text; flagged",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F76",
+   "source": "Open question 4; §Minor title",
+   "status": "resolved"
+  },
+  {
+   "disposition": "escalate → awaiting author; nothing added",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F77",
+   "source": "Open question 5",
+   "status": "escalated"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "S1",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "S2",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (fold in the §I cut)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "S3",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (split into two paragraphs in M14)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "S4",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "no change",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "S5",
+   "source": "Self",
+   "status": "closed"
+  }
+ ],
+ "version": 1
+}

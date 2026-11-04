@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cambridge-handbook-fot-toc-wildy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d47291b30aa4b3ec",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cambridge-handbook-fot-toc-wildy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cambridge-handbook-fot-toc-wildy\n- **URL:** https://www.wildy.com/isbn/9781009539647/the-cambridge-handbook-of-the-right-to-freedom-of-thought-cambridge-university-press · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Table of contents of O'Callaghan & Shiner (eds.), Cambridge Handbook of the Right to Freedom of Thought (Mar. 2025): 29 chapters; Part VI includes ch. 25 Keese & Leiser on online manipulation, ch. 26 neurorights, ch. 27 Ligthart & Van De Pol, ch. 28 Wodajo on strategic litigation in the digital age.\n- **Key passages:** ch. 25: \"Online manipulation as a potential interference\" with the right\n- **Reliability:** Tertiary (bookseller listing of TOC).\n- **Relevance to this project:** Report §1.9, §3; draft ref [17].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 96
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b4c0ef1f2448d439a842cbc4ef0df8e420430bebf883f5bf84f9c5ae997753a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cambridge-handbook-fot-toc-wildy.md",
+ "kind": "artifact-page"
+}

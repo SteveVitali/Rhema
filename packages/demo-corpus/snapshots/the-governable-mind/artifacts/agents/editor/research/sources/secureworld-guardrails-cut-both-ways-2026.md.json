@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/secureworld-guardrails-cut-both-ways-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3530f125d250a8ae",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/secureworld-guardrails-cut-both-ways-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# secureworld-guardrails-cut-both-ways-2026\n- **URL:** https://www.secureworld.io/industry-news/ai-guardrails-openai-hugging-face-security-incident · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** SecureWorld (Todd), July 23, 2026: guardrails blocked defenders; GLM-5.2 on-prem; supports both safety and access arguments; no verified defender pathway exists at frontier providers.\n- **Key passages:** (paraphrase) supports arguments for both robust safety measures and accessible incident-response tools; no frontier provider offers verified bypass for responders.\n- **Reliability:** Secondary; security trade press.\n- **Relevance to this project:** §2 double-revelation verdict; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 74
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b91df66e7f46ea8bbfe48cdd0a0ad4d7654ea3ff98d34b38c64d2ac8acb4e99f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/secureworld-guardrails-cut-both-ways-2026.md",
+ "kind": "artifact-page"
+}

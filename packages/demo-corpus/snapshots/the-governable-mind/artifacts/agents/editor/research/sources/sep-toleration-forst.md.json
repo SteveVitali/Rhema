@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-toleration-forst.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e0195f23ab97c2e4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-toleration-forst.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-toleration-forst\n- **URL:** https://plato.stanford.edu/entries/toleration/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Forst's SEP entry: Bayle's natural light of practical reason; reciprocity cannot be trumped by religious truth because reasonable faith knows it rests on personal trust.\n- **Key passages:** \"Principles of moral respect and of reciprocity cannot be trumped by religious truths, according to Bayle, for reasonable religious faith is aware that ultimately it is based on personal faith and trust\"\n- **Reliability:** Tertiary reference by the proponent of the reading; independent.\n- **Relevance to this project:** Report §5 item 1; draft l.28–30 (C18–19).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 95
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "111db226758a0179fb228c2ad2d4d20bc6d440c5d87e7fb06be753bdaaf2c509",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-toleration-forst.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mn-reformer-metro-surge.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0de8dc8d0f549bb6",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "eb65850280653e3f",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "0c046cb10db1ef56",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/mn-reformer-metro-surge.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Minnesota Reformer — \"Feds spied on protesters...\" (McVan, 2026-08-13)\n\n- Canonical: https://minnesotareformer.com/2026/08/13/feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/ (403)\n- Read via: https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html ; corroborated by https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches/\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: secret recordings + infiltrated Signal chats; venues incl. libraries and\nunion halls; dossier at Prince of Peace Lutheran (names, photos, addresses, vehicle\nregistrations, family/employment info); administrative subpoenas (bank, PayPal, Venmo;\nthree years); grand-jury diagram \"centered around 'Direct Action MN'\" linking orgs \"with\nno evidence\" (the only source for the grand-jury element of draft C6); \"None of the 18\norganizations named on the government's slide has been charged\" (NationOfChange).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c5e23b6f895195b113dd396cc263725dfc5bf4ab80493eb09f29903308da6270",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/mn-reformer-metro-surge.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "research_note",
+  "artifactPath": "agents/editor/research/index.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "20dc2374c0cdd05f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fac9bf96e7cecd49",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/index.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Research index\n\n(no source notes yet)\n",
+  "meters": {
+   "readMin": 1,
+   "words": 6
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fc09d92edb85c79550f3597f60c9f4a0c05a00a9b2ec91e7a75b837a045085a2",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/editor/research/index.md",
+ "kind": "artifact-page"
+}

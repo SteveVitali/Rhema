@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mayhem-open-model-fought-back-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d92050027097e497",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mayhem-open-model-fought-back-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mayhem-open-model-fought-back-2026\n- **URL:** https://mayhem.substack.com/p/the-open-model-that-fought-back · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Markets & Mayhem, Sept 14, 2026: explicit double reading; supervision not capability failures; concentration caused the incident; replace permission regimes with responsibility regimes; conduct rules.\n- **Key passages:** (paraphrase) \"supervision failures, not capability failures\"; \"replace permission regimes with responsibility regimes…conduct rules rather than permission rules.\"\n- **Reliability:** Secondary; finance Substack; open-weights-sympathetic; byline uncertain.\n- **Relevance to this project:** Closest rhetorical neighbor to 'permissioned cognition', two days before the draft; §2.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 82
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "deb94903976d6d6757087b6928ef48a4bea5be6811789a4bff95f951a0abc0ef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mayhem-open-model-fought-back-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# openai-transparency-2025h1
+- **URL:** https://cdn.openai.com/trust-and-transparency/report-2025h1-government-requests-for-user-data.pdf · **Accessed:** 2026-09-16 (2 pp.) · **For:** v1 response round, item 9
+- **What it establishes:** OpenAI Report on Government Requests for User Data, January–June 2025. Non-content requests: 119 received, 81 with data disclosed, 147 accounts. Content requests: 26 received, 23 disclosed, 41 accounts. Emergency requests: the row reads "112" in the extracted table (most plausibly 1 request / 1 disclosed / 2 accounts, the column split is ambiguous in extraction). National security process (FISA/NSL): 0–249 requests, 0–249 accounts.
+- **Key passages:** "'Content requests' consist of legal process such as search warrants to produce content data, such as text or files input or output in connection with the use of OpenAI services." / "'Non-content requests' consist of legal process such as subpoenas to produce non-content data, such as information of an account user's name, email address, payment information, and transaction history."
+- **Reliability:** Primary (company transparency report); self-reported.
+- **Relevance to this project:** Item 9; baseline volume for the first half of 2025. Editor's figures (119 non-content, 26 content) verified.

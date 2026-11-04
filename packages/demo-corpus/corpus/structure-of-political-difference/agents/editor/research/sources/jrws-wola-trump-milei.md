@@ -1,0 +1,6 @@
+# jrws-wola-trump-milei
+- **URL:** https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw and https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1
+- **What it establishes:** Trump and Milei are routinely paired as right-wing populists; Milei's chainsaw symbolism and state-cutting program are documented; Milei's cultural traditionalism (anti-gender-ideology, anti-DEI, anti-abortion politics) is on the record.
+- **Key passages:** JRWS: "Government by chain saw is evident in what Milei submitted… as the Ley de Bases"; "naming the enemy Other… that's Trump and Milei's winning formula." WOLA: Milei closed the "Ministry for Women, Gender, and Diversities," "banned gender-affirming care for minors," called wokeism "a systematic plan by the party of the state."
+- **Reliability:** Academic-adjacent journal (Berkeley JRWS, essayistic/critical voice) plus advocacy-research NGO (WOLA); adequate for characterization claims; both read in full.
+- **Relevance to this project:** Verifies C1, C19, C23c (Milei worked profile: radically market-oriented, culturally traditional in respects, highly insurgent).

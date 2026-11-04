@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/flock-scale-and-retrenchment.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8dff0ee1306baab6",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "221aae399181eda5",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "9e7ff4a457f6a8ee",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/flock-scale-and-retrenchment.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Flock Safety — scale and 2026 retrenchment\n\n- Stateline: https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network\n- Flock FAQ: https://www.flocksafety.com/faq\n- Changes detail (search-confirmed): https://www.police1.com/technology/flock-safety-sets-7-day-default-for-alpr-data-adds-mandatory-misuse-safeguards ; https://www.flocksafety.com/blog/flock-guardrails-address-lpr-privacy-concerns-and-police-transparency\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: >120,000 cameras, >6,000 communities, 49 states, thousands of LE agencies;\nFAQ: make/model/color, broken taillight, roof racks, 7-day retention. 2026: 50+\ncommunities terminated/suspended/rejected (DeFlock count); ~50 officers accused of misuse;\ndefault retention 30→7 days (existing customers keep settings); cross-agency search\ncontrols by offense type; case codes required by end of 2026; federal orgs removed from\nnational lookup Aug. 2025.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 81
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5fe07d6e8e49baac1d3cef9f6c1edb0191cf45a5678dd3ab6214925370d2877e",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/flock-scale-and-retrenchment.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/rte-amodei-slow-down-2026-09-12.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4132ed68ee7bbbe8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/rte-amodei-slow-down-2026-09-12.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rte-amodei-slow-down-2026-09-12\n- **URL:** https://www.rte.ie/news/world/2026/0912/1591311-slowing-ai-development/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Amodei's call dated Saturday, Sept. 12, 2026 → Zuckerberg's Tuesday post is three days later (C12).\n- **Key passages:** \"We must slow the pace at which we improve the capabilities of AI models.\"\n- **Reliability:** Secondary; independent.\n- **Relevance to this project:** C12.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 55
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0ec2182ae6fb61550f779915e4ce85beb1c92d3359d13ed292bb6a65d181e471",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/rte-amodei-slow-down-2026-09-12.md",
+ "kind": "artifact-page"
+}

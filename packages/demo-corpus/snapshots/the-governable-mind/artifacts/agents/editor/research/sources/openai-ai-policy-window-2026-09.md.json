@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-ai-policy-window-2026-09.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fe18e316efde71da",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-ai-policy-window-2026-09.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-ai-policy-window-2026-09\n- **URL:** https://openai.com/index/ai-policy-window/ · **Accessed:** 2026-09-16 (via a reader proxy) · **For:** v1 review, Phase 1\n- **What it establishes:** All C11 quotations and the scope claim verbatim. No visible date in the page text; Reuters dates it Sept. 9, 2026.\n- **Key passages:** \"The prospect of AI-accelerated AI development demands more than voluntary commitments. The United States needs mandatory, capability-based national regulation that can evolve as the technology does.\" / \"common testing and independent-assessment requirements, stronger cybersecurity protections, clear incident-reporting rules.\" / \"apply to the handful of well-resourced laboratories developing the most capable systems—not to startups, small developers, or researchers.\" / \"Congress should act before it adjourns.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** C11; ref [44].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 117
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b5065ceb2ea80db73d8df8a0cc780cca2f993837685fa6aea4fe7e5915a51751",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-ai-policy-window-2026-09.md",
+ "kind": "artifact-page"
+}

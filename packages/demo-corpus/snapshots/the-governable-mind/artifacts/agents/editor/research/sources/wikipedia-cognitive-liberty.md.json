@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-cognitive-liberty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fc46145e9762a967",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-cognitive-liberty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-cognitive-liberty\n- **URL:** https://en.wikipedia.org/wiki/Cognitive_liberty · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Term coined by Sententia and Boire (CCLE); definition; Sententia 2004's two principles; Bublitz & Merkel and Farahany as later users; Sandel as critic.\n- **Key passages:** \"the right of each individual to think independently and autonomously, to use the full power of his or her mind, and to engage in multiple modes of thought\"\n- **Reliability:** Tertiary; used for attribution only (CCLE page itself unreachable).\n- **Relevance to this project:** Report §1.6; draft subtitle.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 86
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5a48cb7ec2a2ac84046e6d0cfaf8b0abc4a8969d64d0a0f3a12dfecc600730c0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-cognitive-liberty.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,131 @@
+{
+ "sections": [
+  {
+   "purpose": "Install the case and the thesis: a documented federal intelligence operation against lawful civic institutions, inside a functioning legal order — the coexistence is the object. Define *authoritarian capacity* (coinage marked).",
+   "ref": "S1",
+   "targetWords": 600,
+   "title": "The Conspiracy"
+  },
+  {
+   "purpose": "The 20th-century image (tanks, coups) misleads; backsliding is executive aggrandizement under legal forms; the risk is composition of individually legal parts.",
+   "ref": "I",
+   "targetWords": 550,
+   "title": "The Wrong Picture of How Democracy Dies"
+  },
+  {
+   "purpose": "Legibility is the root of state capacity (Scott); the digital shift is from identifiability to patternability — *behavioral legibility*, marked as this essay's extension.",
+   "ref": "II",
+   "targetWords": 450,
+   "title": "To Govern Is First to See"
+  },
+  {
+   "purpose": "No central eye; a modular public-private ecosystem (plate readers, purchased location data, facial search) whose danger is scale + searchability + fusion-readiness. Includes the gait/Bluetooth correction (report against interest).",
+   "ref": "III",
+   "targetWords": 800,
+   "title": "The Distributed Panopticon"
+  },
+  {
+   "purpose": "Integration is the defining technology: relational queries none of the datasets contained; capacity grows combinatorially; spyware closes the endpoint; *Chatrie* shows doctrine adapting behind the curve — lag, not absence.",
+   "ref": "IV",
+   "targetWords": 600,
+   "title": "The Fusion Layer"
+  },
+  {
+   "purpose": "Surveillance becomes political through classification: NSPM-7's ideological threads as investigative predicates; the act→network shift; Puppet Master as the shift made operational (\"The Conspiracy\" returns).",
+   "ref": "V",
+   "targetWords": 650,
+   "title": "From Seeing to Naming"
+  },
+  {
+   "purpose": "Terrorism law converts naming into exception. Precision: no standalone domestic-terrorism offense, no domestic FTO regime; §§2339A/B; *Holder*; why \"Antifa is a terrorist organization\" still matters administratively. Britain (Palestine Action) shows what the missing statute would do — the step not yet taken, and why preserving that distinction matters.",
+   "ref": "VI",
+   "targetWords": 700,
+   "title": "The Most Powerful Word"
+  },
+  {
+   "purpose": "Fraenkel's normative/prerogative coexistence as analogy of structure; the measurable question (where is legal protection thin?); immigration as the answer: Khalil (citizenship as gradient of political vulnerability), citizen spillover, process punishment, the LA deployment and its judicial rebuke.",
+   "ref": "VII",
+   "targetWords": 700,
+   "title": "The Dual State and Its Laboratory"
+  },
+  {
+   "purpose": "Steelman-adjacent history: Palmer (real violence → ideological generalization → mass enforcement), COINTELPRO (\"disrupt and discredit\"), post-9/11 Muslim surveillance with measured participation effects. Bipartisan lesson: capacity is inherited; the variable is leadership.",
+   "ref": "VIII",
+   "targetWords": 600,
+   "title": "The American Precedent Is America"
+  },
+  {
+   "purpose": "The named steelman (\"haven't we always done this?\") answered: continuity conceded in full, then the break located in economics — scale, persistence, granularity, integration, automation, retrospectivity, marginal cost, ideological direction, enforcement resources. \"Armies of agents become a query.\"",
+   "ref": "IX",
+   "targetWords": 450,
+   "title": "What Is Actually New"
+  },
+  {
+   "purpose": "The panopticon properly understood (uncertainty, not omniscience); chilling evidence (Stoycheff) *with* the AJPS complication conceded (report against interest); the strategic-environment reframe; \"the perfect chilling effect leaves no defendant.\"",
+   "ref": "X",
+   "targetWords": 550,
+   "title": "Surveillance Without Arrest"
+  },
+  {
+   "purpose": "Tocqueville (association as the mother science) + Arendt (acting in concert) + Shklar (fear of arbitrary power): surveillance of association reaches the generative mechanism of democratic power; the liberal question becomes \"what must I reasonably fear if I speak?\"",
+   "ref": "XI",
+   "targetWords": 600,
+   "title": "The Politics of Association"
+  },
+  {
+   "purpose": "The limits section, stated in the essay's own voice: what America is not; ICE is not the Gestapo (the better question substituted); courts consequential (*Chatrie*, Natanson, Perkins Coie); civil society powerful; Hungary's reversal as proof of contingency; then the falsifiable thresholds — the essay's own falsification condition (nine, compressed; Comey in one sentence as contested boundary).",
+   "ref": "XII",
+   "targetWords": 700,
+   "title": "The Distance Between Danger and Dictatorship"
+  },
+  {
+   "purpose": "The pivot, philosophical not tactical: the \"nothing to hide\" retort steelmanned then answered; privacy as the condition of exploring, associating, organizing before announcing; the five-thinker synthesis; the explicit limits (not anonymity, not immunity from lawful investigation).",
+   "ref": "XIII",
+   "targetWords": 500,
+   "title": "The Democratic Right to Opacity"
+  },
+  {
+   "purpose": "Principles, not products: threat-model honestly; protect the endpoint; minimize (\"whom besides me would this device expose?\"); compartmentalize; organizational not individual; fear destroys trust horizontally; do not fetishize clandestinity — public legality is a weapon.",
+   "ref": "XIV",
+   "targetWords": 550,
+   "title": "A Security Culture for Democratic Life"
+  },
+  {
+   "purpose": "The climax: the paradox of democratic self-defense (the state must stay capable); design principles compressed into prose (predicate, purpose limitation, retention, audit, associational protection, vendor accountability, pluralism); friction as the constitutional ideal against the frictionless ideal of the surveillance industry; information architecture becomes constitutional architecture.",
+   "ref": "XV",
+   "targetWords": 650,
+   "title": "What Must Power Not Know"
+  },
+  {
+   "purpose": "Return to the meeting: the person who decides not to attend; no knock, no case, the meeting one person smaller. Shklar/Arendt/Tocqueville return in compressed form; the final thesis in the persona's stated-fact register.",
+   "ref": "S17",
+   "targetWords": 450,
+   "title": "Freedom Before the Knock (coda)"
+  },
+  {
+   "purpose": "Deliberately compact; three tiers compressed to short prose-plus-minimal-list; Tier 3 = \"do not improvise; use professionals\" with named organizations; links outward to living resources (EFF SSD, FPF, Access Now).",
+   "ref": "S18",
+   "targetWords": 350,
+   "title": "Appendix — A Democratic Security Baseline"
+  }
+ ],
+ "sidecar": "structure_plan",
+ "spine": [
+  "The Minnesota investigation is neither ordinary policing nor totalitarianism;",
+  "Democracies now lose liberal substance through law rather than against it,",
+  "To govern is first to see: state capacity begins in legibility, and digital",
+  "No single eye watches. A modular, largely private ecosystem observes, and",
+  "Fusion converts observations into relationships; capacity grows",
+  "Seeing becomes targeting only through classification, and current doctrine",
+  "\"Terrorism\" is the word that converts classification into legal exception —",
+  "The right model is Fraenkel's dual state, not the police state: zones of",
+  "None of this is foreign to America — Palmer, COINTELPRO, Muslim",
+  "What is new is not political surveillance but its economics: scale,",
+  "The machinery's most efficient product is not arrest but the quiet",
+  "America is not the dictatorship this machinery could serve; the honest",
+  "Therefore some opacity between citizen and state is democratic",
+  "The constitutional question of the surveillance age is what power must be",
+  "The checks matter until the day they do not; the moment to defend them is"
+ ],
+ "version": 1
+}

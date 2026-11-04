@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/penney-2016-chilling-effects-wikipedia.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "38fadf9f32d5db0e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/penney-2016-chilling-effects-wikipedia.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# penney-2016-chilling-effects-wikipedia\n- **URL:** https://btlj.org/data/articles2016/vol31/31_1/0117_0182_Penney_ChillingEffects_WEB.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Penney, 31 Berkeley Tech. L.J. 117 (2016) (PDF read for design): interrupted time series on 48 terrorism-related Wikipedia articles; acknowledges no true control group; adds comparator/quasi-control groups.\n- **Key passages:** \"true control group was not possible\" so \"comparator groups were also\" analysed · \"comparator/quasi-control group of Wikipedia articles was added to the analysis\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §4′(B); draft l.90 (C38) caveat confirmed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 83
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "000febe745d92984b4a090c9691e99519d577df656f99bb7b4650548498ce106",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/penney-2016-chilling-effects-wikipedia.md",
+ "kind": "artifact-page"
+}

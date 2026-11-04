@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/alegre-shull-2023-cigi-freedom-of-thought.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7739e67d441ec849",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/alegre-shull-2023-cigi-freedom-of-thought.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# alegre-shull-2023-cigi-freedom-of-thought\n- **URL:** https://www.cigionline.org/documents/2719/Freedom.of.Thought_SpecialReport.Alegre.Shull.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** CIGI special report (2023; read in full). Freedom of thought as jus cogens with three planks; key questions on voluntary vs. inferred disclosure and uses of inferences; generative AI aggravates; recommender profiling and BCIs as current threats.\n- **Key passages:** \"What thoughts or information about ourselves are we sharing voluntarily, versus involuntarily through others' inferences?\" · \"As powerful generative AI technologies become more prevalent ... the risks and challenges will only become more pressing.\"\n- **Reliability:** Secondary/policy (think tank, government-funded); advocacy orientation.\n- **Relevance to this project:** Report §1.4; draft l.154, l.196.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0aded27aba4e183b4251d00971e181eea138924e5b17b4cfe6d37f43ad8a9918",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/alegre-shull-2023-cigi-freedom-of-thought.md",
+ "kind": "artifact-page"
+}

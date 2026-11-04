@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f3552a51e99093b3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# uscinski-et-al-2021-two-dimensions\n- **URL:** https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976 · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** Uscinski, Enders, Seelig, Klofstad et al., \"American Politics in Two Dimensions,\" AJPS 65(4), Oct 2021 — exists as cited.\n- **Key passages:** Many problems \"are less the product of left-right orientations than an orthogonal 'anti-establishment' dimension of opinion\" (conspiracy thinking, populism, Manichean outlook); predicts support for both Trump and Sanders; some Americans see politics as \"the people\" vs \"a corrupt establishment\" rather than left vs right.\n- **Reliability:** Primary (institutional repository record with abstract).\n- **Relevance to this project:** Verifies C12 (system axis cross-cuts left-right) and supports C2 (Sanders/Trump shared anti-elite register).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2ad1c9f8064369d10b98164b5565636d7e0f1abbf49cc2c1ecd0eb585c100520",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md",
+ "kind": "artifact-page"
+}

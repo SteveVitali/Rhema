@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-licensing-order-1643.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "aa0ba9faae819ce2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-licensing-order-1643.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-licensing-order-1643\n- **URL:** https://en.wikipedia.org/wiki/Licensing_Order_of_1643 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C55 (lead only)\n- **What it establishes:** Tertiary summary: ordinance of 14 June 1643 titled \"An Ordinance for the Regulating of Printing\"; the Stationers' Company \"was given the responsibility of acting as censor, in return for a monopoly of the printing trade\"; Milton's *Areopagitica* published November 1644 in response, full title \"Areopagitica: A speech of Mr. John Milton for the Liberty of Unlicenc'd Printing, to the Parlament of England.\"\n- **Key passages:**\n  - \"The Stationers' Company was given the responsibility of acting as censor, in return for a monopoly of the printing trade.\"\n  - Sole citation for the Stationers' claims: Eunmi Park, \"Areopagitica in the Licensing Controversy: Milton's Rhetorical Strategies and Modes\" (PDF).\n- **Reliability:** Tertiary; thinly sourced. Superseded for drafting by the BHO primary text and Deazley's commentary.\n- **Relevance to this project:** C55 — lead only; supplies Areopagitica's full title.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 147
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6aa9f22600e5f1c1e91fe20da8b9c8754016bc33ccce7a19ac65a03cc5c247c6",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-licensing-order-1643.md",
+ "kind": "artifact-page"
+}

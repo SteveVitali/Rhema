@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hybridhorizons-iacono-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "478d1a1ee6ad70a6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hybridhorizons-iacono-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hybridhorizons-iacono-2026\n- **URL:** https://hybridhorizons.substack.com/p/openai-and-anthropic-have-already · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Carlo Iacono, Apr 26, 2026: labs confess governance inadequacy while retaining control; IAEA analogy (in quoted OpenAI documents); no Milton, no open weights, no HF.\n- **Key passages:** \"The future of humanity is not OpenAI's to determine.\" (paraphrasing OpenAI)\n- **Reliability:** Secondary; Substack.\n- **Relevance to this project:** Negative result for the Areopagitica search; not a predecessor.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 69
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "134a0bec359cd1f05ae25a63f18cc9d10290bf300ca18eae22f68d643d1f093a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hybridhorizons-iacono-2026.md",
+ "kind": "artifact-page"
+}

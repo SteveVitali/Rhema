@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fox5vegas-cybertruck-police-report-2025-11-03.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "63a04526d02d4b73",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fox5vegas-cybertruck-police-report-2025-11-03.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fox5vegas-cybertruck-police-report-2025-11-03\n- **URL:** https://www.fox5vegas.com/2025/11/03/report-details-police-investigation-into-cybertruck-explosion-trump-international-hotel-las-vegas/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Fox5 Vegas, Nov. 3, 2025, on LVMPD's 78-page report: investigators recovered Livelsberger's ChatGPT history along with his manifesto, search history, and encrypted emails; nothing on a request to OpenAI (VII3-scope).\n- **Key passages:** \"Officials were able to recover Livelsberger's manifesto, internet search history, social media activity, encrypted emails, notes, and his ChatGPT history.\"\n- **Reliability:** Secondary; local press summarizing a police report.\n- **Relevance to this project:** l.152.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 82
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ab8ea6425f57a8ec040adada9f6c886e99d1793f44a9abcb4d497d82ac8ceb31",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fox5vegas-cybertruck-police-report-2025-11-03.md",
+ "kind": "artifact-page"
+}

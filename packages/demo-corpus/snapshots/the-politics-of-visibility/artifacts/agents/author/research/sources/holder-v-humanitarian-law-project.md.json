@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/holder-v-humanitarian-law-project.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "795410426dfc8b03",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/holder-v-humanitarian-law-project.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# holder-v-humanitarian-law-project\n- **URL:** https://www.law.cornell.edu/supct/html/08-1498.ZS.html (syllabus, Cornell LII); citation cross-checked at https://en.wikipedia.org/wiki/Holder_v._Humanitarian_Law_Project · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C16\n- **What it establishes:** Holder v. Humanitarian Law Project, 561 U.S. 1 (2010), decided June 21, 2010, 6–3, majority by Chief Justice Roberts. Held § 2339B constitutional as applied to plaintiffs' proposed support of the PKK and LTTE — including training members to use international law for peaceful dispute resolution and teaching how to petition the UN — while confirming the statute does not reach independent advocacy or mere membership.\n- **Key passages (syllabus):** \"The material-support statute, §2339B, is constitutional as applied to the particular forms of support that plaintiffs seek to provide to foreign terrorist organizations.\" · \"Independently advocating for a cause is different from the prohibited act of providing a service 'to a foreign terrorist organization.'\" · \"a person of ordinary intelligence would understand the term 'service' to cover advocacy performed in coordination with, or at the direction of, a foreign terrorist organization.\" · \"§2339B does not prohibit independent advocacy or membership in the PKK and LTTE.\" · §2339B(h) \"makes clear that 'personnel' does not cover advocacy by those acting entirely independently of a foreign terrorist organization.\"\n- **Reliability:** Cornell LII reproduces the official syllabus/opinion — primary. Wikipedia used only to confirm the U.S. Reports citation (561 U.S. 1), vote (6–3), and author; supremecourt.gov and Justia both 403'd this session. LSB10340 (read in full) independently quotes the opinion's dictum: \"[w]e also do not suggest that Congress could extend the same prohibition on material support at issue here to domestic organizations.\"\n- **Relevance to this project:** C16; the coordination/independent-advocacy line is the load-bearing distinction — keep the Court's own formulation (\"in coordination with, or at the direction of\").\n",
+  "meters": {
+   "readMin": 1,
+   "words": 284
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7d5399f2227f5f3b80aad3b5183299307f39a91713059745a93231f0692c79cc",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/holder-v-humanitarian-law-project.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nspm7-verification.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "03379c21bbbc91b4",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "5f93275237dfc653",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "e80ede84c653c456",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/nspm7-verification.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# NSPM-7 — Phase 1 quote verification\n\n- https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence/ (fetched twice, Sept. 25, 2025)\n- Accessed 2026-08-21 (Phase 1). PRIMARY. (Phase 2 note `nspm7-primary-text.md` covers context; this note records the character-level check.)\n\nBoth long quotations verbatim, including the stem \"Common threads animating this violent\nconduct include...\" and the full \"A new law enforcement strategy that investigates all\nparticipants in these criminal and terroristic conspiracies — including the organized\nstructures, networks, entities, organizations, funding sources, and predicate actions\nbehind them — is required.\" Directives confirmed: national JTTFs coordinate; investigate\n\"institutional and individual funders, and officers and employees of organizations\";\nTreasury/TFI tasked; IRS to ensure no tax-exempt entity finances political violence.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "590eaacc5c6558fdbf5c3517ecd977d24c063a065f3d3033e98ec69cbcfb69f4",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/nspm7-verification.md",
+ "kind": "artifact-page"
+}

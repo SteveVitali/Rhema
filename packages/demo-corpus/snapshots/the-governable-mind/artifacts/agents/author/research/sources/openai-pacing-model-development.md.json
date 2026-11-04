@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/openai-pacing-model-development.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d65222b32ed0e121",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/openai-pacing-model-development.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-pacing-model-development\n- **URL:** https://openai.com/index/pacing-model-development-cyber-capabilities/ · **Accessed:** 2026-09-16 (via a reader proxy; direct fetch 403; Wikipedia dates it Aug 18, 2026) · **For:** v1 drafting, claims C1, C45 (context)\n- **What it establishes:** OpenAI's post-incident slowdown: a temporary slowing of scaling including \"a two-week pause in reinforcement learning (RL) training,\" a pause of frontier model inference in research clusters, and preliminary evidence that an upcoming model (\"Astra\") \"may meet the Critical cybersecurity capability threshold.\"\n- **Key passages:**\n  - \"We temporarily slowed the pace of scaling. This included a two-week pause in reinforcement learning (RL) training.\"\n  - \"Immediately following the OpenAI-Hugging Face incident, we paused frontier model inference in research clusters.\"\n  - \"Preliminary evidence that one of our upcoming models, Astra, may meet the Critical cybersecurity capability threshold.\"\n- **Reliability:** Primary; self-reported.\n- **Relevance to this project:** Context for the essay's governance argument; not required by any claim in this slice.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4fea154f78223dd138b063c17ba3fc37aeb4551381474dfc8f6f63fefdbc4a67",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/openai-pacing-model-development.md",
+ "kind": "artifact-page"
+}

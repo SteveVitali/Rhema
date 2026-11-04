@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/conversation-2026-chatrie.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2bf69ef15c3c18c1",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "90f841b7d189da4d",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/conversation-2026-chatrie.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# conversation-2026-chatrie\n\n- **URL:** https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424 · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** Scholarly explainer (Anne Toomey McKenna, Penn State law faculty, June 30, 2026). Confirms 6-3 in Chatrie v. United States; quotes the opinion: \"An individual has a legitimate expectation of privacy in his cellphone location data\" (linked to the slip opinion, docket 25-112). Facts: Detective Joshua Hylton's geofence warrant compelled Google to identify every cellphone within a 17.5-acre area around a Midlothian, Virginia bank over a two-hour window (May 2019 armed robbery). Remand: whether the geofence warrant, \"including each part of its three-step search process, met the Fourth Amendment's warrant requirements.\"\n- **Key passages:** As above.\n- **Reliability:** Secondary; academic author, independent outlet; quotes the slip opinion directly.\n- **Relevance to this project:** C8 (facts of the case, verbatim opinion line, remand scope).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 134
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "23401feac1fff0c9b543f6d51d03c016eb9656699e7f92680f4ea246a8dbcd39",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/conversation-2026-chatrie.md",
+ "kind": "artifact-page"
+}

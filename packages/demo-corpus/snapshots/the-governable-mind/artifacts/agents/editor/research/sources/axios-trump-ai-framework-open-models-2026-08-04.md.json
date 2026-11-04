@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "17c2cfb9b16210fa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# axios-trump-ai-framework-open-models-2026-08-04\n- **URL:** https://www.axios.com/2026/08/04/trump-ai-framework-open-models · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** Axios, \"Scoop: Inside Trump's AI framework,\" Aug. 4, 2026: the (unpublished) framework excludes open models and disclaims restricting released open models — the baseline the WIRED-reported extension would change (X11; useful to §XII l.260).\n- **Key passages:** \"Open models are excluded, and the framework explicitly says nothing in it should be interpreted as restricting open models once they've been released.\"\n- **Reliability:** Secondary; political press with document access.\n- **Relevance to this project:** l.210, l.260.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 93
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "21d6b64d4d71900a9c0658aa795c4ffa5e3a2e9219256275c126a6c12d745a79",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+ "kind": "artifact-page"
+}

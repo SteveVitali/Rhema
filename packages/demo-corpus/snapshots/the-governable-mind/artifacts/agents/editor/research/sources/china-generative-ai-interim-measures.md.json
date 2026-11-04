@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/china-generative-ai-interim-measures.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "472f1e51e2850828",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/china-generative-ai-interim-measures.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# china-generative-ai-interim-measures\n- **URL:** https://www.chinalawtranslate.com/en/generative-ai-interim/ (via a reader proxy) ; https://fpf.org/blog/unveiling-chinas-generative-ai-regulation/ (on the April 2023 draft) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Non-liberal contrast for C15. Final Interim Measures (eff. 15 Aug. 2023): no explicit real-name article (the draft's Art. 9 had one); Art. 11 confidentiality of \"users' usage records\"; Art. 14 providers must \"store the relevant records and report to the relevant departments.\" Real-name obligations flow from the Cybersecurity Law generally.\n- **Key passages:** Art. 14: \"store the relevant records and report to the relevant departments in charge.\" / FPF on draft Art. 9: \"require users to provide real identity information in accordance with the Cybersecurity Law.\"\n- **Reliability:** Primary translation (China Law Translate) + secondary (FPF, June 2023, draft only).\n- **Relevance to this project:** C15; §VIII (other checker).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 132
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b0e4086dd0712d36c30ab489b03e73ce02a3d42a761eb0d58a98476b97de4bd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/china-generative-ai-interim-measures.md",
+ "kind": "artifact-page"
+}

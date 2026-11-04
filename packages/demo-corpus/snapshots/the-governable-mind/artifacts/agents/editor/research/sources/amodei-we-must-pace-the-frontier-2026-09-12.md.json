@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/amodei-we-must-pace-the-frontier-2026-09-12.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1fb32401d88897e2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/amodei-we-must-pace-the-frontier-2026-09-12.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# amodei-we-must-pace-the-frontier-2026-09-12\n- **URL:** https://darioamodei.com/post/we-must-pace-the-frontier · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** The primary text of the statement the draft paraphrases as \"urged the industry to slow capability gains\" (C12). Page shows \"September 2026\"; press dates it Sept. 12.\n- **Key passages:** \"pacing the rate of capabilities advancement so that risk prevention has time to keep up. We must slow the pace at which we improve the capabilities of AI models. Progress will still seem fast, and we must make wise use of the time we gain.\"\n- **Reliability:** Primary; interested party (Anthropic CEO).\n- **Relevance to this project:** C12; §X.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3343255d1f631b33110d3f7fb79340300e976f4267a3a0d21b92eb2bf90096b3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/amodei-we-must-pace-the-frontier-2026-09-12.md",
+ "kind": "artifact-page"
+}

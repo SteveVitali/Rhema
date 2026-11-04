@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/scott-seeing-like-a-state-full-text.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5a88a3845503356a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/scott-seeing-like-a-state-full-text.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# scott-seeing-like-a-state-full-text\n- **URL:** https://theanarchistlibrary.org/library/james-c-scott-seeing-like-a-state (full-text transcription; book: Yale University Press, 1998) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C23\n- **What it establishes:** Complete transcription of James C. Scott, *Seeing Like a State: How Certain Schemes to Improve the Human Condition Have Failed* (Yale UP, 1998). Scott's own formulations of \"legibility\" verified verbatim from the Introduction and the opening of Part 3.\n- **Key passages (verbatim):**\n  - Introduction: \"The more I examined these efforts at sedentarization, the more I came to see them as a state's attempt to make a society legible, to arrange the population in ways that simplified the classic state functions of taxation, conscription, and prevention of rebellion. Having begun to think in these terms, I began to see legibility as a central problem in statecraft. The premodern state was, in many crucial respects, partially blind; it knew precious little about its subjects...\"\n  - Introduction: \"processes as disparate as the creation of permanent last names, the standardization of weights and measures, the establishment of cadastral surveys and population registers, the invention of freehold tenure, the standardization of language and legal discourse, the design of cities, and the organization of transportation seemed comprehensible as attempts at legibility and simplification. In each case, officials took exceptionally complex, illegible, and local social practices, such as land tenure customs or naming customs, and created a standard grid whereby it could be centrally recorded and monitored.\"\n  - Part 3 opening: \"Legibility is a condition of manipulation. Any substantial state intervention in society—to vaccinate a population, produce goods, mobilize labor, tax people and their property, conduct literacy campaigns, conscript soldiers, enforce sanitation standards, catch criminals, start universal schooling—requires the invention of units that are visible.\"\n- **Reliability:** Primary text (unofficial but complete transcription of the Yale UP edition; page numbers not visible — cite by chapter: Introduction; Part 3 opening. In the print edition these fall at pp. 2 and 183, but those numbers were not verified here).\n- **Relevance to this project:** C23 (Scott's own definition of legibility, verbatim); \"Legibility is a condition of manipulation\" is also a strong pull-quote.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 341
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e43425de9958fcfe622d1ba76e47ee1ae34e8580d1b405cf93117ff8dce97ea9",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/scott-seeing-like-a-state-full-text.md",
+ "kind": "artifact-page"
+}

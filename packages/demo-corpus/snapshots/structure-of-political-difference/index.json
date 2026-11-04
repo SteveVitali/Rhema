@@ -1,0 +1,164 @@
+{
+ "chunks": {
+  "artifact-page": {
+   "agents/author/ledgers/v1-response-ledger.md": "artifacts/agents/author/ledgers/v1-response-ledger.md.json",
+   "agents/author/research/index.md": "artifacts/agents/author/research/index.md.json",
+   "agents/author/research/sources/akkerman-mudde-zaslove-2014.md": "artifacts/agents/author/research/sources/akkerman-mudde-zaslove-2014.md.json",
+   "agents/author/research/sources/bobbio-left-and-right.md": "artifacts/agents/author/research/sources/bobbio-left-and-right.md.json",
+   "agents/author/research/sources/caplan-lewis-exchange.md": "artifacts/agents/author/research/sources/caplan-lewis-exchange.md.json",
+   "agents/author/research/sources/ches-2024-rederivation.md": "artifacts/agents/author/research/sources/ches-2024-rederivation.md.json",
+   "agents/author/research/sources/collier-mahon-1993.md": "artifacts/agents/author/research/sources/collier-mahon-1993.md.json",
+   "agents/author/research/sources/eight-values.md": "artifacts/agents/author/research/sources/eight-values.md.json",
+   "agents/author/research/sources/gonzalez-hxa-reply.md": "artifacts/agents/author/research/sources/gonzalez-hxa-reply.md.json",
+   "agents/author/research/sources/hooghe-marks-wilson-2002.md": "artifacts/agents/author/research/sources/hooghe-marks-wilson-2002.md.json",
+   "agents/author/research/sources/hungary-2026-election.md": "artifacts/agents/author/research/sources/hungary-2026-election.md.json",
+   "agents/author/research/sources/kitschelt-1994.md": "artifacts/agents/author/research/sources/kitschelt-1994.md.json",
+   "agents/author/research/sources/kling-three-languages.md": "artifacts/agents/author/research/sources/kling-three-languages.md.json",
+   "agents/author/research/sources/mudde-2004.md": "artifacts/agents/author/research/sources/mudde-2004.md.json",
+   "agents/author/research/sources/muller-what-is-populism.md": "artifacts/agents/author/research/sources/muller-what-is-populism.md.json",
+   "agents/author/research/sources/orbanomics.md": "artifacts/agents/author/research/sources/orbanomics.md.json",
+   "agents/author/research/sources/sjsebastian-venue-style.md": "artifacts/agents/author/research/sources/sjsebastian-venue-style.md.json",
+   "agents/author/research/sources/tax-foundation-tariff-tracker.md": "artifacts/agents/author/research/sources/tax-foundation-tariff-tracker.md.json",
+   "agents/author/research/sources/welfare-chauvinism.md": "artifacts/agents/author/research/sources/welfare-chauvinism.md.json",
+   "agents/editor/research/index.md": "artifacts/agents/editor/research/index.md.json",
+   "agents/editor/research/sources/8values-test.md": "artifacts/agents/editor/research/sources/8values-test.md.json",
+   "agents/editor/research/sources/9axes-test.md": "artifacts/agents/editor/research/sources/9axes-test.md.json",
+   "agents/editor/research/sources/akkerman-mudde-zaslove-2014.md": "artifacts/agents/editor/research/sources/akkerman-mudde-zaslove-2014.md.json",
+   "agents/editor/research/sources/bobbio-left-and-right.md": "artifacts/agents/editor/research/sources/bobbio-left-and-right.md.json",
+   "agents/editor/research/sources/caplan-lewis-exchange.md": "artifacts/agents/editor/research/sources/caplan-lewis-exchange.md.json",
+   "agents/editor/research/sources/caramani-2017-will-vs-reason.md": "artifacts/agents/editor/research/sources/caramani-2017-will-vs-reason.md.json",
+   "agents/editor/research/sources/ches-2024-codebook-and-site.md": "artifacts/agents/editor/research/sources/ches-2024-codebook-and-site.md.json",
+   "agents/editor/research/sources/ches-2024-dataset-rederivation.md": "artifacts/agents/editor/research/sources/ches-2024-dataset-rederivation.md.json",
+   "agents/editor/research/sources/collier-mahon-radial-categories.md": "artifacts/agents/editor/research/sources/collier-mahon-radial-categories.md.json",
+   "agents/editor/research/sources/converse-1964-belief-systems.md": "artifacts/agents/editor/research/sources/converse-1964-belief-systems.md.json",
+   "agents/editor/research/sources/dewilde-2023-cosmo-comm.md": "artifacts/agents/editor/research/sources/dewilde-2023-cosmo-comm.md.json",
+   "agents/editor/research/sources/dewilde-cosmopolitan-communitarian.md": "artifacts/agents/editor/research/sources/dewilde-cosmopolitan-communitarian.md.json",
+   "agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md": "artifacts/agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md.json",
+   "agents/editor/research/sources/freeden-morphology.md": "artifacts/agents/editor/research/sources/freeden-morphology.md.json",
+   "agents/editor/research/sources/gonzalez-spectrum-does-exist.md": "artifacts/agents/editor/research/sources/gonzalez-spectrum-does-exist.md.json",
+   "agents/editor/research/sources/hooghe-marks-wilson-2002-galtan.md": "artifacts/agents/editor/research/sources/hooghe-marks-wilson-2002-galtan.md.json",
+   "agents/editor/research/sources/hungary-2026-election.md": "artifacts/agents/editor/research/sources/hungary-2026-election.md.json",
+   "agents/editor/research/sources/jrws-wola-trump-milei.md": "artifacts/agents/editor/research/sources/jrws-wola-trump-milei.md.json",
+   "agents/editor/research/sources/kling-three-languages.md": "artifacts/agents/editor/research/sources/kling-three-languages.md.json",
+   "agents/editor/research/sources/lee-santoso-stevenson-2026-heuristic-inference.md": "artifacts/agents/editor/research/sources/lee-santoso-stevenson-2026-heuristic-inference.md.json",
+   "agents/editor/research/sources/lewis-myth-left-right-reviews.md": "artifacts/agents/editor/research/sources/lewis-myth-left-right-reviews.md.json",
+   "agents/editor/research/sources/lewis-quillette-retire-spectrum.md": "artifacts/agents/editor/research/sources/lewis-quillette-retire-spectrum.md.json",
+   "agents/editor/research/sources/mair-mudde-1998-via-manifesto-handbook.md": "artifacts/agents/editor/research/sources/mair-mudde-1998-via-manifesto-handbook.md.json",
+   "agents/editor/research/sources/mongrain-walgrave-2026-nondimensional.md": "artifacts/agents/editor/research/sources/mongrain-walgrave-2026-nondimensional.md.json",
+   "agents/editor/research/sources/mudde-populism-definition.md": "artifacts/agents/editor/research/sources/mudde-populism-definition.md.json",
+   "agents/editor/research/sources/muller-what-is-populism.md": "artifacts/agents/editor/research/sources/muller-what-is-populism.md.json",
+   "agents/editor/research/sources/orbanomics-wikipedia.md": "artifacts/agents/editor/research/sources/orbanomics-wikipedia.md.json",
+   "agents/editor/research/sources/pew-2026-political-typology.md": "artifacts/agents/editor/research/sources/pew-2026-political-typology.md.json",
+   "agents/editor/research/sources/political-compass-two-axes.md": "artifacts/agents/editor/research/sources/political-compass-two-axes.md.json",
+   "agents/editor/research/sources/politiscales-about.md": "artifacts/agents/editor/research/sources/politiscales-about.md.json",
+   "agents/editor/research/sources/poppa-expert-survey.md": "artifacts/agents/editor/research/sources/poppa-expert-survey.md.json",
+   "agents/editor/research/sources/sjsebastian-substack-style.md": "artifacts/agents/editor/research/sources/sjsebastian-substack-style.md.json",
+   "agents/editor/research/sources/ssc-thrive-survive.md": "artifacts/agents/editor/research/sources/ssc-thrive-survive.md.json",
+   "agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md": "artifacts/agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md.json",
+   "agents/editor/research/sources/two-dimensional-precursors.md": "artifacts/agents/editor/research/sources/two-dimensional-precursors.md.json",
+   "agents/editor/research/sources/uscinski-2021-anti-establishment.md": "artifacts/agents/editor/research/sources/uscinski-2021-anti-establishment.md.json",
+   "agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md": "artifacts/agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md.json",
+   "agents/editor/research/sources/venue-sjsebastian-substack.md": "artifacts/agents/editor/research/sources/venue-sjsebastian-substack.md.json",
+   "agents/editor/research/sources/voteview-poole-rosenthal.md": "artifacts/agents/editor/research/sources/voteview-poole-rosenthal.md.json",
+   "agents/editor/research/sources/welfare-chauvinism-literature.md": "artifacts/agents/editor/research/sources/welfare-chauvinism-literature.md.json",
+   "correspondence/v1-response.md": "artifacts/correspondence/v1-response.md.json",
+   "correspondence/v1-review/00-piece-brief.md": "artifacts/correspondence/v1-review/00-piece-brief.md.json",
+   "correspondence/v1-review/01-claim-ledger.md": "artifacts/correspondence/v1-review/01-claim-ledger.md.json",
+   "correspondence/v1-review/02-discourse-report.md": "artifacts/correspondence/v1-review/02-discourse-report.md.json",
+   "correspondence/v1-review/03-argument-notes.md": "artifacts/correspondence/v1-review/03-argument-notes.md.json",
+   "correspondence/v1-review/04-craft-notes.md": "artifacts/correspondence/v1-review/04-craft-notes.md.json",
+   "correspondence/v1-review/05-second-read.md": "artifacts/correspondence/v1-review/05-second-read.md.json",
+   "correspondence/v1-review/editors-letter.md": "artifacts/correspondence/v1-review/editors-letter.md.json",
+   "drafts/taxonomy_reference_sheet.md": "artifacts/drafts/taxonomy_reference_sheet.md.json"
+  },
+  "card-facts": {
+   "": "card-facts.json"
+  },
+  "dossier": {
+   "v1-review": "dossier/v1-review.json"
+  },
+  "editor-doc": {
+   "published": "drafts/published.json",
+   "v1": "drafts/v1.json",
+   "v2": "drafts/v2.json",
+   "v3": "drafts/v3.json",
+   "v4": "drafts/v4.json"
+  },
+  "figure-image": {
+   "figure_1_five_questions": "figures/figure_1_five_questions.json",
+   "figure_2_ches_correlations": "figures/figure_2_ches_correlations.json",
+   "figure_2_ches_correlations_v2": "figures/figure_2_ches_correlations_v2.json",
+   "figure_3_system_axis": "figures/figure_3_system_axis.json",
+   "figure_4_public_lexicon": "figures/figure_4_public_lexicon.json",
+   "figure_5_illustrative_profiles": "figures/figure_5_illustrative_profiles.json"
+  },
+  "files": {
+   "": "files.json"
+  },
+  "run-report": {
+   "v1-review": "run-report/v1-review.json"
+  },
+  "timeline": {
+   "": "timeline.json"
+  },
+  "version-diff": {
+   "1:2": "diffs/1-2.json",
+   "2:3": "diffs/2-3.json",
+   "3:4": "diffs/3-4.json",
+   "4:5": "diffs/4-5.json"
+  },
+  "versions": {
+   "": "versions.json"
+  },
+  "what-changed": {
+   "v1-v2": "what-changed/v1-v2.json",
+   "v2-v3": "what-changed/v2-v3.json",
+   "v3-v4": "what-changed/v3-v4.json",
+   "v4-published": "what-changed/v4-published.json"
+  }
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "head": {
+  "draftId": "published",
+  "n": 5
+ },
+ "resolve": {
+  "1": {
+   "draftId": "v1",
+   "draftN": 1,
+   "origin": "human_upload",
+   "state": "frozen"
+  },
+  "2": {
+   "draftId": "v2",
+   "draftN": 2,
+   "origin": "response_to_review",
+   "state": "frozen"
+  },
+  "3": {
+   "draftId": "v3",
+   "draftN": 3,
+   "origin": "human_revision",
+   "state": "frozen"
+  },
+  "4": {
+   "draftId": "v4",
+   "draftN": 4,
+   "origin": "human_revision",
+   "state": "frozen"
+  },
+  "5": {
+   "draftId": "published",
+   "draftN": 5,
+   "origin": "imported",
+   "state": "working"
+  },
+  "working": {
+   "draftId": "published",
+   "draftN": 5,
+   "origin": "imported",
+   "state": "working"
+  }
+ }
+}

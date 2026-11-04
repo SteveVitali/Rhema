@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/shavit-catch-a-chinchilla-2023.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "46a76f82f23f0db8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/shavit-catch-a-chinchilla-2023.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# shavit-catch-a-chinchilla-2023\n- **URL:** https://arxiv.org/abs/2303.11341 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Shavit, Mar 2023 (abstract read): hardware-level monitoring to verify rules on large-scale training; training only; consumer devices explicitly not curtailed; inspectors see weight snapshots/run metadata, not models, data, hyperparameters.\n- **Key passages:** \"does not curtail the use of consumer computing devices.\"\n- **Reliability:** Primary; technical proposal.\n- **Relevance to this project:** §2 (on-device gating is not in the literature); §4(c).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0fb7dbe947131fb6e822770a75bdb029b6a17ebbd479aaba85823b2932e02b00",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/shavit-catch-a-chinchilla-2023.md",
+ "kind": "artifact-page"
+}

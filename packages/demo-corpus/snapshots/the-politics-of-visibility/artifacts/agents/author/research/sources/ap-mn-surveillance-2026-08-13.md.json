@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ap-mn-surveillance-2026-08-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "36cc517041346820",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ap-mn-surveillance-2026-08-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ap-mn-surveillance-2026-08-13\n- **URL:** https://apnews.com/article/5e6e554e79980553c3a02ca199593a7d (apnews.com blocked to fetcher; full AP text read via syndicated copies: https://www.yahoo.com/news/politics/articles/documents-show-federal-surveillance-operation-074634021.html and https://abcnews.com/US/wireStory/documents-show-federal-surveillance-operation-minnesota-targeted-progressive-135630659 and https://www.cbsnews.com/minnesota/news/federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions-documents/) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C1–C3\n- **What it establishes:** Core C1 elements: operation names (\"Operation Puppet Master\"; a later \"Project Whipple Shield\"); DHS undercover officers infiltrating meetings in churches, schools, parks, libraries; license plate numbers used to compile attendee names; years of financial records obtained (Sunrise Movement, SEIU, CWA) via a summons with a non-disclosure request, including a DHS request to FedWire (Federal Reserve money-transfer system); slide titled \"The Conspiracy\" with 18 organizations; documents emerged via defense motion by Kevin Riach filed Thursday (Aug 13, 2026) in the case of the 15 charged in June. Also the exact C3 Sunrise quotation. NOTE: the AP text itself does NOT say agents \"recorded\" conversations (it says the undercover officer \"listened\") and does not say vehicles were \"photographed\" — those elements come from Minnesota Reformer (see mn-reformer-metro-surge-spying note).\n- **Key passages:** Headline: \"Documents show federal surveillance operation in Minnesota targeted progressive groups, unions\"; dated Aug. 13, 2026 (10:05 PM), by Tim Sullivan and Jennifer Sinco Kelleher, AP. — \"Operation Puppet Master, was aimed at what officials called a network of conspirators helping 'violent opportunists and agitators.'\" — Puppet Master and Project Whipple Shield were a \"broad and irrational investigation\" driven by politics and not criminal conduct, per Riach's motion. — \"A slide created by Homeland Security's investigative branch titled 'The Conspiracy' shows 18 organizations, from a small Minneapolis bicycle repair collective to the AFL-CIO, the largest federation of labor groups in the U.S.\" — \"monitoring activist chat groups and using license plate numbers to compile names of people who attended gatherings.\" — \"The government also obtained years of certain financial records for groups ranging from the Sunrise Movement to major unions, including the Service Employees International Union\"; summons language: \"You are requested not to disclose the existence of this summons for an indefinite period of time.\" — 15 people \"charged by federal prosecutors in June with impeding the crackdown, accusing them of conspiring against the federal government through a range of actions, from throwing ice chunks to setting up blockades.\" — Jan. 31 library meeting: \"a Jan. 31 meeting in a Minneapolis library, when a Homeland Security report says an undercover officer identified as 'UCA 9833' listened as supporters of a progressive climate group, the Sunrise Movement, discussed sit-ins, de-escalation tactics and 'having a police liaison and safety marshal present during events.'\" — C3 quote: \"'During the Action meeting, it was made clear that the Sunrise Movement organization focused on \"peaceful\" protests,' the agent reported.\" — CWA President Claude Cummings Jr.: \"Our union has become the latest target of a corrupt administration that weaponizes the legal process.\"\n- **Reliability:** Secondary (wire reporting) but based directly on court-filed DHS documents; two named AP reporters; independently syndicated identically by ABC/CBS/Yahoo. High reliability; single-origin for the \"18 organizations\" count and \"The Conspiracy\" slide title.\n- **Relevance to this project:** C1 (all elements except \"recorded\"/\"photographed vehicles\"), C2 (count/charge summary), C3 (the exact quotation to be used in the essay).\n",
+  "meters": {
+   "readMin": 2,
+   "words": 511
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5f9b75c5891847737b2f8c2df0f41ba5bcd6b6e197979e36ce34e9769ef281d2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/ap-mn-surveillance-2026-08-13.md",
+ "kind": "artifact-page"
+}

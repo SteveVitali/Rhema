@@ -1,0 +1,6 @@
+# clearinghouse-mennonite-v-dhs
+- **URL:** https://clearinghouse.net/case/46097/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C46
+- **What it establishes:** Mennonite Church USA v. DHS, 1:25-cv-00403 (D.D.C., Judge Dabney Friedrich). Filed Feb. 11, 2025 by religious organizations challenging the Jan. 20, 2025 rescission of the "sensitive locations" policy (RFRA, First Amendment, APA). April 11, 2025: Friedrich DENIED the preliminary injunction for lack of Article III standing (no "credible threat" of imminent enforcement at plaintiffs' churches; causation and conscience-injury theories rejected; plaintiffs "cannot manufacture standing by incurring costs in anticipation of non-imminent harm"). Appeal to D.C. Circuit (No. 25-05209) filed May 30, 2025; briefing ongoing into 2026; no appellate ruling as of accessed date.
+- **Key passages:** As quoted above.
+- **Reliability:** Secondary but docket-grounded (Civil Rights Litigation Clearinghouse).
+- **Relevance to this project:** C46 — the Mennonite case does NOT support "courts have constrained enforcement at churches" (PI denied). The supporting case is Philadelphia Yearly Meeting v. DHS (see pym-fourth-circuit-ruling note).

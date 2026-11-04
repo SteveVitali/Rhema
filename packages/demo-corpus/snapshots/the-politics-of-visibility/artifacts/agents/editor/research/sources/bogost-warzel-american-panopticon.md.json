@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bogost-warzel-american-panopticon.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8df7237fe9f0f4f1",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "5bd5bc4ef9827d0a",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "66b27bdd05072d4a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/bogost-warzel-american-panopticon.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Bogost & Warzel, \"American Panopticon\" (The Atlantic, 2025)\n\n- **URL:** read via mirror https://www.rsn.org/001/american-panopticon.html (orig. theatlantic.com, spring 2025)\n- **Accessed:** 2026-08-21\n\n**Establishes:** The highest-profile 2025 magazine treatment of the capacity thesis, aimed at DOGE's federal data consolidation. \"America already has all the technology it needs to build a draconian surveillance society — the conditions for such a dystopia have been falling into place slowly over time.\" \"A fragile combination of decades-old laws, norms, and jungly bureaucracy has so far prevented repositories such as these from assembling into a centralized American surveillance state.\" Catalogues IRS/DHS/DEA/VA databases, 640M+ photo face systems, phone location data; hypothesizes weaponization against critics. The draft's differentiators vs. this piece: private infrastructure (Flock/brokers/Palantir) rather than intra-government consolidation; the classification layer; the philosophy; the falsification list.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 125
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "87cc1d51d054f08ae5560ca03c5fa81942da7396fa092ff1dc41346a4e468a06",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/bogost-warzel-american-panopticon.md",
+ "kind": "artifact-page"
+}

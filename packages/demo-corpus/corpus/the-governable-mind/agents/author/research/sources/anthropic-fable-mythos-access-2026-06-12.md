@@ -1,0 +1,12 @@
+# anthropic-fable-mythos-access-2026-06-12
+- **URL:** https://www.anthropic.com/news/fable-mythos-access · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (Commerce directive)
+- **What it establishes:** Anthropic's own statement, dated June 12, 2026. The directive was received "today at 5:21pm (ET)"; it is an "export control directive" citing "national security authorities"; scope is nationality-keyed and worldwide, including Anthropic's own foreign-national employees; Anthropic disabled both models for ALL customers. The statement does NOT contain the phrase "no reliable way to verify nationality in real-time" (or the words "nationality", "verify", "real-time", "citizenship", "screen"); the all-customers shutdown is stated as the "net effect" of the order without a stated verification rationale. It does not name the instrument ("is informed" letter) or Amazon, does not say whether the letter is public (only that it "did not provide specific details of its national security concern"), and does not mention identity verification or Persona.
+- **Key passages:**
+  - "The US government, citing national security authorities, has issued an export control directive to suspend all access to Fable 5 and Mythos 5 by any foreign national, whether inside or outside the United States, including foreign national Anthropic employees."
+  - "We received the directive from the government today at 5:21pm (ET)."
+  - "The net effect of this order is that we must abruptly disable Fable 5 and Mythos 5 for all our customers to ensure compliance."
+  - "Our understanding is that the government believes it has become aware of a method of bypassing, or 'jailbreaking' Fable 5."
+  - "The letter did not provide specific details of its national security concern."
+  - "We believe this is a misunderstanding and are working to restore access as soon as possible."
+- **Reliability:** Primary (the regulated party's own contemporaneous statement); self-interested framing ("misunderstanding").
+- **Relevance to this project:** Anchor for the directive's date, scope, and immediate all-user shutdown. Caution: the "no reliable way to verify nationality in real time" language must be attributed to secondary reporting (techpolicy.press, CSA, The Hacker News), not to Anthropic verbatim.

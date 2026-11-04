@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/heppner-memorandum-rakoff-2026-02-17.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fb30acae223864e6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/heppner-memorandum-rakoff-2026-02-17.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# heppner-memorandum-rakoff-2026-02-17\n- **URL:** https://www.akingump.com/a/web/ssTGsd5NHbtZ1onzXQMTye/1_25-cr-503-27-memorandum.pdf · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** PRIMARY. United States v. Heppner, 25 Cr. 503 (JSR), Dkt. 27, Memorandum (S.D.N.Y. filed Feb 17, 2026), 12 pp.; this copy HAS a text layer (read in full locally). Bench ruling Feb 10, 2026; \"a question of first impression nationwide\" (p. 2). The AI Documents \"lack at least two, if not all three, elements\" of privilege (p. 5): (1) not communications with counsel — \"that alone disposes\" (p. 5); (2) not confidential — \"not merely because Heppner communicated with a third-party AI platform but also because\" of Anthropic's privacy policy (p. 6), reinforced by Stein's Jan 5, 2026 OpenAI order (pp. 6–7); (3) not for the purpose of obtaining legal advice — \"perhaps presents a closer call\" (p. 7); Kovel caveat had counsel directed the use (p. 7). Work product also denied (pp. 8–12). Provenance: FBI executed a search warrant at Heppner's HOME at his arrest and seized documents and devices; ~31 documents among the seized materials (p. 3); \"seized from Heppner, at the time of his arrest, pursuant to a search warrant\" (p. 10). Nothing was obtained from Anthropic. Reporter citation 820 F. Supp. 3d 292 is confirmed only through the DOJ's Kim letter (Dkt. 55 at 6: \"United States v. Heppner, 820 F. Supp. 3d 292, 296–97 (S.D.N.Y. 2026)\" and \"at 298\"); I did not see a Westlaw/Lexis page.\n- **Key passages:**\n  - p. 5: \"Applying these principles here, the AI Documents lack at least two, if not all three, elements of the attorney-client privilege.\"\n  - p. 5: \"Because Claude is not an attorney, see ECF No. 23-6, that alone disposes of Heppner's claim of privilege.\"\n  - p. 6: \"Second, the communications memorialized in the AI Documents were not confidential. This is not merely because Heppner communicated with a third-party AI platform but also because the written privacy policy to which users of Claude consent provides that Anthropic collects data on both users' \"inputs\" and Claude's \"outputs,\" that it uses such data to \"train\" Claude, and that Anthropic reserves the right to disclose such data to a host of \"third parties,\" including \"governmental regulatory authorities.\"\"\n  - p. 6: \"The policy clearly puts Claude's users on notice that Anthropic, even in the absence of a subpoena compelling it to do so, may \"disclose personal data to third parties in connection with claims, disputes [,] or litigation.\"\"\n  - p. 7: \"For these reasons, Heppner could have had no \"reasonable expectation of confidentiality in his communications\" with Claude.\"\n  - p. 7: \"Third, Heppner did not communicate with Claude for the purpose of obtaining legal advice. This issue perhaps presents a closer call ...\"\n  - p. 3: \"In connection with Heppner's arrest on November 4, 2025, agents with the Federal Bureau of Investigation executed a search warrant at Heppner's home and seized numerous documents and electronic devices. ... among the seized materials were approximately thirty-one documents that memorialize communications that Heppner had with the generative AI platform \"Claude,\"\"\n  - p. 10: \"Here, however, the AI Documents were seized from Heppner, at the time of his arrest, pursuant to a search warrant the validity of which Heppner's counsel does not challenge.\"\n  - p. 8 n.3: \"he waived the privilege by sharing that information with Claude and Anthropic, just as if he had shared it with any other third party.\"\n- **Reliability:** Primary judicial opinion. Internal date tension: p. 2 says the indictment was unsealed Nov 4 and Heppner \"arrested the following day\"; p. 3 says \"arrest on November 4, 2025.\" Do not give an arrest date without hedging.\n- **Relevance to this project:** L3 CONFIRMED with nuance: three grounds, the first dispositive alone; the confidentiality ground rests on BOTH third-party disclosure and the privacy policy; the third is a self-described closer call. The record came from a home search, not from the provider. Supersedes the limitation in hlr-kumar-heppner that the opinion lacked a text layer.\n",
+  "meters": {
+   "readMin": 3,
+   "words": 646
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "75bf8d45c9e7c7b438391c31dd3a4427abb91d0d8d70dbb7d056d8836988f2ce",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/heppner-memorandum-rakoff-2026-02-17.md",
+ "kind": "artifact-page"
+}

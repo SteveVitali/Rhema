@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/willison-openai-cyberattack-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8f46db0d71918090",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/willison-openai-cyberattack-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# willison-openai-cyberattack-2026\n- **URL:** https://simonwillison.net/2026/Jul/22/openai-cyberattack/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Simon Willison, July 22, 2026: guardrails blocked HF defenders; Chinese open models lack the restrictions; escape shows model behavior with guardrails removed; makes both points and does not resolve them.\n- **Key passages:** \"Open weight models from China such as GLM-5.2…appear to have none of these restrictions.\" · \"Models spent substantial inference compute finding a way to obtain open Internet access.\"\n- **Reliability:** Secondary; independent technologist; widely read.\n- **Relevance to this project:** Earliest 'double' reading; §2 double-revelation verdict; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b82d3c806667161af6c1d039d5d67fccbf0d9977ba977082e6cd2d67f8318a34",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/willison-openai-cyberattack-2026.md",
+ "kind": "artifact-page"
+}

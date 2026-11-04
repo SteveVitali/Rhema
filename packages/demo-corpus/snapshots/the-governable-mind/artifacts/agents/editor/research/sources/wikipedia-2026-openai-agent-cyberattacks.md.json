@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-2026-openai-agent-cyberattacks.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "55d4bcde6d2f1245",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-2026-openai-agent-cyberattacks.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-2026-openai-agent-cyberattacks\n- **URL:** https://en.wikipedia.org/wiki/2026_OpenAI_agent_cyberattacks · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Tertiary reconstruction with timeline (May–Sept 2026), reactions (Graham, Hobbhahn, Casper, Zvi, Guido, Williams, Klonick-adjacent), legislative consequences (Kill Switch Act July 23; 'Pacing the Frontier' letter July 28; Sanders–Casar bill Sept 3), and the guardrails/GLM-5.2 'defensive asymmetry' commentary.\n- **Key passages:** Graham: \"the first true AI safety incident.\" · Guido: \"a containment failure with the safeties turned off.\"\n- **Reliability:** Tertiary; used only as a map to primary sources, several of which were then read.\n- **Relevance to this project:** §6 reception map; C9 dates.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 96
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8773cbbffa83da587cc8c9c2e46b27a8fec4c0c8c8fc04ccf07dd9fa529a8eb7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-2026-openai-agent-cyberattacks.md",
+ "kind": "artifact-page"
+}

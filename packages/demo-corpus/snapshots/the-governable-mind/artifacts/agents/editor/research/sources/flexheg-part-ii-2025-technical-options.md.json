@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/flexheg-part-ii-2025-technical-options.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a91e86104d503ac5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/flexheg-part-ii-2025-technical-options.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# flexheg-part-ii-2025-technical-options\n- **URL:** https://arxiv.org/pdf/2506.03409 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** flexHEG Part II, 'Technical Options' (2025), full PDF via text proxy. Datacenter accelerators only (H100, Blackwell, TPUs); no consumer, edge, or personal devices; no inference-time weight authentication.\n- **Key passages:** 'compatibility with the different types of accelerators ... that are used by frontier AI developers' (design goal).\n- **Reliability:** Primary; technical.\n- **Relevance to this project:** Q4: negative result; confined.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6b7de79116da91a58fba206d2f2e520be8cd9d4b47bee2a1c9a9b8d006a4d95f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/flexheg-part-ii-2025-technical-options.md",
+ "kind": "artifact-page"
+}

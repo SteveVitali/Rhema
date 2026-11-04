@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/anthropic-redeploying-fable-5-2026-06-30.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f2d4336ec7556b59",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/anthropic-redeploying-fable-5-2026-06-30.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-redeploying-fable-5-2026-06-30\n- **URL:** https://www.anthropic.com/news/redeploying-fable-5 · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (lifting; redeployment commitments)\n- **What it establishes:** Dated June 30, 2026 (updated July 1). Export controls lifted June 30; access restored July 1. Mythos 5 had already been restored \"for a set of US organizations\" after government approval on June 26. Four commitments: improved classifier (>99% block of the reported technique), expanded early access for designated government partners to models AND safeguards, jailbreak/misuse triage-and-notify to government, and a cross-industry jailbreak-severity framework with Amazon, Microsoft, Google and Glasswing partners. Contains nothing about identity verification, Persona, KYC, or nationality screening, and does not mention Mythos 5.1.\n- **Key passages:**\n  - \"As of today, June 30, the export controls on Fable 5 and Mythos 5 have been lifted.\"\n  - \"Access to Claude Fable 5 and Mythos 5 is now restored.\" (July 1 update)\n  - \"We have also restored access to Mythos 5 for a set of US organizations, following the US government's approval on June 26.\"\n  - \"Working closely with the government, we trained an improved safety classifier that targets and blocks the behavior described in the report.\" (\"the specific technique described in the Amazon report is blocked in over 99% of cases\")\n  - \"For models that materially advance the capability frontier in areas relevant to national security, we will provide designated government partners with expanded early access to both the models and the safeguards that accompany them.\"\n  - \"When significant jailbreaks or misuse patterns are identified, we will quickly investigate, triage, and notify appropriate government counterparts.\"\n  - \"We are therefore partnering with Amazon, Microsoft, Google, and other Glasswing partners to draft a consensus framework for assessing the severity of AI jailbreaks and how AI developers should respond to them.\"\n- **Reliability:** Primary; self-interested.\n- **Relevance to this project:** Establishes the June 30 / July 1 dates (18 days to lifting, 19 to restoration) and the four commitments. Undercuts any claim that the redeployment itself introduced identity verification: the post is silent on it.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Post re-read via a reader proxy. The nationality sentence IS in this post (first paragraph), verbatim: \"On Friday, June 12, the US government applied export controls to our newest models, Claude Fable 5 and Claude Mythos 5. This required us to restrict access to foreign nationals, whether inside or outside the United States. Because the order took effect immediately and we had no reliable way to verify nationality in real-time, we suspended access to both models for all users.\" Dates verbatim: \"As of today, June 30, the export controls on Fable 5 and Mythos 5 have been lifted.\" / \"Fable 5 will be available starting tomorrow, Wednesday, July 1, to users globally\" / update banner dated \"Jul 1, 2026\": \"Access to Claude Fable 5 and Mythos 5 is now restored.\" Models were released \"on Tuesday, June 9\". Arithmetic: directive June 12 → lifted June 30 = 18 days; access suspended June 12 → restored July 1 = 19 days. The post is dated June 30 with a July 1 update, so cite it as \"June 30, 2026 (updated July 1)\", not as a July 1 post. Cloud platforms (AWS, Google Cloud, Microsoft Foundry) were to be re-enabled \"as quickly as possible\", i.e. possibly after July 1.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 537
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aec3a955f5a4fd0b8f6c32bc10d6e0e033580bfb3f52e854a9f3f20fefc7e370",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/anthropic-redeploying-fable-5-2026-06-30.md",
+ "kind": "artifact-page"
+}

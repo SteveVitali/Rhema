@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/palermos-2023-mental-data-abstract.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "63ef74f69acf5920",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/palermos-2023-mental-data-abstract.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# palermos-2023-mental-data-abstract\n- **URL:** https://www.tandfonline.com/doi/abs/10.1080/21507740.2022.2148772 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Abstract only (via search; page 403): if EMT is true mental privacy is threatened; proposes 'mental data' as a category; technological, not merely legal, protection so mental data are practically impossible to obtain.\n- **Key passages:** mental data should be \"practically — not just legally — impossible for others to obtain\"\n- **Reliability:** Primary scholarly abstract; independent. Full text not read.\n- **Relevance to this project:** Report §3, §2 (epistemic exit convergence); draft l.120, l.234.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 87
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4c2b290741dafd1f6e36d35a69c1e4886b46b9519744a784e5d497f370cb8ab7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/palermos-2023-mental-data-abstract.md",
+ "kind": "artifact-page"
+}

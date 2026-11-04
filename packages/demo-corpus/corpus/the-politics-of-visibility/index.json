@@ -1,0 +1,1193 @@
+{
+  "slug": "the-politics-of-visibility",
+  "artifacts": [
+    {
+      "path": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "bytes": 24415,
+      "sha256": "70f4d407d04e475201bbc46ae8b5ec98c55b168497d09fa223579d9de23f8f0f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/01-voice-brief.md",
+      "bytes": 9977,
+      "sha256": "f0a74f0374c0a374323f486bc0850bfecb49819eb54b0e8baecc7e1776ecd3a0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/02-structure-plan.md",
+      "bytes": 20882,
+      "sha256": "03e7d85040ac915658cf9712b1067d89ba530893dd72ccd74416ee4b41bab738",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/03-claim-ledger.md",
+      "bytes": 48995,
+      "sha256": "3d60074f79286ba85ff1f9bd59db2d1eaa79454b95e4f799ff1d24d627ea41e2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/04-draft-ledger.md",
+      "bytes": 7880,
+      "sha256": "926da603196a1de26d1f11befad7688bdf6bf8fd28149d804bf3e8d6d57d7934",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/05-consolidation-notes.md",
+      "bytes": 5449,
+      "sha256": "77b05c12f6272cae4887e6802e3a860a09dba1b4f653b83ad78d14730ebfb5c4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "bytes": 47587,
+      "sha256": "5aa21f6e1e84c5b45eb5baa877e111613c062d34df02fde7730c970db7b728e1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/ledgers/v1-response-ledger.md",
+      "bytes": 21122,
+      "sha256": "dbc91bfccc87175adfbf862edcd102318e46889126ba473c84afe82d84bb5497",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/index.md",
+      "bytes": 19814,
+      "sha256": "6cc880a43307cd49699cf68983f581ae274ad0f99d1341cf51d2db4bc3943ba0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/accessnow-espionage-for-repression-2026.md",
+      "bytes": 2075,
+      "sha256": "5e50e028dd415862521325d79d182f496e473c29b58f4b2445f1502c21f1d3af",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/accessnow-first-10000-cases-2021.md",
+      "bytes": 1844,
+      "sha256": "69956bb0fe04dd73ad5679bea5dfc747f791ce187c887fb3cc6ead41b6059df2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/accessnow-helpline.md",
+      "bytes": 805,
+      "sha256": "1b1d72647d7239b8698cbf848051f4a360e1685402f0f2da355bde992c25a6c2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-2022-dhs-location-data.md",
+      "bytes": 1584,
+      "sha256": "ed4a5e47612b91702ae5bedf598c9ca0e1bb5ba4c2fb3b97e0a559cf994bbf9d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-2026-dhs-location-data-update.md",
+      "bytes": 1576,
+      "sha256": "921e72dc2674931635ba898c7a7a62038ea38aefc9f59998ba3934f52a923199",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-2026-palantir-roundup.md",
+      "bytes": 1928,
+      "sha256": "8af1c5d47a9c73393a8e196636b9a83e1775a62ebbc5787accdceb35e9fe5c8b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-galati-testimony-2012.md",
+      "bytes": 1396,
+      "sha256": "6e1137a2db3fbb272190a7c709c1b4654678d1cbbedb09ae760d5e600b221429",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-khalil-scotus-review.md",
+      "bytes": 1141,
+      "sha256": "a3f61b26c390984853584af4ed66d12795c6de4a1fb631e43375806f83f09f5c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-nypd-surveillance-factsheet.md",
+      "bytes": 1169,
+      "sha256": "d6117d8b64abbda440409e2d76a9c4af8e2ab77ce02824543b3e539a31217bf5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aclu-nypd-unit-disbanded-2014.md",
+      "bytes": 1251,
+      "sha256": "68f15765c44155e73cc3ad800ccb7bb75b5783558469d6d813862048f93d230e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/amnesty-2021-pegasus-project.md",
+      "bytes": 1579,
+      "sha256": "03ff7436fb83dee9259f23007a6cd5b8efdf195b24854a133304ad85856b1dd7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ap-15-charged-2026-06.md",
+      "bytes": 1873,
+      "sha256": "f342e2ccfeabcb905513981bb7aefe3c00e87afbbc89bf4546e2613813899fa8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ap-mn-surveillance-2026-08-13.md",
+      "bytes": 3990,
+      "sha256": "5f9b75c5891847737b2f8c2df0f41ba5bcd6b6e197979e36ce34e9769ef281d2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ap-pulitzer-2012-nypd.md",
+      "bytes": 1701,
+      "sha256": "dd2261634a47ad75c1e58f69e95254a54b2e278474fe9e16d011c2becadf9c82",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/apsa-riaz-bermeo-definition.md",
+      "bytes": 877,
+      "sha256": "549d2d9475c02f8ff28835fc1f06395b324da2d4f723e3b709269faae619668d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/arendt-origins-total-domination-scan.md",
+      "bytes": 2046,
+      "sha256": "f1fe20a58d9130ed95b754192af67280467605e22a70fcabd446adbd16b66c00",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/austin-social-legibility-2022.md",
+      "bytes": 2146,
+      "sha256": "56641df1d68d5c1db84b39977fc936bfb24d51e55f3e35cba1a57e6908604e7f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aviationist-brize-norton-2025-06-20.md",
+      "bytes": 1368,
+      "sha256": "63d353a59c1bd1023f9a4796c57b532f9f3a29030961fb4e84a416c72ca819f5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/balkin-national-surveillance-state-2008.md",
+      "bytes": 5042,
+      "sha256": "551cb5dcfce1b4550b8125f4d4235269cceebf9fc639c6029504dc11212a432d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/binney-turnkey-totalitarian-2012.md",
+      "bytes": 3075,
+      "sha256": "84a4f0d196482f1c7229d7254230f89faa160549d977c850e93ae154de288fb1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bogost-warzel-american-panopticon-2025.md",
+      "bytes": 2629,
+      "sha256": "b54d84a68f62504fed087787648ccfa8e342c921c49a99e9bd83d066fef2db72",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/brandeis-myers-dissent-1926.md",
+      "bytes": 2546,
+      "sha256": "ed53ddbfbe83a015eaa3c0263ed43f79b42a363f4b4799161bb65925ca7a503c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/brennan-deportation-industrial-complex.md",
+      "bytes": 1734,
+      "sha256": "2275d44e47ff9509c856e93943bb7df6b96d10e80de869380eb29d467ab312eb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/brussels-signal-spo-vote-2026.md",
+      "bytes": 1080,
+      "sha256": "fdc42378484a90568b7218c82f83aad00e736cab2e490a97e41af0a748c4d5b7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cbs-comey-second-indictment.md",
+      "bytes": 1524,
+      "sha256": "279e543d36fe5d2f4092c60a5712ca592eb927fd9deb93bfb21f63231ebe7d0d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cbs-doj-drops-law-firm-eo-appeals.md",
+      "bytes": 1700,
+      "sha256": "d29eae3df489d312de689c499d5d2202539abc6522947af24b495db94ddfbf0f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chatrie-docket-check.md",
+      "bytes": 1168,
+      "sha256": "15c45418f2c81d5e57982e6454fab86095b8de6ed1858246e8f7d56e01f3958d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chilling-effects-skeptic-trail.md",
+      "bytes": 6085,
+      "sha256": "cf76af0fba538a3163e15630bd8557363d282c0191ea8c2623d2cf72b1b87e86",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/church-committee-book-ii-1976.md",
+      "bytes": 3820,
+      "sha256": "444445404dabc797a05d779870616e85b21a6ba14e8b5078cd91f5f09170f39e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/citizenlab-2025-graphite-caught.md",
+      "bytes": 1753,
+      "sha256": "b3706ea95eedf873b032f81b7163770ffab176efdcf9707b663377a7d2182864",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clapper-v-amnesty-2013.md",
+      "bytes": 3465,
+      "sha256": "a2aecd361e334ff971bcb18f81c72483ef8208406baf3ca1bac68737951f45a0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clearinghouse-khalil-v-joyce.md",
+      "bytes": 1952,
+      "sha256": "e380d6d2bdb9c1900f6ec680bd3e643619b8da19b6b629cc2e9a56709ba14774",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clearinghouse-mennonite-v-dhs.md",
+      "bytes": 1206,
+      "sha256": "5d819466d716fbb3334dd8bf4d481d78f19577e87ed685ba2d6b994f0ce12d0b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clearinghouse-newsom-v-trump.md",
+      "bytes": 1787,
+      "sha256": "d14513307597cce5496743fa084ab0f6baa68cf9715749f45a3e81592773e58c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clearinghouse-pym-45979.md",
+      "bytes": 2266,
+      "sha256": "a517dd03624731038921f840ff76d9c2d1e7f439ae2a8b81355f046a0b2a8979",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cohen-what-privacy-is-for-2013.md",
+      "bytes": 3269,
+      "sha256": "93ecdc9f7f1d76446bac305856fe4c83b4c9d705b23dab4dd77102c2b24d489f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/conversation-2026-chatrie.md",
+      "bytes": 1104,
+      "sha256": "23401feac1fff0c9b543f6d51d03c016eb9656699e7f92680f4ea246a8dbcd39",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/crs-lsb10340-domestic-terrorism-considerations.md",
+      "bytes": 1829,
+      "sha256": "3d2c5e0b2a2e9ba6bc1a587724b0310262832513f8647c5d44829e08762544d1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/crs-r46829-domestic-terrorism-federal-criminal-law.md",
+      "bytes": 1861,
+      "sha256": "6801609acee5a160ce121ae6202db26a4a9cdecb4452105c8eb6c0705fe1b3f6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/damn-arraignment-pleas-2026.md",
+      "bytes": 2237,
+      "sha256": "bd150ecdd3a4a880bfd6293824e5de44746bac9d1ecdb6bd11f8c0db42a12003",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/decrypt-2026-os-investigate.md",
+      "bytes": 1560,
+      "sha256": "b7636b569b08c9fb6c62a4b2bff54ef8630cfcea88eef19aaf1682105be1f6f0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/democracynow-nspm7-link-assertion.md",
+      "bytes": 2053,
+      "sha256": "d335ac734f986ff093be6d0618a982eb9189a7bf9c26b2e40cfa9b50bc536276",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/democracynow-puppet-master-2026-08-17.md",
+      "bytes": 2334,
+      "sha256": "b77772a681dd451f99901e3af25dfb616a3f42f1d9e87aae15987585a5cf29fd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/doj-usao-mn-damn-indictment-2026-06-16.md",
+      "bytes": 2741,
+      "sha256": "c2df0cf1463b83bc9b2c9100c321940d04055a907b6f5375d48d43bae4bf850d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/doj-v-reporters-committee-1989.md",
+      "bytes": 3460,
+      "sha256": "fba535d8c4c1659e6182dacfbe8e13502da930a058961a51a0b1aee73044fb26",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-2026-chatrie-victory.md",
+      "bytes": 1393,
+      "sha256": "60390d07270b6af51cbdf8562e8936e54bdbfd0052a06c08ddf95bb41aab2f88",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-ssd-attending-protest.md",
+      "bytes": 1217,
+      "sha256": "4366959e41b552cae729d003af4a55b9fbd38923fbb86d32ea9167d99f7ac643",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-ssd-mobile-location-tracking.md",
+      "bytes": 1353,
+      "sha256": "1bc77c5ad2d82b08f2b74663863dccd9ee2efbcbcf39886ec22e538de26ff106",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-ssd-problem-mobile-phones.md",
+      "bytes": 1077,
+      "sha256": "4e90bdd9daa24cadf136f60adb4c5b15aea65e13cdf56dcf44a95fbc3cdee318",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-ssd-security-plan.md",
+      "bytes": 1160,
+      "sha256": "a433fe5f0384e617f240f7e523cf21e15f57eb23a4ee2e68bdc6c70f76241c8f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fbi-centennial-history-2008.md",
+      "bytes": 1950,
+      "sha256": "83548bf16165b39c007f6085b7f94402705366e179d822624b5ffbb9ab1baf16",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fbi-history-palmer-raids.md",
+      "bytes": 1507,
+      "sha256": "1b0110e77b4f43c92735b2cda0040e6cf56700f36b03a3c10c5edb9c8215147e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/flock-faq-scale-capture.md",
+      "bytes": 1387,
+      "sha256": "2e028239d9e25a25548bf3270e6350e6b3e7bec55bb6434992da8522acf57e98",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/flock-langley-defense-2026.md",
+      "bytes": 3024,
+      "sha256": "245dad08dba94549df202e1db9bd11b6d2eb64d3219283cb11747c80aa05f936",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/foucault-panopticism-foucault-info.md",
+      "bytes": 1771,
+      "sha256": "c03e4633a2b16528824c15aae3062c2448b0c2ee40cb4f9c3be3913fb8720d23",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/foxnews-natanson-home-search.md",
+      "bytes": 1336,
+      "sha256": "b366a3aca65692419eedee065c633e4c8def293be56b5d872cb09a92fdcd5948",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fraenkel-dual-state-oup-2017-preview.md",
+      "bytes": 2071,
+      "sha256": "39b00ef3f74979824c7b93e83012a21bf0b9f72ae09926e5c8fe16a1b98a8f1d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gao-23-105607-facial-recognition.md",
+      "bytes": 1150,
+      "sha256": "c318d9cfd90d7d6f26a1089c7e51e8365c947667923cd60f75bdc58af31dd05d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gao-24-107372-facial-recognition.md",
+      "bytes": 1112,
+      "sha256": "53ce3890ff35554e6d02c964883b6bf1cacc194a908235e9dbdd375f8f4578f9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/garden-court-supreme-court-permission.md",
+      "bytes": 1280,
+      "sha256": "36e733badc7fdbb875f554156313ff5bfde32d5e0081c563ae9c83120d55bd6e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gizmodo-2026-os-investigate.md",
+      "bytes": 1604,
+      "sha256": "940ac549f911967c3f25b75c8c35e49ac5961b5e42ca61124e3c05561e1f7164",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/glissant-for-opacity.md",
+      "bytes": 3391,
+      "sha256": "b09edfa75ff1c29a5f743644bc68fdb425634c3a2b73648eee48f32eb889f6c5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gutenberg-tocqueville-democracy-vol2.md",
+      "bytes": 1604,
+      "sha256": "ec4ade0c1aa3efdf7a07c936390f1491cd0b67b64ca4819335a2fe032b499ea1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hac-bard-arendt-power-quote.md",
+      "bytes": 920,
+      "sha256": "ffa8cd0b84f280934f0c04110165cc2df7a665e0a1c988f180d0350bed2baaa4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hassan-v-nyc-3d-cir-2015.md",
+      "bytes": 1537,
+      "sha256": "90bbe0518d066de5162ef7146805062d44550ee9039442fa28bf800d96043160",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/holder-v-humanitarian-law-project.md",
+      "bytes": 2131,
+      "sha256": "7d5399f2227f5f3b80aad3b5183299307f39a91713059745a93231f0692c79cc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/home-office-tact-stats-dec-2025.md",
+      "bytes": 1705,
+      "sha256": "f4805e45a2b0df81cc7c58bca24c872d930c2631b9ff4c6cba89420dbf12b944",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrw-hungary-spo-abolished-2026.md",
+      "bytes": 1203,
+      "sha256": "dc3d330e0873d9de577759f55eef3767e4d4f35fb24e30da5198e8ec8c55402e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrw-open-letter-transparency-bill-2025.md",
+      "bytes": 1540,
+      "sha256": "b3e646fd5a39b4aa28674c002a6230bca009c3d72f315f23f4e44a30a900dc6c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrw-uk-court-upholds-ban-2026-06-15.md",
+      "bytes": 1397,
+      "sha256": "040394d84d2b2b57b2d8c4396cd914c6805a6566a40d25cc1b14f8918a79ff73",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/intercept-aaup-v-rubio-young-ruling.md",
+      "bytes": 1692,
+      "sha256": "2173ac60e2efdb690c803fe3768a4860b1ca1007749329c52194943506ccb314",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/investigatetv-2026-flock-training-videos.md",
+      "bytes": 1615,
+      "sha256": "4af28a729a41dd3413dedea529f4ebc1d2ab6e8ec044dda4863d94b1d8c72092",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/jan6-investigation-network-methods.md",
+      "bytes": 4986,
+      "sha256": "9b5996ef21cfb8e5b28be876c2e853a35dd4e48e7ad713fd4a0e93dd62331d80",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/jod-bermeo-backsliding-page.md",
+      "bytes": 1213,
+      "sha256": "99202e7d9dc54879a9e4e039bc6a9811aa396b76ba161fbb653ddb6b114c53ff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kirk-assassination-nspm7-timing.md",
+      "bytes": 3519,
+      "sha256": "2c15953a73a839b26ef971cd700b94407af6815af11f02cf8e634efa19add63f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/laird-v-tatum-1972.md",
+      "bytes": 3673,
+      "sha256": "01bb68687874b4d9248051c829366120991e32ea949984183a97aeedf3bcd3b0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/levitsky-way-path-2025.md",
+      "bytes": 3925,
+      "sha256": "74f684e2f916a01146220d71cb74a4c3bdb4ea010d08065410042e52e3fe455d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/levitsky-way-ziblatt-price-2025.md",
+      "bytes": 3110,
+      "sha256": "e7923fb0088eb5f3a9fa96f9ccd0f68401e52118d4f4e36636694e107caa14af",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/liberty-court-of-appeal-judgment-breakdown.md",
+      "bytes": 1558,
+      "sha256": "0d197db4495f3feb7323295633d674b8e05159ad4329bcc51dd213c5b5da9473",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/maynard-mosaic-theory-2010.md",
+      "bytes": 6504,
+      "sha256": "b8ba7d907b43ce90773b4c7461d17871a318680b17b89703899054d80108451f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mn-reformer-metro-surge-spying.md",
+      "bytes": 3912,
+      "sha256": "74184f4e4dc452b44c61db44443772478533057cdb7b3dc60a52ea8fee854254",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nandong-2026-ajps.md",
+      "bytes": 2036,
+      "sha256": "1f73ff0a08d5654f3743dce1de66c9bd3102071061328343e2eb65e6eb0f0545",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/npr-2026-dhs-paragon-no-relationship.md",
+      "bytes": 1540,
+      "sha256": "9bb11bceb605d704a1671b82b54dbbf629e0622adb59e7dc408cc360a90294bb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nspm-7-whitehouse-2025-09-25.md",
+      "bytes": 3956,
+      "sha256": "ac1be8a243bf943aa1396c4b8c345cb331607597910accc2b6ba68cd557ef9b6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nyclu-raza-v-nyc.md",
+      "bytes": 1180,
+      "sha256": "531ee05a4d346b5ec882d06a511295186e929e5f7d2dd3d9b123ae69e2267817",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ohchr-palestine-action-refetch.md",
+      "bytes": 2399,
+      "sha256": "6202cd97c0c0ced90bb4c114d8c3b7660d1a669a20c2f71350a78542775757c7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/peerj-2024-gait-recognition-survey.md",
+      "bytes": 1506,
+      "sha256": "e06bbc6d31f1a047fe2a8b855b58903ecc817db18ee898fef21b6392ca3cf166",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/penney-wikipedia-chilling-2016.md",
+      "bytes": 4853,
+      "sha256": "ab02df5c397aff2cf87f001667eb7bce77e8932dafbe2cbfd1391bdee0281075",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pettit-non-domination-sep.md",
+      "bytes": 3894,
+      "sha256": "0970833d0e17a64c78422f7426fbbea686250cb6da1ef82f962a41bfb767d4c9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/posner-privacy-concealment-2014.md",
+      "bytes": 5361,
+      "sha256": "74e57dfa6d09d52f024c21fa49a7005ccac665ee22fb6e9180a4a0fdcad491b3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/propublica-frontline-caught-in-the-crackdown.md",
+      "bytes": 1570,
+      "sha256": "a412e82e3ebc9be2f74d60d39a896d54cf0634e90f611ccbc2d573385e7cadba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/propublica-us-citizens-held-by-immigration-agents.md",
+      "bytes": 1761,
+      "sha256": "f456f950bb96b29b6ad5df253306ced292689f5ee73431b89ce35f38307f661d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pym-fourth-circuit-ruling.md",
+      "bytes": 1792,
+      "sha256": "7ae8b8be94eedca028cdfe2b7a702d97648a2a983960f28205eac23ae69631f5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rcfp-natanson-quote-verification.md",
+      "bytes": 1661,
+      "sha256": "2e506865f0f4ddb9d187c297d1e25d5d69b8bd49bf63263c9c3a79e9af421612",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rcfp-natanson-search-ruling.md",
+      "bytes": 1496,
+      "sha256": "75489d5e4dd80296e9b45bcb5903921512c400b03b921e63d00018ede7820752",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/reuters-doj-comey-fdr-drive-filing.md",
+      "bytes": 1721,
+      "sha256": "bc748a6e9b6f0782d81e899ff65a06e4448da0bf39db5b22ff5a6c4c040770d3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/reuters-hungary-spo-abolition-2026.md",
+      "bytes": 1722,
+      "sha256": "50f2faeeb84fe3f8680493db15dce14df558293bf1d94ab604dfaadf31ae70d7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/richards-dangers-of-surveillance-2013.md",
+      "bytes": 3609,
+      "sha256": "78b20668bc7d87141e8f34d5bf03c7e5964d8fd3cf50a4660e69309bf7b98f75",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rosenthal-selod-2026-genealogy.md",
+      "bytes": 2004,
+      "sha256": "b41aa042f2203415a0c999b6e2f3fcf9c45408d1427d403436c42e5004fa47b8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/scheppele-autocratic-legalism-uchicago.md",
+      "bytes": 2845,
+      "sha256": "7830cdd6aaa433568828ab1901a0be09dddcd8a445b9bbe196a7da526f88ef1f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/scott-seeing-like-a-state-full-text.md",
+      "bytes": 2485,
+      "sha256": "e43425de9958fcfe622d1ba76e47ee1ae34e8580d1b405cf93117ff8dce97ea9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/securedrop-fpf.md",
+      "bytes": 917,
+      "sha256": "5a3256ede04645ba0ee87995c1cb5175c8969f6ec36b527a559d76f2cd473782",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-arendt.md",
+      "bytes": 1737,
+      "sha256": "1d35d9c8b31e94dd60331ab72637a9f26fe8c00c66be0fdd0eca7ba81fbaf578",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/shklar-liberalism-of-fear-scan.md",
+      "bytes": 2425,
+      "sha256": "026dae43e36cd7fe4b4fa0bc5164629f129088cdde9ea73cc64e52af15d7efdb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/snowden-turnkey-tyranny-2013.md",
+      "bytes": 3075,
+      "sha256": "074e026b8106a09fe0651ff2085cbb345354af63d0eaf5b4652cd090669e6e3f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/snyder-obey-in-advance.md",
+      "bytes": 1848,
+      "sha256": "b59a32cd4e79885ff60e74e2fc4b3f7d47323f520d3d3946573dbe74b5332bfe",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/solove-nothing-to-hide-2007.md",
+      "bytes": 3137,
+      "sha256": "8cb7439ef08f9f2ae900bb4c5aba7340e59cbe34d2f352e3f1adc9fdf66685d5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stateline-flock-2026-scale.md",
+      "bytes": 1438,
+      "sha256": "116b3973f71aa25bd2fdd83268cf1ffdd624ec32f42901c6387b9985fffc50ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stoycheff-2016-under-surveillance.md",
+      "bytes": 1495,
+      "sha256": "ef076a744566b7514266faeac89dc047a4bbd8b473150a6c62956b16e7968967",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stoycheff-2018-privacy-panopticon.md",
+      "bytes": 1500,
+      "sha256": "aac27251b1f9747e3bb0533cb3ab3a2070fa4509ec3d1555eb26854c49aac8be",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stoycheff-nandong-refetch-2026.md",
+      "bytes": 6879,
+      "sha256": "ebc1fda0c6c0b65c05eb658b0385cc1fb02a156ff4d483e9e994637cf9ed3c1a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stripes-la-deployment-numbers.md",
+      "bytes": 964,
+      "sha256": "8903a3f1b0f8313a245f0989249332cd15e620379341169b348cc6d9621b07e2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-2026-ice-paragon.md",
+      "bytes": 1701,
+      "sha256": "03e0bae0c2b5be82dfc4c0abeba97d1d59fdb41daff28ed1a1ef0f60de4771a9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/uk-hcws729-wms-2025.md",
+      "bytes": 3237,
+      "sha256": "797cc1c833611075bb1f7e8fd5317459f7458706ebcfcb2529083dd93faba8fe",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/uk-si-2025-803-proscription-order.md",
+      "bytes": 1109,
+      "sha256": "72c29aa6f38340ab46f5011bb3e611a869de828ebaf225e624000b1bd154c6ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/uk-terrorism-act-2000-ss12-13.md",
+      "bytes": 1839,
+      "sha256": "37cd81a501f9ea8444b724d9269e3a8980d71d2b082ca75e5ad0c17784faf11d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/un-experts-ohchr-palestine-action.md",
+      "bytes": 2372,
+      "sha256": "daae882841310d9906cd701ed0b6d85b850d3dd2b7b134ca525feddc95fe9d32",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/understanding-society-fraenkel-dual-state.md",
+      "bytes": 1398,
+      "sha256": "daef21029a4c2dabe00cee97eb40afed1250de5182ac6323ee1d698c77f3dfcc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/vdem-uwp54-bermeo-aggrandizement.md",
+      "bytes": 1150,
+      "sha256": "fc5d9e614c22329745171f6f83609a7cfb0e5a177fc31f01466168d9569d80d2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/venable-2026-chatrie-analysis.md",
+      "bytes": 1385,
+      "sha256": "72ef9efb138675531109cff4daaeee0b1e69833df022eea8f9cd7ae8542f2259",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/volokh-comey-indictment-analysis.md",
+      "bytes": 1146,
+      "sha256": "e688aad8532a536550352cd58b674ae6adc4c5a46d54325290b12190313840f1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-palestine-action-timeline.md",
+      "bytes": 1394,
+      "sha256": "0581c39bf2b09b69e53ad38fd6b8e8b2e9c3edf5e79641807877f7b6351090a8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wired-os-investigate-2026.md",
+      "bytes": 3070,
+      "sha256": "6532cf7b79c00724f6bb5e793531f5fa181522e90279e4af87c7545a5fb3b644",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zuboff-behavioral-surplus.md",
+      "bytes": 3298,
+      "sha256": "58ca541c964e43da0779d6bb2fa25418cad52f5a390fef488356b633a988d6bc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/index.md",
+      "bytes": 8279,
+      "sha256": "60b83441b876fae55133e50fa4bd282546ccb67de9c9475f0b5cf329206b822f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aclu-dhs-location-data.md",
+      "bytes": 630,
+      "sha256": "3fc61e845ab0478da5237318cba049a5a875dfbb6ec0b37d916d005ef3ee28b8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aclu-palantir-roundup.md",
+      "bytes": 614,
+      "sha256": "cf2a9a951bd8044fa764783f9d92da44a7f16a4bd9c90f30caa6891bc1481989",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aclu-shamsi-nspm7.md",
+      "bytes": 722,
+      "sha256": "9ede5e811c7fe168dbf124350dd43ffaa5816925a44147e9fda7d57f1d2ce577",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ap-minnesota-surveillance.md",
+      "bytes": 1431,
+      "sha256": "d8eb44fc0d2d95f383944b161515018b55d4e4040c2df158794d462e9b13dd51",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/austin-social-legibility.md",
+      "bytes": 753,
+      "sha256": "ff2e26e30c15e6f34492c37009634a6d26d8fbcdcd880a5034d4400c45ab9ffc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/balkin-national-surveillance-state.md",
+      "bytes": 1592,
+      "sha256": "7c2c82e4295ff55f3d90c5a57eea07ec5b5c64879e55b99b674ac610814344cf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bermeo-scheppele-backsliding.md",
+      "bytes": 938,
+      "sha256": "80f3dcddb70cd0b663515059d2e02f6bb91a3410d1060f58a63b6942b8ac6385",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bogost-warzel-american-panopticon.md",
+      "bytes": 1028,
+      "sha256": "87cc1d51d054f08ae5560ca03c5fa81942da7396fa092ff1dc41346a4e468a06",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/brandeis-myers-friction.md",
+      "bytes": 950,
+      "sha256": "a13dce787d89571817597f201d8c73e9584ac067f61597719a5355f47cac2887",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/brennan-patel-antifascism.md",
+      "bytes": 947,
+      "sha256": "a5c4bedafe534c65fbe366213646db806d298d4181b1832bfcbee37163943b54",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chatrie-scotus.md",
+      "bytes": 689,
+      "sha256": "f3fd0300f03e664a138b9b1566a0a99bb788bafd23710606051e1a790be2bf37",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/checks-calibration-cases.md",
+      "bytes": 1459,
+      "sha256": "423e72ec70a3db91d688f714fb3cd53cbc62e2640a0c061b09ce715b8d881415",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chilling-empirics.md",
+      "bytes": 1161,
+      "sha256": "c8e935f7774741b0dbabbe7d8a5ddcbf7996c32ccb259b864b852cc3d0c00739",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/church-committee-book2.md",
+      "bytes": 727,
+      "sha256": "6d0a424c4e86c7852c971d7a65fc651d558e798396911e37c272fb93181e5a62",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/citizenlab-graphite-pegasus.md",
+      "bytes": 723,
+      "sha256": "1a20bfb5007ec465dfe6ff6012ae8a6a0385308db2ed6c6ffe90eb83ea97f724",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cohen-what-privacy-is-for.md",
+      "bytes": 1038,
+      "sha256": "ce8869df18a8672eec6b16e3d0a17b1aa999d93579c3ee07023d6793bc0808bd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cooper-wms-palestine-action.md",
+      "bytes": 1287,
+      "sha256": "70cc54e0038f420d2f0ac0e134ba209de99861f4745881ace076214860b3cf58",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/crs-domestic-terrorism.md",
+      "bytes": 562,
+      "sha256": "25330e4a1de6e873f496077fc90efacf3fa5519c3887431f1fd56f67d20d66ec",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/damn-indictment-arraignment.md",
+      "bytes": 948,
+      "sha256": "98993bc498f5485afd91f571befc2d5b53b7ce901701daf3a945cb7a34816924",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/democracynow-puppet-master.md",
+      "bytes": 884,
+      "sha256": "b75a0f2bde77db637b7c6e252f27a8c22ca6868cfddac78cd71b709421d5c86e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fbi-palmer-raids.md",
+      "bytes": 881,
+      "sha256": "f0a99950128389b6f3630e5297fe18d59c9f6a3a6739b3394f889703c92ff0ed",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flock-langley-defense.md",
+      "bytes": 1247,
+      "sha256": "8dacd0a0a403eb5f80545687b4fd04c32b3c6ef9d26d1b343f3dd1e471b44cc7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flock-person-tracking-freeform.md",
+      "bytes": 967,
+      "sha256": "2f69c951d5f907586ab96f5f54e0d340cb9bcadb175c50904d7e384551680812",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flock-scale-and-retrenchment.md",
+      "bytes": 972,
+      "sha256": "5fe07d6e8e49baac1d3cef9f6c1edb0191cf45a5678dd3ab6214925370d2877e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gao-facial-recognition.md",
+      "bytes": 514,
+      "sha256": "02418189100099cd37439443139c5e54c0cce44b6a38a8940a2b42300fce9b0d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/glissant-for-opacity.md",
+      "bytes": 1103,
+      "sha256": "927fa352cf14397dbafb090840cdbae4620f038f9e778bf87576d4b49a26741d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/holder-v-hlp.md",
+      "bytes": 632,
+      "sha256": "3564c74cdea66c565a2a5ec59449f2b23d5de6e59b5dd735666846bf680b2676",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/home-office-tact-dec2025.md",
+      "bytes": 717,
+      "sha256": "e01762e629cc4f8afabf643dd1df790f78acc0a1586ff4f7439b06e8c460d805",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ice-paragon-spyware.md",
+      "bytes": 1162,
+      "sha256": "4b8c1117c146e28ffd2c4204930449df02e845c13675a2c29a265325e3e4c971",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/immigration-prerogative-cases.md",
+      "bytes": 1531,
+      "sha256": "c6ab7899b951fe4a5b9f3669135df7cc5f2aa857ecc6e50e7139c34d9a5aa16d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/levitsky-way-path-american-authoritarianism.md",
+      "bytes": 1660,
+      "sha256": "992007fa276957ef700d0858a6ad64629b47c73aa9776237b7822a0c4a32aac2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mn-reformer-metro-surge.md",
+      "bytes": 1127,
+      "sha256": "c5e23b6f895195b113dd396cc263725dfc5bf4ab80493eb09f29903308da6270",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mosaic-theory-practical-obscurity.md",
+      "bytes": 1561,
+      "sha256": "d62a0c5bbc1d8f3ec312c7ea9b9a16d86381c756a061c991781a18c4c8f9ca18",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nspm7-context-wikipedia.md",
+      "bytes": 818,
+      "sha256": "0291466765fa15bf6f7c58d377f5fb5cca38d611257bb55b9bc509d52b3cc297",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nspm7-primary-text.md",
+      "bytes": 1124,
+      "sha256": "ef2b820b221b4e0710e8a5bef54676b82cbc71e602d45a4000cfaeb727a654e0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nspm7-verification.md",
+      "bytes": 949,
+      "sha256": "590eaacc5c6558fdbf5c3517ecd977d24c063a065f3d3033e98ec69cbcfb69f4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nypd-demographics-hassan.md",
+      "bytes": 1033,
+      "sha256": "5b853987ff30119789c5b8f980fed4a99560d0506536bf3c4b1b0e47efcf2ef2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ohchr-palestine-action-un-experts.md",
+      "bytes": 1120,
+      "sha256": "689a3a1eda6d68467e06eca85de4ec5c1d7ce2ee661c4b890f9fee32536fdc8d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/penney-chilling-effects.md",
+      "bytes": 1506,
+      "sha256": "f900f95cbb570db8b19c2ff812bff918a8da40af750020b84eb18c32bf1f4f3d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/posner-nothing-to-hide-holders.md",
+      "bytes": 1607,
+      "sha256": "a2abd3629b02759ae59058811e588b6cddd28daffa68d5a397554ca9ee22587a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/protect-democracy-doge-panopticon.md",
+      "bytes": 842,
+      "sha256": "9b19e0acbd29da41535e99304c5d770052f99e5adf149af275401c41c30268c2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/richards-dangers-of-surveillance.md",
+      "bytes": 1176,
+      "sha256": "21367adcf9dcaf8d9fb9e52134aad64207a1fcad53e9dae700139fc2043bca35",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/scott-seeing-like-a-state.md",
+      "bytes": 695,
+      "sha256": "496a892b6813fe00b498360aebd94796ede5ca31f5d3cf03710b4cdf74144830",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/security-practice-sources.md",
+      "bytes": 1117,
+      "sha256": "f8b09dd47f736673fa125bff3af2043b5ebb3634e7cda825e1b3c01ff597b3de",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/snowden-turnkey-tyranny.md",
+      "bytes": 996,
+      "sha256": "f1c5cf317c49e2df413d7114e82df509fd6f3e7bb731f5e0324cead1749b66b8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/solove-nothing-to-hide.md",
+      "bytes": 1107,
+      "sha256": "42d35a6f7df7390d73e10cff91c7e63924dac7b6fab56ca31e1cb6cc39201858",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techpolicy-ice-architecture.md",
+      "bytes": 1134,
+      "sha256": "94fdd0434c9504de206fff749441aa476b162ccdcd9364525a7b8c70aaa2312e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/theory-quotes-foucault-tocqueville-arendt-shklar-fraenkel.md",
+      "bytes": 1676,
+      "sha256": "daa13b108f16ce7bd3c2117fcbc1e6f8d6606addf5507d3b85bb19004bdd783a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/uk-palestine-action-law-litigation.md",
+      "bytes": 1226,
+      "sha256": "0090d63a82ec433d8ea816c9771954ad021cdccaaaa8b00c3465fb4d4a996d26",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/veliz-schneier-snyder.md",
+      "bytes": 1341,
+      "sha256": "e71792805b75abf26079d3c7077b5e57431c22fb8209c949637e58f8501ca90d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wired-flock-os-investigate.md",
+      "bytes": 904,
+      "sha256": "d1c798b868de00845634c61cbbbef484814e0fb891d5c7424598068bd187c71a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zuboff-surveillance-capitalism.md",
+      "bytes": 1084,
+      "sha256": "08a7cc423eeabefbb431026fb445879e95fdd62753db6fbf7d42f0ac55fc3934",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-drafting-note.md",
+      "bytes": 7958,
+      "sha256": "c91f6f24b748386a585944f3e5f7038dba88893d76f892746d257400e18373be",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-response.md",
+      "bytes": 23286,
+      "sha256": "5ded0b0eaec1669e09b555b356466b29c7f4d803ffbb138a8a0efffedd74ebc6",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/00-piece-brief.md",
+      "bytes": 20579,
+      "sha256": "f70a7632afb472cb20ee5c8db64a9a20d2a810971beecdd28cc78b5e6d834042",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/01-claim-ledger.md",
+      "bytes": 71769,
+      "sha256": "0f996c59b50ba3070143565b3533d68abd939c91ad81623c966e550f78081c82",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/02-discourse-report.md",
+      "bytes": 39771,
+      "sha256": "b52cd863698f24390aa91814de44fc8d34b3f31e01bd3acae2e242a785ccffe0",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/03-argument-notes.md",
+      "bytes": 15863,
+      "sha256": "2adc62d3d99926de6d1cab5f5be0be36526b7f29bf02740779e657e5b6a5e53d",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/04-craft-notes.md",
+      "bytes": 8717,
+      "sha256": "3fdcc9a75d96238e8f1e7480cbe3d00cd0e09bc4ec6fc4e633f0d677402a60ba",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/05-second-read.md",
+      "bytes": 13931,
+      "sha256": "317fb1d2644c2f4f244230b1288662ebd646547e58846f6d3086dd5516e5dced",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/editors-letter.md",
+      "bytes": 36586,
+      "sha256": "3427f6675385993f4c38ab5e65f543e4f880473caddb1c9dadd4ae58943de290",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v1.md",
+      "bytes": 77192,
+      "sha256": "7c06865a5038cfb5b6b55c2a0ba4f8111b48d586979969a9b283b4728ff4cf9f",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v2.md",
+      "bytes": 100180,
+      "sha256": "06ee41a297f13b84cd2f490e87af260cf3f69345aafa2b2de14ce899e08910ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "published.md",
+      "bytes": 109650,
+      "sha256": "6ad5fbaaae071a64aa613cc576b6f2083739933c8e7e8056f82472c9387ed04f",
+      "kind": "markdown"
+    }
+  ]
+}

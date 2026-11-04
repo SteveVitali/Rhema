@@ -1,0 +1,187 @@
+{
+ "dto": {
+  "artifactKind": "response_letter",
+  "artifactPath": "correspondence/v1-response.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ceb2b1ea65b46e68",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "44f204c7d2cfb727",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "d2d1c6055a446de8",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "5aac66595d2cc284",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "4d5822c3b1fb64e6",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "4c8b27398749ccb8",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "0b7249c60f6f18e4",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "627f40717419e810",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "453224cad1532dfb",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "08bbd05cd94d2472",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "15e8cfd1e74bb54d",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "87cb722d59c3f946",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "731e7c0eb35e0d63",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "5505a64677238dda",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "0b8587cb990ed3e2",
+    "ordinal": 22
+   },
+   "b23": {
+    "contentHash": "1f0fc1ffddd78548",
+    "ordinal": 23
+   },
+   "b24": {
+    "contentHash": "21b2b166602dcb99",
+    "ordinal": 24
+   },
+   "b25": {
+    "contentHash": "f7be64fad9368b79",
+    "ordinal": 25
+   },
+   "b26": {
+    "contentHash": "85a9288a3d2d1d47",
+    "ordinal": 26
+   },
+   "b27": {
+    "contentHash": "766b90352cd03f6a",
+    "ordinal": 27
+   },
+   "b28": {
+    "contentHash": "a7ac65ca27d45d5b",
+    "ordinal": 28
+   },
+   "b29": {
+    "contentHash": "5f91511e99d9a724",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "ca600b14c9f7dabd",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "3f7a25b573cd0265",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "80f9b18858ea631b",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "2483fc8b9c3d182a",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "66bde5fbb52abb4e",
+    "ordinal": 33
+   },
+   "b34": {
+    "contentHash": "d1605f9625c2a2c4",
+    "ordinal": 34
+   },
+   "b35": {
+    "contentHash": "ddfd6f23d8023079",
+    "ordinal": 35
+   },
+   "b36": {
+    "contentHash": "c68a6051af208535",
+    "ordinal": 36
+   },
+   "b37": {
+    "contentHash": "853bfa04dd78951c",
+    "ordinal": 37
+   },
+   "b38": {
+    "contentHash": "f883f6d661a2aa30",
+    "ordinal": 38
+   },
+   "b4": {
+    "contentHash": "516086f44cfd7d8f",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "b75018dee4679c57",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "9305253272d0fd0d",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "9b36c154ce73605e",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "957c90d32b7b03b0",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "62758cf010d3f987",
+    "ordinal": 9
+   }
+  },
+  "demo": {
+   "notPublishedRefs": [
+    {
+     "line": 5,
+     "path": "agents/author/voice-charter.md"
+    }
+   ]
+  },
+  "draftId": "correspondence/v1-response.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Response to review — The Governable Mind, v1 → v2\n\n- **Review answered:** correspondence/v1-review/ (editor's letter, piece brief, 79-claim ledger, two discourse reports, craft notes, independent second read) · **New draft:** drafts/v2.md\n- **Author guidance applied:** none supplied; the round ran autonomously, and every identity-level fork was resolved by the conservative rule (preserve the piece's existing commitments) and is flagged below for the author to reverse.\n- **Persona:** the S. J. Sebastian corpus (profile refreshed 2026-09-16, fresh), loaded for voice print, lexicon, and exemplars; the voice charter at `agents/author/voice-charter.md` was created this round and outranks it for this piece.\n\n## Flags and escalations (first, always)\n\n1. **Which way the test resolves layer 2 (open question 1; Major issue 1).** Resolved by conservative default: the essay now runs its eight questions on mandatory pre-release testing of open weights at a capability threshold and reaches a *conditional* verdict (§XII, the paragraph beginning \"The harder case is the one the essay has been circling since Milton\"). Testing at the second layer is constitutionally tolerable if the tester's classifications are inspectable and appealable; if the threshold is defined by what a model can do and never by what its users ask; if there is more than one accredited tester, a published standard, and a sunset; and if enforcement stops at release and never reaches the fourth layer. Where those conditions fail, \"the arrangement is the bargain of 1557.\" This preserves §X's existing concession that a model which acts is conduct and the credit the draft already gave to testing. The other option, declaring pre-release certification of weights a prior restraint that fails the test outright, would have contradicted §X and is the author's to choose; it would cost the essay its standing with the safety readership and gain it a cleaner Milton.\n2. **Self-citations (open question 2; Major issue 7).** Resolved by conservative default: the cross-reference apparatus to the three predecessor essays is kept, and the three imports that carried weight are now stated in the essay's own sentences so a cold reader is not sent elsewhere: chilling as the injury that leaves no defendant (§III ¶13), behavioral legibility defined without self-quotation (§VII ¶1), and \"no finite mind is reason as such\" / \"the judge must remain judgeable\" (§I ¶7; §XV ¶3). The perfunctory imports (\"does not need re-arguing here\"; \"takes the point as settled\"; \"needs only a paragraph\") are gone with the passages that carried them. The author may strip the remaining references entirely (six sentences) or restore the deference.\n3. **The prologue (open question 3).** Kept as the documented miniature; the June directive is added at §X and the two exhibits answer each other in §XIII–§XIV, which is the editor's stated preference and the draft's existing commitment.\n4. **Title and subtitle; \"cognitive liberty\" (open question 4; minor issue).** The title and subtitle are kept as the writer's outline named them; changing them is not this agent's call under autonomy. The term is now defined in the text and its coinage and neurotech exponent credited (§III ¶3, ¶8), so the subtitle is earned either way. The craft notes' alternative subtitle (\"Cognitive Liberty and the Constitutional Limits of AI Governance\") is recorded here for the author's decision. §XV's title, which was the author's, is changed to \"No Sovereign Layer\" and \"cognitive federalism\" is dropped.\n5. **Interest to disclose (open question 5).** Not knowable by this agent; nothing was added. **Awaiting the author.**\n6. **Length (new; not in the letter).** v2 runs to about 15,850 body words against v1's 11,900, the corpus ceiling of 12,250, and the venue's tolerance of 12,000. The review asked for ~2,000 words of cuts and budgeted only three additions; Majors 2, 3, 4, and 6, the uncited-work list, and the internalized imports added roughly 4,000 more. The cuts were made (§I −250; the Church Committee paragraph −130; Williams moved; the §XV roll-call; the coda's middle ending; echoes, pointers, and the Clipper, Lessig, and Russia trims −300), and the additions still outweigh them. I chose to deliver the review's substance over the length and to flag the trade rather than to drop requested content silently. A ranked, recoverable cut list to reach ~12,500 in one sitting: (a) §III ¶12's record paragraph to its four strongest items (−120); (b) §XIII ¶6, the hard-proposal run, to two sentences (−150); (c) §XIV ¶5's Thierer and Zuboff distinctions (−110); (d) §VIII's Russia paragraph (−100); (e) §VI's Lessig and Clipper paragraphs to one each (−200); (f) §I's Locke and Milton to one sentence each (−120); (g) §X ¶6's Doctorow and Nvidia clauses (−100); (h) §V ¶8's republican-reply sentences (−120); (i) §II ¶6's Clark quotation (−60); (j) §XI ¶8's Gomes sentence (−50); (k) the §XII practice paragraph (−100); (l) §III ¶3's Sententia/Boire sentence (−40). Beyond that, the choice is between the record and the field in §III, which is the author's.\n\n## Summary\n\nThe revision did three large things. It wrote the paragraph the essay existed to write, running its test on the layer-2 case actually proposed (Anthropic's mandatory pre-release testing; the White House's planned extension of its framework to open weights) and on the Lieu–Moran Kill Switch Act, and it gave the test an eighth question (archival reachability) so that §IX's probability shaping is no longer undetectable by the essay's own instrument. It caught the essay up to the record: the June 2026 Commerce directive, the GPT-5.6 hold, and the labs' identity-verified tiers now sit in §X and are tested in §XII and §XIII; the chat-log litigation (the NYT preservation order and the twenty-million-log production, the Maine reverse-prompt warrant, OpenAI's referral policy, *Heppner*, *Kim*, *Chatrie*) sits in §III; \"anticipatory\" is split into a present-tense record and a prospective architecture; the falsification clause names the June directive as its first datum. And it entered the freedom-of-thought field knowingly: Blitz is cited and the extension claimed, Bublitz's property objection is answered, the right's absoluteness is relocated to the interior with the eight questions as the proposed limitations, Ligthart, Alegre, Farahany, Sententia and Boire, De Cock, Tesink, Palermos, Cohen, Penney 2022, Sastry, Kapoor, Seger, Gomes, Lu, Hirschman, Thierer, and Zuboff are cited where they do work, and the third-party doctrine is engaged as an argument rather than named. Structure: §I cut, the Church Committee paragraph folded into §VIII's close, §XV rebuilt as the place the thinkers are used on the layers with Williams's vocabulary moved there, the coda's middle ending reduced to a clause, the exit paragraph added at the end of §V, the prologue's moral corrected, and the chronology fixed.\n\nCounts: 88 ledger rows. 36 accepted; 31 adapted; 3 rebutted; 1 deferred; 6 escalated (five resolved by the conservative default, one awaiting the author, plus the length flag); 0 mooted by restructuring; the remainder are pointer rows (the scorecard caps; a self-identified non-finding). Five self-identified items were added and handled.\n\n## Point by point\n\n### Major issues\n\n**M1 — \"The test is never run on the case it was built for: model distribution.\"** *Adapted (escalation resolved; flag 1).* §XII now runs the questions on capability-conditioned pre-release testing of open weights and states the verdict quoted above; Sastry et al. are cited at §XI ¶7 with one sentence on what the questions add (\"whether enforcement creates a chokepoint, whether exit survives, and whether the machinery can be repurposed\"); the Kill Switch Act is tested in the same §XII paragraph. Where the fix differs from the prescription: the bill does not pass cleanly. Its text mandates a capacity to suspend \"an account, user, or use pattern\" the Secretary identifies, which reaches layer 3, so the essay says the third question decides \"whether the bill is an incident rule or a monitoring rule\" rather than reporting a pass.\n\n**M2 — \"The essay tests the text of June 2026 and misses its practice; 'anticipatory' is behind the record.\"** *Accepted, with two corrections to the letter's facts.* Prologue ¶6 splits the tenses; §X ¶7 carries the June record; §XII ¶12 tests the practice against the text; §XIV ¶6 makes the directive the first datum. Corrections, from my own reading of the sources: (a) Anthropic's Persona verification was announced on June 8, before the directive, applies to \"a small subset\" of flagged accounts as an appeals mechanism, and Anthropic's spokesperson called it \"unrelated to the Fable or Mythos rollout\"; no source shows it as a consumer-tier gate or as infrastructure the directive left behind, so v2 does not say that. What v2 says instead, and can support, is that the labs answered the second revelation with identity-verified tiers for defenders (government ID via Persona at both companies; Mythos 5.1 \"only\" through trusted access and \"a set of US organizations\"; OpenAI's verification \"does not support retries or appeals\"). (b) The chain-of-thought monitoring commitment has two tiers; only Astra-class models get monitoring of \"all tool-enabled inference workloads,\" and v2 says \"for its most capable class of models.\" Also: the shutdown was nineteen days to restoration (eighteen to lifting); Anthropic's own statement does not give the nationality-screening rationale, which v2 states on the strength of Tech Policy Press, the Cloud Security Alliance, and The Hacker News. The record paragraph in §III uses Stein's actual words (\"which users voluntarily disclosed to OpenAI\"); the letter's \"voluntarily submitted their communications\" is a law-firm paraphrase. *Kim*'s order is dated June 22, not \"~June 23,\" and denied the motion on standing alone. *Chatrie*'s third-party sentence is \"Nor does it matter that the materials obtained were handed over by a third-party tech company\"; the letter's version is Venable's gloss.\n\n**M3 — \"§III enters a field it does not know it is in.\"** *(a) Accepted; (b) adapted; (c) accepted; (d) adapted.* (a) Blitz cited at §III ¶7 with the extension claimed in the essay's terms (\"That is a liberty to use. What this essay claims is a further liberty that Blitz did not argue\"); my read of the article confirms the editor's substance and corrects the page cites (the test is at 1072, the journal-or-iPhone line at 1073) and adds what the letter did not say: Blitz has no observation argument at all, and *Baumgartner* sits in his footnote 103 as a diary used against its author. (b) Bublitz's footnote 23 is answered (\"The objection is right about the wrong claim. Nothing here says the record is a mind.\"); absoluteness relocated (\"belongs to the unmanifested interior, and it stays there\"); Ligthart's implied limitations acknowledged and the eight questions offered as the essay's own (§III ¶8). One attribution correction: \"unpersuasive\" is Ligthart agreeing with Bublitz, and \"evidently false\" is Ligthart quoting Bublitz, so v2 says \"Bublitz and, following him, Sjors Ligthart.\" (c) Alegre (inverted), Farahany (neurotech; AI as manipulator), Sententia and Boire (the coinage) at §III ¶3; De Cock at §III ¶8, with a difference the letter did not draw: she deliberately places the *forum interstitiale* outside the absolute core and asks for a standard \"heightened, not absolute,\" so the disagreement is about derivation, not result, and v2 says so. (d) The third-party doctrine at §III ¶10, engaged as argument: *Carpenter* and *Chatrie* bending toward \"indispensable and revealing\" media, the CRS sentence on the open question, and the claim the privacy literature lacks (\"a warrant requirement, when it comes, governs access. It touches neither retention nor classification nor referral\"). The second reader's request for a privilege-like doctrine is answered structurally rather than juridically (the record's doctrine is partly architectural, which is why the essay turns from the right to the architecture); a full privilege proposal is deferred as a different essay.\n\n**M4 — \"Exit is under-theorized at four joints.\"** *Adapted (a–c); accepted (d).* One paragraph at the end of §V: exit is plural or nothing; the shaping is a property of the weights and a local copy answers the record, not the shaping; Beijing is a sovereignty problem, not a liberty problem \"until a single trainer becomes the only exit\"; exit to a weaker model is worth \"what the cellar press was worth\"; the state's positive duties toward exit, with the republican reply given \"its full force\" in OpenAI's own words and answered by layer; Montana's Right to Compute Act as the negative duty in statute. Shklar's corporate sentence acknowledged at §V ¶4 (verified at p. 31) and \"will get everything else wrong\" softened; Hirschman named at §V ¶5; the labs' answer of permission rather than exit at §X ¶5. One correction to my own draft found on the coherence read: *Heppner*'s exchanges were seized from the defendant's devices, so the point is not that a local model \"would have produced nothing\" but that confidentiality failed because a third party held them on its own terms, \"a ground a model on the defendant's own hardware would not have supplied.\"\n\n**M5 — \"§IX's probability shaping is orphaned by the test and by the falsification clause.\"** *Adapted.* Question 8, \"Archival reachability,\" at §XII; a matching clause in the falsification paragraph (\"the primary record still reachable beneath whatever synthesis has been layered over it\" / \"the archive a thing the synthesis no longer needs to show\"); §XV ¶1 now hangs its \"primary documents\" clause on the eighth question; the chain-of-thought monitoring commitment is at §XIV ¶4. The eighth question is tied to §V's exit paragraph so that plurality of trainers and reachability of the archive are two halves of one answer.\n\n**M6 — \"The opening exhibit does state-shaped work with a corporate-shaped fact, and its chronology is compressed.\"** *(a) Adapted; (b) accepted; (c) adapted.* Prologue ¶4 is now the non-domination exhibit (\"It is about what dependence costs when the guardian is not answerable, and what it is worth to have somewhere else to go\"). Chronology per the ledger (late May; July; July 21; August 26); \"deliberately switched off for the evaluation\"; Klonick's \"left the door open\" conceded; the disclosure's omitted clause restored rather than elided; \"refused a large part of that work\"; \"on its own infrastructure\"; SaferAI's corroboration at ¶3, quoting the primary report (\"refused none of the offensive-security or biological tasks\"; Opus 4.7 \"declined\" its CyberGym evaluations) rather than TechCrunch's harder gloss. §XI ¶9 concedes that layer-5 enforcement reads transcripts and draws the distinction the letter said the essay could draw: the record of what a system did versus the record of what a person asked, written into question 3.\n\n**M7 — \"The contribution is starved, and the piece cannot stand alone.\"** *Adapted.* §I cut (Bayle and Locke in one paragraph; one Milton quotation; Kant and Mill kept); the Church Committee paragraph gone, its lesson in one sentence at §VIII ¶8 with *authoritarian capacity* used as the corpus fixed it; Williams moved to §XV as the positive vocabulary; §XV rebuilt as the section where the thinkers are used on the layers (\"At the first and fifth layers … Berlin's presumption is enough. At the third layer … Pettit's question is the live one. At the fourth layer … Spinoza's line\"); l.310 reduced to a clause inside the penultimate paragraph; the imports per flag 2; the general proposition moved after the 1643 sequel. The proportion problem is only partly fixed, because §III grew with the record and the field the letter asked for; see flag 6.\n\n### Minor issues\n\n- **Uncited work.** All cited where they do work, with two exceptions stated: Bedi 2021 is not cited because I did not read it (the contest is acknowledged without his name); OpenAI's support for age assurance at layer 3 (SB 1119) was verified but not added, since it belongs to a companion-chatbot regime the essay does not discuss. OpenAI's \"not open-weights policy by another name\" could not be confirmed on my read of the post, so v2 quotes \"America needs both open and closed models\" instead, and states that OpenAI signed the Nvidia letter and Anthropic did not (verified from the signatory block).\n- **Edition and translation mixing.** *Accepted.* Kant in Gregor throughout; Berlin in the 1969 wording for both quotations, cited to *Four Essays* alone. The second Berlin quotation keeps \"them\" (\"torture them in the name, and on behalf, of\"), which the 1969 transcription carries and the Stanford Encyclopedia's excerpt omits.\n- **Scope words.** *Accepted*, all five.\n- **Quotation hygiene.** *Accepted*, all four (the Remonstrance now reads \"in matters of the Presse\"; the Safety Report's conditional clause restored).\n- **References.** *Accepted*, all listed fixes, and the list renumbered in order of first citation (86 entries). **Williams p. 11: rebutted.** My drafting-round source note records the sentence verbatim from a publisher-authorized Google Books search-inside snippet of the Princeton edition at p. 11, and a 2023 *European Journal of Philosophy* article cites the maxim to the same page; the quotation and page stand. Happy to paraphrase if a physical copy shows otherwise.\n- **Continuity.** *Adapted.* \"Seven\" no longer appears twice (the test has eight questions); *authoritarian capacity* used at §VIII ¶8; \"reason without a record\" now names the practical opacity the previous essay counted as democratic architecture (question 5).\n- **l.42.** *Accepted* (\"nearly exact\"; the inference made: \"delegation surrenders judgment where collaboration exercises it\").\n- **Pettit and Rawls from the Stanford Encyclopedia.** *Accepted*: Lovett attributed by name; Rawls paraphrased without quotation marks.\n- **l.172 and l.188.** *Accepted*; once, at the close.\n- **Title, subtitle, §XV's title.** See flag 4.\n- **Disclosure.** See flag 5.\n\n### Fact-check (claim ledger)\n\n- **C15 (Misleading in context).** *Accepted*; see M2.\n- **C1, C5, C6, C7, C9, C11, C12, C17, C18, C19, C24, C25, C32, C36, C40, C43, C44, C46, C49, C55, C65, C68, C69, C72; references [3], [27], [37], [43], [48], [50].** *Accepted* as the ledger prescribes, with these notes: C2 \"OpenAI says\" rather than \"The report says\"; C7 \"on its own infrastructure\"; C36 \"citing that research\" kept (my own note identifies footnote 102 as Penney 2016 at pp. 164 and 169), the search-history point reworded to a relayed submission; C49 \"on a prototype card, too slow for a live call but parallelizable\"; C13's optional \"Dario Amodei, writing for Anthropic\" declined because the sentence is about the company's position.\n- **C63 (Williams, unverifiable).** *Rebutted*; above.\n\n### Discourse reports\n\n- **Legal report §1.8 (the Rapporteur already relays the externalization move).** *Accepted*: \"So the revival has already reached the object this essay names; it has not yet said what follows.\"\n- **Legal report §4′(A), (B), (C), (D).** (A) is M3(b). (B) *accepted*: Penney 2022 in a clause, with the point that conformity \"does not wait for a threat.\" (C) *adapted*: the over-breadth objection named in §II ¶5 and the integration condition stated (\"An assistant that has held a person's questions for a year is.\"). (D) *accepted*: OpenAI's \"uniquely private nature\" and Altman's therapist sentence deployed against \"voluntarily disclosed.\"\n- **Legal report §3, items 10–11 (Tesink; Palermos; Carter and Palermos).** Tesink and Palermos *accepted*; Carter and Palermos declined as a fourth citation for one point.\n- **Policy report Headline 2 (the labs' identity-gated answer).** *Accepted*; §X ¶5.\n- **Policy report §4(a), (b), (c), (d).** (a) is M1; (b) is M4(c); (c) is the Sastry citation; (d) is M2.\n- **Policy report §5 (OpenAI's carve-out; age assurance).** Carve-out *accepted* in the form I could verify; age assurance recorded but not added (above).\n- **Policy report §4(a) end (cite the Report against the Report).** *Deferred*: the Report's \"surveillance and social control\" sentence and its listing of KYC among safeguards are not in my verified notes, and verifying them means re-extracting a 221-page PDF; recorded in the manifest's next-round agenda with the chapter hint, not introduced unverified.\n- **Policy report §7 (the compute-governance authors' objection to §XIV's composition).** *Adapted*: §XIV ¶1 labels the scenario a construction; ¶4 concedes the objection and locates the composition risk in the three components built outside that literature's design (the export-control identity gate and the labs' verified tiers; chain-of-thought monitoring of inference; the bill's shutdown order).\n- **Policy report §3 (15) (Doctorow).** *Accepted*, credited as an interlocutor in one clause; my read of his post confirms the consent-decree sentence and finds he does not name Amodei, so v2 attributes only the general argument to him.\n\n### Second read\n\n- **(i)** is M6(a) and M4(a). **(ii)** is M3(d), with its closing question answered at §XIII ¶4: privately achieved legibility is \"a present harm of the kind the fourth section named … and a latent harm of the sovereign kind,\" and the four conditions require the state \"because only the state can universalize the rule and close the exits.\" **(iii)** is M5. **(iv)** is M1. **(v)** is flag 2.\n- **\"About a third too long … near 8,000 words.\"** *Rebutted*, concurring with the editor's own rejection: the persona's long form runs to 12,250 body words and the venue tolerates it; the fault is proportion. That said, v2 is now over the ceiling for the reasons in flag 6, and the reader's instinct about length will be more right of v2 than of v1.\n- **\"Reads as if reconstructed from a narrative rather than from documents.\"** *Rebutted*: every particular is verified in the claim ledger (C1–C9) to OpenAI's and Hugging Face's own posts and in my own source notes; the chronology point inside the objection is accepted (M6).\n- **Smaller notes.** The one-sentence-paragraph list: the persona's long form runs 10–25 percent and v1 sat at 13, so only the echo instances are folded; the pivots the reader singles out are kept, and several he would fold are kept because they carry turns. The Foucault \"boast\" cut. l.42, the SEP quotations, the [39]/[40] order, and l.172/l.188: accepted as above.\n\n### Craft notes and line notes\n\n- **Negation-correction cadence.** *Adapted.* The persona's measured long-form ration is 4–8 per thousand words and v1 ran near 2; the fault the persona's own calibration names is monotony, the two-sentence form at every hinge. The rhythm-only instances the letter names are cut or recast (l.104 \"The essay uses both.\"; l.156 \"Institutional reconstruction … and nothing that requires reading a mind.\"; l.220's second instance; l.284's echo of l.192); the survivors vary across the three forms; no quota was applied.\n- **Echo paragraphs.** *Accepted*, all four folded, with \"The mechanisms differ in what they need to know.\" kept as the one-line paragraph and l.244's restatement removed.\n- **Traffic signs.** *Accepted*: the four named forward pointers cut. Three functional pointers remain, each naming where a load-bearing object is defined (§III ¶8, §VI ¶9, §XI ¶7).\n- **Chained sentences.** *Accepted*: l.10 split (chronology corrected in the same sentence); l.218's Order sentence given its own paragraph; §XV's relay replaced.\n- **Self-certification.** *Adapted.* \"The honest caveat belongs beside the fact\" stays: the persona's lexicon records the construction from *The Politics of Visibility*. The other five go; l.164's superlative is now \"closely.\"\n- **Terms before they are earned.** *Accepted*: \"control plane\" glossed at its first use in the prologue; \"attested hardware\" glossed at §VI ¶9; \"signatures\" at §XIV ¶2.\n- **Coinage load.** *Adapted*: four marked terms; \"cognitive federalism\" removed; the complex keeps its name in §XIII because the four-condition definition needs a handle.\n- **§XIV's frame; the unsourced scenario.** *Adapted*: the frame is one sentence; the scenario is labeled a construction and its sources named.\n- **Authority exceptions.** *Accepted*: \"the formulation this essay needs\"; \"a program would claim more than anyone knows.\"\n- **Prologue ¶3's repetition.** *Accepted*.\n- **Rushed cruxes.** *Adapted*: two sentences added at §X ¶8 (\"A capability is a disposition of the weights; an action is an event at an interface; and a conversation with a model is where a person decides which of the two the next hour will contain\"); §III's runway rebuilt rather than shortened.\n- **Quotation as argument in §I.** *Adapted*: one quotation per thinker unless the wording works.\n\n### Roadmap and open questions\n\nRoadmap items 1–4 map onto the moves above; item 3's research follow-ups were run (four research subagents, 92 source notes, every source in the letter's list opened except WIRED's body, the Heppner scan, Boire 2000, and Bedi). Open questions 1–5 are flags 1–5.\n\n### Self-identified\n\n- [40] cited before [39]: fixed by renumbering. \"Cognitive liberty\" undefined though in the subtitle: defined (§III ¶8). Spinoza's fragmentary one-line paragraph: folded. l.218 doing three jobs: split into two paragraphs.\n\n## New claims introduced this round\n\nFifty-two new factual claims, every one verified against a source note in `agents/author/research/` (slices G–J, written this round). **Unverified: none.** Five are verified only through a secondary source, and the next review should know it: *Heppner*'s wording (via the Harvard Law Review Blog's pinpoint citations; the opinion is an unreadable scan); the White House official's \"expected in the coming months to extend to open models\" (WIRED, relayed by AI Weekly; WIRED's body could not be opened); Zuboff's definition of instrumentarian power (quoted with page in an academic review); Boire's 2000 article (via Bublitz 2013); and the nationality-screening rationale for Anthropic's shutdown (Tech Policy Press, the Cloud Security Alliance, and The Hacker News; Anthropic's own statement gives only the \"net effect\"). The GPT-5.6 partner count is press-sourced and labeled so in the text.\n\n## Unresolved\n\n- **Length** (flag 6): v2 is ~3,600 words over the venue's tolerance; the cut list is above.\n- **F42** (the Safety Report cited against itself): deferred to the next round, unverified by me.\n- **Disclosure** (flag 5): awaiting the author.\n- **Proportion.** About 62 percent of v2's body still precedes §X, the same share as v1, because §III grew with the record and the field this review asked for even as §I, the Church Committee paragraph, and §XV shrank. The cut list in flag 6 is ordered to move that share.\n- **Coverage deferred (F79).** Sources the dossier named that I did not read this round, and so neither cite nor answer: the Shavit, Petrie, and Aarne hardware-governance primaries; the GUARD and CHATBOT Acts (which would supply the identity step's bill number; §XIV now says \"most of its steps have been proposed\" until they are read); EU Chat Control; McCord, Lukianoff and Koralus; McCarthy-Jones; the Cambridge Handbook's chapter 25; the Berkeley report of September 2026; Richards's 2015 book; Wallace et al.; Kembery; Bedi. Listed in the manifest's next-round agenda.\n- **Untouched text changed for length.** Against the principle that text no finding touches is left alone, five passages were trimmed to buy back words: the Russia paragraph's SORM sentence, Lessig's founders-Mill-progressives clause, two Clipper details, and Clark's \"our basic nature\" clause. Each is recoverable from v1 and each is a candidate for restoration if the author cuts elsewhere.\n\n### Addendum: the fresh-context gap analysis\n\nA subagent given only the dossier, the ledger, v1, and v2 found seven coverage gaps, four partial discharges, seven faithfulness gaps, and several seam problems. Closed before delivery: a misattribution I had introduced (the relativizing of the right's absoluteness is Ligthart agreeing with Bublitz's 2021 work, not Bublitz 2013, and §III ¶8 and ref [30] now say so); \"no one's privilege\" in the prologue corrected to \"unprivileged\"; the Safety Report quotation restored to its verified wording after a trim had recast it; \"nineteen days\" corrected to eighteen where it names the directive; the layer-2 run now speaks to questions 2 and 8 and says where the arrangement \"fails both outright\"; the falsification paragraph says the identity condition fired twice, by directive and by the laboratories' own verified tiers; §XIII names which two of the four conditions are present; a new \"should be said\" tic cut back to the one persona-attested instance; the SaferAI sentence de-hardened; the \"seven questions\" collision removed; a clause added so the open-weights reader sees that question 1 protects local agentic use absent a named externality; the Palisades-fire hypothetical added to the record paragraph; §IV's \"It does not.\" restored. Recorded rather than closed: proportion, length, the deferred sources, and the self-reference count, above.\n\n## For the next review\n\nPress hardest on three places. First, the layer-2 verdict in §XII: its four conditions are the essay's, derived from its own premises under autonomy, and a reader who thinks certification before encounter can never be tolerable, or who thinks the conditions are toothless, should say which. Second, §III ¶8: relocating the right's absoluteness to the interior and offering the eight questions as its limitations is what makes the essay's disagreement with De Cock one of derivation rather than result; if that distinction does not hold, the essay's originality claim in §III shrinks to the developmental record and the turn to architecture. Third, the proportion: §III is now the longest section, and the record paragraph, the field paragraph, and the third-party paragraph each do different work; the next review should say which of the three the essay can afford to lose, because the length flag will have to be paid.\n",
+  "meters": {
+   "readMin": 20,
+   "words": 4658
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2a34a22edeeca53a45d7ae5c3fc16b6a5979933ae11392a52394c2023fb8c7c2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "correspondence/v1-response.md",
+ "kind": "artifact-page"
+}

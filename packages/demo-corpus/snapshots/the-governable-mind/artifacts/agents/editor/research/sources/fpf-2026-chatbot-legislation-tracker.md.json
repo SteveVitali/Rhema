@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b1d7be6f86bf8851",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fpf-2026-chatbot-legislation-tracker\n- **URL:** https://fpf.org/2026-chatbot-legislation-tracker/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 3)\n- **What it establishes:** Future of Privacy Forum tracker: 14 states enacted chatbot legislation in 2026 (California x3, Colorado, Connecticut, Georgia, Hawaii, Iowa, Idaho, Maine, Nebraska, New Hampshire, New York x2, Oregon, Rhode Island, Utah, Washington). \"Age Assurance\" is a tracked category and is marked for California (SB 1119), Colorado (HB 1263), Connecticut (SB 5), Georgia (SB 540), Hawaii (SB 3001), Idaho (SB 1297), Nebraska (LB 525), and Washington (HB 2225). \"Transparency Reporting\" is tracked. No law is listed as requiring general identity verification, and the tracker does not record logging/retention mandates.\n- **Key passages:** category listing as above.\n- **Reliability:** Secondary (think-tank tracker); industry-adjacent but careful.\n- **Relevance to this project:** Agenda 3: age assurance at layer 3 is now a multi-state legislative pattern in 2026, not a single instrument.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4caaa89a0819d16257f284e4ae3658dc9889cdcabc61d140e4ae11119f9d78f9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mudde-populism-definition.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "386f3e3f79b50e87",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "cc52f739c1ac8e6f",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/mudde-populism-definition.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mudde-populism-definition\n\n- **URL:** https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century (the draft's own [^8]) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Mudde defines populism as \"a thin-centered ideology that considers society to be ultimately separated into two homogenous and antagonistic groups: 'the pure people' and 'the corrupt elite'\" and which \"argues that politics should be an expression of the volonté générale (general will) of the people.\" Core features: monism and moralism; thin-centeredness requires host ideologies (nationalism on the right, socialism on the left); populism is \"an illiberal democratic response to democratic illiberalism,\" challenging minority rights, pluralism, separation of powers.\n- **Key passages:** As quoted.\n- **Reliability:** Primary (Mudde's own text at the cited URL).\n- **Relevance to this project:** Misrepresentation check passes: the draft's §IV summary (thin-centered; pure people vs corrupt elite; general will) is accurate, and its three-claim decomposition (anti-establishment, moral dualism, directism) is a fair unpacking. Note: \"homogenous groups\" supports the draft's fourth claim (unitarism), but the exclusive-moral-representation version of unitarism is Müller's signature claim, not Mudde's — the draft should credit Müller (see muller-what-is-populism note).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 173
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "27c8714c45805e47e2a634e9ab893d473959c1e8bd23bed6fc3efd9a5b4de2fc",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/mudde-populism-definition.md",
+ "kind": "artifact-page"
+}

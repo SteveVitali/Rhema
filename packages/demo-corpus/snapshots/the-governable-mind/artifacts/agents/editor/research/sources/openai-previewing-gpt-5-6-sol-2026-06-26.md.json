@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "05d1eccb17bec9ed",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-previewing-gpt-5-6-sol-2026-06-26\n- **URL:** https://openai.com/index/previewing-gpt-5-6-sol/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** OpenAI, June 26, 2026: limited preview at the government's request; both l.210 quotations verbatim; no office named, no partner count, no duration (\"broadly available in the coming weeks\") (X10).\n- **Key passages:** \"At their request, we are starting with a limited preview for a small group of trusted partners whose participation has been shared with the government, before releasing more broadly.\" · \"We don't believe this kind of government access process should become the long-term default.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** l.210; ref [76].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "486e496b484b87054f52a065df506be930dde10dce325edf6559f606c6c63599",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+ "kind": "artifact-page"
+}

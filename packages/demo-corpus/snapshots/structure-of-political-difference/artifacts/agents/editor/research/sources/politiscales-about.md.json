@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/politiscales-about.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8fc1b99705647e10",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "5517dcd4f1c79518",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/politiscales-about.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# politiscales-about\n\n- **URL:** https://politiscales.party/about · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** PolitiScales (French origin, \"freely inspired by 8values\") scores eight axes: Constructivism↔Essentialism, Rehabilitative↔Punitive Justice, Progressive↔Conservative, Internationalism↔Nationalism, Communism↔Capitalism, Regulation↔Laissez-faire, Ecology↔Production, Revolution↔Reform.\n- **Key passages:** \"a political test using 8 ideological values\"; created by \"Radicalisé·e·s sur Internet.\"\n- **Reliability:** Primary source; hobbyist.\n- **Relevance to this project:** Anticipates several draft moves in cruder form: an ecology axis (the draft's Growth↔Ecology module), a Revolution↔Reform axis (a cousin of Insurgent↔Institutional, framed as method of change), a justice axis (part of the draft's Coercion), and internationalism↔nationalism (Belonging). Further evidence that the raw axis inventory is well-trodden internet territory; the draft's contribution must be located in the architecture and usage rules, not the axes.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 119
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d7ce169d1bae7464a896c8404ac17609be114be9b92524019cc4c69bac423772",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/politiscales-about.md",
+ "kind": "artifact-page"
+}

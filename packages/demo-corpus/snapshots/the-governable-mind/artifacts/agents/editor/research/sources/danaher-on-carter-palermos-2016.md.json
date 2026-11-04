@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/danaher-on-carter-palermos-2016.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "89b07c56c5d3e098",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/danaher-on-carter-palermos-2016.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# danaher-on-carter-palermos-2016\n- **URL:** https://philosophicaldisquisitions.blogspot.com/2017/05/extended-cognition-and-possibility-of.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** John Danaher's reconstruction of Carter & Palermos, JAPA 2:4 (2016): compromising an integrated cognitive artifact is personal assault; depends on dynamical-systems integration; fungibility objection; no privacy/surveillance discussion.\n- **Key passages:** \"Intentional harm to a part of a person which is responsible for her mental and other faculties constitutes personal assault.\"\n- **Reliability:** Secondary (philosopher's blog summary); independent.\n- **Relevance to this project:** Report §3, §4′(C).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 77
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "96bc1487fce9ebfc35a6596662192c09f3b858b29873c21edc1c55bf4ab2fd87",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/danaher-on-carter-palermos-2016.md",
+ "kind": "artifact-page"
+}

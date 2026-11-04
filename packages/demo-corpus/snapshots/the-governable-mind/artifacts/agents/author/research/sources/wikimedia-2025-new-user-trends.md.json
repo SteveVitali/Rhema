@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikimedia-2025-new-user-trends.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "122b506936dbdcb1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikimedia-2025-new-user-trends.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikimedia-2025-new-user-trends\n- **URL:** https://diff.wikimedia.org/2025/10/17/new-user-trends-on-wikipedia/ · **Accessed:** 2026-09-16 (direct curl, 200; page header shows \"17 October 2025\" and an update stamp \"13 February 2026\") · **For:** v2→v3 response round, slice N (item N5)\n- **What it establishes:** Wikimedia Foundation (Marshall Miller) reports a roughly 8% year-on-year decline in human pageviews after reclassifying bot traffic, attributes it to generative AI and social media, and asks platforms to show sourcing.\n- **Key passages:**\n  - \"after making this revision, we are seeing declines in human pageviews on Wikipedia over the past few months, amounting to a decrease of roughly 8% as compared to the same months in 2024. We believe that these declines reflect the impact of generative AI and social media on how people seek information, especially with search engines providing answers directly to searchers, often based on Wikipedia content.\"\n  - \"For people to trust information shared on the internet, platforms should make it clear where the information is sourced from and elevate opportunities to visit and participate in those sources.\"\n  - \"With fewer visits to Wikipedia, fewer volunteers may grow and enrich the content, and fewer individual donors may support this work.\"\n- **Reliability:** Primary for Wikimedia's own traffic figure; the causal attribution is Wikimedia's belief (\"We believe\"), and Wikimedia is an interested party. The figure depends on revised bot detection (\"we have to interpret it with care\").\n- **Relevance to this project:** Eighth question. Citation: Marshall Miller, \"New User Trends on Wikipedia,\" Diff (Wikimedia Foundation), 17 October 2025.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 239
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7ec18be806fe4ea812f6604d3c35283dcf3bfebb7db1e8e3cb9b0d3648a2e310",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikimedia-2025-new-user-trends.md",
+ "kind": "artifact-page"
+}

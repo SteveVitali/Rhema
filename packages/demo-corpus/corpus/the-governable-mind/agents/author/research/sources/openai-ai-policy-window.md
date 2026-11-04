@@ -1,0 +1,22 @@
+# openai-ai-policy-window
+- **URL:** https://openai.com/index/ai-policy-window/ · **Accessed:** 2026-09-16 (via a reader proxy; direct fetch 403; date not displayed in proxied text — Reuters and Euronews date the announcement Sept 9, 2026) · **For:** v1 drafting, claim C45
+- **What it establishes:** OpenAI's own statement of the proposal: mandatory, capability-based national AI safety regulation; common testing and independent-assessment requirements, stronger cybersecurity protections, clear incident-reporting rules; scope limited to "the handful of well-resourced laboratories developing the most capable systems"; Congress should act before it adjourns. Explicitly does NOT ask for preemption of state law before Congress acts.
+- **Key passages:**
+  - "We want to work with Congress on mandatory, capability-based national AI safety regulation."
+  - "Common testing and independent-assessment requirements, stronger cybersecurity protections, clear incident-reporting rules."
+  - "Frontier safety requirements should apply to the handful of well-resourced laboratories developing the most capable systems—not to startups, small developers."
+- **Reliability:** Primary (OpenAI's own policy statement).
+- **Relevance to this project:** The authoritative text for what OpenAI "actually proposed" (C45).
+
+## Added 2026-09-16 (v1 response round; re-read via a reader proxy)
+- Open models: "Open models can be part of the solution, particularly in cybersecurity and where sovereignty, security, or data-residency needs favor local deployment." · "America needs both open and closed models." · "A federal framework should address frontier capabilities and risks without weakening competition, entrenching incumbents, or driving innovation overseas."
+- Concentration: "Today, frontier laboratories largely set their own rules for managing frontier risks." · "Democratically accountable standards, independent verification, and meaningful transparency would replace that fragmented system of private governance."
+- Layer 3 (users): "SB 1119 would require age assurance, risk assessments, independent audits, parental controls, and safeguards against harmful content for children and teens using companion chatbots." (OpenAI supports the bill.)
+- Not confirmed on this read: the phrase "open-weights policy by another name" and an explicit mention of the Nvidia letter; do not quote either as OpenAI's.
+
+## Added 2026-09-16 (v2→v3 round, slice K, K8) — SUPERSEDES the "Not confirmed" line above
+- Re-read as raw markdown from a reader proxy via curl (saved and grepped locally; openai.com direct still returns a bot wall). Title: "The AI policy window is open. We need to act." Byline "OpenAI"; date displayed: "September 9, 2026"; category Global Affairs.
+- **The sentence IS on the page, verbatim:** "Nor should frontier safety policy become open-weights policy by another name."
+- Immediate context (three consecutive paragraphs): "A national framework should be strong but carefully targeted. Frontier safety requirements should apply to the handful of well-resourced laboratories developing the most capable systems—not to startups, small developers, or researchers operating nowhere near the frontier. Obligations should be proportionate to capabilities and risks." // "Nor should frontier safety policy become open-weights policy by another name. Open models can be part of the solution, particularly in cybersecurity and where sovereignty, security, or data-residency needs favor local deployment. Most compete not at the frontier, but on cost, control, and latency. As we affirmed in signing the Open Weights and American AI Leadership letter, America needs both open and closed models. A federal framework should address frontier capabilities and risks without weakening competition, entrenching incumbents, or driving innovation overseas." // "A serious public framework should reduce, not increase, the concentration of power. Today, frontier laboratories largely set their own rules for managing frontier risks."
+- The Nvidia-hosted letter IS explicitly mentioned and hyperlinked (https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf). Both halves of the earlier "not confirmed" caveat are now withdrawn.
+- Nuance: "Most compete not at the frontier" leaves OpenAI room to accept capability-based rules for frontier-level open models; the sentence is not a blanket open-weights exemption demand.

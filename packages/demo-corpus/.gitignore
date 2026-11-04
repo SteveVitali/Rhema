@@ -1,7 +1,0 @@
-# withheld until HUMAN-H14; 219_R7DATA.1 removes — corpus sign-off (REQ-CORPUS-14,
-# D-R6OSS.1-1 — the public repo's history is permanent). The synthetic fixture under
-# fixtures/synthetic/ is committed; real corpus bytes, rules data, goldens and snapshots are not.
-# Patterns are root-anchored so they never match fixture dirs of the same name.
-/corpus/
-/snapshots/
-/goldens/

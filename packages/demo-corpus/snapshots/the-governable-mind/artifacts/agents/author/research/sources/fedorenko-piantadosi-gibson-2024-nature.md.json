@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/fedorenko-piantadosi-gibson-2024-nature.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0aa2dd773e1f95c8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/fedorenko-piantadosi-gibson-2024-nature.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fedorenko-piantadosi-gibson-2024-nature\n- **URL:** https://pubmed.ncbi.nlm.nih.gov/38898296/ (abstract via NCBI efetch), https://www.nature.com/articles/s41586-024-07522-w (meta tags; full text paywalled), https://api.crossref.org/works/10.1038/s41586-024-07522-w · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C40\n- **What it establishes:** Evelina Fedorenko, Steven T. Piantadosi, Edward A. F. Gibson, \"Language is primarily a tool for communication rather than thought,\" *Nature* 630 (8017): 575–586, published 19 June 2024, doi 10.1038/s41586-024-07522-w. The abstract asserts a double dissociation between language and thought; the aphasia evidence is in the paywalled body (not opened), so quote the abstract, not an aphasia sentence.\n- **Key passages (abstract):** \"We then review evidence for a double dissociation between language and thought, and discuss several properties of language that suggest that it is optimized for communication.\" · \"language does not appear to be a prerequisite for complex thought, including symbolic thought.\" · (nature.com summary line) \"Evidence from neuroscience and related fields suggests that language and thought processes operate in distinct networks in the human brain and that language is optimized for communication and not for complex thought.\"\n- **Reliability:** Primary, peer-reviewed Perspective in Nature; authors are leading researchers in the field; the thesis is contested (e.g., a 2024 rejoinder in *Biolinguistics*).\n- **Relevance to this project:** C40 — dissociability of language and non-linguistic thought.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 198
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "706d1e67b4c4e0b92253b0a1a69d2a2cb29c0ab934f9d17e27cf1a23170bffb5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/fedorenko-piantadosi-gibson-2024-nature.md",
+ "kind": "artifact-page"
+}

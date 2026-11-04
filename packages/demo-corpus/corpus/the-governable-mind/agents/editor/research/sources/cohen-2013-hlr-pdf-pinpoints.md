@@ -1,0 +1,6 @@
+# cohen-2013-hlr-pdf-pinpoints
+- **URL:** https://harvardlawreview.org/wp-content/uploads/2013/05/vol126_cohen.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B
+- **What it establishes:** Cohen, "What Privacy Is For," 126 Harv. L. Rev. 1904–1933 (2013), full PDF text-extracted with running heads. "fixed, transparent, and predictable" at 1905; the modulation definition at 1915; Cohen's footnote there cites Deleuze, "Postscript on Control Societies," in Negotiations (Joughin trans., 1995), so the Deleuze → Cohen lineage is her own.
+- **Key passages:** 1905: "Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable." · 1915: "Networked information technologies enable surveillance to become modulation. … This in turn facilitates modulation: a set of processes in which the quality and content of surveillant attention is continually modified according to the subject's own behavior, sometimes in response to inputs from the subject but according to logics that ultimately are outside the subject's control."
+- **Reliability:** Primary (publisher PDF); independent.
+- **Relevance to this project:** VII6 (l.158); ref [59].

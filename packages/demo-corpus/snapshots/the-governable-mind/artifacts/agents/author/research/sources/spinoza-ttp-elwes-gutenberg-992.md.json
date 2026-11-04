@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/spinoza-ttp-elwes-gutenberg-992.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "24274e4fb69bfb2f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/spinoza-ttp-elwes-gutenberg-992.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# spinoza-ttp-elwes-gutenberg-992\n- **URL:** https://www.gutenberg.org/cache/epub/992/pg992.txt (Part IV of the Gutenberg edition; the Wikisource chapter URL in the outline, /Theologico-Political_Treatise/Chapter_XX, returns 404) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C6, C56\n- **What it establishes:** *A Theological-Political Treatise* [Part IV], translated by R. H. M. Elwes (1883; public domain), Project Gutenberg #992. Contains Chapter XX with its heading and the passages on the mind's immunity from state control, tyranny, actions vs. judgment, and the \"true aim of government is liberty.\" Bracketed sentence numbers like \"(20:20)\" are Gutenberg's editorial apparatus, not Elwes's.\n- **Key passages:**\n  - Heading: \"CHAPTER XX - That in a Free State every man may Think what he Likes, and Say what he Thinks.\"\n  - \"no man's mind can possibly lie wholly at the disposition of another, for no one can willingly transfer his natural right of free reason and judgment, or be compelled so to do.\"\n  - \"For this reason government which attempts to control minds is accounted tyrannical, and it is considered an abuse of sovereignty and a usurpation of the rights of subjects, to seek to prescribe what shall be accepted as true, or rejected as false\"\n  - \"the object of government is not to change men from rational beings into beasts or puppets, but to enable them to develope their minds and bodies in security, and to employ their reason unshackled\"\n  - \"In fact, the true aim of government is liberty.\"\n  - \"a man's loyalty to the state should be judged, like his loyalty to God, from his actions only\"\n  - \"In a democracy ... everyone submits to the control of authority over his actions, but not over his judgment and reason\"\n  - \"In proportion as the power of free judgment is withheld we depart from the natural condition of mankind, and consequently the government becomes more tyrannical.\"\n  - Sedition qualifier: a man is \"seditious, not so much from his actual opinions and judgment, as from the deeds which they involve\"\n- **Reliability:** Primary text in a public-domain translation (Elwes, 1883). Elwes is dated but standard for public-domain quotation; modern translations (Curley, Silverthorne/Israel) render the heading differently (e.g., \"freedom to philosophize\").\n- **Relevance to this project:** C6 (all quoted wording), C56 background.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 353
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e12d3cdc5332601aed0d3b093c85e7b7918cfa947f2c1259744633740f9aae97",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/spinoza-ttp-elwes-gutenberg-992.md",
+ "kind": "artifact-page"
+}

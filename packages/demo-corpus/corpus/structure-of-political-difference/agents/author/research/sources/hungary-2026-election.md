@@ -1,0 +1,6 @@
+# hungary-2026-election
+- **URL:** https://en.wikipedia.org/wiki/2026_Hungarian_parliamentary_election and https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz · **Accessed:** 2026-07-31 · **For:** v1-response — verify C23d (Orbán present-tense Misleading)
+- **What it establishes:** April 12, 2026: Péter Magyar's Tisza party defeated Fidesz, ending Orbán's 16-year tenure (in office 2010–2026). Final result (Wikipedia): Tisza 141 of 199 seats (53.18% list vote) — a two-thirds constitutional supermajority; Fidesz–KDNP 52. Al Jazeera election-night figures: 138 seats / 53.6% (early count — prefer "two-thirds supermajority" phrasing over an exact seat count, or use final 141). Orbán conceded; Magyar elected PM when the Assembly convened May 9, 2026.
+- **Key passages:** Orbán: "The responsibility and possibility of governing was not given to us" (Al Jazeera).
+- **Reliability:** Wikipedia (secondary, current) cross-checked with Al Jazeera contemporaneous reporting; figures agree except early-vs-final seat count.
+- **Relevance:** Confirms editor's C23d verdict. v2 dates the Orbán profile "in office 2010–2026," past tense, and uses the fall (insurgent unseats a consolidated party-state via elections) as live evidence in the System-axis discussion. Cite Al Jazeera in the reference list.

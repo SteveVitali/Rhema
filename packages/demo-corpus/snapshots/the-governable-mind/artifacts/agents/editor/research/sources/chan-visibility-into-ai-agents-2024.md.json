@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/chan-visibility-into-ai-agents-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2de01e082c22b023",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/chan-visibility-into-ai-agents-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# chan-visibility-into-ai-agents-2024\n- **URL:** https://arxiv.org/html/2401.13138v4 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Chan et al., 'Visibility into AI Agents,' ACM FAccT 2024 (full HTML read). Three measures: agent identifiers, real-time monitoring, activity logs. Logs defined to include user inputs; linking actions to user/developer/deployer is a stated benefit; user authentication contemplated; surveillance abuse by governments/deployers acknowledged and mitigated by minimum-necessary access, not by object separation; monitoring users of a few compute providers ≈ monitoring society.\n- **Key passages:** 'Activity logs are records of certain inputs and outputs of an agent. Inputs and outputs could be from both users or tools and services' (3.3) · 'allow one to tie behaviour to specific user choices, facilitating post-incident attribution' (3.3) · 'accountability by linking an action to an AI agent and its user, developer(s), and deployer' (3.1.1) · 'Authentication of the agent's user may be useful when individuals are providing sensitive information' (3.1.2) · 'Governments or deployers may thus abuse their power to carry out excessive or unjustified surveillance of personal activities' (3.4) · 'The granularity and quantity of access should be the minimum necessary' (3.4).\n- **Reliability:** Primary; GovAI-affiliated authors; safety-aligned.\n- **Relevance to this project:** Q3: the direct predecessor the draft's l.234/l.244 distinction must cite against; it lacks the distinction and proposes the identity linkage.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 214
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "333c41c616b74c8699d3b6ad291ba3047f10411d6ac67f543098d9a48a5f5d5f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/chan-visibility-into-ai-agents-2024.md",
+ "kind": "artifact-page"
+}

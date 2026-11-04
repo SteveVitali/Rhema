@@ -1,0 +1,88 @@
+{
+ "dto": {
+  "chip": {
+   "addressed": 14,
+   "open": 2
+  },
+  "drafts": [
+   {
+    "answered": true,
+    "claimsPendingVerification": false,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "v1",
+    "frozen": true,
+    "frozenAt": "2026-11-04T00:00:00.000Z",
+    "label": "v1",
+    "n": 1,
+    "obligations": {
+     "addressed": 7,
+     "open": 1
+    },
+    "origin": "drafted_from_outline",
+    "reviewed": true,
+    "state": "frozen",
+    "words": 13239
+   },
+   {
+    "answered": true,
+    "claimsPendingVerification": false,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "v2",
+    "frozen": true,
+    "frozenAt": "2026-11-04T00:00:00.000Z",
+    "label": "v2",
+    "n": 2,
+    "obligations": {
+     "addressed": 7,
+     "open": 1
+    },
+    "origin": "response_to_review",
+    "reviewed": true,
+    "state": "frozen",
+    "words": 18485
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "v3",
+    "frozen": true,
+    "frozenAt": "2026-11-04T00:00:00.000Z",
+    "label": "v3",
+    "n": 3,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "response_to_review",
+    "reviewed": false,
+    "state": "frozen",
+    "words": 23163
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "published",
+    "frozen": false,
+    "frozenAt": null,
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "n": 4,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "imported",
+    "reviewed": false,
+    "state": "working",
+    "words": 23151
+   }
+  ],
+  "outline": null,
+  "workingN": 4
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "",
+ "kind": "versions"
+}

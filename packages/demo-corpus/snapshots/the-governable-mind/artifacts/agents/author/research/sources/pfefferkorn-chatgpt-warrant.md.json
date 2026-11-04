@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/pfefferkorn-chatgpt-warrant.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7e6601ee3a854d67",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/pfefferkorn-chatgpt-warrant.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pfefferkorn-chatgpt-warrant\n- **URL:** https://cyberlaw.stanford.edu/blog/2025/10/eight-or-so-questions-to-ask-about-the-chatgpt-warrant/ · **Accessed:** 2026-09-16 · **For:** v1 response round, item 3\n- **What it establishes:** Riana Pfefferkorn (Stanford CIS), Oct. 24/25, 2025. Reports Forbes (Thomas Brewster, Oct. 20, 2025) on \"the first known federal search warrant asking OpenAI for user data,\" D. Me., a long-running HSI child-exploitation investigation; an undercover HSI agent chatted with the site admin, who described his ChatGPT prompts and responses; the warrant sought account details, other conversations, names, addresses, payment data; OpenAI complied with an Excel spreadsheet. She coins \"reverse prompt warrants,\" notes this one was properly scoped to one user, and lists eight questions (judge-shopping, OpenAI's capability to search by prompt, gag orders, technical changes to make compliance impossible). Also notes OpenAI's 2H2024 transparency report: 71 requests.\n- **Key passages:** \"User data is 'if you keep it, they will come': If a tech company stores data about its users, in a form the company can legibly access ... it will receive a government request for some user's data eventually\". / \"let's call them 'reverse prompt warrants'\". / \"The affidavit includes two 'unique, specific' prompts and the 'unique responses' that ChatGPT generated.\" / \"this warrant looks properly scoped to seek information about one specific ChatGPT user\".\n- **Reliability:** Secondary expert commentary (surveillance-law scholar), relying on Forbes and the CourtListener affidavit (linked). Independent.\n- **Relevance to this project:** Item 3; the \"identified by the content of his prompts\" mechanism; the \"if you keep it, they will come\" line for the essay's legibility thesis.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Pfefferkorn links the primary documents, which I have now read: affidavit https://storage.courtlistener.com/recap/gov.uscourts.med.68915/gov.uscourts.med.68915.1.1.pdf and warrant return https://storage.courtlistener.com/recap/gov.uscourts.med.68916/gov.uscourts.med.68916.3.0.pdf. The index line for this note (\"suspect identified by unique prompts\") is WRONG as to outcome: per Forbes the government \"did not require the OpenAI data to identify their man\". The warrant specified the user by his prompts; it did not find him.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 311
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bd7e6484dc91c222152a9253d88461db9e05cee90302b5d7f24dc7307ae701bf",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/pfefferkorn-chatgpt-warrant.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ca-sb243-companion-chatbots-2025-text.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1515408244742c95",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ca-sb243-companion-chatbots-2025-text.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ca-sb243-companion-chatbots-2025-text\n- **URL:** https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202520260SB243 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 3)\n- **What it establishes:** SB 243 (Padilla), Ch. 677, Stats. 2025 (signed October 2025; operative Jan. 1, 2026; reporting from July 1, 2027). Defines \"companion chatbot\" as \"an artificial intelligence system with a natural language interface that provides adaptive, human-like responses to user inputs and is capable of meeting a user's social needs\" (with exemptions). Requires a notification that the chatbot \"is artificially generated and not human\" where a reasonable person would be misled; a protocol \"for preventing the production of suicidal ideation, suicide, or self-harm content\" with crisis referrals, published on the website; for a user the operator \"knows is a minor\": AI disclosure, break reminders \"at least every three hours,\" and measures against sexually explicit material; annual reports to the Office of Suicide Prevention (no identifiers); private right of action ($1,000 per violation). The bill does not require operators to verify or determine user age and contains no identity, logging, or retention mandate.\n- **Key passages:** as above.\n- **Reliability:** Primary (chaptered bill text).\n- **Relevance to this project:** Agenda 3. Layer 3 obligation of classification (self-harm detection) without retention or identity; the \"knows is a minor\" trigger is the hook that SB 1119 turns into an age-assurance duty.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 211
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0da80e62af452ef5276d3456ae82609e4abbb3c7af14cc4de63a3f102d43698e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ca-sb243-companion-chatbots-2025-text.md",
+ "kind": "artifact-page"
+}

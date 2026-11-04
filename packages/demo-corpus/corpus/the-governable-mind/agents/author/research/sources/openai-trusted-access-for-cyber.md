@@ -1,0 +1,8 @@
+# openai-trusted-access-for-cyber
+- **URL:** https://openai.com/index/trusted-access-for-cyber/ and https://openai.com/index/gpt-5-5-with-trusted-access-for-cyber/ (both read via a reader proxy; direct fetch 403) · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D
+- **What it establishes:** OpenAI's own TAC pages (undated in the proxied text). TAC is "an identity and trust-based framework designed to help ensure enhanced cyber capabilities are being placed in the right hands." Individuals "can verify their identity at chatgpt.com/cyber." Three tiers: GPT-5.5 default ("Standard safeguards"), GPT-5.5 with TAC ("More precise safeguards for verified defensive work in authorized environments"), and GPT-5.5-Cyber ("Most permissive behavior ... paired with stronger verification and account-level controls"). Approval lowers "classifier-based refusals" for vulnerability triage, malware analysis, reverse engineering, detection engineering, patch validation. The proxied text of these two pages did NOT contain the "government ID check, KYC" sentence; that wording is documented in the Biometric Update note.
+- **Key passages:**
+  - "an identity and trust-based framework designed to help ensure enhanced cyber capabilities are being placed in the right hands."
+  - "lower classifier-based refusals to enable authorized cybersecurity workflows, including vulnerability identification and triage, malware analysis, binary reverse engineering, detection engineering, and patch validation."
+- **Reliability:** Primary (OpenAI), but read through a proxy that may drop page elements.
+- **Relevance to this project:** Establishes the identity-gated structure; pair with biometricupdate note for the government-ID/Persona detail.

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/fei-when-agents-evolve.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0312125ed6c86c03",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/fei-when-agents-evolve.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fei-when-agents-evolve\n- **URL:** https://arxiv.org/html/2604.27691 · **Accessed:** 2026-07-30 · **For:** v2→v3 response; the empirical card for the deflationist rebuttal (Major issue 1)\n- **What it establishes:** Fei (KAUST), Guo, Xiao (Fudan), \"When Agents Evolve, Institutions Follow\" (arXiv:2604.27691, Apr 2026). Seven historical governance systems implemented as executable multi-agent architectures (Qin-Han, Soviet, Mongol pipelines; Tang Three Departments and US Federal gated pipelines; Edo Bakuhan autonomous cluster; Athenian consensus) + single-agent baseline. Within a single model on single-turn tool-use tasks (PinchBench), best-vs-worst institutional gap: 57.1 pp (MiniMax), 58.6 pp (Kimi), 60.5 pp (Gemini). No institution dominates across models/tasks. **Compute was NOT held constant — and that is the point:** \"Tang and US Federal consume the most steps and tokens yet do not consistently lead in score\"; Edo hits 83.7% with only 3.0 steps / 48K tokens (Pareto-efficient). Gate-loop failure: on Kimi, Tang's Menxia gate rejects up to 15 consecutive times, averaging 26.7 steps and 89K tokens per task for a 21.6% score — maximal token burn, near-worst outcome.\n- **Key passages:** \"the gap between the best and worst institution is large: 57.1 percentage points for MiniMax…58.6 for Kimi…60.5 for Gemini\"; \"No single institution dominates across all models and tasks\"; gate-loop: \"the reject-revise cycle amplifies step count without improving output quality.\"\n- **Caveat to carry honestly:** on complex multi-step tasks (ClaweBench) the institutional gap compresses ~80% (to ~12 pp) — the topology effect is task-dependent, strongest on decomposable tool-use work.\n- **Reliability:** primary (arXiv full text read via HTML).\n- **Relevance:** The strongest available answer to \"gains = tokens\": same model, same tasks, ~60-point spread by governance topology, with the *highest*-token institutions sometimes performing worst. Structure doesn't just channel compute; it can waste or leverage it. Cite in v3's deflationist paragraph; do not overclaim (spread is task-dependent).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 286
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "793259d2d678416309476625fcbbe3a987e15d7d5c272fc8ac9bf566fcd5d165",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/fei-when-agents-evolve.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/senate-church-committee-page.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bf9564039cd00086",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/senate-church-committee-page.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# senate-church-committee-page\n- **URL:** https://www.senate.gov/about/powers-procedures/investigations/church-committee.htm · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C32\n- **What it establishes:** The Senate's official history page for the Select Committee to Study Governmental Operations with Respect to Intelligence Activities (Church Committee): resolution January 27, 1975; Frank Church chair; investigated COINTELPRO and NSA SHAMROCK/MINARET; final report April 29, 1976; led to S.Res. 400 (1976, SSCI) and FISA (1978); the House ran a separate inquiry.\n- **Key passages:** COINTELPRO: \"The FBI's long-running program of 'covert action designed to disrupt and discredit the activities of groups and individuals deemed a threat to the social order,' known as COINTELPRO.\" NSA: \"NSA's Projects SHAMROCK and MINARET, programs which monitored wire communications to and from the United States and shared some of that data with other intelligence agencies.\" \"In 1976 the Senate approved Senate Resolution 400, establishing the Senate Select Committee on Intelligence, to provide 'vigilant legislative oversight'\". \"In 1978 Congress approved and President Jimmy Carter signed into law the Foreign Intelligence Surveillance Act (FISA), requiring the executive branch to request warrants\".\n- **Reliability:** Primary/official (U.S. Senate Historical Office).\n- **Relevance to this project:** C32: every element of the claim except the House committee's founding, which is on house.gov.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 194
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "08a99a755b2667b5e148823d651227f65006aaf97038b31d776fe02c3d14e007",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/senate-church-committee-page.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,7 @@
+# voteview-poole-rosenthal
+
+- **URL:** https://voteview.com/about · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Poole & Rosenthal's DW-NOMINATE: congressional roll-call behavior across US history is captured by low dimensionality. "The primary dimension through most of American history has been 'liberal' vs. 'conservative' (also referred to as 'left' vs. 'right')." "A second dimension picks up differences within the major political parties over slavery, currency, nativism, civil rights, and lifestyle issues."
+- **Key passages:** As quoted.
+- **Reliability:** Primary (the project's own methodological statement); the low-dimensionality finding is among the most replicated results in American politics.
+- **Relevance to this project:** The statistical-economy counterargument: if one or two dimensions explain elite behavior, five coordinates are uneconomical for describing actual politicians. The draft has a real answer (coalitional compression is exactly what NOMINATE measures; the questions are about the content of bundles, not the statistics of votes — and NOMINATE's own second dimension keeps absorbing whatever cross-cuts the first), but the draft never makes it. Worth noting: low dimensionality of *elite behavior in a two-party system* is compatible with multidimensional *attitudes*, which the draft's cited multidimensionality literature shows; the draft should connect these explicitly.

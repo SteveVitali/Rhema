@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/orwell-politics-english-language.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7136e5d56bcdafc7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/orwell-politics-english-language.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# orwell-politics-english-language\n- **URL:** https://www.orwellfoundation.com/the-orwell-foundation/orwell/essays-and-other-works/politics-and-the-english-language/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C61: all three quotations verbatim; Horizon, April 1946.\n- **Key passages:** 'But if thought corrupts language, language can also corrupt thought.' / 'the huts set on fire with incendiary bullets: this is called pacification.'\n- **Reliability:** Primary text (Orwell Foundation).\n- **Relevance to this project:** C61\n",
+  "meters": {
+   "readMin": 1,
+   "words": 59
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d2edc0190a276b82139f978ede0154133a675317757bb08ba36fe5349de136b8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/orwell-politics-english-language.md",
+ "kind": "artifact-page"
+}

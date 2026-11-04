@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/protect-democracy-doge-panopticon.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "164d2e1e82022669",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "277a64c2ab05811d",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "870fc8fd3495a18a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/protect-democracy-doge-panopticon.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Schneidman (Protect Democracy), \"DOGE's data 'panopticon' pales compared to what's next\" (2025)\n\n- **URL:** https://www.ifyoucankeepit.org/p/doges-data-panopticon-pales-compared\n- **Accessed:** 2026-08-21\n- **Author/date:** Nicole Schneidman, Protect Democracy's \"If you can keep it,\" May 12, 2025.\n\n**Establishes:** The pro-democracy-org version of the argument, one layer down: federal aggregation (\"everything from Social Security to tax records to biometric data in a singular, AI-enabled hub\") plus the coming fight over *state* datasets (DMV, student, voter, medical). Invokes post-Watergate protections and federalism as the structural defense. Shows the draft's \"what must the state be prevented from knowing\" question already live in the advocacy literature, framed as data-governance federalism rather than constitutional theory.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 102
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b19e0acbd29da41535e99304c5d770052f99e5adf149af275401c41c30268c2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/protect-democracy-doge-panopticon.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/iasr-2026-fulltext-search-surveillance-kyc.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "64e298ad446dda13",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/iasr-2026-fulltext-search-surveillance-kyc.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iasr-2026-fulltext-search-surveillance-kyc\n- **URL:** https://internationalaisafetyreport.org/sites/default/files/2026-02/international-ai-safety-report-2026.pdf · **Accessed:** 2026-09-16 (PDF downloaded, 221 pp., text-extracted with pypdf; full-text search for \"surveillance\", \"social control\", \"know your customer\", \"KYC\", \"identity verification\", \"chilling\", \"vetting\", \"logging\") · **For:** v2 review, Phase 2 legal/philosophical (agenda 5, F42)\n- **What it establishes:** Printed page = PDF page minus 1 (header numerals confirm). (1) \"chilling\" does not occur anywhere in the Report; \"KYC\" as an abbreviation does not occur; \"Know-Your-Customer\" occurs once. (2) Printed p. 111, Table 3.3 (\"Risk mitigation practice / Explanation and examples of use in general-purpose AI risk management\"), row \"Access control/user vetting\": \"AI companies frequently disable accounts found to be engaging in criminal activity (486*) and include user vetting and Know-Your-Customer screenings to ensure that models are only used by trusted actors (991*, 1029*, 1070).\" The table is descriptive of current practice, introduced at p. 110 as \"risk mitigation methods ... adaptable and can mitigate a range of risks\"; refs are Anthropic's RSP (991*), Simkin et al. (1029*), and Jami Pour et al., \"How to Know Your Customers?\" (1070). It is not framed as a recommendation to states. (3) Printed p. 143 (§ \"Building societal resilience\", offence-defence balance): \"AI systems that enhance government legibility by analysing vast data streams could also enable surveillance and social control (1421).\" Ref 1421 = Bullock, Hammond, Krier, \"AGI, Governments, and Free Societies,\" arXiv 2503.05710 (2025). (4) Printed p. 142: \"some research anticipates that AI could transform democratic institutions by enhancing transparency, reducing monitoring and compliance costs, enabling coordination, and strengthening identity verification systems (1421, 1422).\" (5) Printed p. 117: in the survey of Frontier AI Safety Frameworks, \"some prominent risks, such as unlawful surveillance (1131, 1132) and non-consensual intimate imagery (287), receive less emphasis.\" (6) Printed p. 49: output-logging for content provenance \"raises privacy concerns related to logging user interactions (333).\" (7) Printed p. 122, Table of technical safeguards, \"User interaction monitors\": \"Monitoring user interactions for signs of malicious use can help developers terminate service for malicious users (1154, 1166). However, enforcement can inadvertently hinder beneficial research on safety (689), and some forms of misuse are difficult to detect (1150).\" (8) Printed p. 80: \"Current models cannot reliably complete key steps required for self-replication, such as passing identity verification checks to gain access to cloud computing resources (723).\"\n- **Key passages:** see above; all verbatim from the extracted text.\n- **Reliability:** Primary; multilateral expert consensus report (Bengio, chair); February 2026.\n- **Relevance to this project:** F42 (l.204, ref [68]). The Report does list KYC/user vetting among industry risk-mitigation practices (descriptively, p. 111) and does warn, in the essay's own vocabulary, that legibility-enhancing AI \"could also enable surveillance and social control\" (p. 143). It does not recommend identity verification of ordinary users, and it never uses \"chilling.\"\n",
+  "meters": {
+   "readMin": 2,
+   "words": 451
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "802ad5789bf369f738617290ab7ccff226213692a6fadd6bfb05517a59dfd40a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/iasr-2026-fulltext-search-surveillance-kyc.md",
+ "kind": "artifact-page"
+}

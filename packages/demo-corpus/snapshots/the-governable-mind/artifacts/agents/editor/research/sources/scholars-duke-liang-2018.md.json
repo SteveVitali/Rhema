@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/scholars-duke-liang-2018.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4dcf365e4b7b75bf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/scholars-duke-liang-2018.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# scholars-duke-liang-2018\n- **URL:** https://scholars.duke.edu/publication/1493758 (bibliographic cross-check: https://api.semanticscholar.org/graph/v1/paper/DOI:10.1002/poi3.183?fields=title,authors,venue,year,abstract) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C58: abstract contains the quoted sentence verbatim; Policy & Internet 10:4 (2018) 415–453. Wiley refused access.\n- **Key passages:** 'it is a complicated system that focuses primarily on financial and commercial activities rather than political ones.'\n- **Reliability:** Institutional repository record of the abstract (primary-adjacent).\n- **Relevance to this project:** C58\n",
+  "meters": {
+   "readMin": 1,
+   "words": 67
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "560962b49f72737779eb40afb5dac20a7facb398ce09d51e113ab3720851ccf7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/scholars-duke-liang-2018.md",
+ "kind": "artifact-page"
+}

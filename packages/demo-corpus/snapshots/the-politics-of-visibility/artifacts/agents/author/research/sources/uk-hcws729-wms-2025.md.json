@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/uk-hcws729-wms-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3b000ee456b20982",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/uk-hcws729-wms-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# uk-hcws729-wms-2025\n- **URL:** https://questions-statements.parliament.uk/written-statements/detail/2025-06-23/hcws729 (live page Cloudflare-blocked; read in full via Wayback Machine snapshot http://web.archive.org/web/20260719183635/https://questions-statements.parliament.uk/written-statements/detail/2025-06-23/hcws729) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, verbatim verification of the Home Secretary's proscription statement\n- **What it establishes:** Full text of Home Secretary Yvette Cooper's written ministerial statement HCWS729 (Commons, 23 June 2025; Lords parallel HLWS726) announcing the decision to proscribe Palestine Action under s.3 Terrorism Act 2000. Confirms verbatim: (1) the \"nationwide campaign of direct criminal action\" characterization; (2) the willingness-to-use-violence claim; (3) the Thales Glasgow description (over £1m damage, staff panic, sheriff's remarks — note the statement misspells \"Sherif\"); (4) \"The Underground Manual\" reference (late 2023, cells, targets map); (5) the lawful-protest assurances — which come as TWO separated passages, not one continuous quote: the \"specific to Palestine Action\" sentence appears early in the statement, and the \"right to peaceful protest\" assurance appears later and is conditional (\"Should Parliament vote to proscribe, that right will be unaffected\"). Any essay rendering that fuses them into one sentence is a splice.\n- **Key passages:** \"This decision is specific to Palestine Action and does not affect lawful protest groups and other organisations campaigning on issues around Palestine or the Middle East.\" / \"Since its inception in 2020, Palestine Action has orchestrated a nationwide campaign of direct criminal action against businesses and institutions, including key national infrastructure and defence firms...\" / \"...its methods have become more aggressive, with its members demonstrating a willingness to use violence.\" / \"During Palestine Action's attack against the Thales defence factory in Glasgow in 2022, the group caused over a million pounds of damage including to parts essential to submarines. The Sherif, in passing custodial sentences for the attackers' violent crimes, spoke of the panic among staff who feared for their safety as pyrotechnics and smoke bombs were thrown in the area where they were evacuating.\" / \"In late 2023, Palestine Action released 'The Underground Manual'. The document encourages the creation of cells; provides practical guidance on how to carry out activity against private companies and government buildings on behalf of Palestine Action; and provides a link to a website which contains a map of specific targets across the UK.\" / \"The right to peaceful protest is a cornerstone of our democracy. Should Parliament vote to proscribe, that right will be unaffected.\"\n- **Reliability:** primary (official UK Parliament record of the ministerial statement, via archived snapshot of the official page)\n- **Relevance to this project:** Settles all verbatim-quotation corrections for the HCWS729 material: \"nationwide campaign of direct criminal action\" is exact; the lawful-protest assurance is two separate passages and the second is conditional on the parliamentary vote.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 432
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "797cc1c833611075bb1f7e8fd5317459f7458706ebcfcb2529083dd93faba8fe",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/uk-hcws729-wms-2025.md",
+ "kind": "artifact-page"
+}

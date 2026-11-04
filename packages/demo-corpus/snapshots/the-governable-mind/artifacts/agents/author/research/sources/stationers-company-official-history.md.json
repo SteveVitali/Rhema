@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/stationers-company-official-history.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a2ebecff78e7c16f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/stationers-company-official-history.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# stationers-company-official-history\n- **URL:** https://www.stationers.org/history/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C28\n- **What it establishes:** The Stationers' Company's own history page: charter granted by Mary I and Philip II in 1557 with control of printing/publishing and the right to seize pirated works; the Register as the root of copyright. Says nothing about 1662 or 1695.\n- **Key passages:** \"Mary I and Philip II granted the Company a royal Charter in 1557. This gave the Stationers control of printing and publishing, with the right to seize pirated works and register new titles.\" \"The Stationers' Register laid the foundations for the development of copyright law.\"\n- **Reliability:** Primary-adjacent (the institution's self-history); brief and self-flattering; no censorship framing.\n- **Relevance to this project:** C28: confirms 1557, Philip and Mary, and seizure power in the Company's own words.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 131
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2b57c7e155913ce0ef8e8c95e52dc4af06ee0abcf0fbde32bdee21c5bb2e4c2a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/stationers-company-official-history.md",
+ "kind": "artifact-page"
+}

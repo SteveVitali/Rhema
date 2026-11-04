@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/milton-areopagitica-1644-wikisource.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "aaac3ad71070a1c8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/milton-areopagitica-1644-wikisource.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# milton-areopagitica-1644-wikisource\n- **URL:** https://en.wikisource.org/wiki/Areopagitica_(1644) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C8, C55\n- **What it establishes:** Original-spelling text of *Areopagitica* (1644). Wikisource's header notes it was \"Published November 23, 1644.\" Supplies the exact wording of the three candidate quotations and of Milton's endorsement of post-publication punishment.\n- **Key passages:**\n  - \"as good almost kill a Man as kill a good Book; who kills a Man kills a reasonable creature, Gods Image; but hee who destroyes a good Booke, kills reason it selfe, kills the Image of God, as it were in the eye.\"\n  - \"a good Booke is the pretious life-blood of a master spirit, imbalm'd and treasur'd up on purpose to a life beyond life.\"\n  - \"I cannot praise a fugitive and cloister'd vertue, unexercis'd & unbreath'd, that never sallies out and sees her adversary, but slinks out of the race, where that immortall garland is to be run for, not without dust and heat.\"\n  - Preceding sentence (textual crux): \"he is the true wayfaring Christian.\" (This transcription prints \"wayfaring\"; Gutenberg #608 prints \"warfaring\"; the 1644 printing reads \"wayfaring\" with \"warfaring\" a contemporary hand-correction in some copies. Avoid quoting that word or note the crux.)\n  - \"And though all the windes of doctrin were let loose to play upon the earth, so Truth be in the field, we do injuriously, by licencing and prohibiting to misdoubt her strength. Let her and Falshood grapple; who ever knew Truth put to the wors, in a free and open encounter.\"\n  - What Milton did not oppose: \"let no man think to have the honour of advising ye better then your selves have done in that Order publisht next before this, that no book be Printed, unlesse the Printers and the Authors name, or at least the Printers be register'd.\"\n  - \"Those which otherwise come forth, if they be found mischievous and libellous, the fire and the executioner will be the timeliest and the most effectuall remedy, that mans prevention can use.\"\n  - \"this authentic Spanish policy of licencing books ... was the immediat image of a Star-chamber decree\"\n- **Reliability:** Primary text (public-domain; volunteer transcription of the 1644 quarto). Original spelling; punctuation as transcribed.\n- **Relevance to this project:** C8 (all three quotations plus the post-publication caveat); C55 (Milton's own reference to the \"Order publisht next before this,\" i.e. the January 1642 registration order, versus the 1643 licensing order he attacks).\n",
+  "meters": {
+   "readMin": 2,
+   "words": 388
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "432a8255771c9672434f019852e99a3bc3198e9e617a7e7ae5a5b3072e87320b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/milton-areopagitica-1644-wikisource.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/corry-2026-ai-provenance-archival-provenance.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f9ac093e24d3bfb5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/corry-2026-ai-provenance-archival-provenance.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# corry-2026-ai-provenance-archival-provenance\n- **URL:** https://www.cambridge.org/core/journals/cambridge-forum-on-ai-culture-and-society/article/can-ai-provenance-inform-archival-provenance/82BF355A2D0A05D964FBF9A961665CFB · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Frances Corry, \"Can AI provenance inform archival provenance?\" Cambridge Forum on AI: Culture and Society (June 15, 2026): proposes that AI data-documentation practices (Datasheets for Datasets) could inform archival provenance, reversing the usual flow; about the constructedness of collections, not about summaries displacing sources.\n- **Key passages:** n/a beyond abstract.\n- **Reliability:** Primary; peer-reviewed.\n- **Relevance to this project:** Agenda 8: negative result; archival provenance literature does not state the reachability criterion.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce9786aab752268078e3361d90fb700aa8d7f9db5a5d4adf098291825a940819",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/corry-2026-ai-provenance-archival-provenance.md",
+ "kind": "artifact-page"
+}

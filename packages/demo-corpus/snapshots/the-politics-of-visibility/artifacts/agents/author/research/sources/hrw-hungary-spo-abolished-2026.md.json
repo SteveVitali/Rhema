@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hrw-hungary-spo-abolished-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e24ea0b46c31a481",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hrw-hungary-spo-abolished-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hrw-hungary-spo-abolished-2026\n- **URL:** https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C40\n- **What it establishes:** Status as of July 2026: \"Hungary's parliament voted overwhelmingly on June 30 to abolish the Sovereignty Protection Office.\" The office was \"created under a 2023 law,\" \"operated with limited oversight, using its authority to target and harass organizations critical of Fidesz rule\" (targets included Transparency International Hungary and investigative outlet Átlátszó). In February 2026 the EU Court of Justice's advocate general found its powers \"have a chilling effect and may lead to self-censorship by journalists.\"\n- **Key passages:** as quoted above (HRW's paraphrases and quotes of the AG opinion).\n- **Reliability:** Secondary (major human-rights NGO); dates corroborated by Brussels Signal (vote 135–44, six abstentions, June 30; constitutional amendment June 15; assets to Ministry of Justice).\n- **Relevance to this project:** C40(a) and (c) — establishes both what the office did and that abolition passed parliament; as of Aug 2026 the office is being dissolved.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 156
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "dc3d330e0873d9de577759f55eef3767e4d4f35fb24e30da5198e8ec8c55402e",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/hrw-hungary-spo-abolished-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/benton-white-house-exempt-open-models-2026-08-05.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c8f5a302baeafbeb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/benton-white-house-exempt-open-models-2026-08-05.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# benton-white-house-exempt-open-models-2026-08-05\n- **URL:** https://www.benton.org/headlines/white-house-ai-guidelines-exempt-us-open-models-government-review · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding C (the earlier exemption)\n- **What it establishes:** Aug 5, 2026 headline relay (Benton attributes to the Wall Street Journal). Under the guidelines discussed with AI executives, only closed, proprietary U.S. models with state-of-the-art cyber capabilities would undergo voluntary pre-release testing; \"Open-weight models, whose developers, including Nvidia, make them available to download so users can run and customize them on their own, would be exempt.\"\n- **Key passages:**\n  - \"Open-weight models, whose developers, including Nvidia, make them available to download so users can run and customize them on their own, would be exempt.\"\n- **Reliability:** Tertiary relay of a paywalled report.\n- **Relevance to this project:** Documents the early-August exemption that the Aug 12 WIRED report reversed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 124
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "db52d56433792637b1eb0958fa653692a3256370256b7f4b773fe12d68ee3d1b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/benton-white-house-exempt-open-models-2026-08-05.md",
+ "kind": "artifact-page"
+}

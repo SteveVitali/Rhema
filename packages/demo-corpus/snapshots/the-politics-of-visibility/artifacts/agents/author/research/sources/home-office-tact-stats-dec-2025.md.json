@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/home-office-tact-stats-dec-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9965e0dfe1da4c2a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/home-office-tact-stats-dec-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# home-office-tact-stats-dec-2025\n- **URL:** https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C18 (also C19c)\n- **What it establishes:** Home Office accredited official statistics, \"Operation of police powers under the Terrorism Act 2000 … quarterly update to December 2025\" (published 12 March 2026). This — not an annual report and accounts — is the correct source for the arrest figures, and it confirms the claim's numbers exactly.\n- **Key passages:** \"there were 3,034 arrests for terrorism-related activity in the year ending 31 December 2025\" — a rise of 1,114% on the previous year (250). · \"There were 2,779 arrests for terrorism-related activity in the year ending 31 December 2025 linked to supporting Palestine Action, following its proscription on 5 July 2025.\" (2,779/3,034 = 92%.) · Of Palestine Action-linked arrests, \"412 were charged, including 8 under Section 12 and 404 under Section 13 of the Terrorism Act 2000.\" · Definition: arrests in Great Britain \"where there was suspicion of involvement in terrorist-related activity, either at the time of arrest or later in the investigation.\"\n- **Reliability:** Primary — official government statistical release (accredited official statistics), Great Britain coverage.\n- **Relevance to this project:** C18 verified verbatim; supplies the section 12/13 charge breakdown for C17/C19c. Cite period (\"year ending 31 December 2025\") and geography (Great Britain) precisely.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 210
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f4805e45a2b0df81cc7c58bca24c872d930c2631b9ff4c6cba89420dbf12b944",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/home-office-tact-stats-dec-2025.md",
+ "kind": "artifact-page"
+}

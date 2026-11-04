@@ -1,0 +1,64 @@
+{
+ "dto": {
+  "arc": [
+   {
+    "draftId": "v1",
+    "kind": "draft",
+    "label": "v1",
+    "n": 1
+   },
+   {
+    "kind": "review",
+    "runId": "v1-review",
+    "subjectN": 1
+   },
+   {
+    "draftId": "v2",
+    "kind": "draft",
+    "label": "v2",
+    "n": 2
+   },
+   {
+    "draftId": "v3",
+    "kind": "draft",
+    "label": "Writer-directed edit (not reviewed)",
+    "n": 3
+   },
+   {
+    "draftId": "v4",
+    "kind": "draft",
+    "label": "Writer-directed edit (not reviewed)",
+    "n": 4
+   },
+   {
+    "draftId": "published",
+    "kind": "draft",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "n": 5
+   }
+  ],
+  "counts": {
+   "claimsChecked": 27,
+   "major": 7,
+   "minor": 19,
+   "strengths": 6
+  },
+  "essay": "structure-of-political-difference",
+  "publishedLabel": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+  "publishedOn": "2026-11-04",
+  "publishedUrl": "https://sjsebastian.substack.com/p/the-structure-of-political-difference",
+  "retitle": {
+   "atLabel": "Writer-directed edit (not reviewed)",
+   "atVersion": "v3",
+   "from": "Politics Has Five Questions",
+   "to": "The Structure of Political Difference"
+  },
+  "subtitle": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.",
+  "title": "Politics Has Five Questions",
+  "words": 7711
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "",
+ "kind": "card-facts"
+}

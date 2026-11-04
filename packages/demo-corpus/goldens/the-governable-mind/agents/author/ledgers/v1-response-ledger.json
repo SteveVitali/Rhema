@@ -1,0 +1,447 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b130",
+    "confidence": 1,
+    "endOffset": 1664,
+    "quote": "Testing at the second layer is constitutionally tolerable if the tester's classifications are inspectable and appealable; if the threshold is defined by what a model can do and never by what its users ask; if there is more than one accredited tester, a published standard, and a sunset; and if enforcement stops at release and never reaches the fourth layer",
+    "startOffset": 1307
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 15,
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b105",
+    "confidence": 1,
+    "endOffset": 588,
+    "quote": "The practice, in the month the Order was signed, was this",
+    "startOffset": 531
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 6,
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "anchor": {
+    "blockId": "b37",
+    "confidence": 1,
+    "endOffset": 715,
+    "quote": "That is a liberty to use. What this essay claims is a further liberty that Blitz did not argue",
+    "startOffset": 621
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 3
+  },
+  {
+   "anchor": {
+    "blockId": "b61",
+    "confidence": 1,
+    "endOffset": 1440,
+    "quote": "Exit to a weaker model is worth what the cellar press was worth",
+    "startOffset": 1377
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 4
+  },
+  {
+   "anchor": {
+    "blockId": "b147",
+    "confidence": 1,
+    "endOffset": 401,
+    "quote": "which is what the eighth question exists to keep",
+    "startOffset": 353
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 16,
+    "status": "done"
+   },
+   "findingOrdinal": 5
+  },
+  {
+   "anchor": {
+    "blockId": "b8",
+    "confidence": 1,
+    "endOffset": 228,
+    "quote": "The second is not, despite appearances, about the state at all. It is about what dependence costs when the guardian is not answerable",
+    "startOffset": 95
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 6,
+    "status": "done"
+   },
+   "findingOrdinal": 6
+  },
+  {
+   "anchor": {
+    "blockId": "b17",
+    "confidence": 1,
+    "endOffset": 46,
+    "quote": "Kant supplied the formulation this essay needs",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 7
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 18,
+    "status": "done"
+   },
+   "findingOrdinal": 19
+  },
+  {
+   "anchor": {
+    "blockId": "b149",
+    "confidence": 1,
+    "endOffset": 919,
+    "quote": "torture them in the name, and on behalf, of",
+    "startOffset": 876
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 20
+  },
+  {
+   "anchor": {
+    "blockId": "b92",
+    "confidence": 1,
+    "endOffset": 860,
+    "quote": "If that is right, removing a word does not remove the concept, though it may raise its price",
+    "startOffset": 768
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 21
+  },
+  {
+   "anchor": {
+    "blockId": "b102",
+    "confidence": 1,
+    "endOffset": 1144,
+    "quote": "though this depends on relevant decision-makers' risk tolerance",
+    "startOffset": 1081
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 3,
+    "status": "done"
+   },
+   "findingOrdinal": 22
+  },
+  {
+   "anchor": {
+    "blockId": "b151",
+    "confidence": 1,
+    "endOffset": 57,
+    "quote": "set in the enchanted chair",
+    "startOffset": 31
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 20,
+    "status": "done"
+   },
+   "findingOrdinal": 23
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 2,
+    "status": "done"
+   },
+   "findingOrdinal": 24
+  },
+  {
+   "anchor": {
+    "blockId": "b17",
+    "confidence": 1,
+    "endOffset": 46,
+    "quote": "Kant supplied the formulation this essay needs",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 25
+  },
+  {
+   "anchor": {
+    "blockId": "b46",
+    "confidence": 0.4,
+    "endOffset": 22,
+    "quote": "## IV. Three Liberties",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 26
+  },
+  {
+   "anchor": {
+    "blockId": "b90",
+    "confidence": 1,
+    "endOffset": 725,
+    "quote": "The previous essay in this series called the thing that waits authoritarian capacity",
+    "startOffset": 641
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 2,
+    "status": "done"
+   },
+   "findingOrdinal": 27
+  },
+  {
+   "disposition": {
+    "kind": "escalate",
+    "moveOrdinal": 4,
+    "rationale": "escalate → conservative for the title/subtitle (F76); adapt for §XV's title",
+    "status": "done"
+   },
+   "findingOrdinal": 28
+  },
+  {
+   "disposition": {
+    "kind": "escalate",
+    "rationale": "escalate → awaiting author (F77)",
+    "status": "escalated"
+   },
+   "findingOrdinal": 29
+  },
+  {
+   "anchor": {
+    "blockId": "b72",
+    "confidence": 1,
+    "endOffset": 96,
+    "quote": "attested hardware (hardware that proves to a remote party what it is running)",
+    "startOffset": 19
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 18,
+    "status": "done"
+   },
+   "findingOrdinal": 30
+  },
+  {
+   "anchor": {
+    "blockId": "b136",
+    "confidence": 1,
+    "endOffset": 663,
+    "quote": "The four conditions require the state because only the state can universalize the rule and close the exits",
+    "startOffset": 557
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 17,
+    "status": "done"
+   },
+   "findingOrdinal": 35
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 10,
+    "status": "done"
+   },
+   "findingOrdinal": 31
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 19,
+    "status": "done"
+   },
+   "findingOrdinal": 32
+  },
+  {
+   "anchor": {
+    "blockId": "b98",
+    "confidence": 0.4,
+    "endOffset": 44,
+    "quote": "## X. The Hard Case: A Machine Is Not a Book",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 4,
+    "status": "done"
+   },
+   "findingOrdinal": 33
+  },
+  {
+   "anchor": {
+    "blockId": "b89",
+    "confidence": 1,
+    "endOffset": 41,
+    "quote": "The honest caveat belongs beside the fact",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 13,
+    "status": "done"
+   },
+   "findingOrdinal": 34
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "pending",
+   "title": "Move 1",
+   "type": "structure"
+  },
+  {
+   "ordinal": 2,
+   "status": "pending",
+   "title": "Move 2",
+   "type": "structure"
+  },
+  {
+   "ordinal": 3,
+   "status": "pending",
+   "title": "Move 3",
+   "type": "structure"
+  },
+  {
+   "ordinal": 4,
+   "status": "pending",
+   "title": "Move 4",
+   "type": "structure"
+  },
+  {
+   "ordinal": 5,
+   "status": "pending",
+   "title": "Move 5",
+   "type": "structure"
+  },
+  {
+   "ordinal": 6,
+   "status": "pending",
+   "title": "Move 6",
+   "type": "argument"
+  },
+  {
+   "ordinal": 7,
+   "status": "pending",
+   "title": "Move 7",
+   "type": "argument"
+  },
+  {
+   "ordinal": 8,
+   "status": "pending",
+   "title": "Move 8",
+   "type": "argument"
+  },
+  {
+   "ordinal": 9,
+   "status": "pending",
+   "title": "Move 9",
+   "type": "argument"
+  },
+  {
+   "ordinal": 10,
+   "status": "pending",
+   "title": "Move 10",
+   "type": "argument"
+  },
+  {
+   "ordinal": 11,
+   "status": "pending",
+   "title": "Move 11",
+   "type": "argument"
+  },
+  {
+   "ordinal": 12,
+   "status": "pending",
+   "title": "Move 12",
+   "type": "argument"
+  },
+  {
+   "ordinal": 13,
+   "status": "pending",
+   "title": "Move 13",
+   "type": "argument"
+  },
+  {
+   "ordinal": 14,
+   "status": "pending",
+   "title": "Move 14",
+   "type": "argument"
+  },
+  {
+   "ordinal": 15,
+   "status": "pending",
+   "title": "Move 15",
+   "type": "argument"
+  },
+  {
+   "ordinal": 16,
+   "status": "pending",
+   "title": "Move 16",
+   "type": "argument"
+  },
+  {
+   "ordinal": 17,
+   "status": "pending",
+   "title": "Move 17",
+   "type": "argument"
+  },
+  {
+   "ordinal": 18,
+   "status": "pending",
+   "title": "Move 18",
+   "type": "argument"
+  },
+  {
+   "ordinal": 19,
+   "status": "pending",
+   "title": "Move 19",
+   "type": "craft"
+  },
+  {
+   "ordinal": 20,
+   "status": "pending",
+   "title": "Move 20",
+   "type": "references"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

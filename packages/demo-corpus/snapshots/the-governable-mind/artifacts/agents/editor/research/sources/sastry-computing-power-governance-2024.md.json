@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sastry-computing-power-governance-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "06e3830f6ade87e1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sastry-computing-power-governance-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sastry-computing-power-governance-2024\n- **URL:** https://arxiv.org/abs/2402.08797 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Sastry, Heim, Belfield, Anderljung et al., Feb 2024 (full PDF extracted): compute governance is a 'double-edged sword'; risks to privacy, leakage, economics, concentration of power; five guardrail principles; visibility mechanisms target developers not consumers; chip-level interventions should leave consumer use unaffected; consumer-chip power could change the picture.\n- **Key passages:** \"it can also be used to infringe on civil liberties, prop up the powerful, and entrench authoritarian regimes.\" · \"1. Exclude small-scale AI compute and non-AI compute from governance 2. Implement privacy-preserving practices and technologies 3. Focus compute-based controls where ex ante measures are justified 4. Periodically revisit controlled computing technologies 5. Implement all controls with substantive and procedural safeguards.\" · \"should be designed to leave consumer use cases unaffected.\"\n- **Reliability:** Primary; GovAI/OpenAI/Cambridge authors; safety-aligned, self-critical.\n- **Relevance to this project:** Most important uncited predecessor; §2 test verdict; §4(c); l.238–264.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 153
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "511d664736942a27a8fad4824b34ba22ad8ca39b8de3ec7d735440cf2e9356f4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sastry-computing-power-governance-2024.md",
+ "kind": "artifact-page"
+}

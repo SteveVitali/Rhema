@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gizmodo-2026-os-investigate.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "15992dad835a1e8d",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "986ec08bbf5a9861",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/gizmodo-2026-os-investigate.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gizmodo-2026-os-investigate\n\n- **URL:** https://gizmodo.com/flocks-new-ai-tool-does-much-more-than-track-license-plates-2000800372 · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** Secondary confirmation of WIRED's Aug 19, 2026 report on Flock's \"OS Investigate.\" (Gizmodo: Webb Wright, Aug 19, 2026.) WIRED reporters and an independent researcher reconstructed \"a mock-up of the experimental tool's interface\" using \"code found on the Flock website's login portal\"; they could not access the live system. The tool integrates \"911 dispatch logs, arrest records, and other public safety and commercial databases\" to \"connect the dots between license plates and their drivers, as well as people in drivers' social networks.\" Example prompt: \"witnesses based on vehicles most seen in [neighborhood] during [last 14 days].\" Status: \"currently being tested with a small group of law enforcement agencies\"; Flock says capabilities/interface may change before general release.\n- **Key passages:** Flock statement: \"a separate product from Flock's license-plate reader technology, designed to help investigators work across information their agencies already have access to.\" Flock's site claims its cameras do \"not identify people by their faces\" or \"identify who is inside a vehicle.\"\n- **Reliability:** Secondary (coverage of WIRED's reporting; WIRED original unfetchable this session — direct fetch and archive both blocked). Independent outlet.\n- **Relevance to this project:** C6 (product name, WIRED's method, data sources, pilot status, Flock response).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 209
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "940ac549f911967c3f25b75c8c35e49ac5961b5e42ca61124e3c05561e1f7164",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/gizmodo-2026-os-investigate.md",
+ "kind": "artifact-page"
+}

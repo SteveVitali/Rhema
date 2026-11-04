@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eu-ai-act-article-12-logging.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "25e6a05ba8483bad",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eu-ai-act-article-12-logging.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eu-ai-act-article-12-logging\n- **URL:** https://artificialintelligenceact.eu/article/12/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Art. 12 AI Act: automatic logging over the lifetime of high-risk systems only; general-purpose chatbots fall under Chapter V.\n- **Key passages:** \"High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system.\"\n- **Reliability:** Primary text via an independent explainer site.\n- **Relevance to this project:** Report §6; draft l.20 (C15).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ac0fd5c5b8fa4d5001143a6460243ae37d3d06da87dbd4635ee99d37e25f2c66",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eu-ai-act-article-12-logging.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mfs-lexikon-telefonueberwachung.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7cc8bec076d19483",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mfs-lexikon-telefonueberwachung.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mfs-lexikon-telefonueberwachung\n- **URL:** https://www.bundesarchiv.de/glossar/detail/telefonueberwachung/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C55's chronology (handwritten 1950s; cassette recorders mid-1960s; automatic recording 1978; unified system 1986; Arbeitskartei, Datenspeicher, Stimmendatenbank). Author Angela Schmole.\n- **Key passages:** 'In den 50er Jahren … handschriftlich protokolliert. Seit Mitte der 60er Jahre … Kassettenrekorder …, seit 1978 Geräte, die ein automatisches Mitschneiden … erlaubten. Seit 1986 … ein einheitliches Abhörsystem'\n- **Reliability:** Secondary (archive's reference lexicon by a staff historian).\n- **Relevance to this project:** C55\n",
+  "meters": {
+   "readMin": 1,
+   "words": 81
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "656da46637d1654ae4331fa7b8f2cda612b74d25ae1a83c3be7ec046f1c99746",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mfs-lexikon-telefonueberwachung.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/intercept-aaup-v-rubio-young-ruling.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "482fb6b4b6323b4c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/intercept-aaup-v-rubio-young-ruling.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# intercept-aaup-v-rubio-young-ruling\n- **URL:** https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C24\n- **What it establishes:** Sept. 30, 2025: Judge William G. Young (D. Mass., Reagan appointee), after a bench trial in AAUP v. Rubio (1:25-cv-10685), found that Rubio, Noem, and subordinates unconstitutionally targeted noncitizen pro-Palestinian advocates for deportation to suppress protected political speech — the \"ideological deportation\" policy of which Khalil's arrest was a leading instance. 161-page opinion; remedies set for later hearings.\n- **Key passages:** Officials \"acted in concert to misuse the sweeping powers of their respective offices to target noncitizen pro-Palestinians for deportation primarily on account of their First Amendment protected political speech.\" \"This is a new invention that in important ways goes beyond its closest analogues in the Red Scare.\" \"ICE goes masked for a single reason — to terrorize Americans into quiescence.\"\n- **Reliability:** Secondary; The Intercept — left-leaning outlet, but quotes are from the opinion itself; ruling corroborated by AAUP, Clearinghouse (case 46288), Lawfare, Knight Institute.\n- **Relevance to this project:** C24 — this is the judge/case the outline half-remembered: the judicial finding that the campaign against noncitizen academics/activists was an unconstitutional attempt to chill speech is Judge WILLIAM YOUNG in AAUP v. Rubio (D. Mass., Sept. 30, 2025) — a post-trial merits finding, distinct from Khalil's own habeas case (Farbiarz, preliminary findings only, later vacated on jurisdictional grounds).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 221
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2173ac60e2efdb690c803fe3768a4860b1ca1007749329c52194943506ccb314",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/intercept-aaup-v-rubio-young-ruling.md",
+ "kind": "artifact-page"
+}

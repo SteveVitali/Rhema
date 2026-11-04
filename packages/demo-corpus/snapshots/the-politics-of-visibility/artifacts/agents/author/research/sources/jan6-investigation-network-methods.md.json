@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/jan6-investigation-network-methods.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "47c814c45287bddb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/jan6-investigation-network-methods.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# jan6-investigation-network-methods\n- **URL:** multiple (listed per item below) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, one-paragraph treatment of the Jan. 6 probe's network-investigation methods\n- **What it establishes:** All four claims for the paragraph, each citable:\n  - **(a) Geofence warrant.** The FBI obtained a geofence warrant for Google Location History covering devices \"in and immediately around the Capitol between 2:00 p.m. and 6:30 p.m. on January 6, 2021\" (warrant wording as quoted in coverage of the litigation). Google's initial dataset: 5,723 devices, narrowed to 1,498 devices with location points within the Capitol (plus 37 additional), for which Google supplied identifying information. Upheld in *United States v. Rhine*, D.D.C. (Judge Rudolph Contreras), opinion Jan. 25, 2023 — the court found no particularity violation in part because \"the terms of the initial warrant precluded disclosure of deanonymized device information except after separate order of the court based on a supplemental affidavit,\" and found the geofence \"closely… contour[ed] the Capitol building itself, and [did] not include the vast majority of the plazas or grounds surrounding the building.\" Sources: Lawfare (Saraphin Dhanani, Mar. 9, 2023), https://www.lawfaremedia.org/article/dc-district-court-upholds-governments-geofence-warrant-used-identify-jan-6-rioters ; Mark Harris, \"A Peek Inside the FBI's Unprecedented January 6 Geofence Dragnet,\" WIRED, Nov. 28, 2022, https://www.wired.com/story/fbi-google-geofence-warrant-january-6/ (title/date verified via memeorandum/Flipboard; wired.com not directly fetchable).\n  - **(b) Facial recognition and social media at scale.** Washington Post (Apr. 2, 2021): FBI charging documents \"in at least a dozen cases cite the use of facial recognition software\"; the Bureau searched reference images from social media, CCTV, passports, driver's licenses, and news media, alongside massive crowdsourced tip and \"Sedition Hunters\" identification. Sources: https://www.washingtonpost.com/technology/2021/04/02/capitol-siege-arrests-technology-fbi-privacy/ ; NPR (Aug. 18, 2021), https://www.npr.org/2021/08/18/1028527768/the-fbi-keeps-using-clues-from-volunteer-sleuths-to-find-the-jan-6-capitol-riote ; NBC News example case, https://www.nbcnews.com/politics/justice-department/fbi-arrests-jan-6-rioter-facial-recognition-philadelphia-eagles-hat-rcna136589 . (Passage wordings search-level; verify before print quotation.)\n  - **(c) DOJ's own characterization.** AG Merrick Garland, remarks of Jan. 5, 2022 (first-anniversary speech, repeated in later anniversary statements): the Department has undertaken \"one of the largest, most complex, and most resource-intensive investigations in our history,\" involving nearly all 56 FBI field offices and nearly all 94 U.S. Attorneys' offices. Sources: DOJ OPA, https://www.justice.gov/archives/opa/pr/attorney-general-merrick-b-garland-statement-second-anniversary-january-6-attack-capitol (403 to automated fetch; wording corroborated via C-SPAN archive of the Jan. 5, 2022 remarks and Lawfare's \"What Merrick Garland Said About Jan. 6\"). Exact comma placement is search-level — verify against justice.gov before print quotation. Media shorthand \"the largest criminal investigation in American history\" (e.g., CBS News third-anniversary segment) is the press's phrase, not DOJ's.\n  - **(d) Particularized predicate.** The probe's defining feature for the essay's contrast: it proceeded from a specific completed crime at a specific place and time — the *Rhine* court upheld the geofence precisely because it was bounded to the Capitol building during the 2:00–6:30 p.m. attack window, \"the unique facts of the case.\" That is the doctrinal hook: particularized predicate, judicially supervised de-anonymization, temporal and geographic bounds.\n- **Key passages:** see verbatim fragments inline above (warrant window; Rhine reasoning; Garland's \"one of the largest, most complex, and most resource-intensive investigations in our history\").\n- **Reliability:** Mixed: primary (DOJ statement, D.D.C. opinion via Lawfare's quotations) and strong secondary (WIRED, WaPo, NPR). The 1,498/5,723 device figures come from court filings as reported by WIRED/Lawfare/eDiscovery Today — consistent across sources. Note for currency: the Supreme Court's *Chatrie* geofence ruling (2026, 6-3: obtaining location history via geofence warrant is a Fourth Amendment search) postdates and complicates the *Rhine* landscape without disturbing its warrant-based holding.\n- **Relevance to this project:** Supplies the essay's contrast case: network-scale investigation tools (geofence, facial recognition, crowdsourced ID) deployed under a particularized predicate and judicial supervision — against which NSPM-7-era predicate-free, standing surveillance (Puppet Master, OS Investigate) can be measured. Every load-bearing element of the one-paragraph treatment is now citable.\n",
+  "meters": {
+   "readMin": 3,
+   "words": 596
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b5996ef21cfb8e5b28be876c2e853a35dd4e48e7ad713fd4a0e93dd62331d80",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/jan6-investigation-network-methods.md",
+ "kind": "artifact-page"
+}

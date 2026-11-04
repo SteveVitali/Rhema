@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/a16z-asserting-leadership-open-source-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2855b9c0ab667bc3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/a16z-asserting-leadership-open-source-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# a16z-asserting-leadership-open-source-2026\n- **URL:** https://a16zpolicy.substack.com/p/asserting-american-leadership-in · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** a16z policy (Ramaswamy & Perault), Apr 28, 2026: infrastructure control determines influence; Chinese open-model usage stats; license-revocation mandates are a de facto ban; open models let users avoid sharing data with third parties.\n- **Key passages:** \"Any law requiring developers to revoke licenses is a de facto ban on open source.\" · \"enable users to leverage models without sharing data with third parties, increasing confidentiality and data protection.\"\n- **Reliability:** Primary; interested VC policy shop.\n- **Relevance to this project:** §1A; the confidentiality sentence is a16z's nearest approach to the essay.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 103
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0b3395dc1e9ff1ee4e9aaabb2dabff41c7bd57b3b0783fa2996f71965c33b046",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/a16z-asserting-leadership-open-source-2026.md",
+ "kind": "artifact-page"
+}

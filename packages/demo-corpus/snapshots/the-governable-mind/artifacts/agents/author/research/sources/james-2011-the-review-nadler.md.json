@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/james-2011-the-review-nadler.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6b6700ba0b88284a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/james-2011-the-review-nadler.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# james-2011-the-review-nadler\n- **URL:** https://www.timeshighereducation.com/books/a-book-forged-in-hell-spinozas-scandalous-treatise-and-the-birth-of-the-secular-age/418189.article · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C56\n- **What it establishes:** Susan James (Birkbeck; author of *Spinoza on Philosophy, Religion, and Politics*), review of Steven Nadler, *A Book Forged in Hell*, *Times Higher Education*, 24 November 2011. States the TTP was banned by the States of Holland in July 1674.\n- **Key passages:**\n  - \"Within a few months of its publication in 1670, the identity of its author became known, and a storm of opprobrium broke over Spinoza's head.\"\n  - \"in July 1674 it was eventually banned by the States of Holland. According to the States' counsellors, it was a 'blasphemous and soul-harming book, full of groundless and dangerous opinions.'\"\n- **Reliability:** Secondary (review by a specialist scholar summarizing Nadler); independent of Wikipedia. Does not mention the co-banned books (Hobbes, Meyer).\n- **Relevance to this project:** C56 — the 1674 ban, with the issuing body (States of Holland, not the States-General).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 150
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e8e89e3338872ae58b8b26262ad40933a1c80252a90685b61980259448c9492f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/james-2011-the-review-nadler.md",
+ "kind": "artifact-page"
+}

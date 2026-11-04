@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "724530f6d326e509",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# paddo-only-the-paced-get-paced-2026-09-13\n- **URL:** https://paddo.dev/blog/only-the-paced-get-paced (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K4)\n- **What it establishes:** Pseudonymous blog \"paddo\" (meta author \"paddo\"; page stamp \"13-SEP-26\"; JSON-LD datePublished Sep 13 2026). \"Every Mechanism Needs a Building\" is a SECTION HEADING, not a sentence in running prose. The post claims the August 4 framework exempts open weights, citing Reuters, and says \"Meta's Llama and Nvidia's Nemotron were named as exempt.\" It nowhere mentions the Aug 12 WIRED report that the framework is expected to extend to open models, so its \"exempts open weights by name\" is stale on its own terms.\n- **Key passages:**\n  - Heading: \"Every Mechanism Needs a Building\". Body: \"Read the plan as an engineer and one property jumps out. Every lever in it acts on a company. Evaluators need an office to badge into. A checkpoint certification needs someone to hold the model back until it is certified. ... None of that has a handle on a file. Once weights are on Hugging Face there is no office, no gate, and no pace. You cannot un-publish weights\".\n  - \"Washington has already worked through this. On August 4, per Reuters, Trump advisers told AI firms the new pre-release review framework will not safety-test open-weight models. Meta's Llama and Nvidia's Nemotron were named as exempt. Bloomberg reported Chinese open weights are exempt too. The 30-day CAISI review binds five closed labs and nobody else.\"\n  - \"The mechanism is not. Evaluators, checkpoints, and regulation all need a company to act on. Washington's one-month-old precedent for 'frontier AI companies' exempts open weights by name.\"\n  - \"Either the pace exempts open weights ... Or the pace expands to cover open weights, which for a downloadable file means pre-release certification, which is a gate.\"\n  - \"Epoch AI's gap. Since January 2026 the best open-weight model trails the closed frontier by four months on average.\"\n- **Reliability:** Secondary, pseudonymous individual blog; relays Reuters/Bloomberg without quotation. Reuters URL given: reuters.com/business/trump-advisers-tell-ai-firms-they-will-not-safety-test-open-weight-models-2026-08-04/ (not opened).\n- **Relevance to this project:** \"exempts open weights by name\" is paddo's characterization; \"by name\" means Llama and Nemotron were named as exempt in a briefing per Reuters, not that a published framework text names them. Quote the heading as a heading.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 365
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "38f44c6b91f091e95077af8696f1f4db9bb3b1185ca12b84e8ee6d1409432cd1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+ "kind": "artifact-page"
+}

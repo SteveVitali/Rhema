@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eff-2015-clipper-birthday-key-escrow-failures.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6d91b3a67391dfdd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eff-2015-clipper-birthday-key-escrow-failures.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-2015-clipper-birthday-key-escrow-failures\n- **URL:** https://www.eff.org/deeplinks/2015/04/clipper-chips-birthday-looking-back-22-years-key-escrow-failures · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C31\n- **What it establishes:** Parker Higgins, EFF Deeplinks, April 16, 2015. Retrospective: Clipper introduced April 1993; flawed per Blaze; dead by 1996.\n- **Key passages:** \"On this day in 1993, the Clinton White House introduced the Clipper Chip, a plan for building in hardware backdoors to communications technologies.\" \"The security of the Clipper Chip specifically was demonstrated to be fundamentally flawed by security researchers like Matt Blaze.\" \"By 1996 the Clipper Chip proposal was dead.\"\n- **Reliability:** Secondary/advocacy (EFF opposed Clipper); accurate on the timeline but partisan in tone.\n- **Relevance to this project:** C31: the only source I opened that dates the abandonment (~1996); use with attribution or find a neutral history (e.g., the 1996 NRC 'CRISIS' report) if the essay leans on it.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c5096ab1188892f040529083e30e188b7ddb2006d26253d795d06c5d743d4cda",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/eff-2015-clipper-birthday-key-escrow-failures.md",
+ "kind": "artifact-page"
+}

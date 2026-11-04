@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eff-ssd-attending-protest.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3ff7ae9276fb27a3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eff-ssd-attending-protest.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-ssd-attending-protest\n- **URL:** https://ssd.eff.org/module/attending-protest · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C43\n- **What it establishes:** EFF's protest guide warns that using a phone at a protest — even over Signal — can expose location, and frames leaving the phone home / powering it off as an explicit tradeoff.\n- **Key passages:**\n  - \"People at protests will sometimes have to make tradeoffs. You might have good reasons to send a Signal message... Unfortunately, if you go to a protest and use your phone to communicate, even with Signal, the phone's connectivity might expose your location.\"\n  - \"Powering your phone completely off and only using it in case of emergency, or not bringing it at all can be the simplest way to protect your data at protests, but that's not always feasible.\"\n  - \"the only way to ensure this does not happen is to turn the phone off completely.\"\n  - Also recommends disabling Wi-Fi/Bluetooth; notes apps may store GPS data that transmits \"once you connect to the internet again.\"\n- **Reliability:** Primary for EFF's guidance.\n- **Relevance to this project:** C43(c) — Signal-still-exposes-location warning and leave-your-phone tradeoff.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 178
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4366959e41b552cae729d003af4a55b9fbd38923fbb86d32ea9167d99f7ac643",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/eff-ssd-attending-protest.md",
+ "kind": "artifact-page"
+}

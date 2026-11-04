@@ -1,0 +1,11 @@
+# radsch-2026-battle-for-cognitive-liberty
+- **URL:** https://www.techpolicy.press/the-battle-for-cognitive-liberty-in-the-age-of-corporate-ai/ (via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M10)
+- **Citation:** Courtney C. Radsch, "The Battle for Cognitive Liberty in the Age of Corporate AI," *Tech Policy Press*, Jan. 6, 2026. (Radsch directs the Center for Journalism & Liberty at Open Markets Institute; serves on the Tech Policy Press board.)
+- **What it establishes:** "opting out becomes functionally impossible" is verbatim. The phrase "public foundation models" is NOT in the piece; her remedy is foundation models "as public utilities," plus legal limits on cognitive manipulation, fiduciary-style duties for AI agents, and antimonopoly action.
+- **Key passages:**
+  - "And because these corporations monopolize their markets, they don't need our permission. Integration becomes inevitability when opting out becomes functionally impossible."
+  - "Imagine foundation models treated not as corporate assets but as public utilities, subject to democratic oversight and public interest obligations. Imagine a technological environment where we can freely interact with AI chatbots and companions without worrying that what we share will be used to manipulate us."
+  - "Without laws to protect freedom of thought, prohibit cognitive manipulation and require AI agents to act in the best interest of users; a market designed to make it unprofitable if not impossible to do otherwise; and competition to develop alternative right[s-respecting …]"
+  - "Because no matter how advanced these tools become, we must retain the ability to opt out and the right to mental privacy, cognitive liberty and freedom of thought."
+- **Reliability:** Advocacy commentary (antimonopoly perspective); primary for her position only. Threat model is corporate, not state.
+- **Relevance to this project:** Exit/opt-out argument. Quote "public utilities," not "public foundation models."

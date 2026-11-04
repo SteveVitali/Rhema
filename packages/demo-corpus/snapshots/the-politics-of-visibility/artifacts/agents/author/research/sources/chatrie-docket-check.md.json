@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/chatrie-docket-check.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9b630a8f62f8b860",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/chatrie-docket-check.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# chatrie-docket-check\n- **URL:** https://www.supremecourt.gov/opinions/25pdf/25-112_0am4.pdf (slip opinion; also https://www.law.cornell.edu/supremecourt/text/25-112 and https://www.scotusblog.com/cases/chatrie-v-united-states/) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, docket-number verification\n- **What it establishes:** The essay's citation \"No. 25-112\" is CORRECT. *Chatrie v. United States*, No. 25-112, was decided June 29, 2026 (609 U.S. ___). The Supreme Court's own slip-opinion URL carries the docket number (\"25-112_0am4.pdf, 06/29/2026\"), as do Cornell LII, Justia, and SCOTUSblog. Holding (6-3): obtaining cell-phone location data via a geofence warrant is a Fourth Amendment \"search\" notwithstanding the third-party doctrine; remanded to the Fourth Circuit on reasonableness.\n- **Key passages:** supremecourt.gov listing: \"25-112 Chatrie v. United States (06/29/2026)\"; Justia: \"Chatrie v. United States | 609 U.S. ___ (2026)\".\n- **Reliability:** primary (supremecourt.gov slip opinion) corroborated by secondary trackers\n- **Relevance to this project:** Settles the docket-number check: no correction needed; keep \"No. 25-112.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 131
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "15c45418f2c81d5e57982e6454fab86095b8de6ed1858246e8f7d56e01f3958d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/chatrie-docket-check.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/chen-more-llm-calls.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "965fe959b55fdd64",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/chen-more-llm-calls.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# chen-more-llm-calls\n- **URL:** https://arxiv.org/abs/2403.02419 · **Accessed:** 2026-07-30 · **For:** v2→v3; naming the deflationist (Major issue 1)\n- **What it establishes:** Chen, Davis, Hanin, Bailis, Stoica, Zaharia, Zou, \"Are More LLM Calls All You Need? Towards Scaling Laws of Compound Inference Systems\" (NeurIPS 2024 per review; arXiv:2403.02419). Vote/Filter-Vote performance is a non-monotonic function of the number of LLM calls — \"can first increase but then decrease as a function of the number of LM calls\" — explained by query-difficulty mix (\"more LM calls lead to higher performance on 'easy' queries, but lower performance on 'hard' queries\"). Compound-system behavior modeled as sampling statistics, no institutional vocabulary needed.\n- **Reliability:** primary (arXiv abstract).\n- **Relevance:** The named, sharpest form of the deflationary view: multi-agent behavior as predictable sampling statistics. v3 cites it when stating the null hypothesis it must answer.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "98bafcc43bb4cbfdb660eab9931a224897950224b830d94c3b86480865a986f5",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/chen-more-llm-calls.md",
+ "kind": "artifact-page"
+}

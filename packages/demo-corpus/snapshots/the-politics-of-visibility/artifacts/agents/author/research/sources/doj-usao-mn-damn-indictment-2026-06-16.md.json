@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/doj-usao-mn-damn-indictment-2026-06-16.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "65613ee369cda596",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/doj-usao-mn-damn-indictment-2026-06-16.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# doj-usao-mn-damn-indictment-2026-06-16\n- **URL:** https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties · **Accessed:** 2026-08-20 (full text retrieved past bot-check) · **For:** v1 drafting, claim C2\n- **What it establishes:** Primary source for C2. Fifteen members and associates of Direct Action Minnesota (DAMN) charged in an eight-count indictment announced Tuesday, June 16, 2026. Charges: \"conspiracy to impede a federal officer, multiple counts of interstate stalking, interstate threats, solicitation to commit a crime of violence, multiple counts of assault on a federal officer, and destruction of government property.\" 12 arrested in a coordinated HSI operation, two at large, one already in federal custody. The press release gives no statute citations or maximum penalties (AP reported the conspiracy count carries a maximum of six years).\n- **Key passages:** Title: \"15 Members of Direct Action Minnesota, a Minneapolis-Based Direct Action Group with Antifa Ties, Indicted,\" Tuesday, June 16, 2026. — \"An eight-count indictment charges 15 members and associates of the DAMN for a broad range of crimes including conspiracy to impede a federal officer, multiple counts of interstate stalking, interstate threats, solicitation to commit a crime of violence, multiple counts of assault on a federal officer, and destruction of government property.\" — Acting AG Todd Blanche: defendants \"engaged in an unrelenting campaign of harassment and violence targeting federal and local law enforcement.\" — U.S. Attorney Daniel N. Rosen (D. Minn.) and DHS Secretary Markwayne Mullin quoted; Joint Task Force Vanguard involvement. — Alleged conduct: \"hard\" blockades (vehicles, trailers, Czech hedgehogs) and \"soft\" blockades (homemade shields) at the Bishop Henry Whipple Federal Building on Jan. 23 and March 1; \"Whipple Watch\" Signal group tracking law-enforcement vehicles and license plates; \"commuting\" tactics following officers, including to residences. — Note the government's framing: HSI SAC Michael McCarthy: \"We fully respect and defend the First Amendment right to peaceful protest. However, when protest crosses the line into violence or criminal activity, it becomes unlawful...\"\n- **Reliability:** Primary (government press release announcing the indictment); adversarial party in the litigation — states allegations, not findings. Defendants presumed innocent; per Minnesota Reformer, fourteen have pleaded not guilty.\n- **Relevance to this project:** C2 (count and actual charges, verbatim); also explains the \"Whipple\" in \"Project Whipple Shield\" (Whipple Federal Building) and supplies the government's own characterization for balance.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 364
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c2df0cf1463b83bc9b2c9100c321940d04055a907b6f5375d48d43bae4bf850d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/doj-usao-mn-damn-indictment-2026-06-16.md",
+ "kind": "artifact-page"
+}

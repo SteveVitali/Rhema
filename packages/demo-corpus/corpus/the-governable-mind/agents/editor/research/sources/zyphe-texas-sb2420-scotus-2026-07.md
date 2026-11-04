@@ -1,0 +1,6 @@
+# zyphe-texas-sb2420-scotus-2026-07
+- **URL:** https://www.zyphe.com/resources/news/texas-app-store-age-verification-scotus-july-2026 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical
+- **What it establishes:** Texas SB 2420 (App Store Accountability Act): app stores must verify each user into four age categories (under 13; 13-15; 16-17; 18+), link minors to verified parent accounts, obtain documented parental consent per download and purchase, and share age category with developers, by "commercially reasonable method[s] of verification." Effective Jan. 1, 2026; enjoined Dec. 23, 2025; the Fifth Circuit stayed the injunction in June; the Supreme Court on July 6, 2026 "denied two emergency applications" in "brief unsigned orders" without reaching the merits, so enforcement proceeds; Fifth Circuit hearing "set for early August 2026." Utah's act: compliance deadline May 6, 2026.
+- **Key passages:** as quoted.
+- **Reliability:** Secondary (identity-verification vendor's news page); interested in the market; dates consistent with law-firm summaries in search results.
+- **Relevance to this project:** Agenda 3: a device-layer age gate in force, in front of both layer 3 and layer 4 apps; not identity, but universal age classification of account holders.

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-tractatus-theologico-politicus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a1b7f275802d9262",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-tractatus-theologico-politicus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-tractatus-theologico-politicus\n- **URL:** https://en.wikipedia.org/wiki/Tractatus_Theologico-Politicus · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** False imprint: title page named Hamburg and publisher \"Henricus Künraht (who had died in 1605)\"; actually Rieuwertsz, Amsterdam, 1670; condemned 1673, \"officially banned the following year\" (cites Nadler, *A Book Forged in Hell*, 230). Supports C20 (Hamburg imprint).\n- **Key passages:** \"the title page identified the city of publication as Hamburg and the publisher as Henricus Künraht (who had died in 1605).\"\n- **Reliability:** Tertiary; used only for a bibliographic detail it sources to Nadler.\n- **Relevance to this project:** C20; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 94
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c116c4f92f765f1076a97730826888f7e5458c6cbf5b51ed7aed2fb6f880a266",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-tractatus-theologico-politicus.md",
+ "kind": "artifact-page"
+}

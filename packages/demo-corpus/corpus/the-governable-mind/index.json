@@ -1,0 +1,3929 @@
+{
+  "slug": "the-governable-mind",
+  "artifacts": [
+    {
+      "path": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "bytes": 29927,
+      "sha256": "229927cf5942cf4a8358fff5725d4659dd0715160713d209115fb032dc8ff01d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/01-voice-brief.md",
+      "bytes": 10726,
+      "sha256": "720736b5e21c12d5d4b066426209924d7b147aae654d25d24c68fc41d5c37763",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/02-structure-plan.md",
+      "bytes": 16533,
+      "sha256": "4cda1ec2be1d285bad09c69beacb59d267ea5e75b675caaacb8bfc69fda7c97d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/03-claim-ledger.md",
+      "bytes": 82837,
+      "sha256": "2293551d298e3527157ac695f7de1ec00f73c40709b8d4f669f9730dc4d49f57",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/04-draft-ledger.md",
+      "bytes": 9361,
+      "sha256": "0fca9286f7eeabba936759287287eaa3ae74d4ecb4089d43b56b927aab59c66d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/05-consolidation-notes.md",
+      "bytes": 7786,
+      "sha256": "87361729956cb115b15484f3b67fe7255c49d6ba8c7f62de12ce88d1cd1f291a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "bytes": 89620,
+      "sha256": "87444fdf48844f4a64f6c51b54046bfb9da9d4cc6dc2511b89bd34d71c51cae4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/ledgers/v1-response-ledger.md",
+      "bytes": 99295,
+      "sha256": "4d64c7fd92dbbf92d79c46f21294b8518c1441bd073970a6420f7e440c3de68a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/ledgers/v2-response-ledger.md",
+      "bytes": 46239,
+      "sha256": "e489e1e498f554b846d0b5e40925d95c5f06034056f1c6891afe543726a67056",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/index.md",
+      "bytes": 71030,
+      "sha256": "0e30479752d94a5b9d361c16cdb206a37b23b348ac62870de58948c3f505b985",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aarne-fist-withers-cnas-secure-governable-chips-2024.md",
+      "bytes": 2595,
+      "sha256": "46c1a917350977d67ba008aff0dfba68686cbdfc133013503903ec7f072b49a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aarne-petrie-flexheg-part-iii-2025.md",
+      "bytes": 4031,
+      "sha256": "d201e248a86a99a432927b65329decb5650fa06d4aa3dd5577bbfba9b054a3a3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/abc-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 1355,
+      "sha256": "3596c3a7386495d4c7b55421e5572be49c19c578daf8552cb9aa5c6e40bc53cd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/aiweekly-white-house-extend-open-models-2026-08-17.md",
+      "bytes": 1829,
+      "sha256": "7b4a14442f65e31ec7f04cc4d77ff130ec4e70acada6e5ca3cfdbeee786a8c0e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ala-state-library-privacy-laws.md",
+      "bytes": 2141,
+      "sha256": "e4e2903888603444f9849daa02e4c10424c4b4a6339f2dbedea5f3a5e0a06aaa",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+      "bytes": 3802,
+      "sha256": "caf46d2442995bcfcf007f623b6e1d6afa0aa404d6b9432bad1c045a5e98a566",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/alegre-2020-regulating-around-forum-internum.md",
+      "bytes": 2667,
+      "sha256": "df287382c0690174090c30a1cc4f4e106b2e7012b67c4d26e7972532b4a9ea25",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/alegre-shull-2023-cigi-freedom-of-thought.md",
+      "bytes": 1571,
+      "sha256": "2669c0b2762879952a9dbaf1d50e398e071da158d97e39e416d6f800dd1d7213",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ansari-2026-hardware-level-governance.md",
+      "bytes": 2505,
+      "sha256": "c14244daf5fda941dc9ee0543da619f6ac87eba32904d491c41d02ab4df3773a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anthropic-claude-mythos-page.md",
+      "bytes": 1338,
+      "sha256": "e5519d27582a5d4f915ac6f9796abfb8603bf52028b3b55c9747c3bc31072407",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anthropic-fable-mythos-access-2026-06-12.md",
+      "bytes": 2299,
+      "sha256": "860e4ee75d4f4e9f3fd1c011b746f668111f45741e2e48aaa3ebc4b112907e8f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anthropic-position-open-weights.md",
+      "bytes": 1510,
+      "sha256": "e9cbd3d539467af9663563b58b033006d48b83e85dd2d9239b0a1ccfee360323",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anthropic-redeploying-fable-5-2026-06-30.md",
+      "bytes": 3567,
+      "sha256": "aec3a955f5a4fd0b8f6c32bc10d6e0e033580bfb3f52e854a9f3f20fefc7e370",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/arendt-1967-truth-and-politics-new-yorker.md",
+      "bytes": 1795,
+      "sha256": "d1c3b857a31efffa2e5f742315168dfcaa7954750da2889ef7cfafb385279dca",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+      "bytes": 2562,
+      "sha256": "ef7ea52b7167cace5bb4c047d4136956c404d4f915a44cee83982e3caf079971",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/axios-trump-openai-gpt-5-6-2026-06-25.md",
+      "bytes": 1127,
+      "sha256": "990963d701d758ec360429183343a5123e9e98fa8c5c4ee6a449c584f1786828",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/balkin-2008-national-surveillance-state.md",
+      "bytes": 2764,
+      "sha256": "42d2ac162161cd8c1ce1dc7dc5bcfdb2a1761c498ba7254b01a4cf2da53ae273",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bedi-2021-myth-of-the-chilling-effect.md",
+      "bytes": 4260,
+      "sha256": "4b58d8deae940070a902bb9b5d843a38986f7347faacfd6af28173a5cafc9968",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/benson-2026-evidence-frame-integrity.md",
+      "bytes": 1752,
+      "sha256": "2038780dcc6fc28378627a4d29a4d08fb76f11f8814156a47c94c0b012a8f715",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/benton-white-house-exempt-open-models-2026-08-05.md",
+      "bytes": 1034,
+      "sha256": "db52d56433792637b1eb0958fa653692a3256370256b7f4b773fe12d68ee3d1b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/berlin-1958-two-concepts-oxford-vl.md",
+      "bytes": 2172,
+      "sha256": "c38f96010003625ba6bf5efd0bd45591b735262e97b3e38cf1f84ea17670ce23",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/berlin-two-concepts-of-liberty-1969.md",
+      "bytes": 3159,
+      "sha256": "a3705a025ed8abf4d5821b3c7de49969ac852f2f7651bb77ce1d3ad5be936489",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bho-ordinance-regulating-printing-1643.md",
+      "bytes": 2557,
+      "sha256": "d1b9c9bb266ae72d4c621126ffb9edcd0b875c7172ec7168c6b808ba70ed463f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/biometricupdate-openai-hardware-passkeys-2026-07-14.md",
+      "bytes": 1279,
+      "sha256": "abcd427d9d00fded05562ad022c0df7675aefe740c44ae738c7d2f480b112b7d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/blaze-1994-protocol-failure-ees.md",
+      "bytes": 1683,
+      "sha256": "077dcbee30e49c0d88a4c2c4380068570eeaa9d6ca79e8ec365d34efe3bc4388",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/blitz-2010-freedom-of-thought-extended-mind.md",
+      "bytes": 6324,
+      "sha256": "a65596c29116a4d106b6873d72f16adcb172936afd2581b8c112ea9d2d60843d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bublitz-2013-my-mind-is-mine.md",
+      "bytes": 4675,
+      "sha256": "bf6c28daf5d1aca45b12c099efb3dcd0797cc8d347d37ab42a03bf444dad9d9b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bublitz-2025-freedom-of-thought-digital-technologies.md",
+      "bytes": 3350,
+      "sha256": "8632cce57a53c530ca8739ceb8a59ca4dc7fbb7272cd9e1b5a9da290f8d9a477",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bublitz-2026-what-is-thought.md",
+      "bytes": 10913,
+      "sha256": "6bcee64f898b8dab83626a118059948c018cafc5e3cc4d8023247381b0d8d167",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bublitz-blitz-2026-law-ethics-freedom-of-thought-vol2.md",
+      "bytes": 1682,
+      "sha256": "f36cfdfa4c97537a06dca080890c75e86f0eaff8f0d7712f3e124fe608987a2c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid.md",
+      "bytes": 1234,
+      "sha256": "6ad9214126583b337b7de9a82c053014470775b9964da9242a17b66c5a42ee09",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bundesarchiv-mfs-lexikon-abteilung-26.md",
+      "bytes": 1206,
+      "sha256": "34b45708e4dac7bd3edd0aba93076abb4a84e4a33ea420e12ed5708854731cfd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bundesarchiv-mfs-lexikon-telefonueberwachung.md",
+      "bytes": 1987,
+      "sha256": "eb4adce9e8d2afc9a11fda511a84a0a59926b045dd4ca38c1240fff95e4d4aba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bundesarchiv-stasi-unofficial-collaborators.md",
+      "bytes": 608,
+      "sha256": "2c8dc39a3984452220571ea752f41ebb4b8563bab0b0b647ab8b2f3ae69100d4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bundesarchiv-stasi-what-was-the-state-security-introduction.md",
+      "bytes": 1107,
+      "sha256": "90c2ffcb6195d1949c4714dbbe3893878e990eea13351c5809f44eac0857d017",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ca-sb1119-assembly-privacy-analysis-2026-07-01.md",
+      "bytes": 2899,
+      "sha256": "bf6648e34188fbb84ee99b2056a6732f9cd38f8253ca035e70435c38de4e521c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ca-sb1119-leginfo-chaptered-2026-09-10.md",
+      "bytes": 3780,
+      "sha256": "472f387ed4ab939ce0813017d6e17f8afbe32f8c2e452728818d1821f30b8c98",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cambridge-handbook-freedom-of-thought-2025.md",
+      "bytes": 1642,
+      "sha256": "7c12a8c4a4d7ed69f040a06f11e1161bab82bb0f6708936eb135172d7d13a709",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/casper-open-technical-problems-open-weight-2026.md",
+      "bytes": 2538,
+      "sha256": "087cdca140d990b1f0c953de8627b4d03cce566263adfdcd4c126cd9646460cf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chan-2024-visibility-into-ai-agents.md",
+      "bytes": 4590,
+      "sha256": "84541d5a39dcb159bed62006edcee4bfe005497dbe6a5cd96bb8f152fcce4e9c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chan-2025-infrastructure-for-ai-agents.md",
+      "bytes": 2564,
+      "sha256": "91d265f6a2077ed181bb1841a7daa2a57eb5bc966ba38543a1b5fba87f3a2ca4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chatrie-v-united-states-slip-opinion.md",
+      "bytes": 2597,
+      "sha256": "579088db3a1e25458b25a91e952f09daa9b4ede1d2502acef81e349355fca5c6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chen-zaharia-zou-2023-chatgpt-behavior.md",
+      "bytes": 1345,
+      "sha256": "72d5d7b18a735ebb87ef9a2f36e4eb962d2ee6c7279bedfe7f1895600fb7ab31",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/church-committee-book-ii-1976.md",
+      "bytes": 1393,
+      "sha256": "410c8f12ed5050b62f77ed4991d2913ab670b75573882f07c430847f66a0877a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cinar-2025-jiplp-technology-regulation-history.md",
+      "bytes": 2340,
+      "sha256": "d2e56c0303f6ac0da6a0dad158d7b94ca4ee2d6c174e80b17a3d59b73acf4f70",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clark-2025-extending-minds-generative-ai.md",
+      "bytes": 2516,
+      "sha256": "b6f0f4645fb6191061d123941d274e4552b423894ece1a5fe098f02cc5b9185b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clark-chalmers-1998-extended-mind.md",
+      "bytes": 2157,
+      "sha256": "0ae5896c1626e9c7e8cf7131308ce678101a1963a6a6f32761b770b901f01edb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/claude-support-cyber-safeguards-cvp.md",
+      "bytes": 2787,
+      "sha256": "976352343985f60eb9ad2f8fb5233f3cf018d17e4af798a83c9266a3a05b00df",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/claude-support-identity-verification.md",
+      "bytes": 3064,
+      "sha256": "74db85f493fbe5362c58b890967bdd8abd853fc0dc657893c51e7579d41a70d3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/clegg-2014-tudor-literary-censorship-oxford-handbooks.md",
+      "bytes": 1552,
+      "sha256": "cde34bbb423e39b74340c04d9328ea293d93a4bb0aae9d3c7826856d751c6173",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cnbc-openai-limits-gpt-5-6-2026-06-26.md",
+      "bytes": 863,
+      "sha256": "79fcda2c41db94b203497d8f760a68a1a9df2913aeb8d9896981c82e7190f6ac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cnbc-zuckerberg-sides-with-huang.md",
+      "bytes": 1629,
+      "sha256": "ce83551fe27f1828d62a366060452522bfac932aaeaad6662c3018dab6d7b487",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/coe-iris-2019-russia-sovereign-internet-law.md",
+      "bytes": 1092,
+      "sha256": "b5ecc789119bfee444ee6933c0160bb9d60e3cd1e3bba37673af6323b0d2292e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cohen-2013-what-privacy-is-for.md",
+      "bytes": 2612,
+      "sha256": "7d87e90fd205e248b22b72911b8332972ab4d7bc767313c91cda62d93f0b04b5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/covington-globalpolicywatch-guard-act-2026-05-08.md",
+      "bytes": 1234,
+      "sha256": "484e4186f112df40006298055f3e9244eaa88bfd862a8b1b3253ff3a146f89f4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cpr-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 1009,
+      "sha256": "ea7b3c3a20803c44b79d003128b4f3437a49d5944c01f1325272db8d1a07a1ba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/crs-lsb11429-ai-fourth-amendment.md",
+      "bytes": 3754,
+      "sha256": "ac5f49c38a5bf81435113e336be8a575828accdbecf8306aef754d16cf95a2be",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/csa-ai-model-export-controls-2026-06-18.md",
+      "bytes": 1794,
+      "sha256": "a66f5398a4e33377fe09a66e355249a5d03f4b6a703964d903748902b7e8eafe",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/csis-commerce-restricted-anthropic-2026-06-16.md",
+      "bytes": 1543,
+      "sha256": "00b6416d1144ef24a8fef8716c0f81143733fef00342cf8523d97b67a41f994f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cybersecuritynews-dhs-warrant-openai.md",
+      "bytes": 1300,
+      "sha256": "0e454015f5cc7c0ec8c1e3f6619749ce090368f62d148e502282ebd7f9302d3e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+      "bytes": 2607,
+      "sha256": "e418e9bd7698a7037a4a07f935c1592bd107422b7c93f8fb55bec25abf523402",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/deazley-2008-commentary-licensing-act-1662.md",
+      "bytes": 1256,
+      "sha256": "d6f384361354324894e6a8c40b85141c5d32a4f25dbf3330588c84319501e9bb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/deazley-2008-commentary-stationers-charter-1557.md",
+      "bytes": 1808,
+      "sha256": "07378823b65a0e1e066f0db4788d23aadfffc463bd53366c9fd996b61f7ad587",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/deazley-2008-humble-remonstrance-commentary.md",
+      "bytes": 2448,
+      "sha256": "ecc7135ee57dea616b7127339f7655a81a2458ce7090d4179b90644716c31254",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/decock-2026-forum-interstitiale-working-paper.md",
+      "bytes": 7352,
+      "sha256": "a16a63624bbc9d2d751bd5fbeadd1c4a7d7d29f65d8f2867aa22ed60465d06fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/decock-forum-interstitiale.md",
+      "bytes": 4654,
+      "sha256": "3797d83f5fe4c863861691953047353b50c399586fa4199d84354e9e68c5523e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/deleuze-1990-postscript-societies-of-control-purdue.md",
+      "bytes": 1898,
+      "sha256": "65786c72f388fe0f230ec08e1356fc7b2ff988f16d2da24f639cdb4fb9e2b4e8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/dgap-epifanova-2020-sovereign-internet-law.md",
+      "bytes": 873,
+      "sha256": "b9f0f272fe3c2ae532568b22d47d96fb35b522b02dbd22a408fb1bea6151c13a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/doctorow-2026-09-16-ai-moratorium.md",
+      "bytes": 3713,
+      "sha256": "db7912c2aa5a1d70dfd322a02c002904ad4fa30bdf0691297c5bd52ca720334c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/doj-kim-letter-2026-06-17.md",
+      "bytes": 2906,
+      "sha256": "10db77963085bc96083f560c930c757949c74e4228d6bb2a41a1eafa54be6522",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-2015-clipper-birthday-key-escrow-failures.md",
+      "bytes": 1044,
+      "sha256": "c5096ab1188892f040529083e30e188b7ddb2006d26253d795d06c5d743d4cda",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eff-chatbot-bulk-surveillance.md",
+      "bytes": 1462,
+      "sha256": "a658ec2f5c91ff2ea39167abab202032923a70c704bf030d2a720bf7421ff283",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/engadget-openai-preservation-lifted.md",
+      "bytes": 1690,
+      "sha256": "b550f438951a0ae4bcc5aa56c099a1cd002ab8b101015bebde61ad4994fd93bb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/epic-clipper-chip-archive.md",
+      "bytes": 1156,
+      "sha256": "8b696051a6e3247bc72eb1b3805740ebce30755372f126b4c4df7070ab894061",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eu-ai-act-article-52.md",
+      "bytes": 2965,
+      "sha256": "db8776bb43760b34aa6d3f83d82e7236114b0e715d02313104fddb447de460ec",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eu-gpai-code-of-practice-safety-security-measure-3-5.md",
+      "bytes": 3880,
+      "sha256": "7f60f2e61f6a7139613c3e1b81930a9f44a0281a46ff40d9552114cb8460ac7b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/euronews-openai-u-turn.md",
+      "bytes": 1001,
+      "sha256": "289a9af42578da54eaebeb231360b66e0c2efeb41becf2808a07a1f8f2f9d435",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/farahany-2023-cognitive-liberty-generative-ai.md",
+      "bytes": 2515,
+      "sha256": "ef59415b613d9000c472adb523227e953654adff0bdcf5f9f17ff966f0c88475",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/federalregister-eo-14409.md",
+      "bytes": 975,
+      "sha256": "90eac3194cda905624dafe4f6560265956947cc4995cc124a6775f8b7eedd217",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fedorenko-piantadosi-gibson-2024-nature.md",
+      "bytes": 1591,
+      "sha256": "706d1e67b4c4e0b92253b0a1a69d2a2cb29c0ab934f9d17e27cf1a23170bffb5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/firth-rait-1643-ordinance-regulating-printing.md",
+      "bytes": 1210,
+      "sha256": "8e9f28372764eb00ab7877dbacddbf63c8eb7aac6a5c94789c331ec7892c384f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/forbes-brewster-openai-warrant-2025-10-20.md",
+      "bytes": 4107,
+      "sha256": "8427449e05a00c40055ea5a97dacff5061669cca33f9095bbbb8cc38d0fee2a9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fortune-hf-turns-to-chinese-model.md",
+      "bytes": 1283,
+      "sha256": "3f53c61837dd35c99c71bf656166c81d2d9b892d3f2069a8657aa9254cf4d96f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fortune-white-house-framework-unpublished-2026-08-04.md",
+      "bytes": 1904,
+      "sha256": "6796e9ee4dded4d6ca04110aec6b6235aaf8758b85b54c68f3484c1212bb3886",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/foucault-1975-panopticism-foucault-info.md",
+      "bytes": 1844,
+      "sha256": "95bac7652cdd336118df28ee9fa89e577d2bc93817e0da761eaf404c49997cff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+      "bytes": 2523,
+      "sha256": "51d60424ccbae1eb8cdc485f7e9b1dce1ef00ee96858f2d46d131ad8cd0e5796",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/freedom-house-fotn-russia-2024.md",
+      "bytes": 1385,
+      "sha256": "e202a214c08ac50f8fba1c6b40f41f46ac0d2198611d0493e8acff1ff7344351",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gizmodo-anthropic-id-checks-2026-06-23.md",
+      "bytes": 1285,
+      "sha256": "58be19d7c0bee04d450ad6ca114308510934f4cb2ad838b90a7626f0d258bfe9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gizmodo-dhs-openai-unmask-2025-10-20.md",
+      "bytes": 2059,
+      "sha256": "e51a956182b751c119b4557aa4cf87aea28a5933210172f0f432aad938cda33d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gomes-open-weight-paradox-2026.md",
+      "bytes": 2939,
+      "sha256": "92df6247ccfa4232d9e345743dadbd13a8ada0fbe25758fd41dfa002f979fc62",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gordon-2012-tnr-review-nadler.md",
+      "bytes": 957,
+      "sha256": "d9ece1f47f68e5b34bbff935030c720e68c545fef8c2dbc8984eacb333f3dba1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/guard-act-s3062-reported-text-2026-05-11.md",
+      "bytes": 6490,
+      "sha256": "0457fd7c4f1e81f298cc0abd8ecf9650077cad3a56afdcaeffdc252334a57ee1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hall-redeeming-liberalism-of-fear-2023.md",
+      "bytes": 2698,
+      "sha256": "eba89bdff0821bc262eda2e0195bfeb34da4b16b80f12ed4d0a9fcf6c8475870",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/heim-2024-governing-through-the-cloud.md",
+      "bytes": 3748,
+      "sha256": "7f797792e6cd2b667874ab997ffce7f3acc0524520a57f4c3a9938c85955ec4e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/heppner-memorandum-rakoff-2026-02-17.md",
+      "bytes": 4183,
+      "sha256": "75bf8d45c9e7c7b438391c31dd3a4427abb91d0d8d70dbb7d056d8836988f2ce",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hf-agent-intrusion-technical-timeline.md",
+      "bytes": 1467,
+      "sha256": "b4c16546a97fb42a5bbe6dbd50ee7032046c6a633437b1c229d14af6646a59f2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hf-boudier-open-model-cyber-defense.md",
+      "bytes": 1384,
+      "sha256": "2f2e7bf5b9d4f9419394f4288b3207017ef80160309f9882a8c2f86de7dfe111",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hf-security-incident-disclosure-jul-2026.md",
+      "bytes": 2236,
+      "sha256": "5e1942000b59cc31f1e335db9e16a08a3a056810580c0db601e64315473a2ea3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hirschman-exit-voice-loyalty-1970.md",
+      "bytes": 1187,
+      "sha256": "f911b864b803d402bf86bc897b49123468b1553be38da87d3e71a532c0afd80c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hlr-kumar-heppner.md",
+      "bytes": 3038,
+      "sha256": "09315735f3aac90a7b7baa41e4afaded8c6736a293f23fb7623df02679aa44cb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hoehner-openai-warrant-affidavit-and-return.md",
+      "bytes": 3871,
+      "sha256": "8f55c60722fee8f3a582a3fb785fa24c7dd559d231b01ccca576d55d06ffa65a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hpsci-history-house-gov.md",
+      "bytes": 650,
+      "sha256": "7027cf928529291d16276e5c30601ea8d71994777e0149a96d31f26ada4f4323",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hr9917-ai-kill-switch-act-bill-text.md",
+      "bytes": 12436,
+      "sha256": "9541b1d8b41fa0513170eacbb8e7ff6582dfff99e35cee54a59e457e5e282dec",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrc-general-comment-22-1993.md",
+      "bytes": 2016,
+      "sha256": "430910c4a85679a70c1fd74e3de622c76cd6e587fbf8ebbbfefa51613ca1a8c3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrw-2019-china-how-mass-surveillance-works-xinjiang-ecoi-mirror.md",
+      "bytes": 1517,
+      "sha256": "fe4b80ea9ff0ec0c5691a2bb93dbbfe5c7d17aba8f3108c64eda099919e2d8ea",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hrw-2019-chinas-algorithms-of-repression-ecoi-mirror.md",
+      "bytes": 1218,
+      "sha256": "9a648e23427bab071ae7ce084b640eed0c713dea445c348825ac6c8a195889d9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hutchins-1995-cognition-in-the-wild.md",
+      "bytes": 1607,
+      "sha256": "12c6c3df29b1dae1dea093791fd4162af1c35e8b4f1f997919288613565d9401",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/iaisr-2026-report-pdf.md",
+      "bytes": 6177,
+      "sha256": "a50b919f43ba1544bfb7a494a80f739baf9558f7cf38dede18b3c24abbd9d06a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/iaisr-2026-web-page.md",
+      "bytes": 1408,
+      "sha256": "4c67898bbcb490b49cb90c0046dcbde8e262ca6995b468d09aef7004e06bb803",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/iccpr-udhr-freedom-of-thought-texts.md",
+      "bytes": 2151,
+      "sha256": "47b0c73559cef8e714f503dc1834661d777c5d85ec74dabfee1ec0ec9385a12c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ienca-andorno-2017-lssp-pmc.md",
+      "bytes": 2334,
+      "sha256": "9ea862b1658bd4b7ca2f8f9066919e52b61bf783cbb44c5b8dede38c1eca8fbb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ienca-andorno-2017-new-human-rights.md",
+      "bytes": 2135,
+      "sha256": "f390ea66f7bbd8939bb5368fc9f48bd3c9c726e77848b45ba8890dbe5a994dd5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/insideprivacy-iaisr-2026.md",
+      "bytes": 792,
+      "sha256": "1c65332382afc401234820f09bda839b65a65b478a641a7310d871360c5084e6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/james-2011-the-review-nadler.md",
+      "bytes": 1165,
+      "sha256": "e8e89e3338872ae58b8b26262ad40933a1c80252a90685b61980259448c9492f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kammer-1993-nist-key-escrow-testimony.md",
+      "bytes": 989,
+      "sha256": "03c79767f2ea2c5cd4a61cacc550fa591a6532c5ac10078f74ab2348d34fa127",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kant-aufklaerung-1784-de-wikisource.md",
+      "bytes": 1652,
+      "sha256": "204d441c593f2fc91f2243c486b7874a2d9fdddc0eb5992a9721d84d0e9530c3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kant-enlightenment-beck-wikisource.md",
+      "bytes": 1790,
+      "sha256": "f1b99b572fac705ef8b0cadf010b8e5547336b544d8f3188cef11e0548ecb823",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kant-enlightenment-gregor-marxists.md",
+      "bytes": 2082,
+      "sha256": "97240269014b1603d7847087a8faf36ef0e1758fc3638820858d9971100f74e8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kant-what-is-enlightenment-gregor-1996.md",
+      "bytes": 1525,
+      "sha256": "d66c73b4855b277e540383e272e3c5f04f290111368152911bda3e19b1a6ac32",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kapoor-bommasani-open-foundation-models-2024.md",
+      "bytes": 3130,
+      "sha256": "f826253de0ba1fac1ac72e034a74e99bf858d3f1e038d0eed1edae2ac9c109a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kim-order-2026-06-22.md",
+      "bytes": 2118,
+      "sha256": "8c6e4aead27fb7ba5a19ba6cd3b35ffc038909b8afef86a152cc2e2c6a8b0b88",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/klas-8newsnow-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 1063,
+      "sha256": "c83de9a97bf957623b6f7fb996ee23486aefdd033bf6c686638e6530c2bbac46",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ktnv-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 1694,
+      "sha256": "f8a259ef614df9db85b24b46ba955fc64fbff7abf81c47224f98b7714a95ee06",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kulp-rand-hardware-enabled-governance-mechanisms-2024.md",
+      "bytes": 4510,
+      "sha256": "15eb1bfff92006a322edef54d1abb53203e6c577dccb23cb6cd461dde3bdada2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/lawfare-klonick-ai-hacked-its-way-out-2026-07-29.md",
+      "bytes": 1672,
+      "sha256": "7d3b1a84542c8b2d2b9c2c118b281c3ec65242afea295f94956ec3f2bbccdccf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/lessig-2000-harvard-magazine-code-is-law.md",
+      "bytes": 1871,
+      "sha256": "d1a59f86058e44b9c94b063b40c5bfe15fe2776040ccbb00b14b806f0ed6ad1b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/liang-et-al-2018-policy-internet-social-credit.md",
+      "bytes": 1775,
+      "sha256": "e5be8cbfb4bbb0e4a76cb20ad4cf265aed96adbe122b6e837adf26e80a4305ba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/lieu-moran-ai-kill-switch-act-press-release-2026-07-23.md",
+      "bytes": 1683,
+      "sha256": "bbb0bf94296bec10043b0ec348c1ba8e74eb2b737cbff61c57d7d760247d6589",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ligthart-2025-reconsidering-absolute-nature.md",
+      "bytes": 7058,
+      "sha256": "339a875af038c6de327d6e33e00cc5cd05ed59bddf9a249555e7b76c64bc0390",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/locke-letter-toleration-popple-wikisource.md",
+      "bytes": 3115,
+      "sha256": "80fa15d175e18ac139866662a67738e83f69fd9986dd5eadbbc403d12a801dfa",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/lu-compute-monitoring-jolt.md",
+      "bytes": 2759,
+      "sha256": "2abe6af084e9eb8f872170bd3b6ababe3fc7e2513861bd41731452b25db95626",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mann-1984-autonomous-power-of-the-state.md",
+      "bytes": 2101,
+      "sha256": "7362e8caf5b21661bca8000ac9b96fd2414ab0c06130ca290268ce22fbda9396",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mccarthy-jones-2019-autonomous-mind.md",
+      "bytes": 2967,
+      "sha256": "36004bd88fc10869af07413b300b12a4b89d9ebedd05641514ba39db2a7e7838",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mccarthy-jones-2024-freethinker-interview.md",
+      "bytes": 2995,
+      "sha256": "f0fd37b98578e437d856348b2a5aef698a2297beac7dfd9eec401a2301dd1040",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mccarthy-jones-2024-nautilus-interview.md",
+      "bytes": 2730,
+      "sha256": "5e8685c463eed3dbb61603dab14e94df4927b3f2c7a792f4f41a5fbd35359001",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mccarthy-jones-walmsley-2025-forum-externum-thought.md",
+      "bytes": 2506,
+      "sha256": "ef74c41ee34710814f0b92d615aaab4e70f6bbb1784f190f8cbf82db6ff2be5a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mill-on-liberty-gutenberg-34901.md",
+      "bytes": 2812,
+      "sha256": "9920d590e5603f38929ea4e9d7d4e16ccb2016d42ba4a2d7821ead55be253a7a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/milton-areopagitica-1644-wikisource.md",
+      "bytes": 2558,
+      "sha256": "432a8255771c9672434f019852e99a3bc3198e9e617a7e7ae5a5b3072e87320b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/milton-areopagitica-gutenberg-608.md",
+      "bytes": 1371,
+      "sha256": "5cce60804ccb0bed6602e7af98632ac6b88dd1afad6fea29574a0cd3c741d01e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/milton-comus-1645-wikisource.md",
+      "bytes": 1901,
+      "sha256": "7ba341a56226948e2d064f9248df5e0035218ba293a8128598cff4a2cdaa25ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/milton-comus-bell-gutenberg-19819.md",
+      "bytes": 1496,
+      "sha256": "1cfd366edb83f39bfee55428783603622c8fea7452b1fdc34dff9149b1c48acb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/milton-poetical-works-gutenberg-1745.md",
+      "bytes": 970,
+      "sha256": "7e8a7d252d65adfbf5133c7b293c0b547d6c38203bdb76169dd7418c041272fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/montana-sb212-enrolled-text.md",
+      "bytes": 2046,
+      "sha256": "6fd36e1aff3ef7e2bce3a0cb618c2af66e7f47fdc63ad1c5d8367953f5bcd86c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/multistate-montana-right-to-compute.md",
+      "bytes": 1340,
+      "sha256": "668658841b70c6eec0cc8c6cea7e67a3a854e0ad5f411c037356302be900eed8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/natlawreview-20m-logs.md",
+      "bytes": 1367,
+      "sha256": "fb4efc1af1d69ee4d9c0fe6ceb086226de51004d5195a41ee30de53e30eaa2ee",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nbc-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 2110,
+      "sha256": "0c543fda6277738afe50fefa8a4366f0af5ebdb7a6f6de6433038f24c9b3bc53",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nbc-openai-age-prediction-2025-09-16.md",
+      "bytes": 1358,
+      "sha256": "f691d22d4dd245d9068099e628fdd3417e2a96cd71dd7068ccb0933114df3fd2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nextgov-senate-ai-bill-cantwell-clash-2026-09-11.md",
+      "bytes": 3437,
+      "sha256": "47c32cf6361712be31f08dc375dfb11dea503c804a86e41a6ea64573180672d4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nist-fips-185-escrowed-encryption-standard.md",
+      "bytes": 1219,
+      "sha256": "4118607124c68810399fac8add5c4ca694315d15d6785821d9727011fb540a99",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/nvidia-open-weights-american-ai-leadership-2026-07-24.md",
+      "bytes": 2346,
+      "sha256": "484dc7085d551188655781130990b00213a725748d1807f0d0e2e54268f0e441",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-ai-policy-window.md",
+      "bytes": 4443,
+      "sha256": "a2a4f15ddccb777f7cf3e548bc949e601eb8ff3449dacb48c1422a619bccd9ab",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-help-daybreak-tac.md",
+      "bytes": 3200,
+      "sha256": "6afd39dc568902ea7c2b48d7c4f761e561cea52320bb693dd67121d1820376d3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-helping-people-when-they-need-it-most.md",
+      "bytes": 1764,
+      "sha256": "ebf68ef60d801805f5523edcc43518d298e62fc949d65242b85964f754677261",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-hf-incident-road-ahead.md",
+      "bytes": 2703,
+      "sha256": "d59b29e601355f5dbc6c6baa5f2542758e086ba3d7f0d3eb056c2283bb9e2b1c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-hf-incident-third-party-impact.md",
+      "bytes": 2006,
+      "sha256": "56104862eb93c6efc10d896e2a899c24b836156f4f416fd7337be54721b7889c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-hf-joint-statement-jul-2026.md",
+      "bytes": 1104,
+      "sha256": "46408742e876752c191f294a646263e23e78b31cb7eef3ed6e14d76108fed70d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-hugging-face-incident-road-ahead-2026-08-26.md",
+      "bytes": 3746,
+      "sha256": "df14ec04cd59b833f55938ee025edeee132d9e75d751413f637af2d1646858b2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-hugging-face-model-evaluation-security-incident-2026-07.md",
+      "bytes": 1314,
+      "sha256": "b7f67fdc68a8a07bd45b1d717f068269ad3f08621f8e4ede0ac9595295cf9b3a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-pacing-model-development.md",
+      "bytes": 1149,
+      "sha256": "4fea154f78223dd138b063c17ba3fc37aeb4551381474dfc8f6f63fefdbc4a67",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+      "bytes": 1329,
+      "sha256": "426625ab49ebf83d2f6be1fd791a58058d8d66480ed43c9b8f29732b017916fd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-response-to-nyt-data-demands.md",
+      "bytes": 1952,
+      "sha256": "87debb9480da51f210addb8bf461763389c9cf79e1556ebd6e32072f0f4260ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-transparency-2025h1.md",
+      "bytes": 1303,
+      "sha256": "08979e88785c145a336265103e8254a3fb73323aef0c83f72771f947066332b0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-transparency-2025h2.md",
+      "bytes": 1185,
+      "sha256": "f32b18d14a014a711d15c2fb631cd8d1b50fd381f1a2536bc2773a79a85ffb94",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/openai-trusted-access-for-cyber.md",
+      "bytes": 1743,
+      "sha256": "cdcb2295991de71dbd86574699f851d0b8d335bbf14873f0f946f32c07ea6783",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/orwell-1946-politics-and-the-english-language.md",
+      "bytes": 1376,
+      "sha256": "72c2cde3664bb75ce683af2adfb75e18664d0c9a7063d0c32352993c0f4ebe53",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/orwell-1949-newspeak-appendix.md",
+      "bytes": 891,
+      "sha256": "d8ed1ccea14a392232a30be91fe49d544068ba528d71e303356f0952d77f60b5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+      "bytes": 2527,
+      "sha256": "38f44c6b91f091e95077af8696f1f4db9bb3b1185ca12b84e8ee6d1409432cd1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/palermos-2023-data-metadata-mental-data.md",
+      "bytes": 1833,
+      "sha256": "2505fcf9057e3649fdc14918bf0ee411fe912a074fed62b6aecb97c438948cef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/penney-2016-chilling-effects-wikipedia.md",
+      "bytes": 4354,
+      "sha256": "b31ade77634b3371905f79652e56ae87485daa38273798d096ba46722e37ad35",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/penney-2022-understanding-chilling-effects.md",
+      "bytes": 1584,
+      "sha256": "58dfb5bed6abc4e70fa2f8fa18ac9ddbb24020fab9bd9a5ff1c12033eef871cf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/petrie-flexheg-part-i-2025.md",
+      "bytes": 1313,
+      "sha256": "000ca3d48594c14ede8c8983e580f8092e8822f258cfc272eb6dc3031ef28b40",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pew-2025-google-ai-summary-clicks.md",
+      "bytes": 1728,
+      "sha256": "694225afc7fccf8520442c2dfff3e90c9f21482297b58ffa68fb256844ca633c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pfefferkorn-chatgpt-warrant.md",
+      "bytes": 2394,
+      "sha256": "bd7e6484dc91c222152a9253d88461db9e05cee90302b5d7f24dc7307ae701bf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pin-2026-freedom-of-thought-conscience-ai.md",
+      "bytes": 2546,
+      "sha256": "d620de52701ad087842100f99ba4d776b1f0699bd287d5ca5b8f0e7144cbe928",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pymnts-heppner-ruling.md",
+      "bytes": 1564,
+      "sha256": "460124f6b8ee5832fc89ee8462f6e5d55c44d681f76455730d29283933e9e8c7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pymnts-stop-rogue-ai-act-2026-09-10.md",
+      "bytes": 2258,
+      "sha256": "0cec25d5adfd316e82ee18bbaec1897e9354465d230899a5c17336e0b0c3e283",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+      "bytes": 1434,
+      "sha256": "a4a746cea9d5298ceefef1d60864f898ce1cec8de9e0e5d008a69c1e305bb57e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/radsch-2026-battle-for-cognitive-liberty.md",
+      "bytes": 2021,
+      "sha256": "af228b3efd449d6344c44b9bb9c467213b622e702f16794f86405174d1dba8d9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/register-openai-age-prediction-2026-01-21.md",
+      "bytes": 1767,
+      "sha256": "f7171275eb3cc48a5be3891bd0e5071a8676fe3275ac0447663602f250e0ab21",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/reuters-via-fmt-openai-mandatory-rules.md",
+      "bytes": 1601,
+      "sha256": "e2fae8b611e5bbfb7d51dbceea0064be70850fa3f3ad4fe0e2c13a932d92b96c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/reuters-via-mezha-kim-denial.md",
+      "bytes": 2238,
+      "sha256": "d884cef43f4dbe947d813384adb7a31ec4a44a7b8e349eb0fa68848e6932b685",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/richards-2008-intellectual-privacy.md",
+      "bytes": 2849,
+      "sha256": "554fcd4b62bb94afa2b9f274d3858d60676b0af703b6b6ecdf72ac8f81fcf1d0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/richards-2015-intellectual-privacy-book.md",
+      "bytes": 3453,
+      "sha256": "df00d8b920e24e2b0dc522a8e01f99973a23d2688fdcb5da5c86f85e498789bf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rinderknecht-palisades-complaint-2025.md",
+      "bytes": 2612,
+      "sha256": "4fe0560ca9fe892c0dcb9f5965e87c05d3858be34630ac704aee4ef36a5363ed",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/risko-gilbert-2016-cognitive-offloading.md",
+      "bytes": 1632,
+      "sha256": "82724b6ff9c16372ee4b294c537def1bec5ee55bb2ee0fdfe736437959e73ac9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/roanoke-times-my-ai-murder-2024-10-20.md",
+      "bytes": 2580,
+      "sha256": "ad10d3bcc2fd0cb9b439d676ae87702c73bccffbe9a45db70163438629e327d5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/robinsoncole-20m-logs-affirmed.md",
+      "bytes": 1822,
+      "sha256": "e0e38968607e0759a47463d54a244d94d11f47e4d33ef6e6831bf17efccd9310",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rollcall-guard-act-committee-vote-2026-04-30.md",
+      "bytes": 1987,
+      "sha256": "8905650f52997d8aa76c02d8da093b98b638353b6d91c03e2bb129c10988b971",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rte-zuckerberg-ai-labs-incentive.md",
+      "bytes": 980,
+      "sha256": "d6e644d4717e370edb4652a14825b5cf9bb48dc26cddd98d689490d2a0c1dbb5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/saferai-glm-5-2-evaluation-report-2026-08-02.md",
+      "bytes": 1473,
+      "sha256": "b294de7683547d944ede42963f5e95ddcb608be05f76843feff895c7ed2ba01b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sastry-heim-computing-power-governance-2024.md",
+      "bytes": 9379,
+      "sha256": "816704eaf563c643292c561b93e59eb22f2ec1b6747f3661035f5325275d5127",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/scmp-hf-deploys-zhipu-glm.md",
+      "bytes": 726,
+      "sha256": "0af3134a05de4bf35b7428e0c67e69d3c61b11bdec8fec54cc182a578744ae4c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/scott-1998-seeing-like-a-state-quotations.md",
+      "bytes": 1918,
+      "sha256": "d9a4f2a9699646b5ea750747a4c20f1dbd3a65944c6686c4aead109a6968f119",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/scotusblog-texas-sb2420-2026-07-06.md",
+      "bytes": 1544,
+      "sha256": "2e59f2cd80ec4f6dfed7d6d931ce6c39e3e4a8121e298a6193ee9b4c2f7b1362",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/seger-open-sourcing-highly-capable-2023.md",
+      "bytes": 2963,
+      "sha256": "2c73dde0cae3a3f7f25fdb2f19a158551d839766ce0128035f3ef0e6695908a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/selinger-richards-2015-csmonitor-interview.md",
+      "bytes": 1931,
+      "sha256": "d9ae72914e54ce9ea6eaf7609e6d728e9002c975d61a7e89f540428223070658",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/senate-church-committee-page.md",
+      "bytes": 1503,
+      "sha256": "08a99a755b2667b5e148823d651227f65006aaf97038b31d776fe02c3d14e007",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sententia-2004-neuroethical-considerations.md",
+      "bytes": 2480,
+      "sha256": "5af06646e437561402078312e3e15eef4a2296ab833de34a41f593ce88bde0a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-bayle-hickson.md",
+      "bytes": 2391,
+      "sha256": "8e3e80c417b7ea3d720a167f8a9f397e298293b525c56305dee617ad35ea921b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-liberalism-presumption-of-liberty.md",
+      "bytes": 1046,
+      "sha256": "de0dc1f39abfab74aa8614010466e61a6a06c23f202ebed5d4d9219ab04a6177",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-liberty-positive-negative.md",
+      "bytes": 1219,
+      "sha256": "d2a37f0c9128284eceecef155577083a8f0590e937f864bbd95ed885008a4e53",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-rawls.md",
+      "bytes": 1685,
+      "sha256": "f06b9631e81470a058ce2a1ba5f01a554e7997d6565bd749ff31dfec48e03ad8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-republicanism.md",
+      "bytes": 1684,
+      "sha256": "f686332436cc248186211a5b4727b86a76c114f8f659058b083f215edd874167",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-spinoza-nadler.md",
+      "bytes": 832,
+      "sha256": "91c1840e3c4cb8500339e6a7a618cf639692ae3831c300274cae818e54974566",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sep-toleration-forst.md",
+      "bytes": 2757,
+      "sha256": "a88b732e4c4b3c89f90057cdc3a221927a9aebbaefe5cae22eb828c1d8b75a85",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/shavit-2023-catch-a-chinchilla.md",
+      "bytes": 2330,
+      "sha256": "e9927693707cec62d561481f9d9073a55eac111843751fd12b94a0396fffc5e5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/shklar-1989-liberalism-of-fear-quotations.md",
+      "bytes": 1898,
+      "sha256": "21a1172cc6a01e89176de236d715baba0646ad787be0b748db2330ce5030de64",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/shklar-2023-rights-liberal-tradition-political-studies.md",
+      "bytes": 1674,
+      "sha256": "94a42583b6d8665686c06c72ca8dd671fba20cf97dd1bac3c9a4248a32e1c308",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/shklar-liberalism-of-fear-1989.md",
+      "bytes": 3092,
+      "sha256": "c607e020e318374b2d399c33aae28fd138bd8f9d93047b2209961754f2232435",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sjs-constitution-of-reason.md",
+      "bytes": 2267,
+      "sha256": "1fe94121863ba53c93f36473240d6f59cd62688cce5b06b418b49f1199f2c0b1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sjs-politics-of-visibility.md",
+      "bytes": 1746,
+      "sha256": "ecdd48a83f912c7bdc74a819b2adef0691819639c4fd8595d2adb4eba1a7916f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sjs-thinking-through-the-machine.md",
+      "bytes": 1401,
+      "sha256": "b933cdbc741947517af623e118d92d9d4e5b59cee83163800aefec0338e2bb3d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/smart-clowes-clark-2025-chatgpt-extended.md",
+      "bytes": 1935,
+      "sha256": "8ed86b005ceaa7b6728f1613ecf6709684a05aca3484bdd5db634aefe19f7ab5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/spinoza-ttp-elwes-gutenberg-992.md",
+      "bytes": 2383,
+      "sha256": "e12d3cdc5332601aed0d3b093c85e7b7918cfa947f2c1259744633740f9aae97",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stationers-company-official-history.md",
+      "bytes": 948,
+      "sha256": "2b57c7e155913ce0ef8e8c95e52dc4af06ee0abcf0fbde32bdee21c5bb2e4c2a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/stein-order-20m-logs-2026-01-05.md",
+      "bytes": 2668,
+      "sha256": "5f7612bf3fd815de6ff43404a577a29a7322177c7787319246bd32ae35637e0b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techbuzz-white-house-open-models-2026-08-12.md",
+      "bytes": 955,
+      "sha256": "92e9726663db5af94d1b7f10121b5659414adddbdccadf267962427bc363b7db",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-altman-no-confidentiality.md",
+      "bytes": 1623,
+      "sha256": "c90e98a4706bad66fb3b4b3873dd6b8da746c8d79a6304b58d2097ac3f7dd1b5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-anthropic-claude-id-2026-06-22.md",
+      "bytes": 1294,
+      "sha256": "a52a89f08643fa45f23e83f603129bba1a1c2d76841e1726f8583a013346ae40",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-nyt-says-openai-hid-evidence-2026-07-09.md",
+      "bytes": 1971,
+      "sha256": "4e61ca801d4f3f0756f1314fa919516d9d6b06cc49ff57d8c513ac8ada30a842",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-open-weight-safety-gap-2026-08-04.md",
+      "bytes": 1204,
+      "sha256": "a04652c3713e84504c339b0f3ae0c79baff7bb279c168c8c1dff7563e5ad6526",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-openai-gpt-5-6-limited-rollout-2026-06-26.md",
+      "bytes": 1551,
+      "sha256": "4a382ab13694a625a8fc6d0ab46a619f0dd32a6ab1a572b87ab537abe6d747f2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techcrunch-openai-revoked-cyber-access-2026-08-19.md",
+      "bytes": 2843,
+      "sha256": "a58b4e06d15490a344820dd0d50765fe18703f93734fe55afb3735998c7235b5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/technode-openai-admits-hf-hack.md",
+      "bytes": 862,
+      "sha256": "0df411c2cfeb790c5494ef09b70a3995cbc3a94fcdbf6f174c9dd51a25815a1e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techpolicy-press-mythos-export-precedent-2026-06-15.md",
+      "bytes": 1410,
+      "sha256": "b5bbd8aacf91906b86b1855acc7e6ed91a8bcdcde1fb9ac7375751cb0226dc7a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techrepublic-white-house-open-models-2026-08-14.md",
+      "bytes": 2374,
+      "sha256": "c31e043da675424e92be1d35154d9ff26d63159dbe0c5bfc42e93768a03794bd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techtarget-ai-kill-switch-act-cios-2026-08-13.md",
+      "bytes": 1134,
+      "sha256": "54d92919dea912834a50a9911f0bbf7b0b0982dcec2bbe0ceb842aeb7482ac2c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techtimes-claude-identity-verification-2026-06-21.md",
+      "bytes": 1772,
+      "sha256": "ca4bb70e83a8334b17cfa30d720b46cf05071dbfd817e745342cdf1b5bc362ac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/techtimes-gpt-5-6-public-12-day-gate-2026-07-09.md",
+      "bytes": 2351,
+      "sha256": "4ab4b994d06e6ff7cea470576524aa697f88300d89e5a1e3f943958cf20b9a96",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/tesink-2024-mental-integrity-extended-mind.md",
+      "bytes": 4427,
+      "sha256": "ffc6c78320130228e35b75777637289a9dbaaf559b0150ca00390686ac5edb0f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/thehackernews-anthropic-restores-fable-5-2026-07-01.md",
+      "bytes": 1006,
+      "sha256": "7aefb5815180ca8028b2726a394cc47aa3de2763986efcf7bdd2c03b2f60fe9a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/thehackernews-google-anthropic-openai-cyber-2026-09-02.md",
+      "bytes": 1288,
+      "sha256": "6bf9f98c7129d45698813419f14d56e6578c94ada5d56bbbde498dd39436599b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/thenextweb-anthropic-id-verification-2026-06-22.md",
+      "bytes": 894,
+      "sha256": "9b3a189667822bab95a8c12fcd3868c0bf7cdeea731086d42e38ab3946f68982",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/thierer-permissionless-innovation-2016.md",
+      "bytes": 1194,
+      "sha256": "68496fe7a72c2ffebdb626c15ca1e1126194428202e04b45f6cd1e73e7ab5ee2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/time-anthropic-fable-mythos-ban-2026-06-13.md",
+      "bytes": 1102,
+      "sha256": "3eacdd5b810b465f673dd475502bf3d9ddf30759310d073ca4318ce4c0b900ba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/tnw-reuters-senate-ai-bill-block-releases-2026-09-14.md",
+      "bytes": 2997,
+      "sha256": "7fe4c96ba896267a8a1d8b13aa040949a9d06dbd9df5e2a3e777f2b90933abfb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/tnw-zuckerberg-incentive-build-safely.md",
+      "bytes": 1111,
+      "sha256": "d3898984cf54c7715a7e5c0c0bc674368169a3cf82d09e0e2d8e133cb1b8aa5b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/uk-aisi-open-weight-cyber-gap-2026-07-17.md",
+      "bytes": 3900,
+      "sha256": "69b776f99b5a91d7288bf86bf8a478bbfa8e746576c592d6cbaccf18ba80dde8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/un-a76380-shaheed-2021-freedom-of-thought.md",
+      "bytes": 3429,
+      "sha256": "439a5e02921c17b131bbdf565c2136150fa915ee4975e6e5b30438b7911da51e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/unite-ai-altman-match-embedded-evaluator-2026-09-12.md",
+      "bytes": 1735,
+      "sha256": "27974ea8472c77384800d67b2635210e7dc6a8d7ad10ccdd2f92274afa950468",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/uniteai-openai-backs-sb1119-2026-09-01.md",
+      "bytes": 1583,
+      "sha256": "27a24a0e61bc480584ec5a5593f0c55ca1fc84502e4b5138a598e29976e297d0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/venable-chatrie.md",
+      "bytes": 1519,
+      "sha256": "225089d0886aa901ad5e419751a4047ac7fc94170d955f0514afd030dfa97cc3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/venturebeat-openai-models-broke-containment.md",
+      "bytes": 1291,
+      "sha256": "6d40bb72879a58904cbf53121ceb1db81a2719f34ebe765afdb14f2a186196f7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/venturebeat-thomason-amodei-open-weights-2026-09-14.md",
+      "bytes": 3096,
+      "sha256": "c01c6af522e0c44e2ab046057b0f536e266f15f559d08985951083677504cc35",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wang-preservation-order-2025-05-13.md",
+      "bytes": 1755,
+      "sha256": "19d8b954e4d34c866fb4db12ff4060908ec576f886eb6e7dd72ecb475317077a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/white-house-clipper-statement-1993-04-16.md",
+      "bytes": 1229,
+      "sha256": "2e7f0ab6f1a1ccba26b5243bf6cdb9d2462211bae3fceb7b32bc48da06469bdf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/whitehouse-eo-14409.md",
+      "bytes": 1552,
+      "sha256": "3ea89b676644c6598c85c514fb4bbb9f62ae7b32a9c10c3962d1ed9655b19822",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/whitehouse-fact-sheet-eo-14409.md",
+      "bytes": 1243,
+      "sha256": "ba722b3fa0d59929da3196fbfa57349a243c6966d118c0b9de7fcc66741c1f94",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikimedia-2025-new-user-trends.md",
+      "bytes": 1709,
+      "sha256": "7ec18be806fe4ea812f6604d3c35283dcf3bfebb7db1e8e3cb9b0d3648a2e310",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-2026-openai-agent-cyberattacks.md",
+      "bytes": 1183,
+      "sha256": "8eb67a3ae658bc5b893b15aa149831bb375b060b734b8d03d51ac9ffe381451d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-claude-mythos.md",
+      "bytes": 981,
+      "sha256": "6cced634e64a84806f3583e51e6b0d1c89e96078c09bb7f59d625b38f5280550",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-cognitive-liberty.md",
+      "bytes": 1769,
+      "sha256": "7be4ce3fb7e2080a2d879738c8c86833c859c684ceac7ac89d2e2f01aae54ba5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-gpt-5-6.md",
+      "bytes": 576,
+      "sha256": "6c7c5c51f964f95b8fca947dc0d7f24f150efe73b236dd613758fdf4d3a97065",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-letter-concerning-toleration.md",
+      "bytes": 1188,
+      "sha256": "377dbb04df0f436c21989e69fdb4e2f1be53afa4107a99e42d7f3bc818fcf74f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-licensing-order-1643.md",
+      "bytes": 1113,
+      "sha256": "6aa9f22600e5f1c1e91fe20da8b9c8754016bc33ccce7a19ac65a03cc5c247c6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-lodewijk-meyer.md",
+      "bytes": 1257,
+      "sha256": "798f907f209a23d6baa1a687fef4fed2b85c4fbdae0f7ca77634776b8beed66d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wikipedia-tractatus-theologico-politicus.md",
+      "bytes": 1043,
+      "sha256": "fe859afc5fb011fc7c6cc0813e2b4f706bee6cb999c56d045a9286222c9e3938",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/williams-2002-truth-and-truthfulness.md",
+      "bytes": 1679,
+      "sha256": "896045e56480fe8ff0e2c8f8b4928e37029b6e630cbb16c6705e409f093bc3ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/williams-truth-and-truthfulness-2002.md",
+      "bytes": 2771,
+      "sha256": "2cd66560996563b2cdba04d3364a57e646ff326c46a17957034c0514fb315cea",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/willison-openai-preservation-order.md",
+      "bytes": 1556,
+      "sha256": "f3ac468f36ef5a2d831108c970cb27127757573b957f7d5f7d9bd4b8a3e08ed1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/wired-lowell-white-house-expand-ai-policy-2026-08-12.md",
+      "bytes": 2539,
+      "sha256": "396b720e5b08ef0f57f3106c7df53e610b031cfab4c736458bbbe405095c66e7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/workos-agent-audit-logs-2026-06-03.md",
+      "bytes": 2262,
+      "sha256": "b6f29a6bd398c19cd33c1cdee5f294e99f2645188e9f71352b7d7e65c9f20752",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zai-glm-5-2-model-card.md",
+      "bytes": 807,
+      "sha256": "cfd19d9ed83a919eb13f8c66fdcf60721d8bb077a550dff8b3819287b8a0cad1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zuboff-2019-totalitarian-and-china-passages.md",
+      "bytes": 4943,
+      "sha256": "3b0da993fc1e212da0d3de669db9017e5b71b513580f0dd3dba30d7b6314fa1a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zuboff-instrumentarian-power-whitehead-review-2019.md",
+      "bytes": 2618,
+      "sha256": "1cac655b07a2326b2564098b5d07b0b129be748b4880c75a2c91d89238dd985d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zwillgen-state-chatbot-laws.md",
+      "bytes": 2841,
+      "sha256": "f8c0fc01a8a40e1a3fc7cd2b6dbf91be53ccde3325847231063c0b644fb47b80",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/zyphe-texas-sb2420-scotus-2026-07.md",
+      "bytes": 1109,
+      "sha256": "4b1a5c99560b1cbb623b0771c08fd3cbb11c0904a7e24bd30e1c0491636f22d9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/index.md",
+      "bytes": 82318,
+      "sha256": "39c00ab0b9f5e693a56d9c0ff7d4cd48a3d0b5c27db7cfdb13017cb045f76d11",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/a16z-ai-action-plan-recommendations-2025.md",
+      "bytes": 635,
+      "sha256": "9f7086935cd01f446e4f0c4d071a1310a16a77be6149dd3a4f0f1342a1547a16",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/a16z-asserting-leadership-open-source-2026.md",
+      "bytes": 838,
+      "sha256": "0b3395dc1e9ff1ee4e9aaabb2dabff41c7bd57b3b0783fa2996f71965c33b046",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aarne-fist-withers-secure-governable-chips-2024.md",
+      "bytes": 834,
+      "sha256": "2bbae757c05e7fa32467e9e0db85b5e8fc36e7a3a31eb819318f282a813ce7f8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/abcnews-las-vegas-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 860,
+      "sha256": "6212c184107c5a309af7bfd362364a06d286659ea6b6b4087804214716050488",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aclu-venzke-testimony-2025.md",
+      "bytes": 725,
+      "sha256": "66a5a3844eaeb806b45674828a29c316d185d691640b48817331b6290356f67e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/acx-highlights-discourse-hf-2026.md",
+      "bytes": 688,
+      "sha256": "2fb15b826af27e149babaecd0da02a1db075e7569ec666ba12e934f6a567036d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aisi-open-weight-cyber-gap-2026-07-17.md",
+      "bytes": 1021,
+      "sha256": "88bb4a81dc7e0145b44bdb288d2c4ac787202f26a1bdbf279d14bbb32efc2b61",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aiweekly-white-house-open-models-2026.md",
+      "bytes": 829,
+      "sha256": "4f32a68f4941a4b278b4c875e7bcda79949c9c7c0e0751b98b24c05c106f2f20",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/al-ramiah-pause-button-2025.md",
+      "bytes": 628,
+      "sha256": "029896ce7801149fbf454f7b3a0bd89ac231d5857ee62201d4a33d197c47074d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ala-state-library-confidentiality-laws.md",
+      "bytes": 913,
+      "sha256": "dcf0957e5a5870f7a57e3dec76a97fd57456c824373036ec10ae221d601f1a33",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/alegre-2017-ehrlr-pinpoints.md",
+      "bytes": 1591,
+      "sha256": "546c8a8a45488c637b25d0d73f49e98731fd8e0fd0efee8552da4312f6da6ec2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+      "bytes": 976,
+      "sha256": "7db39bce585ec1fbae4a1d39cfb10b872812b24b8873916e17ce954db2662128",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/alegre-2020-era-forum-regulating-forum-internum.md",
+      "bytes": 1515,
+      "sha256": "142921adc80058e86ea4bb9302e5136d590c6a0bc63425cc1b5103aaee056026",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/alegre-shull-2023-cigi-freedom-of-thought.md",
+      "bytes": 908,
+      "sha256": "0aded27aba4e183b4251d00971e181eea138924e5b17b4cfe6d37f43ad8a9918",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/aljazeera-anthropic-block-why-it-matters-2026.md",
+      "bytes": 775,
+      "sha256": "f0bb95bad73c28fd1f8881e1e44dc13a5576f9a20eb45cc567cd56f9fcf9455c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/amodei-we-must-pace-the-frontier-2026-09-12.md",
+      "bytes": 731,
+      "sha256": "3343255d1f631b33110d3f7fb79340300e976f4267a3a0d21b92eb2bf90096b3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/amodei-we-must-pace-the-frontier-2026.md",
+      "bytes": 967,
+      "sha256": "bfed5053cf898a21b825922cb152b1fa44d93d3a28c18739aab266c4e46a8ca2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/andreessen-techno-optimist-manifesto-2023.md",
+      "bytes": 725,
+      "sha256": "129ca46316093cbb4dbd14f3afa3a8c055f6e0fcd17802d6d6982472359a044d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ansari-hardware-governance-taxonomy-2026.md",
+      "bytes": 842,
+      "sha256": "b36e6d5a0aa61e7703045d5a5d1195056f3e83cb8d16208f0af84223172b53e4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ansari-hardware-level-governance-2026.md",
+      "bytes": 1141,
+      "sha256": "063230b4ccc32fd3f96b33bbce75b69d546d9eff1764a3b2ca4be4a045a05b01",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-claude-mythos-page-2026.md",
+      "bytes": 925,
+      "sha256": "eb25b2e8fd076b00e58a457341eab7b9302bcb342c5321f2fc84f7f82b33be45",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-fable-mythos-access-statement-2026.md",
+      "bytes": 936,
+      "sha256": "62cb62a89b123c114857d23bc7a2b4dab7dc70f3bcc9eef75d8171423b4dbb4b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-open-weights-position-2026.md",
+      "bytes": 963,
+      "sha256": "c1103592393b27b49ebae1dd29a6c008027b7f102f9aaff2e3ce427953db1751",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-position-open-weights-2026-07-27.md",
+      "bytes": 979,
+      "sha256": "a877d7c6d387e5585504b73625fa7144054b948a321d0e9dd44fc1fd51a5458c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-redeploying-fable-5-2026.md",
+      "bytes": 887,
+      "sha256": "e62c685e61c5ad83896db1e9a9bcb4c0e78fd991fd81bd6f3596c8eaed9fc779",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-support-identity-verification-persona.md",
+      "bytes": 1068,
+      "sha256": "3b550515ee2b5d578affc57f7aa3e7abf0a27fd4baed6b582649e1532ec932d2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/anthropic-support-real-time-cyber-safeguards.md",
+      "bytes": 1100,
+      "sha256": "8470a969a105a949a329b8f16ed5634465617d9b4a2c286575b202aee5faf8bc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/arber-transcript-vol1-humble-remonstrance.md",
+      "bytes": 831,
+      "sha256": "73131134c8dbc7ae6b3aa0e214fdb5ea8164f7e12b0fbce7028dbbf36eaa53c2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/arendt-truth-and-politics-excerpt-pdf.md",
+      "bytes": 719,
+      "sha256": "e6eb30195ab85b7d6e3546561a145d9be3b3c2f9ff4245c2f7661d759c13d7e4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/arendt-truth-and-politics.md",
+      "bytes": 922,
+      "sha256": "5f12bf064b96c3a60290959660036a29e84be59ff96238f9aaf6fb38ab03b49c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/areopagitica-wikisource.md",
+      "bytes": 634,
+      "sha256": "609a0ec22b52c8838618f5f429670263ef83200aee3f9b8a725e64c409faf7e4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/axios-amodei-pacing-reactions-2026-09-12.md",
+      "bytes": 702,
+      "sha256": "c4b9024294bb4ffa9675baa676abc4d04da6f2be6159e10b74a12814c0b69290",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+      "bytes": 772,
+      "sha256": "21d6b64d4d71900a9c0658aa795c4ffa5e3a2e9219256275c126a6c12d745a79",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ball-clawed-2026.md",
+      "bytes": 793,
+      "sha256": "fb4c5855d991458c2344294e7258d2688c3a4f27b60efbada3107e0b668090ac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ball-heres-what-i-think-2024.md",
+      "bytes": 631,
+      "sha256": "1cb0a43334286e701d439ba01ccd5b4f99132304b9559f67733c3f799efbcb49",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ball-what-comes-after-sb1047-2024.md",
+      "bytes": 712,
+      "sha256": "73d3d72360c21b7ad3cb5d1f67fa30f29d06b7947469610acebe2d4c459ec631",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/baumgartner-v-united-states-1944.md",
+      "bytes": 1450,
+      "sha256": "8f68f1e845af45112c2524a2d3f86152bcf98b9aa0f4ff1a6792f39ffcc6a6a3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bedi-2021-myth-chilling-effect-fulltext.md",
+      "bytes": 2053,
+      "sha256": "c7b48f24ef269cdb1f0d213db983afa43d27c484b93d3e3b9dbae08e34872915",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bedi-2021-myth-of-the-chilling-effect.md",
+      "bytes": 677,
+      "sha256": "afe2f54fc21e30c6a6ade5153fa559447ce95f36d9c97c009b98b47458e5718b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/benson-evidence-frame-integrity-2026-09-07.md",
+      "bytes": 1121,
+      "sha256": "9a49fe989d9e40f02344c5e58ae1c7dcd19ce7a43b38fd9104f169f5afdb5276",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/berkeley-hrc-llm-report-press-release-2026-09-09.md",
+      "bytes": 1208,
+      "sha256": "b9b7a53632af9314b4b923ac082cc714aeec7e4123f4b30ad5c5ce18f9eadd98",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/berlin-two-concepts-1958-pdf.md",
+      "bytes": 708,
+      "sha256": "26681c46f3acb1773e435319b9234fb13b7b718d5e10566ba0aabd0b94c343f2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/berlin-two-concepts-1958-text.md",
+      "bytes": 971,
+      "sha256": "c7396e88dea7baf544d93e71f817dda6dc615e73f892a1365c17cc1636cbd67c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/berlin-two-concepts-philosophyandlaw-1969-text.md",
+      "bytes": 1419,
+      "sha256": "e555c67544ac778f01c773af68ac704f05d83c020d0371af786b6307f736d6a0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/biometricupdate-openai-persona-passkeys-2026-07-14.md",
+      "bytes": 977,
+      "sha256": "dc12e74184b8bf34403c2765c54b114ff68cf52272eafb68cc1e7d6ab46f7b65",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/blaze-1994-eesproto.md",
+      "bytes": 831,
+      "sha256": "04977ee389ad3d9910add41c31b5e872e668a35ddff6ec55abfec57f26ff6158",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/blitz-2010-fn103-and-pinpoints.md",
+      "bytes": 1707,
+      "sha256": "26bf1d35e07415fdda9f6a10b852484a02524a0aaa69b08ae8db92eb2db91070",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/blitz-2010-freedom-of-thought-extended-mind.md",
+      "bytes": 1046,
+      "sha256": "7a3643f57cbe862b5811099cfc7e27bc35068bb26f6d36febe44a4daf3363e6f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/boire-on-cognitive-liberty-2000-reproductions.md",
+      "bytes": 1600,
+      "sha256": "6f0ea05dbd688e6dd3b90cde6e4e53ffd28fe7920d3334fbfeeaa536cc4da1d6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/breyer-chat-control-tracker-2026.md",
+      "bytes": 1573,
+      "sha256": "4c9ebeba665c180588fc52ae9f70d1d8c7b12f1c205f8338ea8853324434f5ec",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/british-history-1643-ordinance.md",
+      "bytes": 760,
+      "sha256": "f9791e86bf4808056bafb7cc37fd61f15cd82507aa21edbe50a4355ca8ec2ce0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/brundage-frontier-ai-auditing-2026.md",
+      "bytes": 832,
+      "sha256": "0c72848e48357e3e6686287593b8305e781fc056552f1ee9b2b89ae1bcfb92ff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/btlj-penney-2016.md",
+      "bytes": 832,
+      "sha256": "6b8366c897d6f939c4f03fd4849d48ed7f2619f5560411590b40b4281fff745a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bublitz-2013-my-mind-is-mine.md",
+      "bytes": 1061,
+      "sha256": "ea27e2cbd7564aa3c58c13455708fb140ecc277ef412a1b8e694650e9045e691",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bublitz-2025-hrr-state-obligations.md",
+      "bytes": 1470,
+      "sha256": "116db21814ece251ae219804d6403f28b80c65ce3637ff7f9808ad8a17f56ccb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bublitz-2026-what-is-thought-ch8-springer-page.md",
+      "bytes": 1576,
+      "sha256": "5a1e50f857acc017bc6659cb9953327982882efd7ac5391eaac731020285b313",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bublitz-blitz-law-ethics-fot-vol2-2026-toc.md",
+      "bytes": 2005,
+      "sha256": "73b1a7aae9b179b3ab9e533610c6b7f265b0cbfdcb0bdb6333b41281902e9661",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bundesarchiv-abteilung-26-finding-aid.md",
+      "bytes": 764,
+      "sha256": "aa7d486557602f092d48344dcd93eedaf2fb755e13e9b383d29b191a4c49b5f3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bundesarchiv-stasi-introduction.md",
+      "bytes": 472,
+      "sha256": "e8bde8ab989fd1c565c8e720a991fd2f3774492830abf3462757c646c5f617f8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bundesarchiv-stasi-unofficial-collaborators.md",
+      "bytes": 592,
+      "sha256": "1c08c957f4a55cb7e2ae40f4a58ea6b70905e5c8e0261a9dd0b408233d8105a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ca-sb1119-assembly-privacy-analysis-2026-07-01.md",
+      "bytes": 2607,
+      "sha256": "5a3b0293fdb09f3bfa8bcf4563982fb000804d1fa8b308c4e24be4ff3c505a57",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ca-sb243-companion-chatbots-2025-text.md",
+      "bytes": 1545,
+      "sha256": "0da80e62af452ef5276d3456ae82609e4abbb3c7af14cc4de63a3f102d43698e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cambridge-handbook-fot-ch25-keese-leiser-2025.md",
+      "bytes": 1643,
+      "sha256": "fb0c064ec499cffc79df11e0293d4c2e0d0e0dc9ef7298a21680d2e6135b6f7d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cambridge-handbook-fot-toc-wildy.md",
+      "bytes": 777,
+      "sha256": "9b4c0ef1f2448d439a842cbc4ef0df8e420430bebf883f5bf84f9c5ae997753a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cantwell-floor-speech-2026-09-15.md",
+      "bytes": 873,
+      "sha256": "295fae6e6dec189e5aa57023ce334b175a32c9be513b7757961900666fa6eb46",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/casper-open-technical-problems-open-weight-2026.md",
+      "bytes": 1010,
+      "sha256": "866d2fc6e20918a8a1df1a9db9dffd3358d28f04d3f9d53e587feccfddc8432f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chan-ids-for-ai-systems-2024.md",
+      "bytes": 782,
+      "sha256": "d35204e1a289a36991e0cdaaf65ee8ad3d6cf5f997c89e985e649babfacbbd66",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chan-infrastructure-for-ai-agents-2025.md",
+      "bytes": 1117,
+      "sha256": "843060c0ab8f2f809e21f29f375c2d4b85ec11824fc58d84a9d445b1206b92c5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chan-visibility-into-ai-agents-2024.md",
+      "bytes": 1605,
+      "sha256": "333c41c616b74c8699d3b6ad291ba3047f10411d6ac67f543098d9a48a5f5d5f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chatrie-v-united-states-slip-opinion-2026.md",
+      "bytes": 1245,
+      "sha256": "3a942e0a282bacf054e6d93d60744f426f5539aa57bea3ba82cabb0c3dda1ba1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/chen-zaharia-zou-chatgpt-behavior-2023.md",
+      "bytes": 1140,
+      "sha256": "7d52da781eb0f09e3d8b44433222e25305228ea27dd41b549cd263bd7035e61d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/china-generative-ai-interim-measures.md",
+      "bytes": 1042,
+      "sha256": "9b0e4086dd0712d36c30ab489b03e73ce02a3d42a761eb0d58a98476b97de4bd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/church-committee-book-ii.md",
+      "bytes": 729,
+      "sha256": "d86ca1516477bd0f65b0cf178cb2497ce6ca4497b9fe52ed63998e91a9e1b19a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cinar-2025-jiplp.md",
+      "bytes": 1136,
+      "sha256": "4103d682898c82082026b25d733ca2c2b082bfbef7a9b038f41b37bd11d392fd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cnbc-chinese-model-openai-attack-2026-07-24.md",
+      "bytes": 851,
+      "sha256": "3f52409a906f61796c6114b35cb27115506b811208e99f270bd184347352825e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cnbc-zuckerberg-huang-slowdown-2026-09-15.md",
+      "bytes": 969,
+      "sha256": "e97d967f852e81fb8495658ca3bd095f497b80021e656ccb65d6b5a0230c1a9f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cnn-levenson-chatgpt-evidence-2026-05-02.md",
+      "bytes": 1118,
+      "sha256": "a41fec769dbcd3c3cbb906f558f2b19303531dec235c3ea8e08c40b2c036b878",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cohen-2013-hlr-pdf-pinpoints.md",
+      "bytes": 1274,
+      "sha256": "37dcc4f60e213cd97887ee788960007bc8aee2bb2b740bfd10a94f574910caa0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cohen-2013-what-privacy-is-for.md",
+      "bytes": 946,
+      "sha256": "f3a01e3d1e4e9b90f2b546263165bd789bbfc0962cb9cb310e8569342b832402",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cointelegraph-open-weight-paradox-2026.md",
+      "bytes": 866,
+      "sha256": "7d345c8ccad18690177259526886325176c9fafd81b6fac4c217d95d0edcb97c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/consc-clark-chalmers-extended-mind.md",
+      "bytes": 780,
+      "sha256": "cf1d7b890559cea5108bd5f9f40fb2e09e497c9b61311223cb5dbac8ee8ddebe",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/corry-2026-ai-provenance-archival-provenance.md",
+      "bytes": 887,
+      "sha256": "ce9786aab752268078e3361d90fb700aa8d7f9db5a5d4adf098291825a940819",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/crossref-bibliographic-checks-v2B.md",
+      "bytes": 1696,
+      "sha256": "88b4a2b0735c6d82914e661fd46efe1edea5340be86ffa23eec8583d498e5013",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/crossref-sententia-2004.md",
+      "bytes": 809,
+      "sha256": "5be108c261fcfda3ce1c39cae07846baba327fb54eb2f905203eb28e23163bcf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/crossref-smart-clowes-clark-2025.md",
+      "bytes": 655,
+      "sha256": "e60e712e4946908c63897f7fec551788921c5795353e334078f606de9ea50466",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/crs-lsb11429-ai-fourth-amendment.md",
+      "bytes": 1262,
+      "sha256": "2e786e92c60e9f8e34788af7fe09027f61903e64fb53aa83de098cccc9918cff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/csa-caisi-testing-agreements-2026.md",
+      "bytes": 941,
+      "sha256": "5a8ec472ffb8cca98aca06b96cc3dc742709b9efa5ae143a4a7191acd1574302",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/csa-fable5-export-control-precedent-2026.md",
+      "bytes": 1111,
+      "sha256": "168d68e67e441b9135d08ac1a1f7ead1bdff2dc4fca296cd013146a815e230ec",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/csa-great-american-ai-act-preemption-2026-07-22.md",
+      "bytes": 827,
+      "sha256": "f592b9fd9666629c8c47ac26e5fe195b1b21ee155941c78c922f8a64d1d44c48",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/csis-commerce-anthropic-directive-2026.md",
+      "bytes": 961,
+      "sha256": "cb4a0ce36bd511ac9e36f9423b2699372329ffdbc297c07bbc31e559022b9d6c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cybernews-kill-switch-editorial-2026-07-29.md",
+      "bytes": 822,
+      "sha256": "9edf03d7a47a1367e78fe841a53f39b72549bce9f95b8ffa41ca84203c7bb74d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/cybersecuritynews-dhs-warrant-openai-2025.md",
+      "bytes": 822,
+      "sha256": "63a0af4b8f8cedfa749978ff289fae4cbc03fe120e3ed224d92d21f5a4355a4b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/danaher-on-carter-palermos-2016.md",
+      "bytes": 742,
+      "sha256": "96bc1487fce9ebfc35a6596662192c09f3b858b29873c21edc1c55bf4ab2fd87",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+      "bytes": 1018,
+      "sha256": "8fc64b66ef739d1decbb89258a747a329447f423bd4126d24e8a624cf62e14aa",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/deazley-commentary-humble-remonstrance-1643.md",
+      "bytes": 629,
+      "sha256": "f168aa926e1592294ec94973a2b350127115f61cdd57950580b1a4b7f92995f7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/deazley-commentary-licensing-act-1662.md",
+      "bytes": 695,
+      "sha256": "6e2299e8320a6abbea421978b834d8557044e7a4f9110a102818b697ec513c6b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/deazley-commentary-star-chamber-decree-1566.md",
+      "bytes": 709,
+      "sha256": "75b9b9887aff3b046d2ded4f1b1de53a864f9b45883e17be6c98b4ac32fef5ac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/deazley-commentary-stationers-charter-1557.md",
+      "bytes": 812,
+      "sha256": "5901122a8917702b5d7ab303c5c5677aaf947bffb3513f17f0639468994b9462",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/debevoise-heppner-written-opinion-2026-02-17.md",
+      "bytes": 885,
+      "sha256": "c1bb9ea1548f7a5913690d6236ea043a0fcabda0f32536f08a4932e330d79421",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/decock-2026-working-paper-abstract-zenodo.md",
+      "bytes": 2117,
+      "sha256": "f6b205198e11e75d1a199080fbc822e53c50a6857087dc8289d1246f9aa3a280",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/decrypt-cot-monitoring-surveillance-2025.md",
+      "bytes": 788,
+      "sha256": "a0b0d85893c209a8a407631f6daf3245e679e8097806a4636c31448e7bb0d555",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/deleuze-postscript-purdue-pdf.md",
+      "bytes": 859,
+      "sha256": "4e385c20b18f8c2b0ef07ad6ab12d88546757499e81750dab0655b737d750c36",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/dgap-sovereign-internet-law.md",
+      "bytes": 682,
+      "sha256": "b56f8e80fc13f33ccac8b69c015ca1d586626269a5804696439d098b738ab5a3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/doctorow-moratorium-cartel-2026.md",
+      "bytes": 849,
+      "sha256": "69eb889d94667500394bcf15b780b083903fb7af784155144fb0acafcac6eaac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/doj-letter-us-v-kim-jun-2026.md",
+      "bytes": 996,
+      "sha256": "884088095866fa3023ef7b948c183207e175af75a1af838058affb2a95d90ffa",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ecoi-hrw-algorithms-of-repression-2019.md",
+      "bytes": 822,
+      "sha256": "a9cb2d0c21a24074ee1fd525f99d89b0a1157dd0ba400aa61a037b9c3110ddea",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ecoi-hrw-how-mass-surveillance-works-xinjiang.md",
+      "bytes": 770,
+      "sha256": "26b5585c329d729a19c63dd98373bc43c5d811d2fbc3494b61467253af2fd99a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eff-ai-surveillance-compelled-2026.md",
+      "bytes": 843,
+      "sha256": "78ac1549d2e55cb8ecb9c7e50e86a999412b35b254daf826d948ac3372901e42",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eff-chatbot-bulk-surveillance-dec-2025.md",
+      "bytes": 839,
+      "sha256": "d0b28bdc3fdd04adce01262e52f996d12764e99da66626427b1bc131520dedbc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eff-clipper-birthday-2015.md",
+      "bytes": 466,
+      "sha256": "93eebcb2be51ec43434d96dade9a68327d62e9b549ca97883b52b6a69fced596",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eff-smart-ai-policy-2026.md",
+      "bytes": 689,
+      "sha256": "b0eb1c2a8a39943e5d0486e01f1bbe52ea629a5218c96cd142179a22764e1602",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/egan-heim-kyc-2023.md",
+      "bytes": 781,
+      "sha256": "664d5b9d45efbde75c27ac04233bca07abe61e394d9f18b6584360cd0a3f7571",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/engadget-openai-preservation-order-lifted.md",
+      "bytes": 793,
+      "sha256": "deeb3bfbc812919c74a1a89d4e2ea67492cc5cf6c1cdfb8828015d26eb918ed8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eo-14409-federal-register-2026.md",
+      "bytes": 1130,
+      "sha256": "1eba3403305f49af101c4c33d9268c36af6b56381e5a218acb0936b7e1fee9cb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/epic-clipper-chip.md",
+      "bytes": 608,
+      "sha256": "d9ec9931d813ca9db873b55dc175fbc5e9a4b13986d73705eafc1f84e57fff79",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/epmc-ienca-andorno-2017.md",
+      "bytes": 699,
+      "sha256": "2415b18ad58c717fabc0096d2a48e63162714afa015480d59d9e2396a5e0725a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eu-ai-act-article-12-logging.md",
+      "bytes": 578,
+      "sha256": "ac0fd5c5b8fa4d5001143a6460243ae37d3d06da87dbd4635ee99d37e25f2c66",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eu-ai-act-article-50.md",
+      "bytes": 944,
+      "sha256": "f2184370c3fa6c2079e7d0cb0769e929bc610dc5c23648bc3320797442fc4bdd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eu-ai-act-article-52.md",
+      "bytes": 1035,
+      "sha256": "108d51530d65dcf24fe20862ef88afdd922955d8056b638242c21ee2bf654508",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/eu-gpai-code-of-practice-measure-3-5.md",
+      "bytes": 1077,
+      "sha256": "3be09a11badf36d466509d04f34e0569aaaf7c273c46baf89274e310072787ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/euperspectives-chat-control-1-0-council-2026-07-23.md",
+      "bytes": 1088,
+      "sha256": "c641f57298ad9e4ebdea22750c8844c4fca085885050d427df59dcf7437f2148",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/evangelista-2019-surveillance-society-review-zuboff.md",
+      "bytes": 1277,
+      "sha256": "c7016631ea03a926c6d2b0839291cb362550bf6842b9104525b858e01f878a9b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/farahany-judicature-battle-for-your-brain.md",
+      "bytes": 944,
+      "sha256": "2a8b3a46f02e08c474781f19f06786eb51193430acc0e04aaae5476641de404c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/farahany-microsoft-unlocked-2023.md",
+      "bytes": 795,
+      "sha256": "9780021f4fa08397ed8361a687f20108165c1ebe492df794fdb979cebffdaa6c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/farahany-time-2023-and-substack-2026.md",
+      "bytes": 949,
+      "sha256": "ac7a5052e38a6c4b9f3c4943aa988d520112203274514317d87804cd304d1872",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/federal-register-eo-14409.md",
+      "bytes": 891,
+      "sha256": "1f407c443ac6ad7d4b1e2b14e184daa6b67b1cc1adbe4fdaf39feacb49a4028f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fedorenko-piantadosi-gibson-2024-pdf.md",
+      "bytes": 815,
+      "sha256": "73163b85dbbb879d61ef05013b363db7a491d4e39706f037ae7e57624b72baed",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fedorenko-piantadosi-gibson-2024.md",
+      "bytes": 970,
+      "sha256": "6c6772116d6e7c76325bfecbe59f5c7ceda32b61eb48d3146122ed95bca30b67",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fire-guard-act-may-2026.md",
+      "bytes": 684,
+      "sha256": "d70e87890351da65061da18b8e4c155ffba3d767997394820668a5bdbc7d4148",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/firth-rait-ordinance-1643-bho.md",
+      "bytes": 811,
+      "sha256": "dd83dc64382643a5791fb76fb67e30088ad7bc5d2c430e488e6e121e02a74d2d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flexheg-part-i-2025-scope-and-abuse.md",
+      "bytes": 1407,
+      "sha256": "50fe5498818d34d6820b43b16ec6ba40b4f2b62c47c6963df929bd2a36ae99da",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flexheg-part-ii-2025-technical-options.md",
+      "bytes": 622,
+      "sha256": "6b7de79116da91a58fba206d2f2e520be8cd9d4b47bee2a1c9a9b8d006a4d95f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/flexheg-part-iii-2025-consumer-chips.md",
+      "bytes": 1459,
+      "sha256": "932e4bcdcd432670b44083f43fbf6cce268af6cf1987f02834968d9d451a5b60",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fmf-third-party-assessments-2025-08-04.md",
+      "bytes": 932,
+      "sha256": "0b82b0062da0b291635c82d523dc3dd8dab6817162849c2a0e182000513a4ef0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/forbes-brewster-first-chatgpt-warrant-2025-10-20.md",
+      "bytes": 1516,
+      "sha256": "27f3410d2d6cd58437232850a22ba62911cd7fdec7004406a2842d81439a8f8b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/forst-architecture-of-freedom-2026.md",
+      "bytes": 869,
+      "sha256": "8f523439fcca013f4c1ae5e5aff0a2e5bbc6599117bf57184d7be5efec00ca1b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fortune-forlini-hf-chinese-open-source-2026.md",
+      "bytes": 1182,
+      "sha256": "17134476fafde2e295e6ad712cd4d97f864c32a0e3abf6b39abcb62ea1783547",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fortune-hf-chinese-model-2026-07-20.md",
+      "bytes": 1526,
+      "sha256": "b17a0b5388ab3567603633f345c66fd3a18defe4ba06cdc70ab7e988db2df1ea",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fortune-openai-report-takeaways-2026.md",
+      "bytes": 738,
+      "sha256": "ee95c80a69f20dff493e4031903376f3701b8294471488d54eb7140d454cdb2e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fortune-white-house-secret-framework-2026-08-04.md",
+      "bytes": 1019,
+      "sha256": "e23ceb51a0f0f51e53be1210dd8b42a3ca2d7772f8016ceee88471a23147742f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/foruminternum-de-cock-2026-full.md",
+      "bytes": 3105,
+      "sha256": "aadcd07be5aa512646d12c2e6ec5e5b508242577b045f8eb9ee6418da9172697",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/foruminternum-de-cock.md",
+      "bytes": 630,
+      "sha256": "7483236a47208bd9b9d18a8cb71c9112fd02df08beda481c54b6aff0b34eeaba",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/foucault-panopticism-foucault-info.md",
+      "bytes": 625,
+      "sha256": "1e9b708320a94eb5f0055717d53168aa24bbaa98d88f8aeb97a837ab0f131470",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fox5vegas-cybertruck-police-report-2025-11-03.md",
+      "bytes": 794,
+      "sha256": "ab8ea6425f57a8ec040adada9f6c886e99d1793f44a9abcb4d497d82ac8ceb31",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/fpf-2026-chatbot-legislation-tracker.md",
+      "bytes": 1077,
+      "sha256": "4caaa89a0819d16257f284e4ae3658dc9889cdcabc61d140e4ae11119f9d78f9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/freedom-house-fotn-2024-russia.md",
+      "bytes": 766,
+      "sha256": "3c37306454e9e4db1708b086ab0120342be498e117668853da041210c75f0984",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/freethinker-mccarthy-jones-interview-2024-03-29.md",
+      "bytes": 1384,
+      "sha256": "df50c9c30ca952565bc86a562ec07a21b855949fbd68bfd33066e5e0a98af2e5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gc22-hrlibrary-umn.md",
+      "bytes": 680,
+      "sha256": "c973419dc57f45f8a2d5f5106ac74f22faf99b929a606ce3b72f8478c4fae40b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gizmodo-ropek-dhs-openai-warrant-2025-10-20.md",
+      "bytes": 1118,
+      "sha256": "91e59b869a5e6b2f58847f88c571aa1f72660062d3ca50624bb0ed8ec4a3b944",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gomes-open-weight-paradox-2026.md",
+      "bytes": 979,
+      "sha256": "4c88052e925d5a529e38ebd6ec11cad0888098faef0522e5949366c1e6d07a0e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/guard-act-s3062-reported-text-2026-05-11.md",
+      "bytes": 3005,
+      "sha256": "f83c7c7cb757105c7a4c57cb49c5c1d16068d0b0020243b892b6979b863c1bf9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gutenberg-34901-mill-on-liberty.md",
+      "bytes": 668,
+      "sha256": "84b7a2959a1a771382d12937cc2304540898a48cbc9b12b289dc0c0d1f0fcc0d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gutenberg-992-spinoza-ttp-elwes.md",
+      "bytes": 815,
+      "sha256": "cc7faa06ff56dd50804643939e35af2cf6cb99b2ffe2299cd1ee323b5d43e56a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gutenberg-bell-comus.md",
+      "bytes": 723,
+      "sha256": "8cf5a874dedc9718a4d555de23a2c091e5e42ebc2eb90e3c1ad2b3db78e5a140",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hackernews-cyber-access-programs-2026.md",
+      "bytes": 766,
+      "sha256": "075ed829f8e87e8d2ab834dc961a7361e5b151fedcd69224c6c4fc13c4dc74a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hall-2023-redeeming-liberalism-of-fear.md",
+      "bytes": 866,
+      "sha256": "223baaebfd41a38ca9dce9ff555b950e0e44eeaba9b5508f3a1b332dcbc62a52",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/heim-governing-through-the-cloud-2024.md",
+      "bytes": 901,
+      "sha256": "37a3a7a042b40871a3f34a1debb3c3f84142f4fe1913bda298b07c0ab439c3bd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hendrycks-superintelligence-strategy-nonproliferation-2025.md",
+      "bytes": 1098,
+      "sha256": "2d258927d1e953e62dbec17b6f56ebf69b4f2e5906f354b8f1ded40a781b7af1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-agent-intrusion-technical-timeline-2026-07-27.md",
+      "bytes": 1356,
+      "sha256": "0dd5e9406d594d46de9c9f2289844732d17317865f990f58783235112445afde",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-agent-intrusion-technical-timeline-2026.md",
+      "bytes": 813,
+      "sha256": "e069b883ccec5d63bf99b6854094df9aa7dfa7666ef344d9843954a068626968",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-boudier-open-model-cyber-defense-2026.md",
+      "bytes": 780,
+      "sha256": "ce927761477cac1048e0b9d9991d07edb8c61c3e4b2d53de3cf4a190c4011bb3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-boudier-self-hosting-open-model-cyber-defense-2026-07-20.md",
+      "bytes": 1105,
+      "sha256": "041d47c6059aa17227dec02a3f7374752114ee3eb90e188f4eeaf2d18643f5de",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-glm-5-2-model-card.md",
+      "bytes": 469,
+      "sha256": "66757840eb3473cad441ba114a0499e93f61cd3b5f751b4431e26353e65d05f3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-security-incident-disclosure-2026-07-16.md",
+      "bytes": 1216,
+      "sha256": "f27c6e403519200c638971926ae61a04299351fc1c467a99fea209b9e81c87a9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-security-incident-disclosure-2026.md",
+      "bytes": 823,
+      "sha256": "083b10d9df7f7bad222b845047e801eeb8c37d30a86c871d5e90bdc4a76ba0cc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hf-state-of-open-models-summer-2026.md",
+      "bytes": 588,
+      "sha256": "18272c8ef54cfd76a7cfd76027a740240d7750c5744714e01cc6bbdeac35156d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hlr-blog-heppner-mar-2026.md",
+      "bytes": 774,
+      "sha256": "d4891a7231496500403a3011750eefa1cdad2dab616902963a30547de3c857d8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hr9917-ai-kill-switch-act-text-2026.md",
+      "bytes": 2144,
+      "sha256": "2a3efe7ded92bb9eef0fccbd72da2bfe68353a699f338dd7f73f7e333f6021fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hup-hirschman-exit-voice-loyalty.md",
+      "bytes": 892,
+      "sha256": "fc90496c7036a4de994a4a94c214d0585e34d71121984c5f006867e2a6c5c2c7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/husted-chat-act-release-2025-09-08.md",
+      "bytes": 1054,
+      "sha256": "be652808d2b2999ec09b44765b8521a5650d76626d18d71074cd5ef2aad1bab0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hybridhorizons-iacono-2026.md",
+      "bytes": 598,
+      "sha256": "134a0bec359cd1f05ae25a63f18cc9d10290bf300ca18eae22f68d643d1f093a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/iasr-2026-fulltext-search-surveillance-kyc.md",
+      "bytes": 3372,
+      "sha256": "802ad5789bf369f738617290ab7ccff226213692a6fadd6bfb05517a59dfd40a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/iasr-2026-pdf.md",
+      "bytes": 1294,
+      "sha256": "9fd94d8d393ba31691d4c8e417722d35f248dc51745659766f4aa4f11200a555",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/iasr-2026.md",
+      "bytes": 1239,
+      "sha256": "bced77f46fbb4f909d32fec7909d97a079a9e059cd64d7b2bfed249e15face3b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ienca-andorno-2017-pmc.md",
+      "bytes": 676,
+      "sha256": "e7af00074df7242625a3d56c527950584d04b6594c88e2881398b8301c70fda8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/import-ai-2026-08-31.md",
+      "bytes": 628,
+      "sha256": "f63a6efd5a75662273b6cda49f8dc9ff28da46454b0b1bf97bb21d6845eaff76",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/insideprivacy-ofcom-genai-osa-2024-11.md",
+      "bytes": 1090,
+      "sha256": "299dbcadfa350a7fb3e0f3c12c1a69915ac87075594cb8baee3d125a1f27d2d9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/interconnects-ball-open-models-2026.md",
+      "bytes": 831,
+      "sha256": "489cb30199fe9924a53b69e012100a577cfcffc91a7aef392c9cfe2ec92ed664",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/iris-merlin-sovereign-internet-law-2019.md",
+      "bytes": 651,
+      "sha256": "6102c342314b54431741a051194c5d5d30a3e09c311894e1bc1afc7677e613a3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/james-the-review-nadler-2011.md",
+      "bytes": 772,
+      "sha256": "9031661713ac6739ac39300d68d4d4ba1eb6e011c31c10ee21ecaba5a1e7e6dc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/justsecurity-mythos-glasswing-2026-05-08.md",
+      "bytes": 783,
+      "sha256": "0b2e4767f9c0920f7751d24be7d4979c34f3d98e648406ef83eed79ba7326eb7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kambhamettu-traceable-text-2024.md",
+      "bytes": 878,
+      "sha256": "0b70c25bcd528d3226cf5391f9cf31497f78f8adaf4800ba45becfad5dbb1558",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kant-what-is-enlightenment-wikisource.md",
+      "bytes": 556,
+      "sha256": "74a01aac151e8d1101fea95acc5b9c8043822903f2801df1bc18e8e41c0ba899",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kapoor-2024-pdf-p3.md",
+      "bytes": 1055,
+      "sha256": "aee96864d7131f4e26758a955fac3d866b293dbb49fca587ae332f31c7664aef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kapoor-societal-impact-open-foundation-models-2024.md",
+      "bytes": 791,
+      "sha256": "dc04f87f27e710310774fa141260039e40218c87ec647b813d262daddc2937bb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kembery-governing-ai-proliferation-2024.md",
+      "bytes": 616,
+      "sha256": "dd38372cc39b1a7d2dd8c28645cdf4afafc21acfa7fbbf5848ab253f14f7015c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/klonick-lawfare-hacked-its-way-out-2026.md",
+      "bytes": 734,
+      "sha256": "3487e12821e46d437b47f3d9691e1b47e4f6734326197fedbf2cf4bd2e17790d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kmph-las-vegas-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 849,
+      "sha256": "740f3e1e6796c91689e5a69811148f0649ce0cbd98c87b280d9a369fe596be99",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kulp-rand-hardware-enabled-governance-2024.md",
+      "bytes": 1409,
+      "sha256": "f0b6abd43677aef118448ea030f9fa9b83d908deeda21fe357aa2d910d1fd67a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lawfare-chavez-kill-switch-long-arm-2026-07-09.md",
+      "bytes": 723,
+      "sha256": "38c81ca99afcd0682ab4bbf6f78c8d2741b2a38284a53c6958e6dd64490ca0bd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lessig-harvard-magazine-2000.md",
+      "bytes": 780,
+      "sha256": "37fbbdf41eb5e461d9b147fe20bd72ef806ff28903f184d05bba5de62a5bf79e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lieu-moran-kill-switch-act-2026.md",
+      "bytes": 1035,
+      "sha256": "694e48d5a40bf8d38aee9582cf06133c23f4b2e044b391af60b46dbf33f85cac",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ligthart-2025-reconsidering-absolute.md",
+      "bytes": 842,
+      "sha256": "8dc94b241c18b84a0e2b383795b1fb54104ed8d28fea69e8ad3e95e232e7a72a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ligthart-2025-section-pinpoints.md",
+      "bytes": 1777,
+      "sha256": "027b80ef9d13309be268f1ea9943470dd9666473b1e9cd01f60c37d9427eb778",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lu-compute-monitoring-jolt-2025.md",
+      "bytes": 1062,
+      "sha256": "51052ac320436a43353ab0cbd48e6aecaa29ef34b5d5f1d6f6403ed356beff5c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/luitel-buy-the-evidence-2026.md",
+      "bytes": 867,
+      "sha256": "2a1a6b210a347a8731660accc9878ee7e0a5e4356dabc3a8b0e6e532157653fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mark-scher-constitutional-constraints-2025.md",
+      "bytes": 664,
+      "sha256": "27b1e0731020bbbb757d03e388b9ea6d1b32078d5cb67b2691a7ac04b204bc9e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/marxists-kant-enlightenment-gregor.md",
+      "bytes": 940,
+      "sha256": "3a7b081a21e922f743090d7e17ebee206fd86ca422abfde43a2b8358b41a340a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mayhem-open-model-fought-back-2026.md",
+      "bytes": 796,
+      "sha256": "deb94903976d6d6757087b6928ef48a4bea5be6811789a4bff95f951a0abc0ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mccarthy-jones-2019-autonomous-mind-frontiers.md",
+      "bytes": 1458,
+      "sha256": "caadeecdedbe67ae21d7cb961af870ded55cf538694478903eb7047c3276f7f3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mccord-lukianoff-koralus-2025-will-ai-kill.md",
+      "bytes": 948,
+      "sha256": "8ec919a0ea8e92aa750ee43ee63475b03f343d106f53fecac28c86268dc4f25f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/metr-hf-investigation-2026.md",
+      "bytes": 715,
+      "sha256": "89668544f1ec1abd92b3473cc224dcfbfccf94498c3c4f2a680131119b157843",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mfs-lexikon-telefonueberwachung.md",
+      "bytes": 751,
+      "sha256": "656da46637d1654ae4331fa7b8f2cda612b74d25ae1a83c3be7ec046f1c99746",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mishcon-hancock-anthropic-open-models-2026-07-30.md",
+      "bytes": 973,
+      "sha256": "946c6537a294dfbe07bf89dc587383f75956ee928d1b0e1bd864944f3d6747c0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/montana-right-to-compute-2025.md",
+      "bytes": 857,
+      "sha256": "a5552f2e86bb33719d44165fdff904db4164d9cfe7751ed2720292f265b66e86",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/montana-sb212-enrolled-ch150-2025.md",
+      "bytes": 1018,
+      "sha256": "867d88635a8f07118a64e0644bc642665178c71472b92dc7245ddf29c7bb4346",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mozilla-columbia-openness-framework-2024.md",
+      "bytes": 670,
+      "sha256": "fab9c2a9045dca87260cd0ff390a7c431690b420d164b663573c15d7428a05f4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mrkt30-pace-the-frontier-reactions-2026.md",
+      "bytes": 684,
+      "sha256": "fb95a37667b5f98d41c7db3a78c72267b017cbf0553f5a6a0d7f4fcafc52519d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/natlawreview-openai-20m-logs-jan-2026.md",
+      "bytes": 764,
+      "sha256": "d113daf37ea24e7a859ed35541e33fe0b50989359f110a645e9919da00e36039",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nautilus-mccarthy-jones-2024.md",
+      "bytes": 722,
+      "sha256": "3d04f00158624aaf38c15dae8e5c14e027aa6c715bb4c5a4fa8b0046edb6a936",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nbc-openai-age-prediction-2025-09-16.md",
+      "bytes": 1183,
+      "sha256": "249f620b11848f9ad6055b01e028d220cab47b8d39d6041d4d3805afa4f0891d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nbcnews-las-vegas-cybertruck-chatgpt-2025-01-07.md",
+      "bytes": 1282,
+      "sha256": "8b9ba988a0ff7725c686186d150daf497ebcf33429a9fa6ed5ff64e50c078f50",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ndpr-williams-truth-truthfulness-review.md",
+      "bytes": 607,
+      "sha256": "b49b207215781d67822daec01db7d987e400da98aea816e783c793b60acdcfdb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nextgov-anthropic-export-order-2026.md",
+      "bytes": 783,
+      "sha256": "82432acd1332724dc4e45ec43aaa6d5648afb15bfbfbab7d6e84367b2059b9f9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nextgov-kelley-kill-switch-2026-07-23.md",
+      "bytes": 740,
+      "sha256": "290f667e6571106b3950fb6b6ad781423d1ebe3cd410e3c90043f4f94b3df110",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nextgov-kelley-senate-testing-clash-2026-09-11.md",
+      "bytes": 830,
+      "sha256": "c9e5a635295f7e8ae40f7699111b6c75b67b8bbe87d45a0c3dc6b106a99a0e64",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nist-fips-185.md",
+      "bytes": 512,
+      "sha256": "99416f1cfccb21177ca7a3f4f60ce9cdc1f4f0f0aced9623f77a3f09f0c4311b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nvidia-open-weights-letter-2026.md",
+      "bytes": 1195,
+      "sha256": "c6c0c306022fd27b36b229f3a391885626fe6d73b69df8d0b3635a8951d304d0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nybooks-mcginn-williams-review.md",
+      "bytes": 458,
+      "sha256": "ed2e1860f5561dfac68f10371efb1bbd99671b52a8a3595a3359ce1c8abda898",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nyt-v-openai-preservation-order-2025-05-13.md",
+      "bytes": 822,
+      "sha256": "21db2ac2a797749b632d5a30dcd9644c97ec6e21d61753586c38de3e0ac5c7f9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nyt-v-openai-preservation-order.md",
+      "bytes": 1256,
+      "sha256": "db2aceb6e5b1c8377fd27008084a1cc000b67ad1cbf57e952dbd512fd3c85407",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/nyt-v-openai-stein-order-2026-01-05.md",
+      "bytes": 982,
+      "sha256": "1b6b11e8e72f07467c200df08b7d7c13d8655658e8c7d5329d5b9c447c2bccf3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-ai-policy-window-2026-09.md",
+      "bytes": 942,
+      "sha256": "b5065ceb2ea80db73d8df8a0cc780cca2f993837685fa6aea4fe7e5915a51751",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-ai-policy-window-2026.md",
+      "bytes": 1108,
+      "sha256": "48444626cf4e2c87f7552e8f39aafe6b5502d5e19a558916d9ea7c69cbaf6f6d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-help-daybreak-common-issues.md",
+      "bytes": 740,
+      "sha256": "087bedab60174347a18e959b5deff27393f95069e5e6c1c0234e6aba8185c1ed",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-helping-people-when-they-need-it-most-2025.md",
+      "bytes": 1168,
+      "sha256": "d4d11b2babdeb60d765a6664bfb26d15c2de49de3b1d12e85ad505e5d752b5c5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-hf-incident-and-misalignment.md",
+      "bytes": 731,
+      "sha256": "ed51f511d5fa0baf7eacd16e3c2f63eee6725f0475063e458c6748ba8187339b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-hf-incident-road-ahead-2026-08-26.md",
+      "bytes": 1575,
+      "sha256": "8afc84b84023cca991034f97b84e30c40d29d2e61ca66ac3c8cec4fd90396f32",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-hf-model-evaluation-security-incident-2026-07-21.md",
+      "bytes": 955,
+      "sha256": "636eba3edcb90bdbfc752eb095ed923530554dd483fafa421b58aeba9156e2ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-hugging-face-misalignment-2026.md",
+      "bytes": 560,
+      "sha256": "418c8e8ab43d025c9f2528098a6ebaedbe1747c36c6bbb2b636b33c62f4bcd53",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-hugging-face-road-ahead-2026.md",
+      "bytes": 1113,
+      "sha256": "55a125bfec53a093ee048de37cdd4ef1b1f23eca9a0c9aa733caea3eedc461be",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+      "bytes": 813,
+      "sha256": "486e496b484b87054f52a065df506be930dde10dce325edf6559f606c6c63599",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-supports-sb1119-via-unite-ai-2026-08.md",
+      "bytes": 1536,
+      "sha256": "105a198e7a3da37a286e5f9580b0564730a379572fb0955bf02d26871beab284",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-transparency-2025h1.md",
+      "bytes": 659,
+      "sha256": "8a63ab543fe4cf9411526bda93e94be2bca93eeb8f5a31d3a70c4814e2e4777f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-transparency-2025h2.md",
+      "bytes": 593,
+      "sha256": "5a9e47eb1813d67a6d20e55921d046b15f9d3179334ba34e0686c7bd71bad219",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/openai-trusted-access-for-cyber-page.md",
+      "bytes": 570,
+      "sha256": "29c549ed7f0afe32b9504a08b5fd9ba17521eefc0e9800d4f2166fcc0255e9b0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/orrick-state-chatbot-laws-2026.md",
+      "bytes": 727,
+      "sha256": "a76dddd10ed34f8456d026802d49aa0049fa48c731ab2144f04eaae32d542cde",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/orwell-1984-appendix-orwell-ru.md",
+      "bytes": 428,
+      "sha256": "d522497f59a4a6f9617b0ef90ec65e8edb5623b6b9fa3e7df2fa6920ea396bff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/orwell-politics-english-language.md",
+      "bytes": 578,
+      "sha256": "d2edc0190a276b82139f978ede0154133a675317757bb08ba36fe5349de136b8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+      "bytes": 987,
+      "sha256": "bb66a85677f8f856dd5d004c8a39fed2906c05478af3e410cde4b6b17c922a7a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/palermos-2023-mental-data-abstract.md",
+      "bytes": 710,
+      "sha256": "4c2b290741dafd1f6e36d35a69c1e4886b46b9519744a784e5d497f370cb8ab7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/penney-2016-chilling-effects-wikipedia.md",
+      "bytes": 760,
+      "sha256": "000febe745d92984b4a090c9691e99519d577df656f99bb7b4650548498ce106",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/penney-2016-pp164-169-shaheed-fn102.md",
+      "bytes": 1656,
+      "sha256": "ce6855d90067bd1cf065d3f67a021ecc414b749ffedbc556efd6aa68ada23b0f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/penney-2022-umn-repository.md",
+      "bytes": 1195,
+      "sha256": "c157b1f4dcd60c8bb9a87e7f9cd2c5004bbc360da5430ec67a44d33ba538ad84",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/penney-2022-understanding-chilling-effects-abstract.md",
+      "bytes": 720,
+      "sha256": "7cd99fcbcd6bab33c15e0297495577dbf246399fb39e76c58dd9803f72fd201e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/perkins-coie-iapp-panel-may-2026.md",
+      "bytes": 858,
+      "sha256": "4fc6040d22d2a4e00787ff1fd8b3847bf703a08abbe1984c97e75717ceff041b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/petrie-flexheg-2025.md",
+      "bytes": 910,
+      "sha256": "790d87e9c53b14a71624226ba4324f13486d989123706d59e4d65a97f0f4ce4d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pew-ai-summaries-clicks-2025-07-22.md",
+      "bytes": 1118,
+      "sha256": "d391d18be51d4f63c23d95eb8dc203a30a1a29f64f802ccd1ae62ba6ec03e3e4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pfefferkorn-eight-questions-chatgpt-warrant.md",
+      "bytes": 824,
+      "sha256": "f1d5b8a9e00cdb5ba8fe0f39cda7524f9399f03b7b7439fe4f0c2d862a914bad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/physorg-berkeley-hrc-llm-report-sep-2026.md",
+      "bytes": 685,
+      "sha256": "442a32420342cf164a498a86140379784e6192d2ad8013466ce40889f1024d54",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pin-2026-jlr-freedom-of-thought-conscience-ai.md",
+      "bytes": 1165,
+      "sha256": "af211902c413295c78352e22d392cc58ce632248244ce1c177f7d46bb18a99ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pmc-clark-2025-extending-minds.md",
+      "bytes": 888,
+      "sha256": "4fb384b42ab578aa65c4f28d4570c2663d586a210fdc6b17996560230bfad53c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pubmed-risko-gilbert-2016.md",
+      "bytes": 600,
+      "sha256": "1b250f4fb50ac4c99c18b0ffe0c319e4ce64d27a7244d0568c94c3905ec31cef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pymnts-heppner-feb-2026.md",
+      "bytes": 539,
+      "sha256": "278a147ee8f9ee0fd3242a9b9006d6934c78800f1318c9ad7c845c067c05bd9c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pymnts-white-house-open-models-2026-08-13.md",
+      "bytes": 581,
+      "sha256": "ebefaf99eeb8f02694ff2bde23d36d9fe16591df2db910d01d812f466694baaf",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/radsch-2026-techpolicy-battle-cognitive-liberty.md",
+      "bytes": 1219,
+      "sha256": "b5b9006d7eb68d1f8d80977d6b71313e73807001d032f096463e4acb04e27e21",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/reason-ibrahim-kill-switch-2026-07-27.md",
+      "bytes": 923,
+      "sha256": "00bb1f2b66e363dc8cbf5172fc4f92632bf080cf78a8a61531d891731ab9aca1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/recordedfuture-governance-failure-2026.md",
+      "bytes": 725,
+      "sha256": "ad03e699bd6e67340f7fbab83b80a99d5e02f1e017d45c268d1f42dfa85f89d9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/register-chat-control-revival-2026-07-09.md",
+      "bytes": 1398,
+      "sha256": "649b3ceb340b4ee9b25317cb69c135fccd3fff0d53dbe228e9ad50a667b0bd82",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/register-openai-age-prediction-persona-2026-01-21.md",
+      "bytes": 898,
+      "sha256": "162097cbc03ac4697d36ee2d8e042810ec362ae21840361ad94b846bec47a343",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/register-sharwood-regulatory-capture-2026-09-14.md",
+      "bytes": 793,
+      "sha256": "26978ea5fb55c26a2ab21aa81a378dc564719aa5519bfcfc556c709a2a8bd234",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/reuters-via-kfgo-openai-mandatory-2026-09-09.md",
+      "bytes": 823,
+      "sha256": "f2d07c94567bf3bab39631f9a2d472ac5bb560055fd941d9de0225ccd2ee7607",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/reuters-yahoo-mythos-trusted-orgs-2026-06-27.md",
+      "bytes": 858,
+      "sha256": "136f77f9b455feb27e114e177284ab7fd0686365365797cef500dcea288a7e81",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/richards-2015-csmonitor-intellectual-privacy.md",
+      "bytes": 1154,
+      "sha256": "e9f39d5cc0eef36ecbf3f6a87e0127552be2c80327ad104bf8f39f035dc91a0f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/roanoke-times-snapchat-my-ai-conviction-2024-10-20.md",
+      "bytes": 1202,
+      "sha256": "2238475d2290efabc9e34125d1a9de2fcd3554d2dd5ae4bbffdacfd9045e60c6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/rollcall-congress-ai-guardrails-2026-09-15.md",
+      "bytes": 748,
+      "sha256": "c58503903740591cde0098c90106772721cf3e450d03e05d32ea397bdb0543b2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/rte-amodei-slow-down-2026-09-12.md",
+      "bytes": 481,
+      "sha256": "0ec2182ae6fb61550f779915e4ce85beb1c92d3359d13ed292bb6a65d181e471",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/rte-zuckerberg-incentive-2026-09-16.md",
+      "bytes": 935,
+      "sha256": "aa5aadef8bf4392f67aac1f80b2f5917cf4fc73fee44577397d00b5fd2f8ead5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/saferai-glm-5-2-evaluation-report-2026.md",
+      "bytes": 1277,
+      "sha256": "d2e97f24ebb74a1bb0855e2bd6769d4d176250333c1f068c40332473ec66f7e8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sastry-computing-power-governance-2024.md",
+      "bytes": 1269,
+      "sha256": "511d664736942a27a8fad4824b34ba22ad8ca39b8de3ec7d735440cf2e9356f4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/scher-thiergart-miri-verification-2024.md",
+      "bytes": 847,
+      "sha256": "fb82ba5b175688e841a510860b866134682ae9a0bf617b59cbe443f0ae7d6de7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/scholars-duke-liang-2018.md",
+      "bytes": 696,
+      "sha256": "560962b49f72737779eb40afb5dac20a7facb398ce09d51e113ab3720851ccf7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/scott-seeing-like-a-state-fulltext.md",
+      "bytes": 630,
+      "sha256": "b18fb69e746a43136291a9eff49cc1cbdca7f8f82dbb3aae6a74b1fa1909c2a4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sebastian-constitution-of-reason.md",
+      "bytes": 617,
+      "sha256": "f568112c5ff33fa7d419e556b753baf9de5724cd215e7d3ca684f4d377c219e0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sebastian-politics-of-visibility-2026.md",
+      "bytes": 846,
+      "sha256": "6e3f06d896090917fe7de9c3cdbc4cec582a07a4d5c3153f96e3ed83816c91c7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sebastian-politics-of-visibility.md",
+      "bytes": 778,
+      "sha256": "77c2fdc803c219c9990a758370f7dfa19758dfb002bf63afb0ce4a6da08a0963",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sebastian-thinking-through-the-machine.md",
+      "bytes": 656,
+      "sha256": "cabf4eefe1eddc3a2b92a411ac6384b010c4d15e1ddcde0f5d86970569dc2e91",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/secureworld-guardrails-cut-both-ways-2026.md",
+      "bytes": 723,
+      "sha256": "b91df66e7f46ea8bbfe48cdd0a0ad4d7654ea3ff98d34b38c64d2ac8acb4e99f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/seger-2023-pdf-pinpoints.md",
+      "bytes": 1042,
+      "sha256": "5e927f89f1c7d1c5bcf665afbfde2569425c89654b0e7d1ebd69cfafe26e44eb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/seger-open-sourcing-highly-capable-2023.md",
+      "bytes": 779,
+      "sha256": "ef034adc53ade85a1591492281112f6d562de008ea41693618e5a488bb38d480",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/senate-church-committee-page.md",
+      "bytes": 635,
+      "sha256": "d72baff2856d78ed320d36e450b85e41be763d674d26202222e51ee5fc9b3851",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-bayle-hickson.md",
+      "bytes": 786,
+      "sha256": "5728d2089c9d074644f4aa6ca32fc4e7e37e6ee95b8f8b371150e3971c33611f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-liberalism-gaus.md",
+      "bytes": 671,
+      "sha256": "4afceae60ac31f099b1f3c85ff18249476b0cdfb0c28e0bc5b7eed5a4d5c757d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-liberty-positive-negative-berlin-pinpoint.md",
+      "bytes": 1024,
+      "sha256": "feb2c8788aed984a1aa3ed6b308f4e100a203ecf0e12d885c51707f0fbc0d0f5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-rawls-wenar.md",
+      "bytes": 519,
+      "sha256": "4331d1a1185bd4a075101ba2695d092b6040c639f964255727ad77df9e482ddb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-republicanism-lovett.md",
+      "bytes": 709,
+      "sha256": "2f2f48b0a65f4caf593ada373e9c30fae23ea014d1cf7e9c7742d87a9d04f30d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-spinoza-nadler.md",
+      "bytes": 602,
+      "sha256": "276aa54bb73470e1da32255e0f0eebfffeec38e53009c16ec54739d67ceaa1f7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sep-toleration-forst.md",
+      "bytes": 725,
+      "sha256": "111db226758a0179fb228c2ad2d4d20bc6d440c5d87e7fb06be753bdaaf2c509",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/shattered-vance-senate-kill-switch-2026-09-16.md",
+      "bytes": 939,
+      "sha256": "8755d36faa5cca62a6b28a6ea1dfc87ff9046a65e7fed08b5598b615098ba8d2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/shavit-catch-a-chinchilla-2023.md",
+      "bytes": 619,
+      "sha256": "0fb7dbe947131fb6e822770a75bdb029b6a17ebbd479aaba85823b2932e02b00",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/shavit-chinchilla-2023-scope-passages.md",
+      "bytes": 1150,
+      "sha256": "a50c3758e57a2e0a7a44a79b78196be3d73c47447f093242dfc214be6bef5be8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/shklar-liberalism-of-fear-1989.md",
+      "bytes": 1087,
+      "sha256": "32212086ee918cc743e93249333ce8372dd08ff350ead643b8da7b039b549f35",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/slashdot-openai-scanning-referral-aug-2025.md",
+      "bytes": 1182,
+      "sha256": "296509e39d28f5ef40ddf5b9acbe42ae6ac8b00711e806e0dda51913a8f4c745",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/smart-clowes-clark-2025-chatgpt-extended-abstract.md",
+      "bytes": 601,
+      "sha256": "4788d82d0112c8849cb013172fe7caba0954173e627ef22557bd579078939fd1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/solitum-scott-notes.md",
+      "bytes": 615,
+      "sha256": "21b94d0b8d8c1c623bed15ec4dc10b2c883ba9c5fb09a7d30131fec5b0cda979",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/spinoza-ttp-ch20-gutenberg.md",
+      "bytes": 644,
+      "sha256": "ce9305eea37a1e2f27b53ac55de513c01b57204e525ca7d95a44eaaca8cdc3c3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/springer-bublitz-2025.md",
+      "bytes": 942,
+      "sha256": "9dc7a574e75b1d807f6eec8c4d5e479b591740228127bb02142a79ac56196987",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/stationers-company-history.md",
+      "bytes": 685,
+      "sha256": "d9ebe29224e46788d91c834a853d8f3d12cca66e28be5aad21db2530dea54dab",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/stop-rogue-ai-act-pymnts-2026-09-10.md",
+      "bytes": 1069,
+      "sha256": "014a953060a301a070d643012ac107386f8a26057be16c7c68775a8ca2b48370",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techbuzz-white-house-open-models-2026-08-12.md",
+      "bytes": 968,
+      "sha256": "86f3e6fee30a5b3e596152f48d6220161568599eb33132bdfc788918372fc83f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techcrunch-altman-no-legal-confidentiality.md",
+      "bytes": 828,
+      "sha256": "86584981938a0f5dce4e09aef2353b093367ff3146515fb385293eaac555f998",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techcrunch-open-weight-safety-gap-saferai-2026.md",
+      "bytes": 914,
+      "sha256": "1462be4edde34ce25822e13b0b6cc68cc598003d89348db20ddf1542a30cdd13",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techcrunch-openai-gpt56-limits-2026.md",
+      "bytes": 1102,
+      "sha256": "ddf1cade72ad599d0c8b77a28bf8652060803f75481fd3518d9880874cf90916",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techcrunch-openai-tac-revoked-2026.md",
+      "bytes": 800,
+      "sha256": "1224fe5915d85777a3a7d806c2b01be089e689bc3f7bb9d2da4a5ebee641a94a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techpolicy-hoefer-mythos-precedent-2026.md",
+      "bytes": 906,
+      "sha256": "b8a524324f1f057029a7e8ef0e113d77473f30a8e80a69afc73c35d04209f2b9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techrepublic-white-house-open-models-2026-08-14.md",
+      "bytes": 716,
+      "sha256": "6d5c3cfe155f5b504182211c0a008e8e730d4b22fedc666577ff948bcc95253c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techtimes-claude-identity-verification-2026.md",
+      "bytes": 842,
+      "sha256": "4b13e6eb4624431b66e777ebfae548aff3ea990c52a71a3706877cc8f1855cff",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/techtimes-gpt56-12-day-gate-2026-07-09.md",
+      "bytes": 1137,
+      "sha256": "487109574bb5b0025dfdf9ebceb4b9da81f58ac832f78041199d9436cea24816",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/teo-2024-freedom-of-thought-age-of-ai-abstract.md",
+      "bytes": 719,
+      "sha256": "b20b13022e0d1ef103d36f79c996080360125434fbeb4b4824490af6d6838b24",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/tesink-et-al-2024-mental-integrity-extended-mind.md",
+      "bytes": 805,
+      "sha256": "b150acc5a3f9c1f754424298410c910f21de06a8aca24b6f1567f8d2d707c45e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/thierer-2017-techliberation-permissionless-definition.md",
+      "bytes": 1067,
+      "sha256": "de32bd32d1633e01465d97867d25cd63ce1d248aaf4c38bdb2cf545e28165871",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/thierer-permissionless-innovation-2016-pdf.md",
+      "bytes": 1141,
+      "sha256": "24c94a41410f33b73f43ce9e6c142190323a643583a27173bf0f770a3d4e5b75",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/time-anthropic-fable-mythos-ban-2026.md",
+      "bytes": 590,
+      "sha256": "33ed3af6497d76cd2458d98361d382e1f437b0eb55232295d855e6df86e723f1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/time-open-source-fight-2026-07-28.md",
+      "bytes": 961,
+      "sha256": "9df9d4fb530fce208053ac55216afccfe33265037de8a83aad65fa8238291fb7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/tnw-reuters-senate-ai-bill-2026-09-14.md",
+      "bytes": 965,
+      "sha256": "d5b371da6e4c30010c348998eb4ed536f0bdc0470eacf848cdfe410774786970",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/tnw-zuckerberg-incentive-2026-09-16.md",
+      "bytes": 619,
+      "sha256": "9ee80ccd3bfb1f71122d9c79a09935a2c75d22da55f816c64ae34b8797af78ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/transformer-hashim-policy-window-2026-09-11.md",
+      "bytes": 884,
+      "sha256": "8382a84c868caded9f3e845bf35f28b79ce43f9e7fd378217f102fa8acc6922d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/transformer-hf-incident-coverage-2026.md",
+      "bytes": 965,
+      "sha256": "242b550b5a7d29c6d74e508e6918ac606593b6f57c275ef8c005dfc60087117f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/uk-osa-chatbots-ofcom.md",
+      "bytes": 1185,
+      "sha256": "3fe4d76421d032c275b471f6e20b82de1dfd37b22955c80694e9de3c1107e0fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/umn-general-comment-22.md",
+      "bytes": 714,
+      "sha256": "84f3d0eac66bc81e2a8f2f087c9175792038c94704a5418fbef3ed31cc862445",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/un-a-76-380-shaheed.md",
+      "bytes": 1049,
+      "sha256": "25ca99be721438df2bcdf6c9a4715d260ba0d3dde7b4d17de5627ed5f89cfd94",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/unite-altman-evaluator-pledge-delangue-2026-09-12.md",
+      "bytes": 846,
+      "sha256": "810ec0496aa5376c6b8c3f2b12b7ad7bc19f8b41c1b46c18e6075def2eb00086",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/unite-forss-guard-dog-2026.md",
+      "bytes": 809,
+      "sha256": "a0a7ad915dec28439620f9512484bf3b34679766ba8512afc68f5bc162e8a118",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/us-v-heppner-rakoff-memorandum-2026-02-17.md",
+      "bytes": 1669,
+      "sha256": "f5f212eb5b7c1f52842941a59a00d265d9b9bc7fc31e85429ecdb61a7641a685",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/us-v-kim-order-dkt56-2026-06-22.md",
+      "bytes": 1074,
+      "sha256": "4132a977779f7a40127ad12138ea43b12412e0dceb9acffcf8b7b27debc3800d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/us-v-rinderknecht-criminal-complaint-2025-10-08.md",
+      "bytes": 1224,
+      "sha256": "b05edd5241351e3788f95fd80e466cce1e0dc3e145bec0efb1cbc1139498c2d1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/venable-chatrie-jul-2026.md",
+      "bytes": 829,
+      "sha256": "ce4fa21bb79e8291785cf73dc2908c1aee77b83b9dfdd1a4c5fead3564772c52",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/venturebeat-thomason-amodei-open-weights-2026-09-14.md",
+      "bytes": 1030,
+      "sha256": "8d7fa1548b25cf5830e84cc50caa0890a9c0326064de873c86190d950ac47813",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/volkov-anthropic-export-controls-2026.md",
+      "bytes": 779,
+      "sha256": "035ad36ef5ad9df488293d0676c4e8a9fc76517ee77bc2a2653a8030e0ae9c4a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wallace-worst-case-open-weight-2025.md",
+      "bytes": 662,
+      "sha256": "bdba8d9a5aa58acfec4f68e8ee35345b493f1ed633219c5dd4f2b703b919f50d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/white-house-clipper-statement-1993.md",
+      "bytes": 732,
+      "sha256": "0f874d79e9b86816d04d726038785f85fe10f47aecc6172c89d2b6b49f6a22d5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/whitehead-2019-antipode-review-zuboff.md",
+      "bytes": 1453,
+      "sha256": "a59aa8daaac8c6ef1f6e364234acbd0ab86c5281d085daaaffc4ccf327d46e53",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikimedia-miller-new-user-trends-2025-10-17.md",
+      "bytes": 958,
+      "sha256": "2c1d55d5cf22378ec9b9922f988c1b12cb6d12208d21c501b9ef2e8d05c54ed4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-2026-openai-agent-cyberattacks.md",
+      "bytes": 808,
+      "sha256": "8773cbbffa83da587cc8c9c2e46b27a8fec4c0c8c8fc04ccf07dd9fa529a8eb7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-cognitive-liberty.md",
+      "bytes": 654,
+      "sha256": "5a48cb7ec2a2ac84046e6d0cfaf8b0abc4a8969d64d0a0f3a12dfecc600730c0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-demographics-east-germany.md",
+      "bytes": 507,
+      "sha256": "b766ccf3f08903b0cac12bede23d954440ca2f3655ea34a1e36b723b63fc4c85",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-edwin-hutchins.md",
+      "bytes": 574,
+      "sha256": "d45b22b4b479a3311268929614f9171ad69712f0b4d4b9fd694ba6564eb33365",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-tractatus-theologico-politicus.md",
+      "bytes": 747,
+      "sha256": "c116c4f92f765f1076a97730826888f7e5458c6cbf5b51ed7aed2fb6f880a266",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikipedia-two-concepts-of-liberty.md",
+      "bytes": 901,
+      "sha256": "d37172588706cdf5da4e0d3b945f4b69d50fd909338e64a3221f22450719428c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikisource-areopagitica-1644.md",
+      "bytes": 829,
+      "sha256": "28995fd8b6fae10baf34ca7ef7d174564c36d5f3af6c3bbd9454ac6cbbe3f16c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikisource-iccpr.md",
+      "bytes": 577,
+      "sha256": "5ffd81bb88af06fd7018829b768b588077863c0195554f10d4920bb4b0f0ab1e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikisource-kant-enlightenment-beck.md",
+      "bytes": 807,
+      "sha256": "f2a0ae78d41c15990283e1a46e463dcc05b3bba3082fbb687238189bef267b6c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikisource-locke-letter-toleration.md",
+      "bytes": 712,
+      "sha256": "3627ac7a65a7c4af469c7c1062c753f38ff2f67a228e517623292bc0afafaaa4",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wikisource-milton-1645-comus.md",
+      "bytes": 666,
+      "sha256": "2ea24e1f82340e09c6d96d3e554b22a78a73949218b6be85a3345c694ea9f4e6",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/williams-truth-truthfulness-p11-quoting-scholarship.md",
+      "bytes": 1606,
+      "sha256": "7cbd57a278d64658127847c6b8295f712c9a099b096e4084e5864610bfbd8176",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/willison-openai-cyberattack-2026.md",
+      "bytes": 767,
+      "sha256": "b82d3c806667161af6c1d039d5d67fccbf0d9977ba977082e6cd2d67f8318a34",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/willison-openai-preservation-lifted.md",
+      "bytes": 569,
+      "sha256": "e412576b4b48509468ffc6d1733cb730c17233266fe72044dca5178dee888742",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wired-lowell-white-house-expand-ai-policy-2026-08-12.md",
+      "bytes": 898,
+      "sha256": "5d49e009112aabb3123a0de9c7029f36527dd83e6261f00c3e876863d2af6c87",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/workos-agent-audit-logs-2026-06-03.md",
+      "bytes": 927,
+      "sha256": "c0683f8a3c6a1e459d14537f9357a09c135672666ef9ed827a160d83a40700d1",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/wustl-richards-intellectual-privacy.md",
+      "bytes": 962,
+      "sha256": "d6e64068a063d8388700589c63703c29e8c7322636dfb0498643da7cfed14c6e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zuboff-instrumentarian-power-p352.md",
+      "bytes": 1303,
+      "sha256": "fea3c5f77744ef873521d40a36f422fea7ad7ce8c948797759765cc6fc4561f9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zuckerberg-x-post-coverage-2026.md",
+      "bytes": 966,
+      "sha256": "aa116b211e004175a5d3818e93780ef94e69ebf3314024315ac1b1e8af188dae",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zvi-hf-incident-2026.md",
+      "bytes": 761,
+      "sha256": "9e43c1ff0e11bbf8ee6a4268036e3e06c8d2aba8d4fb0d3e0ee738d7ef9ff53f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zwillgen-state-chatbot-laws-jun-2026.md",
+      "bytes": 828,
+      "sha256": "300cebcd1f18fd64ac2371ffdaa4015699b8a0dc65655a51ae70e4d0167957ef",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/zyphe-texas-sb2420-scotus-2026-07.md",
+      "bytes": 1295,
+      "sha256": "8d9de886d5de0151a1fff55162875673134d0f641d52757d0e9ad988ad7a7821",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-drafting-note.md",
+      "bytes": 11300,
+      "sha256": "bbe2bac5c43d5ce5e83123bb6d2cbffd6cfaad65dcc1fac68609978bbe1865ab",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-response.md",
+      "bytes": 30399,
+      "sha256": "2a34a22edeeca53a45d7ae5c3fc16b6a5979933ae11392a52394c2023fb8c7c2",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/00-piece-brief.md",
+      "bytes": 31671,
+      "sha256": "987eec2551dcfbcf8192bcc99386cfc91f96b56c0b7624ce1f2b8257e60a4937",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/01-claim-ledger.md",
+      "bytes": 135986,
+      "sha256": "afb3e7233667b69b58080ba86d24f746e1c464ffe194a6da5d1220c1b803740a",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/02-discourse-report-policy.md",
+      "bytes": 75187,
+      "sha256": "a9fb119ff441ee17d54f965f5b1f640e37061bf6e10fd1fc3f235bd38114f207",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/02-discourse-report.md",
+      "bytes": 68207,
+      "sha256": "a8716c7f0f7cf1e31d09170d0839357e8ee97d330e0a6037a4f1be695c4dce48",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/04-craft-notes.md",
+      "bytes": 15998,
+      "sha256": "0b046c4ba7f29b6d97062a4ef2b2e2636e0d4dfe7530e516ae9f66ad0143126d",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/05-second-read.md",
+      "bytes": 19486,
+      "sha256": "79bdb3dd9d359ae8aa06038e8aec745e9e5a19f44c92ce1831a8d20a7fabd3ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/editors-letter.md",
+      "bytes": 61576,
+      "sha256": "3a8852b6a56c26c93b91cd9c7826b69d60805647ce0230fbdcd1c4e43d67bc0c",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-response.md",
+      "bytes": 20740,
+      "sha256": "8cbe3e1c21281e5e17e3bb059c167d024399ac0f44ed8ea0ce3def8b06f897fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/00-piece-brief.md",
+      "bytes": 33821,
+      "sha256": "f8d9931ea1f69b8cf8b466de874faffbdc8b8ba6ee5eacea9e39e5e4c69fdc14",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/01-claim-ledger.md",
+      "bytes": 122738,
+      "sha256": "c08e851c3723abf37b7c541b2e0eac255f29633ddad41f986e904893dbf6f80d",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/02-discourse-report-policy.md",
+      "bytes": 72819,
+      "sha256": "77c49e89d3323f2888abb189a1df178e102501187e0b28295f5c1ba20654add4",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/02-discourse-report.md",
+      "bytes": 62104,
+      "sha256": "9e326372e00e3c38a7448b876a3667de45f5fa11b4781d8eba89c71a1e351705",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/04-craft-notes.md",
+      "bytes": 20291,
+      "sha256": "37ece470c2a9d4d9ea1dbf2f10e62b199462e8e34045dfce6daf83399eaf262b",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/05-second-read.md",
+      "bytes": 20649,
+      "sha256": "1f7e90cdc180ecaecadf195eb87765ed39fd0e642f923766eaaaa7bd673a4504",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/editors-letter.md",
+      "bytes": 67719,
+      "sha256": "c421a7d082ee31244a2de250319f6c00e4576b2d95037ce3c1983aa78dd29222",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v1.md",
+      "bytes": 89448,
+      "sha256": "1fa6d79f0785fb588bd19dbff412e0905a579ae55fb8ba080615841e8672198a",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v2.md",
+      "bytes": 124840,
+      "sha256": "53da8c3d82125cb7f5e12566a0f43d360b830808b5ceda5aacb568f56e75f670",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v3.md",
+      "bytes": 155812,
+      "sha256": "9006ce0b081de285e896c84fc2d56e758ada11e4b720fe9f6494adee89aeaad7",
+      "kind": "markdown"
+    },
+    {
+      "path": "published.md",
+      "bytes": 159438,
+      "sha256": "9f4ccda750ad7f6b1ca843c851a00f7435a0326e3732f2980564765b21cebdd2",
+      "kind": "markdown"
+    }
+  ]
+}

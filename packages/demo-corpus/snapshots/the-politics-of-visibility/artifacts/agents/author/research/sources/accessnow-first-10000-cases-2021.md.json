@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/accessnow-first-10000-cases-2021.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cce22fbd547a7a8c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/accessnow-first-10000-cases-2021.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# accessnow-first-10000-cases-2021\n- **URL:** https://www.accessnow.org/wp-content/uploads/2021/06/Helpline-10000-cases-report.pdf (15-pp. report PDF downloaded and read; announcement at https://www.accessnow.org/press-release/digital-security-helpline-cases-report/) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C45\n- **What it establishes:** By June 2021 the Helpline had surpassed 10,000 cases (\"The 24/7 computer security incident response team has now assisted on more than 10,000 cases affecting activists, journalists, and non-profit organizations\" — press release). The report covers \"cases Helpline managed since 2013.\" Origin story: the organization — not the Helpline itself — began around the 2009 Iranian election.\n- **Key passages (report, verbatim):**\n  - \"Providing digital security advice and support to at-risk users has been a core pillar of Access Now's work since the early days of the organization, more than 10 years ago. During the 2009 Iranian election, millions came together both in person and online to organize, protest election fraud, and report on human rights abuses, despite the government blocking internet access, censoring content, and undermining its opponents' online security. Access Now began as an emergency response team of technologists working to help people...\"\n  - \"Our 24/7 services are available with support in nine languages... We respond to all requests within two hours.\" (nine languages in 2021; ten per the 2026 help page)\n- **Reliability:** Primary (organization's own report); case counts self-reported.\n- **Relevance to this project:** C45 — 10,000+ cases and origin. Scope note: the Helpline formally launched in 2013; \"grew out of\" the 2009 Iran emergency-response work is accurate for the organization/lineage, but don't say the Helpline itself started in 2009.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 243
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "69956bb0fe04dd73ad5679bea5dfc747f791ce187c887fb3cc6ead41b6059df2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/accessnow-first-10000-cases-2021.md",
+ "kind": "artifact-page"
+}

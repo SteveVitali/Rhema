@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nyt-v-openai-preservation-order-2025-05-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f631ba3837f8603f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nyt-v-openai-preservation-order-2025-05-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nyt-v-openai-preservation-order-2025-05-13\n- **URL:** https://cdn.arstechnica.net/wp-content/uploads/2025/06/NYT-v-OpenAI-Preservation-Order-5-13-25.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** In re OpenAI, Inc., Copyright Infringement Litigation, 25-md-3143 (SHS)(OTW) / 23-cv-11195, order of May 13, 2025 (Wang, M.J.): the operative preservation directive, verbatim (III15).\n- **Key passages:** \"OpenAI is NOW DIRECTED to preserve and segregate all output log data that would otherwise be deleted on a going forward basis\" — whether deletion would occur \"at a user's request or because of 'numerous privacy laws and regulations.'\"\n- **Reliability:** Primary; court order (press-hosted copy).\n- **Relevance to this project:** l.84; ref [34].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 99
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "21db2ac2a797749b632d5a30dcd9644c97ec6e21d61753586c38de3e0ac5c7f9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nyt-v-openai-preservation-order-2025-05-13.md",
+ "kind": "artifact-page"
+}

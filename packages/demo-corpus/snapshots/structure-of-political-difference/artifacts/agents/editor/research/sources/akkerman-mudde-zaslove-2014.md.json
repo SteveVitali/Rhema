@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/akkerman-mudde-zaslove-2014.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d00d69e143396c61",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "219f25a1039cb962",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/akkerman-mudde-zaslove-2014.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# akkerman-mudde-zaslove-2014\n\n- **URL:** https://journals.sagepub.com/doi/10.1177/0010414013512600 (located; abstract-level access via search results and repository pages, e.g. https://research.rug.nl/en/publications/how-populist-are-the-people-measuring-populist-attitudes-in-voter/) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Akkerman, Mudde & Zaslove, \"How Populist Are the People?\" (*CPS* 2014): populist attitudes are measured via a battery covering **anti-elitism, people-centrism, and Manicheism**, and are empirically distinguished from **pluralist attitudes** and **elitist attitudes** (three statistically separate scales, Dutch sample, PCA).\n- **Key passages:** As summarized; full text not read this session.\n- **Reliability:** Abstract/repository-level; the scale is the standard in populist-attitudes survey research.\n- **Relevance to this project:** The draft's four System-axis facets (anti-establishment ≈ anti-elitism; directism ≈ people-centrism/direct-decision preference; pluralism ≈ the pluralism scale; legitimation ≈ Caramani's will/reason plus elitism scale) closely parallel this existing measurement scheme. Not a strawman — a reinvention. The draft cites Mudde's definition but not the measurement literature that already decomposed it; citing Akkerman et al. (and POPPA) would convert an apparent invention into a credible synthesis.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 156
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "378bb4ab9c3de869bdfb577bbfbef56b0ac38d0df9982cef1792b59c3dfb7158",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/akkerman-mudde-zaslove-2014.md",
+ "kind": "artifact-page"
+}

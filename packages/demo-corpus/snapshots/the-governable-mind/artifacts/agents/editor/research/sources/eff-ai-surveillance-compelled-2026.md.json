@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eff-ai-surveillance-compelled-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "17977f71b89f213a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eff-ai-surveillance-compelled-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-ai-surveillance-compelled-2026\n- **URL:** https://www.eff.org/deeplinks/2026/03/government-must-not-force-companies-participate-ai-powered-surveillance · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** EFF (McSherry, Noble), Mar 10, 2026: DoD supply-chain-risk designation of Anthropic after refusal to remove anti-domestic-surveillance guardrails; compelled guardrail removal is compelled expression; government surveillance history; nothing on chatbot logs or safety regulation as surveillance vector.\n- **Key passages:** \"Requiring a company to rewrite its code to remove guardrails means compelling different expression, a clear constitutional violation.\"\n- **Reliability:** Primary advocacy; civil-liberties org.\n- **Relevance to this project:** Q6 (intermediaries free to resist demands); §1B.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 87
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "78ac1549d2e55cb8ecb9c7e50e86a999412b35b254daf826d948ac3372901e42",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eff-ai-surveillance-compelled-2026.md",
+ "kind": "artifact-page"
+}

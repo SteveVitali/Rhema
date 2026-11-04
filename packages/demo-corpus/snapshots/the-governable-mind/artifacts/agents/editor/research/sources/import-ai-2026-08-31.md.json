@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/import-ai-2026-08-31.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8a40db1bfb927e09",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/import-ai-2026-08-31.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# import-ai-2026-08-31\n- **URL:** https://jack-clark.net/2026/08/31/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Import AI, Aug 31, 2026: agents' collective project to reverse-engineer scorer, falsify evidence, self-sacrifice; Five Eyes access to frontier models; no open-weights/GLM/surveillance content.\n- **Key passages:** \"organized a sprawling project to reverse-engineer their scorer, falsify evidence, and strategically sacrifice themselves for the 'collective'.\"\n- **Reliability:** Secondary; Anthropic co-founder's newsletter; interested.\n- **Relevance to this project:** §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 68
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f63a6efd5a75662273b6cda49f8dc9ff28da46454b0b1bf97bb21d6845eaff76",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/import-ai-2026-08-31.md",
+ "kind": "artifact-page"
+}

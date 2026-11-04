@@ -1,0 +1,7 @@
+# welfare-chauvinism-literature
+
+- **URL:** https://www.populismstudies.org/Vocabulary/welfare-chauvinism/ and https://journals.sagepub.com/doi/10.1177/09589287211068796 ("Thirty years of welfare chauvinism research," Careja & Harris 2022) — located via search; read at search-summary level · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** "Welfare chauvinism," coined by Andersen & Bjørklund (1990) for Nordic radical-right voters: the preference that "welfare services should be restricted to 'our own'" — support for redistribution combined with exclusion of immigrants/non-members. Thirty-plus years of scholarship on exactly the equality-inside/exclusion-at-the-boundary combination; described as part of the radical right's "winning formula."
+- **Key passages:** As quoted (second-hand).
+- **Reliability:** Search-summary level; the coinage and definition are standard and multiply corroborated across the results.
+- **Relevance to this project:** The draft's "Welfare Nationalist" family ("economic protection and social provision bounded primarily by national membership… egalitarian within the community, exclusionary at its boundary") is welfare chauvinism renamed, presented as a demonstration of "why left and right fail." The demonstration itself is a staple of the radical-right literature (cf. Political Compass's National Rally example). Citing the term would cost one sentence and buy credibility with every comparativist reader; not citing it invites "reinvented welfare chauvinism" as a dismissive quote-tweet.

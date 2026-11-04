@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fire-guard-act-may-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ce549f2edb947e4a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fire-guard-act-may-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fire-guard-act-may-2026\n- **URL:** https://www.fire.org/news/senates-rush-regulate-ai-chatbots-bad-everybody · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** FIRE, May 8/11, 2026: GUARD Act (S. 3062) and CHATBOT Act would mandate age verification, account freezes, periodic rechecks; FIRE argues identity disclosure chills questions.\n- **Key passages:** \"Faced with mandatory identity disclosure, many think twice before asking sensitive questions.\"\n- **Reliability:** Secondary (advocacy organization); free-speech orientation, stated.\n- **Relevance to this project:** Report §6; draft l.100 ('must identify herself before reasoning'), l.286.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 75
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d70e87890351da65061da18b8e4c155ffba3d767997394820668a5bdbc7d4148",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fire-guard-act-may-2026.md",
+ "kind": "artifact-page"
+}

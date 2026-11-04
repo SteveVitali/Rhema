@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/orwell-1949-newspeak-appendix.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "96c7d069fccf2b5d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/orwell-1949-newspeak-appendix.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# orwell-1949-newspeak-appendix\n- **URL:** https://www.orwell.ru/library/novels/1984/english/en_app · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C59\n- **What it establishes:** Orwell's own statement of Newspeak's aim, with its qualification \"at least so far as thought is dependent on words\" — i.e., the appendix itself hedges the strong linguistic-determinist reading.\n- **Key passages:** \"It was intended that when Newspeak had been adopted once and for all and Oldspeak forgotten, a heretical thought — that is, a thought diverging from the principles of Ingsoc — should be literally unthinkable, at least so far as thought is dependent on words.\"\n- **Reliability:** primary text (public-domain hosting of the 1949 novel's appendix).\n- **Relevance to this project:** §IX ¶1; supports refusal R7 (do not treat Orwell as a cognitive scientist) from Orwell's own text.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 122
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d8ed1ccea14a392232a30be91fe49d544068ba528d71e303356f0952d77f60b5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/orwell-1949-newspeak-appendix.md",
+ "kind": "artifact-page"
+}

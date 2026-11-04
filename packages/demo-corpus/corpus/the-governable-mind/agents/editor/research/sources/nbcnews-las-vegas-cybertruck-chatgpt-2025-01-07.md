@@ -1,0 +1,6 @@
+# nbcnews-las-vegas-cybertruck-chatgpt-2025-01-07
+- **URL:** https://www.nbcnews.com/news/us-news/driver-las-vegas-cybertruck-explosion-used-chatgpt-plan-blast-authorit-rcna186704 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A
+- **What it establishes:** NBC (Winter, Blankstein, Planas), Jan. 7, 2025: LVMPD said Livelsberger used ChatGPT to plan the Jan. 1 Cybertruck explosion; the categories of queries; McMahill's "first incident" line; OpenAI's response. Predates the Maine warrant by eight months (VII3-scope).
+- **Key passages:** he "queried ChatGPT for information about how he could put together an explosive, how fast a round would need to be fired for the explosives found in the truck to go off — not just catch fire — and what laws he would need to get around to get the materials" · McMahill: "I think this is the first incident that I'm aware of on U.S. soil where ChatGPT is utilized to help an individual build a particular device." · OpenAI: "ChatGPT responded with information already publicly available on the internet and provided warnings against harmful or illegal activities."
+- **Reliability:** Secondary; national press reporting a police briefing; independent.
+- **Relevance to this project:** l.152 "first documented instance."

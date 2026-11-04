@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/forst-architecture-of-freedom-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0d43293355492a3d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/forst-architecture-of-freedom-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# forst-architecture-of-freedom-2026\n- **URL:** https://civicsnation.substack.com/p/the-architecture-of-freedom · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Eric Forst, July 25, 2026: Federalist 51 applied to compute/cognition/distribution; open weights break vertical integration; renting vs owning; local deployment as 'a vote for the commons'; Palantir paradox.\n- **Key passages:** \"It is the difference between renting and owning. Between sovereignty and dependency. Between a commons and an enclosure.\" · \"Palantir signed this letter because open weights serve Palantir's business model, not because of digital civil liberties conversion.\"\n- **Reliability:** Secondary; Substack essay; open-weights-partisan.\n- **Relevance to this project:** Nearest Substack neighbor to §V, §XIII; §2 permissioned-cognition neighbors.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8f523439fcca013f4c1ae5e5aff0a2e5bbc6599117bf57184d7be5efec00ca1b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/forst-architecture-of-freedom-2026.md",
+ "kind": "artifact-page"
+}

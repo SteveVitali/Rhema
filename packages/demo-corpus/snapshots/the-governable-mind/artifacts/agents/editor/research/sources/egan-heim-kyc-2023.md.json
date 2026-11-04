@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/egan-heim-kyc-2023.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b027511286483d4a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/egan-heim-kyc-2023.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# egan-heim-kyc-2023\n- **URL:** https://arxiv.org/abs/2310.13625 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Egan & Heim, Oct 2023 (abstract read): US-mandated KYC for compute providers with a dynamic compute threshold capturing frontier development while 'minimizing imposition on developers not engaged in frontier AI'; record-keeping and reporting of high-risk entities; no individual-consumer or inference focus in abstract.\n- **Key passages:** \"a dynamic threshold of compute that effectively captures high-risk frontier model development, while minimizing imposition on developers not engaged in frontier AI.\"\n- **Reliability:** Primary; policy research.\n- **Relevance to this project:** §2 layers; KYC is layer-1 scoped in origin.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 98
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "664d5b9d45efbde75c27ac04233bca07abe61e394d9f18b6584360cd0a3f7571",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/egan-heim-kyc-2023.md",
+ "kind": "artifact-page"
+}

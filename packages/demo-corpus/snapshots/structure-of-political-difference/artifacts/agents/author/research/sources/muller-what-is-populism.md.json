@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/muller-what-is-populism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a42bc5feb126aad6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/muller-what-is-populism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# muller-what-is-populism\n- **URL:** https://blogs.lse.ac.uk/lsereviewofbooks/2016/12/14/book-review-what-is-populism-by-jan-werner-muller/ · **Accessed:** 2026-07-31 · **For:** v1-response — MI5 (Müller attribution in §IV/§V text)\n- **What it establishes:** Jan-Werner Müller, *What Is Populism?*, University of Pennsylvania Press, 2016. Criterion of populism: anti-pluralism — populists claim they, and they alone, represent the people; an exclusive moral monopoly of representation (\"populist claims are moral and symbolic rather than empirically testable\"; populists assert they represent the whole while denying legitimacy to competitors). In power: occupy the state, mass clientelism, repress civil society.\n- **Key passages:** as above (review's summary of the anti-pluralism criterion).\n- **Reliability:** Secondary (LSE review) for a well-known thesis; safe for attribution of the exclusive-representation claim; do not quote the book directly.\n- **Relevance:** The draft's \"moral dualism\"/\"unitarism\"/pluralism facets descend from Müller's anti-pluralism thesis; v2 credits him in the populism section's text proper, not only an endnote.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 135
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c2b05c505cd93cad2d998c1cae3f9f1ee70f59a9974366a19ebc8c91bd52d569",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/muller-what-is-populism.md",
+ "kind": "artifact-page"
+}

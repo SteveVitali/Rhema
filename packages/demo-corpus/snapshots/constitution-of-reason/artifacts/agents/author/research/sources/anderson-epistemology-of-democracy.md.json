@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/anderson-epistemology-of-democracy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b4066e189743b6ba",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/anderson-epistemology-of-democracy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anderson-epistemology-of-democracy\n- **URL:** https://www.semanticscholar.org/paper/The-Epistemology-of-Democracy-Anderson/d5bf4c725dd2393a47a538389602e0d9f3616802 (abstract via search; MUSE gated) · **Accessed:** 2026-07-30 · **For:** v2→v3; §IV structural predecessor (Major issue 2)\n- **What it establishes:** Elizabeth Anderson, \"The Epistemology of Democracy,\" *Episteme* 3:1–2 (2006). Assesses three epistemic models of democracy — the Condorcet Jury Theorem, the Diversity-Trumps-Ability Theorem, and Dewey's experimentalism — and argues Dewey's is superior because it models the epistemic functions of democracy's constitutive features: epistemic diversity of participants, the interaction of voting with discussion, and **feedback mechanisms** (periodic elections, protest) that keep decisions revisable.\n- **Reliability:** secondary (abstract-level; full text gated at MUSE). Cite at abstract granularity only — the triad and the Dewey verdict.\n- **Relevance:** v2's §IV recapitulates Anderson's architecture (aggregation with Condorcet caveats + diversity conditions + external feedback/reopenability) without citing it. v3 cites her at the aggregation discussion; her \"feedback mechanisms\" line also anticipates the constitutional test's reopenability criterion — acknowledge.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 144
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2a2ef7198af06151f3e597458933294276d8b9eeb864a862ff8f25843a732287",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/anderson-epistemology-of-democracy.md",
+ "kind": "artifact-page"
+}

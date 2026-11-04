@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-liberty-positive-negative-berlin-pinpoint.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f96a173933ee0e06",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-liberty-positive-negative-berlin-pinpoint.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-liberty-positive-negative-berlin-pinpoint\n- **URL:** https://plato.stanford.edu/entries/liberty-positive-negative/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** The SEP entry quotes Berlin's \"bully, oppress, torture\" sentence in the revised wording (\"in the name, and on behalf, of their 'real' selves\", omitting \"them\") and cites it to Four Essays on Liberty (1969), pp. 132–33 — confirming ref [42]'s pinpoint 132–133 for the l.298 quotation. Notes Berlin 2002 (Liberty), 166–217, as the new edition.\n- **Key passages:** \"'Once I take this view', Berlin says, 'I am in a position to ignore the actual wishes of men or societies, to bully, oppress, torture in the name, and on behalf, of their 'real' selves, in the secure knowledge that whatever is the true goal of man ... must be identical with his freedom' (1969, pp. 132–33).\"\n- **Reliability:** Secondary, scholarly (SEP); reliable for pinpoints.\n- **Relevance to this project:** XV2 (l.298); ref [42].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 146
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "feb2c8788aed984a1aa3ed6b308f4e100a203ecf0e12d885c51707f0fbc0d0f5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-liberty-positive-negative-berlin-pinpoint.md",
+ "kind": "artifact-page"
+}

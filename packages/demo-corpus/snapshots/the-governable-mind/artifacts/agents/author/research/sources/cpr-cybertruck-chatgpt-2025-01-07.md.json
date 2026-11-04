@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cpr-cybertruck-chatgpt-2025-01-07.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c4c6d014b735f1ff",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cpr-cybertruck-chatgpt-2025-01-07.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cpr-cybertruck-chatgpt-2025-01-07\n- **URL:** https://www.cpr.org/2025/01/07/colorado-man-in-cybertruck-explosion-at-trump-hotel-used-chatgpt/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Colorado Public Radio on the Jan 7, 2025 briefing; fuller version of McMahill's quote.\n- **Key passages:**\n  - \"His ChatGPT searches included: “what is the largest gun store in Denver” and “could it ignite Tannerite.”\"\n  - McMahill: \"We knew that AI was going to change the game at some point or another in, really, all of our lives,\" ... \"And certainly I think this is the first incident — that I'm aware of — on U.S. soil where ChatGPT was utilized to help an individual build a particular device… So, absolutely, it's a concerning moment for us.\"\n- **Reliability:** Secondary; note the transcription of the quote differs slightly from NBC's (\"was utilized\" vs. \"is utilized\"). Quote one outlet and attribute.\n- **Relevance to this project:** L2(a).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 137
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ea7b3c3a20803c44b79d003128b4f3437a49d5944c01f1325272db8d1a07a1ba",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/cpr-cybertruck-chatgpt-2025-01-07.md",
+ "kind": "artifact-page"
+}

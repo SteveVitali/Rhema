@@ -1,0 +1,6 @@
+# caplan-lewis-exchange
+- **URL:** https://www.betonit.ai/p/the-myth-of-left-and-right-the-last · **Accessed:** 2026-07-31 · **For:** v1-response — verify MI1's "strongest counterargument" characterization; source the flanking-positions paragraph
+- **What it establishes:** Hyrum Lewis (with Verlan Lewis, *The Myth of Left and Right*, OUP 2023) argues against "monism": "There is more than one issue in politics. That's all. It's not complicated." Tribal conformism ("85% sounds about right") suffices to explain belief clustering. His remedy is unbundling into issues: "Why not just say anti-market instead of left-wing?"; "Politics, like biology, is pluralist not monist and we should do in politics what we have done in biology: keep unrelated issues unbundled." Caplan's counterposition: the spectrum is genuinely useful for understanding political identity and conflict as they exist — pragmatic retention.
+- **Key passages:** as quoted above.
+- **Reliability:** Primary for both positions (the authors' own exchange).
+- **Relevance:** The two flanking positions for v2's "Why five, and not fifty" section: Caplan's pragmatic monism on one side, Lewis eliminativism (issue-atomism) on the other; the framework sits between. Lewis's granularity objection (each axis is itself a bundle) must be stated and answered in text.

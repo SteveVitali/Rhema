@@ -1,0 +1,7 @@
+# stateline-flock-2026-scale
+
+- **URL:** https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network (Stateline story via Indiana Public Media) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** Independent current scale figures: 120,000+ cameras across 49 states; "used in more than 6,000 communities across 49 states in partnership with thousands of law enforcement agencies nationwide." LPRs "photograph passing vehicles and record license plates, vehicle characteristics, location, and time." 2026 backlash context: nearly 50 officers charged/accused of unauthorized use; Flock cutting default retention recommendation from 30 to 7 days, adding "Evidence Mode" and "offense filtering" so communities can block outside-agency search types (e.g., immigration enforcement).
+- **Key passages:** "The company says its technology is used in more than 6,000 communities across 49 states in partnership with thousands of law enforcement agencies nationwide."; 120,000+ cameras figure.
+- **Reliability:** Secondary; Stateline is a nonprofit news service (Pew-founded), independent of Flock; figures partly company-attributed ("the company says").
+- **Relevance to this project:** C5 (current scale + cross-jurisdiction searchability and its 2026 partial retrenchment). The retrenchment detail matters for present-tense accuracy in the essay.

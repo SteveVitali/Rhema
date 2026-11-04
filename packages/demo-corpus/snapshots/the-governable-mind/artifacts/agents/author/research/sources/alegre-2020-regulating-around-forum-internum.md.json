@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/alegre-2020-regulating-around-forum-internum.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "92efd70560653bd9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/alegre-2020-regulating-around-forum-internum.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# alegre-2020-regulating-around-forum-internum\n- **URL:** https://link.springer.com/article/10.1007/s12027-020-00633-7 (open access, CC BY 4.0; read via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M8)\n- **Citation:** Susie Alegre, \"Regulating around freedom in the 'forum internum',\" *ERA Forum* 21(4): 591–604 (published online 6 Oct. 2020; issue dated 2021), doi 10.1007/s12027-020-00633-7. Page pinpoint not available from the HTML; the sentence is in §2 \"International law framework.\"\n- **What it establishes:** Yes — Alegre names state action *first* and private action second, in one sentence, grounded in positive obligations. Review's quotation is verbatim (the ellipsis stands for \"with our rights to freedom in the 'forum internum,'\").\n- **Key passages:**\n  - §2: \"In practical terms, State signatories to international human rights conventions are bound to respect these rights, and in many cases, they are reflected in domestic human rights laws and constitutions. But there are also positive obligations to protect all those in their jurisdiction from interference with the right. So, laws must be in place, not only to prevent state actions that could interfere with our rights to freedom in the \"forum internum,\" but also prohibiting others from doing so. Effective protection for the rights to freedom of thought and opinion in the 21st Century must be sufficient to address threats from public and private sector activities as well as security threats from bad actors. Protecting the right to freedom of thought is not about directing thoughts in the direction we think is best, it is about recognising and prohibiting the kind of practices and techniques which threaten to undermine the right, no matter who is using them.\"\n  - §1: \"there is an urgent need for States to deliver on their positive obligations to protect human rights through effective law and regulation.\"\n  - Cf. her 2017 EHRLR article p. 222 (see alegre-2017-rethinking-freedom-of-thought): \"governments need to refrain from using techniques that interfere with our freedom of thought, but they also need to take concrete steps to protect us from interference from the private sector\" — same order (state first, then private); p. 225 is the three-elements passage, not the state/private sentence.\n- **Reliability:** Primary; open-access journal article by a practising barrister/advocate.\n- **Relevance to this project:** Any sentence in the essay implying Alegre's concern is only/primarily corporate should be corrected: she puts state action first and derives private-sector regulation from the state's positive obligation.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 382
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "df287382c0690174090c30a1cc4f4e106b2e7012b67c4d26e7972532b4a9ea25",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/alegre-2020-regulating-around-forum-internum.md",
+ "kind": "artifact-page"
+}

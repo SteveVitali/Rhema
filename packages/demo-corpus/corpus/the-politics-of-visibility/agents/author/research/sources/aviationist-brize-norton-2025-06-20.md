@@ -1,0 +1,6 @@
+# aviationist-brize-norton-2025-06-20
+- **URL:** https://theaviationist.com/2025/06/20/raf-brize-norton-protesters/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C19(c)
+- **What it establishes:** The 20 June 2025 RAF Brize Norton incident: Palestine Action activists breached the RAF's air transport hub and sprayed red paint on and into the engines of Airbus A330 Voyager tanker/transport aircraft (at least two targeted); Palestine Action claimed responsibility with video. PM Starmer condemned it; Defence Secretary John Healey: "This action does nothing to support Gaza or our push for peace and stability in the Middle East."
+- **Key passages:** Images showed "the starboard rear section of a Voyager KC3 covered in paint splatters, while the inside of the starboard engine was thoroughly covered in paint." RAF sources: "unlikely to impact ongoing operations."
+- **Reliability:** Secondary; specialist aviation outlet, same-day reporting; no stake in the proscription debate. The widely reported ~£7m damage estimate comes from later court proceedings/other outlets (ITV, UK Defence Journal), not this piece — attribute it to court reporting if used.
+- **Relevance to this project:** C19(c) — the property-destruction predicate the government cited; the proscription announcement followed on 23 June 2025 and the order took effect 5 July 2025.

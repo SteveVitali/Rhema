@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/zuboff-instrumentarian-power-p352.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4e9a661698039e92",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/zuboff-instrumentarian-power-p352.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zuboff-instrumentarian-power-p352\n- **URL:** https://www.google.com/books/feeds/volumes?q=%22instrumentation+and+instrumentalization+of+behavior+for+the+purposes+of+modification%22 (secondary for the page: https://bryanalexander.org/book-club/reading-the-age-of-surveillance-capitalism-chapters-11-and-12/) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** The wording of Zuboff's definition of instrumentarian power is verified against the book through the Google Books volumes-feed snippet of The Age of Surveillance Capitalism; the page (352, chapter 12 \"Two Species of Power\") is confirmed only by Bryan Alexander's chapter-by-chapter reading, which quotes the sentence with \"(352)\". Google Books search-inside (which would show the page) returned a CAPTCHA.\n- **Key passages:** Zuboff volume snippet: \"instrumentation and instrumentalization of behavior for the purposes of modification, prediction, monetization, and control. In this formulation, 'instrumentation' refers to the puppet: the ubiquitous connected material architecture…\" · Alexander: same sentence, \"(352)\".\n- **Reliability:** Primary wording via Google Books snippet; page via a secondary (academic blogger's reading notes).\n- **Relevance to this project:** XIV4 (l.288); ref [84].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fea3c5f77744ef873521d40a36f422fea7ad7ce8c948797759765cc6fc4561f9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/zuboff-instrumentarian-power-p352.md",
+ "kind": "artifact-page"
+}

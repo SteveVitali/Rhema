@@ -1,0 +1,9 @@
+# selinger-richards-2015-csmonitor-interview
+- **URL:** https://www.csmonitor.com/World/Passcode/Passcode-Voices/2015/0225/What-is-intellectual-privacy-and-how-yours-is-being-violated · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M4)
+- **Citation:** Evan Selinger, "What is intellectual privacy, and how yours is being violated" (Q&A with Neil Richards), *Christian Science Monitor* (Passcode Voices), Feb. 25, 2015. It is an interview by Selinger ("Edited excerpts follow"), not an article by Richards.
+- **What it establishes:** Both review-quoted phrases are Richards's spoken answers, verbatim — but the review's first quotation silently drops a clause.
+- **Key passages:**
+  - "Selinger: Is intellectual privacy something special that's only for intellectuals? Richards: No, intellectual privacy is for anyone with an intellect – which is to say, it's for everyone. Intellectual privacy is about needing to have protections from being watched and interfered with **when we're making up our minds about the world –** when we're reading, surfing the Web, talking on the phone, and sending e-mail to confidants." (bold = clause omitted in the review's version; an ellipsis is needed.)
+  - "Richards: A free society needs citizens with free minds. But as the social science shows, we act differently when we're watched. We become boring, inoffensive, and mainstream. And this is true of our thoughts and beliefs as well as our actions. When we know we're being monitored, we might not click on a controversial link or discuss controversial views on politics or sexuality over the phone."
+- **Reliability:** Journalism; edited interview; primary for Richards's popular summary only.
+- **Relevance to this project:** §III/§IV. Cite to CSMonitor, not to the book. Book equivalents: p. 95 definition; p. 101 "the boring, the bland, and the mainstream" (see richards-2015-intellectual-privacy-book).

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/mccarthy-jones-2024-freethinker-interview.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6f5351dc0fe17080",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/mccarthy-jones-2024-freethinker-interview.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mccarthy-jones-2024-freethinker-interview\n- **URL:** https://freethinker.co.uk/2024/03/interview-simon-mccarthy-jones/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M2)\n- **Citation:** Emma Park, \"The psychology of free thought: interview with Simon McCarthy-Jones,\" *The Freethinker*, 29 March 2024.\n- **What it establishes:** In his own spoken words McCarthy-Jones accepts the full consequence of the strong view: diaries and (to the extent they represent thinking) Google searches would be absolutely private and inadmissible as evidence — and when asked directly whether he favours this, he says \"Yes,\" with a caveat about misuse and a precondition (a community-agreed definition of thinking).\n- **Key passages:**\n  - \"you have an inner world, the forum internum, where thought happens. Then you have an external world, or forum externum, where speech happens. Unfortunately, this division does not stand up to any kind of philosophical or psychological inquiry, because thought extends out into the external world, while speech reaches into our internal world.\" [site prints \"theexternal\"]\n  - \"Freethinker: You also suggest that a diary could be a form of externalised thinking. McCarthy-Jones: Yes, that would be a kind of external mind. We are thinking through writing, therefore it is happening in the external world. We are making a mark on the external world. Somebody else could read our diary. The implications of this view would be quite profound, because if we recognise writing a diary as a kind of thought, we will want to give it the absolute protection of freedom of thought. Thus nobody will be allowed to look in our diaries – and they will not be able to be used as evidence against us in court. The same would apply to Google searches, to the extent that they represented our thinking: if the right to freedom of thought is absolute, then these searches should be treated as absolutely private.\"\n  - \"Freethinker: And you would be in favour of this? McCarthy-Jones: Yes. There are always slight concerns that this rule could be misused for what I would see as being substantial harms. But in general, if we could come up as a community with what we felt thinking was and give an agreed definition, then I think I would be happy to give external kinds of thinking absolute protection, just because of the importance of thinking to us. Because once we start limiting our freedom to think, everything starts to fall apart.\"\n  - His own worry about absoluteness: \"as an absolute human right, freedom of thought looked as though it could have the potential to steamroll over any other concern, and become a powerful tool of lawfare.\"\n- **Reliability:** Secondary venue (magazine interview), primary for his stated view; consistent with the 2019 paper and the 2025 Handbook chapter.\n- **Relevance to this project:** §III — the essay should cite this as the explicit \"evidence-exclusion\" consequence that its own, qualified derivation avoids.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 461
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f0fd37b98578e437d856348b2a5aef698a2297beac7dfd9eec401a2301dd1040",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/mccarthy-jones-2024-freethinker-interview.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ball-heres-what-i-think-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cee99c313ecddce2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ball-heres-what-i-think-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ball-heres-what-i-think-2024\n- **URL:** https://www.hyperdimensional.co/p/heres-what-i-think-we-should-do · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Dean Ball, Nov 14, 2024: transparency (RSPs, model specs) over model controls; state preemption; NIST/AISI non-regulatory; no KYC/surveillance/open-weights-liberty content.\n- **Key passages:** \"major AI risks are primarily scientific and engineering, rather than regulatory, problems.\"\n- **Reliability:** Secondary; policy Substack; influential.\n- **Relevance to this project:** §1A; Ball's frame is regulatory economy, not the person.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 66
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1cb0a43334286e701d439ba01ccd5b4f99132304b9559f67733c3f799efbcb49",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ball-heres-what-i-think-2024.md",
+ "kind": "artifact-page"
+}

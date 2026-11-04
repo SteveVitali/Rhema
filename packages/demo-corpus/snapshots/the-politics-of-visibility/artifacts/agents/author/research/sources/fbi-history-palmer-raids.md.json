@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/fbi-history-palmer-raids.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bc01fb829792f88f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/fbi-history-palmer-raids.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fbi-history-palmer-raids\n- **URL:** https://www.fbi.gov/history/famous-cases/palmer-raids (read via Wayback Machine capture; live page blocks fetchers) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C28\n- **What it establishes:** FBI's current-history web page on the Palmer Raids: June 2, 1919 anarchist bombing of AG Palmer's home by Carlo Valdinoci (one of coordinated attacks in eight cities; earlier mail bombs); Palmer \"created a small division to gather intelligence on the radical threat and placed a young Justice Department lawyer named J. Edgar Hoover in charge\"; arrests under the Sedition Act incl. Emma Goldman and Alexander Berkman; December 1919 \"Soviet Ark\" deportations; January 1920 mass raids.\n- **Key passages:**\n  - \"On June 2, 1919, a militant anarchist named Carlo Valdinoci blew up the front of newly appointed Attorney General A. Mitchell Palmer's home in Washington, D.C...\"\n  - \"But the ensuing 'Palmer Raids' turned into a nightmare, marked by poor communications, planning, and intelligence about who should be targeted and how many arrest warrants would be needed. The constitutionality of the entire operation was questioned, and Palmer and Hoover were roundly criticized...\"\n- **Reliability:** Primary (FBI institutional self-history); web variant of the centennial-book text with one wording difference (\"questioned\" vs. book's \"questionable\").\n- **Relevance to this project:** C28 — bombings-preceded-raids narrative and the intelligence-apparatus detail.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 202
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1b0110e77b4f43c92735b2cda0040e6cf56700f36b03a3c10c5edb9c8215147e",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/fbi-history-palmer-raids.md",
+ "kind": "artifact-page"
+}

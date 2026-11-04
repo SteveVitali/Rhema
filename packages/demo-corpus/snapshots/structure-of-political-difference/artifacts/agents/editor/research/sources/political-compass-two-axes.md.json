@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/political-compass-two-axes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "232a4254d36ae433",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "339cad43adcfe690",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/political-compass-two-axes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# political-compass-two-axes\n\n- **URL:** https://www.politicalcompass.org/analysis2 · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** The canonical popular two-axis model (economic left↔right; social authoritarian↔libertarian), descended from the Nolan chart (1969). Its critique of one-dimensionality is the same as the draft's opening move, made a quarter-century earlier: one line conflates economics with social attitudes.\n- **Key passages:** The left-right line is \"certainly fine for discussing economics but to this day is still widely — and wrongly — used to describe social attitudes.\" \"On that basis, North Korea must be a shining model of human rights and social freedoms!\" Examples: Singapore (economically free, \"deeply authoritarian\"); France's National Rally \"far right\" despite economics \"sometimes to the left of even the French Socialist Party.\"\n- **Reliability:** Primary source for its own model; widely known; methodologically criticized elsewhere (question wording, opaque scoring) but that is not at issue here.\n- **Relevance to this project:** The draft's \"compression\" critique is not new — it is the founding gesture of a whole genre (Nolan 1969 → Political Compass → 8values → 9Axes → PolitiScales). The National Rally example is nearly the draft's welfare-nationalist point. The draft never mentions this genre; a one-paragraph genealogy (\"two axes were the first decompression; here is why two is still too few and why a test is the wrong form\") would inoculate it against \"Political Compass with extra steps.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 224
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b39663ab43d394e1ce6cceaf18b9902d88895e6a91a023c47497c7f90bd66d8",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/political-compass-two-axes.md",
+ "kind": "artifact-page"
+}

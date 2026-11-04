@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techcrunch-anthropic-claude-id-2026-06-22.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ab45ff889d4e8ae3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techcrunch-anthropic-claude-id-2026-06-22.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-anthropic-claude-id-2026-06-22\n- **URL:** https://techcrunch.com/2026/06/22/anthropic-says-claude-may-want-to-see-your-id/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (scope of Persona verification)\n- **What it establishes:** Zack Whittaker, June 22, 2026. The privacy-policy update (effective July 8) requires identity/age verification via Persona for \"a small subset of users\" whose accounts are flagged, as an \"update to the appeals process\"; collects government ID scan, selfie photo/video, face geometry template. Anthropic spokesperson Thariq Shihipar said the update was \"unrelated to the Fable or Mythos rollout.\" No nationality verification mentioned.\n- **Key passages:**\n  - Applies to \"a small subset of users\" (Anthropic declined to say how many).\n  - Shihipar: the update was \"unrelated to the Fable or Mythos rollout.\"\n  - Verification may be requested \"in certain circumstances.\"\n- **Reliability:** Secondary, mainstream tech press with on-record company spokesperson.\n- **Relevance to this project:** Key corrective: as announced, Persona verification was NOT a blanket requirement for consumer tiers; Anthropic denied linkage to the Commerce directive. The editor's phrasing should not imply the directive caused a general biometric gate.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 161
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a52a89f08643fa45f23e83f603129bba1a1c2d76841e1726f8583a013346ae40",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techcrunch-anthropic-claude-id-2026-06-22.md",
+ "kind": "artifact-page"
+}

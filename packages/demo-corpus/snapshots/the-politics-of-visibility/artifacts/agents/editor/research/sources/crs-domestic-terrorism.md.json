@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/crs-domestic-terrorism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "13deb3d95957576c",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "083d1e285d24dc52",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "8e870fa49e38a69a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/crs-domestic-terrorism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# CRS — domestic terrorism law (LSB10340)\n\n- https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf (PDF text-extracted)\n- Accessed 2026-08-21 (Phase 1). PRIMARY.\n\nEstablishes verbatim: \"Existing federal law defines domestic terrorism but does not\noutlaw it by name\" (§2331(5)); FTO material support \"has no similarly captioned\ncounterpart on the domestic side\"; \"Beneath the surface, co-conspirator and accomplice\nliability look much like providing material support.\"; §2339A (predicate-crime support)\nvs. §2339B (designated FTOs).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 62
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "25330e4a1de6e873f496077fc90efacf3fa5519c3887431f1fd56f67d20d66ec",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/crs-domestic-terrorism.md",
+ "kind": "artifact-page"
+}

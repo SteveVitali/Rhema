@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hrw-uk-court-upholds-ban-2026-06-15.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b8a60f4921d08665",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hrw-uk-court-upholds-ban-2026-06-15.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hrw-uk-court-upholds-ban-2026-06-15\n- **URL:** https://www.hrw.org/news/2026/06/15/uk-court-upholds-terrorism-ban-on-palestine-action · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C19(a),(b)\n- **What it establishes:** HRW news piece, \"UK Court Upholds 'Terrorism' Ban on Palestine Action\" (June 15, 2026): the Court of Appeal in London upheld the 2025 proscription, overturning the earlier High Court decision against the ban. Also carries HRW's substantive objection and arrest figures.\n- **Key passages:** HRW's position: \"criminal damage, including property damage that does not endanger life, should not qualify as terrorism\" and should be handled through ordinary criminal law; international best-practice standards tie terrorism to acts intended to cause death, serious injury, or hostage-taking. · Reports ~3,000 arrests since the ban, 700+ cases pending in England and Wales. · Notes the court accepted the ban had a \"chilling effect\" but found it \"justified and proportionate.\" · Sign text at protests: \"I oppose genocide. I support Palestine Action.\"\n- **Reliability:** Secondary; established human-rights NGO; adversarial to the proscription (use for the NGO-criticism element with attribution; use court documents/officials for the ruling itself).\n- **Relevance to this project:** C19(a) date/court; C19(b) HRW's argument verbatim; C19(c) arrest scale corroboration.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 178
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "040394d84d2b2b57b2d8c4396cd914c6805a6566a40d25cc1b14f8918a79ff73",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/hrw-uk-court-upholds-ban-2026-06-15.md",
+ "kind": "artifact-page"
+}

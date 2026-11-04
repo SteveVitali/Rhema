@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/williams-truth-truthfulness-p11-quoting-scholarship.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3d1efe61f2a65b45",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/williams-truth-truthfulness-p11-quoting-scholarship.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# williams-truth-truthfulness-p11-quoting-scholarship\n- **URL:** https://www.google.com/books/feeds/volumes?q=%22reveals+what+you+believe%22+%22Williams+2002%22+11 (and …q=%22Accuracy+and+Sincerity%22+%22Truth+and+Truthfulness%22+%22p.+11%22; chapter pagination: https://muse.jhu.edu/pub/267/monograph/book/29724) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** The sentence \"which I shall call Accuracy and Sincerity: you do the best you can to acquire true beliefs, and what you say reveals what you believe\" is quoted verbatim and cited to Williams 2002, p. 11 by at least seven independent scholarly works (Dynel, Irony, Deception and Humour; Herrera & Perry, The Moral Philosophy of Bernard Williams; Young, Bringing Knowledge Back In; Dyrberg, Foucault on the Politics of Parrhesia; Payne & Barbera, A Dictionary of Cultural and Critical Theory; Knights, Teaching Literature; Silverstone, Media and Morality). Project MUSE places ch. 1 \"The Problem\" at pp. 1–19. The primary page itself was not opened (Google Books CAPTCHA; archive.org 401; MUSE no preview; PUP sample 404).\n- **Key passages:** Dyrberg snippet: \"'Accuracy and Sincerity: you do the best you can to acquire true beliefs, and what you say reveals what you believe.' (Williams 2002: 11)\" · Herrera & Perry: \"…reveals what you believe\" (Williams, 2002, p. 11)\".\n- **Reliability:** Secondary (multiple independent scholarly quotations converging on wording and page); primary not seen.\n- **Relevance to this project:** XV1 (l.298); ref [85]; upgrades round 1's C63 from Unverifiable.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 205
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7cbd57a278d64658127847c6b8295f712c9a099b096e4084e5864610bfbd8176",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/williams-truth-truthfulness-p11-quoting-scholarship.md",
+ "kind": "artifact-page"
+}

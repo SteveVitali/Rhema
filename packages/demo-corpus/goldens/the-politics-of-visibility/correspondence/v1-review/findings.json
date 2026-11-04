@@ -1,0 +1,525 @@
+{
+ "findings": [
+  {
+   "anchor": {
+    "blockId": "b113",
+    "confidence": 0.4,
+    "endOffset": 40,
+    "quote": "## XIII. The Democratic Right to Opacity",
+    "startOffset": 0
+   },
+   "body": "put the essay into its conversation by name. One positioning move — \"Snowden called it turnkey tyranny; Balkin mapped the National Surveillance State in 2008; political science calls its cousin coercive capacity; call the general case authoritarian capacity\" — plus a Solove sentence in §XIII, a Pettit sentence in §XI, and Brandeis in §XV. Roughly a dozen sentences and a handful of endnotes, and the essay stops being dismissible as rediscovery and starts reading as the synthesis it actually is.",
+   "kind": "discourse",
+   "letterSection": "one_thing",
+   "ordinal": 0,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "major",
+   "title": "The one thing"
+  },
+  {
+   "anchor": {
+    "blockId": "b23",
+    "confidence": 1,
+    "endOffset": 363,
+    "quote": "behavioral legibility, an extension of Scott's term coined here for the purpose",
+    "startOffset": 284
+   },
+   "body": "- **The problem:** every load-bearing element has a distinguished, findable predecessor the draft never cites. Snowden stated the thesis in one sentence in 2013 (\"…they'll find the switch… and it will be turnkey tyranny\"). Balkin's \"The Constitution in the National Surveillance State\" (2008) anticipates the permanence-and-normalization point, the public-private assemblage, §VII's parallel-track analysis, and §XV's prescriptions nearly clause for clause — and distinguishes \"authoritarian information states\" from \"democratic\" ones as a gradient within surveillance governance. §XIII re-runs the steelman-then-refute structure of Solove's \"'I've Got Nothing to Hide'\" (2007) on the same target, uncited. §XV's friction argument is Brandeis's *Myers* dissent (\"not to avoid friction but, by means of the inevitable friction… to save the people from autocracy\"); §IV's combinatorial claim is mosaic theory under its court-recognized name; \"right to opacity\" is Glissant's famous phrase from a different fight; and the \"coined here\" flag on behavioral legibility sits two paragraphs from the draft's own quotation of the industry term for the same capability (\"pattern of life\"). Full map with URLs: `02-discourse-report.md` §1–2.\n- **Why it matters here:** the persona's calibration bar is the venue where these readers are. Each omission is a five-minute dismissive review if uncited and a non-event if cited — and the discourse report's verdict is that the *synthesis* is genuinely new, so the citations cost nothing but the appearance of discovery the piece doesn't need.\n- **Direction:** the positioning program in \"the one thing,\" plus: one differentiating sentence on the coinage (state-facing where Zuboff's surplus is market-facing; pattern-of-life, generalized); one Glissant clause; Solove-Richards-Cohen named in §XIII with the draft's real inflection stated (it moves the protected object from the thinking individual to the *associating group* — that is yours, claim it); Brandeis + mosaic in §XV. Where the draft has novelty it doesn't claim — the threshold list, ideology-as-query, and the unclaimed junction that the state now *subscribes to* the private behavioral surplus Zuboff insisted was distinct from state power — say so, modestly.",
+   "kind": "discourse",
+   "letterSection": "major",
+   "ordinal": 1,
+   "origin": "editor",
+   "rubricDims": [
+    "originality_situatedness"
+   ],
+   "severity": "major",
+   "title": "The essay doesn't name the conversation it is in — and its educated readers live there"
+  },
+  {
+   "anchor": {
+    "blockId": "b131",
+    "confidence": 1,
+    "endOffset": 623,
+    "quote": "she decides that this month she will stay home",
+    "startOffset": 577
+   },
+   "body": "- **The problem:** three converging findings. (a) The chilling evidence offered is Stoycheff's intention-survey experiments and one correlational turnout study the draft itself discounts — while the strongest empirical card available (Penney's Wikipedia study: behavioral, not self-report) and the doctrinal anchor for \"the constitutional order's alarms are wired to state action\" (*Laird v. Tatum*; *Clapper*) both go unused. The second read pressed harder: the draft's own best facts cut the other way (\"The Minnesota organizations were not destroyed by being surveilled; the surveillance… became the government's embarrassment,\" §XIV), so the machinery is documented at book length and the harm at paragraph length. (b) Posner's collection/use distinction — machine collection is not harm; harm occurs at use, and use can be audited — is the sophisticated security-side answer to the entire essay (it grants the capacity and denies the injury), and the draft never engages it. (c) The empirical chilling-effects literature contains a serious skeptical trail (Schauer's own \"most likely unprovable\" concession; Kendrick's \"flimsy\") that the draft's §X concession does not reach.\n- **Why it matters here:** natsec-law readers — the audience most likely to write a substantive response — will go straight to (b), and the hostile-but-fair reading writes itself: \"its chilling mechanism rests on intention surveys.\"\n- **Direction:** four fixes, all additive. Cite Penney (URL in the discourse report). Anchor \"alarms wired to state action\" in *Laird*/*Clapper* — it converts §X's climax from aperçu to doctrine. Give the coda's citizen an explicit modal (\"this is the mechanism the theory predicts and the filings instantiate — not a measured national quantity\"). And answer Posner with the essay's own material: NSPM-7 is the proof that *the query can change while the archive persists* — retrievability by a future classifier is itself the political fact. That paragraph belongs in §XIII and the essay already owns every piece of it.",
+   "kind": "argument",
+   "letterSection": "major",
+   "ordinal": 2,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [
+    "argument_rigor"
+   ],
+   "severity": "major",
+   "title": "The injury is the thesis, and it is the least-evidenced thing in the piece — with the strongest published counterargument unanswered"
+  },
+  {
+   "anchor": {
+    "blockId": "b55",
+    "confidence": 1,
+    "endOffset": 110,
+    "quote": "Which returns the argument to Minnesota, because Operation Puppet Master is the network logic made operational",
+    "startOffset": 0
+   },
+   "body": "- **The problem:** the hedges are all present and well drafted (\"no court has yet ruled\"), but the rhetorical architecture — opening set piece, recurring anchor, coda return — assigns the defense's characterization a settled weight the record cannot yet bear. The ledger adds a specific soft spot: \"shown to a grand jury\" is the Minnesota Reformer's report of a grand-jury diagram, not established for the titled slide in the AP account the sentence cites. And the citational base is strikingly perishable (a WIRED story two days old at review; a Fourth Circuit ruling three days old; multiple pending appeals) for a venue whose essays are meant to be readable in five years.\n- **Why it matters here:** if the government's response or the court's ruling reframes the documents, the essay's frame — not a paragraph — is exposed.\n- **Direction:** the cheap, strong fix is to make the argument ruling-proof *explicitly*, because it already is implicitly: if the court finds the investigation unlawful, the checks worked and capacity was misused; if the court finds it *lawful*, that is §I's autocratic-legalism point exactly — the machinery operated within law. One paragraph stating that the essay's claim survives either ruling converts the vulnerability into a demonstration of the thesis. Add the second read's cheaper insurance too: one explicit \"these are allegations in an unresolved case\" near the opening, not only in §V; and re-attribute the grand-jury detail per the ledger.",
+   "kind": "discourse",
+   "letterSection": "major",
+   "ordinal": 3,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [],
+   "severity": "major",
+   "title": "The evidentiary tentpole is a contested defense filing eight days old, and the architecture presumes a favorable ruling"
+  },
+  {
+   "anchor": {
+    "blockId": "b99",
+    "confidence": 1,
+    "endOffset": 129,
+    "quote": "the philosophical center of the essay.",
+    "startOffset": 91
+   },
+   "body": "- **The problem:** the section runs quote → gloss three times (Tocqueville, Arendt, Shklar) and reserves four sentences for the essay's own move. And that move — \"The liberal question is not only 'may I speak?' It is 'what must I reasonably fear if I do?'\" — is, nearly verbatim, the republican theory of freedom as non-domination: unfreedom constituted by the standing capacity for arbitrary interference, injury complete before any interference occurs. Pettit and Skinner have a fifty-year literature under a proper name, and the second read flagged it independently and immediately. The five-thinker apparatus is a roll-call: none of the thinkers is pressed, complicated, or made to disagree (Foucault is introduced as \"most misread,\" then deployed in the most-cited way).\n- **Why it matters here:** the section carrying the essay's title-claim is its thinnest argumentative stretch, and academic readers will name the missing tradition in the first comment.\n- **Direction:** grow §XI by the ~150–250 words the drafting audit already contemplated, and spend them on argument, not more quotation: name non-domination (one sentence converts vulnerability into lineage — Shklar and Pettit as two roads to the same question), then *develop* the two-questions formulation — what makes a fear \"reasonable,\" why the capacity itself and not its exercise is the injury (this is also where Major issue 2's Posner answer gets its philosophical footing), and what the associational inflection adds that Pettit's individual-liberty version lacks. That last piece is the essay's genuine contribution here; currently it is implicit.",
+   "kind": "discourse",
+   "letterSection": "major",
+   "ordinal": 4,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [
+    "originality_situatedness"
+   ],
+   "severity": "major",
+   "title": "The declared philosophical center delegates its argument — and misses its own tradition"
+  },
+  {
+   "anchor": {
+    "blockId": "b112",
+    "confidence": 1,
+    "endOffset": 266,
+    "quote": "if the thresholds hold over the coming years, the warning was calibrated; if they fall and nothing here has changed, it was understated",
+    "startOffset": 131
+   },
+   "body": "- **The problem:** three related softnesses. (a) Calibrated-or-understated has no branch in which the warning was *overblown* — heads the essay wins, tails it was even more right; the second read called this out, and it lands on the essay's proudest gesture. (b) The \"accumulation is reversible\" evidence (Hungary abolishing an *office*; Palmer, COINTELPRO, the Demographics Unit — all *program* corrections) operates on a different object than §IX's accumulation claim (*infrastructure*: subscriptions, databases, interoperability). The essay never asks its own hard question — has surveillance infrastructure, as opposed to a program using it, ever been decommissioned? — even though its own Flock retention datum (30→7 days) is a live partial answer sitting unused. (c) §VII's \"duality is the thesis\" restates the thesis in its softest form — one nearly every informed reader already accepts — where the essay's actual claim needs the asymmetry stated: **checks operate on episodes; capacity is a stock.** Courts enjoined the LA deployment and the law-firm orders; they decommissioned nothing.\n- **Why it matters here:** §XII is the essay's credibility engine and its most-quoted future object; a hostile reader who finds the one-way falsification clause gets to disbelieve the whole calibration.\n- **Direction:** write the overblown-branch (e.g., thresholds holding for years *while* the contested capabilities are rolled back — retention shrinking, purchase-warrant requirements enacted — which the essay's own Flock and *Chatrie* evidence shows is possible). State the programs/infrastructure distinction once and route the Hungary and archive evidence through it. Replace §VII's \"It is the thesis\" with the stock/flow sentence — it is the stronger and the truer claim. And engage Levitsky & Way by name: the leading scholars of democratic breakdown have published the opposite regime call about this country and year (their \"self-sidelining\" passage is the coda's citizen transposed to elites), and §XII disagreeing with them *via the threshold instrument* is precisely what the instrument is for.",
+   "kind": "argument",
+   "letterSection": "major",
+   "ordinal": 5,
+   "origin": "both",
+   "reconciliation": "kept",
+   "rubricDims": [
+    "thesis_contribution"
+   ],
+   "severity": "major",
+   "title": "§XII's falsification clause is self-immunizing, and the reversibility evidence doesn't meet the accumulation claim"
+  },
+  {
+   "anchor": {
+    "blockId": "b55",
+    "confidence": 1,
+    "endOffset": 214,
+    "quote": "this essay asserts no such link",
+    "startOffset": 183
+   },
+   "body": "- **The problem:** the discourse report's hostile-but-fair reading: *\"calibration of tone, not of evidence.\"* Specifics: NSPM-7 issued fifteen days after the Kirk assassination, amid a real wave of political violence — the draft's own stated standard (\"every legal exception arose from some real problem,\" §I) demands that sentence, and it is missing. The UK section understates the Home Secretary's actual case (five-year campaign, violence and intimidation findings, the \"Underground Manual\" — and the explicit assurance that lawful protest would be unaffected, which makes the 92%-of-arrests statistic land *harder*, not softer). \"No public document connects… and this essay asserts no such link\" reads as if no one had made the claim, but reporting (Democracy Now, Aug. 17) has asserted it. Flock's best self-defense (\"Data is a liability, not an asset\"; deletion claims; missing-persons record) goes unquoted where the parking-utility gesture concedes utility only in the abstract. And the most salient recent case of network-logic domestic investigation — January 6: geofence warrants, facial recognition, associational mapping, used against an anti-democratic mob with broad approval from this essay's likely sympathetic readers — never appears. The essay's principled position (\"by whoever next holds it\") can survive that test case, but only if it takes it.\n- **Why it matters here:** the piece's entire strategy is to out-precision both camps; asymmetric curation at checkable points is the one failure mode that strategy cannot absorb.\n- **Direction:** all line-edit cost. One Kirk sentence in §V. Two sentences of the WMS case plus the assurance in §VI, then let the numbers do their work. Rewrite the link sentence: \"though reporting has asserted a connection, no public document establishes one.\" One Flock quote in §III. And take January 6 in one paragraph (natural home: §V's network-logic discussion or §XII): the distinction the essay needs is its own §XV principle — particularized predicate, a specific crime at a specific place and time — and applying it to the case its readers approved of *demonstrates the framework's cutting power* instead of leaving the symmetry test to hostile reviewers.",
+   "kind": "argument",
+   "letterSection": "major",
+   "ordinal": 6,
+   "origin": "editor",
+   "rubricDims": [
+    "argument_rigor"
+   ],
+   "severity": "major",
+   "title": "The evidence is curated in one direction at exactly the points a checking reader will check"
+  },
+  {
+   "anchor": {
+    "blockId": "b9",
+    "confidence": 1,
+    "endOffset": 430,
+    "quote": "A totalitarian state does not lose custody of its surveillance files to defense counsel",
+    "startOffset": 343
+   },
+   "body": "**The opening.** \"The quotation marks around *peaceful* are his.\" is reporting compressed to a single punctuation mark — the state reading lawful assembly through a lens that pre-converts it into suspicion, which is the entire essay in miniature. The second read called it among the best openings it had seen in this genre, and the refusal of the cheap register in the first thousand words (\"A totalitarian state does not lose custody of its surveillance files to defense counsel\") buys credibility for everything after.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 7,
+   "origin": "both",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**The opening.** \"The quotation marks around *peaceful* are his.\" is reporting compressed to a single punctuation mark — the state reading lawful assembly through a lens that pre-converts it into susp"
+  },
+  {
+   "anchor": {
+    "blockId": "b52",
+    "confidence": 1,
+    "endOffset": 389,
+    "quote": "An indicator does not prohibit; it directs attention",
+    "startOffset": 337
+   },
+   "body": "**§V's ideology-as-query analysis.** \"An indicator does not prohibit; it directs attention… The ideology is not the charge. It is the query.\" The discourse mapping found nothing like it: where the advocacy literature is indignant, this is mechanistic, and it is the piece's sharpest genuinely original move.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 8,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**§V's ideology-as-query analysis.** \"An indicator does not prohibit; it directs attention… The ideology is not the charge. It is the query.\" The discourse mapping found nothing like it: where the adv"
+  },
+  {
+   "anchor": {
+    "blockId": "b85",
+    "confidence": 1,
+    "endOffset": 298,
+    "quote": "Has America not always done this?",
+    "startOffset": 265
+   },
+   "body": "**§IX.** The strongest objection (\"Has America not always done this?\") is answered with an argument — the economics of surveillance, five named properties, ending on retrospectivity (\"investigation becomes retrieval\") — rather than a gesture. Both the second read and my own read ranked it the essay's best analytic section.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 9,
+   "origin": "both",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**§IX.** The strongest objection (\"Has America not always done this?\") is answered with an argument — the economics of surveillance, five named properties, ending on retrospectivity (\"investigation be"
+  },
+  {
+   "anchor": {
+    "blockId": "b105",
+    "confidence": 0.4,
+    "endOffset": 52,
+    "quote": "## XII. The Distance Between Danger and Dictatorship",
+    "startOffset": 0
+   },
+   "body": "**§XII's threshold list.** No analogue found in the genre. It is the piece's most shareable object and its best legacy asset — commentators can return to it annually — and it is only writable because the regime/capacity distinction is doing real analytic work. (Its closing sentence needs repair; see Major issue 5. The list itself is a jewel.)",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 10,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**§XII's threshold list.** No analogue found in the genre. It is the piece's most shareable object and its best legacy asset — commentators can return to it annually — and it is only writable because "
+  },
+  {
+   "anchor": {
+    "blockId": "b38",
+    "confidence": 1,
+    "endOffset": 164,
+    "quote": "an essay that gets the cameras wrong forfeits the standing to be believed about the databases",
+    "startOffset": 71
+   },
+   "body": "**The scoping discipline.** The gait-recognition negative (§III), the Paragon capability/use paragraph (§IV), the refusal to link Minnesota to NSPM-7 causally (§V): \"an essay that gets the cameras wrong forfeits the standing to be believed about the databases\" is a method, not just a sentence, and the fact-check confirms the method held.",
+   "kind": "craft",
+   "letterSection": "strength",
+   "ordinal": 11,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**The scoping discipline.** The gait-recognition negative (§III), the Paragon capability/use paragraph (§IV), the refusal to link Minnesota to NSPM-7 causally (§V): \"an essay that gets the cameras wro"
+  },
+  {
+   "anchor": null,
+   "body": "**Ref [46] links the wrong case:** clearinghouse.net/case/46097 is *Mennonite Church USA v. DHS* (PI denied); the case described is *Philadelphia Yearly Meeting* (clearinghouse.net/case/45979). Content true, pointer wrong. (Ledger C51.)",
+   "evidence": {
+    "urls": [],
+    "verdict": "verified"
+   },
+   "kind": "claim",
+   "ordinal": 12,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Ref [46] links the wrong case:** clearinghouse.net/case/46097 is *Mennonite Church USA v. DHS* (PI denied); the case described is *Philadelphia Yearly Meeting* (clearinghouse.net/case/45979). Conten"
+  },
+  {
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "The record of the past two years, honestly read, shows the checks imposing real costs. The Supreme Court extended constitutional protection to location data.[17] When the FBI searched the home of a Wa",
+    "startOffset": 0
+   },
+   "body": "**Quote truncated inside quotation marks (§XII):** the ruling reads \"the government's fox in charge of the *Washington Post's* henhouse\"; the draft drops the possessive. Restore or ellipsize. (Ledger C49.)",
+   "evidence": {
+    "urls": [],
+    "verdict": "substantially_accurate"
+   },
+   "kind": "claim",
+   "ordinal": 13,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Quote truncated inside quotation marks (§XII):** the ruling reads \"the government's fox in charge of the *Washington Post's* henhouse\"; the draft drops the possessive. Restore or ellipsize. (Ledger "
+  },
+  {
+   "anchor": {
+    "blockId": "b7",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "And they include a slide, prepared by the investigative branch of the Department of Homeland Security and shown to a grand jury, titled \"The Conspiracy.\" It maps eighteen organizations, from a small M",
+    "startOffset": 0
+   },
+   "body": "**\"Shown to a grand jury\" (opening):** Minnesota Reformer's report, not AP's; re-attribute or soften — see Major issue 3.",
+   "kind": "craft",
+   "ordinal": 14,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**\"Shown to a grand jury\" (opening):** Minnesota Reformer's report, not AP's; re-attribute or soften — see Major issue 3."
+  },
+  {
+   "anchor": {
+    "blockId": "b32",
+    "confidence": 1,
+    "endOffset": 104,
+    "quote": "WIRED reported",
+    "startOffset": 90
+   },
+   "body": "**Ref [8]:** prose says \"WIRED reported\" but cites aggregators; WIRED's own story exists and checks out (wired.com/story/flock-safety-os-investigate/, Mehrotra & Cameron, Aug. 19, 2026). Cite it.",
+   "kind": "claim",
+   "ordinal": 15,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Ref [8]:** prose says \"WIRED reported\" but cites aggregators; WIRED's own story exists and checks out (wired.com/story/flock-safety-os-investigate/, Mehrotra & Cameron, Aug. 19, 2026). Cite it."
+  },
+  {
+   "anchor": {
+    "blockId": "b77",
+    "confidence": 1,
+    "endOffset": 533,
+    "quote": "was questionable",
+    "startOffset": 517
+   },
+   "body": "**§VIII Palmer quote:** the reachable FBI page reads \"was questioned\"; the draft's \"was questionable\" rests on the fetch-blocked centennial book — verify the book's wording before publication. (Ledger C39.)",
+   "evidence": {
+    "urls": [],
+    "verdict": "substantially_accurate"
+   },
+   "kind": "claim",
+   "ordinal": 16,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**§VIII Palmer quote:** the reachable FBI page reads \"was questioned\"; the draft's \"was questionable\" rests on the fetch-blocked centennial book — verify the book's wording before publication. (Ledger"
+  },
+  {
+   "anchor": {
+    "blockId": "b43",
+    "confidence": 0.6,
+    "endOffset": 200,
+    "quote": "At the far end of the fusion layer sits the endpoint. In April 2026, ICE's acting director acknowledged in a letter to Congress that he had approved his investigative division's \"procurement and opera",
+    "startOffset": 0
+   },
+   "body": "**§IV Pegasus:** should read \"at least 180 journalists… *selected for potential targeting*\" — the list was of candidates, not confirmed infections. (Ledger C25.)",
+   "evidence": {
+    "urls": [],
+    "verdict": "substantially_accurate"
+   },
+   "kind": "claim",
+   "ordinal": 17,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**§IV Pegasus:** should read \"at least 180 journalists… *selected for potential targeting*\" — the list was of candidates, not confirmed infections. (Ledger C25.)"
+  },
+  {
+   "anchor": {
+    "blockId": "b79",
+    "confidence": 1,
+    "endOffset": 515,
+    "quote": "no holds were barred",
+    "startOffset": 495
+   },
+   "body": "**§VIII \"no holds were barred\":** the FBI official's phrase quoted by the Church Committee, not the Committee's own finding — attribute accordingly. (Ledger C40.)",
+   "evidence": {
+    "urls": [],
+    "verdict": "verified"
+   },
+   "kind": "claim",
+   "ordinal": 18,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**§VIII \"no holds were barred\":** the FBI official's phrase quoted by the Church Committee, not the Committee's own finding — attribute accordingly. (Ledger C40.)"
+  },
+  {
+   "anchor": null,
+   "body": "**UCA 9833 gendered \"he\":** no source states the officer's sex; \"the agent wrote\" solves it.",
+   "kind": "craft",
+   "ordinal": 19,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**UCA 9833 gendered \"he\":** no source states the officer's sex; \"the agent wrote\" solves it."
+  },
+  {
+   "anchor": {
+    "blockId": "b134",
+    "confidence": 1,
+    "endOffset": 646,
+    "quote": "Its absence is a condition of freedom",
+    "startOffset": 609
+   },
+   "body": "**Coda's final sentence** asserts the unbounded version of §XIII's carefully bounded claim (\"Its absence is a condition of freedom\" — §XIII argued for *limits* on legibility, not absence). The last sentence is the pull-quote; \"Its limits are a condition of freedom\" keeps the cadence and the argument.",
+   "kind": "claim",
+   "ordinal": 20,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Coda's final sentence** asserts the unbounded version of §XIII's carefully bounded claim (\"Its absence is a condition of freedom\" — §XIII argued for *limits* on legibility, not absence). The last se"
+  },
+  {
+   "anchor": {
+    "blockId": "b52",
+    "confidence": 1,
+    "endOffset": 433,
+    "quote": "It tells the fusion layer what to retrieve",
+    "startOffset": 391
+   },
+   "body": "**§V tense:** \"It tells the fusion layer what to retrieve\" — a prediction wearing a description's clothes; one scoping word (\"It is built to tell…\" / \"It would tell…\") fixes it.",
+   "kind": "craft",
+   "ordinal": 21,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**§V tense:** \"It tells the fusion layer what to retrieve\" — a prediction wearing a description's clothes; one scoping word (\"It is built to tell…\" / \"It would tell…\") fixes it."
+  },
+  {
+   "anchor": {
+    "blockId": "b36",
+    "confidence": 1,
+    "endOffset": 44,
+    "quote": "Face completes identity's side of the ledger",
+    "startOffset": 0
+   },
+   "body": "**§III repetition:** \"The phone completes the picture\" / \"Face completes identity's side of the ledger\" — same verb, adjacent paragraphs.",
+   "kind": "craft",
+   "ordinal": 22,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**§III repetition:** \"The phone completes the picture\" / \"Face completes identity's side of the ledger\" — same verb, adjacent paragraphs."
+  },
+  {
+   "anchor": {
+    "blockId": "b67",
+    "confidence": 0.4,
+    "endOffset": 41,
+    "quote": "## VII. The Dual State and Its Laboratory",
+    "startOffset": 0
+   },
+   "body": "**Fraenkel page cite (§VII)** is edition-dependent; pin to the Meierhenrich/OUP edition explicitly.",
+   "kind": "claim",
+   "ordinal": 23,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Fraenkel page cite (§VII)** is edition-dependent; pin to the Meierhenrich/OUP edition explicitly."
+  },
+  {
+   "anchor": null,
+   "body": "**Pre-publication re-fetches:** Stoycheff, Nandong, and Rosenthal & Selod were verifiable only to abstract level (SAGE/Wiley/MDPI block fetching) — characterizations match; re-fetch before publication. OHCHR quotes now fully verified (see fact-check).",
+   "kind": "claim",
+   "ordinal": 24,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Pre-publication re-fetches:** Stoycheff, Nandong, and Rosenthal & Selod were verifiable only to abstract level (SAGE/Wiley/MDPI block fetching) — characterizations match; re-fetch before publication"
+  },
+  {
+   "anchor": null,
+   "body": "**Section count:** 17 units against the corpus long-form norm of 10–14 — not a defect in itself, but evidence for the merges in the roadmap.",
+   "kind": "craft",
+   "ordinal": 25,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "**Section count:** 17 units against the corpus long-form norm of 10–14 — not a defect in itself, but evidence for the merges in the roadmap."
+  },
+  {
+   "anchor": {
+    "blockId": "b80",
+    "confidence": 1,
+    "endOffset": 44,
+    "quote": "Inherited capacity does not leave. It waits.",
+    "startOffset": 0
+   },
+   "body": "**Aphorism-coda density.** ~11 one-sentence payoff paragraphs (\"The person carries the file.\" / \"Inherited capacity does not leave. It waits.\" / \"Anticipation trips none of them.\"). The signature move becomes metronomic at this rate and each instance discounts the next. Keep the four or five that carry theses; fold the rest into their paragraphs — e.g., \"…the address book, the location history, and the key ring at once — the person carries the file.\"",
+   "kind": "craft",
+   "ordinal": 26,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**Aphorism-coda density.** ~11 one-sentence payoff paragraphs (\"The person carries the file.\" / \"Inherited capacity does not leave. It waits.\" / \"Anticipation trips none of them.\"). The signature move"
+  },
+  {
+   "anchor": {
+    "blockId": "b46",
+    "confidence": 1,
+    "endOffset": 67,
+    "quote": "Law is not absent from this story; it is behind, which is different",
+    "startOffset": 0
+   },
+   "body": "**The \"not X. It is Y.\" template** runs at least six times (\"The danger is not the eye. It is the interoperability.\" / \"The mechanism is not observation. It is uncertainty…\" / \"The ideology is not the charge. It is the query.\"). Internal monotony plus a live reception risk: elite readers now pattern-match the cadence as machine boilerplate. Keep the two best; vary the syntax elsewhere — \"Law is not absent from this story; it is behind, which is different\" is the model for the varied form.",
+   "kind": "craft",
+   "ordinal": 27,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**The \"not X. It is Y.\" template** runs at least six times (\"The danger is not the eye. It is the interoperability.\" / \"The mechanism is not observation. It is uncertainty…\" / \"The ideology is not the"
+  },
+  {
+   "anchor": {
+    "blockId": "b99",
+    "confidence": 1,
+    "endOffset": 128,
+    "quote": "The next section is the answer, and it is the philosophical center of the essay",
+    "startOffset": 49
+   },
+   "body": "**Visible stage machinery.** \"the argument must now turn to the technology\" / \"The next section is the answer, and it is the philosophical center of the essay\" / ~12 occurrences of \"this essay\"/\"the essay\" as subject — plus the second read's sharper version: the recurring *performance* of rigor (\"Precision requires…\", \"Honesty requires…\", \"must be written exactly as scoped\") tells the reader how careful the essay is being rather than letting the care show. Worst instance: §X's close — \"What, exactly, is lost when the meeting shrinks?\" is a perfect transition alone; cut the sentence after it.",
+   "kind": "craft",
+   "ordinal": 28,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**Visible stage machinery.** \"the argument must now turn to the technology\" / \"The next section is the answer, and it is the philosophical center of the essay\" / ~12 occurrences of \"this essay\"/\"the e"
+  },
+  {
+   "anchor": {
+    "blockId": "b116",
+    "confidence": 1,
+    "endOffset": 143,
+    "quote": "Foucault, because",
+    "startOffset": 126
+   },
+   "body": "**§XIII's five-thinker roll-call paragraph** (\"Scott, because… Foucault, because…\") is the one place the essay summarizes itself; compress to a sentence.",
+   "kind": "craft",
+   "ordinal": 29,
+   "origin": "editor",
+   "rubricDims": [],
+   "severity": "note",
+   "title": "**§XIII's five-thinker roll-call paragraph** (\"Scott, because… Foucault, because…\") is the one place the essay summarizes itself; compress to a sentence."
+  },
+  {
+   "anchor": {
+    "blockId": "b138",
+    "confidence": 1,
+    "endOffset": 123,
+    "quote": "**For politically engaged citizens:** current operating systems and prompt updates; a password manager and unique passwords",
+    "startOffset": 0
+   },
+   "body": "Sections I–XIII are an ideas essay. Section XIV (\"Threat-model honestly... advice detached from a threat model is costume\") and the Appendix (\"**For politically engaged citizens:** current operating systems and prompt updates; a password manager and unique passwords...\") are an EFF-style operational security handbook, and the threshold checklist of §XII (nine bulleted tripwires) is a think-tank monitoring memo. Each is competent in its genre; together they break the register of the piece and inflate it far past the venue's form. No editor at this stratum runs a philosophical essay that ends with advice to enable \"passkeys or hardware-key two-factor authentication.\" The handbook material also subtly damages the essay's authority: it converts the author from essayist to advisor, and the closing meditation on the woman who stays home lands differently when followed by an appendix of product categories. Cut XIV and the Appendix entirely (they are a separate, publishable service piece), compress the §XII checklist into prose, and the essay loses perhaps a fifth of its length and none of its argument.",
+   "kind": "argument",
+   "ordinal": 30,
+   "origin": "second_read",
+   "reconciliation": "kept",
+   "rubricDims": [],
+   "severity": "minor",
+   "title": "The piece is three publications in one, and two of them do not belong at this venue."
+  }
+ ],
+ "sidecar": "findings",
+ "version": 1
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/nextgov-senate-ai-bill-cantwell-clash-2026-09-11.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "89cc5ffd451a0cea",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/nextgov-senate-ai-bill-cantwell-clash-2026-09-11.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nextgov-senate-ai-bill-cantwell-clash-2026-09-11\n- **URL:** https://www.nextgov.com/artificial-intelligence/2026/09/lawmakers-clash-safety-testing-language-development-ai-legislation-people-familiar-say/415948/ (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K6)\n- **What it establishes:** Alexandra Kelley, Nextgov/FCW, September 11, 2026. An unreleased, \"in-the-works\" Senate Commerce bill \"sponsored by Amy Klobuchar, D-Minn., and John Thune, R-S.D. with input from Chair Ted Cruz, R-Texas\" (so Nextgov's ordering is Klobuchar–Thune with Cruz input; the aide calls it \"the Cruz-Klobuchar-Thune version\"). NOT introduced: \"Cruz's bill with Thune and Klobuchar has yet to be released\"; \"draft bill\", \"the measure that is under development\", \"forthcoming legislation\". The description of the testing mechanism comes from ONE anonymous \"Democratic committee aide\" — an opponent's staff — and the same aide calls the draft \"primarily a voluntary standard type situation\", which sits awkwardly beside \"deployment approval\".\n- **Key passages:**\n  - \"A Democratic committee aide said that the elements in the draft bill that Cantwell wants reworked hinge on having safety tests of AI models be conducted by the companies themselves, who would later present results to the Commerce secretary for deployment approval. Cantwell instead supports language that mandates models instead go through federal agencies — such as the national labs and national security agencies — for security vetting and testing.\"\n  - Aide: \"Cantwell really wanted to get these large language models tested and to have mandatory vetting, but the Cruz-Klobuchar-Thune version now that she is opposing, it's primarily a voluntary standard type situation\".\n  - Klobuchar statement: \"That includes requiring developers to work with government experts to verify and test models to make sure AI is safe. We cannot allow the release of dangerous models, including those that evade the control of their developers.\"\n  - Second person familiar: Cantwell \"along with Anthropic and AI safety groups\" are \"refusing to play ball\"; \"Republicans have created legal duties for companies to manage catastrophic risks and ensure that government can verify they are doing so ... ensuring continued innovation and due process in the courts. Senator Cantwell is going as far as to require mandatory pre-deployment testing/fixes before down-dais Democrats can support.\"\n  - Cantwell on X: \"Meaningful legislation would require the most powerful AI models undergo testing by scientists and experts at our national laboratories to assess whether they could enable sophisticated cyberattacks or aid the development of biological or nuclear weapons.\"\n  - Lineage: Klobuchar–Thune's Artificial Intelligence Research, Innovation, and Accountability Act of 2023 \"has informed the new bill\", though \"likely to be 'a fundamentally different bill'\".\n- **Reliability:** Secondary; trade press; all characterizations of the text are from anonymous partisans on opposite sides; no text seen by the reporter is claimed.\n- **Relevance to this project:** Confirms the \"present results to the Commerce secretary for deployment approval\" wording — but it is Nextgov's paraphrase of a Democratic aide (the exact article wording is \"present results\", no \"the\"), not bill text. The essay must hedge accordingly and may not call the bill \"introduced\".\n",
+  "meters": {
+   "readMin": 2,
+   "words": 468
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "47c32cf6361712be31f08dc375dfb11dea503c804a86e41a6ea64573180672d4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/nextgov-senate-ai-bill-cantwell-clash-2026-09-11.md",
+ "kind": "artifact-page"
+}

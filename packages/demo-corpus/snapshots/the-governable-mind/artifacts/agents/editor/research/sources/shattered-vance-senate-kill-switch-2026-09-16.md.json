@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/shattered-vance-senate-kill-switch-2026-09-16.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "10f71dd075d1ffd3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/shattered-vance-senate-kill-switch-2026-09-16.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# shattered-vance-senate-kill-switch-2026-09-16\n- **URL:** https://shattered.io/senate-ai-kill-switch-bill-google-veto-2026/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Tom Vance, shattered.io, updated Sept 16, 2026: three kill-switch tracks (H.R. 9917; a Kennedy Senate companion requiring built-in kill switches; a bipartisan duty-of-care draft); DHS order authority with Commerce and DNI consulted; flags the absence of a judicial step before an order takes effect; generic civil-liberties objection attributed to EFF-type groups.\n- **Key passages:** 'What the bill does not spell out ... is a clear judicial review step before a shutdown order takes effect. That gap is likely to become one of the sharpest points of debate.'\n- **Reliability:** Secondary; tech-policy blog; no primary bill reading shown.\n- **Relevance to this project:** Q2 judicial-review finding; Q5 legislative map.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 121
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8755d36faa5cca62a6b28a6ea1dfc87ff9046a65e7fed08b5598b615098ba8d2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/shattered-vance-senate-kill-switch-2026-09-16.md",
+ "kind": "artifact-page"
+}

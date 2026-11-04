@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/fortune-white-house-framework-unpublished-2026-08-04.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ca612a035322432c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/fortune-white-house-framework-unpublished-2026-08-04.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fortune-white-house-framework-unpublished-2026-08-04\n- **URL:** https://fortune.com/2026/08/04/baffling-white-house-wont-publicly-release-ai-model-evaluation-framework-it-reviewed-today-with-openai-anthropic-microsoft-and-others/ (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K5, K12)\n- **What it establishes:** Emily Forlini, Fortune, \"August 4, 2026, 6:53 PM ET\". The framework is unpublished and voluntary; Aug 4 meeting attendees; EO deadline. Says nothing about open-weight models. Confirms GPT-5.6's \"July 9 debut\".\n- **Key passages:**\n  - \"The White House has no plans to publicly reveal the framework ... the details will be kept under wraps, only known to a select group of companies that may choose to participate in the process, which is voluntary.\"\n  - \"Attendees included Meta, Nvidia, Microsoft, OpenAI, Anthropic, and a variety of smaller companies, according to sources familiar with the matter.\"\n  - \"The administration issued an executive order on June 2 mandating the creation of this framework within 60 days, or by Aug. 1. The directive ... instructs the AI labs that they have \"up to 30 days\" to submit them to the government prior to their public release.\"\n  - \"Per the executive order, the framework is not a \"mandatory governmental licensing, preclearance, or permitting requirement for the development, publication, release, or distribution of new AI models, including frontier models.\"\"\n  - Chris McGuire (CFR) \"called the decision to keep the framework behind closed doors \"baffling.\"\"\n  - \"Then the government worked closely with OpenAI ahead of its July 9 debut of GPT-5.6.\" · \"It's unclear if the framework is finalized or still in progress.\"\n- **Reliability:** Secondary; reputable business press; anonymous sourcing for the meeting.\n- **Relevance to this project:** Supports \"unpublished, voluntary\" and the July 9 date.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 253
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6796e9ee4dded4d6ca04110aec6b6235aaf8758b85b54c68f3484c1212bb3886",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/fortune-white-house-framework-unpublished-2026-08-04.md",
+ "kind": "artifact-page"
+}

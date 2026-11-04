@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/axios-amodei-pacing-reactions-2026-09-12.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "616fd34e2e7d81c5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/axios-amodei-pacing-reactions-2026-09-12.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# axios-amodei-pacing-reactions-2026-09-12\n- **URL:** https://www.axios.com/2026/09/12/anthropic-ai-amodei-pacing · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Axios, Sept 12, 2026 (via text proxy): Amodei's call; Altman and Musk endorsements; Palihapitiya's open-source objection; Anthropic policy chief Sarah Heck advocating mandatory frontier testing 'with authority to block unsafe systems.'\n- **Key passages:** Palihapitiya: 'Dario makes the case to stop open source and concentrate enormous technological and economic power with Anthropic.'\n- **Reliability:** Secondary; news.\n- **Relevance to this project:** Q1(a) (blocking authority); Q1(c); Q5.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c4b9024294bb4ffa9675baa676abc4d04da6f2be6159e10b74a12814c0b69290",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/axios-amodei-pacing-reactions-2026-09-12.md",
+ "kind": "artifact-page"
+}

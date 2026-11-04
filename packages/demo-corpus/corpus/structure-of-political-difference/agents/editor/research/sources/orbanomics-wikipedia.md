@@ -1,0 +1,6 @@
+# orbanomics-wikipedia
+- **URL:** https://en.wikipedia.org/wiki/Orbanomics · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1
+- **What it establishes:** Orbán's political economy is interventionist-nationalist, not laissez-faire — supporting the draft's "welfare nationalist" placement, with a workfare caveat.
+- **Key passages:** "Selective state intervention, tax cuts, and nationalist rhetoric"; nationalized private pension funds; flat 15% income tax; "price controls on utilities and state oversight of key industries"; mandatory workfare (~4% of workforce); natalist tax exemptions and subsidized loans.
+- **Reliability:** Tertiary but well-sourced overview; consistent with academic literature surfaced in search (Socio-Economic Review "financial nationalism"; "welfare to workfare model").
+- **Relevance to this project:** Verifies C18's factual predicate (nearer welfare nationalism than laissez-faire). Nuance for the author: "welfare" here is workfare-plus-natalism bounded by membership, not redistributive generosity.

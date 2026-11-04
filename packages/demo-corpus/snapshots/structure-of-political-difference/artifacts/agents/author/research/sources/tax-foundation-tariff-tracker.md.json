@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/tax-foundation-tariff-tracker.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "192e259bbc5a1aa6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/tax-foundation-tariff-tracker.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# tax-foundation-tariff-tracker\n- **URL:** https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/ · **Accessed:** 2026-07-31 · **For:** v1-response — verify C23a (Trump \"market-leaning\" Misleading) and source the rebuilt Trump profile\n- **What it establishes:** Mid-2026 Trump economic policy is tariff-centered: Supreme Court ruled Feb 20, 2026 that IEEPA cannot be used to impose tariffs; a 10% universal baseline tariff then ran under Section 122 from Feb 24, 2026 until it expired after 150 days on July 24, 2026. Section 232 tariffs: steel/aluminum/copper up to 50% (derivatives 25%), autos 25%, patented pharmaceuticals 100% (15% EU/Japan), heavy trucks 25%, lumber 10%, furniture 25–30%. Weighted average applied tariff rate for 2026 rises to 11.8%. Estimated tax increase ~$900 per US household in 2026. (No Intel-stake or sovereign-wealth-fund data on this page — do not source those claims here.)\n- **Key passages:** \"the President cannot use IEEPA to impose tariffs\" (SCOTUS, Feb 20, 2026); \"expired after 150 days on July 24\"; \"the weighted average applied tariff rate rises to 11.8 percent\"; \"We estimate the tariffs will increase taxes per US household by $900 in 2026.\"\n- **Gap-analysis reconciliation (2026-07-31):** The editor's ledger C23a placed pharmaceuticals inside the 10–50% band; the tracker and multiple independent legal/trade sources (Ropes & Gray \"100% On Brand\"; Crowell & Moring; BioPharma Dive) confirm a **100% Section 232 tariff on patented pharmaceuticals** (proclamation April 2, 2026; effective July 31, 2026 for Annex III companies; tiered down to 20% with onshoring agreements, 15% for EU/Japan/Korea/CH, exempt with MFN pricing agreements). v2's \"up to 100 percent on patented pharmaceuticals\" is accurate; the editor's band was imprecise on this item.\n- **Reliability:** Primary-adjacent policy tracker; nonpartisan-leaning think tank (market-friendly bias if anything, which runs *against* overstating tariffs — good for this use).\n- **Relevance:** Confirms editor's C23a verdict; supplies the two cited facts for the Trump rhetoric/program/practice demonstration in v2 §VIII (Grammar).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 295
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e91d60743abb9c1263ef2cd514b0cf829ab294713198685d013ac1a40b9d5b35",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/tax-foundation-tariff-tracker.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ndpr-williams-truth-truthfulness-review.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5d390ff592709e3b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ndpr-williams-truth-truthfulness-review.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ndpr-williams-truth-truthfulness-review\n- **URL:** https://ndpr.nd.edu/reviews/truth-and-truthfulness-an-essay-in-genealogy/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Bears on C63: confirms the two virtues and their content but does not quote the draft's sentence or give p. 11.\n- **Key passages:** 'Accuracy is the virtue of carefully investigating and deliberating over the evidence … sincerity is the virtue of genuinely expressing to others what one in fact believes.'\n- **Reliability:** Secondary (scholarly review).\n- **Relevance to this project:** C63\n",
+  "meters": {
+   "readMin": 1,
+   "words": 74
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b49b207215781d67822daec01db7d987e400da98aea816e783c793b60acdcfdb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ndpr-williams-truth-truthfulness-review.md",
+ "kind": "artifact-page"
+}

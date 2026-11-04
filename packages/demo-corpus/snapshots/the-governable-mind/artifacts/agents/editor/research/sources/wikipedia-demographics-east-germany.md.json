@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-demographics-east-germany.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6d62af6d67b055a4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-demographics-east-germany.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-demographics-east-germany\n- **URL:** https://en.wikipedia.org/wiki/Demographics_of_East_Germany · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Used only to re-derive C77: 1989 population 16,434 thousand → 16.434M/189k ≈ 87 per IM.\n- **Key passages:** table row: '1989 16,434 198,992 205,711 −6,789 …'\n- **Reliability:** Tertiary; statistical table with cited source. Sufficient for an order-of-magnitude check.\n- **Relevance to this project:** C77\n",
+  "meters": {
+   "readMin": 1,
+   "words": 57
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b766ccf3f08903b0cac12bede23d954440ca2f3655ea34a1e36b723b63fc4c85",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-demographics-east-germany.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,869 @@
+{
+  "$comment": "Real file-targeted rewrites authored by 214b from the R1 §2 census (withheld until HUMAN-H14/219). Schema owned by packages/demo-corpus/src/rules.ts: id + slug (the project the row targets — projects share project-relative paths) + file (project-relative source path) + line (1-based) + literal pattern → replacement + reason; a stale row fails the export. Covers: workflow-sense ‘operator’ → ‘the writer’ (S-10; content/statutory senses untouched), reader-proxy access annotations → ‘a reader proxy’, utm prose → ‘a deep-research tracking parameter’, private scratch paths → migrated draft paths.",
+  "rewrites": [
+    {
+      "id": "rw-001",
+      "slug": "constitution-of-reason",
+      "file": "correspondence/v2-review/00-piece-brief.md",
+      "line": 3,
+      "pattern": "`agent-scratch/constitution-of-reason-draft-2.md`",
+      "replacement": "`drafts/v2.md`",
+      "reason": "private scratch path becomes the migrated draft path (R1 §2)"
+    },
+    {
+      "id": "rw-002",
+      "slug": "constitution-of-reason",
+      "file": "correspondence/v2-review/editors-letter.md",
+      "line": 3,
+      "pattern": "`agent-scratch/constitution-of-reason-draft-2.md`",
+      "replacement": "`drafts/v2.md`",
+      "reason": "private scratch path becomes the migrated draft path (R1 §2)"
+    },
+    {
+      "id": "rw-003",
+      "slug": "structure-of-political-difference",
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 106,
+      "pattern": "operator must attach the public link",
+      "replacement": "the writer must attach the public link",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-004",
+      "slug": "structure-of-political-difference",
+      "file": "agents/author/research/sources/sjsebastian-venue-style.md",
+      "line": 3,
+      "pattern": "(operator has overridden this",
+      "replacement": "(the writer has overridden this",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-005",
+      "slug": "structure-of-political-difference",
+      "file": "agents/editor/research/sources/sjsebastian-substack-style.md",
+      "line": 10,
+      "pattern": "(Operator has overridden this",
+      "replacement": "(The writer has overridden this",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-006",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-response.md",
+      "line": 13,
+      "pattern": "**The operator must attach the public link at publication**",
+      "replacement": "**The writer must attach the public link at publication**",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-007",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-response.md",
+      "line": 75,
+      "pattern": "link needed from operator",
+      "replacement": "link needed from the writer",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-008",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/00-piece-brief.md",
+      "line": 4,
+      "pattern": "operator-specified",
+      "replacement": "writer-specified",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-009",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/00-piece-brief.md",
+      "line": 68,
+      "pattern": "per operator's [n] refactor request",
+      "replacement": "per the writer's [n] refactor request",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-010",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/04-craft-notes.md",
+      "line": 3,
+      "pattern": "The operator has overridden",
+      "replacement": "The writer has overridden",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-011",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/04-craft-notes.md",
+      "line": 55,
+      "pattern": "operator requires `[n]` bracket citations",
+      "replacement": "the writer requires `[n]` bracket citations",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-012",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/editors-letter.md",
+      "line": 4,
+      "pattern": "operator-specified venue",
+      "replacement": "writer-specified venue",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-013",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/editors-letter.md",
+      "line": 7,
+      "pattern": "**Operator constraints for v2:**",
+      "replacement": "**Writer constraints for v2:**",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-014",
+      "slug": "structure-of-political-difference",
+      "file": "correspondence/v1-review/editors-letter.md",
+      "line": 89,
+      "pattern": "- Operator requirement:",
+      "replacement": "- Writer requirement:",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-015",
+      "slug": "the-governable-mind",
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 6,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-016",
+      "slug": "the-governable-mind",
+      "file": "agents/author/drafting/v1/03-claim-ledger.md",
+      "line": 46,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-017",
+      "slug": "the-governable-mind",
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 106,
+      "pattern": "as the operator's outline named them",
+      "replacement": "as the writer's outline named them",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-018",
+      "slug": "the-governable-mind",
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 260,
+      "pattern": "are the operator's, named in the outline",
+      "replacement": "are the writer's, named in the outline",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-019",
+      "slug": "the-governable-mind",
+      "file": "agents/author/ledgers/v1-response-ledger.md",
+      "line": 376,
+      "pattern": "as the operator's outline named them",
+      "replacement": "as the writer's outline named them",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-020",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/index.md",
+      "line": 311,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-021",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/index.md",
+      "line": 334,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-022",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-023",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/alegre-2020-regulating-around-forum-internum.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-024",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/anthropic-position-open-weights.md",
+      "line": 12,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-025",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/anthropic-redeploying-fable-5-2026-06-30.md",
+      "line": 14,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-026",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-027",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/axios-trump-openai-gpt-5-6-2026-06-25.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-028",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/bublitz-2026-what-is-thought.md",
+      "line": 2,
+      "pattern": "via https://r.jina.ai/ proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-029",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/chatrie-v-united-states-slip-opinion.md",
+      "line": 2,
+      "pattern": "via r.jina.ai text extraction",
+      "replacement": "via a reader proxy’s text extraction",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-030",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/cnbc-openai-limits-gpt-5-6-2026-06-26.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-031",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/crs-lsb11429-ai-fourth-amendment.md",
+      "line": 2,
+      "pattern": "via r.jina.ai text extraction",
+      "replacement": "via a reader proxy’s text extraction",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-032",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/decock-2026-forum-interstitiale-working-paper.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-033",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/doj-kim-letter-2026-06-17.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-034",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/iaisr-2026-web-page.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-035",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/kim-order-2026-06-22.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-036",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/mccarthy-jones-walmsley-2025-forum-externum-thought.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-037",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/natlawreview-20m-logs.md",
+      "line": 2,
+      "pattern": "the r.jina.ai proxy",
+      "replacement": "a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-038",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-ai-policy-window.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-039",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-ai-policy-window.md",
+      "line": 11,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-040",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-ai-policy-window.md",
+      "line": 18,
+      "pattern": "from the r.jina.ai reader",
+      "replacement": "from a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-041",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-help-daybreak-tac.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-042",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-help-daybreak-tac.md",
+      "line": 9,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-043",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-helping-people-when-they-need-it-most.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-044",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hf-incident-road-ahead.md",
+      "line": 2,
+      "pattern": "through the r.jina.ai reader proxy",
+      "replacement": "through a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-045",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hf-incident-third-party-impact.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-046",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hf-joint-statement-jul-2026.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-047",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hugging-face-incident-road-ahead-2026-08-26.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-048",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hugging-face-incident-road-ahead-2026-08-26.md",
+      "line": 11,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-049",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-hugging-face-model-evaluation-security-incident-2026-07.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-050",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-pacing-model-development.md",
+      "line": 2,
+      "pattern": "via r.jina.ai reader proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-051",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-052",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-response-to-nyt-data-demands.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-053",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/openai-trusted-access-for-cyber.md",
+      "line": 2,
+      "pattern": "via r.jina.ai proxy",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-054",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/pin-2026-freedom-of-thought-conscience-ai.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-055",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/pymnts-heppner-ruling.md",
+      "line": 2,
+      "pattern": "the r.jina.ai proxy",
+      "replacement": "a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-056",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/radsch-2026-battle-for-cognitive-liberty.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-057",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/richards-2015-intellectual-privacy-book.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-058",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/stein-order-20m-logs-2026-01-05.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-059",
+      "slug": "the-governable-mind",
+      "file": "agents/author/research/sources/techcrunch-openai-revoked-cyber-access-2026-08-19.md",
+      "line": 10,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-060",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/anthropic-claude-mythos-page-2026.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-061",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/anthropic-position-open-weights-2026-07-27.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-062",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/axios-trump-ai-framework-open-models-2026-08-04.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-063",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/china-generative-ai-interim-measures.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-064",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/cnbc-chinese-model-openai-attack-2026-07-24.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-065",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/cnbc-zuckerberg-huang-slowdown-2026-09-15.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-066",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/nyt-v-openai-preservation-order-2025-05-13.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-067",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/nyt-v-openai-preservation-order.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-068",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/nyt-v-openai-stein-order-2026-01-05.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-069",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-ai-policy-window-2026-09.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-070",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-help-daybreak-common-issues.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-071",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-helping-people-when-they-need-it-most-2025.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-072",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-hf-incident-and-misalignment.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-073",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-hf-incident-road-ahead-2026-08-26.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-074",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-hf-model-evaluation-security-incident-2026-07-21.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-075",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-previewing-gpt-5-6-sol-2026-06-26.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-076",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/openai-trusted-access-for-cyber-page.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-077",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/roanoke-times-snapchat-my-ai-conviction-2024-10-20.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-078",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/rte-zuckerberg-incentive-2026-09-16.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-079",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/us-v-heppner-rakoff-memorandum-2026-02-17.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-080",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/us-v-rinderknecht-criminal-complaint-2025-10-08.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-081",
+      "slug": "the-governable-mind",
+      "file": "agents/editor/research/sources/wired-lowell-white-house-expand-ai-policy-2026-08-12.md",
+      "line": 2,
+      "pattern": "via r.jina.ai",
+      "replacement": "via a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-082",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 6,
+      "pattern": "(the operator's \"Pass III article specification\")",
+      "replacement": "(the writer's \"Pass III article specification\")",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-083",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 77,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-084",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 179,
+      "pattern": "If the operator",
+      "replacement": "If the writer",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-085",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v1-response.md",
+      "line": 12,
+      "pattern": "as the operator's outline named them",
+      "replacement": "as the writer's outline named them",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-086",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v1-review/01-claim-ledger.md",
+      "line": 32,
+      "pattern": "a reader proxy (r.jina.ai)",
+      "replacement": "a reader proxy",
+      "reason": "reader-proxy access annotation normalized (R1 §2)"
+    },
+    {
+      "id": "rw-087",
+      "slug": "the-governable-mind",
+      "file": "correspondence/v2-review/04-craft-notes.md",
+      "line": 39,
+      "pattern": "the operator's title under autonomy",
+      "replacement": "the writer's title under autonomy",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-088",
+      "slug": "the-politics-of-visibility",
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 5,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-089",
+      "slug": "the-politics-of-visibility",
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 172,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-090",
+      "slug": "the-politics-of-visibility",
+      "file": "agents/author/drafting/v1/04-draft-ledger.md",
+      "line": 55,
+      "pattern": "by operator \"approved, proceed.\"",
+      "replacement": "by the writer \"approved, proceed.\"",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-091",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 5,
+      "pattern": "outline.md`. Operator",
+      "replacement": "outline.md`. The writer",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-092",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 71,
+      "pattern": "`utm_source=chatgpt.com`",
+      "replacement": "a deep-research tracking parameter",
+      "reason": "prose mention of a tracking parameter normalized (R1 §2)"
+    },
+    {
+      "id": "rw-093",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-response.md",
+      "line": 8,
+      "pattern": "an operator-approved shape",
+      "replacement": "a writer-approved shape",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-094",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-response.md",
+      "line": 8,
+      "pattern": "without operator input",
+      "replacement": "without the writer's input",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-095",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-response.md",
+      "line": 8,
+      "pattern": "the operator's standing question",
+      "replacement": "the writer's standing question",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    },
+    {
+      "id": "rw-096",
+      "slug": "the-politics-of-visibility",
+      "file": "correspondence/v1-response.md",
+      "line": 94,
+      "pattern": "(operator's standing question",
+      "replacement": "(the writer's standing question",
+      "reason": "workflow-sense role vocabulary — ‘operator’ becomes ‘the writer’ (S-10), never ‘the author’"
+    }
+  ]
+}

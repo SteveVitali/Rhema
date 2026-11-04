@@ -1,0 +1,262 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b147",
+    "confidence": 1,
+    "endOffset": 754,
+    "quote": "determines less how often it is right than *which of its errors can encounter resistance*.",
+    "startOffset": 664
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b184",
+    "confidence": 1,
+    "endOffset": 601,
+    "quote": "What the present argument adds is the machinery question",
+    "startOffset": 545
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "anchor": {
+    "blockId": "b135",
+    "confidence": 1,
+    "endOffset": 358,
+    "quote": "legibility kept the door open for eleven years until Heawood walked through it",
+    "startOffset": 280
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 3
+  },
+  {
+   "anchor": {
+    "blockId": "b31",
+    "confidence": 1,
+    "endOffset": 1166,
+    "quote": "The relativist gives up the appeal; the proceduralist forgets that it is an appeal.",
+    "startOffset": 1083
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "done"
+   },
+   "findingOrdinal": 4
+  },
+  {
+   "anchor": {
+    "blockId": "b80",
+    "confidence": 1,
+    "endOffset": 585,
+    "quote": "engineered outsides, with standing to resist. Where the analogy breaks, the breaks will be named",
+    "startOffset": 489
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 5
+  },
+  {
+   "anchor": {
+    "blockId": "b29",
+    "confidence": 1,
+    "endOffset": 544,
+    "quote": "bears the marks of the path by which it was reached",
+    "startOffset": 493
+   },
+   "disposition": {
+    "kind": "adapt",
+    "status": "open"
+   },
+   "findingOrdinal": 6
+  },
+  {
+   "anchor": {
+    "blockId": "b138",
+    "confidence": 1,
+    "endOffset": 774,
+    "quote": "voting and consensus protocols favored different task types — voting helped on reasoning problems, consensus on knowledge retrieval — and the gains of newly designed protocols came from increasing answer diversity.[38]",
+    "startOffset": 556
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 12
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 13
+  },
+  {
+   "anchor": {
+    "blockId": "b72",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "Helen Longino made the institutional requirements explicit. Objectivity, on her account, is not secured by the private virtue of an unbiased scientist. It depends on social processes of transformative",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 14
+  },
+  {
+   "anchor": {
+    "blockId": "b71",
+    "confidence": 1,
+    "endOffset": 369,
+    "quote": "whatever the community happened, at any given moment, to settle upon.",
+    "startOffset": 300
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 15
+  },
+  {
+   "anchor": {
+    "blockId": "b96",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "Habermas offers a different correction. Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding through claims ",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 16
+  },
+  {
+   "anchor": {
+    "blockId": "b17",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "Once cognition is distributed in this way, engineering begins to resemble constitutional design. A caution about the word: \"constitution\" here does not mean what it has lately come to mean in AI engin",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 17
+  },
+  {
+   "anchor": {
+    "blockId": "b110",
+    "confidence": 0.4,
+    "endOffset": 42,
+    "quote": "## VI. Artificial Constitutions of Thought",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 18
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 19
+  },
+  {
+   "anchor": {
+    "blockId": "b105",
+    "confidence": 1,
+    "endOffset": 99,
+    "quote": "The celebrated counterexamples — Descartes alone in his stove-heated room, the patent clerk of 1905",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 20
+  },
+  {
+   "anchor": {
+    "blockId": "b15",
+    "confidence": 1,
+    "endOffset": 450,
+    "quote": "Nothing in what follows argues that more agents are better; often they are worse",
+    "startOffset": 370
+   },
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 21
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 2,
+   "title": "§V rebuild"
+  },
+  {
+   "ordinal": 3,
+   "title": "§IV compress+cites"
+  },
+  {
+   "ordinal": 4,
+   "title": "§VIII compress+cites"
+  },
+  {
+   "ordinal": 5,
+   "title": "§I Logos ¶ + reconstruction note (moved to opening end — better placement, inoculates whole arc"
+  },
+  {
+   "ordinal": 6,
+   "title": "analogy ¶ + disputatio + Kempe"
+  },
+  {
+   "ordinal": 7,
+   "title": "incentive ¶"
+  },
+  {
+   "ordinal": 8,
+   "title": "null-hypothesis section"
+  },
+  {
+   "ordinal": 9,
+   "title": "§VII repairs"
+  },
+  {
+   "ordinal": 10,
+   "title": "case threading + Kitcher/NLSOM"
+  },
+  {
+   "ordinal": 11,
+   "title": "all executed (M1 opening case/signals"
+  },
+  {
+   "ordinal": 11,
+   "title": "craft passes + micro-fixes + renumber to 49 refs"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

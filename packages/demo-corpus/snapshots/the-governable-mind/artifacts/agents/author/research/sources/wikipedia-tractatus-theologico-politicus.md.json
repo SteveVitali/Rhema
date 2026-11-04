@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-tractatus-theologico-politicus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f398a7fda65e96d0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-tractatus-theologico-politicus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-tractatus-theologico-politicus\n- **URL:** https://en.wikipedia.org/wiki/Tractatus_Theologico-Politicus · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C56 (lead only)\n- **What it establishes:** Tertiary confirmation that the TTP was published anonymously in 1670 by Jan Rieuwertsz with a false Hamburg imprint, condemned by the Synod of Dordrecht in 1673, and \"officially banned the following year,\" citing Nadler, *A Book Forged in Hell*, p. 230.\n- **Key passages:**\n  - \"The treatise was published anonymously in 1670 by Jan Rieuwertsz.\"\n  - \"the title page identified the city of publication as Hamburg and the publisher as Henricus Künraht (who had died in 1605).\"\n  - \"In 1673, it was publicly condemned by the Dutch Reformed Church's Synod of Dordrecht (1673) and officially banned the following year.\" [cites Nadler, A Book Forged in Hell, 230]\n- **Reliability:** Tertiary; used only to locate the Nadler page reference and the imprint detail. Not to be cited in the essay.\n- **Relevance to this project:** C56.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 146
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fe859afc5fb011fc7c6cc0813e2b4f706bee6cb999c56d045a9286222c9e3938",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-tractatus-theologico-politicus.md",
+ "kind": "artifact-page"
+}

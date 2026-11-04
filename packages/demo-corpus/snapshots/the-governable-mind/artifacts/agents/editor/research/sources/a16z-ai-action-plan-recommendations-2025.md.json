@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/a16z-ai-action-plan-recommendations-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5ad3a3f856476c22",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/a16z-ai-action-plan-recommendations-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# a16z-ai-action-plan-recommendations-2025\n- **URL:** https://a16z.com/a16zs-recommendations-for-the-national-ai-action-plan/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** a16z, Mar 14, 2025: regulate harmful use not development; federal leadership; compute access; open source lowers barriers; no KYC/licensing/surveillance/freedom-to-compute content.\n- **Key passages:** \"There's no law dictating how to build a computer…the law does prohibit using it to hurt someone else.\"\n- **Reliability:** Primary; interested.\n- **Relevance to this project:** §1A; two-layer split vs the essay's five.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 69
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9f7086935cd01f446e4f0c4d071a1310a16a77be6149dd3a4f0f1342a1547a16",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/a16z-ai-action-plan-recommendations-2025.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# orwell-1946-politics-and-the-english-language
+- **URL:** https://www.orwellfoundation.com/the-orwell-foundation/orwell/essays-and-other-works/politics-and-the-english-language/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C41
+- **What it establishes:** Full text of "Politics and the English Language" (*Horizon*, April 1946), reproduced by the Orwell Foundation with permission of the Orwell Estate. Confirms exact wording of the corruption line and the euphemism/ready-made-phrase passages.
+- **Key passages:** "But if thought corrupts language, language can also corrupt thought. A bad usage can spread by tradition and imitation, even among people who should and do know better." · "Defenceless villages are bombarded from the air, the inhabitants driven out into the countryside, the cattle machine-gunned, the huts set on fire with incendiary bullets: this is called pacification." · "Such phraseology is needed if one wants to name things without calling up mental pictures of them." · "In our time, political speech and writing are largely the defence of the indefensible." · "It is easier – even quicker, once you have the habit – to say In my opinion it is not an unjustifiable assumption that than to say I think."
+- **Reliability:** Primary; authorized host.
+- **Relevance to this project:** C41 — language corrupting thought; euphemism.

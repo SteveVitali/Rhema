@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cohen-2013-hlr-pdf-pinpoints.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6a06822142facfcd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cohen-2013-hlr-pdf-pinpoints.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cohen-2013-hlr-pdf-pinpoints\n- **URL:** https://harvardlawreview.org/wp-content/uploads/2013/05/vol126_cohen.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Cohen, \"What Privacy Is For,\" 126 Harv. L. Rev. 1904–1933 (2013), full PDF text-extracted with running heads. \"fixed, transparent, and predictable\" at 1905; the modulation definition at 1915; Cohen's footnote there cites Deleuze, \"Postscript on Control Societies,\" in Negotiations (Joughin trans., 1995), so the Deleuze → Cohen lineage is her own.\n- **Key passages:** 1905: \"Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable.\" · 1915: \"Networked information technologies enable surveillance to become modulation. … This in turn facilitates modulation: a set of processes in which the quality and content of surveillant attention is continually modified according to the subject's own behavior, sometimes in response to inputs from the subject but according to logics that ultimately are outside the subject's control.\"\n- **Reliability:** Primary (publisher PDF); independent.\n- **Relevance to this project:** VII6 (l.158); ref [59].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 163
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "37dcc4f60e213cd97887ee788960007bc8aee2bb2b740bfd10a94f574910caa0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cohen-2013-hlr-pdf-pinpoints.md",
+ "kind": "artifact-page"
+}

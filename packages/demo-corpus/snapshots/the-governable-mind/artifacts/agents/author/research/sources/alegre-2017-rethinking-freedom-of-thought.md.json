@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5b812123994fffb3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# alegre-2017-rethinking-freedom-of-thought\n- **URL:** https://www.doughtystreet.co.uk/sites/default/files/media/document/Rethinking%20Freedom%20of%20Thought%20for%20the%2021st.pdf (direct fetch 403; read via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v1 response round, finding (c) \"Alegre should be cited\"\n- **Citation:** Susie Alegre, \"Rethinking Freedom of Thought for the 21st Century,\" [2017] *European Human Rights Law Review* issue 3, 221–233.\n- **What it establishes:** All three editor-quoted sentences verified. Alegre states the three-element structure (not reveal / not be manipulated / not be penalised), the \"beyond reach\" premise, and the extraction sentence. She does argue from absoluteness to state duties to regulate the private sector: because the right is absolute, \"once an interference or limitation is established, it will be unlawful and cannot be justified,\" and states \"have a duty to protect us from others who seek to interfere\" — hence \"new legal and policy responses … to regulate and limit business practices.\"\n- **Key passages:**\n  - p. 221 (abstract): \"Freedom of thought is protected as an absolute right in international human rights law but has received little attention over the years either in the courts or in academic analysis, in part because of an assumption that our inner thoughts were beyond reach.\"\n  - p. 221: \"Perhaps because of an assumption that our inner thoughts are beyond the effective scope of state intervention, the right to freedom of thought has received little attention in the courts and little academic analysis in international human rights law.\" … \"there is an absolute right to think what you like in the 'forum internum', or the inner space of your mind.\"\n  - p. 222: \"governments need to refrain from using techniques that interfere with our freedom of thought, but they also need to take concrete steps to protect us from interference from the private sector where much of the technology is being developed and used.\" … \"This article will argue that new legal and policy responses are required as a matter of urgency to regulate and limit business practices or state interventions that risk interference with freedom of thought.\"\n  - p. 225: \"the right has three key elements: • the right not to reveal one's thoughts or opinions; • the right not to have one's thoughts or opinions manipulated; and • the right not to be penalised for one's thoughts. All three elements are crucial to ensuring the absolute nature of the right… Given the absolute nature of the right to freedom of thought, once an interference or limitation is established, it will be unlawful and cannot be justified.\"\n  - p. 226 (under \"The right not to reveal one's thoughts or opinions,\" epigraph from Eben Moglen: \"They own the search box and we put our dreams in it. And they eat them and they tell us who we are right back\"): \"The right not to reveal one's thoughts does not prevent us from revealing our innermost thoughts and feelings if we want to. But as technology develops more complex ways to surveille us and analyse the resulting data, it becomes less clear which thoughts we are offering to the outside world and which are being extracted without our knowledge or understanding.\"\n- **Reliability:** Primary. Alegre is a practising barrister and advocate for the right; the piece is an opinion article, not doctrinal analysis, and does not engage the extended-mind literature.\n- **Relevance to this project:** Alegre is the nearest prior statement of the essay's *disclosure* concern (search box as a place we \"put our dreams\"), and of the absoluteness → private-actor regulation inference. The essay's distinct contribution is naming the medium as forum internum rather than treating the data as extracted thought.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 584
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "caf46d2442995bcfcf007f623b6e1d6afa0aa404d6b9432bad1c045a5e98a566",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/alegre-2017-rethinking-freedom-of-thought.md",
+ "kind": "artifact-page"
+}

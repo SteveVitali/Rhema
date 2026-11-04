@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/dgap-epifanova-2020-sovereign-internet-law.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3ced7759a106fc50",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/dgap-epifanova-2020-sovereign-internet-law.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# dgap-epifanova-2020-sovereign-internet-law\n- **URL:** https://dgap.org/en/research/publications/deciphering-russias-sovereign-internet-law · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C37\n- **What it establishes:** Alena Epifanova, 'Deciphering Russia's \"Sovereign Internet Law\"', DGAP, January 16, 2020: TSPU defined; DPI tests on Ural operators (per BBC); Roskomnadzor's centralised-management powers; Yarovaya data-retention.\n- **Key passages:** TSPU: \"technical equipment for counteracting threats to stability, security, and the functional integrity of the internet\". Roskomnadzor may \"take over the centralized management of the network in case of a threat\".\n- **Reliability:** Secondary; German foreign-policy think tank; expert analysis.\n- **Relevance to this project:** C37: the expanded name of TSPU and Roskomnadzor's centralised control power.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 96
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b9f0f272fe3c2ae532568b22d47d96fb35b522b02dbd22a408fb1bea6151c13a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/dgap-epifanova-2020-sovereign-internet-law.md",
+ "kind": "artifact-page"
+}

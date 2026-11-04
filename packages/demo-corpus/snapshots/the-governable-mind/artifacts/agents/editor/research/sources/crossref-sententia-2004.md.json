@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/crossref-sententia-2004.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "65661354710e83ce",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/crossref-sententia-2004.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# crossref-sententia-2004\n- **URL:** https://api.crossref.org/works/10.1196/annals.1305.014 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Sententia, \"Neuroethical Considerations: Cognitive Liberty and Converging Technologies for Improving Human Cognition,\" Annals of the New York Academy of Sciences 1013 (2004), 221–228 — ref [28]'s citation is correct. Abstract frames \"cognitive liberty\" as the analytical model for NBIC technologies \"capable of monitoring or altering cognition.\"\n- **Key passages:** \"we need analytical models that protect values of personhood at the heart of a functional democracy\" (abstract, via Crossref).\n- **Reliability:** Bibliographic record (Crossref); primary metadata.\n- **Relevance to this project:** III8 (l.68); ref [28].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 98
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5be108c261fcfda3ce1c39cae07846baba327fb54eb2f905203eb28e23163bcf",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/crossref-sententia-2004.md",
+ "kind": "artifact-page"
+}

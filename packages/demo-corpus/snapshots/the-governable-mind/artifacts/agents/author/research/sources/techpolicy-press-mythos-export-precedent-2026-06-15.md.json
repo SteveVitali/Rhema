@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techpolicy-press-mythos-export-precedent-2026-06-15.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f3a1b2131e131581",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techpolicy-press-mythos-export-precedent-2026-06-15.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techpolicy-press-mythos-export-precedent-2026-06-15\n- **URL:** https://www.techpolicy.press/did-the-us-government-just-set-an-ai-export-precedent-by-blocking-mythos/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (precedent; verification rationale)\n- **What it establishes:** Joseph Hoefer, June 15, 2026. BIS directive by letter on June 12, not publicly released; scope \"any foreign national, whether located abroad or inside the United States\"; Anthropic \"disabled both models entirely\" because it \"could not reliably screen users by nationality.\" Argues the policy choice is being made implicitly \"inside discrete enforcement actions that read like one-offs.\"\n- **Key passages:**\n  - The directive letter \"has not been made public, so the precise scope and rationale are known mostly secondhand.\"\n  - \"suspend access to its Fable 5 and Mythos 5 models for any foreign national, whether located abroad or inside the United States\"\n  - Anthropic \"could not reliably screen users by nationality.\"\n  - \"the choice between the two framings is the actual policy decision, and right now it's being made implicitly, buried inside discrete enforcement actions that read like one-offs\"\n- **Reliability:** Secondary, policy commentary.\n- **Relevance to this project:** Second source for nationality-screening rationale and for the \"unpublished letter\" point; quotable on the precedent problem.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 177
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b5bbd8aacf91906b86b1855acc7e6ed91a8bcdcde1fb9ac7375751cb0226dc7a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techpolicy-press-mythos-export-precedent-2026-06-15.md",
+ "kind": "artifact-page"
+}

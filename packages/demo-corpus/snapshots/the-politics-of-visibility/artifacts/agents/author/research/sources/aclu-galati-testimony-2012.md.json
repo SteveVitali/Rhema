@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/aclu-galati-testimony-2012.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ac3acbe0f737824",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/aclu-galati-testimony-2012.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aclu-galati-testimony-2012\n- **URL:** https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C31\n- **What it establishes:** NYPD Assistant Chief Thomas Galati (commanding officer, Intelligence Division), in a June 28, 2012 deposition unsealed in the *Handschu v. Special Services Division* litigation, testified under oath that the Demographics Unit's work never generated a lead.\n- **Key passages:**\n  - Galati, verbatim: \"I never made a lead from rhetoric that came from a Demographics report, and I'm here since 2006.\" He added, \"I don't recall other ones prior to my arrival.\"\n  - Context: the deposition was discovery in the decades-old Handschu federal case, under a 1985 consent decree restricting NYPD surveillance of political/religious activity absent \"specific information\" linking a group to crime.\n- **Reliability:** Secondary (advocacy press release), but it quotes sworn testimony verbatim and matches AP's contemporaneous reporting (AP, Aug. 21, 2012, Apuzzo/Goldman: \"NYPD: Muslim spying led to no leads, terror cases\"). ACLU was counsel-adjacent in related litigation — treat characterizations as adversarial, the quote itself as record.\n- **Relevance to this project:** C31 — the load-bearing \"no leads by the unit chief's sworn testimony\" specific.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 177
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6e1137a2db3fbb272190a7c709c1b4654678d1cbbedb09ae760d5e600b221429",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/aclu-galati-testimony-2012.md",
+ "kind": "artifact-page"
+}

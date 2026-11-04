@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ligthart-2025-section-pinpoints.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "24a6f996d5c3d479",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ligthart-2025-section-pinpoints.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ligthart-2025-section-pinpoints\n- **URL:** https://academic.oup.com/hrlr/article/25/3/ngaf018/8155294 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Section map of Ligthart, HRLR 25:3 (2025), open access CC BY 4.0 (Crossref). Headings: 2 \"Is the RFoT really absolute?\" (2.B \"Inner thoughts are beyond state power\"); 3 \"Should the RFoT be absolute? Exploring implied limitations\" (3.A Revitalization through Relativization; 3.B Altering thoughts: treating patients in mental healthcare; 3.C Revealing thoughts: saving lives and preventing torture); 4 \"Absolute safeguards: the essence of the RFoT\"; 5 Conclusion. The \"I agree with Bublitz … unpersuasive\" sentence is in §3.B, and the Bublitz work is cited as forthcoming in Bublitz & Blitz (eds.), vol. 2 (in press), not as a 2021 publication.\n- **Key passages:** \"Against this background, I agree with Bublitz that categorical insistence on the absolute nature of the RFoT—prohibiting any interference in every case—is unpersuasive.\" (§3.B) · essence: \"no punishment for unexpressed thought; no use of force to reveal a person's political or moral views; nor the imprinting of such views into persons' minds, especially not through means that undermine or bypass the person's (mental) autonomy\" (§4) · limitations: treatment when the right-holder is \"incompetent to give free and informed consent\"; \"to prevent imminent and severe harm\"; disclosure \"in emergency situations to save lives or prevent torture\" (§§3.B–C) · \"As Bublitz writes, this premise is 'evidently false'\" (§2.B).\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** III11 (l.76); ref [30] pinpoint correction (§3.A → §3.B; \"2021\" → vol. 2, 2026).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 247
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "027b80ef9d13309be268f1ea9943470dd9666473b1e9cd01f60c37d9427eb778",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ligthart-2025-section-pinpoints.md",
+ "kind": "artifact-page"
+}

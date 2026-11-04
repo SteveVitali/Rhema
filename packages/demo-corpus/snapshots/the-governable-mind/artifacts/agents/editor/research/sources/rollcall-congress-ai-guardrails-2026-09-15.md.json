@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/rollcall-congress-ai-guardrails-2026-09-15.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "091db9cca79130eb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/rollcall-congress-ai-guardrails-2026-09-15.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rollcall-congress-ai-guardrails-2026-09-15\n- **URL:** https://rollcall.com/2026/09/15/ai-threats-confront-a-congress-far-from-erecting-guardrails/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Roll Call, Sept 15, 2026: deadlock before midterms; Thune–Klobuchar effort; Kennedy to seek unanimous consent on a Senate kill-switch bill; Johnson 'self-police'; Trump 'hoax'; Obernolte–Trahan preemption; Cantwell opposed to weak federal standards.\n- **Key passages:** Thune: 'the question is, do we get bipartisan agreement?' · Johnson: 'They can self-police, they can self-regulate.'\n- **Reliability:** Secondary; congressional press.\n- **Relevance to this project:** Q5 legislative state of play.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 80
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c58503903740591cde0098c90106772721cf3e450d03e05d32ea397bdb0543b2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/rollcall-congress-ai-guardrails-2026-09-15.md",
+ "kind": "artifact-page"
+}

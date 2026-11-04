@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nvidia-open-weights-letter-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ff76b6508e4c8590",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nvidia-open-weights-letter-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nvidia-open-weights-letter-2026\n- **URL:** https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Nvidia coalition letter, July 24, 2026 (PDF extracted): open weights as models anyone can download, inspect, modify, run on own infrastructure; sovereignty and control framing; concedes irreversibility; defenders need comparable capability; asks to avoid premature restrictions; distillation is legitimate. Signatories grew from 25 to 150+ incl. OpenAI and Google, not Anthropic/xAI (per Forbes, Axios, NYU Shanghai coverage via search).\n- **Key passages:** \"anyone can download, inspect, modify, and run on their own infrastructure.\" · \"the right response to this risk is not to prohibit open weights. In a world where cybersecurity attackers use advanced AI, defenders need access to models with comparable capabilities.\" · \"avoiding premature restrictions on open models that stifle competition or drive innovation overseas.\"\n- **Reliability:** Primary; industry coalition; interested.\n- **Relevance to this project:** §1A; §3 item 3; l.218 September politics incomplete without it.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 150
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c6c0c306022fd27b36b229f3a391885626fe6d73b69df8d0b3635a8951d304d0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nvidia-open-weights-letter-2026.md",
+ "kind": "artifact-page"
+}

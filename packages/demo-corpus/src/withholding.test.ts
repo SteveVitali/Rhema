@@ -1,52 +1,49 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
-// REQ-CORPUS-14 / D-R6OSS.1-1 — the withholding tripwire: while the dated .gitignore marker is
-// present, no file under the withheld real-data paths (corpus/**, snapshots/**, goldens/**) may be
-// tracked — a `git add -f` lands in permanent public history. Fails hard on a planted entry.
+// REQ-CORPUS-14 / D-R6OSS.1-1 (post-HUMAN-H14, 219_R7DATA.1) — the tripwire inverted: H14 signed
+// the export on 2026-11-03 and the sanitized corpus is committed permanent public history. The
+// post-sign invariant is that the withheld marker is GONE (re-withholding would pretend the data
+// isn't already public history) and the real derived dirs are tracked and non-empty.
 
 const PKG = fileURLToPath(new URL("..", import.meta.url));
 const ROOT = join(PKG, "..", "..");
-const WITHHELD_RE = /^packages\/demo-corpus\/(corpus|snapshots|goldens)\//;
 const MARKER = "withheld until HUMAN-H14";
+const GITIGNORE = join(PKG, ".gitignore");
 
-export function withheldViolations(tracked: readonly string[], markerPresent: boolean): string[] {
-  if (!markerPresent) return [];
-  return tracked.filter((p) => WITHHELD_RE.test(p));
-}
-
-describe("withholding tripwire (REQ-CORPUS-14)", () => {
-  it("the dated withheld marker is present in packages/demo-corpus/.gitignore", () => {
-    expect(readFileSync(join(PKG, ".gitignore"), "utf8")).toContain(MARKER);
+describe("post-H14 corpus invariant (REQ-CORPUS-14, 219_R7DATA.1)", () => {
+  it("the withheld marker and root-anchored withholding patterns are gone from .gitignore", () => {
+    if (!existsSync(GITIGNORE)) return;
+    const text = readFileSync(GITIGNORE, "utf8");
+    expect(text).not.toContain(MARKER);
+    expect(text).not.toMatch(/^\/(corpus|snapshots|goldens)\/\s*$/m);
   });
 
-  it("no withheld path is tracked at HEAD", () => {
-    const tracked = execFileSync(
-      "git",
-      [
-        "ls-files",
-        "packages/demo-corpus/corpus",
-        "packages/demo-corpus/snapshots",
-        "packages/demo-corpus/goldens",
-      ],
-      { cwd: ROOT, encoding: "utf8" },
-    )
-      .split("\n")
-      .filter(Boolean);
-    expect(tracked).toEqual([]);
+  it("the real corpus, goldens and snapshots are tracked and non-empty at HEAD", () => {
+    for (const dir of ["corpus", "goldens", "snapshots"]) {
+      const tracked = execFileSync("git", ["ls-files", `packages/demo-corpus/${dir}`], {
+        cwd: ROOT,
+        encoding: "utf8",
+      })
+        .split("\n")
+        .filter(Boolean);
+      expect(tracked.length, `packages/demo-corpus/${dir}/ tracked`).toBeGreaterThan(0);
+    }
   });
 
-  it("the check fails on a force-added withheld path while the marker is present", () => {
-    const gitignore = readFileSync(join(PKG, ".gitignore"), "utf8");
-    expect(withheldViolations(["packages/demo-corpus/corpus/real/v1.md"], true)).toHaveLength(1);
-    expect(
-      withheldViolations(["packages/demo-corpus/snapshots/x.json"], gitignore.includes(MARKER)),
-    ).toHaveLength(1);
-    expect(
-      withheldViolations(["packages/demo-corpus/fixtures/synthetic/corpus/x.md"], true),
-    ).toHaveLength(0);
+  it("the export manifest carries the operator-signed digest (H14)", () => {
+    const manifest = JSON.parse(
+      readFileSync(join(PKG, "corpus/export-manifest.json"), "utf8"),
+    ) as { digest?: string };
+    expect(manifest.digest).toBe(
+      "19861a06c4401b8f9e1798751fe7dd6ab0e03b8670e974a4aab638c542116c91",
+    );
+  });
+
+  it("the committed corpus still carries its rules dir (denylist gate inputs)", () => {
+    expect(readdirSync(join(PKG, "corpus/_rules")).length).toBeGreaterThan(0);
   });
 });

@@ -1,0 +1,105 @@
+{
+ "chunks": {
+  "artifact-page": {
+   "agents/author/ledgers/v2-response-ledger.md": "artifacts/agents/author/ledgers/v2-response-ledger.md.json",
+   "agents/author/research/index.md": "artifacts/agents/author/research/index.md.json",
+   "agents/author/research/sources/anderson-epistemology-of-democracy.md": "artifacts/agents/author/research/sources/anderson-epistemology-of-democracy.md.json",
+   "agents/author/research/sources/anthropic-multi-agent-figures.md": "artifacts/agents/author/research/sources/anthropic-multi-agent-figures.md.json",
+   "agents/author/research/sources/chen-more-llm-calls.md": "artifacts/agents/author/research/sources/chen-more-llm-calls.md.json",
+   "agents/author/research/sources/cognition-dont-build-multi-agents.md": "artifacts/agents/author/research/sources/cognition-dont-build-multi-agents.md.json",
+   "agents/author/research/sources/estlund-democratic-authority.md": "artifacts/agents/author/research/sources/estlund-democratic-authority.md.json",
+   "agents/author/research/sources/farrell-shalizi-cognitive-democracy.md": "artifacts/agents/author/research/sources/farrell-shalizi-cognitive-democracy.md.json",
+   "agents/author/research/sources/federalist-51-authorship.md": "artifacts/agents/author/research/sources/federalist-51-authorship.md.json",
+   "agents/author/research/sources/fei-when-agents-evolve.md": "artifacts/agents/author/research/sources/fei-when-agents-evolve.md.json",
+   "agents/author/research/sources/four-color-kempe-heawood.md": "artifacts/agents/author/research/sources/four-color-kempe-heawood.md.json",
+   "agents/author/research/sources/hayek-use-of-knowledge.md": "artifacts/agents/author/research/sources/hayek-use-of-knowledge.md.json",
+   "agents/author/research/sources/huang-self-correction-yogurt.md": "artifacts/agents/author/research/sources/huang-self-correction-yogurt.md.json",
+   "agents/author/research/sources/kaesberg-voting-consensus.md": "artifacts/agents/author/research/sources/kaesberg-voting-consensus.md.json",
+   "agents/author/research/sources/popper-critical-rationalism.md": "artifacts/agents/author/research/sources/popper-critical-rationalism.md.json",
+   "agents/author/research/sources/rauch-constitution-of-knowledge.md": "artifacts/agents/author/research/sources/rauch-constitution-of-knowledge.md.json",
+   "agents/author/research/sources/smit-going-mad.md": "artifacts/agents/author/research/sources/smit-going-mad.md.json",
+   "agents/editor/research/index.md": "artifacts/agents/editor/research/index.md.json",
+   "correspondence/v2-response.md": "artifacts/correspondence/v2-response.md.json",
+   "correspondence/v2-review/00-piece-brief.md": "artifacts/correspondence/v2-review/00-piece-brief.md.json",
+   "correspondence/v2-review/01-claim-ledger.md": "artifacts/correspondence/v2-review/01-claim-ledger.md.json",
+   "correspondence/v2-review/02-discourse-report.md": "artifacts/correspondence/v2-review/02-discourse-report.md.json",
+   "correspondence/v2-review/03-argument-notes.md": "artifacts/correspondence/v2-review/03-argument-notes.md.json",
+   "correspondence/v2-review/04-craft-notes.md": "artifacts/correspondence/v2-review/04-craft-notes.md.json",
+   "correspondence/v2-review/05-second-read.md": "artifacts/correspondence/v2-review/05-second-read.md.json",
+   "correspondence/v2-review/editors-letter.md": "artifacts/correspondence/v2-review/editors-letter.md.json"
+  },
+  "card-facts": {
+   "": "card-facts.json"
+  },
+  "dossier": {
+   "v2-review": "dossier/v2-review.json"
+  },
+  "editor-doc": {
+   "published": "drafts/published.json",
+   "v2": "drafts/v2.json",
+   "v3": "drafts/v3.json",
+   "v4": "drafts/v4.json"
+  },
+  "figure-image": {},
+  "files": {
+   "": "files.json"
+  },
+  "run-report": {
+   "v2-review": "run-report/v2-review.json"
+  },
+  "timeline": {
+   "": "timeline.json"
+  },
+  "version-diff": {
+   "1:2": "diffs/1-2.json",
+   "2:3": "diffs/2-3.json",
+   "3:4": "diffs/3-4.json"
+  },
+  "versions": {
+   "": "versions.json"
+  },
+  "what-changed": {
+   "v2-v3": "what-changed/v2-v3.json",
+   "v3-v4": "what-changed/v3-v4.json",
+   "v4-published": "what-changed/v4-published.json"
+  }
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "head": {
+  "draftId": "published",
+  "n": 4
+ },
+ "resolve": {
+  "1": {
+   "draftId": "v2",
+   "draftN": 1,
+   "origin": "human_upload",
+   "state": "frozen"
+  },
+  "2": {
+   "draftId": "v3",
+   "draftN": 2,
+   "origin": "response_to_review",
+   "state": "frozen"
+  },
+  "3": {
+   "draftId": "v4",
+   "draftN": 3,
+   "origin": "human_revision",
+   "state": "frozen"
+  },
+  "4": {
+   "draftId": "published",
+   "draftN": 4,
+   "origin": "imported",
+   "state": "working"
+  },
+  "working": {
+   "draftId": "published",
+   "draftN": 4,
+   "origin": "imported",
+   "state": "working"
+  }
+ }
+}

@@ -1,0 +1,6 @@
+# zuboff-instrumentarian-power-p352
+- **URL:** https://www.google.com/books/feeds/volumes?q=%22instrumentation+and+instrumentalization+of+behavior+for+the+purposes+of+modification%22 (secondary for the page: https://bryanalexander.org/book-club/reading-the-age-of-surveillance-capitalism-chapters-11-and-12/) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B
+- **What it establishes:** The wording of Zuboff's definition of instrumentarian power is verified against the book through the Google Books volumes-feed snippet of The Age of Surveillance Capitalism; the page (352, chapter 12 "Two Species of Power") is confirmed only by Bryan Alexander's chapter-by-chapter reading, which quotes the sentence with "(352)". Google Books search-inside (which would show the page) returned a CAPTCHA.
+- **Key passages:** Zuboff volume snippet: "instrumentation and instrumentalization of behavior for the purposes of modification, prediction, monetization, and control. In this formulation, 'instrumentation' refers to the puppet: the ubiquitous connected material architecture…" · Alexander: same sentence, "(352)".
+- **Reliability:** Primary wording via Google Books snippet; page via a secondary (academic blogger's reading notes).
+- **Relevance to this project:** XIV4 (l.288); ref [84].

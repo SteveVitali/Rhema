@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/deazley-commentary-star-chamber-decree-1566.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "49440cb8afe9eac5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/deazley-commentary-star-chamber-decree-1566.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# deazley-commentary-star-chamber-decree-1566\n- **URL:** https://www.copyrighthistory.org/cam/tools/request/showRecord.php?id=commentary_uk_1566 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Clarifies the 1566 instrument: High Commission recommendations 'approved by the Privy Council at the Star Chamber in June 1566' — so 'Privy Council ordinances of 1566' and 'Star Chamber decree of 1566' name the same document.\n- **Key passages:** 'a short set of recommendations produced by Elizabeth's High Commission was approved by the Privy Council at the Star Chamber in June 1566.'\n- **Reliability:** Secondary; scholarly commentary.\n- **Relevance to this project:** C45\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "75b9b9887aff3b046d2ded4f1b1de53a864f9b45883e17be6c98b4ac32fef5ac",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/deazley-commentary-star-chamber-decree-1566.md",
+ "kind": "artifact-page"
+}

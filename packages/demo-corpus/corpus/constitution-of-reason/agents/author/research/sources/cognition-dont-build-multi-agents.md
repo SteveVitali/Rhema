@@ -1,0 +1,5 @@
+# cognition-dont-build-multi-agents
+- **URL:** https://cognition.com/blog/dont-build-multi-agents · **Accessed:** 2026-07-30 · **For:** v2→v3; the practitioner counter-default (Major issue 1)
+- **What it establishes:** Walden Yan (Cognition), "Don't Build Multi-Agents" (June 12, 2025). Principles: "Share context, and share full agent traces, not just individual messages"; "Actions carry implicit decisions, and conflicting decisions carry bad results." Parallel subagents fail through context fragmentation and conflicting implicit assumptions; "The simplest way to follow the principles is to just use a single-threaded linear agent" — single-threaded is the production default.
+- **Reliability:** primary (practitioner blog post, read in full via fetch summary).
+- **Relevance:** The engineering camp that presses the essay's own "coordination tax" to the opposite default conclusion. v3 acknowledges it by name where the coordination tax is discussed (§VII): the essay's frame *agrees* that most differentiation is bought at integration cost and predicts exactly when single-threading wins (tasks needing unified state).

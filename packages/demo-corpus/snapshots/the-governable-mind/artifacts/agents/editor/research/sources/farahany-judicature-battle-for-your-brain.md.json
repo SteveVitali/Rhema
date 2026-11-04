@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/farahany-judicature-battle-for-your-brain.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ae5fa4d57b8b601",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/farahany-judicature-battle-for-your-brain.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# farahany-judicature-battle-for-your-brain\n- **URL:** https://judicature.duke.edu/articles/the-battle-for-your-brain-a-legal-scholars-argument-for-protecting-brain-data-and-cognitive-liberty/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Farahany Q&A (Duke Judicature, 2023): cognitive liberty defined; three components; freedom of thought 'absolute ... but much narrower'; discusses GPT-based decoding and generative AI alongside neurotech; proposes international right with 'carrots and sticks'.\n- **Key passages:** \"a fundamental human right both to access and change our brains and to be safeguarded against others doing so\" · freedom of thought is \"an absolute human right, but much narrower ... because it's only about literally what you're thinking\"\n- **Reliability:** Primary interview with the proponent; self-presentation.\n- **Relevance to this project:** Report §1.5; draft subtitle, l.78.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2a8b3a46f02e08c474781f19f06786eb51193430acc0e04aaae5476641de404c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/farahany-judicature-battle-for-your-brain.md",
+ "kind": "artifact-page"
+}

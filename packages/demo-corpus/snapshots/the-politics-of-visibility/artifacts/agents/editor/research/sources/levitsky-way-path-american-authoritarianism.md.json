@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/levitsky-way-path-american-authoritarianism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "41aad5d9a6454491",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "5b6f8eaed9deb250",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "1478d7c259277005",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/levitsky-way-path-american-authoritarianism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Levitsky & Way, \"The Path to American Authoritarianism\" (2025)\n\n- **URL:** https://www.foreignaffairs.com/united-states/path-american-authoritarianism-trump ; full text read via https://ash.harvard.edu/wp-content/uploads/2025/03/Levitsky-Way-2025-The-Path-to-American-Authoritarianism-What-Comes-After-Democratic-Breakdown-3.pdf\n- **Accessed:** 2026-08-21 (full text read)\n- **Cite:** Foreign Affairs, March/April 2025 (pub. Feb. 11, 2025).\n\n**Establishes:** The leading regime-side claim the draft implicitly argues against. US is heading into competitive authoritarianism: \"incumbents rig the game by deploying the machinery of government to attack opponents and co-opt critics. Competition is real but unfair.\" Mechanism is \"the politicization and weaponization of government bureaucracy,\" and the citizen-level effect is *self-sidelining*: \"the heightened cost of public opposition will lead many of them to retreat to the political sidelines\" — CEOs stop donating, editors soften headlines, universities go quiet. This is the draft's coda mechanism, published 18 months earlier at the elite level. Divergence: L&W say the regime line is being crossed; the draft insists it is not and offers thresholds. Sequel noted (not read): \"The Price of American Authoritarianism,\" Foreign Affairs, Dec. 2025 (https://www.foreignaffairs.com/united-states/american-authoritarianism-levitsky-way-ziblatt). Also of record: Levitsky & Way, \"The Dynamics of Autocratic Coercive Capacity After the Cold War\" (https://levitsky.scholars.harvard.edu/publications/dynamics-autocratic-coercive-capacity-after-cold-war) — \"coercive capacity\" is an established term of art.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 182
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "992007fa276957ef700d0858a6ad64629b47c73aa9776237b7822a0c4a32aac2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/levitsky-way-path-american-authoritarianism.md",
+ "kind": "artifact-page"
+}

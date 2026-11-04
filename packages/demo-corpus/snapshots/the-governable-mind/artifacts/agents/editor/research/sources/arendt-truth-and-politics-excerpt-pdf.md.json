@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/arendt-truth-and-politics-excerpt-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "97d1903a8a910127",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/arendt-truth-and-politics-excerpt-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# arendt-truth-and-politics-excerpt-pdf\n- **URL:** https://idanlandau.com/wp-content/uploads/2014/12/arendt-truth-and-politics.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** 8-page excerpt (with elisions): 'It is political by nature' and 'unwelcome facts possess an infuriating stubbornness that nothing can move except plain lies' verified; the 'farce' sentence not present in the excerpt.\n- **Key passages:** \"unwelcome facts possess an infuriating stubbornness that nothing can move except plain lies\"\n- **Reliability:** Primary text, excerpted; New Yorker original not fetchable.\n- **Relevance to this project:** Report §5 item 11; draft l.200 (C62) partially confirmed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 84
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e6eb30195ab85b7d6e3546561a145d9be3b3c2f9ff4245c2f7661d759c13d7e4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/arendt-truth-and-politics-excerpt-pdf.md",
+ "kind": "artifact-page"
+}

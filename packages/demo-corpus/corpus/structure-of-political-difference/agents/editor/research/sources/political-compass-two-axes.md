@@ -1,0 +1,7 @@
+# political-compass-two-axes
+
+- **URL:** https://www.politicalcompass.org/analysis2 · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** The canonical popular two-axis model (economic left↔right; social authoritarian↔libertarian), descended from the Nolan chart (1969). Its critique of one-dimensionality is the same as the draft's opening move, made a quarter-century earlier: one line conflates economics with social attitudes.
+- **Key passages:** The left-right line is "certainly fine for discussing economics but to this day is still widely — and wrongly — used to describe social attitudes." "On that basis, North Korea must be a shining model of human rights and social freedoms!" Examples: Singapore (economically free, "deeply authoritarian"); France's National Rally "far right" despite economics "sometimes to the left of even the French Socialist Party."
+- **Reliability:** Primary source for its own model; widely known; methodologically criticized elsewhere (question wording, opaque scoring) but that is not at issue here.
+- **Relevance to this project:** The draft's "compression" critique is not new — it is the founding gesture of a whole genre (Nolan 1969 → Political Compass → 8values → 9Axes → PolitiScales). The National Rally example is nearly the draft's welfare-nationalist point. The draft never mentions this genre; a one-paragraph genealogy ("two axes were the first decompression; here is why two is still too few and why a test is the wrong form") would inoculate it against "Political Compass with extra steps."

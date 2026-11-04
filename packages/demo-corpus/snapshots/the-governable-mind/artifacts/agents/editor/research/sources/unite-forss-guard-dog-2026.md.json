@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/unite-forss-guard-dog-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8828eaaa93ac8d5f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/unite-forss-guard-dog-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# unite-forss-guard-dog-2026\n- **URL:** https://www.unite.ai/ai-security-lessons-hugging-face-exploit-barings/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Forss (EXANTE CTO), Sept 14, 2026: guardrails shielded the attacker's methods from defenders; keep a capable model on owned hardware; cites Huang, Meta, Microsoft, IBM on defender parity.\n- **Key passages:** \"The safety feature worked perfectly, in the sense that it shielded the attacker's methods from the only people with a reason to study them.\" · \"Keep a capable model on hardware you own, aimed at the work the commercial ones will primarily decline.\"\n- **Reliability:** Secondary; practitioner op-ed.\n- **Relevance to this project:** §6 practitioner reading; the self-hosting remedy as industry advice.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 105
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a0a7ad915dec28439620f9512484bf3b34679766ba8512afc68f5bc162e8a118",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/unite-forss-guard-dog-2026.md",
+ "kind": "artifact-page"
+}

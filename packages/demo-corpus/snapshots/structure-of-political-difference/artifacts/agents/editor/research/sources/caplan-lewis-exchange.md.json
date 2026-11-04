@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/caplan-lewis-exchange.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b6442d09c30e7176",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fa0f291dabbc2167",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/caplan-lewis-exchange.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# caplan-lewis-exchange\n\n- **URL:** https://www.betonit.ai/p/the-myth-of-left-and-right-the-last · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Bryan Caplan defends the spectrum as a useful simple model: \"the spectrum helps us to understand political identity and political conflict. Which it totally does\" (analogy: masculine/feminine, rich/poor — imperfect unidimensional models can still be useful). Hyrum Lewis's last-word rebuttal: \"the political spectrum is not useful...it's based on a delusion\"; studying how people self-identify around false categories differs from the categories modeling reality. Crucially for Phase 2, Lewis states the granularity objection: \"there is more than one issue in politics\" — politics is like biology (many species) or chemistry (many elements); we should keep issues unbundled — \"why not just say 'anti-market' instead of 'left-wing'?\"\n- **Key passages:** As quoted above; both sides in one exchange.\n- **Reliability:** Primary for both positions (hosted debate on Caplan's Substack).\n- **Relevance to this project:** Contains, in compact form, both the strongest practical defense of left-right (Caplan's coordination/simple-model view — which the draft's §VIII partly concedes) and the strongest attack on the draft (Lewis's granularity argument, which applies with equal force to five axes: each of the draft's \"questions\" is itself a bundle — Economy bundles trade, tax, redistribution, property; a protectionist tax-cutter has no single Economy score). The draft addresses neither party by name.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 214
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "03ea47e5cb5f577c035154389b85ec0fe62a160cca87f442162d5ce8beb6a21a",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/caplan-lewis-exchange.md",
+ "kind": "artifact-page"
+}

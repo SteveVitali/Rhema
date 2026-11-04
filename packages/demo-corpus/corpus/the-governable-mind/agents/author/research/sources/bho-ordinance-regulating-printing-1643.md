@@ -1,0 +1,13 @@
+# bho-ordinance-regulating-printing-1643
+- **URL:** https://www.british-history.ac.uk/no-series/acts-ordinances-interregnum/pp184-186 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C55
+- **What it establishes:** "June 1643: An Ordinance for the Regulating of Printing," in *Acts and Ordinances of the Interregnum, 1642-1660*, ed. C. H. Firth and R. S. Rait (London, 1911), pp. 184-186, dated [14 June, 1643]. Primary text of the Licensing Order: pre-publication licensing, entry in the Stationers' Register, and search-and-seizure powers vested in the Master and Wardens of the Stationers' Company (among others).
+- **Key passages:**
+  - Preamble: "Whereas divers good orders have been lately made by both Houses of Parliament, for suppressing the great late abuses and frequent disorders in Printing many false, forged, scandalous, seditious, libellous, and unlicensed Papers, Pamphlets, and Books"
+  - "Which Orders (notwithstanding the diligence of the company of Stationers to put them in full execution) have taken little or no effect"
+  - Licensing clause: "Nor other Book, Pamphlet, paper, nor part of any such Book, Pamphlet, or paper shall from henceforth be printed, bound, stitched or put to sale by any person or persons whatsoever, unless the same be first approved of and licensed"
+  - "and entred in the Register Book of the Company of Stationers, according to ancient custom, and the Printer thereof to put his name thereto."
+  - Search clause: "the Master and Wardens of the said Company, the Gentleman Usher of the House of Peers, the Sergeant of the Commons House and their Deputies ... are hereby Authorized and required, from time to time, to make diligent search in all places"
+  - "for all unlicensed Printing Presses ... and to seize and cary away such Printing Presses Letters, together with the Nut, Spindle, and other materials of every such irregular Printer ... unto the Common Hall of the said Company there to be defaced"
+  - Copy-protection clause: no reprinting of books "granted to the said Company of Stationers for their relief and maintenance of their poor, without the license or consent of the Master, Wardens and Assistants of the said Company"
+- **Reliability:** Primary (scholarly edition of the statute text, hosted by the Institute of Historical Research). Date given as 14 June 1643; some secondary sources say 16 June.
+- **Relevance to this project:** C55 — enforcement "in part through" the Stationers' Company is verbatim in the search-and-seizure clause; the Company also gets copy protection.

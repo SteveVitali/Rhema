@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/decrypt-2026-os-investigate.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "77a850b3502f2be7",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "e04c4d4ef8e764c4",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/decrypt-2026-os-investigate.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# decrypt-2026-os-investigate\n\n- **URL:** https://decrypt.co/375978/flock-ai-police-tool-track-drivers · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** Second independent account of the WIRED OS Investigate report (Decrypt: Jose Antonio Lanz, Aug 20, 2026). WIRED extracted system code from files served by Flock's own login pages; Flock did not dispute the reporting's accuracy. Data sources: license plate reader data, police/arrest records, commercial databases \"including Social Security numbers and family connections,\" plus agency-held records. The system ships with 69 prewritten prompts, including vehicles most frequently seen in a neighborhood over two weeks, people arrested multiple times in a timeframe, vehicles visiting multiple retail locations within days, and \"associates\" inferred from vehicle co-location patterns; 14 prompts require only location, time, and behavioral pattern — no plate, name, or description.\n- **Key passages:** Flock spokesperson Paris Lewbel: OS Investigate is a separate product \"to help investigators work across records their agencies already hold,\" with capabilities potentially changing before wider release.\n- **Reliability:** Secondary (coverage of WIRED). Consistent with Gizmodo's account and multiple other outlets (Cybernews, TechTimes, TheNextWeb headlines seen in search).\n- **Relevance to this project:** C6 (behavioral/associational queries, recurring-visitor prompts, no-plate pattern searches — the exact interface features the essay characterizes).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 193
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b7636b569b08c9fb6c62a4b2bff54ef8630cfcea88eef19aaf1682105be1f6f0",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/decrypt-2026-os-investigate.md",
+ "kind": "artifact-page"
+}

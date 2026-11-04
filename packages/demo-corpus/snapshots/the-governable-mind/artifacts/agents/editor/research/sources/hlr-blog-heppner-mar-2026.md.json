@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hlr-blog-heppner-mar-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "732e9327fda3618b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hlr-blog-heppner-mar-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hlr-blog-heppner-mar-2026\n- **URL:** https://harvardlawreview.org/blog/2026/03/united-states-v-heppner/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Mira Kumar, Mar. 23, 2026: Rakoff, J. held Heppner's Claude exchanges not privileged (Claude not an attorney; confidentiality defeated by platform data terms; no intent to obtain advice from Claude); Kumar argues courts treat software tools as not breaking privilege and invokes Katz.\n- **Key passages:** \"Because Claude is not an attorney, that alone disposes of Heppner's claim of privilege.\"\n- **Reliability:** Secondary (student-edited law review blog) on a primary opinion; independent.\n- **Relevance to this project:** Report §6, §4; draft l.120 (exit illustration), l.232.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d4891a7231496500403a3011750eefa1cdad2dab616902963a30547de3c857d8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hlr-blog-heppner-mar-2026.md",
+ "kind": "artifact-page"
+}

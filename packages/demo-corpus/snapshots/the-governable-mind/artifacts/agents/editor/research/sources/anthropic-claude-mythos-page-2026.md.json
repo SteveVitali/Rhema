@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/anthropic-claude-mythos-page-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b14a0003fbf8c08e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/anthropic-claude-mythos-page-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-claude-mythos-page-2026\n- **URL:** https://www.anthropic.com/claude/mythos · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** Anthropic's Mythos page (Mythos 5.1 announced Sept. 1, 2026; Mythos 5 launched June 9, 2026): the two l.206 quotations verbatim; trusted access programs (Cyber Verification Program; Life Sciences Verification Program, invite-only beta) (X2).\n- **Key passages:** \"Claude Mythos 5.1 is available to vetted cyberdefenders and life scientists through our trusted access programs.\" · \"Currently, we're only able to make it available to a set of US organizations, though we're working to expand access.\" · \"We currently only provide access to a small, but growing, set of vetted organizations through our trusted access programs.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** l.206; ref [69].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 124
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "eb25b2e8fd076b00e58a457341eab7b9302bcb342c5321f2fc84f7f82b33be45",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/anthropic-claude-mythos-page-2026.md",
+ "kind": "artifact-page"
+}

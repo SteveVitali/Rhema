@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/scott-seeing-like-a-state-fulltext.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a4463a10b8e57c53",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/scott-seeing-like-a-state-fulltext.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# scott-seeing-like-a-state-fulltext\n- **URL:** https://ia801803.us.archive.org/29/items/the-anarchist-library-full-list-of-pdfs-nov-2020/james-c-scott-seeing-like-a-state.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Confirms wording of both C51 quotations (same paragraph, opening of Part 3). Not paginated to the Yale edition.\n- **Key passages:** 'Legibility is a condition of manipulation. Any substantial state intervention in society … requires the invention of units that are visible.'\n- **Reliability:** Primary text, unofficial PDF copy.\n- **Relevance to this project:** C51\n",
+  "meters": {
+   "readMin": 1,
+   "words": 67
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b18fb69e746a43136291a9eff49cc1cbdca7f8f82dbb3aae6a74b1fa1909c2a4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/scott-seeing-like-a-state-fulltext.md",
+ "kind": "artifact-page"
+}

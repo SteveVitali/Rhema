@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techcrunch-open-weight-safety-gap-saferai-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "55301b241c575adf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/techcrunch-open-weight-safety-gap-saferai-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-open-weight-safety-gap-saferai-2026\n- **URL:** https://techcrunch.com/2026/08/04/open-weight-ai-models-are-catching-up-to-the-frontier-the-safety-gap-remains/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** TechCrunch (Bellan), Aug 4, 2026: SaferAI evaluation—GLM-5.2 refused zero offensive cyber/bio requests; Claude Opus 4.7 refused so consistently CyberGym could not be completed; HF used GLM-5.2 for defense; Papadatos: 'The frontier of capability is not the frontier of risk'.\n- **Key passages:** \"refused so consistently that SaferAI could not complete CyberGym on it at all.\" · \"The frontier of capability is not the frontier of risk.\"\n- **Reliability:** Secondary; reporting an independent evaluator.\n- **Relevance to this project:** Independent corroboration of the refusal asymmetry (l.14); the exit model is the safety camp's danger model (§4(a)).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1462be4edde34ce25822e13b0b6cc68cc598003d89348db20ddf1542a30cdd13",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/techcrunch-open-weight-safety-gap-saferai-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/penney-2016-pp164-169-shaheed-fn102.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b50d61677b64c669",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/penney-2016-pp164-169-shaheed-fn102.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# penney-2016-pp164-169-shaheed-fn102\n- **URL:** https://btlj.org/data/articles2016/vol31/31_1/0117_0182_Penney_ChillingEffects_WEB.pdf (pp. 164, 169) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Shaheed A/76/380 fn. 102 cites \"lawcat.berkeley.edu/record/1127413/files/fulltext.pdf, pp. 164 and 169\" for the para. 54 self-censorship sentence. The lawcat record would not open (403/empty via curl), but pp. 164 and 169 of Penney's BTLJ article (vol. 31, 117–182, which Berkeley's library catalogue hosts) carry exactly the conformity/self-censorship discussion the sentence summarizes — so \"citing that research\" (l.86) is consistent and effectively confirmed. Against interest: p. 164 already argues that fear of prosecution cannot explain the chilling and that conformity (\"pollution\") may, which the draft attributes to Penney 2022.\n- **Key passages:** p. 164: \"it is unlikely that actual fear of prosecution can fully explain the chilling effects suggested by the findings of this study. Rather, Solove's notion of surveillance-related 'pollution'—the broader societal context of self-censorship and conformity arising from ubiquitous and large-scale surveillance—may be the better explanation.\" · p. 169: chilling effects threaten \"what Richards calls 'intellectual privacy'—the freedom to read, think, and communicate privately\"; \"Chilling effects are indeed a force for conformity and therefore corrosive to 'political discourse.'\"\n- **Reliability:** Primary (journal PDF); independent.\n- **Relevance to this project:** III24 (l.86), III25 (l.86); resolves round 1's open fn. 102 question.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 207
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce6855d90067bd1cf065d3f67a021ecc414b749ffedbc556efd6aa68ada23b0f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/penney-2016-pp164-169-shaheed-fn102.md",
+ "kind": "artifact-page"
+}

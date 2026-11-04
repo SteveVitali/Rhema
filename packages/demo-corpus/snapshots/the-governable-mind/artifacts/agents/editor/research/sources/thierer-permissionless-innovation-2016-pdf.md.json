@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/thierer-permissionless-innovation-2016-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6281f244782f4474",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/thierer-permissionless-innovation-2016-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thierer-permissionless-innovation-2016-pdf\n- **URL:** https://www.mercatus.org/media/61036/download?attachment (book page: https://www.mercatus.org/research/books/permissionless-innovation-continuing-case-comprehensive-technological-freedom) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Thierer, Permissionless Innovation: The Continuing Case for Comprehensive Technological Freedom, \"Revised and Expanded Edition\" (Mercatus Center, Mar. 15, 2016). The defining sentence is in the Preface (\"Which Policy Vision Will Govern the Future?\").\n- **Key passages:** \"The other vision can be labeled 'permissionless innovation.' It refers to the notion that experimentation with new technologies and business models should generally be permitted by default. Unless a compelling case can be made that a new invention will bring serious harm to society, innovation should be allowed to continue unabated and problems, if any develop, can be addressed later.\"\n- **Reliability:** Primary (publisher PDF); author is a libertarian policy advocate.\n- **Relevance to this project:** XIV3 (l.288); ref [83].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "24c94a41410f33b73f43ce9e6c142190323a643583a27173bf0f770a3d4e5b75",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/thierer-permissionless-innovation-2016-pdf.md",
+ "kind": "artifact-page"
+}

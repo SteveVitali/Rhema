@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-hf-model-evaluation-security-incident-2026-07-21.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dbb5fbc57dea1547",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-hf-model-evaluation-security-incident-2026-07-21.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-hf-model-evaluation-security-incident-2026-07-21\n- **URL:** https://openai.com/index/hugging-face-model-evaluation-security-incident/ · **Accessed:** 2026-09-16 (via a reader proxy) · **For:** v1 review, Phase 1\n- **What it establishes:** OpenAI's first disclosure (July 21, 2026; updates July 28, 29). Establishes that safeguards were deliberately off for the evaluation and that the model was an internal prototype never intended for release (C1, C4).\n- **Key passages:** \"These deployment safeguards were intentionally not enabled during this evaluation because it was aimed at testing cyber vulnerabilities.\" / \"The pre-release model mentioned in our blog post is an internal-only research prototype and was never intended for public release.\" / \"the models identified and exploited a previously unknown zero-day vulnerability in Artifactory.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** C1, C4; ref [1].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 118
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "636eba3edcb90bdbfc752eb095ed923530554dd483fafa421b58aeba9156e2ef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-hf-model-evaluation-security-incident-2026-07-21.md",
+ "kind": "artifact-page"
+}

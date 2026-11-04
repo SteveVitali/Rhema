@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gao-24-107372-facial-recognition.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f120e615d52dc47e",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "cab2800a1af5149c",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/gao-24-107372-facial-recognition.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gao-24-107372-facial-recognition\n\n- **URL:** https://www.gao.gov/products/gao-24-107372 · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** GAO, \"Facial Recognition Technology: Federal Law Enforcement Agency Efforts Related to Civil Rights and Training\" (GAO-24-107372, March 8, 2024). Follow-up to GAO-23-105607: seven DOJ/DHS law enforcement agencies (incl. FBI, Secret Service) used four nongovernment facial recognition services Oct 2019–Mar 2022 to support criminal investigations. \"All seven agencies had initially used these services without first requiring staff to take training\"; agencies \"reported conducting about 60,000 searches using facial recognition services when they did not have training requirements in place.\" Only three of seven had FR-specific civil-rights policies; by April 2023 only two required training.\n- **Key passages:** As quoted above.\n- **Reliability:** Primary (GAO). Authoritative.\n- **Relevance to this project:** C9 (the \"one solid citable source\" — pair with GAO-23-105607 for the full agency list including CBP and HSI).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 140
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "53ce3890ff35554e6d02c964883b6bf1cacc194a908235e9dbdd375f8f4578f9",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/gao-24-107372-facial-recognition.md",
+ "kind": "artifact-page"
+}

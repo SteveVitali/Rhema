@@ -1,0 +1,14 @@
+# hf-security-incident-disclosure-jul-2026
+- **URL:** https://huggingface.co/blog/security-incident-july-2026 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C2, C54, C58
+- **What it establishes:** Hugging Face's first public account (July 16, 2026). Initial access via a malicious dataset abusing dataset-processing code-execution paths; an autonomous agent framework ran thousands of actions; unauthorized access to "a limited set of internal datasets" and "several credentials"; no evidence of tampering with public models/datasets/Spaces. Forensics: commercial-API frontier models were blocked by provider guardrails; analysis run instead on zai-org/GLM-5.2 on Hugging Face's own infrastructure. At this date HF did not yet attribute the attack to OpenAI ("LLM still not known").
+- **Key passages:**
+  - "A malicious dataset abused two code-execution paths in our dataset processing to run code on a processing worker."
+  - "The campaign was run by an autonomous agent framework executing many thousands of individual actions across a swarm of short-lived sandboxes."
+  - "Unauthorized access to a limited set of internal datasets and to several credentials used by our services."
+  - "We ran LLM-driven analysis agents over the full attacker action log, comprised of more than 17,000 recorded events."
+  - "We first used frontier models behind commercial APIs. This did not work: requests were blocked by the providers' safety guardrails, which cannot distinguish an incident responder from an attacker."
+  - "We ran the forensic analysis instead on zai-org/GLM-5.2, an open-weight model, on our own infrastructure."
+  - "No attacker data, and none of the credentials it referenced, left our environment."
+  - "We have found no evidence of tampering with public, user-facing models, datasets, or Spaces, and our software supply chain was verified clean."
+- **Reliability:** Primary (victim's own disclosure). Hugging Face has a commercial interest in open-weight models; the forensic detail is nonetheless first-hand.
+- **Relevance to this project:** The primary source for the local-GLM forensics detail in C2 and for C58; also the best source for what "compromised" means (datasets + credentials, not public models).

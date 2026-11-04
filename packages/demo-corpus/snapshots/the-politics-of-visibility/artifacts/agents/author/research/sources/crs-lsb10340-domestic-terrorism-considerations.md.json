@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/crs-lsb10340-domestic-terrorism-considerations.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "667b2fa0d68c5c00",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/crs-lsb10340-domestic-terrorism-considerations.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# crs-lsb10340-domestic-terrorism-considerations\n- **URL:** https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C14–C19\n- **What it establishes:** CRS Legal Sidebar LSB10340, \"Domestic Terrorism: Some Considerations\" (Aug. 12, 2019, Charles Doyle; version 2). Full PDF downloaded and text-extracted. Establishes that federal law defines domestic terrorism (18 U.S.C. § 2331(5)) without making it a named offense, and that the material-support-to-designated-FTO crime \"has no similarly captioned counterpart on the domestic side\" — while cautioning that conspiracy/accomplice liability covers much of the same ground.\n- **Key passages:** \"Existing federal law defines domestic terrorism but does not outlaw it by name.\" · \"Domestic terrorism, by name, is not a federal crime, but the conduct that Section 2331(5) describes is already a state or federal crime under some other name.\" · \"the federal crime of providing material support to a designated foreign terrorist organization has no similarly captioned counterpart on the domestic side. Yet here too, the basis for criminal liability has a different name.\" · Quoting Holder v. HLP dictum: \"[w]e also do not suggest that Congress could extend the same prohibition on material support at issue here to domestic organizations.\"\n- **Reliability:** Primary-adjacent (CRS: nonpartisan congressional shared staff); authoritative on U.S. federal law as of 2019; no advocacy stake.\n- **Relevance to this project:** C14 core framing; supports C15/C16 context. Note the sidebar's own caveat (conspiracy/aiding-and-abetting as functional analogues) — the essay should not imply supporters of domestic groups are legally untouchable, only that no designation mechanism/named offense exists.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 240
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3d2c5e0b2a2e9ba6bc1a587724b0310262832513f8647c5d44829e08762544d1",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/crs-lsb10340-domestic-terrorism-considerations.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,14 @@
+{
+ "files": {
+  "correspondence/v2-review/{editors-letter,05-second-read}.md": {
+   "exact": 18,
+   "exact-multi": 0,
+   "fuzzy": 3,
+   "line": 0,
+   "none": 3,
+   "normalized": 1,
+   "section": 2
+  }
+ },
+ "version": 1
+}

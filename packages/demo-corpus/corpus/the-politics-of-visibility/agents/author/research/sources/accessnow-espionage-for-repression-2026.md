@@ -1,0 +1,10 @@
+# accessnow-espionage-for-repression-2026
+- **URL:** https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf (29-pp. PDF downloaded and read; blog: https://www.accessnow.org/mena-phishing-2026/) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C45
+- **What it establishes:** "Espionage for Repression: Forensic Analysis of a Cross-Border Hack-for-Hire Campaign Targeting Civil Society in MENA," Access Now Digital Security Helpline team, April 2026. Investigation of spear-phishing against Egyptian journalists Mostafa Al-A'sar and Ahmed Eltantawy (Oct 2023 / Jan 2024), plus a similar SMEX-investigated case against a Lebanese journalist; attributes activity to a likely hack-for-hire APT. Phishing and impersonation are the recurring vectors throughout (37 "phishing" / 13 "impersonat-" occurrences): impersonation of Apple, Microsoft, Signal, Google, and media brands via lookalike domains and fake accounts.
+- **Key passages (verbatim):**
+  - "In this report, Access Now's Digital Security Helpline ('the Helpline') outlines our investigation into spear-phishing cases targeting Egyptian members of civil society in 2023 and 2024..."
+  - "The attacker impersonated Apple." (Al-A'sar iMessage/Apple-account case)
+  - "...the use of similar impersonation tactics, a common fingerprint, and the repeated use of the same attack infrastructure" links the SMEX case to the same actor.
+  - Infrastructure tables list spoofed Apple/Microsoft/Signal/Guardian domains (e.g., "confirm-your-identity[.]ar-id[.]co", "signin-guardian[.]ar-me[.]cc").
+- **Reliability:** Primary (the investigating organization's forensic report); attribution independently echoed by Lookout and press coverage (TechCrunch, CyberScoop, Infosecurity, April 2026).
+- **Relevance to this project:** C45 — the 2026 investigation; phrase the vectors as "spear-phishing and impersonation (of trusted services and contacts)" rather than the outline's "identity impersonation."

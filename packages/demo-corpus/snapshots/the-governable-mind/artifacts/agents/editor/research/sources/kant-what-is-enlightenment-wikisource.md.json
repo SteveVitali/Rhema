@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kant-what-is-enlightenment-wikisource.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7494cff0d5e793ce",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/kant-what-is-enlightenment-wikisource.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kant-what-is-enlightenment-wikisource\n- **URL:** https://en.wikisource.org/wiki/What_is_Enlightenment%3F · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Beck translation: public use 'as a scholar before the reading public'; private 'in a particular civil post or office which is entrusted to him'; guardians passage.\n- **Key passages:** \"the use which a person makes of it as a scholar before the reading public\"\n- **Reliability:** Primary text.\n- **Relevance to this project:** Report §5 item 4; draft l.40 (C25).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "74a01aac151e8d1101fea95acc5b9c8043822903f2801df1bc18e8e41c0ba899",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/kant-what-is-enlightenment-wikisource.md",
+ "kind": "artifact-page"
+}

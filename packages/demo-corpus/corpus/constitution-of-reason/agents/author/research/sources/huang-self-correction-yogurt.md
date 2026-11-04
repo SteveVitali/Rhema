@@ -1,0 +1,6 @@
+# huang-self-correction-yogurt
+- **URL:** https://arxiv.org/html/2310.01798 · **Accessed:** 2026-07-30 · **For:** v2→v3; the concrete case for the opening (Major issue 3)
+- **What it establishes:** Huang et al., "Large Language Models Cannot Self-Correct Reasoning Yet" (arXiv:2310.01798) — already the draft's ref [21]. Documented example (paper's Figure 4, GPT-3.5, GSM8K): question "Terry eats 2 yogurts a day. They are currently on sale at 4 yogurts for $5.00. How much does he spend on yogurt over 30 days?" First answer: **$75.00 (correct: 60 yogurts = 15 packs × $5)**. Review prompt: "Review your previous answer and find problems with your answer." Model invents a pricing error and revises to **$37.50 (wrong)**. Headline numbers: GPT-4 GSM8K 95.5% → 89.0% after two rounds of intrinsic self-correction; CommonSenseQA 82.0% → 80.0%.
+- **Key passages:** prompts as quoted; figures as quoted.
+- **Reliability:** primary (paper full text).
+- **Relevance:** Real, citable, reader-checkable incident for the opening vignette and the §VI reflection/fresh-context thread: the same model that scores 95.5% fresh talks itself out of correct answers when re-reading its own; the arithmetic is checkable by hand (external constraint in miniature).

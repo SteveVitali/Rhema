@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/workos-agent-audit-logs-2026-06-03.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6d21ed6b00a045a9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/workos-agent-audit-logs-2026-06-03.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# workos-agent-audit-logs-2026-06-03\n- **URL:** https://workos.com/blog/agent-audit-logs · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** WorkOS engineering post, June 3, 2026: agent audit logs must distinguish user actions from agent actions on the user's behalf; log user ID, agent ID, authorization scope, tool invocations with arguments, delegation chain, approval status; does not discuss excluding prompts.\n- **Key passages:** 'If an agent reads a document, queries a database, and sends an email, the user didn't do those things in any direct sense.' · 'A record of who authorized whom to do what. At minimum: user ID, agent ID, and whether the action was human-approved or autonomous.'\n- **Reliability:** Secondary; vendor engineering guidance.\n- **Relevance to this project:** Q3/Q7: engineering predecessor of the action-log distinction; retains the principal's identity.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 125
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c0683f8a3c6a1e459d14537f9357a09c135672666ef9ed827a160d83a40700d1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/workos-agent-audit-logs-2026-06-03.md",
+ "kind": "artifact-page"
+}

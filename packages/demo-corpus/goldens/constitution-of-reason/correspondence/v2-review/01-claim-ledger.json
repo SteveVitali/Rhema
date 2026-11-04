@@ -1,0 +1,1011 @@
+{
+ "claims": [
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b4",
+    "confidence": 1,
+    "endOffset": 91,
+    "quote": "Although the logos is common, the many live as though they had a private understanding.",
+    "startOffset": 4
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/heraclitus",
+   "note": "Fix: none required. Optional polish: credit the translation (it is closest to the Curd/McKirahan-family rendering) or mark it \"trans. modified.\"\nFinding: Fragment number, wording, and reading all check out. The Stanford Encyclopedia of Philosophy renders B2: \"Although this Word is common, the many live as if they had a private understanding\" — the draft's epigraph is this standard rendering with *logos* left untranslated and \"as though\" for \"as if.\" Wikipedia's Heraclitus article gives another standard translation with the same sense (\"And though reason is common, most people live as though they had an understanding peculiar to themselves\") and confirms the scholarly dispute over *logos* the draft's §I asserts (Kahn arguing multiple deliberate senses vs. Guthrie denying unusual usage; \"Heraclitus might have a different meaning of the word for each usage\").",
+   "ordinal": 0,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/heraclitus",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/heraclitus/"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Heraclitus",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Heraclitus"
+    }
+   ],
+   "text": "\"Although the logos is common, the many live as though they had a private understanding.\" — Heraclitus, DK 22 B2 (epigraph); also §I ¶1: \"the meaning of *logos* in them remains contested\"",
+   "tier": 1,
+   "url": "https://plato.stanford.edu/entries/heraclitus/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b15",
+    "confidence": 1,
+    "endOffset": 732,
+    "quote": "Anthropic's research system uses a lead agent to delegate different searches to subagents operating in their own contexts, then compresses their findings into a final synthesis.",
+    "startOffset": 555
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+   "note": "Fix: none.\nFinding: Matches the primary source. The Anthropic engineering post: \"the lead agent analyzes it, develops a strategy, and spawns subagents to explore different aspects simultaneously\"; \"Subagents facilitate compression by operating in parallel with their own context windows.\"",
+   "ordinal": 1,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+     "stance": "supports",
+     "url": "https://www.anthropic.com/engineering/built-multi-agent-research-system"
+    }
+   ],
+   "text": "\"Anthropic's research system uses a lead agent to delegate different searches to subagents operating in their own contexts, then compresses their findings into a final synthesis.\"",
+   "tier": 1,
+   "url": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b163",
+    "confidence": 1,
+    "endOffset": 424,
+    "quote": "Anthropic reports that this architecture performs especially well on breadth-first research questions—but it also reports that token use alone explained most of the performance variance in one analysis, and that multi-agent research consumed many times the tokens of ordinary chat.",
+    "startOffset": 143
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+   "note": "Fix: none. The draft could cite the exact figures (80%, 15×) for force.\nFinding: All three sub-claims are in the source, with the numbers behind the draft's hedged phrasing: \"multi-agent research systems excel especially for breadth-first queries\"; \"token usage by itself explains 80% of the variance\" (three factors together explain 95%); \"multi-agent systems use about 15× more tokens than chats.\" \"Most of the variance\" and \"many times the tokens\" are accurate compressions of 80% and 15×.",
+   "ordinal": 2,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+     "stance": "supports",
+     "url": "https://www.anthropic.com/engineering/built-multi-agent-research-system"
+    }
+   ],
+   "text": "\"Anthropic reports that this architecture performs especially well on breadth-first research questions—but it also reports that token use alone explained most of the performance variance in one analysis, and that multi-agent research consumed many times the tokens of ordinary chat.\"",
+   "tier": 1,
+   "url": "https://www.anthropic.com/engineering/built-multi-agent-research-system",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b15",
+    "confidence": 1,
+    "endOffset": 856,
+    "quote": "Google's AI co-scientist organizes specialized agents around generation, reflection, ranking, evolution, and meta-review",
+    "startOffset": 736
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2502.18864",
+   "note": "Fix: none.\nFinding: All correct, including the retitling parenthetical the brief flagged as suspicious. arXiv:2502.18864 v1 (Feb 26, 2025) is titled \"Towards an AI co-scientist,\" Gottweis and Weng first authors; the current version (v2, revised 2026) is titled \"Accelerating scientific discovery with Co-Scientist,\" with \"a tournament evolution process for self-improving hypotheses generation\" in the abstract. Google's research blog names exactly six agents — Generation, Reflection, Ranking, Evolution, Proximity, Meta-review — and Elo-based tournament evaluation. Note the Second Context paragraph lists five roles (omitting proximity); §VI gives all six; both are accurate as written (\"organizes … around\" vs. exhaustive list).",
+   "ordinal": 3,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2502.18864",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2502.18864"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2502.18864v1",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2502.18864v1"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist",
+     "stance": "supports",
+     "url": "https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist/"
+    }
+   ],
+   "text": "\"Google's AI co-scientist organizes specialized agents around generation, reflection, ranking, evolution, and meta-review\" (Second Context ¶7); \"assigns specialized roles to generation, reflection, ranking, evolution, proximity, and meta-review processes … tournament-like evaluation\" (§VI); ref [2]: \"Gottweis, J., et al., 'Accelerating Scientific Discovery with Co-Scientist' (originally circulated as 'Towards an AI Co-Scientist'), arXiv:2502.18864 (2025).\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2502.18864",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b153",
+    "confidence": 1,
+    "endOffset": 199,
+    "quote": "But intrinsic self-correction—revision without new evidence or external feedback—has often proved unreliable. Models may preserve the original error or change correct answers into incorrect ones.[21]",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2310.01798",
+   "note": "Fix: none.\nFinding: Exactly what the paper says. Huang et al., \"Large Language Models Cannot Self-Correct Reasoning Yet\" (arXiv:2310.01798, Oct 2023): \"LLMs struggle to self-correct their responses without external feedback, and at times, their performance even degrades after self-correction\"; the paper's subject is \"intrinsic self-correction … without the crutch of external feedback\" — the draft's definition matches the paper's.",
+   "ordinal": 4,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2310.01798",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2310.01798"
+    }
+   ],
+   "text": "\"But intrinsic self-correction—revision without new evidence or external feedback—has often proved unreliable. Models may preserve the original error or change correct answers into incorrect ones.[21]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2310.01798",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b153",
+    "confidence": 1,
+    "endOffset": 406,
+    "quote": "Research separating error detection from error correction suggests that models can sometimes repair a mistake once its location is supplied while remaining poor at discovering the mistake independently.[22]",
+    "startOffset": 200
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2311.08516",
+   "note": "Fix: none (optionally cite as 2023/2024).\nFinding: Accurate. Tyen et al., \"LLMs cannot find reasoning errors, but can correct them given the error location\" (arXiv:2311.08516; ACL 2024 Findings): \"poor self-correction performance stems from LLMs' inability to find logical mistakes, rather than their ability to correct a known mistake\"; providing error location \"boosts downstream task performance across our 5 reasoning tasks.\" Reference dates it \"(2024)\" — submitted Nov 2023, revised/published 2024; the 2311 ID makes the year visible either way. Acceptable.",
+   "ordinal": 5,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2311.08516",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2311.08516"
+    }
+   ],
+   "text": "\"Research separating error detection from error correction suggests that models can sometimes repair a mistake once its location is supplied while remaining poor at discovering the mistake independently.[22]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2311.08516",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b174",
+    "confidence": 1,
+    "endOffset": 302,
+    "quote": "Comparative studies have found that popular debate methods do not reliably outperform strong chain-of-thought or self-consistency baselines despite consuming additional computation, although heterogeneity among models can help.[27]",
+    "startOffset": 71
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://iclr-blogposts.github.io/2025/blog/mad",
+   "note": "Fix: none. (The ICLR virtual site lists a poster entry, so attribution may exist elsewhere; the citation as written is defensible since the published page itself carries no authors.)\nFinding: The blogpost exists at the ICLR 2025 Blogposts Track and says what the draft says: \"current MAD frameworks fail to consistently outperform simple single-agent test-time computation strategies\"; \"most MAD frameworks are not able to achieve consistently better performances than CoT\"; \"MAD cannot scale well with increased inference budget.\" Heterogeneity: \"combining GPT-4o-mini and Llama3.1-70b together\" improved accuracy, with the caveat that combination \"does not always ha[ve] positive influence\" — the draft's \"can help\" is properly hedged. The odd \"published without author attribution\" is literally true: the page's author block reads \"PLACEHOLDER FOR ACADEMIC ATTRIBUTION\" / \"PLACEHOLDER FOR BIBTEX.\" I suspected this detail and it checks out.",
+   "ordinal": 6,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://iclr-blogposts.github.io/2025/blog/mad",
+     "stance": "supports",
+     "url": "https://iclr-blogposts.github.io/2025/blog/mad/"
+    }
+   ],
+   "text": "\"Comparative studies have found that popular debate methods do not reliably outperform strong chain-of-thought or self-consistency baselines despite consuming additional computation, although heterogeneity among models can help.[27]\" — ref [27]: \"'Multi-LLM-Agents Debate: Performance, Efficiency, and Scaling Challenges,' ICLR 2025 Blogposts Track (published without author attribution).\"",
+   "tier": 1,
+   "url": "https://iclr-blogposts.github.io/2025/blog/mad/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b174",
+    "confidence": 1,
+    "endOffset": 547,
+    "quote": "Controlled work disentangling the ingredients of debate has found that intrinsic reasoning strength and genuine diversity matter more than most structural protocol choices, and that majority pressure can suppress correct minority judgments.[28]",
+    "startOffset": 303
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2511.07784",
+   "note": "Fix: none.\nFinding: The paper exists and matches: Wu, Haolun; Li, Zhenkun; Li, Lingyao, \"Can LLM Agents Really Debate? A Controlled Study of Multi-Agent Debate in Logical Reasoning\" (arXiv:2511.07784, Nov 11, 2025). Findings: \"intrinsic reasoning strength and group diversity are the dominant drivers of debate success,\" structural elements (turn order, confidence visibility) marginal, and \"majority pressure suppresses independent correction.\" Author initials in ref [29-style] (\"Wu, H., Z. Li, and L. Li\") match. Flagged as too-good-to-check; it checks out.",
+   "ordinal": 7,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2511.07784",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2511.07784"
+    }
+   ],
+   "text": "\"Controlled work disentangling the ingredients of debate has found that intrinsic reasoning strength and genuine diversity matter more than most structural protocol choices, and that majority pressure can suppress correct minority judgments.[28]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2511.07784",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b174",
+    "confidence": 1,
+    "endOffset": 870,
+    "quote": "Even the decision rule matters—voting can preserve a useful independence that forced consensus destroys.[29]",
+    "startOffset": 762
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2502.19130",
+   "note": "Fix: re-scope to what the paper shows, e.g.: \"Even the decision rule matters — in one systematic comparison, voting and consensus protocols favored different task types, and the gains from new protocols came from increasing answer diversity.\" Or keep the independence point but attach it to [30] (Bertalanič & Fortuna), which does show consensus destroying correct answers.\nFinding: The citation is real and supports the first half: Kaesberg, Becker, Wahle, Ruas, Gipp, \"Voting or Consensus? Decision-Making in Multi-Agent Debate\" (arXiv:2502.19130; ACL 2025 Findings) shows decision protocols \"can highly impact final model answers.\" But the paper's actual finding is task-dependent, not directional: voting protocols improved reasoning tasks by 13.2% while *consensus protocols improved knowledge tasks* by 2.8%; the paper's diversity angle is that its proposed methods (All-Agents Drafting, Collective Improvement) raise performance \"by increasing answer diversity,\" and that agents are agreeable and tend to improve the first agent's answer. The draft's mechanism — voting preserving an independence that consensus destroys — is the essay's gloss, compatible with but not stated by the paper, and it flattens the paper's finding that consensus is *better* for knowledge tasks.",
+   "ordinal": 8,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2502.19130",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2502.19130"
+    }
+   ],
+   "text": "\"Even the decision rule matters—voting can preserve a useful independence that forced consensus destroys.[29]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2502.19130",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b188",
+    "confidence": 1,
+    "endOffset": 485,
+    "quote": "A recent study of unguided debate among identical models found precisely this kind of semantic contagion: agents frequently discarded independently correct reasoning to adopt the modal answer, producing high consensus alongside lower accuracy and substantial communication cost.[30]",
+    "startOffset": 203
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2605.00914",
+   "note": "Fix: none.\nFinding: Fully confirmed, down to the term. arXiv:2605.00914, Bertalanič & Fortuna, \"The Cost of Consensus: Isolated Self-Correction Prevails Over Unguided Homogeneous Multi-Agent Debate\" (submitted end of April 2026): teams of 10 *identical* models; \"widespread semantic contagion\" (the paper's own phrase, Fig. 1); \"agents uncritically adopt majority answers (modal adoption up to 85.5%)\"; \"teams systematically generate, but subsequently discard, correct answers due to peer-induced sycophancy\"; \"debate consumes 2.1–3.4× more tokens … than self-correction for equal or lower accuracy.\" Author names and diacritics in ref [30] match. Flagged as too-good-to-check; it checks out exactly.",
+   "ordinal": 9,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2605.00914",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2605.00914"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/html/2605.00914v1",
+     "stance": "supports",
+     "url": "https://arxiv.org/html/2605.00914v1"
+    }
+   ],
+   "text": "\"A recent study of unguided debate among identical models found precisely this kind of semantic contagion: agents frequently discarded independently correct reasoning to adopt the modal answer, producing high consensus alongside lower accuracy and substantial communication cost.[30]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2605.00914",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b190",
+    "confidence": 1,
+    "endOffset": 443,
+    "quote": "Recent experiments with self-organizing model teams found that teams often failed to match their strongest member even when explicitly told which agent was the expert. The systems tended toward integrative compromise—averaging expert and non-expert positions—and the problem worsened as teams grew.[31]",
+    "startOffset": 141
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2602.01011",
+   "note": "Fix: none.\nFinding: Fully confirmed. arXiv:2602.01011, Pappu, El, Cao, di Nolfo, Sun, Cao, Zou, \"Multi-Agent Teams Hold Experts Back\" (Feb 2026; ICML 2026): \"LLM teams consistently fail to match their expert agent's performance, even when explicitly told who the expert is, incurring performance losses of up to 41.1%\"; \"a tendency toward integrative compromise — averaging expert and non-expert views rather than appropriately weighting expertise — which increases with team size and correlates negatively with performance.\" The Apple attribution is correct: the paper is hosted on Apple Machine Learning Research. Flagged as too-good-to-check; it checks out verbatim.",
+   "ordinal": 10,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2602.01011",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2602.01011"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://machinelearning.apple.com/research/multi-agent-teams-experts",
+     "stance": "supports",
+     "url": "https://machinelearning.apple.com/research/multi-agent-teams-experts"
+    }
+   ],
+   "text": "\"Recent experiments with self-organizing model teams found that teams often failed to match their strongest member even when explicitly told which agent was the expert. The systems tended toward integrative compromise—averaging expert and non-expert positions—and the problem worsened as teams grew.[31]\" — ref [31]: \"Pappu, A., et al., … Apple Machine Learning Research, arXiv:2602.01011 (2026).\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2602.01011",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b194",
+    "confidence": 1,
+    "endOffset": 217,
+    "quote": "A large controlled study of agent architectures found that multi-agent systems could produce large improvements on decomposable tasks while severely degrading sequential planning tasks.",
+    "startOffset": 32
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2512.08296",
+   "note": "Fix: none.\nFinding: Confirmed. arXiv:2512.08296, Kim et al., \"Towards a Science of Scaling Agent Systems\" (Dec 9, 2025): 260 configurations, five architectures, six benchmarks; \"relative performance change compared to single-agent baseline ranges from +80.8% on decomposable financial reasoning to −70.0% on sequential planning\"; \"architectures without centralized verification tend to propagate errors more\"; no universal winner — success depends on matching coordination structure to task. \"Large controlled study\" is a fair description. Flagged as too-good-to-check; it checks out.",
+   "ordinal": 11,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2512.08296",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2512.08296"
+    }
+   ],
+   "text": "\"A large controlled study of agent architectures found that multi-agent systems could produce large improvements on decomposable tasks while severely degrading sequential planning tasks. … Validation bottlenecks reduced some forms of error propagation, but no architecture dominated across tasks.[32]\"",
+   "tier": 1,
+   "url": "https://arxiv.org/abs/2512.08296",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b125",
+    "confidence": 1,
+    "endOffset": 587,
+    "quote": "People can be remarkably skilled at constructing support for positions they already hold and surprisingly poor at impartially searching for reasons against them. Under suitable interactive conditions, however, another person may detect the weakness",
+    "startOffset": 339
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.psychologytoday.com/us/blog/theory-knowledge/201808/the-enigma-reason-brief-review",
+   "note": "Fix: none.\nFinding: Accurate characterization of *The Enigma of Reason* (Harvard UP, 2017 — matching ref [13]). A review of the book confirms the two functions as characterized (\"persuade skeptical others about one's beliefs, as well as the capacity to determine the legitimacy of others' claims\"; generating justifications), myside bias as socially adaptive rather than a defect, and reasoning performing better in interactive settings than in solitary use — precisely the asymmetry the draft describes. Note the draft's careful hedges (\"important functions,\" \"should not be converted into a complete evolutionary history\") if anything under-claim relative to the authors' stronger evolutionary thesis. *Primary unreachable this session:* the Harvard UP catalog page returned empty content twice and the authors' précis PDF was unreadable; verified against a secondary source per protocol §3.",
+   "ordinal": 12,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.psychologytoday.com/us/blog/theory-knowledge/201808/the-enigma-reason-brief-review",
+     "stance": "supports",
+     "url": "https://www.psychologytoday.com/us/blog/theory-knowledge/201808/the-enigma-reason-brief-review"
+    }
+   ],
+   "text": "\"Mercier and Sperber's interactionist theory of reasoning … They argue that important functions of human reasoning are social: producing reasons for claims and evaluating reasons presented by others. … People can be remarkably skilled at constructing support for positions they already hold and surprisingly poor at impartially searching for reasons against them. Under suitable interactive conditions, however, another person may detect the weakness…\"",
+   "tier": 1,
+   "url": "https://www.psychologytoday.com/us/blog/theory-knowledge/201808/the-enigma-reason-brief-review",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b83",
+    "confidence": 1,
+    "endOffset": 467,
+    "quote": "depends upon social processes of transformative criticism: recognized places where criticism can be offered, shared standards by which claims are evaluated, actual uptake through which criticism can alter inquiry, and a qualified equality of intellectual authority",
+    "startOffset": 203
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/feminist-science",
+   "note": "Fix: none.\nFinding: The draft's four conditions match Longino's four criteria as standardly reported: (1) \"publicly recognized forums for the criticism of evidence, methods, and assumptions\"; (2) \"publicly recognized standards\" for evaluation; (3) \"uptake of criticism, which requires that the community not merely tolerate dissent, but alter its beliefs\"; (4) \"tempered equality of intellectual authority.\" The draft's \"qualified equality\" for \"tempered equality\" is a fair paraphrase; \"transformative criticism\" is Longino's term. The draft's emphasis on uptake as the key condition is an authorial judgment, not misattribution.",
+   "ordinal": 13,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/feminist-science",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/feminist-science/"
+    }
+   ],
+   "text": "\"[Objectivity] depends upon social processes of transformative criticism: recognized places where criticism can be offered, shared standards by which claims are evaluated, actual uptake through which criticism can alter inquiry, and a qualified equality of intellectual authority…\"",
+   "tier": 1,
+   "url": "https://plato.stanford.edu/entries/feminist-science/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b81",
+    "confidence": 1,
+    "endOffset": 562,
+    "quote": "The scientific method was superior because it sought beliefs determined by something external to any person's opinion—by a reality whose characteristics did not depend upon what anyone thought them to be.[7]",
+    "startOffset": 355
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.peirce.org/writings/p107.html",
+   "note": "Fix: none.\nFinding: Faithful paraphrase of the primary text. Peirce, \"The Fixation of Belief,\" *Popular Science Monthly* 12 (November 1877): \"Unless we make ourselves hermits, we shall necessarily influence each other's opinions; so that the problem becomes how to fix belief, not in the individual merely, but in the community.\" And on science/external permanency: \"There are Real things, whose characters are entirely independent of our opinions about them.\" Journal, volume, and year in ref [7] confirmed by the source header.",
+   "ordinal": 14,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.peirce.org/writings/p107.html",
+     "stance": "supports",
+     "url": "https://www.peirce.org/writings/p107.html"
+    }
+   ],
+   "text": "\"Unless we become hermits, he observed, the fixation of belief cannot remain merely an individual problem; our beliefs affect one another… The scientific method was superior because it sought beliefs determined by something external to any person's opinion—by a reality whose characteristics did not depend upon what anyone thought them to be.[7]\"",
+   "tier": 1,
+   "url": "https://www.peirce.org/writings/p107.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b92",
+    "confidence": 1,
+    "endOffset": 506,
+    "quote": "To silence an opinion because one is certain of its falsity is to confuse certainty with infallibility.[9]",
+    "startOffset": 400
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.utilitarianism.com/ol/two.html",
+   "note": "Fix: none.\nFinding: All four elements are in *On Liberty* ch. II, nearly verbatim: \"if it is not fully, frequently, and fearlessly discussed, it will be held as a dead dogma, not a living truth\"; \"when the conflicting doctrines … share the truth between them; and the nonconforming opinion is needed to supply the remainder of the truth\"; \"All silencing of discussion is an assumption of infallibility.\" \"Dead dogma\" is correctly quoted and correctly attributed to ch. II (1859).",
+   "ordinal": 15,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.utilitarianism.com/ol/two.html",
+     "stance": "supports",
+     "url": "https://www.utilitarianism.com/ol/two.html"
+    }
+   ],
+   "text": "\"The opinion suppressed by authority may be true. It may contain the neglected part of a truth divided among opposing positions. Even when it is false, its serious contestation may prevent true belief from decaying into what Mill called 'dead dogma'… To silence an opinion because one is certain of its falsity is to confuse certainty with infallibility.[9]\"",
+   "tier": 1,
+   "url": "https://www.utilitarianism.com/ol/two.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b102",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "Constitutional government generalizes this distrust. Madison's famous claim that \"ambition must be made to counteract ambition\" does not assume that officeholders will become wise by entering separate",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://avalon.law.yale.edu/18th_century/fed51.asp",
+   "note": "Fix: optional and minor: no change needed for a general audience, or hedge the reference (\"No. 51, conventionally attributed to Madison\").\nFinding: The quotation is verbatim in Federalist No. 51 (\"Ambition must be made to counteract ambition. The interest of the man must be connected with the constitutional rights of the place.\"), the year 1788 is correct (New York Packet, Feb 8, 1788), and the draft's reading matches the surrounding \"If men were angels…\" passage — the argument is expressly architectural, not a hope for wiser officeholders. One detail: the authorship of No. 51 is formally disputed; the Avalon text is headed \"HAMILTON OR MADISON.\" Standard modern scholarly practice attributes No. 51 to Madison, so the citation follows convention, but \"Madison's famous claim\" states as settled what the documentary record marks as contested.",
+   "ordinal": 16,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://avalon.law.yale.edu/18th_century/fed51.asp",
+     "stance": "supports",
+     "url": "https://avalon.law.yale.edu/18th_century/fed51.asp"
+    }
+   ],
+   "text": "\"Madison's famous claim that 'ambition must be made to counteract ambition' does not assume that officeholders will become wise by entering separate branches.[10]\" — ref [10]: \"Madison, J., *The Federalist*, No. 51 (1788).\"",
+   "tier": 1,
+   "url": "https://avalon.law.yale.edu/18th_century/fed51.asp",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 1,
+    "endOffset": 282,
+    "quote": "The Condorcet Jury Theorem gives this intuition a formal but highly conditional expression.[11] In its familiar form, if individuals independently have a better-than-random probability of selecting the correct answer to a binary question, majority accuracy rises as the group grows.",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/jury-theorems",
+   "note": "Fix: none.\nFinding: Correct statement and correct caveats. SEP: \"Assuming UI [unconditional independence] and UC [unconditional competence >1/2], the probability of majority correctness … increases in (odd) group size n and converges to 1.\" On correlated error: \"common causes create correlations\" (shared evidence, shared perspective-shaping influences) that violate independence — exactly the draft's point. Ref [11]'s French title of the 1785 *Essai* matches the SEP bibliography entry word for word.",
+   "ordinal": 17,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/jury-theorems",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/jury-theorems/"
+    }
+   ],
+   "text": "\"The Condorcet Jury Theorem gives this intuition a formal but highly conditional expression.[11] In its familiar form, if individuals independently have a better-than-random probability of selecting the correct answer to a binary question, majority accuracy rises as the group grows. … Competence matters. Independence matters. Correlated error can destroy the result.\" (§IV); and \"A thousand judgments produced by the same error are not a thousand independent judgments.\"",
+   "tier": 1,
+   "url": "https://plato.stanford.edu/entries/jury-theorems/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b51",
+    "confidence": 1,
+    "endOffset": 169,
+    "quote": "In the *Sophist*, thought is described as a silent dialogue of the soul with itself.[4]",
+    "startOffset": 82
+   },
+   "humanAdded": false,
+   "normalizedUrl": "http://www.perseus.tufts.edu/hopper/text",
+   "note": "Fix: none.\nFinding: Both loci are correct. Sophist 263e (Fowler): \"thought and speech are the same; only the former, which is a silent inner conversation of the soul with itself, has been given the special name of thought.\" Theaetetus 189e–190a (Jowett): \"Thinking is the conversing of the mind with herself, which is carried on in question and answer…\" The draft's wording (\"silent dialogue of the soul with itself\") is effectively the Fowler rendering.",
+   "ordinal": 18,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "http://www.perseus.tufts.edu/hopper/text",
+     "stance": "supports",
+     "url": "http://www.perseus.tufts.edu/hopper/text?doc=Perseus%3Atext%3A1999.01.0172%3Atext%3DSoph.%3Asection%3D263e"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.gutenberg.org/cache/epub/1726/pg1726.txt",
+     "stance": "supports",
+     "url": "https://www.gutenberg.org/cache/epub/1726/pg1726.txt"
+    }
+   ],
+   "text": "\"In the *Sophist*, thought is described as a silent dialogue of the soul with itself.[4]\" — ref [4]: \"Plato, *Sophist* 263e; cf. *Theaetetus* 189e–190a.\"",
+   "tier": 2,
+   "url": "http://www.perseus.tufts.edu/hopper/text?doc=Perseus%3Atext%3A1999.01.0172%3Atext%3DSoph.%3Asection%3D263e",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b40",
+    "confidence": 1,
+    "endOffset": 69,
+    "quote": "Plato did not write treatises under his own name. He wrote dialogues.",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/plato",
+   "note": "Fix: none.\nFinding: Confirmed as the scholarly consensus, with the standard footnote-level caveats (the *Apology* is a courtroom speech; letters of disputed authenticity). SEP: \"Nearly everything he wrote takes the form of a dialogue\"; \"In all of his writings—except in the letters, if any of them are genuine—Plato never speaks to his audience directly and in his own voice\"; SEP also contrasts this with contemporaries' treatise-writing. The draft's two-sentence version is an acceptable compression; its argumentative use (author absent as asserting voice) is exactly what SEP affirms.",
+   "ordinal": 19,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/plato",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/plato/"
+    }
+   ],
+   "text": "\"Plato did not write treatises under his own name. He wrote dialogues.\"",
+   "tier": 2,
+   "url": "https://plato.stanford.edu/entries/plato/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b56",
+    "confidence": 1,
+    "endOffset": 157,
+    "quote": "His logical works distinguish among forms of reasoning",
+    "startOffset": 103
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/aristotle-logic",
+   "note": "Fix: none.\nFinding: Accurate, and the cited loci are the right ones. SEP: the premises of demonstrations must be \"true, primary, immediate, better known … prior to the conclusion, causes of the conclusion\" (*Posterior Analytics* I.2); \"The premises of dialectical deductions, by contrast, must be accepted (*endoxos*)\" (*Topics* I.1). \"Reputable opinions\" is the standard translation of *endoxa*.",
+   "ordinal": 20,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/aristotle-logic",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/aristotle-logic/"
+    }
+   ],
+   "text": "\"His logical works distinguish among forms of reasoning… Demonstration aims at knowledge from premises of the appropriate kind. Dialectic proceeds from reputable opinions and tests their implications.[5]\" — ref [5]: \"*Posterior Analytics* I.1–2; *Topics* I.1–2.\"",
+   "tier": 2,
+   "url": "https://plato.stanford.edu/entries/aristotle-logic/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b66",
+    "confidence": 1,
+    "endOffset": 307,
+    "quote": "In the disputed question and the familiar structure of Aquinas's articles, the question is posed. Arguments are presented against the position the author will eventually defend. A contrary consideration is introduced. The author gives a determination. Then the initial objections are answered one by one.[6]",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://en.wikipedia.org/wiki/Summa_Theologica",
+   "note": "Fix: none.\nFinding: Correct in every element. The article structure is: objections; *sed contra*, which \"almost always references authoritative literature, such as the Bible, Aristotle, or the Church Fathers\" (matching the draft's \"commonly appealed to authoritative sources\"); *respondeo dicendum quod* (the determination); replies to each objection. SEP confirms the disputed question as \"a regular form of teaching … characterized by a dialectical method\" of opposed arguments from reason and authority, and that the *Summa* uses \"an abbreviated form of the disputed question.\"",
+   "ordinal": 21,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Summa_Theologica",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Summa_Theologica"
+    },
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/medieval-literary",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/medieval-literary/"
+    }
+   ],
+   "text": "\"In the disputed question and the familiar structure of Aquinas's articles, the question is posed. Arguments are presented against the position the author will eventually defend. A contrary consideration is introduced. The author gives a determination. Then the initial objections are answered one by one.[6]\" and \"The *sed contra* commonly appealed to authoritative sources.\"",
+   "tier": 2,
+   "url": "https://en.wikipedia.org/wiki/Summa_Theologica",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b113",
+    "confidence": 1,
+    "endOffset": 209,
+    "quote": "Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding",
+    "startOffset": 65
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/habermas",
+   "note": "Fix: none.\nFinding: Accurate rendering of the *Theory of Communicative Action* distinction. SEP: in communicative action, \"the actions of the agents involved are coordinated not through egocentric calculations of success but through acts of reaching understanding\" (citing the 1984 McCarthy translation, matching ref [12]); strategic action pursues success by producing effects on others. The draft's use (persuasion diverging from truth; rhetorical victory vs. reasons) is a legitimate application.",
+   "ordinal": 22,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/habermas",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/habermas/"
+    }
+   ],
+   "text": "\"Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding… Communicative action differs from strategic action, in which speech is used primarily to produce a desired effect.[12]\"",
+   "tier": 2,
+   "url": "https://plato.stanford.edu/entries/habermas/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b128",
+    "confidence": 1,
+    "endOffset": 316,
+    "quote": "Practices of regulation, explanation, and problem-solving that initially occur between child and caregiver can become internalized as private speech and inner speech. The child gradually takes over functions once performed by another person.[14]",
+    "startOffset": 71
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.simplypsychology.org/vygotsky.html",
+   "note": "Fix: none.\nFinding: Correct statement of Vygotsky's internalization thesis and the social speech → private speech → inner speech sequence: \"Every function in the child's cultural development appears twice: first, on the social level, and later, on the individual level; first, between people (interpsychological) and then inside the child (intrapsychological)\" (Vygotsky 1978, p. 57); the more knowledgeable other's dialogue \"is what gets internalized.\" Ref [14] cites *Thought and Language* (1934/1986), which is the right work for inner speech; the \"appears twice\" law is from *Mind in Society* — but the draft paraphrases the doctrine, not that sentence, so the citation is adequate.",
+   "ordinal": 23,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://www.simplypsychology.org/vygotsky.html",
+     "stance": "supports",
+     "url": "https://www.simplypsychology.org/vygotsky.html"
+    }
+   ],
+   "text": "\"Practices of regulation, explanation, and problem-solving that initially occur between child and caregiver can become internalized as private speech and inner speech. The child gradually takes over functions once performed by another person.[14]\"",
+   "tier": 2,
+   "url": "https://www.simplypsychology.org/vygotsky.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b132",
+    "confidence": 0.9,
+    "endOffset": 340,
+    "quote": "His study of ship navigation treats cognitive work as distributed across sailors, instruments, procedures, representations, and time. The relevant computation is not contained completely within any one skull. It is accomplished by the organized system.",
+    "startOffset": 88
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://en.wikipedia.org/wiki/Distributed_cognition",
+   "note": "Fix: none.\nFinding: Accurate. Hutchins's *Cognition in the Wild* analyzes navigation aboard the USS Palau with the unit of analysis \"a collection of individuals and artifacts and their relations to each other in a particular work practice,\" showing \"distributed cognition … manifested through the interaction between crew members as they interpret, process, and transform information into various representational states in order to safely navigate the ship.\" The draft's careful negative (\"does not require claiming that the ship has a consciousness\") is consistent with the theory's framing. Ref [15] (MIT Press, 1995) matches the standard citation.",
+   "ordinal": 24,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Distributed_cognition",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Distributed_cognition"
+    }
+   ],
+   "text": "\"His study of ship navigation treats cognitive work as distributed across sailors, instruments, procedures, representations, and time. The relevant computation is not contained completely within any one skull. It is accomplished by the organized system.[15]\"",
+   "tier": 2,
+   "url": "https://en.wikipedia.org/wiki/Distributed_cognition",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b133",
+    "confidence": 1,
+    "endOffset": 347,
+    "quote": "Their famous question—where does the mind stop and the rest of the world begin?—destabilizes the assumption that skin and skull supply the natural boundary of cognition.[16]",
+    "startOffset": 174
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://consc.net/papers/extended.html",
+   "note": "Fix: none.\nFinding: Exact. \"Where does the mind stop and the rest of the world begin?\" is verbatim the opening sentence of Clark & Chalmers, \"The Extended Mind\" (*Analysis* 1998, matching ref [16]). The characterization (\"sufficiently integrated external resources can sometimes count as parts of a cognitive process rather than merely aids\") matches the paper's active externalism and parity principle: \"If, as we confront some task, a part of the world functions as a process which, were it done in the head, we would have no hesitation in recognizing as part of the cognitive process, then that part of the world is … part of the cognitive process.\"",
+   "ordinal": 25,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://consc.net/papers/extended.html",
+     "stance": "supports",
+     "url": "https://consc.net/papers/extended.html"
+    }
+   ],
+   "text": "\"Their famous question—where does the mind stop and the rest of the world begin?—destabilizes the assumption that skin and skull supply the natural boundary of cognition.[16]\"",
+   "tier": 2,
+   "url": "https://consc.net/papers/extended.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b136",
+    "confidence": 1,
+    "endOffset": 222,
+    "quote": "Minsky's *Society of Mind* proposed that what appears as unified intelligence might emerge from the interaction of many simpler agencies.[17] No single internal agent possesses the whole mind. The mind is the organization.",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://en.wikipedia.org/wiki/Society_of_Mind",
+   "note": "Fix: none.\nFinding: Accurate. The theory \"views the human mind as a vast society of individually simple processes known as agents … the fundamental thinking entities from which minds are built\"; no individual agent is intelligent — intelligence arises from their organization (\"The power of intelligence stems from our vast diversity, not from any single, perfect principle\"). Ref [17] (Simon & Schuster, 1986) matches the standard citation.",
+   "ordinal": 26,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Society_of_Mind",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Society_of_Mind"
+    }
+   ],
+   "text": "\"Minsky's *Society of Mind* proposed that what appears as unified intelligence might emerge from the interaction of many simpler agencies.[17] No single internal agent possesses the whole mind. The mind is the organization.\"",
+   "tier": 2,
+   "url": "https://en.wikipedia.org/wiki/Society_of_Mind",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b144",
+    "confidence": 1,
+    "endOffset": 337,
+    "quote": "Chain-of-thought prompting demonstrated that eliciting intermediate reasoning artifacts could improve performance on many multi-step tasks.[18]",
+    "startOffset": 194
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2201.11903",
+   "note": "Fix: none.\nFinding: Matches the paper. Wei et al., arXiv:2201.11903 (2022): \"chain of thought prompting improves performance on a range of arithmetic, commonsense, and symbolic reasoning tasks.\"",
+   "ordinal": 27,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2201.11903",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2201.11903"
+    }
+   ],
+   "text": "\"Chain-of-thought prompting demonstrated that eliciting intermediate reasoning artifacts could improve performance on many multi-step tasks.[18]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2201.11903",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b148",
+    "confidence": 1,
+    "endOffset": 217,
+    "quote": "Self-consistency generates several reasoning paths and aggregates their answers rather than trusting the first or most probable completion.[19] The technique improved performance across a range of reasoning benchmarks",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2203.11171",
+   "note": "Fix: none.\nFinding: Matches. Wang et al., arXiv:2203.11171: \"samples a diverse set of reasoning paths instead of only taking the greedy one, and then selects the most consistent answer by marginalizing out the sampled reasoning paths\"; gains of 3.9%–17.9% across GSM8K, SVAMP, AQuA, StrategyQA, ARC-challenge.",
+   "ordinal": 28,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2203.11171",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2203.11171"
+    }
+   ],
+   "text": "\"Self-consistency generates several reasoning paths and aggregates their answers rather than trusting the first or most probable completion.[19] The technique improved performance across a range of reasoning benchmarks…\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2203.11171",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b152",
+    "confidence": 1,
+    "endOffset": 297,
+    "quote": "Reflexion-style systems convert feedback from prior attempts into textual memory that alters subsequent behavior.[20]",
+    "startOffset": 180
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2303.11366",
+   "note": "Fix: none.\nFinding: Matches. Shinn et al., arXiv:2303.11366: \"Reflexion agents verbally reflect on task feedback signals, then maintain their own reflective text in an episodic memory buffer to induce better decision-making in subsequent trials.\"",
+   "ordinal": 29,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2303.11366",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2303.11366"
+    }
+   ],
+   "text": "\"Reflexion-style systems convert feedback from prior attempts into textual memory that alters subsequent behavior.[20]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2303.11366",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b167",
+    "confidence": 1,
+    "endOffset": 152,
+    "quote": "OpenAI's work on model-written critiques found that critique assistance helped human evaluators notice flaws in summaries they would otherwise miss.[23]",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2206.05802",
+   "note": "Fix: none.\nFinding: Matches nearly verbatim: the abstract of Saunders et al., \"Self-critiquing models for assisting human evaluators\" (arXiv:2206.05802, 2022) states \"critiques written by our models help humans find flaws in summaries that they would have otherwise missed.\" The OpenAI attribution is supported by the author roster (Saunders, Yeh, Wu, Bills, Ouyang, Ward, Leike — the OpenAI alignment team at the time; affiliations are not shown on the arXiv abstract page itself, and OpenAI's own page for the paper returned 403 this session).",
+   "ordinal": 30,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2206.05802",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2206.05802"
+    }
+   ],
+   "text": "\"OpenAI's work on model-written critiques found that critique assistance helped human evaluators notice flaws in summaries they would otherwise miss.[23]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2206.05802",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b167",
+    "confidence": 1,
+    "endOffset": 553,
+    "quote": "A prover produces an answer. A verifier determines whether the answer is acceptable. Training can reward the prover not only for correctness but for producing reasoning that weaker verifiers—and, indirectly, humans—can inspect more reliably.[24]",
+    "startOffset": 308
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2407.13692",
+   "note": "Fix: none.\nFinding: Matches. Kirchner et al., \"Prover-Verifier Games improve legibility of LLM outputs\" (arXiv:2407.13692, 2024): smaller verifier checks solutions; helpful prover trained to produce correct, verifiable solutions (against a \"sneaky\" prover); \"legibility training transfers to time-constrained humans tasked with verifying solution correctness … human accuracy increases when checking the helpful prover's solutions.\"",
+   "ordinal": 31,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2407.13692",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2407.13692"
+    }
+   ],
+   "text": "\"A prover produces an answer. A verifier determines whether the answer is acceptable. Training can reward the prover not only for correctness but for producing reasoning that weaker verifiers—and, indirectly, humans—can inspect more reliably.[24]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2407.13692",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b171",
+    "confidence": 1,
+    "endOffset": 399,
+    "quote": "The original proposals for AI debate were motivated partly by the hope that opposing systems could expose decisive information to a human unable to evaluate a complex answer directly.[25]",
+    "startOffset": 212
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/1805.00899",
+   "note": "Fix: none.\nFinding: Matches. Irving, Christiano, Amodei, \"AI safety via debate\" (arXiv:1805.00899, 2018): direct human judgment \"can fail if the task is too complicated for a human to directly judge\"; in debate, \"two agents take turns making short statements … then a human judges which of the agents gave the most true, useful information.\" Ref [25]'s author list matches.",
+   "ordinal": 32,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/1805.00899",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/1805.00899"
+    }
+   ],
+   "text": "\"The original proposals for AI debate were motivated partly by the hope that opposing systems could expose decisive information to a human unable to evaluate a complex answer directly.[25]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/1805.00899",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b171",
+    "confidence": 1,
+    "endOffset": 499,
+    "quote": "Early multi-agent-debate experiments also reported improvements on factual and reasoning tasks.[26]",
+    "startOffset": 400
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://arxiv.org/abs/2305.14325",
+   "note": "Fix: none.\nFinding: Matches. Du et al., \"Improving Factuality and Reasoning in Language Models through Multiagent Debate\" (arXiv:2305.14325, 2023): \"multiple language model instances propose and debate their individual responses and reasoning processes over multiple rounds\"; the approach \"improves the factual validity of generated content, reducing fallacious answers and hallucinations\" and enhances reasoning. The draft's \"reported\" framing is apt given the later deflationary literature it cites (C7, C10).",
+   "ordinal": 33,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://arxiv.org/abs/2305.14325",
+     "stance": "supports",
+     "url": "https://arxiv.org/abs/2305.14325"
+    }
+   ],
+   "text": "\"Early multi-agent-debate experiments also reported improvements on factual and reasoning tasks.[26]\"",
+   "tier": 2,
+   "url": "https://arxiv.org/abs/2305.14325",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b27",
+    "confidence": 1,
+    "endOffset": 215,
+    "quote": "They encounter an intelligible order and fail to comprehend it. They hear, but do not hear rightly.",
+    "startOffset": 116
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://plato.stanford.edu/entries/heraclitus",
+   "note": "Fix: none.\nFinding: Tracks fragments B1 and B34 as the brief suspected. SEP's B1: \"Of this Word's being forever do men prove to be uncomprehending, both before they hear and once they have heard it.\" B34: \"Having heard without comprehension they are like the deaf; this saying bears witness to them: present they are absent.\" The draft's unquoted gloss is a fair compression of both.",
+   "ordinal": 34,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://plato.stanford.edu/entries/heraclitus",
+     "stance": "supports",
+     "url": "https://plato.stanford.edu/entries/heraclitus/"
+    }
+   ],
+   "text": "\"They encounter an intelligible order and fail to comprehend it. They hear, but do not hear rightly.\"",
+   "tier": 2,
+   "url": "https://plato.stanford.edu/entries/heraclitus/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b35",
+    "confidence": 1,
+    "endOffset": 145,
+    "quote": "The theological history of the Logos would later add other meanings: rational order, divine wisdom, the Word through which form enters the world.",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://en.wikipedia.org/wiki/Logos",
+   "note": "Fix: none.\nFinding: Fair as compressed history. The Stoics made logos \"the active divine principle animating existence\" / \"the fundamental ordering force of reality\" (rational order); Philo of Alexandria treated logos as divine intermediary and \"the bond of everything, holding all things together\" (divine wisdom); John's Gospel: \"In the beginning was the Word, and the Word was with God, and the Word was God\" (the Word). The draft's three-item list maps cleanly onto Stoa–Philo–John.",
+   "ordinal": 35,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Logos",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Logos"
+    }
+   ],
+   "text": "\"The theological history of the Logos would later add other meanings: rational order, divine wisdom, the Word through which form enters the world.\"",
+   "tier": 2,
+   "url": "https://en.wikipedia.org/wiki/Logos",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-07-30T00:00:00Z",
+   "anchor": {
+    "blockId": "b97",
+    "confidence": 1,
+    "endOffset": 476,
+    "quote": "Witnesses are examined and cross-examined. Burdens of proof are allocated. Rules limit what counts as admissible. Advocacy is separated from judgment. Decisions can sometimes be appealed.",
+    "startOffset": 289
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://en.wikipedia.org/wiki/Adversarial_system",
+   "note": "(spot-check)\nFix: none.\nFinding: Standard, accurate description of the adversarial system: \"two advocates represent their parties' case or position before an impartial person or group of people, usually a judge or jury,\" with a neutral decision-maker, party presentation of evidence, and structured procedural rules; judges referee rather than investigate (contrast with inquisitorial systems). The draft's caveats (procedural victory ≠ truth; courts pursue values beyond accuracy) make the characterization safer, not riskier.",
+   "ordinal": 36,
+   "sources": [
+    {
+     "accessedAt": "2026-07-30T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Adversarial_system",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Adversarial_system"
+    }
+   ],
+   "text": "\"A court does not normally ask prosecution and defense to transcend their partiality… It assigns opposed roles… Witnesses are examined and cross-examined. Burdens of proof are allocated. Rules limit what counts as admissible. Advocacy is separated from judgment. Decisions can sometimes be appealed.\"",
+   "tier": 3,
+   "url": "https://en.wikipedia.org/wiki/Adversarial_system",
+   "verdict": "verified"
+  }
+ ],
+ "inventoryCount": 39,
+ "sidecar": "claim_ledger",
+ "version": 1
+}

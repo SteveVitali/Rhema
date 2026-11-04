@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/crossref-smart-clowes-clark-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "97a8b245f240670c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/crossref-smart-clowes-clark-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# crossref-smart-clowes-clark-2025\n- **URL:** https://api.crossref.org/works/10.1007/s11229-025-05046-y · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** The DOI resolves to Smart, Clowes & Clark, \"ChatGPT, extended: large language models and the extended mind,\" *Synthese* 205(6), art. 242, 2025 (C31). Springer's page itself is cookie-gated; Crossref metadata used.\n- **Key passages:** title, authors, container, volume 205, issue 6, article-number 242, issued 2025-06-06.\n- **Reliability:** Registry metadata (authoritative for existence/bibliographic data; not content).\n- **Relevance to this project:** C31; §II.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 74
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e60e712e4946908c63897f7fec551788921c5795353e334078f606de9ea50466",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/crossref-smart-clowes-clark-2025.md",
+ "kind": "artifact-page"
+}

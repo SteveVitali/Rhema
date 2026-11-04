@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/liberty-court-of-appeal-judgment-breakdown.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e87b1fccf5b3f671",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/liberty-court-of-appeal-judgment-breakdown.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# liberty-court-of-appeal-judgment-breakdown\n- **URL:** https://www.libertyhumanrights.org.uk/issue/breaking-down-the-court-of-appeal-judgment-on-palestine-actions-proscription/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C19(a)\n- **What it establishes:** The litigation posture in R (Ammori) v Secretary of State for the Home Department. High Court/Divisional Court, February 2026 ([2026] EWHC 292 (Admin); press summary 13 Feb. 2026): proscription unlawful on three grounds — the Home Secretary failed to follow her own policy that \"not all organisations that meet the concerned in terrorism requirement should be proscribed\"; unjustified restriction of \"rights to freedom of expression and association\"; disproportionate because only three of hundreds of Palestine Action activities met the terrorism definition and \"ordinary criminal law was available to deal with those incidents.\" The quashing order was suspended pending appeal, so the ban never lapsed. Court of Appeal, 15 June 2026: ruled for the Government — proscription \"lawful and proportionate.\"\n- **Key passages:** As above; Liberty notes the proscription remained in effect throughout.\n- **Reliability:** Secondary; UK civil-liberties NGO, critical of proscription, but its procedural account matches Garden Court Chambers and JURIST/press summaries.\n- **Relevance to this project:** C19(a) — the essay must not say a court simply \"upheld\" the ban without the reversal history: Feb. 2026 High Court found it unlawful; June 2026 CA reversed; Supreme Court appeal follows.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 201
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0d197db4495f3feb7323295633d674b8e05159ad4329bcc51dd213c5b5da9473",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/liberty-court-of-appeal-judgment-breakdown.md",
+ "kind": "artifact-page"
+}

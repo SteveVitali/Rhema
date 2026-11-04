@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/austin-social-legibility-2022.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c7c26650d9c7abdb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/austin-social-legibility-2022.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# austin-social-legibility-2022\n- **URL:** https://ojs.library.queensu.ca/index.php/surveillance-and-society/article/view/15762 · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, differentiating the essay's \"behavioral legibility\" coinage from prior art\n- **What it establishes:** Lisa Austin, \"From Privacy to Social Legibility,\" Surveillance & Society 20:3 (2022), open access (CC BY-NC-ND 4.0). Austin already imports Scott's legibility concept into privacy theory — but at the level of LAW REFORM and DATA GOVERNANCE: she argues privacy law's individual-legibility focus is too narrow and should be enfolded \"within a broader data governance framework concerned with the fair and just terms of social legibility.\" Her project is about governing the terms on which populations are made legible; it is not a descriptive account of legibility produced from behavioral/transactional exhaust. The essay's \"behavioral legibility\" can be differentiated in one clause as naming the mechanism (legibility assembled from observed behavior) rather than Austin's governance frame — but the essay should cite her as the nearest prior use of Scott-style legibility in privacy theory.\n- **Key passages:** Abstract: \"This paper draws upon James Scott's Seeing Like a State (1998) to argue that privacy law currently suffers from (at least) three defects: a focus on the legibility of individuals that is too narrow, a focus on collection and subsequent use of data that comes too late, and a focus on rights and harms that ignores the need to create new social structures that can empower more local forms of collective decision-making. What this outlines in broad brushstrokes is the need to enfold privacy concerns within a broader data governance framework concerned with the fair and just terms of social legibility.\"\n- **Reliability:** secondary (peer-reviewed journal article; primary for what Austin herself argues)\n- **Relevance to this project:** Settles the originality-audit correction: \"social legibility\" is Austin's established term; the essay's \"behavioral legibility\" needs a differentiating clause and a citation to Austin.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 298
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "56641df1d68d5c1db84b39977fc936bfb24d51e55f3e35cba1a57e6908604e7f",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/austin-social-legibility-2022.md",
+ "kind": "artifact-page"
+}

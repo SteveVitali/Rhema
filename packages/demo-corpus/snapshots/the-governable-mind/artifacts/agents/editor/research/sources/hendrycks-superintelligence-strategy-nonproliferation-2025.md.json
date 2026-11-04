@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hendrycks-superintelligence-strategy-nonproliferation-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d0a0d311189373fd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hendrycks-superintelligence-strategy-nonproliferation-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hendrycks-superintelligence-strategy-nonproliferation-2025\n- **URL:** https://www.nationalsecurity.ai/chapter/nonproliferation · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Hendrycks, Schmidt, Wang, 2025 (chapter read): export-control licensing of chips; geolocation; firmware remote deactivation; chips needing periodic cryptographic signatures; network allow-lists; KYC-gated removal of safeguards for verified users; consensus to prohibit release of models above capability thresholds.\n- **Key passages:** \"Chips might need to obtain cryptographic signatures regularly to continue operating.\" · \"Researchers with legitimate needs can be granted access to dual-use capabilities after proper verification.\" · \"prohibit the release of models exceeding certain capability thresholds, such as those equivalent to expert-level virologists.\"\n- **Reliability:** Primary; policy manifesto; national-security framing.\n- **Relevance to this project:** §4(a) best statement of layer-2 red lines and layer-3 verified access; §XIV components proposed in earnest.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 123
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2d258927d1e953e62dbec17b6f56ebf69b4f2e5906f354b8f1ded40a781b7af1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hendrycks-superintelligence-strategy-nonproliferation-2025.md",
+ "kind": "artifact-page"
+}

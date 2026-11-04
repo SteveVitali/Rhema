@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/chatrie-scotus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "475766a2e4d625e7",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "59ce565e74986a24",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "0f5e0c174e4b064c",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/chatrie-scotus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Chatrie v. United States (U.S., June 29, 2026)\n\n- EFF: https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data\n- The Conversation: https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: 6–3, June 29, 2026; obtaining app-generated cellphone location data from a\nthird party is a Fourth Amendment search; opinion quoted: \"An individual has a legitimate\nexpectation of privacy in his cellphone location data.\"; extends Carpenter; geofence\nwarrant reasonableness/good-faith left unresolved, remanded to the Fourth Circuit.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 63
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f3fd0300f03e664a138b9b1566a0a99bb788bafd23710606051e1a790be2bf37",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/chatrie-scotus.md",
+ "kind": "artifact-page"
+}

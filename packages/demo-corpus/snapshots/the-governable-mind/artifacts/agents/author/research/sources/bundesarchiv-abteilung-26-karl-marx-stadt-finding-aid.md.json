@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5d1059f5575d3485",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid\n- **URL:** https://www.bundesarchiv.de/bestandsuebersichten/bestaende-und-teilbestaende-des-stasi-unterlagen-archivs/19215-abteilung-26-telefonueberwachung-1/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C36\n- **What it establishes:** Bundesarchiv finding aid (Bestandsübersicht) for Abteilung 26 (Telefonüberwachung) of the Karl-Marx-Stadt district administration, 1950–1990: lists telephone/telex surveillance, room surveillance and technical observation with microphones and cameras, and central computing/control systems.\n- **Key passages:** \"Überwachung des Telefon- und Fernschreibverkehrs\" [surveillance of telephone and telex traffic]; \"Raumüberwachungen und technische Beobachtungen mit Mikrofonen und Kameras\" [room surveillance and technical observation with microphones and cameras]; \"Einsatz von Zentraler Rechentechnik, Umrüstung des Zentralen Kontrollsystems\" [deployment of central computing technology, conversion of the central control system].\n- **Reliability:** Primary/official archival description (German).\n- **Relevance to this project:** C36: documents telephone, telex, room and technical surveillance in the archive's own words.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6ad9214126583b337b7de9a82c053014470775b9964da9242a17b66c5a42ee09",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid.md",
+ "kind": "artifact-page"
+}

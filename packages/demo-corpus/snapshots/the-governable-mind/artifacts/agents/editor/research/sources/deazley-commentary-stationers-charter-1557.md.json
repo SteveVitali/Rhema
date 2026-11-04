@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/deazley-commentary-stationers-charter-1557.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "255047e92fc39f68",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/deazley-commentary-stationers-charter-1557.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# deazley-commentary-stationers-charter-1557\n- **URL:** https://www.copyrighthistory.org/cam/tools/request/showRecord.php?id=commentary_uk_1557 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Settles the attribution of 'ad hoc and reactive': Deazley's words, presented as the thesis of Clegg's work; applies to Tudor censorship. Supports 'proclamations and statute' and 'sometimes searched' (fn. 24).\n- **Key passages:** 'censorship of the press throughout the Tudor period remained an essentially ad hoc and reactive phenomenon' / 'Clegg makes … that … the censoring of printed texts was essentially an ad hoc and reactive phenomenon'\n- **Reliability:** Secondary; scholarly commentary (Deazley 2008, Primary Sources on Copyright).\n- **Relevance to this project:** C46\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5901122a8917702b5d7ab303c5c5677aaf947bffb3513f17f0639468994b9462",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/deazley-commentary-stationers-charter-1557.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/freeden-morphology.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "907d964c8fc776f4",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "b8f1c5fff28725c7",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/freeden-morphology.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# freeden-morphology\n\n- **URL:** https://academic.oup.com/edited-volume/34324/chapter/291329165 (\"The Morphological Analysis of Ideology,\" Oxford Handbook of Political Ideologies — abstract page; full chapter paywalled) plus corroborating summaries via https://philpapers.org/rec/FRETMA-7 and related search results · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Freeden's morphological approach: ideologies are structures of interrelated political concepts in three clusters (core, adjacent, peripheral); meaning is fixed by **decontestation** — \"conceptual configurations… link together notions like equality and justice, bestowing upon each a decontested meaning\"; proximity, priority, permeability, proportionality govern how concepts interact; shifting arrangements produce ideological variants.\n- **Key passages:** As quoted (from summaries; chapter itself not readable this session — noted honestly).\n- **Reliability:** Abstract/summary level for the chapter; the characterization of Freeden is standard and multiply corroborated.\n- **Relevance to this project:** The draft's §I gloss (ideologies \"draw from a common field of contested political concepts… and give them determinate meaning by placing them into characteristic configurations\") is accurate — no strawman. But there is an unacknowledged tension: Freeden's core claim is that pole-words like \"liberty\" and \"equality\" have no ideology-independent meaning, whereas the draft's coordinate system requires ten pole-words with stable, shared meanings to serve as measurement anchors. A Freeden-literate reader can object that the axes themselves are decontestations — i.e., the framework is one more ideology's map. The draft uses Freeden for the naming layer (prototypes) but not for the coordinate layer, and never addresses why the coordinate layer escapes morphological relativity.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 236
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c9e3ac50aa41da099ff33f8b08e9a0791072781ed77fec9ac960526f9b874b58",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/freeden-morphology.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/zvi-hf-incident-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0f17a99efcd6bcab",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/zvi-hf-incident-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zvi-hf-incident-2026\n- **URL:** https://thezvi.substack.com/p/what-happened-openai-and-huggingface · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Zvi Mowshowitz, Aug 8 and Aug 28, 2026 (both read): complete failure of safety culture; alignment failure treated as infrastructure problem; should have reverted training; postmortem 'mostly prosaic' framing is wrong; no GLM/guardrails/open-weights/surveillance discussion.\n- **Key passages:** \"This was a complete failure of safety culture. They haven't acknowledged that.\" · \"They understand they have a problem, but they think the problem is mostly prosaic. It's not.\"\n- **Reliability:** Secondary; safety-aligned commentator.\n- **Relevance to this project:** §6; §7.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 90
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9e43c1ff0e11bbf8ee6a4268036e3e06c8d2aba8d4fb0d3e0ee738d7ef9ff53f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/zvi-hf-incident-2026.md",
+ "kind": "artifact-page"
+}

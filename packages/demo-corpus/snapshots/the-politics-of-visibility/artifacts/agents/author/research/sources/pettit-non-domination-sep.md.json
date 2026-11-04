@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/pettit-non-domination-sep.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f1a817b4a00a630e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/pettit-non-domination-sep.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pettit-non-domination-sep\n- **URL:** https://plato.stanford.edu/entries/republicanism/ · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, republican theory of freedom as non-domination (Pettit/Skinner anchor)\n- **What it establishes:** The canonical formulation of the republican (neo-Roman) conception of freedom: unfreedom consists in subjection to another's *capacity* for arbitrary/uncontrolled interference, not in actual interference — so the slave of a kindly master who never strikes is still unfree. Supports the essay's claim that surveillance can constitute an unfreedom even when the watcher never acts. Standard citations confirmed: Pettit, *Republicanism: A Theory of Freedom and Government* (Oxford, 1997); Skinner, *Liberty Before Liberalism* (Cambridge, 1998). Entry by Frank Lovett; first published Jun 19, 2006; substantive revision Aug 12, 2026.\n- **Key passages:** (all verbatim from the entry, checked against page source)\n  - Canonical formulation: \"Pettit, who has done more than anyone else to develop this republican conception of freedom philosophically, puts it thus: a person or group enjoys freedom to the extent that no other person or group has 'the capacity to interfere in their affairs on an arbitrary basis' (1999, 165; cf. Pettit 1997, 2001, 2012, 2014).\" (The inner quote is Lovett quoting Pettit.)\n  - Equivalent gloss: \"On a plausible rendering of the term 'domination' to mean arbitrary or uncontrolled power … we might equivalently say that freedom in the republican sense consists in the robust enjoyment of non-domination.\"\n  - The master who never strikes (§1.2, \"Liberty as Non-Domination\"): \"In the first, imagine a group of slaves with a generally well-meaning master. While the latter has an institutionally-protected right to treat his slaves more or less as he pleases (he might start whipping them just for the heck of it, say), let us suppose that this master in particular leaves his slaves for the most part alone. Now to the extent that he does not in fact interfere with his slaves on a day-to-day basis, we are committed to saying—on the non-interference view of liberty—that they enjoy a good measure of freedom. Some find this conclusion deeply counterintuitive: if there is anything to the idea of political liberty, one might think, surely it cannot be found in the condition of slavery!\"\n  - Domination as structural, not contingent: \"Whether a master chooses to whip his slave on any given day, we might say, is a contingent outcome: it all depends on the master's mood, the slave's behavior, and so forth. What is not contingent (or at least not in the same way) is the broader configuration of laws, institutions, and norms that effectively permit masters to treat their slaves however they please.\"\n  - Freedom characterized \"as the condition of not being subject to the arbitrary or uncontrolled power of a master.\"\n  - Skinner's adoption noted: \"This view has since been widely embraced by republican-minded authors such as Skinner (1998, 2002, forthcoming)…\"\n- **Reliability:** Secondary (authoritative encyclopedia article by Frank Lovett, himself a leading republican theorist); peer-reviewed reference work; the fairest available summary of the position. The \"(1999, 165)\" page cite is to the 1999 paperback of Pettit's *Republicanism*.\n- **Relevance to this project:** Grounds the essay's core theoretical move — surveillance as domination/unchecked capacity rather than as exercised interference; supplies the exact vocabulary (\"capacity to interfere … on an arbitrary basis,\" \"non-domination\") and the book citations. NOTE: the term \"antipower\" does NOT appear in this entry (0 occurrences). If the essay uses \"antipower,\" cite Pettit, \"Freedom as Antipower,\" *Ethics* 106(3) (1996): 576–604 (search-level; verify before print quotation) — do not attribute the term to the SEP entry.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 568
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0970833d0e17a64c78422f7426fbbea686250cb6da1ef82f962a41bfb767d4c9",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/pettit-non-domination-sep.md",
+ "kind": "artifact-page"
+}

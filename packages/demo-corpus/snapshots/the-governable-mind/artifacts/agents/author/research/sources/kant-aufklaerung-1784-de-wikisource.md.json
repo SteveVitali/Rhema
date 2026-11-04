@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/kant-aufklaerung-1784-de-wikisource.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3dc69a6543234344",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/kant-aufklaerung-1784-de-wikisource.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kant-aufklaerung-1784-de-wikisource\n- **URL:** https://de.wikisource.org/wiki/Beantwortung_der_Frage:_Was_ist_Aufkl%C3%A4rung%3F · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C9\n- **What it establishes:** German original of Kant's essay (*Berlinische Monatsschrift*, December 1784, pp. 481-494, as paginated on the page). Anchors the translation variants: \"selbst verschuldeten Unmündigkeit\" (tutelage / minority / immaturity), \"Sapere aude! Habe Muth dich deines eigenen Verstandes zu bedienen!\", \"Vormünder\" (guardians), and the definitions of öffentlicher Gebrauch / Privatgebrauch.\n- **Key passages:**\n  - \"Aufklärung ist der Ausgang des Menschen aus seiner selbst verschuldeten Unmündigkeit. Unmündigkeit ist das Unvermögen, sich seines Verstandes ohne Leitung eines anderen zu bedienen.\"\n  - \"Sapere aude! Habe Muth dich deines eigenen Verstandes zu bedienen! ist also der Wahlspruch der Aufklärung.\"\n  - \"dafür sorgen schon jene Vormünder, die die Oberaufsicht über sie gütigst auf sich genommen haben.\"\n  - \"Ich verstehe aber unter dem öffentlichen Gebrauche seiner eigenen Vernunft denjenigen, den jemand als Gelehrter von ihr vor dem ganzen Publikum der Leserwelt macht. Den Privatgebrauch nenne ich denjenigen, den er in einem gewissen ihm anvertrauten bürgerlichen Posten, oder Amte, von seiner Vernunft machen darf.\"\n- **Reliability:** Primary (public-domain German text; Wikisource transcription of the Akademie/Berlinische Monatsschrift text with page markers).\n- **Relevance to this project:** C9 — lets the essay say \"Unmündigkeit (minority, immaturity, tutelage in different translations)\" accurately.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 198
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "204d441c593f2fc91f2243c486b7874a2d9fdddc0eb5992a9721d84d0e9530c3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/kant-aufklaerung-1784-de-wikisource.md",
+ "kind": "artifact-page"
+}

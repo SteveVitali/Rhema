@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/richards-2008-intellectual-privacy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "304a1808b4734119",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/richards-2008-intellectual-privacy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# richards-2008-intellectual-privacy\n- **URL:** https://openscholarship.wustl.edu/law_scholarship/522/ (WashU repository landing page with abstract) and the repository PDF read via the Internet Archive capture https://web.archive.org/web/20241206051109id_/https://openscholarship.wustl.edu/cgi/viewcontent.cgi?article=1508&context=law_scholarship (the live PDF and SSRN both returned 403) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C21\n- **What it establishes:** Neil M. Richards, \"Intellectual Privacy,\" 87 *Texas Law Review* 387 (2008) (Vol. 87, Issue 2, December 2008; running heads confirm \"[Vol. 87:387]\"). Also SSRN abstract 1108268. Definition at p. 389; the \"constitutive of cognition, not tort/consumer privacy\" claim at pp. 391 and 436; the inaccessibility premise at p. 389.\n- **Key passages:** Abstract (p. 387): \"This Article is about intellectual privacy—the protection of records of our intellectual activities—and how legal protection of these records is essential to the First Amendment values of free thought and expression.\" Definition (p. 389): \"Intellectual privacy is the ability, whether protected by law or social circumstances, to develop ideas and beliefs away from the unwanted gaze or interference of others.\" (p. 389): \"Surveillance or interference can warp the integrity of our freedom of thought and can skew the way we think, with clear repercussions for the content of our subsequent speech or writing.\" (p. 389): \"Yet intellectual privacy has remained underappreciated in First Amendment theory. This has occurred for a number of reasons, but chiefly because it has been difficult—even for those so inclined—to monitor or interfere with the thought processes in people's heads.\" (p. 391): \"Intellectual privacy is different from other conceptions of privacy, such as those that protect individuals from the emotional harm of information disclosure. It is not concerned with remedying tort injury, but rather with the way our cognitive processes, and ultimately our public discourse, are constituted.\" (p. 436): \"records of Web sites visited, books owned, or terms entered into a search engine—are in a very real sense a partial transcript of the operation of a human mind. ... They are fundamentally different in kind from purchases of consumer goods\".\n- **Reliability:** Primary; author's institutional repository copy of the published article (page numbers as printed). Richards is the originator of the concept; the article is normative legal theory.\n- **Relevance to this project:** C21 and the C16 \"inaccessibility\" theme. The p. 389 \"chiefly because it has been difficult ... to monitor or interfere with the thought processes in people's heads\" sentence is the cleanest primary statement of the essay's premise that the law under-built this right because the mind was out of reach.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 399
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "554fcd4b62bb94afa2b9f274d3858d60676b0af703b6b6ecdf72ac8f81fcf1d0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/richards-2008-intellectual-privacy.md",
+ "kind": "artifact-page"
+}

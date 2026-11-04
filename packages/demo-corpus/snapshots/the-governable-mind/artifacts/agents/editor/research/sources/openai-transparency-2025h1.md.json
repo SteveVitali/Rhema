@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-transparency-2025h1.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5f78385a046ed87d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-transparency-2025h1.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-transparency-2025h1\n- **URL:** https://cdn.openai.com/trust-and-transparency/report-2025h1-government-requests-for-user-data.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Jan–Jun 2025: 119 non-content requests (81 disclosed, 147 accounts); 26 content requests (23 disclosed, 41 accounts); 1 emergency.\n- **Key passages:** \"Content requests consist of legal process such as search warrants to produce content data, such as text or files input or output\"\n- **Reliability:** Primary (company report); interested party; numbers self-reported.\n- **Relevance to this project:** Report §6; draft l.232, l.244.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 74
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8a63ab543fe4cf9411526bda93e94be2bca93eeb8f5a31d3a70c4814e2e4777f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-transparency-2025h1.md",
+ "kind": "artifact-page"
+}

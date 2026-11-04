@@ -1,0 +1,111 @@
+{
+ "dto": {
+  "artifactKind": "voice_brief",
+  "artifactPath": "agents/author/drafting/v1/01-voice-brief.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "44193ea5566942a9",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "cab80d2fe4a5600c",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "f47cdf51da45fab5",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "01be6598847fe0ea",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "799d6d229be0bc93",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "6a1a9bb45ccba967",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "4fe0836b56e395c3",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "3db99cae306f48f1",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "9edef9c2ffe9074f",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "d04eb5499221d834",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "55cc46e836951f2d",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "95a59ea56f7c5601",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "24ce4f60c44b46ce",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "b9a7255e6c90df95",
+    "ordinal": 21
+   },
+   "b3": {
+    "contentHash": "6294460eae0f0287",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "ec4f48e03e9c8e3d",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "f7d159d12c42d86f",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "016b6102bb795d22",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "7915c9b8841a3745",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "32cb4ca9dc8d9d7f",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "b0302a59099d8cf5",
+    "ordinal": 9
+   }
+  },
+  "draftId": "agents/author/drafting/v1/01-voice-brief.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Voice brief — The Politics of Visibility, v1\n\nPersona: **the S. J. Sebastian corpus** (S. J. Sebastian), mode `self`. Bootstrapped profile\n**built 2026-08-20, staleness verdict: fresh** (10/10 essays read; refresh due\nat 13 essays or 2027-02-20). Resolution: id → `the persona profile\nthe S. J. Sebastian corpus/PERSONA.md` via the workspace-root personas directory (resolution\nrule 3 in `conventions/personas.md`). Loaded: `profile/index.md`,\n`voice-print.md`, `structure-repertoire.md`, `lexicon.md`, `exemplars.md`,\n`audience-and-venue.md`, `continuity.md`, and the corpus note for the model\npiece.\n\n**Regime: long form. Register: analytic-philosophical** (the profile says\nregister selection cannot be inferred and must be stated — stated here).\n**Model piece: *The Structure of Political Difference*** (6,700 words,\npolitical subject, full apparatus) with *The Constitution of Reason* as the\nsecondary model for length and coda practice. Per the voice print's instruction,\ntargets below use the model piece's measured figures, not corpus averages.\n\n## Measurable targets (checked in Phases 5–6)\n\n| Feature | Target | Source |\n|---|---|---|\n| Sentence length | median 14–16; mean ~18; p90 ≤36; ≥30% of sentences ≤10 words; ≤8% ≥40 | model piece: median 14, 36% ≤10w |\n| Paragraph length | median 35–50 words; single-sentence paragraphs 20–30% | model piece: ~37w, 31% |\n| Em dash | **≤1.4 / 1k** (long-regime band 0.6–1.4); parentheses carry asides instead (~3–6.6/1k) | voice print anti-signature, corrected |\n| Semicolon | ≤6 / 1k | model piece 5.1 |\n| Colon | 10–14 / 1k | model piece 13.6 |\n| Question marks | ≤3 / 1k, only in structural positions (section-defining, closing reframe) | model piece 3.15 |\n| Exclamation marks | **0** | absolute |\n| First person singular | ~0 (hard cap: 2, methodological only) | corpus 0.46/1k |\n| Second person | 0 | venue rule |\n| \"We\" | sparing, diagnostic never hortatory | lexicon |\n| Negation-then-correction | **4–6 / 1k** (long form), all three forms varied (*not X but Y* / *not X; Y* / *X is not Y. It is Z.*); ≥1 in the opening paragraph | voice print ration |\n| Triads | ≤4 / 1k, never consecutive, third element varied in length | voice print |\n| Aphoristic closers | ≤1 per ~600 words; never two in a row; must pay off the paragraph above, never introduce a new idea | voice print |\n| Scare quotes | ≤2 / 1k, only for borrowed vocabulary under criticism | voice print |\n| Sentence-initial \"But\" | ~1.4 / 1k; do not substitute \"Yet\" | voice print |\n| Contractions | 0 | lexicon |\n\n## Structure norms binding this piece\n\n- Roman-numeral `<h2>` sections with **declarative titles** (claims or noun\n  phrases; never questions, never gerunds); an **unnumbered opening section**\n  and an **unnumbered coda whose title echoes or completes the essay title**.\n- **Epigraph**: one, attributed, naming the thinker whose frame the piece uses\n  — contingent on verbatim verification (claim C48). All four 2026 pieces\n  carry one.\n- **Apparatus**: numbered endnote references `[n]` resolved in a References\n  section with URLs; **zero footnotes**. Citation style: name the author and\n  the claim in the sentence, carry bibliography in the note.\n- **Counterarguments get structural positions**: a named steelman section, and\n  an explicit limits move (\"What This Does Not Solve\" family).\n- **Concrete cases are used once and dropped**; analogies run 2–5 sentences,\n  never sustained as a conceit.\n- **Enumerations are announced and then paid off.**\n- **Ending**: 2–4 sentences, stated fact rather than judgment (judgment may be\n  explicitly disclaimed); last sentence short (7–25 words) or one balanced\n  periodic sentence returning the opening term.\n\n## Signature moves to deploy here\n\n- **Concede-correct-diagnose opening** at the turn (the \"this sounds\n  totalitarian\" intuition conceded, then corrected into the capacity thesis).\n- **Named steelman before refutation**: the \"haven't we always done this?\"\n  objection gets its own section (IX); the \"if you have done nothing wrong\"\n  retort is stated in its strongest form before XIII answers it.\n- **Report against interest** (≥1, planned at 3): the gait/Bluetooth\n  correction; the AJPS complication of the chilling thesis; the thresholds\n  section as an explicit falsification condition for the essay's own warning.\n- **Coinage marked as coinage**: \"authoritarian capacity\" introduced with an\n  explicit definition and flagged as this essay's term of art.\n- **Self-application** (Constitution of Reason move): available if natural —\n  this essay is itself an act of the public visibility it defends; use only if\n  it lands in one sentence.\n\n## Anti-signature rations (the audit counts these)\n\n- **Negation-then-correction is simultaneously the persona's signature and the\n  machine's tic.** The ration (4–6/1k, forms varied) governs; monotony, not\n  density, is the failure mode. Per `draft-from-outline` Phase 4: the recast-on-\n  sight rule for \"not X, but Y\" is overridden by this ration.\n- **Em dashes:** the model's strongest tell and this persona's most-watched\n  number. Long-form band ≤1.4/1k. Convert to commas, colons, parentheses, or\n  full stops.\n- **Aphorism inflation**: this outline is aphorism-rich (\"The machinery can\n  precede the regime\"; \"the perfect chilling effect…\"; \"frictionless power…\").\n  Budget them — roughly one per section, placed at stress positions, never\n  stacked.\n- **Triads**: the subject invites list-of-three rhetoric (surveil, classify,\n  punish). Hold to ≤4/1k, no stacking.\n- **\"This is why…\"** ≤2 in the whole piece.\n- **Rhetorical questions** only in structural positions; the outline's many\n  interrogatives (\"What exactly are we seeing?\") mostly become declaratives.\n\n## Register hazards (from `prose-standards.md` §5 + persona lexicon)\n\nMarker vocabulary — defect at first appearance: delve, showcase, underscore,\nintricate, notably, crucially, pivotal, robust, nuanced, multifaceted, tapestry,\nlandscape/realm/navigate (as metaphor), testament, leverage (verb), foster,\nmyriad, plethora, ever-evolving, in today's world. Also: hedge stacks\n(scope limits stated flatly instead), throat-clearing openings, summary\nparagraphs restating the paragraph above, symmetrical both-sidesing (\"the truth\nis somewhere in between\" — this essay has a position), \"not only… but also\" as\nfiller, stacked tricolons. **No both-sides throat-clearing**: the corpus states\nits commitments; hedges appear only as stated scope limits (\"this cannot show\nwhat a naive reading would want it to show\").\n\n## Lexicon discipline\n\n- **Available register vocabulary**: finite, answerable, articulation,\n  intelligible, arrangement, structural, invariant, constituted, partial,\n  mediation, uptake, **legibility**, provisional, conduct, office, standing.\n  \"Legibility\" is already in the persona's working vocabulary — Scott's sense\n  is compatible; use freely.\n- **Fixed terms not to redefine silently**: *compression* (owned by SPD's\n  political-language argument — do not reuse as a term of art here),\n  *category error* (owned by the AI-criticism diagnosis — avoid), *the Logos*,\n  *authorship*, *discourse-first*. None is needed by this piece.\n- **New terms of art this piece introduces** (announced, not smuggled):\n  *authoritarian capacity* (defined in the opening turn), *the prerogative\n  state* (Fraenkel's, credited), *behavioral legibility* (this essay's\n  extension of Scott — mark the extension), possibly *the democratic right to\n  opacity* (section title does the announcing).\n- **Nobody living attacked by name**: Trump, Orbán, Comey, Khalil appear as\n  cases to be described; critics are positions (\"the sentimental critics\" →\n  here, \"the alarmist reading,\" \"the complacent reading\").\n- The corpus **never cites its own essays by name** — maintained here (no\n  \"as I argued in…\").\n\n## First-person policy\n\nNone. The corpus's default voice is impersonal with ideas as subjects; this\npiece contains no professional-history opening and the author's lived\nexperience is not in the outline. **No invented experience, no reporting\npose** — the Minneapolis opening is a *documented miniature* (opening variant\n5, long-form attested), built strictly from the AP/court record and cited,\nnever narrated as if witnessed. No second person (\"the reader enters a\nchurch…\" from the outline is recast).\n\n## Exemplars in view while drafting\n\n1. \"The left–right spectrum is not false. It is a compression. Its error begins\n   when the compression is mistaken for the thing compressed.\" — opening shape.\n2. \"Organizations did not wake up one day and decide to become bureaucratic as\n   an aesthetic choice. They became bureaucratic because cognition is\n   expensive. Attention is scarce. Context is difficult to carry.\" — paragraph\n   texture: one long refusal of the moral explanation, three short structurals.\n3. \"The philosophically significant fact is not that multiplicity produces\n   intelligence. It is that the intelligence of the participant does not\n   determine the intelligence of the system.\" — negation-then-correction at\n   thesis scale.\n4. \"This is not a moral condemnation. It is a factual claim about what happens\n   when leverage increases and the cost of waiting becomes intolerable.\" —\n   the ending register.\n\n## Persona positions bearing on this piece (from `continuity.md`)\n\n- The corpus has argued institutions as epistemic machinery (*Discourse,\n  Dignity, and Decision* → *SPD* → *Constitution of Reason*); this piece\n  extends the thread to coercive institutions — an entry into an existing\n  thread, not a new departure.\n- *SPD* committed to \"classify conduct, not souls\" and to dating every profile\n  — congenial to this essay's capability-vs-use discipline; no contradiction\n  to manage.\n- No prior position conflicts with this piece's theses. The corpus's open\n  tension (productivity vs. dignity) is not touched.\n",
+  "meters": {
+   "readMin": 6,
+   "words": 1344
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f0a74f0374c0a374323f486bc0850bfecb49819eb54b0e8baecc7e1776ecd3a0",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/drafting/v1/01-voice-brief.md",
+ "kind": "artifact-page"
+}

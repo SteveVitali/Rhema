@@ -1,0 +1,115 @@
+{
+ "dto": {
+  "artifactKind": "structure_plan",
+  "artifactPath": "agents/author/drafting/v1/02-structure-plan.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "19d7f8dbec75e0be",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "eadaded47c7ccbc1",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "6ed828677d13af93",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "36f8ee52ec8e3e0f",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "04cc3f9f79ca199e",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "653b274995cb42c4",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "d6d812d730970fe3",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "6b1693b417e99db9",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "3948b9595c505b6e",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "711647a932de47f3",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "25516bf4a43615f2",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "20756aef87f6f438",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "747afd58f9943e59",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "788d4a42be29b297",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "f323fa6bdeaf2a7f",
+    "ordinal": 22
+   },
+   "b3": {
+    "contentHash": "b2e3ec7d7b72fde6",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "40b9a5f9f6f24172",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "476a2f64b4f78b1e",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "d57553b6c777d78f",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "1d2b8ba3f96fee5e",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "3ec7cff112899578",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "4c4ed0a67dc384c6",
+    "ordinal": 9
+   }
+  },
+  "draftId": "agents/author/drafting/v1/02-structure-plan.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Structure plan — The Governable Mind, v1\n\n- **Fidelity:** adaptive. **Target:** ~11,500 body words (tolerance 12,000).\n- **Reading order vs. outline order:** the outline's seventeen units are kept\n  in number and, with one exception (D3 below), in sequence. The outline's\n  order already is a reading order: puzzle (prologue) → what liberalism\n  protected (I) → why the protected thing is leaving the skull (II) → what\n  it becomes outside (III) → which freedoms are at stake (IV) → whose power\n  (V) → how control has historically been built (VI) → what the new\n  legibility is (VII) → what it can do when unconstrained (VIII) → how it\n  shapes rather than forbids thought (IX) → the objection at full force (X)\n  → the technical decomposition that dissolves the false binary (XI) → the\n  test (XII) → the failure mode named (XIII) → the failure mode imagined\n  (XIV) → the alternative (XV) → coda. The re-budgeting, not the re-ordering,\n  is where this plan departs from the outline.\n\n## The spine (twelve steps, each a claim)\n\n1. The same incident showed why people want AI governed and why it is\n   dangerous for intelligence to be governable only through institutions; so\n   the prior question is what is being controlled when AI participates in\n   thought.\n2. Liberalism's protection of the inner life was built, contested, and\n   partial: born from the discovery that sincere certainty does not license\n   coercion (Bayle), fixed as a limit at judgment (Spinoza), bounded (Locke),\n   aimed at licensing rather than speech (Milton), reframed as non-delegated\n   reason (Kant), and given a theory of truth under fallibility (Mill).\n3. Cognition was never confined to the skull, and the political argument\n   needs only the weak claim (functional integration), not the strong one\n   (constitution); what leaves the skull can be recorded.\n4. Records generated during thought are not thoughts, but the political\n   protection of thought never depended on identity between a medium and the\n   mind; it depends on what control of the medium does to the conditions of\n   thinking. Call the technologically mediated portion of deliberation the\n   externalized forum internum.\n5. Three traditions of freedom (non-interference, non-domination, conscience)\n   converge on cognitive liberty; none alone suffices.\n6. Private and sovereign epistemic power are different species of problem;\n   the sovereign can universalize a rule and close exits; epistemic exit is\n   what open and local models provide, and an exit can be constitutionally\n   significant while economically marginal.\n7. Historically, control of a cognitive technology has been achieved by\n   concentrating its production and enlisting the concentrators (the\n   Stationers); regulation has moved from licensing to architecture (Lessig,\n   Clipper); and surveillance powers have been abused and then corrected\n   (Church).\n8. Legibility of persons proceeds by degrees, and AI adds a new degree:\n   cognitive legibility, the institutional reconstruction of deliberation\n   from traces; its form is modulated permission, not prohibition.\n9. The authoritarian archive shows what those affordances do when\n   constraints are absent; the lesson is constitutional, not predictive; the\n   bottleneck moves from collection to computation.\n10. Control of thought through an intermediary works by probability shaping,\n    not prohibition; a mutable intermediary threatens the factual world\n    Arendt's politics presupposes; the liberal answer is not neutrality about\n    truth but suspicion of any final sovereign of it.\n11. The hard case is real: a model is not a book; present evidence is sober\n    on both sides; the boundary to police is between governing externalized\n    capability and governing deliberation, and it runs between layers of the\n    machine.\n12. A seven-question test locates that boundary; the failure mode is a\n    public-private cognitive-security complex issuing in permissioned\n    cognition; the alternative is plural; the freedom of the mind must be\n    allowed to follow the mind out of the skull.\n\n## Section map\n\n| # | Header | Function (claim) | Entry state | Exit state | Material | Budget |\n|---|---|---|---|---|---|---|\n| 0 | *The Double Revelation* (unnumbered) | Establish the paradox before the theory: one incident supports both camps | Reader expects a piece about AI regulation | Reader holds the hinge sentence and the prior question; knows the essay goes back four centuries | C1, C2, C54, C58; outline Prologue | 800 |\n| I | The Sanctuary of Conscience | Reconstruct the inner/outer boundary as built, contested, partial; install Mill's fallibilism as the theory of truth | Knows the question; expects Locke | Holds five distinct formulations and the line \"liberal epistemology is the institutional consequence of taking truth seriously under fallibility\" | C5–C10, C55, C56; outline §I; K7, K25 (reconstruction not teleology) | 1,150 |\n| II | The Mind Was Never Entirely Inside the Skull | Distinguish three levels of claim; rest the political case on the weakest; pivot: what leaves the skull can be recorded | Holds the boundary as historical | Holds the pivot and the distinctiveness of the LLM (recursive participation) | C11–C16, C51 (TTM); outline §II; K8, K9 | 700 |\n| III | The Externalized Forum Internum | Coin the central concept; ground it in the freedom-of-thought renaissance; introduce cognitive records and the chilling mechanism | Holds the pivot | Holds the definition, \"a prompt is not a thought… neither is a diary,\" and \"surveillance changes the expected cost of inquiry\" | C16–C23; outline §III; K10 | 1,000 |\n| IV | Three Liberties | Disaggregate freedom; show convergence | Holds the concept, asks \"which freedom?\" | Holds non-interference / non-domination / conscience as one composite claim | C24–C26; outline §IV; K11 | 650 |\n| V | The State, the Corporation, and the Right of Exit | Distinguish species of power; concede infrastructural dependence; coin epistemic exit | Holds three liberties; suspects the essay is anti-corporate or anti-state | Holds the hardened formulation and the printing-press-of-one-dissident point | C25, C27; outline §V; K12, R3 | 800 |\n| VI | The Chokepoint | Historical centerpiece: concentration makes control tractable; from licensing to architecture; abuse and correction | Holds exit as the thing to protect | Holds the Stationers mechanism, the Clipper question (\"sovereign for the user and guaranteed accessible to the state?\"), and the two-directional Church lesson | C28–C32, C55, C8; outline §VI; K13 | 900 |\n| VII | From Behavioral Legibility to Cognitive Legibility | Join the previous essay; define the new degree; name its form (modulated permission) | Holds the chokepoint | Holds cognitive legibility, the five-step ladder, Foucault's uncertain observability, Deleuze's modulation | C33–C35, C51 (Visibility); outline §VII; K14 | 700 |\n| VIII | The Authoritarian Archive | Capability demonstrations, not predictions; the bottleneck moves to computation; correct the social-credit myth | Holds the abstract mechanism | Holds \"ask what the infrastructure makes possible for tomorrow's administrators\" | C36–C39, C27; outline §VIII; K15, R8 | 650 |\n| IX | Orwell After Orwell | Reject Newspeak; install probability shaping; Arendt's mutable intermediary; Williams; the fallibilist answer | Holds legibility (what can be seen) | Holds shaping (what can be steered) and \"truth outruns every institution\" | C40–C43, C51 (Constitution); outline §IX; K16, R7, R9 | 850 |\n| X | The Hard Case: A Machine Is Not a Book | The objection at full force; present evidence; the incident's other half; not capture; the boundary question | Holds the warning; the opponent has been waiting | Holds \"cognition → capability → external action\" and the boundary question | C1, C2, C44–C48; outline §X; K17, R4–R6 | 850 |\n| XI | The Layers of the Machine | Decompose \"AI regulation\" into five layers; show no technological law forces safety into surveillance | Holds the boundary question | Holds the five layers and the concession that makes the warning stronger | C49, C50; outline §XI; K18 | 550 |\n| XII | The Constitutional Test | Seven questions; the half-life problem; apply the test to the essay's own proposals | Holds the layers | Holds the test as a tool and \"a law can expire faster than the architecture\" | C51 (Constitution's test); outline §XII; K19 | 750 |\n| XIII | The Public-Private Cognitive-Security Complex | Name the failure mode with four necessary components; what does not constitute it | Holds the test | Holds the definition and its four exclusions | outline §XIII; K20 | 450 |\n| XIV | Permissioned Cognition | The speculative climax: emergent, convenient, administratively rational; Deleuze over Orwell; Shklar's question | Holds the diagnosis | Holds the named nightmare, defined | C35, C27; outline §XIV; K21, R12 | 500 |\n| XV | Cognitive Federalism | The plural alternative, without a manifesto; the traditions converge | Holds the nightmare | Holds the plural picture and the one-time name | C24, C26; outline §XV; K22, R11 | 400 |\n| — | *The Last Private Domain* (coda) | Return to Milton; two losses of control; the litany; the closing pair | Holds the alternative | Holds the final paradox and the closing sentence | C3; outline Coda; K23 | 400 |\n| | | | | | **Total** | **12,100** |\n\nBudget total exceeds target by ~600; the tolerance absorbs it, and Phase 5\ncuts from over-budget sections first. The plan's ranked trim order if needed:\nVIII (−100), I (−100), VI (−100), III (−100), X (−100), XII (−100).\n\n## The opening\n\nMove: documented miniature, opening variant 5/7. Paragraph one narrates the\nfirst half of the incident from OpenAI's report (dated, attributed, cited\nfrom the first sentence, evidentiary status stated: \"by OpenAI's own\naccount\"). Paragraph two narrates the second half from the FT and any\ncorroboration (attributed: \"as the *Financial Times* reports\"). Paragraph\nthree states what neither camp can do with it: four short sentences of the\nsymmetry, plainly. Paragraph four: the hinge sentence, then the refusal —\n\"The political debate asks how artificial intelligence should be controlled.\nThat is the wrong question to ask first\" — and the prior question. Paragraph\nfive: the scope paragraph in the third person (\"This essay is about…\"), five\nparts, each paid off; then \"That takes the argument backward four\ncenturies.\" Stakes are clear by the end of paragraph three (~450 words); the\nthesis arrives in paragraph four (~600 words), within the long form's\nattested delay.\n\nProvenance: no invented scene. Every sentence of the incident carries a\ncitation; nothing is narrated that a fetched source does not state.\n\n## The ending\n\nThe coda returns the epigraph: the line's confidence \"depended partly on\ntechnology\" (four short sentences: the body could be imprisoned; books\nburned; speech forbidden; inward reflection remained hard to observe). Then\nthe strange thing AI does: the mind is moved outward voluntarily because\ndoing so enlarges it. The paradox as one sentence. Then the two losses of\ncontrol, and the litany from *The Constitution of Reason*'s register (no\nmodel, company, state, safety institution, or dissenting individual is\nidentical with reason; truth exceeds all of them). Last two sentences,\nclose to the outline's: \"Make dangerous power governable without making\nthought governable. The mind may extend beyond the skull. The freedom of the\nmind must be allowed to follow it.\" The epigraph's key term (*the freedom of\nmy mind*) returns in the last sentence, per the corpus habit.\n\n## Promise / payoff\n\n| Promise | Where paid |\n|---|---|\n| \"What exactly are we controlling when AI has begun to participate in thought?\" (prologue) | §§II–III (the externalized forum internum); restated §X.D |\n| The scope paragraph's five parts: what liberalism protected / why it is leaving the skull / what it becomes outside / how such things have been controlled / what a constitution would have to preserve | §I / §II / §III / §§VI–IX / §§XI–XV |\n| The incident \"belongs at both ends\" | §X.B |\n| \"That takes the argument backward four centuries\" | §I opens on Bayle; §VI returns to 1557 |\n| Milton's licensing \"prepares the Stationers' Company section later\" (§I.B) | §VI.A |\n| \"That line sets up Orwell much later\" (§III.D chilling) | §IX.B |\n| The three liberties \"explain why some interferences possess unusual significance\" | §V (species of power) and §XII (test) |\n| \"This is why the incident belongs at both ends\" | §X |\n| The constitutional test \"echoes\" the earlier essay's | §XII names the kinship explicitly |\n| Epigraph | Coda's last sentence |\n\n## Apparatus budget\n\n- 1 epigraph; 1 unnumbered opening header; 15 roman-numeral headers; 1\n  unnumbered coda header; 1 References header. No `<h3>` sub-sections.\n- `[n]` references: 45–60 entries; markers may bundle.\n- Block quotes: ≤3 (the thesis-scale definitions are set as prose, not\n  block quotes; a block quote only for a passage the essay then interprets —\n  candidates: Shklar's \"weak and the powerful\"; Deleuze's password sentence).\n- Lists: 0. The five layers (§XI) and the seven questions (§XII) are runs of\n  short paragraphs, each opening with its name.\n- Tables: 0. Bold in prose: 0. Italics for coinages at first use only.\n- Section-number cross-references inside the essay: permitted (corpus habit).\n\n## Cut list (recoverable)\n\n| Item | Outline location | Reason |\n|---|---|---|\n| The extended Church Committee account (COINTELPRO detail, the oversight architecture) | §VI.D | Settled in the previous essay; reduced to one paragraph that states the two-directional lesson and refers back |\n| Scott exposition (names, addresses, standardized units) | §VII.A | Settled in the previous essay; one sentence plus the cross-reference |\n| Balkin; Mann | bib | Off the spine at this length; Balkin already positioned in the previous essay. Mann's despotic/infrastructural distinction may return as one clause in §V if verified |\n| Russia (SORM, sovereign internet) at paragraph length | §VIII | Reduced to one or two sentences if a solid source is found; cut entirely if not (G5) |\n| The full list of nine things an intermediary can shape (§IX.B) | §IX.B | Compressed to four or five in prose |\n| The fourteen-item plural-society list (§XV) | §XV | Compressed to a sentence |\n| The seven exit mechanisms (§V.C) | §V.C | Compressed to one sentence |\n| Cambridge Handbook; Bublitz & Blitz vol. 2 | §III.A | Existence-only; one clause or a bundled reference |\n| Companion-piece suggestion about monitoring the regulatory landscape | end | Not part of the piece |\n\n## Deviations from the outline\n\n| ID | Outline location | What the plan does instead | Reason |\n|---|---|---|---|\n| D1 | Cross-references to the three predecessor essays throughout | Relative reference in prose, titles in References only | The persona's essays historically do not cite each other; the one attested self-citation uses this form. Q1 |\n| D2 | §XI table | Five short paragraphs | Tables occur once in the corpus, in the excluded technical register |\n| D3 | §VI.D Church Committee as a full subsection | One paragraph, referring to the previous essay's treatment | The corpus rule: do not re-argue settled ground; the previous essay covered the domestic archive with its own sources |\n| D4 | Length 12,000–16,000 | ~11,500–12,000 | Corpus ceiling; the compression falls on settled ground, not on the theory or the technical problem. Q2 |\n| D5 | §XII \"seven questions\" as a numbered list; §XV fourteen-item list | Runs of short paragraphs | Corpus apparatus norm |\n| D6 | The outline's blockquoted definitions and hinge sentences | Set as prose | Block quotes in the corpus are for text about to be interpreted, not for the author's own theses |\n| D7 | \"Cognitive records,\" \"probability shaping,\" \"constitutional half-life,\" \"cognitive federalism\" | Used once or twice each, unmarked or once-marked | Outline K24: do not elevate them |\n| D8 | The outline's opening subsection structure (§I.A–D, §III.A–D, etc.) | No `<h3>` subsections | *Constitution* uses `<h3>`; *Visibility* does not; at 11,500 words with 17 headers already, sub-headers would push the apparatus past the venue's practice and invite outline-shaped prose |\n\n## Open questions carried to the gate (autonomous: defaults taken)\n\nQ1–Q5 as in the commissioning brief.\n",
+  "meters": {
+   "readMin": 10,
+   "words": 2345
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4cda1ec2be1d285bad09c69beacb59d267ea5e75b675caaacb8bfc69fda7c97d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/drafting/v1/02-structure-plan.md",
+ "kind": "artifact-page"
+}

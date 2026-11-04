@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bundesarchiv-abteilung-26-finding-aid.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5cb0a7a94d445223",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bundesarchiv-abteilung-26-finding-aid.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bundesarchiv-abteilung-26-finding-aid\n- **URL:** https://www.bundesarchiv.de/bestandsuebersichten/bestaende-und-teilbestaende-des-stasi-unterlagen-archivs/19215-abteilung-26-telefonueberwachung-1/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C55's list of activities (telephone and telex monitoring; room surveillance with microphones and cameras; marking agents). Does not contain the technical chronology.\n- **Key passages:** 'Überwachung des Telefon- und Fernschreibverkehrs – Raumüberwachungen und technische Beobachtungen mit Mikrofonen und Kameras – Einsatz von Markierungsmitteln'\n- **Reliability:** Primary-adjacent (official finding aid; Stand Dezember 2021).\n- **Relevance to this project:** C55\n",
+  "meters": {
+   "readMin": 1,
+   "words": 71
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aa7d486557602f092d48344dcd93eedaf2fb755e13e9b383d29b191a4c49b5f3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bundesarchiv-abteilung-26-finding-aid.md",
+ "kind": "artifact-page"
+}

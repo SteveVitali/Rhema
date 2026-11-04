@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/solitum-scott-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "81d274c34930131f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/solitum-scott-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# solitum-scott-notes\n- **URL:** https://solitum.net/posts/seeing-like-a-state/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Page-keyed reader notes: the legibility passage at p. 183; the surnames passage ('create a legible people') at p. 65. Used only for page numbers because the Yale edition could not be opened.\n- **Key passages:** 'On Legibility as Manipulation (p. 183)' / 'On Surnames and State Legibility (p. 65)'\n- **Reliability:** Secondary, informal; page numbers plausible and consistent with the book's structure.\n- **Relevance to this project:** C51; ref [32]\n",
+  "meters": {
+   "readMin": 1,
+   "words": 82
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "21b94d0b8d8c1c623bed15ec4dc10b2c883ba9c5fb09a7d30131fec5b0cda979",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/solitum-scott-notes.md",
+ "kind": "artifact-page"
+}

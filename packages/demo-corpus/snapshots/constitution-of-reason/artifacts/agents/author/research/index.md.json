@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "research_note",
+  "artifactPath": "agents/author/research/index.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "20dc2374c0cdd05f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "03fc7936fe9a8c04",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "582405c8ba5b45ec",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/author/research/index.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Research index\n\nRound v2→v3 (accessed 2026-07-30):\n\n- [kaesberg-voting-consensus](sources/kaesberg-voting-consensus.md) — confirms C9 re-scope: voting/consensus gains are task-dependent (13.2% reasoning / 2.8% knowledge); diversity is the active ingredient\n- [fei-when-agents-evolve](sources/fei-when-agents-evolve.md) — governance topology: ~57–60-pp institutional spread within one model; highest-token institutions not best (gate-loop); caveat: spread compresses on multi-step tasks\n- [hayek-use-of-knowledge](sources/hayek-use-of-knowledge.md) — verbatim dispersed-knowledge and price-system passages (AER 1945) for the §IV citation\n- [rauch-constitution-of-knowledge](sources/rauch-constitution-of-knowledge.md) — the two rules (fallibilist/empirical), Madison analogy, defends-existing-institution framing; differentiation basis\n- [farrell-shalizi-cognitive-democracy](sources/farrell-shalizi-cognitive-democracy.md) — 2012 ancestor synthesis: institutions as information processors + Mercier–Sperber + dissent preservation\n- [popper-critical-rationalism](sources/popper-critical-rationalism.md) — conjecture/refutation, open-society institutional extension; for the \"organized corrigibility\" credit\n- [anderson-epistemology-of-democracy](sources/anderson-epistemology-of-democracy.md) — Episteme 2006 triad (Condorcet / diversity / Dewey experimentalism), feedback mechanisms; abstract-level only\n- [estlund-democratic-authority](sources/estlund-democratic-authority.md) — epistemic proceduralism, legitimacy ≠ accuracy, anti-epistocracy; secondary-level only\n- [smit-going-mad](sources/smit-going-mad.md) — ICML 2024 (PMLR v235): MAD doesn't reliably beat self-consistency/ensembling; tuning-sensitive\n- [chen-more-llm-calls](sources/chen-more-llm-calls.md) — NeurIPS 2024: vote-system performance non-monotone in calls, predictable from difficulty mix (the named null hypothesis)\n- [cognition-dont-build-multi-agents](sources/cognition-dont-build-multi-agents.md) — practitioner counter-default: share full traces, single-threaded unless proven otherwise\n- [huang-self-correction-yogurt](sources/huang-self-correction-yogurt.md) — documented concrete incident (yogurt problem, $75→$37.50; GPT-4 95.5→89.0 GSM8K) for the opening\n- [four-color-kempe-heawood](sources/four-color-kempe-heawood.md) — Kempe 1879 / Heawood 1890 / Appel–Haken 1976 / Coq 2005: the historical concrete thread\n- [anthropic-multi-agent-figures](sources/anthropic-multi-agent-figures.md) — exact 80% variance / 15× tokens / 90.2% eval quotes\n- [federalist-51-authorship](sources/federalist-51-authorship.md) — Avalon header \"HAMILTON OR MADISON\"; C17 hedge confirmed\n",
+  "meters": {
+   "readMin": 1,
+   "words": 214
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "13c3461ce99f651ccab6d8084c415bc9cf281398774e5e2557554b1e4c3caf3e",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/index.md",
+ "kind": "artifact-page"
+}

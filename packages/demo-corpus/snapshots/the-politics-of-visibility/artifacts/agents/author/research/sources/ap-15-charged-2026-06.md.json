@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ap-15-charged-2026-06.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9f845abbaa655448",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ap-15-charged-2026-06.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ap-15-charged-2026-06\n- **URL:** https://firstamendment.mtsu.edu/post/federal-prosecutors-charge-15-people-with-impeding-agents-during-minn-illegal-immigration-crackdown/ (AP story republished by the Free Speech Center, MTSU; dated June 18, 2026) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C2\n- **What it establishes:** Independent (non-government) account of the June charges. Each of the 15 defendants charged with \"conspiracy to impede or injure a federal officer,\" maximum sentence six years. Three defendants faced extra counts (interstate stalking, assault on a federal officer, destruction of government property). Announced June 16, 2026 at a news conference led by U.S. Attorney Daniel N. Rosen, who tied defendants to \"antifa\" and said Operation Metro Surge had produced over 4,000 arrests. Defense attorney Kevin Riach called the charges \"an affront to the First Amendment,\" intended to intimidate people observing ICE.\n- **Key passages:** Charge: \"conspiracy to impede or injure a federal officer\" (max six years). Group: \"Direct Action Minnesota,\" described as a left-wing coalition that trains members in \"surveillance, operational planning and rapid mobilization against law enforcement.\" Alleged conduct: blockades around government buildings, throwing ice chunks at federal vehicles, tracking agents' movements across Minneapolis.\n- **Reliability:** Secondary (AP wire); corroborates the DOJ press release from outside government and adds the six-year maximum and the defense response. Small discrepancy vs. DOJ release: AP says three defendants faced additional counts; DOJ's own list of extra charges also includes interstate threats and solicitation to commit a crime of violence — prefer the DOJ release for the full charge list.\n- **Relevance to this project:** C2 (charge wording, penalty, announcement details, defense framing).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 245
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f342e2ccfeabcb905513981bb7aefe3c00e87afbbc89bf4546e2613813899fa8",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/ap-15-charged-2026-06.md",
+ "kind": "artifact-page"
+}

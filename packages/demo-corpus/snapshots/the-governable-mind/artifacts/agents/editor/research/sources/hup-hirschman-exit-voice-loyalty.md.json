@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hup-hirschman-exit-voice-loyalty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "649a1e7ff47e804a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hup-hirschman-exit-voice-loyalty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hup-hirschman-exit-voice-loyalty\n- **URL:** https://www.hup.harvard.edu/books/9780674276604 (read via reader proxy) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Hirschman, Exit, Voice, and Loyalty: Responses to Decline in Firms, Organizations, and States (Harvard University Press). Exit = leaving/switching; voice = advocating change from within; loyalty delays exit. The HUP page shows a 1972 printing; the first edition (1970) is the standard citation and is what ref [47] gives.\n- **Key passages:** publisher's description: exit (leaving an organization or switching products) versus voice (advocating for internal change), with loyalty delaying exit and strengthening voice.\n- **Reliability:** Publisher's catalogue page; secondary for the concept, primary for bibliographic data.\n- **Relevance to this project:** V2 (l.116); ref [47].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 114
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fc90496c7036a4de994a4a94c214d0585e34d71121984c5f006867e2a6c5c2c7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hup-hirschman-exit-voice-loyalty.md",
+ "kind": "artifact-page"
+}

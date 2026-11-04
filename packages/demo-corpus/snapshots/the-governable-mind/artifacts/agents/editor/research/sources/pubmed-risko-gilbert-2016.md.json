@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/pubmed-risko-gilbert-2016.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3448509588fd0109",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/pubmed-risko-gilbert-2016.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pubmed-risko-gilbert-2016\n- **URL:** https://pubmed.ncbi.nlm.nih.gov/27542527/ (metadata cross-checked at https://api.crossref.org/works/10.1016/j.tics.2016.07.002) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** The cognitive-offloading definition verbatim; TiCS 20(9):676–688, 2016 (C28).\n- **Key passages:** \"the use of physical action to alter the information processing requirements of a task so as to reduce cognitive demand.\"\n- **Reliability:** Primary abstract via PubMed; Crossref for bibliographic data.\n- **Relevance to this project:** C28; §II.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 64
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1b250f4fb50ac4c99c18b0ffe0c319e4ce64d27a7244d0568c94c3905ec31cef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/pubmed-risko-gilbert-2016.md",
+ "kind": "artifact-page"
+}
