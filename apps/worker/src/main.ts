@@ -22,9 +22,21 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
-import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery, persistEstimatorCell, loadEstimatorCells } from "@rhema/ledger";
+import {
+  SqlHoldLedger,
+  STRIPE_EVENT_JOB,
+  FetchStripePort,
+  settleUnverifiedDelivery,
+  persistEstimatorCell,
+  loadEstimatorCells,
+} from "@rhema/ledger";
 import { SqlObligationHook } from "@rhema/obligations";
-import { recordInstrumentedFold, setInstrumentedOverride, type EstimatorSpec, type InstrumentedMeasurement } from "@rhema/protocols";
+import {
+  recordInstrumentedFold,
+  setInstrumentedOverride,
+  type EstimatorSpec,
+  type InstrumentedMeasurement,
+} from "@rhema/protocols";
 import { createGcsContentStore } from "@rhema/mirror";
 import {
   PgPoolTxRunner,
@@ -49,13 +61,15 @@ import {
   handleRunReap,
   handleStrandedSweep,
   handleGateExpiryJob,
-  handleRunWalkthrough,
   type WorkerRunDeps,
   type WorkerRunConfig,
   type RunJobPayload,
 } from "./run-jobs.js";
-import { loadWalkthroughGenerator } from "./walkthrough-generator.js";
-import { handleRunEventsRetention, handleRunEventsPartition, RUN_EVENT_JOBS } from "./run-events-jobs.js";
+import {
+  handleRunEventsRetention,
+  handleRunEventsPartition,
+  RUN_EVENT_JOBS,
+} from "./run-events-jobs.js";
 import { handleParkedSweep, reDebitOnResume, type WorkerLedgerDeps } from "./ledger-jobs.js";
 import {
   handleStripeEvent,
@@ -138,7 +152,12 @@ export async function startWorker(): Promise<void> {
   // on every poll and starving run provisioning (diagnosed live — the api's short per-request queries are
   // unaffected). TCP keepalive holds the connections open; bounded pools + a real connect timeout keep the
   // footprint sane and fail fast rather than hanging.
-  const pgOpts = { keepAlive: true, keepAliveInitialDelayMillis: 10_000, connectionTimeoutMillis: 15_000, idleTimeoutMillis: 30_000 };
+  const pgOpts = {
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
+    connectionTimeoutMillis: 15_000,
+    idleTimeoutMillis: 30_000,
+  };
   // SEC.1 (REQ-SPEC-30) — the pool split: `DATABASE_URL` authenticates as `rhema_app_login` (the
   // user-serving role: NOBYPASSRLS, RLS-bound tenant transactions) and `SYSTEM_DATABASE_URL` — REQUIRED,
   // fail-closed in env.ts — is the elevated role for the audited system seams (sweeps, credential mint,
@@ -146,19 +165,30 @@ export async function startWorker(): Promise<void> {
   // queue transport — schema CREATE + full DML), which the user role must never be granted; job payloads
   // carry no tenant rows, so the queue is transport, not tenancy.
   const pool = new pg.Pool({ connectionString: env.databaseUrl, max: 6, ...pgOpts });
-  const redis = new Redis(env.redisUrl, { maxRetriesPerRequest: 3, enableOfflineQueue: true, lazyConnect: false });
+  const redis = new Redis(env.redisUrl, {
+    maxRetriesPerRequest: 3,
+    enableOfflineQueue: true,
+    lazyConnect: false,
+  });
   const subscriber = redis.duplicate();
   // SLO.1 (§13.5 run-start/gate-resume lever) — `useListenNotify` wakes a worker the moment a job is
   // created on a `notify: true` queue (below) instead of waiting out the 2 s base poll. The dispatch
   // slice of queued→provisioning drops from ~1–2 s to ~ms; polling stays on as the correctness floor
   // (a dropped listener degrades to the poll, never a lost job). One dedicated listen connection.
-  const boss = new PgBoss({ connectionString: env.systemDatabaseUrl, max: 5, ...pgOpts, useListenNotify: true });
+  const boss = new PgBoss({
+    connectionString: env.systemDatabaseUrl,
+    max: 5,
+    ...pgOpts,
+    useListenNotify: true,
+  });
 
   // A background service must never let a transient infra blip become an UNHANDLED error that exits the process
   // (a single pg-boss connection timeout on the reaper cron was crashing the whole worker → EventEmitter
   // 'error' with no listener → ERR_UNHANDLED_ERROR → exit(1), losing the run consumers). Attach listeners so a
   // blip is logged and pg-boss/pg recover on their own retry cadence instead of killing the run lifecycle.
-  boss.on("error", (err: unknown) => console.error("[worker] pg-boss error (non-fatal, will retry):", err));
+  boss.on("error", (err: unknown) =>
+    console.error("[worker] pg-boss error (non-fatal, will retry):", err),
+  );
   pool.on("error", (err: unknown) => console.error("[worker] pg pool error (non-fatal):", err));
   redis.on("error", (err: unknown) => console.error("[worker] redis error (non-fatal):", err));
 
@@ -215,7 +245,9 @@ export async function startWorker(): Promise<void> {
     let t: ReturnType<typeof setTimeout>;
     return Promise.race([
       pr.finally(() => clearTimeout(t)),
-      new Promise<T>((_, rej) => (t = setTimeout(() => rej(new Error(`timeout after ${ms}ms: ${label}`)), ms))),
+      new Promise<T>(
+        (_, rej) => (t = setTimeout(() => rej(new Error(`timeout after ${ms}ms: ${label}`)), ms)),
+      ),
     ]);
   };
   const ensureLauncher = async (): Promise<Awaited<ReturnType<typeof createGkeJobLauncher>>> => {
@@ -233,7 +265,9 @@ export async function startWorker(): Promise<void> {
     }
   };
   const launcher = {
-    launch: async (spec: Parameters<Awaited<ReturnType<typeof createGkeJobLauncher>>["launch"]>[0]) => {
+    launch: async (
+      spec: Parameters<Awaited<ReturnType<typeof createGkeJobLauncher>>["launch"]>[0],
+    ) => {
       let lastErr: unknown;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
@@ -241,7 +275,10 @@ export async function startWorker(): Promise<void> {
           return await withTimeout(l.launch(spec), 90_000, "launch");
         } catch (err) {
           lastErr = err;
-          console.error(`[worker] launch attempt ${attempt}/3 failed (will retry):`, err instanceof Error ? err.message : err);
+          console.error(
+            `[worker] launch attempt ${attempt}/3 failed (will retry):`,
+            err instanceof Error ? err.message : err,
+          );
           await new Promise((r) => setTimeout(r, 2000 * attempt));
         }
       }
@@ -262,9 +299,14 @@ export async function startWorker(): Promise<void> {
   // failure mode the role split removes. `systemTxRunner` binds the tenant-scoped transaction seam to it;
   // `systemExec` is the bare cross-tenant exec for the sweeps.
   const systemPool = new pg.Pool({ connectionString: env.systemDatabaseUrl, max: 4, ...pgOpts });
-  systemPool.on("error", (err: unknown) => console.error("[worker] system pg pool error (non-fatal):", err));
+  systemPool.on("error", (err: unknown) =>
+    console.error("[worker] system pg pool error (non-fatal):", err),
+  );
   const systemExec: SqlClient = {
-    query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
+    query: (sql, params) =>
+      systemPool
+        .query(sql, params ? [...params] : undefined)
+        .then((r) => ({ rows: r.rows as unknown[] })),
   };
 
   // ECON.1 — boot-load the durable estimator cells into the override map: a folded spec survives a
@@ -286,10 +328,14 @@ export async function startWorker(): Promise<void> {
   // as on prod 2026-09-18) must not construct a source whose 401s crash every nightly `usage.reconcile`
   // before it reaches the balance assertion. Same guard shape as the Resend placeholder below: a value
   // self-marked `placeholder` is "not configured" → the report pull skips, the assertion still runs.
-  const adminSecret = env.anthropicAdminKeySecret ? await access(env.anthropicAdminKeySecret) : undefined;
+  const adminSecret = env.anthropicAdminKeySecret
+    ? await access(env.anthropicAdminKeySecret)
+    : undefined;
   const adminKey = adminSecret && !/placeholder/i.test(adminSecret) ? adminSecret : undefined;
   if (adminSecret && !adminKey) {
-    console.log("[worker] ANTHROPIC admin key is a placeholder — Usage & Cost report pull unconfigured");
+    console.log(
+      "[worker] ANTHROPIC admin key is a placeholder — Usage & Cost report pull unconfigured",
+    );
   }
   const alertSink = env.opsAlertWebhookUrl
     ? async (a: unknown) => {
@@ -303,7 +349,9 @@ export async function startWorker(): Promise<void> {
 
   // PRB.09 — the notification config (signed-action secret + link origins) and the Resend transport. Both
   // are optional seams: a preview stage without the secrets runs the queues as no-ops and stays green.
-  const actionSecret = env.emailActionSecretName ? await access(env.emailActionSecretName) : undefined;
+  const actionSecret = env.emailActionSecretName
+    ? await access(env.emailActionSecretName)
+    : undefined;
   // PRB.16 — a seeded PLACEHOLDER value (the secret NAME is provisioned before the real key exists, as
   // on prod 2026-09-17) must not construct a client that fails every send and burns pg-boss retries.
   // Resend keys carry the `re_` prefix — and the seeded stand-ins MIMIC it (`re_placeholder_…`), so the
@@ -311,7 +359,9 @@ export async function startWorker(): Promise<void> {
   // "not configured" → the mail legs no-op cleanly.
   const resendSecret = env.resendApiKeySecret ? await access(env.resendApiKeySecret) : undefined;
   const resendKey =
-    resendSecret?.startsWith("re_") && !/placeholder/i.test(resendSecret) ? resendSecret : undefined;
+    resendSecret?.startsWith("re_") && !/placeholder/i.test(resendSecret)
+      ? resendSecret
+      : undefined;
   if (resendSecret && !resendKey) {
     console.log("[worker] RESEND key is a placeholder/malformed — mail transport unconfigured");
   }
@@ -323,17 +373,18 @@ export async function startWorker(): Promise<void> {
   // P1.16 — the Stripe Billing key (Secret-Manager NAME; placeholder counts as unconfigured — the
   // PRB.17 pattern). Bound into `deps.stripe` for the auto-reload sweep's off-session charge — the ONLY
   // unattended charge path (REQ-BILL-17). Unset ⇒ the sweep logs `no_stripe_port` and skips.
-  const stripeKeySecret = env.stripeSecretKeyName ? await access(env.stripeSecretKeyName) : undefined;
-  const stripeKey = stripeKeySecret && !/placeholder/i.test(stripeKeySecret) ? stripeKeySecret : undefined;
+  const stripeKeySecret = env.stripeSecretKeyName
+    ? await access(env.stripeSecretKeyName)
+    : undefined;
+  const stripeKey =
+    stripeKeySecret && !/placeholder/i.test(stripeKeySecret) ? stripeKeySecret : undefined;
   if (stripeKeySecret && !stripeKey) {
     console.log("[worker] STRIPE key is a placeholder — auto-reload sweep stays no_stripe_port");
   }
 
-  // P1.05 — the walkthrough's package-class call (RUN.1: the binding lives in walkthrough-generator.ts
-  // for testability; the Pulumi program carries WALKTHROUGH_MODEL_KEY_SECRET → the provider key's
-  // secret-version NAME — see ADR-052). Unconfigured ⇒ a stub that fails the attempt cleanly
-  // (recorded `failed`; the card's Retry covers it once the secret lands).
-  const walkthrough = await loadWalkthroughGenerator(env.walkthroughModelKeySecret, access);
+  // R7COPY.0/ADR-130 — the generated run walkthrough is retired: no `run.walkthrough` consumer and no
+  // WALKTHROUGH_MODEL_KEY_SECRET read (the name survives only as the ingest key's legacy fallback —
+  // env.ts). The provider-key exception narrows to `ingest.reconstruct` (ADR-052 amended).
 
   // SEC.1 — `txRunner` runs the user-serving role (the tenant transactions RLS binds); the role pin is
   // belt-and-suspenders on top of the repointed DATABASE_URL. `systemTxRunner` rides the elevated pool
@@ -343,7 +394,7 @@ export async function startWorker(): Promise<void> {
   const systemTxRunner = new PgPoolTxRunner(systemPool);
   const eventWriter = new SqlEventWriter(bus);
 
-  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerFullBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
+  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerFullBillingDeps & WorkerNotificationDeps = {
     txRunner,
     systemTxRunner,
     eventWriter,
@@ -362,8 +413,12 @@ export async function startWorker(): Promise<void> {
     // ECON.1 — `DEBIT_MODE` (default `committed`); the metered-debit flag rides the run paths.
     debitMode: env.debitMode,
     // ECON.1 — the harvest's admissibility cutovers (unset ⇒ predicates inert; see docs/ops/ flip runbook).
-    ...(env.calibrationPresetCutover ? { calibrationPresetCutover: env.calibrationPresetCutover } : {}),
-    ...(env.calibrationResearchAfter ? { calibrationResearchAfter: env.calibrationResearchAfter } : {}),
+    ...(env.calibrationPresetCutover
+      ? { calibrationPresetCutover: env.calibrationPresetCutover }
+      : {}),
+    ...(env.calibrationResearchAfter
+      ? { calibrationResearchAfter: env.calibrationResearchAfter }
+      : {}),
     // PRB.19 (live F35): the `run.deliver` withheld-delivery re-drive folds a `response` ledger into
     // obligation routing exactly like the api's inline POST path — without the hook wired here, a
     // re-driven response delivered with its obligations unrouted (prod run 01M2VDHN… routed post-hoc).
@@ -400,19 +455,24 @@ export async function startWorker(): Promise<void> {
         runsBehind: folded.runsBehind ?? [],
       }).catch(() => {});
     },
-    contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
+    contentStoreFor: (workspaceId: string) =>
+      createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
     ...(notificationConfig ? { notifications: notificationConfig } : {}),
-    ...(resendKey && env.emailFrom ? { mailer: new ResendMailSender(resendKey, env.emailFrom) } : {}),
+    ...(resendKey && env.emailFrom
+      ? { mailer: new ResendMailSender(resendKey, env.emailFrom) }
+      : {}),
     ...(env.emailFrom ? { emailFrom: env.emailFrom } : {}),
-    walkthrough,
   };
 
   // P1.15 — the ingestion deps (§9.5): every seam is optional and fails closed with a named reason.
   // The fetcher rides the invoker-gated fetcher service (OIDC per hop — LIVE FINDING 11); the
-  // reconstructor spends the same Secret-Manager anthropic key the walkthrough generator uses
+  // reconstructor spends the same Secret-Manager anthropic key the retired walkthrough generator used
   // (operator-gated spend — D-P1.15-1 caps the first live visual pass at ≤$5).
-  const ingestKeySecret = env.ingestModelKeySecret ? await access(env.ingestModelKeySecret) : undefined;
-  const ingestKey = ingestKeySecret && !/placeholder/i.test(ingestKeySecret) ? ingestKeySecret : undefined;
+  const ingestKeySecret = env.ingestModelKeySecret
+    ? await access(env.ingestModelKeySecret)
+    : undefined;
+  const ingestKey =
+    ingestKeySecret && !/placeholder/i.test(ingestKeySecret) ? ingestKeySecret : undefined;
   const ingestDeps: WorkerIngestDeps = {
     txRunner: deps.txRunner,
     ids,
@@ -423,7 +483,9 @@ export async function startWorker(): Promise<void> {
     ...(env.fetcherServiceUrl
       ? { fetcher: createFetcherServicePort(env.fetcherServiceUrl, fetch, fetchGceMetadataIdToken) }
       : {}),
-    ...(env.userContentBucket ? { ingestBlobs: await createGcsBlobStore(env.userContentBucket) } : {}),
+    ...(env.userContentBucket
+      ? { ingestBlobs: await createGcsBlobStore(env.userContentBucket) }
+      : {}),
     ...(env.userContentBucket && env.convertJob
       ? {
           converter: createConvertJobPreview({
@@ -449,7 +511,10 @@ export async function startWorker(): Promise<void> {
         return;
       } catch (err) {
         lastErr = err;
-        console.error(`[worker] startup ${label} attempt ${attempt} failed (will retry):`, err instanceof Error ? err.message : err);
+        console.error(
+          `[worker] startup ${label} attempt ${attempt} failed (will retry):`,
+          err instanceof Error ? err.message : err,
+        );
         await new Promise((r) => setTimeout(r, Math.min(1000 * attempt, 5000)));
       }
     }
@@ -490,7 +555,9 @@ export async function startWorker(): Promise<void> {
     // immediately (the dispatch slice of queued→provisioning / gate→queued→launch). Idempotent —
     // createQueue updates the queue's options on an existing row.
     const notify = name === RUN_JOBS.start || name === RUN_JOBS.resume;
-    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name, notify ? { notify: true } : undefined));
+    await retryStartup(`createQueue ${name}`, () =>
+      boss.createQueue(name, notify ? { notify: true } : undefined),
+    );
   }
   console.log("[worker] startup: queues created; registering consumers");
 
@@ -511,7 +578,12 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) {
       const res = await handleRunResume(deps, job.data);
       // re-debit the refunded phases FIRST at resume (REQ-SPEC-24.6), keyed per episode (resume:<run>:<attempt>).
-      if (res.ok) await reDebitOnResume(deps, { runId: res.runId, workspaceId: job.data.workspaceId, attempt: res.attempt });
+      if (res.ok)
+        await reDebitOnResume(deps, {
+          runId: res.runId,
+          workspaceId: job.data.workspaceId,
+          attempt: res.attempt,
+        });
     }
   });
   await boss.work<RunJobPayload>(RUN_JOBS.cancel, async (jobs) => {
@@ -521,16 +593,6 @@ export async function startWorker(): Promise<void> {
   // settles the run + applies the Approve-outline consequences; no pod resumes).
   await boss.work<RunJobPayload>(RUN_JOBS.finalize, async (jobs) => {
     for (const job of jobs) await handleRunFinalize(deps, job.data);
-  });
-
-  // P1.05 — the lazy walkthrough generator (one package-class call per job; failures land as
-  // {status:'failed'} on runs.walkthrough and never throw — a throw would burn pg-boss retries for a
-  // terminal-state nicety).
-  await boss.work<RunJobPayload>(RUN_JOBS.walkthrough, async (jobs) => {
-    for (const job of jobs) {
-      const r = await handleRunWalkthrough(deps, job.data);
-      console.log(`[worker] run.walkthrough ${job.data.runId} → ${JSON.stringify(r)}`);
-    }
   });
 
   // PRB.16b F25 — the gate-expiry consumer: P0.10's `gate:<id>` design was never registered here AND was an
@@ -579,9 +641,20 @@ export async function startWorker(): Promise<void> {
       .then((readings) => {
         for (const r of readings) {
           if (r.status === "breach") {
-            const line = JSON.stringify({ signal: r.key, value: r.value, threshold: r.threshold, target: r.target });
+            const line = JSON.stringify({
+              signal: r.key,
+              value: r.value,
+              threshold: r.threshold,
+              target: r.target,
+            });
             console.error(`[slo] violation ${line}`);
-            void alertSink?.({ kind: "slo_violation", signal: r.key, value: r.value, threshold: r.threshold, target: r.target });
+            void alertSink?.({
+              kind: "slo_violation",
+              signal: r.key,
+              value: r.value,
+              threshold: r.threshold,
+              target: r.target,
+            });
           }
         }
       })
@@ -613,7 +686,9 @@ export async function startWorker(): Promise<void> {
   };
   await boss.work("slo.review.weekly", logWeeklyReadout);
   await boss.schedule("slo.review.weekly", "12 7 * * 1");
-  void logWeeklyReadout().catch((err: unknown) => console.error("[worker] slo weekly readout failed:", err));
+  void logWeeklyReadout().catch((err: unknown) =>
+    console.error("[worker] slo weekly readout failed:", err),
+  );
 
   // CITE.1 (REQ-VIS-9; ADR-084) — the cross-tenant citation-completeness rollup: a REPORTED signal
   // (deliberately not a §13.5 SLO row). Daily on the system executor, flagged test tenants excluded:
@@ -650,7 +725,8 @@ export async function startWorker(): Promise<void> {
   await boss.work<StripeEventJobPayload>(STRIPE_EVENT_JOB, async (jobs) => {
     for (const job of jobs) {
       const outcome = await handleStripeEvent(deps, job.data);
-      if (outcome.kind === "unresolved") throw new Error(`stripe event unresolved: ${outcome.reason}`);
+      if (outcome.kind === "unresolved")
+        throw new Error(`stripe event unresolved: ${outcome.reason}`);
       console.log(`[worker] stripe.event ${job.data.eventId} → ${outcome.kind}`);
     }
   });
@@ -661,12 +737,15 @@ export async function startWorker(): Promise<void> {
 
   // P1.13 — the deterministic figure render (the render step's commit enqueues; the job renders the
   // committed spec server-side and emits figure.rendered). A render fault throws → pg-boss retries.
-  await boss.work<{ figureId: string; runId: string; workspaceId: string }>(FIGURE_RENDER_QUEUE, async (jobs) => {
-    for (const job of jobs) {
-      const outcome = await handleFigureRender(deps, job.data);
-      console.log(`[worker] figure.render ${job.data.figureId} → ${JSON.stringify(outcome)}`);
-    }
-  });
+  await boss.work<{ figureId: string; runId: string; workspaceId: string }>(
+    FIGURE_RENDER_QUEUE,
+    async (jobs) => {
+      for (const job of jobs) {
+        const outcome = await handleFigureRender(deps, job.data);
+        console.log(`[worker] figure.render ${job.data.figureId} → ${JSON.stringify(outcome)}`);
+      }
+    },
+  );
   // REQ-BILL-13 — nightly provider-report reconciliation + the REQ-SPEC-24.1 balance assertion (3:15 UTC).
   await boss.work(USAGE_RECONCILE_JOB, async () => {
     const r = await handleUsageReconcile(deps);
@@ -708,7 +787,9 @@ export async function startWorker(): Promise<void> {
   await boss.work<IngestReconstructJobPayload>(INGEST_JOB_NAMES.reconstruct, async (jobs) => {
     for (const job of jobs) {
       const r = await handleIngestReconstruct(ingestDeps, job.data);
-      console.log(`[worker] ingest.reconstruct ${job.data.itemId} (${job.data.tier}) → ${JSON.stringify(r)}`);
+      console.log(
+        `[worker] ingest.reconstruct ${job.data.itemId} (${job.data.tier}) → ${JSON.stringify(r)}`,
+      );
     }
   });
   await boss.work<VoicePurgeJobPayload>(INGEST_JOB_NAMES.voicePurge, async (jobs) => {
@@ -735,16 +816,24 @@ export async function startWorker(): Promise<void> {
   // PRB.09 — the notification consumers: `notify` (domain jobs — re-read state, claim, mint links, enqueue
   // mail) and `mail.send` (the Resend transport leg). Payloads are the NotificationJobPayload shapes.
   await boss.work("notify", async (jobs) => {
-    for (const job of jobs) await handleNotifyJobPayload(deps, job.data as Parameters<typeof handleNotifyJobPayload>[1]);
+    for (const job of jobs)
+      await handleNotifyJobPayload(deps, job.data as Parameters<typeof handleNotifyJobPayload>[1]);
   });
   await boss.work("mail.send", async (jobs) => {
-    for (const job of jobs) await handleMailSendJobPayload(deps, job.data as Parameters<typeof handleMailSendJobPayload>[1]);
+    for (const job of jobs)
+      await handleMailSendJobPayload(
+        deps,
+        job.data as Parameters<typeof handleMailSendJobPayload>[1],
+      );
   });
   // P1.19 — the deferred §5.11 rows' sweeps. Each fans out one `notify` job per WORKSPACE through the
   // system client (cross-tenant enumeration must never ride the RLS-scoped tenant pool); the tenant-
   // scoped notify handler does the per-workspace work with its own dedup claims, so a re-fired sweep
   // is idempotent.
-  const sweepWorkspaces = async (type: "voice_digest" | "trial_ending" | "run_digest", grainKey: string) => {
+  const sweepWorkspaces = async (
+    type: "voice_digest" | "trial_ending" | "run_digest",
+    grainKey: string,
+  ) => {
     const res = await systemExec.query(`select id from workspaces order by id`, []);
     for (const w of res.rows as { id: string }[]) {
       await deps.queue.send(
@@ -779,8 +868,14 @@ export async function startWorker(): Promise<void> {
       }
     }
   });
-  await boss.send(TEST_TENANT_PURGE_JOB, { olderThanHours: testTenantPurgeHours }, { singletonKey: "boot" });
-  await boss.schedule(TEST_TENANT_PURGE_JOB, "10 * * * *", { olderThanHours: testTenantPurgeHours });
+  await boss.send(
+    TEST_TENANT_PURGE_JOB,
+    { olderThanHours: testTenantPurgeHours },
+    { singletonKey: "boot" },
+  );
+  await boss.schedule(TEST_TENANT_PURGE_JOB, "10 * * * *", {
+    olderThanHours: testTenantPurgeHours,
+  });
 
   // PRB.16 — the auth-mail transport (magic links). A plain `to/subject/text/html` send — no notification
   // delivery row (pre-auth mail has no workspace). Unconfigured mailer ⇒ drop (the api's enqueue remains
@@ -807,7 +902,11 @@ export async function startWorker(): Promise<void> {
     ...(deps.mailer ? { mailer: deps.mailer } : {}),
     ...(deps.emailFrom ? { emailFrom: deps.emailFrom } : {}),
     // the emailed link hits the API's token-gated /export/download (the web app proxies it).
-    ...(env.apiPublicUrl ? { linkBaseUrl: env.apiPublicUrl } : env.appBaseUrl ? { linkBaseUrl: env.appBaseUrl } : {}),
+    ...(env.apiPublicUrl
+      ? { linkBaseUrl: env.apiPublicUrl }
+      : env.appBaseUrl
+        ? { linkBaseUrl: env.appBaseUrl }
+        : {}),
   };
   await boss.work<AccountExportJobPayload>(ACCOUNT_EXPORT_QUEUE, async (jobs) => {
     for (const job of jobs) {
@@ -833,7 +932,11 @@ export async function startWorker(): Promise<void> {
   const purgeBlobs = await createGcsBlobStore(env.objectsBucket);
   await boss.work<ProjectPurgeJob>(PROJECT_PURGE_JOB, async (jobs) => {
     for (const job of jobs) {
-      const r = await handleProjectPurge(job.data, { systemExec, queue: deps.queue, blobs: purgeBlobs });
+      const r = await handleProjectPurge(job.data, {
+        systemExec,
+        queue: deps.queue,
+        blobs: purgeBlobs,
+      });
       console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
     }
   });

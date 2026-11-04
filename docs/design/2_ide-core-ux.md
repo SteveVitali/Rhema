@@ -379,9 +379,16 @@ Steering (K5), available from `Steer ▾` on a running card — the five primiti
 
 ### 5.6 Round walkthrough and run report (D20 proposal)
 
+> **Amended 2026-11-03 (ADR-130, GD-UX-WALKTHROUGH.R7 "Retire it"; 213 R7COPY.0).** The ≤200-word
+> model-written Walkthrough is retired: the R5 audit found it factually wrong and leaking internals
+> (C3). The run card's "What it delivered" is now **composed deterministically from the delivered
+> record** — the letter's verdict line quoted verbatim, the finding/claim counts (one rule), and the
+> dossier/letter/ledger links. Nothing generated, no model call, no retry surface. The **Run report**
+> is unchanged. D20's model-summary arm is closed by this amendment.
+
 On completion the run card gains two links: **Walkthrough** (≤ 200 words, model-written: what was delivered and the one thing to read first — Antigravity's walkthrough [4§4.2]) and **Run report** (phase timings, credits by phase × role, flags such as "fact-check dominated 62 % — 71 claims", unmet targets, and *suggested guidance for next round* — Devin Session Insights [4§1.2]). The run report is the D12 drill-down's leaf; tokens are Advanced-tier.
 
-**REQ-IDE-19** Completed runs expose a ≤200-word walkthrough and a run report (phase × role credits, flags, suggested guidance); raw tokens are behind the Advanced disclosure.
+**REQ-IDE-19** ~~Completed runs expose a ≤200-word walkthrough and~~ a run report (phase × role credits, flags, suggested guidance); raw tokens are behind the Advanced disclosure. *(Amended 2026-11-03, ADR-130: the walkthrough arm retires — see the banner above; REQ-COPY-4 replaces it with the record-composed block.)*
 
 ---
 

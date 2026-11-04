@@ -5,6 +5,7 @@ import {
   type RunState,
 } from "@rhema/contracts";
 import type { GateDecisionView } from "./gate-card.js";
+import type { DeliveredSummary } from "./delivered-summary.js";
 
 // The run card + its state (§5.5; REQ-IDE-11/12). The card renders ORCHESTRATOR-EMITTED state, counters,
 // elapsed, credits-vs-cap and an ETA band — and NOTHING derived from agent-authored text. This builder reads
@@ -42,17 +43,6 @@ export interface DeliverableChip {
   readonly count?: number;
 }
 
-/**
- * The walkthrough's stored state (§5.5 D20; REQ-IDE-19 amended). The TEXT is model-written content rendered
- * as a discrete block — it is NOT a progress element, so its presence here does not violate REQ-IDE-11 (the
- * rule covers progress: glyphs/counters/credits/ETA — never the walkthrough's prose).
- */
-export interface WalkthroughState {
-  readonly status: "pending" | "ready" | "failed";
-  /** ≤200 words, present only when ready. */
-  readonly text?: string;
-}
-
 /** The state-driven actions a card offers (§5.5's primary-action column; §6.5 steering). */
 export type RunCardAction =
   | "cancel" //            queued/created — stop before compute exists
@@ -62,12 +52,12 @@ export type RunCardAction =
   | "resume" //            paused / terminal-partial — Resume (gate-resume or a successor run)
   | "live_feed" //         running — open the Desk feed
   | "open_deliverable" //  completed — the letter/response/draft
-  | "report" //            terminal — the Level-3 run report link
-  | "retry_walkthrough"; // walkthrough.status === 'failed' — lazy re-run of the one call
+  | "report"; //            terminal — the Level-3 run report link
 
 /**
- * The structured orchestrator facts a run card is built from — NO free-text field exists on this type
- * beyond the walkthrough's stored body (content, not progress).
+ * The structured orchestrator facts a run card is built from — NO free-text field exists on this type:
+ * R7COPY.0 (ADR-130) retired the model-written walkthrough; the `delivered` block is composed
+ * deterministically from the delivered record (REQ-COPY-4 — a verbatim quote and counts, never prose).
  */
 export interface RunCardInput {
   readonly runId: string;
@@ -100,8 +90,13 @@ export interface RunCardInput {
   readonly waitingGate?: { readonly kind: string; readonly deadlineAt?: string | null } | null;
   /** P1.05 — delivered/committed artifact chips on terminal cards. */
   readonly deliverables?: readonly DeliverableChip[];
-  /** P1.05 — the stored walkthrough (lazily generated; the card may render pending/failed + Retry). */
-  readonly walkthrough?: WalkthroughState;
+  /**
+   * R7COPY.0 (REQ-COPY-4; ADR-130) — the record-composed "What it delivered" block on delivered
+   * cards: the letter's verdict line quoted verbatim, the one-rule counts, and the dossier/letter/
+   * ledger links. Replaces the retired model-written walkthrough; composed from the record, never
+   * generated. Absent ⇒ the block hides.
+   */
+  readonly delivered?: DeliveredSummary | null;
   /** P1.05 — the run's `failure.code` (a server-authored code, never the agent's message). */
   readonly failureCode?: string | null;
   /** P1.05 — a terminal partial/failed/cancelled run with ≥1 committed step can be resumed (a successor run
@@ -147,7 +142,8 @@ export interface RunCardView {
   readonly paused: boolean;
   readonly waitingGate: { readonly kind: string; readonly deadlineAt: string | null } | null;
   readonly deliverables: readonly DeliverableChip[];
-  readonly walkthrough: WalkthroughState | null;
+  /** R7COPY.0 — the record-composed "What it delivered" block (null on non-delivered/absent-record cards). */
+  readonly delivered: DeliveredSummary | null;
   readonly failureCode: string | null;
   readonly resumable: boolean;
   readonly queuedNotes: number;
@@ -169,7 +165,6 @@ export function runCardActions(args: {
   paused: boolean;
   resumable: boolean;
   hasDeliverable: boolean;
-  walkthroughFailed: boolean;
 }): RunCardAction[] {
   const out: RunCardAction[] = [];
   switch (args.state) {
@@ -201,7 +196,6 @@ export function runCardActions(args: {
     default:
       break;
   }
-  if (args.walkthroughFailed) out.push("retry_walkthrough");
   return out;
 }
 
@@ -210,10 +204,10 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
   const total = input.phases.length;
   const done = input.phases.filter((p) => p.status === "done").length;
   const running = input.phases.filter((p) => p.status === "running").length;
-  const creditFraction = input.capCredits > 0 ? Math.min(1, Math.max(0, input.spentCredits / input.capCredits)) : 0;
+  const creditFraction =
+    input.capCredits > 0 ? Math.min(1, Math.max(0, input.spentCredits / input.capCredits)) : 0;
   const paused = input.paused === true && input.state === "waiting_gate";
   const deliverables = input.deliverables ?? [];
-  const walkthrough = input.walkthrough ?? null;
   const resumable = input.resumable === true;
   return {
     runId: input.runId,
@@ -236,7 +230,7 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
       ? { kind: input.waitingGate.kind, deadlineAt: input.waitingGate.deadlineAt ?? null }
       : null,
     deliverables,
-    walkthrough,
+    delivered: input.delivered ?? null,
     failureCode: input.failureCode ?? null,
     resumable,
     queuedNotes: input.queuedNotes ?? 0,
@@ -247,9 +241,25 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
       paused,
       resumable,
       hasDeliverable: deliverables.length > 0,
-      walkthroughFailed: walkthrough?.status === "failed",
     }),
   };
+}
+
+/**
+ * R7COPY.0 (REQ-SYNC-1; R5 C4) — the ONE run summary every run-state display reads: the Timeline's
+ * per-run entry, the dossier's embedded card, and the chrome's `data-run-state` all carry facts built
+ * by the same SQL-side assembly (never the event-derived projection — `deriveRunCardInput` could show
+ * a stale `created` state beside the same run's `completed` Timeline card). `subjectN`/`producedN`/
+ * `gate` are Timeline-grouping extras (`TimelineRun extends RunSummaryView`); the shared face is
+ * runId + workflow + state + the built card.
+ */
+export interface RunSummaryView {
+  readonly runId: string;
+  readonly workflow: string;
+  readonly state: RunState;
+  readonly createdAt: string;
+  /** the run's card view, already built from whitelisted facts (REQ-IDE-11). */
+  readonly card: RunCardView;
 }
 
 // ---------------------------------------------------------------- event → card input (REQ-IDE-11)
@@ -293,12 +303,13 @@ interface DeriveOptions {
   readonly elapsedMs?: number;
   readonly etaBand?: { readonly lowMin: number; readonly highMin: number };
   /** P1.05 — SQL-side facts the event stream does not carry (estimate, queue position, deliverables,
-   *  walkthrough, failure code, resumability, undelivered queued-note count). */
+   *  failure code, resumability, undelivered queued-note count). */
   readonly estimateCredits?: number;
   readonly queuePosition?: number | null;
   readonly paused?: boolean;
   readonly deliverables?: readonly DeliverableChip[];
-  readonly walkthrough?: WalkthroughState;
+  /** R7COPY.0 — the record-composed delivered summary (replaces the retired walkthrough option). */
+  readonly delivered?: DeliveredSummary | null;
   readonly failureCode?: string | null;
   readonly resumable?: boolean;
   readonly queuedNotes?: number;
@@ -323,7 +334,11 @@ function str(v: unknown): string | undefined {
  * ONLY their numeric/enum fields (REQ-IDE-11). Any other event type — including one carrying agent prose — is
  * ignored entirely, so the card can never render agent-authored text.
  */
-export function deriveRunCardInput(runId: string, events: readonly RunEventLike[], opts: DeriveOptions = {}): RunCardInput {
+export function deriveRunCardInput(
+  runId: string,
+  events: readonly RunEventLike[],
+  opts: DeriveOptions = {},
+): RunCardInput {
   const off = new Set(opts.offPhases ?? []);
   const order: string[] = [...(opts.phaseKeys ?? [])];
   const status = new Map<string, PhaseStatus>();
@@ -395,7 +410,9 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
           // attach to whichever phase is currently running (claim checking).
           const runningPhase = order.find((k) => status.get(k) === "running");
           if (runningPhase) {
-            counters.set(runningPhase, [{ key: "claims", value: checked, ...(of != null ? { of } : {}) }]);
+            counters.set(runningPhase, [
+              { key: "claims", value: checked, ...(of != null ? { of } : {}) },
+            ]);
           }
         }
         break;
@@ -475,7 +492,7 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
     paused,
     ...(waitingGate ? { waitingGate } : {}),
     ...(opts.deliverables ? { deliverables: opts.deliverables } : {}),
-    ...(opts.walkthrough ? { walkthrough: opts.walkthrough } : {}),
+    ...(opts.delivered !== undefined ? { delivered: opts.delivered } : {}),
     ...(opts.failureCode !== undefined ? { failureCode: opts.failureCode } : {}),
     ...(opts.resumable != null ? { resumable: opts.resumable } : {}),
     queuedNotes: opts.queuedNotes ?? 0,
@@ -509,9 +526,20 @@ export function etaBandForPhases(
 ): { readonly lowMin: number; readonly highMin: number } | null {
   const remaining = phases.filter((p) => p.status === "pending" || p.status === "running").length;
   if (remaining === 0) return null;
-  const durations = stepFacts.map((s) => s.durationMs).filter((d): d is number => d != null && d > 0);
-  const meanMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : ETA_PRIOR_MS_PER_PHASE;
-  const lowMin = Math.max(1, Math.round((meanMs * remaining * DURATION_PRIOR_LOW_FRACTION) / 60000));
-  const highMin = Math.max(lowMin + 1, Math.round((meanMs * remaining * DURATION_PRIOR_HIGH_FRACTION) / 60000));
+  const durations = stepFacts
+    .map((s) => s.durationMs)
+    .filter((d): d is number => d != null && d > 0);
+  const meanMs =
+    durations.length > 0
+      ? durations.reduce((a, b) => a + b, 0) / durations.length
+      : ETA_PRIOR_MS_PER_PHASE;
+  const lowMin = Math.max(
+    1,
+    Math.round((meanMs * remaining * DURATION_PRIOR_LOW_FRACTION) / 60000),
+  );
+  const highMin = Math.max(
+    lowMin + 1,
+    Math.round((meanMs * remaining * DURATION_PRIOR_HIGH_FRACTION) / 60000),
+  );
   return { lowMin, highMin };
 }

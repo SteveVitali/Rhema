@@ -6,6 +6,7 @@ import type {
   Severity,
 } from "@rhema/contracts";
 import { WHOLE_PIECE } from "./anchor.js";
+import { deliveredRecordCounts, type DeliveredRecordCounts } from "./delivered-summary.js";
 import { canDispose } from "./disposition.js";
 import { SEVERITY_ORDER, groupFindingsForList } from "./find-view.js";
 import { normalizeEvidence } from "./normalize-evidence.js";
@@ -34,6 +35,10 @@ export type MarginItem =
       /** the group key — the anchor block id, or "Whole piece" for unanchored findings. */
       readonly key: string;
       readonly count: number;
+      /** R7COPY.0 (REQ-SYNC-2) — the stack's split under the ONE count rule (a `strength`-slot row
+       *  rides its own figure, never the findings figure — the rail can no longer disagree with
+       *  the Timeline chips or the run card over the same rows). */
+      readonly counts: DeliveredRecordCounts;
       /** the highest severity in the stack (the chip's hue + "K <severity>" count). */
       readonly topSeverity: Severity;
       /** how many findings sit at `topSeverity` (the chip's "· 1 major" figure). */
@@ -69,6 +74,7 @@ export function marginItems(views: readonly FindingView[]): MarginItem[] {
       kind: "chip",
       key: g.key,
       count: g.findings.length,
+      counts: deliveredRecordCounts({ findings: g.findings, claims: 0 }),
       topSeverity: top.severity,
       topCount: top.count,
       findings: g.findings,

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { ApiError, type ProjectRow } from "@rhema/api-client";
 import type { FindingView } from "@rhema/contracts";
+import { buildRunCardView } from "@rhema/findings-core";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
 
@@ -16,7 +17,12 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_pv",
     slug: SLUG,
     title: "The Politics of Visibility",
-    state: { key: "reviewed", pill: "Reviewed", overlay: null, suggested: { action: "read_letter", label: "Read the letter" } },
+    state: {
+      key: "reviewed",
+      pill: "Reviewed",
+      overlay: null,
+      suggested: { action: "read_letter", label: "Read the letter" },
+    },
   },
 ];
 
@@ -43,22 +49,50 @@ const DOSSIER: DossierData = {
   rigor: "standard",
   openObligations: 0,
   addressedObligations: 0,
-  runCard: { runId: "run_1", state: "completed", phases: [], spentCredits: 100, capCredits: 840 },
+  runSummary: {
+    runId: "run_1",
+    workflow: "review",
+    state: "completed",
+    createdAt: "2026-11-01T00:00:00Z",
+    card: buildRunCardView({
+      runId: "run_1",
+      state: "completed",
+      phases: [],
+      spentCredits: 100,
+      capCredits: 840,
+    }),
+  },
   letterTitle: "The Politics of Visibility",
   letterSections: [{ id: "verdict", title: "Verdict", paragraphs: ["Holds."] }],
   claims: [],
   fetchLog: [],
   findings: [
     finding({ id: "f_1", severity: "blocking", suggestion: { replacement: "better wording" } }),
-    finding({ id: "f_2", severity: "note", title: "A note", suggestion: { replacement: "tweak" }, letterSection: "strength" }),
+    finding({
+      id: "f_2",
+      severity: "note",
+      title: "A note",
+      suggestion: { replacement: "tweak" },
+      letterSection: "strength",
+    }),
     finding({ id: "f_3", severity: "minor", title: "A minor one" }),
     finding({ id: "f_s", title: "streaming", provisional: true }),
   ],
   rubric: [],
-  accessReport: { seat: "editor", mountedPathCount: 0, fetches: 0, deniedAttempts: 0, violations: 0, subagents: [] },
+  accessReport: {
+    seat: "editor",
+    mountedPathCount: 0,
+    fetches: 0,
+    deniedAttempts: 0,
+    violations: 0,
+    subagents: [],
+  },
 };
 
-function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = () => ({})): WebDeps {
+function makeDeps(
+  over: Partial<DataSource> = {},
+  session: WebDeps["session"] = () => ({}),
+): WebDeps {
   const dataSource: DataSource = {
     listProjects: async () => PROJECTS,
     getDossier: async () => DOSSIER,
@@ -68,7 +102,12 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
     },
     createImport: async () => ({ draftId: "d" }),
     createRun: async () => ({ runId: "run_new", state: "queued" }),
-    recordDisposition: async () => ({ id: "dsp_1", findingId: "f_1", kind: "accept", status: "proposed" }),
+    recordDisposition: async () => ({
+      id: "dsp_1",
+      findingId: "f_1",
+      kind: "accept",
+      status: "proposed",
+    }),
     listGates: async () => [],
     decideGate: async () => {},
     recordGateActivity: async () => {},
@@ -77,15 +116,34 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
     getPretriage: async () => ({ correspondenceId: "c_1", triaged: 0, total: 4, entries: [] }),
     getApprovalOverrides: async () => ({}),
     setApprovalOverrides: async () => {},
-    getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+    getBillingBalance: async () => ({
+      spendableCredits: 200_000,
+      suspended: false,
+      clawbackDebt: 0,
+    }),
     recordExhaustedPrompt: async () => undefined,
-    applyFinding: async () => ({ ok: true as const, findingId: "f_1", draftId: "d_2", draftN: 2, versionId: "v_2", disposition: { kind: "accept" as const, applied: true } }),
+    applyFinding: async () => ({
+      ok: true as const,
+      findingId: "f_1",
+      draftId: "d_2",
+      draftN: 2,
+      versionId: "v_2",
+      disposition: { kind: "accept" as const, applied: true },
+    }),
     promoteFinding: async () => ({ ok: true as const, findingId: "f_1" }),
     addFindingToObligations: async () => ({ ok: true as const, obligationId: "obl_1" }),
     resolveFinding: async () => ({ findingId: "f_1", runId: "run_1", anchor: "finding-f_1" }),
     previewBulkFindings: async () => ({
       action: "apply_notes" as const,
-      rows: [{ findingId: "f_2", title: "A note", severity: "note", disposition: "accept" as const, obligation: "none" as const }],
+      rows: [
+        {
+          findingId: "f_2",
+          title: "A note",
+          severity: "note",
+          disposition: "accept" as const,
+          obligation: "none" as const,
+        },
+      ],
       skipped: [{ findingId: "f_1", title: "A finding", reason: "severity_not_note" }],
       total: 4,
     }),
@@ -96,7 +154,10 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
 }
 
 function form(fields: Record<string, string>): { body: string; headers: Record<string, string> } {
-  return { body: new URLSearchParams(fields).toString(), headers: { "content-type": "application/x-www-form-urlencoded" } };
+  return {
+    body: new URLSearchParams(fields).toString(),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  };
 }
 
 describe("P1.07 — the dossier's three surfaces share one list (§5.7)", () => {
@@ -135,9 +196,16 @@ describe("P1.07 — the dossier's three surfaces share one list (§5.7)", () => 
   });
 
   it("?bulk=apply_notes carries the api's preview verbatim (rows + skipped)", async () => {
-    const res = await createWebApp(makeDeps()).request(`/bff/p/${SLUG}/review/run_1?bulk=apply_notes`);
+    const res = await createWebApp(makeDeps()).request(
+      `/bff/p/${SLUG}/review/run_1?bulk=apply_notes`,
+    );
     const { dossierView } = (await res.json()) as {
-      dossierView: { bulk?: { action: string; preview: { rows: { findingId: string }[]; skipped: { reason: string }[] } } };
+      dossierView: {
+        bulk?: {
+          action: string;
+          preview: { rows: { findingId: string }[]; skipped: { reason: string }[] };
+        };
+      };
     };
     expect(dossierView.bulk?.action).toBe("apply_notes");
     expect(dossierView.bulk?.preview.rows.map((r) => r.findingId)).toEqual(["f_2"]);
@@ -147,9 +215,19 @@ describe("P1.07 — the dossier's three surfaces share one list (§5.7)", () => 
 
 describe("P1.07 — the finding write routes", () => {
   it("Apply POSTs through and bounces back with the applied notice", async () => {
-    const applyFinding = vi.fn(async () => ({ ok: true as const, findingId: "f_1", draftId: "d_2", draftN: 2, versionId: "v_2", disposition: { kind: "accept" as const, applied: true } }));
+    const applyFinding = vi.fn(async () => ({
+      ok: true as const,
+      findingId: "f_1",
+      draftId: "d_2",
+      draftN: 2,
+      versionId: "v_2",
+      disposition: { kind: "accept" as const, applied: true },
+    }));
     const app = createWebApp(makeDeps({ applyFinding }));
-    const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/apply`, { method: "POST", ...form({}) });
+    const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/apply`, {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(`/p/${SLUG}/review/run_1?applied=f_1#finding-f_1`);
     expect(applyFinding).toHaveBeenCalledWith(expect.anything(), "proj_pv", "f_1");
@@ -160,14 +238,20 @@ describe("P1.07 — the finding write routes", () => {
       throw new ApiError(422, "anchor_lost");
     });
     const app = createWebApp(makeDeps({ applyFinding }));
-    const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/apply`, { method: "POST", ...form({}) });
+    const res = await app.request(`/p/${SLUG}/review/run_1/findings/f_1/apply`, {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toContain("ferr=f_1");
   });
 
   it("promote + add-to-obligations POST through with the right notices", async () => {
     const promoteFinding = vi.fn(async () => ({ ok: true as const, findingId: "f_1" }));
-    const addFindingToObligations = vi.fn(async () => ({ ok: true as const, obligationId: "obl_1" }));
+    const addFindingToObligations = vi.fn(async () => ({
+      ok: true as const,
+      obligationId: "obl_1",
+    }));
     const app = createWebApp(makeDeps({ promoteFinding, addFindingToObligations }));
     const p = await app.request(`/p/${SLUG}/findings/f_1/promote`, {
       method: "POST",
@@ -183,7 +267,11 @@ describe("P1.07 — the finding write routes", () => {
   });
 
   it("the deep link resolves finding → dossier anchor", async () => {
-    const resolveFinding = vi.fn(async () => ({ findingId: "f_1", runId: "run_1", anchor: "finding-f_1" }));
+    const resolveFinding = vi.fn(async () => ({
+      findingId: "f_1",
+      runId: "run_1",
+      anchor: "finding-f_1",
+    }));
     const app = createWebApp(makeDeps({ resolveFinding }));
     const res = await app.request(`/p/${SLUG}/f/f_1`);
     expect(res.status).toBe(302);
@@ -203,16 +291,25 @@ describe("P1.07 — the finding write routes", () => {
     const createObligation = vi.fn(async () => ({ ok: true as const, obligationId: "obl_new" }));
     const app = createWebApp(makeDeps({ createObligation }));
     // SPA.27 — the form's SSR render is deleted; the GET serves the shell and the leaf mounts it.
-    const page = await app.request(`/p/${SLUG}/obligations/new?next=${encodeURIComponent(`/p/${SLUG}/review/run_1`)}`);
+    const page = await app.request(
+      `/p/${SLUG}/obligations/new?next=${encodeURIComponent(`/p/${SLUG}/review/run_1`)}`,
+    );
     expect(page.status).toBe(200);
     expect(await page.text()).toContain('id="spa-root"');
     const res2 = await app.request(`/p/${SLUG}/obligations`, {
       method: "POST",
-      ...form({ title: "Re-check the census stats", severity: "major", next: `/p/${SLUG}/review/run_1` }),
+      ...form({
+        title: "Re-check the census stats",
+        severity: "major",
+        next: `/p/${SLUG}/review/run_1`,
+      }),
     });
     expect(res2.status).toBe(302);
     expect(res2.headers.get("location")).toBe(`/p/${SLUG}/review/run_1?obligation=new`);
-    expect(createObligation).toHaveBeenCalledWith(expect.anything(), "proj_pv", { title: "Re-check the census stats", severity: "major" });
+    expect(createObligation).toHaveBeenCalledWith(expect.anything(), "proj_pv", {
+      title: "Re-check the census stats",
+      severity: "major",
+    });
   });
 
   it("an empty obligation title bounces back to the form (the leaf holds the error line)", async () => {
@@ -232,11 +329,16 @@ describe("P1.07 — the finding write routes", () => {
       body: JSON.stringify({ title: "", next: `/p/${SLUG}` }),
     });
     expect(json.status).toBe(422);
-    expect((await json.json() as { error: string }).error).toBe("title_required");
+    expect(((await json.json()) as { error: string }).error).toBe("title_required");
   });
 
   it("bulk-preview POSTs bounce to the GET preview; bulk dispatch posts the checked subset", async () => {
-    const applyBulkFindings = vi.fn(async () => ({ ok: true as const, applied: ["f_2"], skipped: [], count: 1 }));
+    const applyBulkFindings = vi.fn(async () => ({
+      ok: true as const,
+      applied: ["f_2"],
+      skipped: [],
+      count: 1,
+    }));
     const app = createWebApp(makeDeps({ applyBulkFindings }));
     const pv = await app.request(`/p/${SLUG}/review/run_1/findings/bulk-preview`, {
       method: "POST",
@@ -253,7 +355,9 @@ describe("P1.07 — the finding write routes", () => {
       method: "POST",
       ...form({ action: "apply_notes", only: "f_2" }),
     });
-    expect(done.headers.get("location")).toBe(`/p/${SLUG}/review/run_1?bulkdone=1&bulkskip=0#findings`);
+    expect(done.headers.get("location")).toBe(
+      `/p/${SLUG}/review/run_1?bulkdone=1&bulkskip=0#findings`,
+    );
     expect(applyBulkFindings).toHaveBeenCalledWith(
       expect.anything(),
       "proj_pv",

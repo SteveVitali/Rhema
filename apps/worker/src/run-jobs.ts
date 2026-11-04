@@ -20,13 +20,10 @@ import {
   gateExpiryJob,
   handleGateExpiry,
   sweepStrandedRuns,
-  generateWalkthrough,
   finalizeRun,
   publishCommittedEventHighWater,
   figureRenderJob,
   type FigureRenderOutcome,
-  type GenerateWalkthroughResult,
-  type WalkthroughGenerator,
   type OrchestratorDeps,
   type JobLauncher,
   type ProvisionResult,
@@ -108,7 +105,10 @@ async function loadRun(deps: WorkerRunDeps, workspaceId: string, runId: string):
 }
 
 /** `run.start` — provision a queued run (mint token/credential/allowlist, launch the Job). */
-export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): Promise<ProvisionResult> {
+export async function handleRunStart(
+  deps: WorkerRunDeps,
+  job: RunJobPayload,
+): Promise<ProvisionResult> {
   const run = await loadRun(deps, job.workspaceId, job.runId);
   const workflow = run.workflow as WorkflowKey;
   const seat = run.seat ?? seatForWorkflow(workflow);
@@ -125,7 +125,9 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   // source count. Neither has a claim count to scale on.
   const snap = run.input_snapshot ?? {};
   const rawClaims =
-    typeof snap.claimCount === "number" ? snap.claimCount : provisionalClaimCount(workflow, snap.wordCount);
+    typeof snap.claimCount === "number"
+      ? snap.claimCount
+      : provisionalClaimCount(workflow, snap.wordCount);
   // ECON.1 (§6.5; ADR-033) — the rigor's frozen claim cap bounds the claim-scaled web budgets even if a
   // client-supplied snapshot out-counts it (Quick Review: five load-bearing claims ⇒ five claims' budgets).
   const claims =
@@ -144,15 +146,22 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   // (authorWebToolPolicy). Absent/malformed ⇒ all-off, the pre-ECON.2 shape.
   const levers = sanitizeCogsLevers(run.inputs?.cogsLevers);
   const webTools = forceUnverified
-    ? { search: true, fetch: true, searchBudget: 0, fetchBudget: 0, searchFloor: 0, fetchFloor: 0,
+    ? {
+        search: true,
+        fetch: true,
+        searchBudget: 0,
+        fetchBudget: 0,
+        searchFloor: 0,
+        fetchFloor: 0,
         // CITE.1 — the backfill allowance is zeroed too: a forced-Unverified run must not rescue
         // its coverage through the mechanism's fetch grant (ADR-085).
-        backfillFetchBudget: 0 }
-    : authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
+        backfillFetchBudget: 0,
+      }
+    : (authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
       authorWebToolPolicy({
         ...(claims != null ? { claims } : {}),
         l5ResearchEnvelope: levers.l5ResearchEnvelope,
-      });
+      }));
   // P1.21 (REQ-WF-8/§16.4) — a Memo run's `user_sources[]` text rides the credential context as
   // `draftText`: the proxy's n-gram guard diffs every search query against it, so internal figures
   // cannot leak inside a query (the fetch-side deny is the frozen `urlPolicy.userSourceDomains`).
@@ -215,7 +224,12 @@ interface CancelRow {
 async function settleTerminal(
   deps: WorkerRunDeps,
   tx: SqlClient,
-  args: { runId: string; workspaceId: string; billingAccountId: string; holdLedgerId: string | null },
+  args: {
+    runId: string;
+    workspaceId: string;
+    billingAccountId: string;
+    holdLedgerId: string | null;
+  },
 ): Promise<void> {
   if (args.holdLedgerId) {
     await deps.ledger.release(tx, {
@@ -238,7 +252,10 @@ async function settleTerminal(
  * `completeCancellation`). A parked/queued run cancels DIRECTLY, releasing the hold + credential. The writer
  * lock is cleared automatically at the terminal transition (transition.ts). Gate expiry is P0.10's.
  */
-export async function handleRunCancel(deps: WorkerRunDeps, job: RunJobPayload): Promise<CancelResult> {
+export async function handleRunCancel(
+  deps: WorkerRunDeps,
+  job: RunJobPayload,
+): Promise<CancelResult> {
   const state = await deps.txRunner.run(job.workspaceId, async (tx) => {
     const res = await tx.query(
       `select r.state, r.hold_ledger_id, w.billing_account_id
@@ -250,14 +267,29 @@ export async function handleRunCancel(deps: WorkerRunDeps, job: RunJobPayload): 
     const cur = row.state as RunState;
 
     if (cur === "running") {
-      await applyTransition(tx, deps, { runId: job.runId, from: "running", to: "cancelling", reason: "stop" });
+      await applyTransition(tx, deps, {
+        runId: job.runId,
+        from: "running",
+        to: "cancelling",
+        reason: "stop",
+      });
       return "cancelling";
     }
     // a parked/queued/provisioning run has no in-flight phase: cancel directly + settle.
-    if (cur === "queued" || cur === "provisioning" || cur === "waiting_gate" || cur === "awaiting_consent") {
+    if (
+      cur === "queued" ||
+      cur === "provisioning" ||
+      cur === "waiting_gate" ||
+      cur === "awaiting_consent"
+    ) {
       const reason = cur === "awaiting_consent" ? "declined" : "stop";
       await applyTransition(tx, deps, { runId: job.runId, from: cur, to: "cancelled", reason });
-      await settleTerminal(deps, tx, { runId: job.runId, workspaceId: job.workspaceId, billingAccountId: row.billing_account_id, holdLedgerId: row.hold_ledger_id });
+      await settleTerminal(deps, tx, {
+        runId: job.runId,
+        workspaceId: job.workspaceId,
+        billingAccountId: row.billing_account_id,
+        holdLedgerId: row.hold_ledger_id,
+      });
       return "cancelled";
     }
     return cur; // terminal or already cancelling — idempotent no-op
@@ -279,7 +311,10 @@ export async function handleRunCancel(deps: WorkerRunDeps, job: RunJobPayload): 
  * lock. Called when the task acknowledges the cancel (a reduced commit — P0.09) or by the reaper when a
  * cancelling run's heartbeat has stopped. Idempotent: a run already cancelled is a no-op.
  */
-export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPayload): Promise<CancelResult> {
+export async function completeCancellation(
+  deps: WorkerRunDeps,
+  job: RunJobPayload,
+): Promise<CancelResult> {
   const state = await deps.txRunner.run(job.workspaceId, async (tx) => {
     const res = await tx.query(
       `select r.state, r.hold_ledger_id, w.billing_account_id
@@ -289,8 +324,18 @@ export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPaylo
     const row = res.rows[0] as CancelRow | undefined;
     if (!row) throw new Error(`run ${job.runId} not found`);
     if (row.state !== "cancelling") return row.state; // already settled / not cancelling
-    await applyTransition(tx, deps, { runId: job.runId, from: "cancelling", to: "cancelled", reason: "stop" });
-    await settleTerminal(deps, tx, { runId: job.runId, workspaceId: job.workspaceId, billingAccountId: row.billing_account_id, holdLedgerId: row.hold_ledger_id });
+    await applyTransition(tx, deps, {
+      runId: job.runId,
+      from: "cancelling",
+      to: "cancelled",
+      reason: "stop",
+    });
+    await settleTerminal(deps, tx, {
+      runId: job.runId,
+      workspaceId: job.workspaceId,
+      billingAccountId: row.billing_account_id,
+      holdLedgerId: row.hold_ledger_id,
+    });
     return "cancelled";
   });
   if (state === "cancelled") {
@@ -299,18 +344,6 @@ export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPaylo
     await deps.heartbeats.clear(job.runId);
   }
   return { runId: job.runId, state };
-}
-
-/**
- * `run.walkthrough` (P1.05; §5.5 D20) — the lazy one-call walkthrough generator. `deps.walkthrough` is the
- * deploy-bound model seam (a preview stage without the key marks attempts `failed`; the card's Retry and
- * the self-healing next-render enqueue cover it).
- */
-export function handleRunWalkthrough(
-  deps: OrchestratorDeps & { readonly walkthrough: WalkthroughGenerator },
-  job: RunJobPayload,
-): Promise<GenerateWalkthroughResult> {
-  return generateWalkthrough(deps, job);
 }
 
 /**
@@ -376,7 +409,10 @@ export async function handleFigureRender(
  * payload → this handler; the deadline re-read, conditional resolve, reschedule, and onExpiry transition
  * all live in @rhema/orchestrator. The payload carries the gate id + workspace.
  */
-export function handleGateExpiryJob(deps: OrchestratorDeps, job: { gateId: string; workspaceId: string }): Promise<GateExpiryOutcome> {
+export function handleGateExpiryJob(
+  deps: OrchestratorDeps,
+  job: { gateId: string; workspaceId: string },
+): Promise<GateExpiryOutcome> {
   return handleGateExpiry(deps, job);
 }
 

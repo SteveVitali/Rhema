@@ -203,7 +203,16 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
       claims: { id: string; sources?: { normalizedUrl: string }[] }[];
       rubric: { dimension: string; score: number }[];
       accessReport: { seat: string; fetches: number; deniedAttempts: number };
-      runCard: { state: string };
+      runSummary: {
+        state: string;
+        card: {
+          spentCredits: number;
+          delivered?: {
+            verdict: string | null;
+            counts: { findings: number; strengths: number; claims: number };
+          } | null;
+        };
+      };
       findingObligations: Record<string, string>;
     };
 
@@ -241,9 +250,25 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     expect(dto.accessReport.fetches).toBe(1);
     expect(dto.accessReport.deniedAttempts).toBe(1);
 
-    // the run card derives only from whitelisted events — agent.note can never feed it (REQ-IDE-11).
-    expect(dto.runCard.state).toBe("completed");
-    expect(JSON.stringify(dto.runCard)).not.toContain("fabricated progress");
+    // the run summary carries the SQL fact state (agent.note can never feed it — REQ-IDE-11), and
+    // R7COPY.0's record-composed block quotes the letter's verdict verbatim + one-rule counts.
+    expect(dto.runSummary.state).toBe("completed");
+    expect(JSON.stringify(dto.runSummary)).not.toContain("fabricated progress");
+    expect(dto.runSummary.card.delivered?.verdict).toBe(
+      "A precise, persuasive draft with one structural soft spot.",
+    );
+    expect(dto.runSummary.card.delivered?.counts).toEqual({ findings: 2, strengths: 0, claims: 1 });
+
+    // R7COPY.0 (REQ-SYNC-1; R5 C4) — the dossier's card is IDENTICAL to the Timeline's card for the
+    // same run: both mount the same RunSummaryView built by the same SQL-fact assembly.
+    const timeline = (await (await app.request(`/projects/${seed.projectId}/timeline`)).json()) as {
+      rounds: { runs: { runId: string; card: unknown }[] }[];
+      ungrouped: { runId: string; card: unknown }[];
+    };
+    const timelineCard = [...timeline.rounds.flatMap((r) => r.runs), ...timeline.ungrouped].find(
+      (r) => r.runId === RUN,
+    )?.card;
+    expect(timelineCard).toEqual(dto.runSummary.card);
 
     // the per-finding obligation chips (REQ-OBJ-6).
     expect(dto.findingObligations).toEqual({ fnd_1: "open", fnd_2: "discharged" });
@@ -270,10 +295,11 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     await seedDeliveredReview();
     // no label → both slots absent.
     const before = (await (await getDossier(seed.projectId, RUN)).json()) as {
-      deliveryLabel?: string | null; runCard: { deliveryLabel?: string | null };
+      deliveryLabel?: string | null;
+      runSummary: { card: { deliveryLabel?: string | null } };
     };
     expect(before.deliveryLabel).toBeNull(); // the banner slot serializes null
-    expect(before.runCard.deliveryLabel).toBeUndefined(); // the card omits the key when unlabelled
+    expect(before.runSummary.card.deliveryLabel).toBeNull(); // the view serializes null when unlabelled
     // persist the label → it rides the DTO's top-level banner slot and the card verbatim.
     await db.pg.query(
       `update runs set delivery = '{"label":"unverified","checkableClaims":16,"coveredClaims":0}'::jsonb where id = $1`,
@@ -282,11 +308,12 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     const res = await getDossier(seed.projectId, RUN);
     expect(res.status).toBe(200);
     const dto = (await res.json()) as {
-      deliveryLabel?: string; runCard: { deliveryLabel?: string; state: string };
+      deliveryLabel?: string;
+      runSummary: { card: { deliveryLabel?: string }; state: string };
     };
     expect(dto.deliveryLabel).toBe("unverified");
-    expect(dto.runCard.deliveryLabel).toBe("unverified");
-    expect(dto.runCard.state).toBe("completed"); // the label never rewrote the state
+    expect(dto.runSummary.card.deliveryLabel).toBe("unverified");
+    expect(dto.runSummary.state).toBe("completed"); // the label never rewrote the state
   });
 
   it("STB.2 — a dossier in ANOTHER workspace 404s even without RLS (the SQL workspace predicate)", async () => {
@@ -320,10 +347,9 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     await db.txRunner.run(seed.workspaceId, async (tx) => {
       // the shapes prod actually carried: the pre-canonical [{claim, source}] Showcase array, the
       // {verdict}-only sidecar carry, and a malformed blob — all must lift to {urls: [...]}.
-      await tx.query(
-        `update findings set evidence = $1::jsonb where id = 'fnd_1'`,
-        [JSON.stringify([{ claim: "a claim", source: "https://legacy.test/src" }])],
-      );
+      await tx.query(`update findings set evidence = $1::jsonb where id = 'fnd_1'`, [
+        JSON.stringify([{ claim: "a claim", source: "https://legacy.test/src" }]),
+      ]);
       await tx.query(`update findings set evidence = $1::jsonb where id = 'fnd_2'`, [
         JSON.stringify({ verdict: "verified" }),
       ]);
@@ -366,10 +392,14 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     };
     // the contradicted Tier-1 claim carries its fetched source URL (the REQ-POS-3 surface contract)
     const tier1 = dto.claims.find((cl) => cl.tier === 1 && cl.verdict === "contradicted");
-    expect(tier1?.sources?.some((s) => s.url.includes("wikipedia.org/wiki/Paradoxides"))).toBe(true);
+    expect(tier1?.sources?.some((s) => s.url.includes("wikipedia.org/wiki/Paradoxides"))).toBe(
+      true,
+    );
     // and the seeded canonical evidence survives row → DTO intact (urls present + stamped accessed)
     const anchorFinding = dto.findings.find((f) => f.evidence?.verdict === "contradicted");
-    expect(anchorFinding?.evidence?.urls.some((u) => u.url.includes("wikipedia.org/wiki/Paradoxides"))).toBe(true);
+    expect(
+      anchorFinding?.evidence?.urls.some((u) => u.url.includes("wikipedia.org/wiki/Paradoxides")),
+    ).toBe(true);
     // the letter is real content, not an error body
     expect(dto.letterSections.length).toBeGreaterThan(0);
   });

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildRunCardView, deriveRunCardInput, etaBandForPhases, CARD_EVENT_TYPES, type RunEventLike } from "./run-card.js";
+import {
+  buildRunCardView,
+  deriveRunCardInput,
+  etaBandForPhases,
+  CARD_EVENT_TYPES,
+  type RunEventLike,
+} from "./run-card.js";
 
 // AC2 — the run card renders ONLY orchestrator-emitted state/counters; a stream carrying agent-authored
 // progress text contributes NONE of it (REQ-IDE-11). REQ-IDE-12 — opt-out phases render "off".
@@ -10,22 +16,44 @@ const events: RunEventLike[] = [
   { type: "run.started", payload: { modelTier: "balanced" } },
   { type: "run.state_changed", payload: { from: "queued", to: "running" } },
   { type: "step.started", payload: { phase: "reading_the_piece", ordinal: 1, of: 7 } },
-  { type: "step.finished", payload: { phase: "reading_the_piece", ordinal: 1, of: 7, credits: 120, durationMs: 60000 } },
+  {
+    type: "step.finished",
+    payload: { phase: "reading_the_piece", ordinal: 1, of: 7, credits: 120, durationMs: 60000 },
+  },
   { type: "step.started", payload: { phase: "checking_claims", ordinal: 2, of: 7 } },
   { type: "claim.progress", payload: { checked: 23, of: 56, verified: 20 } },
   // agent-authored text the card MUST NOT render (REQ-IDE-11):
   { type: "agent.note", payload: { template: "tool", text: AGENT_PROSE } },
-  { type: "finding.emitted", payload: { findingOrdinal: 3, kind: "argument", severity: "blocking", anchorHash: "abc" } },
-  { type: "artifact.written", payload: { kind: "editors_letter", mirrorPath: "x", versionId: "v_1", summary: AGENT_PROSE } },
-  { type: "source.read", payload: { url: "https://x.test", title: AGENT_PROSE, agentLabel: "Editor" } },
+  {
+    type: "finding.emitted",
+    payload: { findingOrdinal: 3, kind: "argument", severity: "blocking", anchorHash: "abc" },
+  },
+  {
+    type: "artifact.written",
+    payload: { kind: "editors_letter", mirrorPath: "x", versionId: "v_1", summary: AGENT_PROSE },
+  },
+  {
+    type: "source.read",
+    payload: { url: "https://x.test", title: AGENT_PROSE, agentLabel: "Editor" },
+  },
   { type: "usage.tick", payload: { spentCredits: 412, capCredits: 1860 } },
 ];
 
-const PHASES = ["reading_the_piece", "checking_claims", "mapping_the_field", "second_read", "editors_letter"];
+const PHASES = [
+  "reading_the_piece",
+  "checking_claims",
+  "mapping_the_field",
+  "second_read",
+  "editors_letter",
+];
 
 describe("deriveRunCardInput (REQ-IDE-11)", () => {
   it("builds the card from orchestrator facts only — no agent-authored text anywhere in the derived input", () => {
-    const input = deriveRunCardInput("run_1", events, { phaseKeys: PHASES, offPhases: ["mapping_the_field"], capCredits: 1860 });
+    const input = deriveRunCardInput("run_1", events, {
+      phaseKeys: PHASES,
+      offPhases: ["mapping_the_field"],
+      capCredits: 1860,
+    });
     const json = JSON.stringify(input);
     expect(json).not.toContain(AGENT_PROSE);
     // no free-text/prose leaked: the only strings are phase keys, the run state, and counter keys.
@@ -35,7 +63,10 @@ describe("deriveRunCardInput (REQ-IDE-11)", () => {
   });
 
   it("reflects phase status ✓/◐/○ and greys opt-out phases 'off' (REQ-IDE-12)", () => {
-    const input = deriveRunCardInput("run_1", events, { phaseKeys: PHASES, offPhases: ["mapping_the_field"] });
+    const input = deriveRunCardInput("run_1", events, {
+      phaseKeys: PHASES,
+      offPhases: ["mapping_the_field"],
+    });
     const byKey = Object.fromEntries(input.phases.map((p) => [p.key, p.status]));
     expect(byKey["reading_the_piece"]).toBe("done");
     expect(byKey["checking_claims"]).toBe("running");
@@ -65,7 +96,11 @@ describe("deriveRunCardInput (REQ-IDE-11)", () => {
 
 describe("buildRunCardView", () => {
   it("computes done/running/total and the clamped credit fraction", () => {
-    const input = deriveRunCardInput("run_1", events, { phaseKeys: PHASES, offPhases: ["mapping_the_field"], capCredits: 1860 });
+    const input = deriveRunCardInput("run_1", events, {
+      phaseKeys: PHASES,
+      offPhases: ["mapping_the_field"],
+      capCredits: 1860,
+    });
     const view = buildRunCardView(input);
     expect(view.done).toBe(1);
     expect(view.running).toBe(1);
@@ -74,7 +109,13 @@ describe("buildRunCardView", () => {
   });
 
   it("never lets the credit fraction exceed 1", () => {
-    const view = buildRunCardView({ runId: "r", state: "running", phases: [], spentCredits: 3000, capCredits: 1000 });
+    const view = buildRunCardView({
+      runId: "r",
+      state: "running",
+      phases: [],
+      spentCredits: 3000,
+      capCredits: 1000,
+    });
     expect(view.creditFraction).toBe(1);
   });
 });
@@ -151,24 +192,40 @@ describe("the six §5.5 card states → primary actions", () => {
     expect(view.actions).toContain("pause");
   });
 
-  it("completed → open_deliverable (when chips exist) + report; a failed walkthrough adds retry", () => {
+  it("completed → open_deliverable (when chips exist) + report (R7COPY.0: no walkthrough retry action)", () => {
     const view = buildRunCardView(
-      base({ state: "completed", deliverables: [{ key: "letter" }, { key: "findings", count: 41 }] }),
+      base({
+        state: "completed",
+        deliverables: [{ key: "letter" }, { key: "findings", count: 41 }],
+      }),
     );
     expect(view.actions).toEqual(["open_deliverable", "report"]);
 
-    const failed = buildRunCardView(
-      base({ state: "completed", deliverables: [{ key: "letter" }], walkthrough: { status: "failed" } }),
+    const delivered = buildRunCardView(
+      base({
+        state: "completed",
+        deliverables: [{ key: "letter" }],
+        delivered: {
+          verdict: "The draft holds up.",
+          counts: { findings: 5, strengths: 1, claims: 6 },
+          links: ["dossier", "letter", "ledger"],
+        },
+      }),
     );
-    expect(failed.actions).toEqual(["open_deliverable", "report", "retry_walkthrough"]);
+    expect(delivered.actions).toEqual(["open_deliverable", "report"]);
+    expect(delivered.delivered?.verdict).toBe("The draft holds up.");
 
     const noDeliverables = buildRunCardView(base({ state: "completed" }));
     expect(noDeliverables.actions).toEqual(["report"]);
+    expect(noDeliverables.delivered).toBeNull();
   });
 
   it("failed/cancelled/completed_partial → resume (when resumable) + report", () => {
     for (const state of ["failed", "cancelled", "completed_partial"] as const) {
-      expect(buildRunCardView(base({ state, resumable: true })).actions).toEqual(["resume", "report"]);
+      expect(buildRunCardView(base({ state, resumable: true })).actions).toEqual([
+        "resume",
+        "report",
+      ]);
       expect(buildRunCardView(base({ state, resumable: false })).actions).toEqual(["report"]);
     }
     const failedView = buildRunCardView(base({ state: "failed", failureCode: "cap_exceeded" }));
@@ -177,14 +234,23 @@ describe("the six §5.5 card states → primary actions", () => {
 
   it("runCardActions is pure: provisioning (not in the §5.5 table) falls through to no actions", () => {
     expect(
-      runCardActions({ state: "provisioning", paused: false, resumable: false, hasDeliverable: false, walkthroughFailed: false }),
+      runCardActions({
+        state: "provisioning",
+        paused: false,
+        resumable: false,
+        hasDeliverable: false,
+      }),
     ).toEqual([]);
   });
 });
 
 describe("etaBandForPhases (ledger K4 — the running card's ≈ low–high min band)", () => {
   const phases = (statuses: string[]) =>
-    statuses.map((s, i) => ({ key: `p${i}`, ordinal: i + 1, status: s as "done" | "running" | "pending" | "off" }));
+    statuses.map((s, i) => ({
+      key: `p${i}`,
+      ordinal: i + 1,
+      status: s as "done" | "running" | "pending" | "off",
+    }));
 
   it("projects the mean committed-step duration over the phases still to run — band [0.8×, 1.5×]", () => {
     // 2 committed steps at 10 min each, 3 phases remaining → 10 min × 3 = 30 min → [24, 45].
@@ -197,7 +263,10 @@ describe("etaBandForPhases (ledger K4 — the running card's ≈ low–high min 
 
   it("uses the flat 5-min/phase prior when no step has committed yet", () => {
     // 2 remaining → prior 5 min × 2 = 10 min → [8, 15].
-    expect(etaBandForPhases(phases(["running", "pending"]), [])).toEqual({ lowMin: 8, highMin: 15 });
+    expect(etaBandForPhases(phases(["running", "pending"]), [])).toEqual({
+      lowMin: 8,
+      highMin: 15,
+    });
   });
 
   it("is null once nothing remains — and 'off' phases never count", () => {
@@ -252,8 +321,20 @@ describe("the provisional meter (RPT.1)", () => {
 
   it("step.finished's durationMs lands on the phase row (and absence stays absent — the '—' render)", () => {
     const stream: RunEventLike[] = [
-      { type: "step.finished", payload: { phase: "reading_the_piece", ordinal: 1, of: 7, credits: 120, durationMs: 120000 } },
-      { type: "step.finished", payload: { phase: "checking_claims", ordinal: 2, of: 7, credits: 300 } },
+      {
+        type: "step.finished",
+        payload: {
+          phase: "reading_the_piece",
+          ordinal: 1,
+          of: 7,
+          credits: 120,
+          durationMs: 120000,
+        },
+      },
+      {
+        type: "step.finished",
+        payload: { phase: "checking_claims", ordinal: 2, of: 7, credits: 300 },
+      },
     ];
     const input = deriveRunCardInput("run_1", stream, { phaseKeys: PHASES });
     expect(input.phases.find((p) => p.key === "reading_the_piece")?.durationMs).toBe(120000);

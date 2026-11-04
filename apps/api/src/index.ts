@@ -42,7 +42,12 @@ import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js
 import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
 import { createOutlineRoutes, type OutlineApiDeps } from "./outline-routes.js";
 import { createFigureRoutes, type FigureApiDeps } from "./figure-routes.js";
-import { apiOnError, instrumentReads, instrumentStoreFactory, requestContext } from "./observability.js";
+import {
+  apiOnError,
+  instrumentReads,
+  instrumentStoreFactory,
+  requestContext,
+} from "./observability.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -82,7 +87,12 @@ export type { SseApiDeps } from "./sse-routes.js";
 export { createInviteGate } from "./invite.js";
 export type { InviteGate, InviteCheck, InviteRejectReason, SqlClient } from "./invite.js";
 export { createSignupRoutes, admitSignup, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
-export type { SignupApiDeps, SignupPolicyDeps, SignupAdmission, SignupRejectReason } from "./signup.js";
+export type {
+  SignupApiDeps,
+  SignupPolicyDeps,
+  SignupAdmission,
+  SignupRejectReason,
+} from "./signup.js";
 export {
   createShellRoutes,
   listProjectStates,
@@ -117,7 +127,13 @@ export type { RevisionApiDeps } from "./revision-routes.js";
 export { createEditorRoutes } from "./editor-routes.js";
 export type { EditorApiDeps, EditorFindingDto } from "./editor-routes.js";
 export { loadWhatChanged, loadVersionDiff, computeReReviewSeed } from "./what-changed.js";
-export type { WhatChangedResult, WhatChangedOutcome, ReReviewSeed, VersionDiffOutcome, VersionDiffResult } from "./what-changed.js";
+export type {
+  WhatChangedResult,
+  WhatChangedOutcome,
+  ReReviewSeed,
+  VersionDiffOutcome,
+  VersionDiffResult,
+} from "./what-changed.js";
 export { createVersionRoutes } from "./version-routes.js";
 export type { VersionApiDeps } from "./version-routes.js";
 export { createNotificationRoutes } from "./notification-routes.js";
@@ -151,7 +167,11 @@ export { createAnalyticsRoutes } from "./analytics-routes.js";
 export { createThemeRoutes } from "./theme-routes.js";
 // P1.20 — the §14.7 settings routes (account/preferences/data/support-access/deletion/integrations/
 // project settings). `logSupportAccess` is the REQ-VIS-11 shared logger the admin CLI calls.
-export { createSettingsRoutes, logSupportAccess, ACCOUNT_HARD_DELETE_QUEUE } from "./settings-routes.js";
+export {
+  createSettingsRoutes,
+  logSupportAccess,
+  ACCOUNT_HARD_DELETE_QUEUE,
+} from "./settings-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
@@ -321,9 +341,15 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     deps = {
       ...deps,
       ...(deps.db ? { db: instrumentReads(deps.db, ["query"]) } : {}),
-      ...(deps.contentStore ? { contentStore: instrumentReads(deps.contentStore, ["get", "put"]) } : {}),
-      ...(deps.restoreBlobs ? { restoreBlobs: instrumentReads(deps.restoreBlobs, ["get", "put", "delete"]) } : {}),
-      ...(deps.ingestBlobs ? { ingestBlobs: instrumentReads(deps.ingestBlobs, ["read", "write"]) } : {}),
+      ...(deps.contentStore
+        ? { contentStore: instrumentReads(deps.contentStore, ["get", "put"]) }
+        : {}),
+      ...(deps.restoreBlobs
+        ? { restoreBlobs: instrumentReads(deps.restoreBlobs, ["get", "put", "delete"]) }
+        : {}),
+      ...(deps.ingestBlobs
+        ? { ingestBlobs: instrumentReads(deps.ingestBlobs, ["read", "write"]) }
+        : {}),
       ...(deps.txRunner ? { txRunner: instrumentReads(deps.txRunner, ["run"]) } : {}),
       ...(innerStoreFor
         ? {
@@ -424,7 +450,10 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           return (r.rows[0] as { email_verified: boolean } | undefined)?.email_verified === true;
         }
       : undefined;
-    app.route("/", createRunRoutes({ ...deps, ...(userEmailVerified ? { userEmailVerified } : {}) }));
+    app.route(
+      "/",
+      createRunRoutes({ ...deps, ...(userEmailVerified ? { userEmailVerified } : {}) }),
+    );
     app.route("/", createEstimateRoutes(deps));
     app.route("/", createSseRoutes(deps));
     // PRB.08 — the billing surface: the §14.6 Stripe webhook (Payment Links are the only money channel),
@@ -454,7 +483,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     // access_report, the run's own event stream, and the obligation counts.
     app.route("/", createDossierRoutes(deps as DossierApiDeps));
     // P1.05 — the Timeline round log, the Level-3/4 run report, and the §6.5 steering endpoints
-    // (pause-after-phase / resume / queue-note / stop / walkthrough retry). Session-authed like the
+    // (pause-after-phase / resume / queue-note / stop). Session-authed like the
     // gate routes; all state changes ride the canonical orchestrator seams.
     app.route("/", createTimelineRoutes(deps));
     // PRB.10 — the voice surface (§9.2–§9.6): personas, samples, the seed editor, the build run, the

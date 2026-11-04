@@ -19,9 +19,11 @@ export const COPY = {
       "The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings.",
     // R6LGL.1 (REQ-LCH-1) — the legal/trust documents' meta descriptions.
     terms: "The Rhēma Terms of Service — the rules for using the writing-review service.",
-    privacy: "The Rhēma Privacy Policy — what we collect, what happens to your words, and the controls you hold.",
+    privacy:
+      "The Rhēma Privacy Policy — what we collect, what happens to your words, and the controls you hold.",
     refunds: "The Rhēma Refund Policy — how a run's credits move and when they come back.",
-    acceptableUse: "The Rhēma Acceptable Use Policy — what you may upload and what you may do on the service.",
+    acceptableUse:
+      "The Rhēma Acceptable Use Policy — what you may upload and what you may do on the service.",
     contact: "How to reach Rhēma — support, privacy, and legal contact details.",
   },
 
@@ -29,12 +31,12 @@ export const COPY = {
     heading: "Rhēma is in private beta.",
     // UX.1 — open mode never claims a closed program: the invite surface's heading follows the mode.
     headingOpen: "Welcome to Rhēma.",
-    lede:
-      "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources, maps the argument, and hands back a dossier you can act on.",
+    lede: "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources, maps the argument, and hands back a dossier you can act on.",
     accessNote: "Access is by invitation. If you have a code, sign in below.",
     // PRB.13 — `signup.mode === "open"` variants (REQ-BETA-19 amended 2026-09-16): factual only — no
     // marketing copy, no pricing page language.
-    accessNoteOpen: "Create an account or sign in — runs are paid for with credits you add yourself.",
+    accessNoteOpen:
+      "Create an account or sign in — runs are paid for with credits you add yourself.",
     sampleHeading: "See what it hands back",
     sampleLede:
       "A read-only sample dossier from a real essay. Note the contradicted claim, verified against the source it cites.",
@@ -139,19 +141,23 @@ export const COPY = {
     venuePlaceholder: "Pick or type a venue",
     // §16.4 — a venue-table row that was never verified (H4) shows its authored date, never a
     // fabricated "verified" stamp.
-    venueStaleFmt: "Venue bounds as of {dates} — not yet re-verified; you can always type your own.",
+    venueStaleFmt:
+      "Venue bounds as of {dates} — not yet re-verified; you can always type your own.",
     lengthLabel: "Target length",
     voiceLegend: "Voice",
     voiceGroupYours: "Your voices",
     voiceGroupHouse: "House styles",
     noVoice: "No voice",
-    voiceHintNeverBuilt: "Rhēma will draft from the description only — build a profile for measured voice.",
+    voiceHintNeverBuilt:
+      "Rhēma will draft from the description only — build a profile for measured voice.",
     entryScratch: "Start from scratch",
-    entryScratchNote: "Open the Desk's Chat — research a question, name a thesis, be interviewed, or paste notes.",
+    entryScratchNote:
+      "Open the Desk's Chat — research a question, name a thesis, be interviewed, or paste notes.",
     entryOutline: "Upload an outline",
     entryOutlineNote: "Drop a .md/.txt outline — it lands on the Page with a Draft v1 estimate.",
     entryDraft: "Upload a draft",
-    entryDraftNote: "Drop a manuscript (.md, .txt, .html, .docx, .pdf) — it imports as a numbered Draft and gets a Review estimate.",
+    entryDraftNote:
+      "Drop a manuscript (.md, .txt, .html, .docx, .pdf) — it imports as a numbered Draft and gets a Review estimate.",
     startVersionLabel: "Starting version",
     fileLabel: "Choose a file",
     pasteLabel: "…or paste the text",
@@ -160,12 +166,14 @@ export const COPY = {
     backToApp: "All projects",
     // the landing cards (§5.3 — each entry lands on its next-step card)
     nextStepHeading: "Next step",
-    nextStepScratch: "Start in Chat — research a question, name your thesis, be interviewed, or paste notes.",
+    nextStepScratch:
+      "Start in Chat — research a question, name your thesis, be interviewed, or paste notes.",
     nextStepOutlineFmt: "Draft {v} — the estimate below prices it.",
     nextStepDraftFmt: "Review {v} — the estimate below prices it.",
     estimatePending: "Estimate unavailable",
     conversionNotes: "Conversion notes",
-    unconvertedNote: "Some source spans could not be converted — they are preserved with [unconverted] markers.",
+    unconvertedNote:
+      "Some source spans could not be converted — they are preserved with [unconverted] markers.",
     // SPA.14 — the sheet's refusal copy, lifted from server.ts literals so the JSON mutation
     // branches' `detail` and the SSR inline re-render share the ONE string (REQ-BFF-5's
     // refusal-as-rerender; REQ-SAFE-10's single-source rule).
@@ -197,7 +205,8 @@ export const COPY = {
     noWarnings: "Everything converted cleanly.",
     createLabel: "Create and fix later",
     fixNowLabel: "Fix now",
-    fixNowNote: "Fix now opens the affected block; Create and fix later keeps notes on the timeline.",
+    fixNowNote:
+      "Fix now opens the affected block; Create and fix later keeps notes on the timeline.",
     created: "Draft created.",
     // ONB.1 (REQ-GROWTH-1) — the converting state, honest about the format: text formats ride the
     // warm convert service (usually seconds); PDFs still run the batch Job (~minutes on a cold
@@ -205,8 +214,10 @@ export const COPY = {
     convertingFmt: "Converting {name} — this usually takes a few seconds.",
     convertingSlowFmt: "Converting {name} — a PDF can take a few minutes.",
     // the key-only poll can't see the format — say both bounds rather than promise either.
-    convertingUnknownFmt: "Converting {name} — a text import usually takes a few seconds; a PDF can take a few minutes.",
-    convertingNote: "This page refreshes itself until the preview is ready; you can also close it and come back to the project.",
+    convertingUnknownFmt:
+      "Converting {name} — a text import usually takes a few seconds; a PDF can take a few minutes.",
+    convertingNote:
+      "This page refreshes itself until the preview is ready; you can also close it and come back to the project.",
   },
 
   runSheet: {
@@ -229,7 +240,8 @@ export const COPY = {
     why: "Why this estimate?",
     advanced: "Advanced",
     started: "Your run has started. Watch it on the project.",
-    insufficient: "This run's cap is more than your spendable balance. Lower the rigor to fit, or add credits.",
+    insufficient:
+      "This run's cap is more than your spendable balance. Lower the rigor to fit, or add credits.",
     // PRB.21 / D-PRB.20-1 — the in-progress state that REPLACES the Run affordance while a non-terminal
     // run exists (at most one per project; the api 409s a second create — this is the honest screen).
     inProgress: "A run is already in progress on this project.",
@@ -240,8 +252,10 @@ export const COPY = {
     // (itself config-derived; no terms are hand-written here).
     buyCredits: "Add credits",
     // BILL.3 — the exhaustion panel + the bounced POST while purchase is closed for the account.
-    purchasePaused: "Purchases are paused while we finish rolling them out — your balance and work are safe.",
-    suspended: "This account is paused while a payment dispute is open — runs can't start until it resolves.",
+    purchasePaused:
+      "Purchases are paused while we finish rolling them out — your balance and work are safe.",
+    suspended:
+      "This account is paused while a payment dispute is open — runs can't start until it resolves.",
     // PRB.13 — the verified-email gate's notice (REQ-BETA-19 amended): the sign-in link is the verification.
     emailUnverified: "Runs need a verified email — your sign-in link verifies it.",
     // renders only when the deploy configures the offer link (env `BETA_PLAN_OFFER_URL`); the copy
@@ -278,11 +292,16 @@ export const COPY = {
     // ACT.1 — the trial refusal notices (§14.3; REQ-SPEC-8): deny / challenge / paused each render
     // honest copy and create no run. The word-cap + shape refusals are plain facts of the claim.
     trialDenied: "This device has already had its included Review — add credits to run.",
-    trialCeiling: "The included-Review quota is full for today — try again tomorrow, or add credits.",
-    trialPhoneChallenge: "Before your included Review can start, we need to verify this device — a quick phone check is on the way.",
-    entitlementUnavailable: "The included Review isn't available on this account — add credits to run.",
-    trialWordCapFmt: "Your included Review covers up to {cap} words — this draft runs the first {cap}; shorter scope or add credits to run it all.",
-    trialShape: "The included Review is Standard rigor on Base — switch the levers back or add credits to run your way.",
+    trialCeiling:
+      "The included-Review quota is full for today — try again tomorrow, or add credits.",
+    trialPhoneChallenge:
+      "Before your included Review can start, we need to verify this device — a quick phone check is on the way.",
+    entitlementUnavailable:
+      "The included Review isn't available on this account — add credits to run.",
+    trialWordCapFmt:
+      "Your included Review covers up to {cap} words — this draft runs the first {cap}; shorter scope or add credits to run it all.",
+    trialShape:
+      "The included Review is Standard rigor on Base — switch the levers back or add credits to run your way.",
     // EST.1 — the model-tier select + plan-clamp notice (§6.5's tier choice, REQ-IDE-13 amended) and
     // the unmeasured-inputs estimate state (fail closed — "—", never a fabricated figure).
     modelTierLabel: "Model tier",
@@ -345,9 +364,13 @@ export const COPY = {
     // stays `Unverifiable` (verdictLabel.unverifiable, below) — the two never conflate: the label names a
     // RUN whose research could not fetch a single source, the verdict names a CLAIM that cannot be checked.
     deliveryLabel: "Unverified",
-    deliveryBannerFmt: "{label} — research could not check the claims; the research credits were refunded",
+    deliveryBannerFmt:
+      "{label} — research could not check the claims; the research credits were refunded",
     feedHeading: "Live feed",
-    densityLabel: { summary: "Summary", details: "Details", verbose: "Verbose" } as Record<string, string>,
+    densityLabel: { summary: "Summary", details: "Details", verbose: "Verbose" } as Record<
+      string,
+      string
+    >,
     letterTocHeading: "Contents",
     attestationHeading: "The boundary",
     trust: {
@@ -370,7 +393,11 @@ export const COPY = {
       unverifiable: "Unverifiable",
       verified_against_user_source: "Verified against your source",
     } as Record<string, string>,
-    stanceLabel: { supports: "supports", contradicts: "contradicts", contextualizes: "contextualizes" } as Record<string, string>,
+    stanceLabel: {
+      supports: "supports",
+      contradicts: "contradicts",
+      contextualizes: "contextualizes",
+    } as Record<string, string>,
     kindNounLabel: {
       factual: "factual",
       statistical: "statistical",
@@ -407,7 +434,10 @@ export const COPY = {
     promoteLabel: "Address this anyway",
     emptyRejected: "The second read withdrew nothing.",
     findingsHeading: "Findings",
-    severityLabel: { blocking: "Blocking", major: "Major", minor: "Minor", note: "Note" } as Record<string, string>,
+    severityLabel: { blocking: "Blocking", major: "Major", minor: "Minor", note: "Note" } as Record<
+      string,
+      string
+    >,
     findingKindLabel: {
       claim: "claim",
       discourse: "discourse",
@@ -441,7 +471,7 @@ export const COPY = {
     } as Record<string, string>,
     // ---- P1.07 — the findings surface, full (§5.7): Margin chips, shared filters, triage mode,
     // Apply (the free verb), the one-preview bulk actions, and the deep link. ----
-    marginChipFmt: "{count} findings · {top} {severity}",
+    marginChipFmt: "{count} findings{strengths} · {top} {severity}",
     marginChipAriaFmt: "{count} findings stacked on this passage",
     wholePieceLabel: "Whole piece",
     applyLabel: "Apply",
@@ -487,7 +517,13 @@ export const COPY = {
       emptyPreview: "Nothing this action covers.",
     },
     findingsEmpty: "No findings on this round.",
-    deskTable: { finding: "Finding", severity: "Severity", kind: "Kind", status: "Status", actions: "Actions" },
+    deskTable: {
+      finding: "Finding",
+      severity: "Severity",
+      kind: "Kind",
+      status: "Status",
+      actions: "Actions",
+    },
   },
 
   // PRB.05 — the five-verb triage controls (§5.7; REQ-BETA-6, REQ-MOBILE-11 amended).
@@ -515,7 +551,8 @@ export const COPY = {
     } as Record<string, string>,
     adaptLabel: "Proposed edit",
     appliedNote: "applies at revision time",
-    pretriageFmt: "You pre-triaged {n} of {m} findings — your rows are authoritative for the Revise run.",
+    pretriageFmt:
+      "You pre-triaged {n} of {m} findings — your rows are authoritative for the Revise run.",
     promoFmt: "More than {n} findings — the Drafter can propose a triage on the Revise run.",
     savedLabel: "Saved",
   },
@@ -569,7 +606,8 @@ export const COPY = {
     // §6.4 R3 — the per-project approve_triage 24-h opt-in (default: wait for you).
     optInHeading: "Approval timing",
     optInLabel: "Auto-approve triage after 24 h on this project",
-    optInNote: "Approve triage waits for you by default; opting in proceeds with the proposals after 24 h.",
+    optInNote:
+      "Approve triage waits for you by default; opting in proceeds with the proposals after 24 h.",
     optInSave: "Save",
     // ---- P1.09 — the full §6.4 surface: structured fields, decision record, explainer, the row ----
     factsHeading: "The facts",
@@ -583,7 +621,8 @@ export const COPY = {
       reason: "Reason",
       round: "Round",
     } as Record<string, string>,
-    exceedsCapLine: "The re-priced estimate exceeds the cap you consented to — this approval waits for you.",
+    exceedsCapLine:
+      "The re-priced estimate exceeds the cap you consented to — this approval waits for you.",
     scopeFieldsHeading: "Corrections — applied as guidance",
     scopeFieldLabel: {
       stage: "Stage",
@@ -698,7 +737,8 @@ export const COPY = {
     policyNote: {
       named: "The named cards open; each carries its deadline.",
       wait_each: "A card opens and waits after every phase — no deadlines.",
-      run_to_completion: "Named approvals resolve by policy; spend and refusal cards still wait for you.",
+      run_to_completion:
+        "Named approvals resolve by policy; spend and refusal cards still wait for you.",
     } as Record<string, string>,
     overridesHeading: "Deadlines by approval",
     overrideKindColumn: "Approval",
@@ -710,9 +750,11 @@ export const COPY = {
     overrideNeverLabel: "always waits for you",
     saveLabel: "Save approvals",
     savedLabel: "Saved",
-    invalidLabel: "That deadline is not allowed for this approval — it can only grow, never shrink.",
+    invalidLabel:
+      "That deadline is not allowed for this approval — it can only grow, never shrink.",
     standingHeading: "Standing notes",
-    standingEmpty: "No standing notes yet — “…and remember this for this project” on any approval adds one.",
+    standingEmpty:
+      "No standing notes yet — “…and remember this for this project” on any approval adds one.",
     standingRetireLabel: "Retire",
     standingEditSaveLabel: "Replace",
     standingAddLabel: "Add a standing note",
@@ -835,7 +877,8 @@ export const COPY = {
     restorePreviewHeading: "Restore preview",
     restoreApply: "Restore this point",
     restoreUndoHint: "Undoable — restoring first marks a restore point on the current state.",
-    restoredFmt: "Restored — v{n} carries that point's text; the previous state is a restore point.",
+    restoredFmt:
+      "Restored — v{n} carries that point's text; the previous state is a restore point.",
     notFound: "That version isn't here.",
   },
 
@@ -852,7 +895,8 @@ export const COPY = {
     beforeCol: "Before",
     afterCol: "After",
     unchangedFmt: "{n} unchanged passages",
-    unlinkedNote: "No revision answers this pair — every change below is an unlinked edit (the coherence read).",
+    unlinkedNote:
+      "No revision answers this pair — every change below is an unlinked edit (the coherence read).",
     noChanges: "No differences.",
     notFound: "That pair isn't here.",
   },
@@ -901,7 +945,8 @@ export const COPY = {
     // EDIT.1 — §5.4's verbatim fork banner ("Editing vN+1 · findings from vN follow your text").
     versionForkFmt: "Editing v{n} · findings from v{base} follow your text",
     writerLockFmt: "A {workflow} run is writing this draft — editing is locked until it finishes.",
-    readerLockFmt: "A {workflow} run is reading the frozen draft — editing is locked until it finishes.",
+    readerLockFmt:
+      "A {workflow} run is reading the frozen draft — editing is locked until it finishes.",
     cancelRun: "Cancel run to edit",
     sync: {
       // §5.10's verbatim vocabulary (lowercase, as the status-bar mock renders) — `offline`
@@ -935,7 +980,8 @@ export const COPY = {
     // ("Source" pressed = markdown view), the note explains the foreign-write merge posture.
     sourceToggle: "Source",
     sourceAriaLabel: "Markdown source",
-    sourceStaleNote: "This draft changed elsewhere while you edited — your pending text applies where you changed it.",
+    sourceStaleNote:
+      "This draft changed elsewhere while you edited — your pending text applies where you changed it.",
   },
 
   // PRB.10 — Quick Voice (§9.2–§9.6): the creation sheet, the library list, the detail page (seed editor +
@@ -978,7 +1024,8 @@ export const COPY = {
       sampleLabel: "Paste a writing sample (optional)",
       sampleFileLabel: "Or upload a file (.md, .txt, .html)",
       sampleUrlLabel: "Or add a sample by URL",
-      sampleUrlHint: "Rhēma fetches the page once, through the fetcher — the build never re-fetches it.",
+      sampleUrlHint:
+        "Rhēma fetches the page once, through the fetcher — the build never re-fetches it.",
       sampleHint: "One sample is enough for a Quick Voice; a Full Profile needs at least four.",
       sampleTitleLabel: "Sample title (optional)",
       modeLabel: "This voice is",
@@ -995,7 +1042,8 @@ export const COPY = {
       quickOption: "Quick Voice",
       quickHint: "≈ 60–150 credits · a few minutes · untested",
       fullOption: "Full Profile",
-      fullHint: "the full build — census, close reading, voice, substance, and a held-out calibration test",
+      fullHint:
+        "the full build — census, close reading, voice, substance, and a held-out calibration test",
       fullRequired: "A Full Profile needs at least four samples, two of them readable (≥10 words).",
       sampleRequired: "A Quick Voice build needs at least one sample.",
       nameRequired: "A name is required.",
@@ -1016,7 +1064,7 @@ export const COPY = {
       factsEmpty: "No build yet — the facts appear after the first one.",
       ageFmt: "{n} days old",
       corpusLineFmt: "{built} → {current} words",
-      routeHeading: "What \"Update voice\" will do",
+      routeHeading: 'What "Update voice" will do',
       upgradeCta: "Upgrade to Full Profile",
       // P1.14 — the approve_sample gate card (§9.2/§6.4).
       gateHeading: "Approve the sample",
@@ -1038,7 +1086,8 @@ export const COPY = {
       // P1.14 — build notes (the Description tab's "Notes from the last build"; §9.4).
       buildNotesHeading: "Notes from the last build",
       // P1.14 — the hold-out (§9.4): generic until calibration reveals it.
-      holdoutGeneric: "one of your pieces is held back to test the profile — you won't see which until after calibration",
+      holdoutGeneric:
+        "one of your pieces is held back to test the profile — you won't see which until after calibration",
       holdoutRevealedFmt: "★ held out — {title}",
       // P1.14 — the calibration table + the deterministic measures (§9.4 Advanced).
       calibrationHeading: "Calibration",
@@ -1049,7 +1098,13 @@ export const COPY = {
         pending: "pending",
       } as Record<string, string>,
       calibrationWithinFmt: "{n} of {total} within one band",
-      calibrationTable: { feature: "Feature", target: "Profile target", prediction: "Prediction", real: "Held-out piece", band: "Within band" },
+      calibrationTable: {
+        feature: "Feature",
+        target: "Profile target",
+        prediction: "Prediction",
+        real: "Held-out piece",
+        band: "Within band",
+      },
       measuresHeading: "Voice measures",
       advancedTag: "(Advanced)",
       profileHeading: "Profile",
@@ -1066,9 +1121,11 @@ export const COPY = {
       forkProjectCta: "Fork under a different voice",
       reseedPreviewCta: "Preview the charter diff",
       reseedNoCharter: "No charter yet — the reseed writes one.",
-      reseedGuidanceKept: "Your guidance lines carry over verbatim — the diff above never touches them.",
+      reseedGuidanceKept:
+        "Your guidance lines carry over verbatim — the diff above never touches them.",
       reseedGuidanceLost: "Guidance would be lost — the adopt will NOT reseed.",
-      voiceLockedNotice: "The voice is set once drafts exist — adopt the refreshed profile or fork under a different voice.",
+      voiceLockedNotice:
+        "The voice is set once drafts exist — adopt the refreshed profile or fork under a different voice.",
       seedHeading: "Description",
       agentDraftedMark: "Drafted by Rhēma — correct it",
       bylineLabel: "Byline",
@@ -1133,7 +1190,8 @@ export const COPY = {
       reconstructVisualCta: "Visual reconstruction (~180 credits)",
       reconstructQueued: "Reconstruction queued — the new version appears here when it's ready.",
       deleteVoiceHeading: "Delete this voice",
-      deleteVoiceNote: "Deletes the voice, its samples, and profile data. Type “delete” to confirm.",
+      deleteVoiceNote:
+        "Deletes the voice, its samples, and profile data. Type “delete” to confirm.",
       deleteVoiceCta: "Delete voice",
       deletePlaceholder: "delete",
       addSampleLabel: "Paste a new sample",
@@ -1195,7 +1253,8 @@ export const COPY = {
     titleLabel: "What must the next revision do?",
     titlePlaceholder: "e.g. Re-check the tenure statistics against the 2024 census release",
     severityLabel: "Severity",
-    severityHint: "Pick the weight the obligation carries — blocking holds the verdict, the rest are guidance.",
+    severityHint:
+      "Pick the weight the obligation carries — blocking holds the verdict, the rest are guidance.",
     createCta: "Add obligation",
     cancel: "Cancel",
     required: "Give the obligation a title.",
@@ -1217,10 +1276,13 @@ export const COPY = {
     provenanceUnavailable: "No provenance map yet — the appendix unlocks once the draft has one.",
     obligationsNote: "Listed for your records — export always proceeds.",
     attachLabel: "Attach the AI-use statement",
-    attachNote: "A generated disclosure of how Rhēma was used on this manuscript — the workflows, model tiers, dates, and your decisions, straight from the run record.",
-    disclosureNote: "This venue asks for a formal disclosure — the export ships the AI-use statement (the venue template registers in a later release).",
+    attachNote:
+      "A generated disclosure of how Rhēma was used on this manuscript — the workflows, model tiers, dates, and your decisions, straight from the run record.",
+    disclosureNote:
+      "This venue asks for a formal disclosure — the export ships the AI-use statement (the venue template registers in a later release).",
     statementHeading: "AI-use statement",
-    statementNote: "Recomputed from the run record every time. Add your own sentences below; the generated sentences stay.",
+    statementNote:
+      "Recomputed from the run record every time. Add your own sentences below; the generated sentences stay.",
     additionLabel: "Add a sentence to the statement",
     additionPlaceholder: "e.g. I rewrote the conclusion myself.",
     additionCta: "Add sentence",
@@ -1243,7 +1305,8 @@ export const COPY = {
     failedFmt: "The export failed: {error}",
     downloadCta: "Download now",
     importHeading: "Restore from an export",
-    importNote: "Import a Rhema export zip into this account. Re-importing the same zip is a no-op — nothing duplicates.",
+    importNote:
+      "Import a Rhema export zip into this account. Re-importing the same zip is a no-op — nothing duplicates.",
     importLabel: "Export zip",
     importCta: "Import",
     importDoneFmt: "Imported {projects} project(s), {voices} voice(s), {files} file(s).",
@@ -1295,13 +1358,15 @@ export const COPY = {
     emailLabel: "Email",
     emailVerified: "Verified",
     emailUnverified: "Not verified",
-    emailPendingFmt: "Change pending — we emailed a confirmation link to {email}. The account switches when you open it.",
+    emailPendingFmt:
+      "Change pending — we emailed a confirmation link to {email}. The account switches when you open it.",
     emailChangeLabel: "New email",
     emailChangeCta: "Send confirmation link",
     emailChangeNote: "A magic link confirms the new address; nothing changes until you open it.",
     signInHeading: "Sign-in methods",
     sessionsHeading: "Active sessions",
-    sessionsNote: "Revoking kills the token server-side — the shared session contract the mobile app uses too.",
+    sessionsNote:
+      "Revoking kills the token server-side — the shared session contract the mobile app uses too.",
     sessionThisDevice: "This device",
     sessionRevokeCta: "Revoke",
     sessionExpiresFmt: "expires {at}",
@@ -1316,9 +1381,10 @@ export const COPY = {
       frontier: "Frontier — the deepest read, reserved for near-final work.",
     } as Record<string, string>,
     rigorHeading: "Default rigor",
-    rigorNote: "Standard is the default; a project's own setting always wins over the account default.",
+    rigorNote:
+      "Standard is the default; a project's own setting always wins over the account default.",
     rigorByWorkflowHeading: "Rigor per workflow",
-    rigorByWorkflowNote: "Leave a workflow on \"Default\" to use the rigor above.",
+    rigorByWorkflowNote: 'Leave a workflow on "Default" to use the rigor above.',
     rigorDefaultOpt: "Default",
     approvalHeading: "Approval policy default",
     approvalNote: "The policy new projects start on — the project can always pick its own.",
@@ -1350,9 +1416,10 @@ export const COPY = {
     lockedNote: "Always on — spend gates and trial/payment mail can't be turned off.",
     emailNoneNote: "—", // the row never mails (in-app only)
     digestHeading: "Digests",
-    digestRunFinishedLabel: "Batch \"run finished\" mail into an hourly digest",
+    digestRunFinishedLabel: 'Batch "run finished" mail into an hourly digest',
     quietHeading: "Quiet hours",
-    quietNote: "Run-finished and chat replies hold until the window ends (UTC). Approvals and spend gates always land.",
+    quietNote:
+      "Run-finished and chat replies hold until the window ends (UTC). Approvals and spend gates always land.",
     quietEnable: "On",
     quietStartLabel: "From",
     quietEndLabel: "To",
@@ -1417,8 +1484,10 @@ export const COPY = {
     // ---- P1.20 — Data (Q-12 minimal; §13.3 deletion; Q-26 posture; REQ-VIS-11) ----
     dataHeading: "Data",
     supportAccessLabel: "Allow Rhema staff to view my projects for support (per request, 72 h)",
-    supportAccessNote: "A grant expires after 72 hours. Every grant, access, and revocation lands in the log below.",
-    supportAccessActiveFmt: "Active until {at} (UTC) — we can view your projects for support until then.",
+    supportAccessNote:
+      "A grant expires after 72 hours. Every grant, access, and revocation lands in the log below.",
+    supportAccessActiveFmt:
+      "Active until {at} (UTC) — we can view your projects for support until then.",
     supportAccessLogHeading: "Support access log",
     supportAccessLogEmpty: "No support access on record.",
     supportAccessActions: {
@@ -1437,7 +1506,8 @@ export const COPY = {
     preferenceCopy:
       "Rhema learns your working preferences from your decisions to help the Drafter and pre-fill defaults. The Editor never sees this — reviews never soften.",
     preferenceToggleLabel: "Let Rhema learn my working preferences",
-    preferenceOffNote: "Off — no new preference signals are recorded. The profile is account-local, exports with your data, and dies with the account.",
+    preferenceOffNote:
+      "Off — no new preference signals are recorded. The profile is account-local, exports with your data, and dies with the account.",
     exportHeading: "Export",
     // ---- P1.20 — Delete account (REQ-ACCT-4; §13.3) ----
     deletionHeading: "Delete account",
@@ -1445,7 +1515,8 @@ export const COPY = {
       "Deleting starts a 14-day grace period — cancel any time before it ends. After that, Rhema hard-deletes your content and personal information; anonymized ledger rows and the Stripe customer record are retained as tax law requires — nothing else.",
     deletionConfirmLabel: "Type “delete” to confirm",
     deletionCta: "Delete account",
-    deletionScheduledFmt: "Deletion scheduled — your account and its content are deleted on {date} unless you cancel.",
+    deletionScheduledFmt:
+      "Deletion scheduled — your account and its content are deleted on {date} unless you cancel.",
     deletionCancelCta: "Keep my account",
     deletionCancelledNote: "Deletion cancelled — welcome back.",
     // ---- P1.20 — project settings (/p/:project/settings; §4.2/§6.7, REQ-GENRE-2) ----
@@ -1461,7 +1532,10 @@ export const COPY = {
       lengthLabel: "Length target",
       lengthNote: "Override the protocol's default length (its own unit — words, pages…).",
       stageLabel: "Stage",
-      stages: { early: "Early draft", near_final: "Near final", infer: "Infer" } as Record<string, string>,
+      stages: { early: "Early draft", near_final: "Near final", infer: "Infer" } as Record<
+        string,
+        string
+      >,
       stageNote: "Pick a stage or let the run infer it.",
       phaseDefaultsHeading: "Phase defaults",
       phaseDefaults: {
@@ -1501,7 +1575,13 @@ export const COPY = {
     monthToDateFmt: "{n} cr this period",
     includedFmt: "{remaining} of {monthly} included credits left",
     bucketsHeading: "Balance",
-    bucketLabels: { included: "Plan credits", topup: "Top-ups", trial_pocket: "Trial pocket", daily: "Daily", promo: "Promo" } as Record<string, string>,
+    bucketLabels: {
+      included: "Plan credits",
+      topup: "Top-ups",
+      trial_pocket: "Trial pocket",
+      daily: "Daily",
+      promo: "Promo",
+    } as Record<string, string>,
     expiresFmt: "expires {at}",
     warningsHeading: "Heads up",
     nextExpiryFmt: "{n} {bucket} credits expire {at}",
@@ -1549,7 +1629,8 @@ export const COPY = {
     autoReloadCapLabel: "Up to per month ($)",
     autoReloadSave: "Save auto-reload",
     teamHeading: "Team",
-    teamNote: "Shared workspaces, pooled credits and roles are coming. Leave an email and we'll write when seats open.",
+    teamNote:
+      "Shared workspaces, pooled credits and roles are coming. Leave an email and we'll write when seats open.",
     teamEmailLabel: "Work email",
     teamSeatsLabel: "Seats",
     teamCta: "Join the waitlist",
@@ -1558,13 +1639,17 @@ export const COPY = {
     // BILL.3 — the per-class failure copy (REQ-BILL-16): each refusal names its own cause, and the
     // generic line only remains for the genuinely-transient case (Stripe itself unreachable).
     stripeDownNote: "Billing is temporarily unavailable — try again in a moment.",
-    stripeUnconfiguredNote: "Checkout isn't configured on this deployment yet — nothing was charged.",
-    purchasePausedNote: "Purchases are paused while we finish rolling them out — your balance and work are safe.",
+    stripeUnconfiguredNote:
+      "Checkout isn't configured on this deployment yet — nothing was charged.",
+    purchasePausedNote:
+      "Purchases are paused while we finish rolling them out — your balance and work are safe.",
     topupRequiresPlanNote: "Top-ups need a paid plan — choose Writer or above first.",
-    firstMonthCapNote: "New accounts can add up to $100 of credits in their first month — the cap lifts after.",
+    firstMonthCapNote:
+      "New accounts can add up to $100 of credits in their first month — the cap lifts after.",
     planWaitlistedNote: "That plan isn't open yet — join its waitlist on the card above.",
     noStripeCustomerNote: "There's no card on file yet — choose a plan or buy a top-up first.",
-    stripeRejectedNote: "Stripe refused that checkout — nothing was charged. The detail is logged; try again in a moment.",
+    stripeRejectedNote:
+      "Stripe refused that checkout — nothing was charged. The detail is logged; try again in a moment.",
     changeFailedNote: "The plan change didn't apply — try again.",
     cancelFailedNote: "Cancellation didn't apply — try again.",
     autoReloadFailedNote: "The auto-reload settings didn't save — check the values and try again.",
@@ -1572,9 +1657,11 @@ export const COPY = {
     includedBadge: "Included",
     returnHeading: "Checkout",
     returnDone: "Payment confirmed — your credits are in.",
-    returnPending: "Confirming your payment with Stripe — this page refreshes. If it takes more than a moment, we'll email you when it lands.",
+    returnPending:
+      "Confirming your payment with Stripe — this page refreshes. If it takes more than a moment, we'll email you when it lands.",
     returnExpired: "That checkout expired — nothing was charged. Start again from Billing.",
-    returnCancelled: "Checkout cancelled — nothing was charged. Start again from Billing whenever you're ready.",
+    returnCancelled:
+      "Checkout cancelled — nothing was charged. Start again from Billing whenever you're ready.",
     returnContinue: "Continue",
     returnBack: "Back to Billing",
     upgradePromptFmt: "{tier} adds {credits} credits a month and unlocks {tiers}.",
@@ -1610,7 +1697,11 @@ export const COPY = {
     heading: "Promote to an outline",
     backToProject: "Back to the project",
     promoteLabel: "Promote",
-    scopeLabel: { thread: "this thread", turn: "this turn", research: "all Assistant research" } as Record<string, string>,
+    scopeLabel: {
+      thread: "this thread",
+      turn: "this turn",
+      research: "all Assistant research",
+    } as Record<string, string>,
     sourcesFmt: "{n} source notes will copy to your research folder.",
     urlsFmt: "{n} URLs will be re-fetched — a failed fetch lands [unverified].",
     estimateFmt: "Estimate {estimate} credits · cap {cap}",
@@ -1646,7 +1737,8 @@ export const COPY = {
     chipsHeading: "Chart type",
     chipsNote: "Type chips are local spec edits — 0 credits, no model call.",
     insertHeading: "Insert into the draft",
-    insertNote: "Insert is a proposal — Accept writes the figure block; a frozen draft forks v(N+1).",
+    insertNote:
+      "Insert is a proposal — Accept writes the figure block; a frozen draft forks v(N+1).",
     anchorLabel: "Insert after block (optional — e.g. b7; empty = end of the draft)",
     proposeLabel: "Insert…",
     acceptLabel: "Accept",
@@ -1668,10 +1760,12 @@ export const COPY = {
     heading: "Visualize",
     backToProject: "Back to the project",
     requestLabel: "What should the figure show?",
-    requestHint: "Describe the figure. @claim:<id>, @asset:<id>, or a URL binds the numbers to a source; numbers with no source are refused.",
+    requestHint:
+      "Describe the figure. @claim:<id>, @asset:<id>, or a URL binds the numbers to a source; numbers with no source are refused.",
     kindLabel: "Figure kind",
     kindAuto: "let the run decide",
-    insistLabel: "Create it anyway with unsourced numbers — carries a persistent [unverified data] badge",
+    insistLabel:
+      "Create it anyway with unsourced numbers — carries a persistent [unverified data] badge",
     iterateLabel: "Iterating figure",
     estimateFmt: "Estimate {estimate} credits · cap {cap}",
     chipNote: "Type-chip edits on the card are 0 credits.",
@@ -1903,20 +1997,27 @@ export const COPY = {
     report: "Run report",
     openDeliverable: "Open the delivered review",
     liveFeed: "Live feed",
-    retryWalkthrough: "Retry",
     queueFmt: "{n} in line — starts when the run ahead finishes",
     estimateLineFmt: "{actual} cr spent · est. {est}",
     pausedFmt: "Paused after phase {done} of {total}",
     partialFmt: "partial ({done}/{total} phases) — committed work kept",
     waitingGateFmt: "Waiting on you — {kind}",
     queuedNotesFmt: "{n} note(s) queued for the next phase",
-    walkthroughHeading: "What it delivered",
-    walkthroughPending: "Writing the walkthrough…",
-    walkthroughFailed: "The walkthrough couldn't be written — retry when ready.",
+    // R7COPY.0 (REQ-COPY-4; ADR-130) — the record-composed "What it delivered" (the generated
+    // walkthrough's heading survives verbatim; nothing pending/failed can ever render again).
+    deliveredHeading: "What it delivered",
+    deliveredCountsFmt: "{findings} findings{strengths} · {claims} claims",
+    deliveredStrengthsFmt: " · {n} strength{s}",
+    deliveredLinkLabel: {
+      dossier: "Dossier",
+      letter: "Letter",
+      ledger: "Claims ledger",
+    } as Record<string, string>,
     deliverableLabel: {
       letter: "Letter",
       response: "Response",
       findings: "{n} findings",
+      strengths: "{n} strength{s}",
       claims: "{n} claims",
       second_read: "Second read",
       rubric: "Rubric",
@@ -2040,7 +2141,8 @@ export const COPY = {
       refundNoReason: "{n} cr returned.",
       entitlement: "{n} cr metered — covered by your included review, no charge.",
       committed: "Charged on the committed phase figures — {n} cr differs from the meter.",
-      cross_check: "The agent's own estimate read {n} cr — the proxy meter is the figure of record.",
+      cross_check:
+        "The agent's own estimate read {n} cr — the proxy meter is the figure of record.",
     } as Record<string, string>,
     // RPT.1 — refund ledger reasons → readable words (a machine code never renders raw).
     refundReasonLabel: {
@@ -2050,7 +2152,8 @@ export const COPY = {
       operator: "an operator adjustment",
       user_window: "requested within your refund window",
     } as Record<string, string>,
-    workedExample: "Worked example — the seeded Showcase run; these are illustrative figures, not your usage.",
+    workedExample:
+      "Worked example — the seeded Showcase run; these are illustrative figures, not your usage.",
     phaseHeading: "Phases",
     phaseDetailFmt: "{credits} cr",
     phaseDetailDurationFmt: "{credits} cr · {n} min",
@@ -2171,11 +2274,27 @@ export const COPY = {
     workflow: {
       heading: "The workflow, in lifecycle order",
       steps: [
-        { key: "outline", label: "Outline", note: "The argument's skeleton, checked before prose." },
-        { key: "draft", label: "Draft", note: "Your authorship — every suggestion waits for your approval." },
+        {
+          key: "outline",
+          label: "Outline",
+          note: "The argument's skeleton, checked before prose.",
+        },
+        {
+          key: "draft",
+          label: "Draft",
+          note: "Your authorship — every suggestion waits for your approval.",
+        },
         { key: "review", label: "Review", note: "The full board: claims, structure, discourse." },
-        { key: "fact_check", label: "Fact-check", note: "Every checkable claim against fetched sources." },
-        { key: "revise", label: "Revise", note: "Moves proposed as a response — you keep the pen." },
+        {
+          key: "fact_check",
+          label: "Fact-check",
+          note: "Every checkable claim against fetched sources.",
+        },
+        {
+          key: "revise",
+          label: "Revise",
+          note: "Moves proposed as a response — you keep the pen.",
+        },
       ] as const,
       gateNote: "Draft's suggestions never apply themselves — every one waits for your approval.",
     },
@@ -2267,7 +2386,8 @@ export const COPY = {
     includedCreditsLabel: "included credits / mo",
     coversLabel: "What it covers",
     costCardsHeading: "What a run costs",
-    costCardsNote: "Modeled figures at Standard rigor, across model tiers — the live estimate on the run sheet is authoritative for a real run.",
+    costCardsNote:
+      "Modeled figures at Standard rigor, across model tiers — the live estimate on the run sheet is authoritative for a real run.",
     // R6MNY.1 (REQ-LCH-5a) — the same charge-what-we-meter sentence the paid-account notice carries
     // (`meteredNoticeTemplate`), told to a new user BEFORE the flip is their first billing model —
     // GD-LAUNCH-MONEY.R6 orders metered debit ahead of purchase-open, so this is never a post-hoc
@@ -2277,7 +2397,8 @@ export const COPY = {
       "How a run charges: it shows its estimate and cap before it starts, you pay the run's actual cost as each phase completes, and it can never cost more than the cap you confirm.",
     voiceCardHeading: "Voice profile",
     voiceCardLine: "A profile built from a {words}-word corpus",
-    quickLineFmt: "A ≤{cap}-word piece on Base: Quick ≈ {quick} cr · Standard ≈ {standard} cr · Full board ≈ {fb} cr",
+    quickLineFmt:
+      "A ≤{cap}-word piece on Base: Quick ≈ {quick} cr · Standard ≈ {standard} cr · Full board ≈ {fb} cr",
     factCheckOffLabel: "fact-check off",
     matrixHeading: "The ladder, compared",
     faqHeading: "Questions",
@@ -2306,7 +2427,8 @@ export const COPY = {
     intentNoteDraft: "Your held file is ready — it becomes your first project after you sign in.",
     intentNoteOutline: "Your outline becomes your first project after you sign in.",
     sentHeading: "Check your email",
-    sentBody: "The link signs you in. While you wait — the dossier below is the worked example waiting in your workspace.",
+    sentBody:
+      "The link signs you in. While you wait — the dossier below is the worked example waiting in your workspace.",
     sampleHeading: "The Showcase — a worked example",
     chooseEntry: "Or choose your first step:",
     entryScratch: "Start from scratch",
@@ -2327,7 +2449,8 @@ export const COPY = {
     signInCta: "Sign in",
     rowLabel: "Worked example",
     bannerTitle: "Welcome — a worked example",
-    bannerBody: "This dossier is read-only: it shows what the board hands back before your own work is in. Duplicate it into a project of your own to play with the moves.",
+    bannerBody:
+      "This dossier is read-only: it shows what the board hands back before your own work is in. Duplicate it into a project of your own to play with the moves.",
     duplicateCta: "Duplicate it",
     openDossierCta: "Open the dossier",
     heldFileReady: "Your held file is here — upload it to start.",
@@ -2378,8 +2501,7 @@ export const COPY = {
     draftBanner:
       "Draft — the operator has not yet approved this page's text. Slots marked ⟦KEY⟧ are filled before approval.",
     terms: {
-      lede:
-        "These terms govern your use of Rhēma — the writing-review service operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
+      lede: "These terms govern your use of Rhēma — the writing-review service operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
       sections: [
         {
           heading: "The service",
@@ -2429,8 +2551,7 @@ export const COPY = {
       ],
     },
     privacy: {
-      lede:
-        "This policy states what ⟦OPERATING_ENTITY⟧ collects through Rhēma, what happens to it, and the controls you hold. Write to ⟦CONTACT_EMAIL⟧ with questions.",
+      lede: "This policy states what ⟦OPERATING_ENTITY⟧ collects through Rhēma, what happens to it, and the controls you hold. Write to ⟦CONTACT_EMAIL⟧ with questions.",
       sections: [
         {
           heading: "What we collect",
@@ -2483,8 +2604,7 @@ export const COPY = {
       ],
     },
     refunds: {
-      lede:
-        "How a run's credits move and when money comes back — the accounting every run follows. ⟦OPERATING_ENTITY⟧ answers questions at ⟦CONTACT_EMAIL⟧.",
+      lede: "How a run's credits move and when money comes back — the accounting every run follows. ⟦OPERATING_ENTITY⟧ answers questions at ⟦CONTACT_EMAIL⟧.",
       sections: [
         {
           heading: "How a run is charged",
@@ -2510,8 +2630,7 @@ export const COPY = {
       ],
     },
     acceptableUse: {
-      lede:
-        "What you may and may not do on Rhēma, operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
+      lede: "What you may and may not do on Rhēma, operated by ⟦OPERATING_ENTITY⟧. Questions go to ⟦CONTACT_EMAIL⟧.",
       sections: [
         {
           heading: "Your content",
@@ -2540,8 +2659,7 @@ export const COPY = {
       ],
     },
     contact: {
-      lede:
-        "How to reach ⟦OPERATING_ENTITY⟧ — the operator of Rhēma.",
+      lede: "How to reach ⟦OPERATING_ENTITY⟧ — the operator of Rhēma.",
       sections: [
         {
           heading: "Support",
@@ -2581,10 +2699,7 @@ export const IDE_FEED_LABELS = {
 };
 
 /** A `[path, value]` pair for every string leaf in the copy tree (functions/objects skipped). */
-export function collectCopyStrings(
-  obj: unknown = COPY,
-  prefix = "",
-): [string, string][] {
+export function collectCopyStrings(obj: unknown = COPY, prefix = ""): [string, string][] {
   const out: [string, string][] = [];
   if (typeof obj === "string") {
     out.push([prefix || "(root)", obj]);

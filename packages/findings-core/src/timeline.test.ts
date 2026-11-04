@@ -32,7 +32,7 @@ const card = (over: Partial<RunCardView> = {}): RunCardView => ({
   paused: false,
   waitingGate: null,
   deliverables: [],
-  walkthrough: null,
+  delivered: null,
   failureCode: null,
   resumable: false,
   queuedNotes: 0,
@@ -57,7 +57,12 @@ describe("groupRounds (§5.5)", () => {
     const runs: TimelineRun[] = [
       run({ runId: "r_v2_late", subjectN: 2, createdAt: "2026-09-03T10:00:00Z" }),
       run({ runId: "r_v1", subjectN: 1, createdAt: "2026-09-01T09:00:00Z" }),
-      run({ runId: "r_v2_early", subjectN: 2, createdAt: "2026-09-03T08:00:00Z", workflow: "revise" }),
+      run({
+        runId: "r_v2_early",
+        subjectN: 2,
+        createdAt: "2026-09-03T08:00:00Z",
+        workflow: "revise",
+      }),
     ];
     const { rounds, ungrouped } = groupRounds([draft(1), draft(2)], runs);
     expect(rounds.map((r) => r.n)).toEqual([2, 1]);

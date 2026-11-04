@@ -679,6 +679,13 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-focused-gate", "conditional", "pages.tsx"),
     a("data-pretriage-line", "conditional", "pages.tsx / spa/surfaces/run-sheet.tsx"),
     a("data-run-card", "conditional", "ui/run-card.tsx", "feed run card — the live meter root"),
+    // R7COPY.0 (REQ-COPY-4) — the record-composed "What it delivered" block (the generated
+    // walkthrough's hooks were never declared here and are gone with the generator).
+    a("data-delivered-summary", "conditional", "ui/run-card.tsx", "record-composed delivered block"),
+    a("data-delivered-verdict", "conditional", "ui/run-card.tsx", "verdict line, quoted verbatim"),
+    a("data-delivered-counts", "conditional", "ui/run-card.tsx", "one-rule findings/strengths/claims"),
+    a("data-delivered-links", "conditional", "ui/run-card.tsx", "dossier/letter/ledger link row"),
+    a("data-delivered-link", "conditional", "ui/run-card.tsx", "one composed link"),
     a("data-run-state", "conditional", "ui/run-card + ide-shell"),
     a("data-credits", "conditional", "ui/run-card.tsx + ide feed patch"),
     a("data-credit-meter", "conditional", "ui/run-card.tsx + ide feed patch"),

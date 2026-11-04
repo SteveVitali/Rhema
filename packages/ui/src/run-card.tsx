@@ -58,12 +58,19 @@ export interface RunCardLabels {
   readonly actionLabel?: (action: RunCardAction) => string;
   /** the note-for-next-phase field's placeholder + submit label (§6.5). */
   readonly notePlaceholder?: string;
-  /** the walkthrough block's heading (§5.5 D20). */
-  readonly walkthroughHeading?: string;
-  /** shown while the walkthrough's one call is in flight. */
-  readonly walkthroughPendingLabel?: string;
-  /** shown when the walkthrough's call failed (Retry renders beside it). */
-  readonly walkthroughFailedLabel?: string;
+  /**
+   * R7COPY.0 (REQ-COPY-4; ADR-130) — the record-composed "What it delivered" block's heading
+   * (replaces the retired model-written walkthrough's labels).
+   */
+  readonly deliveredHeading?: string;
+  /** the counts line, e.g. (counts) => "5 findings · 1 strength · 6 claims". */
+  readonly deliveredCountsLabel?: (counts: {
+    findings: number;
+    strengths: number;
+    claims: number;
+  }) => string;
+  /** a delivered link's label, e.g. (key) => "Dossier" / "Letter" / "Claims ledger". */
+  readonly deliveredLinkLabel?: (key: string) => string;
   /** the run report link label (§14.5). */
   readonly reportLabel?: string;
   /**
@@ -89,7 +96,8 @@ export interface RunCardHrefs {
   readonly note?: string;
   readonly report?: string;
   readonly deliverable?: string;
-  readonly retryWalkthrough?: string;
+  /** R7COPY.0 — resolve a delivered-summary link key ("dossier" | "letter" | "ledger") to its href. */
+  readonly deliveredLink?: (key: string) => string;
   readonly gate?: string;
 }
 
@@ -108,14 +116,39 @@ function PhaseRow({ phase, labels }: { phase: PhaseProgress; labels: RunCardLabe
         fontSize: "13px",
       }}
     >
-      <span aria-hidden="true" style={{ width: "14px", color: phase.status === "running" ? "var(--state-running)" : phase.status === "done" ? "var(--state-ready)" : "var(--shell-fg-faint)" }}>
+      <span
+        aria-hidden="true"
+        style={{
+          width: "14px",
+          color:
+            phase.status === "running"
+              ? "var(--state-running)"
+              : phase.status === "done"
+                ? "var(--state-ready)"
+                : "var(--shell-fg-faint)",
+        }}
+      >
         {GLYPH[phase.status]}
       </span>
       <span>{labels.phaseLabel(phase.key)}</span>
-      {off ? <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{labels.offLabel}</span> : null}
+      {off ? (
+        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{labels.offLabel}</span>
+      ) : null}
       {phase.counters?.map((c) => (
-        <span key={c.key} data-counter={c.key} style={{ color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>
-          {labels.counterLabel ? labels.counterLabel(c.key, c.value, c.of) : c.of != null ? `${c.value} / ${c.of}` : String(c.value)}
+        <span
+          key={c.key}
+          data-counter={c.key}
+          style={{
+            color: "var(--shell-fg-muted)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: "12px",
+          }}
+        >
+          {labels.counterLabel
+            ? labels.counterLabel(c.key, c.value, c.of)
+            : c.of != null
+              ? `${c.value} / ${c.of}`
+              : String(c.value)}
         </span>
       ))}
     </li>
@@ -142,7 +175,11 @@ function ActionButton({
   }
   if (action === "report" || action === "open_deliverable") {
     return href ? (
-      <a href={href} data-run-report={action === "report" ? "" : undefined} style={{ fontSize: "12px" }}>
+      <a
+        href={href}
+        data-run-report={action === "report" ? "" : undefined}
+        style={{ fontSize: "12px" }}
+      >
         {label}
       </a>
     ) : null;
@@ -158,7 +195,8 @@ function ActionButton({
 }
 
 /** The run card (§5.5): phase list ✓/◐/○ with orchestrator counters, credits vs cap, ETA band — plus the
- *  P1.05 state chrome (queue position, paused/waiting lines, deliverables, walkthrough, steering actions). */
+ *  P1.05 state chrome (queue position, paused/waiting lines, deliverables, the delivered block,
+ *  steering actions). */
 export function RunCard({
   view,
   labels,
@@ -177,16 +215,24 @@ export function RunCard({
 }): ReactNode {
   const actionHref = (a: RunCardAction): string | undefined => {
     switch (a) {
-      case "pause": return hrefs?.pause;
-      case "stop": return hrefs?.stop;
-      case "cancel": return hrefs?.cancel;
-      case "resume": return hrefs?.resume;
-      case "report": return hrefs?.report;
-      case "open_deliverable": return hrefs?.deliverable;
-      case "retry_walkthrough": return hrefs?.retryWalkthrough;
-      case "note": return hrefs?.note;
-      case "live_feed": return "#desk";
-      default: return undefined;
+      case "pause":
+        return hrefs?.pause;
+      case "stop":
+        return hrefs?.stop;
+      case "cancel":
+        return hrefs?.cancel;
+      case "resume":
+        return hrefs?.resume;
+      case "report":
+        return hrefs?.report;
+      case "open_deliverable":
+        return hrefs?.deliverable;
+      case "note":
+        return hrefs?.note;
+      case "live_feed":
+        return "#desk";
+      default:
+        return undefined;
     }
   };
   return (
@@ -207,44 +253,98 @@ export function RunCard({
       {view.deliveryLabel && labels.deliveryLabel ? (
         <p
           data-delivery-label={view.deliveryLabel}
-          style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: 600, color: "var(--state-running)" }}
+          style={{
+            margin: "0 0 10px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--state-running)",
+          }}
         >
           {labels.deliveryLabel(view.deliveryLabel)}
         </p>
       ) : null}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--shell-fg)" }}>{labels.stateLabel(view.state)}</span>
-        <span data-credits {...(view.provisional ? { "data-provisional": "true" } : {})} style={{ fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "8px",
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--shell-fg)" }}>
+          {labels.stateLabel(view.state)}
+        </span>
+        <span
+          data-credits
+          {...(view.provisional ? { "data-provisional": "true" } : {})}
+          style={{
+            fontSize: "12px",
+            color: "var(--shell-fg-muted)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           {labels.creditsLabel(view.spentCredits, view.capCredits, view.provisional)}
         </span>
       </div>
       {view.paused && labels.pausedLabel ? (
-        <p data-paused-line style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--state-running)" }}>
+        <p
+          data-paused-line
+          style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--state-running)" }}
+        >
           {labels.pausedLabel(view.done, view.total)}
         </p>
       ) : null}
       {!view.paused && view.waitingGate && labels.waitingGateLabel ? (
-        <p data-waiting-gate style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--state-running)" }}>
+        <p
+          data-waiting-gate
+          style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--state-running)" }}
+        >
           {hrefs?.gate ? (
-            <a href={hrefs.gate}>{labels.waitingGateLabel(view.waitingGate.kind, view.waitingGate.deadlineAt)}</a>
+            <a href={hrefs.gate}>
+              {labels.waitingGateLabel(view.waitingGate.kind, view.waitingGate.deadlineAt)}
+            </a>
           ) : (
             labels.waitingGateLabel(view.waitingGate.kind, view.waitingGate.deadlineAt)
           )}
         </p>
       ) : null}
-      {(view.state === "completed_partial" || view.state === "failed" || view.state === "cancelled") &&
+      {(view.state === "completed_partial" ||
+        view.state === "failed" ||
+        view.state === "cancelled") &&
       labels.partialLabel ? (
-        <p data-partial-line style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <p
+          data-partial-line
+          style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+        >
           {labels.partialLabel(view.done, view.total)}
         </p>
       ) : null}
       {view.queuePosition != null && labels.queueLabel ? (
-        <p data-queue-position style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <p
+          data-queue-position
+          style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+        >
           {labels.queueLabel(view.queuePosition)}
         </p>
       ) : null}
-      <div aria-hidden="true" style={{ height: "4px", borderRadius: "999px", background: "var(--shell-raised)", overflow: "hidden", marginBottom: "12px" }}>
-        <div data-credit-meter style={{ width: `${Math.round(view.creditFraction * 100)}%`, height: "100%", background: "var(--state-running)" }} />
+      <div
+        aria-hidden="true"
+        style={{
+          height: "4px",
+          borderRadius: "999px",
+          background: "var(--shell-raised)",
+          overflow: "hidden",
+          marginBottom: "12px",
+        }}
+      >
+        <div
+          data-credit-meter
+          style={{
+            width: `${Math.round(view.creditFraction * 100)}%`,
+            height: "100%",
+            background: "var(--state-running)",
+          }}
+        />
       </div>
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {view.phases.map((p) => (
@@ -252,42 +352,120 @@ export function RunCard({
         ))}
       </ul>
       {view.estimateCredits != null && labels.estimateLabel ? (
-        <p data-estimate style={{ marginTop: "10px", marginBottom: 0, fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+        <p
+          data-estimate
+          style={{
+            marginTop: "10px",
+            marginBottom: 0,
+            fontSize: "12px",
+            color: "var(--shell-fg-muted)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           {labels.estimateLabel(view.spentCredits, view.estimateCredits)}
         </p>
       ) : null}
       {view.queuedNotes > 0 && labels.queuedNotesLabel ? (
-        <p data-queued-notes style={{ marginTop: "6px", marginBottom: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <p
+          data-queued-notes
+          style={{
+            marginTop: "6px",
+            marginBottom: 0,
+            fontSize: "12px",
+            color: "var(--shell-fg-muted)",
+          }}
+        >
           {labels.queuedNotesLabel(view.queuedNotes)}
         </p>
       ) : null}
       {view.deliverables.length > 0 && labels.deliverableLabel ? (
-        <ul data-deliverables style={{ listStyle: "none", display: "flex", flexWrap: "wrap", gap: "6px", margin: "10px 0 0", padding: 0 }}>
+        <ul
+          data-deliverables
+          style={{
+            listStyle: "none",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "6px",
+            margin: "10px 0 0",
+            padding: 0,
+          }}
+        >
           {view.deliverables.map((d, i) => (
-            <li key={`${d.key}-${i}`} data-deliverable={d.key} style={{ fontSize: "12px", padding: "2px 8px", borderRadius: "999px", border: "1px solid var(--shell-border)", color: "var(--shell-fg-muted)" }}>
+            <li
+              key={`${d.key}-${i}`}
+              data-deliverable={d.key}
+              style={{
+                fontSize: "12px",
+                padding: "2px 8px",
+                borderRadius: "999px",
+                border: "1px solid var(--shell-border)",
+                color: "var(--shell-fg-muted)",
+              }}
+            >
               {labels.deliverableLabel!(d.key, d.count)}
             </li>
           ))}
         </ul>
       ) : null}
-      {view.walkthrough ? (
-        <div data-walkthrough={view.walkthrough.status} style={{ marginTop: "10px", fontSize: "13px" }}>
-          {labels.walkthroughHeading ? (
-            <p style={{ margin: "0 0 4px", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>
-              {labels.walkthroughHeading}
+      {/* R7COPY.0 (REQ-COPY-4) — the record-composed "What it delivered": the letter's verdict
+          line quoted verbatim (never rendered when the record has no verdict section), the
+          one-rule counts (REQ-SYNC-2), and the dossier/letter/ledger links. Nothing generated —
+          a stored `runs.walkthrough` never renders here (ADR-130). */}
+      {view.delivered ? (
+        <div data-delivered-summary style={{ marginTop: "10px", fontSize: "13px" }}>
+          {labels.deliveredHeading ? (
+            <p
+              style={{
+                margin: "0 0 4px",
+                fontSize: "12px",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--shell-fg-muted)",
+              }}
+            >
+              {labels.deliveredHeading}
             </p>
           ) : null}
-          {view.walkthrough.status === "ready" ? (
-            <p style={{ margin: 0, color: "var(--shell-fg)" }}>{view.walkthrough.text}</p>
-          ) : view.walkthrough.status === "failed" ? (
-            <p style={{ margin: 0, color: "var(--shell-fg-muted)", fontSize: "12px" }}>{labels.walkthroughFailedLabel ?? ""}</p>
-          ) : (
-            <p style={{ margin: 0, color: "var(--shell-fg-muted)", fontSize: "12px" }}>{labels.walkthroughPendingLabel ?? ""}</p>
-          )}
+          {view.delivered.verdict != null ? (
+            <p
+              data-delivered-verdict
+              style={{ margin: 0, color: "var(--shell-fg)", fontStyle: "italic" }}
+            >
+              “{view.delivered.verdict}”
+            </p>
+          ) : null}
+          {labels.deliveredCountsLabel ? (
+            <p
+              data-delivered-counts
+              style={{
+                margin: "4px 0 0",
+                color: "var(--shell-fg-muted)",
+                fontSize: "12px",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {labels.deliveredCountsLabel(view.delivered.counts)}
+            </p>
+          ) : null}
+          {view.delivered.links.length > 0 && hrefs?.deliveredLink && labels.deliveredLinkLabel ? (
+            <p data-delivered-links style={{ margin: "4px 0 0", fontSize: "12px" }}>
+              {view.delivered.links.map((key, i) => (
+                <span key={key}>
+                  {i > 0 ? " · " : ""}
+                  <a data-delivered-link={key} href={hrefs.deliveredLink!(key)}>
+                    {labels.deliveredLinkLabel!(key)}
+                  </a>
+                </span>
+              ))}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {view.refundedCredits > 0 && labels.refundLabel ? (
-        <p data-refund style={{ marginTop: "10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <p
+          data-refund
+          style={{ marginTop: "10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+        >
           {labels.refundLabel(view.refundedCredits)}
         </p>
       ) : null}
@@ -297,7 +475,16 @@ export function RunCard({
         </p>
       ) : null}
       {view.actions.length > 0 ? (
-        <div data-run-actions style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginTop: "12px" }}>
+        <div
+          data-run-actions
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            alignItems: "center",
+            marginTop: "12px",
+          }}
+        >
           {view.actions
             .filter((a) => a !== "note")
             .map((a) => (
@@ -306,12 +493,25 @@ export function RunCard({
         </div>
       ) : null}
       {view.actions.includes("note") && hrefs?.note ? (
-        <form method="post" action={hrefs.note} data-run-note style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
+        <form
+          method="post"
+          action={hrefs.note}
+          data-run-note
+          style={{ display: "flex", gap: "6px", marginTop: "10px" }}
+        >
           <input
             type="text"
             name="text"
             placeholder={labels.notePlaceholder ?? ""}
-            style={{ flex: 1, fontSize: "12px", padding: "4px 8px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)" }}
+            style={{
+              flex: 1,
+              fontSize: "12px",
+              padding: "4px 8px",
+              borderRadius: "8px",
+              border: "1px solid var(--shell-border)",
+              background: "var(--shell-raised)",
+              color: "var(--shell-fg)",
+            }}
           />
           <button type="submit" style={{ fontSize: "12px" }}>
             {labels.actionLabel?.("note") ?? "note"}
@@ -324,7 +524,20 @@ export function RunCard({
       {/* P1.09 — the permanent decision record (§6.4 item 8): one line per resolved approval.
           `view` crosses a cast DTO boundary (timeline.tsx) — a pre-P1.09 card may lack `decisions`. */}
       {(view.decisions?.length ?? 0) > 0 && labels.decisionLabel ? (
-        <ul data-run-decisions style={{ listStyle: "none", margin: "10px 0 0", padding: "8px 0 0", borderTop: "1px solid var(--shell-border)", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+        <ul
+          data-run-decisions
+          style={{
+            listStyle: "none",
+            margin: "10px 0 0",
+            padding: "8px 0 0",
+            borderTop: "1px solid var(--shell-border)",
+            fontSize: "12px",
+            color: "var(--shell-fg-muted)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+          }}
+        >
           {view.decisions.map((d) => (
             <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
               {labels.decisionLabel!(d)}
@@ -369,22 +582,55 @@ export function LiveFeed({
 }): ReactNode {
   return (
     <section data-live-feed="true" data-density={density} aria-label={labels.heading}>
-      <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>
+      <h3
+        style={{
+          fontSize: "13px",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--shell-fg-muted)",
+        }}
+      >
         {labels.heading} · {labels.densityLabel(density)}
       </h3>
-      <div role="group" aria-label={labels.heading} style={{ display: "flex", gap: "8px", margin: "4px 0" }}>
+      <div
+        role="group"
+        aria-label={labels.heading}
+        style={{ display: "flex", gap: "8px", margin: "4px 0" }}
+      >
         {(["summary", "details", "verbose"] as const).map((d) => (
           // Verbose lives behind the Advanced disclosure (§5.5) — data-tier hides it until ⌘⇧M.
-          <button key={d} type="button" data-feed-density={d} {...(d === "verbose" ? { "data-tier": "advanced" } : {})} aria-pressed={d === density} style={{ fontSize: "11px" }}>
+          <button
+            key={d}
+            type="button"
+            data-feed-density={d}
+            {...(d === "verbose" ? { "data-tier": "advanced" } : {})}
+            aria-pressed={d === density}
+            style={{ fontSize: "11px" }}
+          >
             {labels.densityLabel(d)}
           </button>
         ))}
       </div>
       <ul data-feed-rows style={{ listStyle: "none", margin: "8px 0 0", padding: 0 }}>
         {rows.map((r, i) => (
-          <li key={i} data-feed-event={r.type} {...(r.density ? { "data-feed-density-row": r.density } : {})} style={{ display: "flex", gap: "10px", padding: "4px 0", fontSize: "13px", color: "var(--shell-fg)" }}>
+          <li
+            key={i}
+            data-feed-event={r.type}
+            {...(r.density ? { "data-feed-density-row": r.density } : {})}
+            style={{
+              display: "flex",
+              gap: "10px",
+              padding: "4px 0",
+              fontSize: "13px",
+              color: "var(--shell-fg)",
+            }}
+          >
             <span>{r.label}</span>
-            {r.detail ? <span style={{ color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>{r.detail}</span> : null}
+            {r.detail ? (
+              <span style={{ color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+                {r.detail}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>

@@ -59,8 +59,8 @@ import type {
   RubricRowInput,
   VoiceFactsPanel,
   VoiceUpdateRoute,
-  RunCardInput,
   RunCardView,
+  RunSummaryView,
   RoundSummaryPart,
   RunReportView,
   RunReportAdvancedView,
@@ -115,7 +115,11 @@ export interface ProjectRow {
    * PRB.21 — the project's ONE non-terminal run when it has one (D-PRB.20-1: at most one — the create
    * route 409s a second). The run sheet renders its in-progress state + links here instead of Run.
    */
-  readonly activeRun?: { readonly runId: string; readonly state: string; readonly workflow?: string } | null;
+  readonly activeRun?: {
+    readonly runId: string;
+    readonly state: string;
+    readonly workflow?: string;
+  } | null;
   /** PRB.10 — the linked voice's chip (persona + the shared status pill); null ⇒ ad-hoc (§9.6). */
   readonly voice?: {
     readonly personaId: string;
@@ -198,7 +202,11 @@ export interface ProtocolCardDto {
     }[];
     readonly prompt: string;
   };
-  readonly lengthNorms: { readonly unit: string; readonly default?: number; readonly apparatus: string };
+  readonly lengthNorms: {
+    readonly unit: string;
+    readonly default?: number;
+    readonly apparatus: string;
+  };
   readonly entryDefault: string;
   /** the card's labelled typical length the typical Review figure is priced at (§5.3). */
   readonly typicalWords: number;
@@ -241,7 +249,11 @@ export interface SignupRequestDto {
    * (a carried file reads `draft`), `src` the acquisition label. Persisted once at creation;
    * `GET /showcase` returns it for the `GET /app` precedence redirect.
    */
-  readonly intent?: { readonly entry?: "scratch" | "outline" | "draft"; readonly src?: string; readonly held?: boolean };
+  readonly intent?: {
+    readonly entry?: "scratch" | "outline" | "draft";
+    readonly src?: string;
+    readonly held?: boolean;
+  };
 }
 
 /**
@@ -258,7 +270,12 @@ export interface EstimateRequestDto {
   readonly workflow: string;
   readonly rigor: "quick" | "standard" | "full_board";
   readonly modelTier: "base" | "balanced" | "frontier";
-  readonly inputs?: Readonly<{ words?: number; claims?: number; findings?: number; movesWithResearch?: number }>;
+  readonly inputs?: Readonly<{
+    words?: number;
+    claims?: number;
+    findings?: number;
+    movesWithResearch?: number;
+  }>;
   readonly variant?: string;
   readonly draftSha?: string;
   readonly refine?: boolean;
@@ -323,7 +340,11 @@ export interface CreateRunDto {
    * validates the shape, refuses the field off the memo protocol, mounts the text read-only in the
    * sandbox, and freezes each url's host into the run's `userSourceDomains` URL policy.
    */
-  readonly userSources?: readonly { readonly name: string; readonly text?: string; readonly url?: string }[];
+  readonly userSources?: readonly {
+    readonly name: string;
+    readonly text?: string;
+    readonly url?: string;
+  }[];
   /** the reader's correspondence kind + variant slot (the corr lock discriminator). */
   readonly corrKind?: string;
   readonly corrK?: number;
@@ -423,7 +444,10 @@ export interface RunSheetContextDto {
    * (`cost_card_cells` → `"<rigor>|<modelTier>"` → minute bands; migration 0050). `null`/absent ⇒
    * the shared per-phase prior governs.
    */
-  readonly durations?: Record<string, { readonly lowMinutes: number; readonly highMinutes: number }> | null;
+  readonly durations?: Record<
+    string,
+    { readonly lowMinutes: number; readonly highMinutes: number }
+  > | null;
   readonly headDraft: {
     readonly id: string;
     readonly n: number;
@@ -431,7 +455,11 @@ export interface RunSheetContextDto {
     readonly words: number | null;
     readonly sha256: string | null;
   } | null;
-  readonly sections: readonly { readonly ref: string; readonly title: string; readonly words: number }[];
+  readonly sections: readonly {
+    readonly ref: string;
+    readonly title: string;
+    readonly words: number;
+  }[];
   readonly openObligations: number;
   readonly reviewScopeLine: string | null;
   readonly reviseScopeLine: string | null;
@@ -444,7 +472,12 @@ export interface RunSheetContextDto {
     readonly modelTier: string;
   } | null;
   readonly dontAskUnder: number;
-  readonly activeRuns: readonly { readonly id: string; readonly workflow: string; readonly state: string; readonly scope: unknown }[];
+  readonly activeRuns: readonly {
+    readonly id: string;
+    readonly workflow: string;
+    readonly state: string;
+    readonly scope: unknown;
+  }[];
   readonly blockedBy: { readonly runId: string; readonly state: string } | null;
 }
 
@@ -510,7 +543,11 @@ export interface BulkPreviewRowDto {
 export interface BulkPreviewDto {
   readonly action: "apply_notes" | "defer_minor" | "accept_section";
   readonly rows: readonly BulkPreviewRowDto[];
-  readonly skipped: readonly { readonly findingId: string; readonly title: string; readonly reason: string }[];
+  readonly skipped: readonly {
+    readonly findingId: string;
+    readonly title: string;
+    readonly reason: string;
+  }[];
   readonly total: number;
 }
 
@@ -595,13 +632,7 @@ export interface GateCardDto extends GateCardWire {
 /** A gate decision the card POSTs (§6.4 item 1's five actions + hold). */
 export interface GateDecisionDto {
   readonly action:
-    | "approve"
-    | "approve_autonomous"
-    | "keep_planning"
-    | "edit"
-    | "wait"
-    | "stop"
-    | "hold";
+    "approve" | "approve_autonomous" | "keep_planning" | "edit" | "wait" | "stop" | "hold";
   /** the Edit-guidance / gate-note text captured with the decision. */
   readonly guidance?: string;
   /** "…and remember this for this project" → a standing guidance rule (REQ-GATE-10). */
@@ -798,7 +829,11 @@ export interface VersionRailDto {
   readonly workingN: number | null;
   /** the project-level ⚑ chip — blocking/major obligations only (REQ-OBJ-6). */
   readonly chip: { readonly open: number; readonly addressed: number };
-  readonly outline: { readonly artifactId: string; readonly createdAt: string | null; readonly words: number | null } | null;
+  readonly outline: {
+    readonly artifactId: string;
+    readonly createdAt: string | null;
+    readonly words: number | null;
+  } | null;
   readonly drafts: readonly {
     readonly draftId: string;
     readonly n: number;
@@ -929,7 +964,8 @@ export interface DossierDto {
   readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
   readonly addressedObligations: number;
-  readonly runCard: RunCardInput;
+  /** R7COPY.0 (REQ-SYNC-1) — the ONE run summary the dossier's card mounts (replaces `runCard`). */
+  readonly runSummary: RunSummaryView;
   readonly letterTitle: string;
   readonly letterSections: readonly DossierLetterSectionDto[];
   readonly claims: readonly Claim[];
@@ -1127,7 +1163,11 @@ export interface ShowcaseEntryDto {
   } | null;
   /** the intent POST /signup recorded (`user.signup_intent`; null ⇒ none carried). `held` marks a
    *  device-local drop-zone hold the /app redirect must route to the claim form — a flag, never bytes. */
-  readonly intent: { readonly entry?: "scratch" | "outline" | "draft"; readonly src?: string; readonly held?: boolean } | null;
+  readonly intent: {
+    readonly entry?: "scratch" | "outline" | "draft";
+    readonly src?: string;
+    readonly held?: boolean;
+  } | null;
 }
 
 /** POST /analytics/acquisition — the §3.5 funnel mint (session-bound identity). */
@@ -1227,7 +1267,12 @@ export interface BillingPlansDto {
   readonly plans: Record<string, BillingPlanDto>;
   readonly trial: {
     readonly windowDays: number;
-    readonly entitlement: { readonly kind: string; readonly wordCap: number; readonly rigor: string; readonly modelTier: string };
+    readonly entitlement: {
+      readonly kind: string;
+      readonly wordCap: number;
+      readonly rigor: string;
+      readonly modelTier: string;
+    };
     readonly pocketCredits: number;
     readonly upgradePromoCredits: number;
     /** HOT.1 — null while `trial.firstReviewIncluded` is hidden. */
@@ -1235,7 +1280,11 @@ export interface BillingPlansDto {
     readonly postTrialNote: string;
     readonly eligibilityLine: string;
   };
-  readonly topUpPacks: readonly { readonly id: string; readonly usd: number; readonly credits: number }[];
+  readonly topUpPacks: readonly {
+    readonly id: string;
+    readonly usd: number;
+    readonly credits: number;
+  }[];
   readonly autoReloadDefaults: unknown;
 }
 
@@ -1277,7 +1326,12 @@ export interface BillingSubscriptionDto {
   } | null;
   readonly trial: {
     readonly state: string | null;
-    readonly entitlement: { readonly id: string; readonly state: string; readonly wordCap: number; readonly expiresAt: string | null } | null;
+    readonly entitlement: {
+      readonly id: string;
+      readonly state: string;
+      readonly wordCap: number;
+      readonly expiresAt: string | null;
+    } | null;
   };
   readonly autoReload: {
     readonly enabled: boolean;
@@ -1320,7 +1374,11 @@ export interface UsageAccountDto {
   readonly periodStart: string | null;
   readonly periodEnd: string | null;
   readonly warnings: readonly string[];
-  readonly nextExpiry: { readonly bucket: string; readonly credits: number; readonly at: string } | null;
+  readonly nextExpiry: {
+    readonly bucket: string;
+    readonly credits: number;
+    readonly at: string;
+  } | null;
 }
 
 /** GET /billing/usage/project/:id — the §14.5 level-2 project rollup. */
@@ -1399,7 +1457,11 @@ export interface VoiceStatusDto {
   readonly action: "build" | "open_run" | "update_voice" | "test" | "rebuild" | "none";
   readonly detail: {
     readonly seedChanged: boolean;
-    readonly samples: { readonly added: number; readonly removed: number; readonly changed: number };
+    readonly samples: {
+      readonly added: number;
+      readonly removed: number;
+      readonly changed: number;
+    };
     readonly growthRatio: number | null;
     readonly ageDays: number | null;
   };
@@ -1821,7 +1883,11 @@ export interface IngestSyncReportDto {
   readonly changed: number;
   readonly newVersions: number;
   readonly skippedUnchanged: number;
-  readonly errors: readonly { readonly itemId: string | null; readonly message: string; readonly remedy: string }[];
+  readonly errors: readonly {
+    readonly itemId: string | null;
+    readonly message: string;
+    readonly remedy: string;
+  }[];
 }
 
 /** confirm/sync responses: `{queued:true}` in prod, `{report}` under the inline test seam. */
@@ -1992,7 +2058,11 @@ export interface AiUseStatementDto {
   /** generated sentences — recomputed from run rows on every read; never user-editable. */
   readonly generated: string[];
   /** the author's appended sentences (oldest first). */
-  readonly additions: { readonly id: string; readonly sentence: string; readonly createdAt: string }[];
+  readonly additions: {
+    readonly id: string;
+    readonly sentence: string;
+    readonly createdAt: string;
+  }[];
   /** the standalone statement rendered to markdown (title + sentences + additions + generated-on line). */
   readonly markdown: string;
   readonly openObligations: number;
@@ -2297,7 +2367,11 @@ export interface ChatPanelDto {
   readonly activeThreadId: string;
   readonly turns: readonly ChatTurnRowDto[];
   readonly messages: readonly ChatMessageDto[];
-  readonly pins: { readonly pins: readonly ChatPinDto[]; readonly footprint: number; readonly cap: number };
+  readonly pins: {
+    readonly pins: readonly ChatPinDto[];
+    readonly footprint: number;
+    readonly cap: number;
+  };
   readonly sources: readonly ChatSourceDto[];
   /** a non-chat live run id — while set the assistant reads committed artifacts only (REQ-CHAT-20). */
   readonly liveRun: string | null;
@@ -2341,7 +2415,12 @@ export interface ChatTurnStatusDto {
     readonly workspaceSpent?: number;
     readonly tier: string;
   };
-  readonly activity: { readonly searches: number; readonly fetches: number; readonly artifactReads: number; readonly sourcesRead: number };
+  readonly activity: {
+    readonly searches: number;
+    readonly fetches: number;
+    readonly artifactReads: number;
+    readonly sourcesRead: number;
+  };
   readonly result: { readonly turnResultSha: string } | null;
 }
 
@@ -2457,7 +2536,11 @@ export interface OutlineDto {
       readonly scope?: string;
       readonly runId?: string;
       readonly generatedAt?: string;
-      readonly urls?: readonly { readonly url: string; readonly fetchedAt?: string; readonly unverified?: boolean }[];
+      readonly urls?: readonly {
+        readonly url: string;
+        readonly fetchedAt?: string;
+        readonly unverified?: boolean;
+      }[];
     };
     readonly spine: readonly string[];
     readonly sections: readonly {
@@ -2567,7 +2650,11 @@ export interface FigureCardDto {
     readonly svgDark: string | null;
     readonly tableSource: string | null;
   };
-  readonly render: { readonly lightAvailable: boolean; readonly darkAvailable: boolean; readonly pngAvailable: boolean };
+  readonly render: {
+    readonly lightAvailable: boolean;
+    readonly darkAvailable: boolean;
+    readonly pngAvailable: boolean;
+  };
   readonly readiness: { readonly ok: boolean; readonly missing: readonly ("alt" | "sourceLine")[] };
 }
 
@@ -2596,7 +2683,8 @@ export interface FigureRunFactsDto {
 
 /** A type-chip edit (POST …/spec-edit): the 0-cr mark change. */
 export interface FigureSpecEditDto {
-  readonly mark: "bar" | "line" | "point" | "area" | "rect" | "tick" | "arc" | "rule" | "circle" | "square";
+  readonly mark:
+    "bar" | "line" | "point" | "area" | "rect" | "tick" | "arc" | "rule" | "circle" | "square";
 }
 
 /** A propose request (POST …/proposals): the draft + the optional after-block anchor. */
@@ -2672,16 +2760,27 @@ export interface ApiClient {
    */
   signup(req: SignupRequestDto, init?: RequestInitLite): Promise<SignupResultDto>;
   /** The stateless, cached estimate (REQ-SPEC-16) — creates no run row and emits `run.estimated`. */
-  estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
+  estimate(
+    projectId: string,
+    req: EstimateRequestDto,
+    init?: RequestInitLite,
+  ): Promise<EstimateDto>;
   /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
   createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto>;
   /**
    * P1.06 — `GET /projects/:id/run-sheet-context` (§5.6): the ONE read the sheet's GET consumes (head
    * draft, derived sections, obligations, entitlement, consent pref, `blockedBy` under the P1.06 ruling).
    */
-  runSheetContext(projectId: string, args?: { workflow?: string; scope?: string }, init?: RequestInitLite): Promise<RunSheetContextDto>;
+  runSheetContext(
+    projectId: string,
+    args?: { workflow?: string; scope?: string },
+    init?: RequestInitLite,
+  ): Promise<RunSheetContextDto>;
   /** P1.06 (REQ-BILL-4) — `PUT /settings/consent`: the per-user "don't ask under N credits" pref (≤1,000). */
-  setConsentPref(dontAskUnder: number, init?: RequestInitLite): Promise<{ ok: true; dontAskUnder: number }>;
+  setConsentPref(
+    dontAskUnder: number,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; dontAskUnder: number }>;
   // ---- P1.04 — project home: create + row actions + search + grouping (§5.2/§5.3) ----
   /** `POST /projects` — the §5.3 create (entry + picks + the adopted quarantined conversion). */
   createProject(req: CreateProjectDto, init?: RequestInitLite): Promise<CreatedProjectDto>;
@@ -2699,7 +2798,11 @@ export interface ApiClient {
   restoreProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
   /** `GET /projects/search?q=` — the server-side index over title/Voice/venue/materialized markdown.
    *  P1.06: `projectId` narrows the hits to one project (the ⌘K palette's "Go to" section). */
-  searchProjects(q: string, init?: RequestInitLite, opts?: { projectId?: string }): Promise<ProjectSearchHitDto[]>;
+  searchProjects(
+    q: string,
+    init?: RequestInitLite,
+    opts?: { projectId?: string },
+  ): Promise<ProjectSearchHitDto[]>;
   /** The per-user grouping preference (GET /settings/project-grouping). */
   getProjectGrouping(init?: RequestInitLite): Promise<ProjectGroupByDto>;
   /** Set the per-user grouping preference. */
@@ -2717,7 +2820,11 @@ export interface ApiClient {
   ): Promise<DispositionDto>;
   /** P1.07 — Apply (REQ-SPEC-6): splice the finding's suggestion into the working head + accept·applied.
    *  `ApiError(422)` carries `reason` (no_suggestion/already_applied/unanchored/anchor_lost); 409 = frozen. */
-  applyFinding(projectId: string, findingId: string, init?: RequestInitLite): Promise<ApplyResultDto>;
+  applyFinding(
+    projectId: string,
+    findingId: string,
+    init?: RequestInitLite,
+  ): Promise<ApplyResultDto>;
   /** P1.07 — promote a reconciliation-rejected second-read finding to the main list (REQ-IDE-26). */
   promoteFinding(
     projectId: string,
@@ -2737,7 +2844,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true; obligationId: string }>;
   /** P1.07 — the shared deep link: resolve a finding to its dossier's run + anchor. */
-  resolveFinding(projectId: string, findingId: string, init?: RequestInitLite): Promise<FindingResolveDto>;
+  resolveFinding(
+    projectId: string,
+    findingId: string,
+    init?: RequestInitLite,
+  ): Promise<FindingResolveDto>;
   /** P1.07 — the consolidated bulk preview (§5.7): checklist + spliced diffs + obligations, before writes. */
   previewBulkFindings(
     projectId: string,
@@ -2767,11 +2878,21 @@ export interface ApiClient {
   /** The Decisions list — open `decision_requests` for the project (§5.7; beta Inbox stand-in). */
   listDecisions(projectId: string, init?: RequestInitLite): Promise<DecisionItemDto[]>;
   /** Answer a Decisions row (the row's option, or "dismiss"). */
-  answerDecision(projectId: string, decisionId: string, answer: string, init?: RequestInitLite): Promise<void>;
+  answerDecision(
+    projectId: string,
+    decisionId: string,
+    answer: string,
+    init?: RequestInitLite,
+  ): Promise<void>;
   /** The open gate cards for a project's runs (§6.4; the Needs-you surface feed). */
   listGates(projectId: string, init?: RequestInitLite): Promise<GateCardDto[]>;
   /** A gate card's decision (approve / approve_autonomous / keep_planning / wait / stop / hold). */
-  decideGate(projectId: string, gateId: string, req: GateDecisionDto, init?: RequestInitLite): Promise<void>;
+  decideGate(
+    projectId: string,
+    gateId: string,
+    req: GateDecisionDto,
+    init?: RequestInitLite,
+  ): Promise<void>;
   /** A presence/reading ping for the gate's presence timer (§6.4 item 2; REQ-SPEC-18). */
   recordGateActivity(
     projectId: string,
@@ -2784,7 +2905,11 @@ export interface ApiClient {
   /** The project's approval-deadline overrides (§6.4 R3; the approve_triage 24-h opt-in lives here). */
   getApprovalOverrides(projectId: string, init?: RequestInitLite): Promise<ApprovalOverridesDto>;
   /** Set the project's approval-deadline overrides — validated server-side (REQ-SPEC-1 rules). */
-  setApprovalOverrides(projectId: string, overrides: ApprovalOverridesDto, init?: RequestInitLite): Promise<void>;
+  setApprovalOverrides(
+    projectId: string,
+    overrides: ApprovalOverridesDto,
+    init?: RequestInitLite,
+  ): Promise<void>;
   // ---- P1.09 — the approval-policy surface (§6.4 R3; REQ-SPEC-1) ----
   /** `GET /projects/:id/settings/approvals` — policy + overrides + R3 defaults + standing guidance. */
   getApprovalSettings(projectId: string, init?: RequestInitLite): Promise<ApprovalSettingsDto>;
@@ -2808,7 +2933,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true; guidanceId: string }>;
   /** `POST /projects/:id/guidance/:gid/retire` — standing guidance retires, never deletes. */
-  retireGuidance(projectId: string, guidanceId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  retireGuidance(
+    projectId: string,
+    guidanceId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
   /** `GET /settings/explainers` — the user's dismissed one-time inline explainers. */
   getExplainers(init?: RequestInitLite): Promise<ExplainersDto>;
   /** `POST /settings/explainers/:name/dismiss` — mark the one-time explainer seen (§5.11/§6.4). */
@@ -2816,7 +2945,11 @@ export interface ApiClient {
   /** The delivered-review dossier (§5.7; PRB.04's live binding) — assembled server-side from delivered rows. */
   getDossier(projectId: string, runId: string, init?: RequestInitLite): Promise<DossierDto>;
   /** The server-joined What-changed read for a delivered response (§5.8; PRB.06). */
-  getWhatChanged(projectId: string, responseId: string, init?: RequestInitLite): Promise<WhatChangedDto>;
+  getWhatChanged(
+    projectId: string,
+    responseId: string,
+    init?: RequestInitLite,
+  ): Promise<WhatChangedDto>;
   /** A comment on a changed hunk → a `Guidance` row the next Revise consumes (§6.5). */
   commentOnHunk(
     projectId: string,
@@ -2826,9 +2959,17 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<HunkCommentDto>;
   /** The editor document: markdown + the §6.3 run lock + the projected findings rail (PRB.07). */
-  getEditorDoc(projectId: string, draftId: string, init?: RequestInitLite & { opts?: EditorDocOptions }): Promise<EditorDocDto>;
+  getEditorDoc(
+    projectId: string,
+    draftId: string,
+    init?: RequestInitLite & { opts?: EditorDocOptions },
+  ): Promise<EditorDocDto>;
   /** P1.02 — resolve a `/v/:n|working` ref to its draft (for the Page's versioned routes). */
-  resolveEditorDraft(projectId: string, v: string, init?: RequestInitLite): Promise<EditorResolveDto>;
+  resolveEditorDraft(
+    projectId: string,
+    v: string,
+    init?: RequestInitLite,
+  ): Promise<EditorResolveDto>;
   /** P1.02 — the project's stored CSL-JSON bibliography. */
   getBibliography(projectId: string, init?: RequestInitLite): Promise<BibliographyDto>;
   /** P1.02 — import a bibliography (BibTeX / CSL-JSON / Zotero export text) into the project's items. */
@@ -2838,12 +2979,21 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<BibliographyImportDto>;
   /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
-  getArtifactPage(projectId: string, artifactId: string, init?: RequestInitLite): Promise<EditorDocDto>;
+  getArtifactPage(
+    projectId: string,
+    artifactId: string,
+    init?: RequestInitLite,
+  ): Promise<EditorDocDto>;
   // ---- P1.08 — §5.8 versions/compare/restore + the §5.13 Files pane ----
   /** The version rail read model (every origin, flags, the ⚑ chip). */
   getVersions(projectId: string, init?: RequestInitLite): Promise<VersionRailDto>;
   /** The generalized compare: any draft pair (`m` may be `working`), server-projected. */
-  getVersionDiff(projectId: string, n: string, m: string, init?: RequestInitLite): Promise<VersionDiffDto>;
+  getVersionDiff(
+    projectId: string,
+    n: string,
+    m: string,
+    init?: RequestInitLite,
+  ): Promise<VersionDiffDto>;
   /** A comment on a compare hunk → `Guidance{source:'inline_comment'}` for the next Revise. */
   commentOnCompareHunk(
     projectId: string,
@@ -2856,7 +3006,11 @@ export interface ApiClient {
   /** The §5.13 Files pane — typed sections; default rows carry no I/H kinds. */
   getFiles(projectId: string, init?: RequestInitLite): Promise<FilesDto>;
   /** The §5.8-grouped restore points for a draft's live doc. */
-  listRestorePoints(projectId: string, draftId: string, init?: RequestInitLite): Promise<RestorePointsDto>;
+  listRestorePoints(
+    projectId: string,
+    draftId: string,
+    init?: RequestInitLite,
+  ): Promise<RestorePointsDto>;
   /** The point's reconstructed content diffed against the current head (all-Unlinked view). */
   previewRestorePoint(
     projectId: string,
@@ -2879,15 +3033,31 @@ export interface ApiClient {
     markdown: string,
     init?: RequestInitLite & {
       /** P1.02 — the live provenance capture the Page sends with the save. */
-      meta?: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] };
+      meta?: {
+        provenanceSpans?: { blockId: string; source: unknown }[];
+        agentSpans?: { blockId: string; from: number; to: number }[];
+      };
     },
   ): Promise<EditorSaveDto>;
   /** The one note field → a Guidance row the next Revise consumes (REQ-DATA-41's comment path). */
-  postEditorNote(projectId: string, draftId: string, text: string, init?: RequestInitLite): Promise<EditorNoteDto>;
+  postEditorNote(
+    projectId: string,
+    draftId: string,
+    text: string,
+    init?: RequestInitLite,
+  ): Promise<EditorNoteDto>;
   /** "Cancel run to edit" — cancels the run holding the head (§6.3 banner release). */
-  cancelEditorRun(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorCancelRunDto>;
+  cancelEditorRun(
+    projectId: string,
+    draftId: string,
+    init?: RequestInitLite,
+  ): Promise<EditorCancelRunDto>;
   /** "Revise using your edits" (REQ-DATA-26): review of vN + base v(N+1); lost quotes auto-mooted. */
-  reviseWithEdits(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorReviseDto>;
+  reviseWithEdits(
+    projectId: string,
+    draftId: string,
+    init?: RequestInitLite,
+  ): Promise<EditorReviseDto>;
   /** PRB.08 — the account's spendable balance + suspension + the beta Payment Link (§14.6). */
   getBillingBalance(init?: RequestInitLite): Promise<BillingBalanceDto>;
   /** PRB.08 — record `credits.exhausted_prompt{action_taken}` when the exhaustion panel resolves (REQ-BETA-12). */
@@ -2933,7 +3103,11 @@ export interface ApiClient {
   /** Cancel = cancel_at_period_end — the plan runs to the paid-through date (§14.6). */
   cancelSubscription(init?: RequestInitLite): Promise<{ applied: boolean }>;
   /** Change plan: an upgrade applies now; a downgrade schedules to period end. */
-  changePlan(tier: string, cycle?: "monthly" | "annual", init?: RequestInitLite): Promise<{ applied: "now" | "scheduled" } | { error: string }>;
+  changePlan(
+    tier: string,
+    cycle?: "monthly" | "annual",
+    init?: RequestInitLite,
+  ): Promise<{ applied: "now" | "scheduled" } | { error: string }>;
   /** The checkout-return poll (webhook lag ≤30 s, then the email fallback). */
   getCheckoutSession(sessionId: string, init?: RequestInitLite): Promise<CheckoutStatusDto>;
   /** Opt in/out of auto-reload — the only unattended charge path (REQ-BILL-17). */
@@ -2959,7 +3133,10 @@ export interface ApiClient {
   /** The per-user app theme (dark | light | auto — dark default; §5.9 theme policy). */
   getTheme(init?: RequestInitLite): Promise<ThemeSettingsDto>;
   /** Set the app theme (the Settings control; the IDE's light/dark/auto cycle posts here). */
-  setTheme(appTheme: ThemeSettingsDto["appTheme"], init?: RequestInitLite): Promise<ThemeSettingsDto>;
+  setTheme(
+    appTheme: ThemeSettingsDto["appTheme"],
+    init?: RequestInitLite,
+  ): Promise<ThemeSettingsDto>;
   /** Set a project's paper pin (⌘⇧L posts here — 'light' | 'follow' | 'dark'). */
   setPaperTheme(
     projectId: string,
@@ -2975,15 +3152,27 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true }>;
   /** POST /settings/account/email — start the magic-link email change (link rides `auth.mail`). */
-  requestEmailChange(email: string, init?: RequestInitLite): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
+  requestEmailChange(
+    email: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
   /** POST /settings/account/email/confirm — consume the emailed token (proves the new mailbox). */
-  confirmEmailChange(token: string, init?: RequestInitLite): Promise<{ ok: true; email: string } | { error: string }>;
+  confirmEmailChange(
+    token: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; email: string } | { error: string }>;
   /** POST /settings/sessions/revoke — kill one active session server-side. */
-  revokeSession(sessionId: string, init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
+  revokeSession(
+    sessionId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true } | { error: string }>;
   /** GET /settings/preferences — the account-defaults blob + consent threshold + app theme. */
   getPreferencesSettings(init?: RequestInitLite): Promise<PreferencesSettingsDto>;
   /** PUT /settings/preferences — merge a validated UserPrefs patch (unknown keys 422). */
-  updatePreferences(patch: UserPrefs, init?: RequestInitLite): Promise<{ ok: true; prefs: UserPrefs }>;
+  updatePreferences(
+    patch: UserPrefs,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; prefs: UserPrefs }>;
   /** GET /settings/data — privacy toggles, the support-access grant + visible log, pending deletion. */
   getDataSettings(init?: RequestInitLite): Promise<DataSettingsDto>;
   /** POST /settings/support-access — grant/revoke the 72-h support grant (REQ-VIS-11). */
@@ -3000,13 +3189,18 @@ export interface ApiClient {
   requestAccountDeletion(
     confirmation: string,
     init?: RequestInitLite,
-  ): Promise<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>;
+  ): Promise<
+    { ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }
+  >;
   /** POST /settings/account/delete/cancel — cancel inside the grace window. */
   cancelAccountDeletion(init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
   /** GET /settings/integrations — the uniform provider cards (P1.15's connections). */
   getIntegrationsSettings(init?: RequestInitLite): Promise<IntegrationsSettingsDto>;
   /** POST /settings/integrations/:id/disconnect — drops the credential now; samples stay. */
-  disconnectIntegration(connectionId: string, init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
+  disconnectIntegration(
+    connectionId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true } | { error: string }>;
   /** GET /projects/:id/settings — the §4.2 project-settings read. */
   getProjectSettings(projectId: string, init?: RequestInitLite): Promise<ProjectSettingsDto>;
   /** PUT /projects/:id/settings — the REQ-GENRE-2 safe-field patch. */
@@ -3046,7 +3240,11 @@ export interface ApiClient {
   /** The voice detail read: status + samples + build history + profile artifacts. */
   getVoice(personaId: string, init?: RequestInitLite): Promise<VoiceDetailDto>;
   /** Upload/paste a sample through the §9.5 model (REQ-INGEST-1); returns the refreshed corpus words. */
-  addVoiceSample(personaId: string, req: AddVoiceSampleDto, init?: RequestInitLite): Promise<AddedVoiceSampleDto>;
+  addVoiceSample(
+    personaId: string,
+    req: AddVoiceSampleDto,
+    init?: RequestInitLite,
+  ): Promise<AddedVoiceSampleDto>;
   /** The per-item include/omit toggle (REQ-INGEST-4). */
   setVoiceSampleIncluded(
     personaId: string,
@@ -3055,23 +3253,44 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ status: VoiceStatusDto | null }>;
   /** The seed editor's save — recomputes the J9 hash and flips the pill live (§9.3; REQ-PERSONA-4). */
-  saveVoiceSeed(personaId: string, req: SaveVoiceSeedDto, init?: RequestInitLite): Promise<SavedVoiceSeedDto>;
+  saveVoiceSeed(
+    personaId: string,
+    req: SaveVoiceSeedDto,
+    init?: RequestInitLite,
+  ): Promise<SavedVoiceSeedDto>;
   /** The ≤500 ms tier estimate over the current included corpus (REQ-PERSONA-3). */
-  estimateVoice(personaId: string, tier: "quick" | "full", init?: RequestInitLite): Promise<VoiceEstimateDto>;
+  estimateVoice(
+    personaId: string,
+    tier: "quick" | "full",
+    init?: RequestInitLite,
+  ): Promise<VoiceEstimateDto>;
   /** "Create and build" — a `profile_voice{tier}` run (§9.2 item 3). */
   buildVoice(personaId: string, req: BuildVoiceDto, init?: RequestInitLite): Promise<BuiltVoiceDto>;
   /** Cancel an open build run. */
   cancelVoiceRun(runId: string, init?: RequestInitLite): Promise<{ runId: string; state: string }>;
   /** P1.14 — resolve a persona run's gate (the approve_sample card; §9.2/§6.4). Run-scoped — the
    *  voice build is a persona run, not a project run. */
-  decideRunGate(runId: string, gateId: string, req: GateDecisionDto, init?: RequestInitLite): Promise<void>;
+  decideRunGate(
+    runId: string,
+    gateId: string,
+    req: GateDecisionDto,
+    init?: RequestInitLite,
+  ): Promise<void>;
   /** P1.14 — the fetcher-only URL ingestion path: the URL is fetched server-side, never by the
    *  sample's reader (REQ-INGEST-13). */
-  addVoiceSampleUrl(personaId: string, req: AddVoiceSampleUrlDto, init?: RequestInitLite): Promise<AddedVoiceSampleUrlDto>;
+  addVoiceSampleUrl(
+    personaId: string,
+    req: AddVoiceSampleUrlDto,
+    init?: RequestInitLite,
+  ): Promise<AddedVoiceSampleUrlDto>;
   /** P1.14 — the diff-of-inputs sheet's pre-computed route + estimate (§9.3). */
   getVoiceUpdatePlan(personaId: string, init?: RequestInitLite): Promise<VoiceUpdatePlanDto>;
   /** P1.14 — the ONE Update-voice verb: absent `scope` ⇒ the routed scope (§9.3; REQ-SPEC-27). */
-  updateVoice(personaId: string, req: UpdateVoiceDto, init?: RequestInitLite): Promise<UpdatedVoiceDto>;
+  updateVoice(
+    personaId: string,
+    req: UpdateVoiceDto,
+    init?: RequestInitLite,
+  ): Promise<UpdatedVoiceDto>;
   /** P1.14 — "Correct this in your description": a blockquote on PERSONA.md + a consume-once
    *  corrections row (§9.4; REQ-PERSONA-7). */
   addVoiceCorrection(
@@ -3125,7 +3344,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true }>;
   /** The item preview: canonical document + quality notes + version list (the quality drawer). */
-  getVoiceSample(personaId: string, itemId: string, init?: RequestInitLite): Promise<VoiceSampleDetailDto>;
+  getVoiceSample(
+    personaId: string,
+    itemId: string,
+    init?: RequestInitLite,
+  ): Promise<VoiceSampleDetailDto>;
   /** The version-history list (v1..vN newest first). */
   listVoiceSampleVersions(
     personaId: string,
@@ -3133,7 +3356,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<VoiceSampleVersionsDto>;
   /** The ORIGINAL bytes (the side-by-side preview's raw side — a PDF page for pdf.js). */
-  getVoiceSampleRaw(personaId: string, itemId: string, init?: RequestInitLite): Promise<ExportDownloadDto>;
+  getVoiceSampleRaw(
+    personaId: string,
+    itemId: string,
+    init?: RequestInitLite,
+  ): Promise<ExportDownloadDto>;
   /** The priced reconstruction pass (REQ-INGEST-10): omit `confirmed` to read the estimate; pass
    *  `confirmed: true` to enqueue the metered worker job. `tier:'visual'` is the opt-in ~180-credit pass. */
   reconstructVoiceSample(
@@ -3155,9 +3382,17 @@ export interface ApiClient {
   ): Promise<ProjectVoiceDto>;
   /** P1.14 — adopt hatch: pin the refreshed snapshot (§9.6; REQ-DATA-30); `reseed` launches a
    *  reseed_charter run that rewrites the charter's seeded lines only. */
-  adoptProjectVoice(projectId: string, req: AdoptProjectVoiceDto, init?: RequestInitLite): Promise<AdoptedProjectVoiceDto>;
+  adoptProjectVoice(
+    projectId: string,
+    req: AdoptProjectVoiceDto,
+    init?: RequestInitLite,
+  ): Promise<AdoptedProjectVoiceDto>;
   /** P1.14 — fork hatch: a NEW project at `outlined` with the outline copied, drafts not (§9.6). */
-  forkProjectVoice(projectId: string, req: ForkProjectVoiceDto, init?: RequestInitLite): Promise<ForkedProjectVoiceDto>;
+  forkProjectVoice(
+    projectId: string,
+    req: ForkProjectVoiceDto,
+    init?: RequestInitLite,
+  ): Promise<ForkedProjectVoiceDto>;
   /** P1.14 — the adopt dialog's charter diff; guidance lines never appear in it (§9.6). */
   getVoiceReseedPreview(projectId: string, init?: RequestInitLite): Promise<ReseedPreviewDto>;
   // ---- PRB.11 — export + the AI-use statement ----
@@ -3165,16 +3400,28 @@ export interface ApiClient {
    *  Opening the dialog sweeps `pre_export` deferral horizons (REQ-OBJ-3). */
   getExportDialog(projectId: string, init?: RequestInitLite): Promise<ExportDialogDto>;
   /** POST /projects/:id/export → the binary download. Never blocks on obligations (§11.7). */
-  exportProject(projectId: string, req: ExportRequestDto, init?: RequestInitLite): Promise<ExportDownloadDto>;
+  exportProject(
+    projectId: string,
+    req: ExportRequestDto,
+    init?: RequestInitLite,
+  ): Promise<ExportDownloadDto>;
   // ---- P1.18 — the whole-account zip (REQ-ACCT-3) ----
   /** GET /account/export — the latest build's state (null when never requested). */
   getAccountExportState(init?: RequestInitLite): Promise<{ export: AccountExportDto | null }>;
   /** POST /account/export — enqueue the build; deduped when a build runs or a link still lives. */
-  requestAccountExport(init?: RequestInitLite): Promise<{ export: AccountExportDto; deduped: boolean }>;
+  requestAccountExport(
+    init?: RequestInitLite,
+  ): Promise<{ export: AccountExportDto; deduped: boolean }>;
   /** GET /account/export/download → a presigned object URL for the ready zip (410 when expired). */
-  getAccountExportDownloadUrl(exportId?: string, init?: RequestInitLite): Promise<{ downloadUrl: string }>;
+  getAccountExportDownloadUrl(
+    exportId?: string,
+    init?: RequestInitLite,
+  ): Promise<{ downloadUrl: string }>;
   /** POST /account/import — replay an export zip into this (fresh) account; idempotent. */
-  importAccountExport(zipBytes: ArrayBuffer | Uint8Array, init?: RequestInitLite): Promise<AccountImportResultDto>;
+  importAccountExport(
+    zipBytes: ArrayBuffer | Uint8Array,
+    init?: RequestInitLite,
+  ): Promise<AccountImportResultDto>;
   /** GET /projects/:id/ai-use — the statement JSON; `format` returns the standalone binary download. */
   getAiUseStatement(projectId: string, init?: RequestInitLite): Promise<AiUseStatementDto>;
   downloadAiUseStatement(
@@ -3193,26 +3440,45 @@ export interface ApiClient {
   presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto>;
   /** POST /projects/:id/import/preview — convert the quarantine key → §5.3 preview. With `waitMs` the
    *  api answers `pending` instead of holding through a cold Job (PRB.21); retry to join the same run. */
-  previewImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<ImportPreviewDto>;
+  previewImport(
+    projectId: string,
+    req: ImportRequestDto,
+    init?: RequestInitLite,
+  ): Promise<ImportPreviewDto>;
   /** POST /projects/:id/import/create — convert + write the frozen `human_upload` draft 1 (201). */
-  createImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<CreatedImportDraftDto>;
+  createImport(
+    projectId: string,
+    req: ImportRequestDto,
+    init?: RequestInitLite,
+  ): Promise<CreatedImportDraftDto>;
   // ---- P1.05 — the Timeline round log, run report, and §6.5 steering ----
   /** GET /projects/:id/timeline — the round log: per-run cards, rounds, the next-step card. */
   getTimeline(projectId: string, init?: RequestInitLite): Promise<TimelineDto>;
   /** GET /runs/:id/report — the Level-3 report; `advanced` adds the Level-4 drill-down. */
-  getRunReport(runId: string, opts?: { advanced?: boolean }, init?: RequestInitLite): Promise<RunReportDto>;
+  getRunReport(
+    runId: string,
+    opts?: { advanced?: boolean },
+    init?: RequestInitLite,
+  ): Promise<RunReportDto>;
   /** POST /runs/:id/pause — "Pause after this phase" (honored at the next committed boundary). */
   pauseRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
   /** POST /runs/:id/resume — resume a steering-parked run; `note` captures Resume-with-note. */
-  resumeRun(runId: string, req?: { note?: string }, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
+  resumeRun(
+    runId: string,
+    req?: { note?: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; state: string }>;
   /** POST /runs/:id/notes — a note for the next phase → Guidance{queued_message}. */
-  postRunNote(runId: string, text: string, init?: RequestInitLite): Promise<{ ok: true; guidanceId: string }>;
+  postRunNote(
+    runId: string,
+    text: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; guidanceId: string }>;
   /** POST /runs/:id/stop — Stop, keep partials. */
   stopRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
   /** POST /runs/:id/refund — DEF.4's §14.4 refund-window request (flag-gated; 202 = sent for review). */
   requestRefund(runId: string, init?: RequestInitLite): Promise<UserRefundResponseDto>;
-  /** POST /runs/:id/walkthrough/retry — re-enqueue the one package-class walkthrough call. */
-  retryWalkthrough(runId: string, init?: RequestInitLite): Promise<{ status: string }>;
+  // R7COPY.0/ADR-130 — `POST /runs/:id/walkthrough/retry` retired with the generated walkthrough.
   /**
    * SPA.5 (REQ-DAT-13, REQ-BFF-12) — `GET /runs/:id/events?poll=1`: the FINITE replay, parsed to
    * event rows (the feed's initial paint). Non-2xx → `ApiError` carrying the api's `{error}` code.
@@ -3232,11 +3498,23 @@ export interface ApiClient {
 
   // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6) ----
   /** GET /projects/:id/chat — the Desk Chat read (threads, turns, pins, sources, the empty state). */
-  getChat(projectId: string, opts?: { thread?: string }, init?: RequestInitLite): Promise<ChatPanelDto>;
+  getChat(
+    projectId: string,
+    opts?: { thread?: string },
+    init?: RequestInitLite,
+  ): Promise<ChatPanelDto>;
   /** POST /projects/:id/chat/threads — a named thread (the default "Project chat" exists already). */
-  createChatThread(projectId: string, req: { name: string }, init?: RequestInitLite): Promise<{ thread: ChatThreadDto }>;
+  createChatThread(
+    projectId: string,
+    req: { name: string },
+    init?: RequestInitLite,
+  ): Promise<{ thread: ChatThreadDto }>;
   /** DELETE /projects/:id/chat/threads/:tid — archives purge thread files; the default is undeletable. */
-  deleteChatThread(projectId: string, threadId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  deleteChatThread(
+    projectId: string,
+    threadId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
   /** POST …/threads/:tid/turns — send a message; creates the turn's `chat_turn` run (plan card = consent). */
   postChatTurn(
     projectId: string,
@@ -3273,7 +3551,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<ChatPinsDto>;
   /** GET …/threads/:tid/remembers — "what the assistant remembers" (brief + pins, read-only). */
-  getChatRemembers(projectId: string, threadId: string, init?: RequestInitLite): Promise<ChatRemembersDto>;
+  getChatRemembers(
+    projectId: string,
+    threadId: string,
+    init?: RequestInitLite,
+  ): Promise<ChatRemembersDto>;
   /** POST …/threads/:tid/remembers/corrections — a correction lands as a Guidance-class note. */
   postChatCorrection(
     projectId: string,
@@ -3284,7 +3566,13 @@ export interface ApiClient {
   /** POST /projects/:id/chat/attachments — quarantine key → convert → an assistant source note. */
   postChatAttachment(
     projectId: string,
-    req: { quarantineKey: string; filename: string; mediaType: string; threadId?: string; waitMs?: number },
+    req: {
+      quarantineKey: string;
+      filename: string;
+      mediaType: string;
+      threadId?: string;
+      waitMs?: number;
+    },
     init?: RequestInitLite,
   ): Promise<ChatAttachmentDto>;
   /** GET /projects/:id/chat/sources — the "Chat sources" list (read-only). */
@@ -3296,13 +3584,24 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<ChatSuggestionDto>;
   /** POST /projects/:id/chat/notes — "Paste my notes" → agents/author/notes.md (the scratch path). */
-  postChatNote(projectId: string, req: { text: string }, init?: RequestInitLite): Promise<{ ok: true; path: string }>;
+  postChatNote(
+    projectId: string,
+    req: { text: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; path: string }>;
 
   // ---- P1.12 — the Outline surface (§7.3) ----
   /** GET /projects/:id/outline/promotion — the promotion sheet's facts (scope: thread|turn|research). */
   getOutlinePromotion(
     projectId: string,
-    opts: { scope?: "thread" | "turn" | "research"; threadId?: string; turnId?: string; tier?: string; rigor?: string; slug?: string },
+    opts: {
+      scope?: "thread" | "turn" | "research";
+      threadId?: string;
+      turnId?: string;
+      tier?: string;
+      rigor?: string;
+      slug?: string;
+    },
     init?: RequestInitLite,
   ): Promise<OutlinePromotionDto>;
   /** POST /projects/:id/outline/promotions — create the `outline` run (the sheet's Promote = consent). */
@@ -3312,7 +3611,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ runId: string; state: string; deduped: boolean; slug: string }>;
   /** GET /projects/:id/outline — the editor DTO (head artifact + parsed twin + citations). */
-  getOutline(projectId: string, opts?: { slug?: string }, init?: RequestInitLite): Promise<OutlineDto>;
+  getOutline(
+    projectId: string,
+    opts?: { slug?: string },
+    init?: RequestInitLite,
+  ): Promise<OutlineDto>;
   /** PATCH /projects/:id/outline — the autosave: full document or a structured delta → new versions. */
   patchOutline(
     projectId: string,
@@ -3320,7 +3623,11 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>;
   /** DELETE /projects/:id/outline — refused 409 `outline_cited` while a draft cites the outline. */
-  deleteOutline(projectId: string, opts?: { slug?: string }, init?: RequestInitLite): Promise<{ ok: true }>;
+  deleteOutline(
+    projectId: string,
+    opts?: { slug?: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
   /** POST /projects/:id/outline/gaps/:gapId/answer — a gap's Answer → a `user_typed` claim row. */
   answerOutlineGap(
     projectId: string,
@@ -3348,9 +3655,17 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<FigureProposedDto>;
   /** POST …/proposals/accept — ONE tx: the block splices through the draft save path (frozen ⇒ fork). */
-  acceptFigureProposal(projectId: string, figureId: string, init?: RequestInitLite): Promise<FigureAcceptedDto>;
+  acceptFigureProposal(
+    projectId: string,
+    figureId: string,
+    init?: RequestInitLite,
+  ): Promise<FigureAcceptedDto>;
   /** POST …/proposals/reject — clear the pending card; the asset stays in working figures. */
-  rejectFigureProposal(projectId: string, figureId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  rejectFigureProposal(
+    projectId: string,
+    figureId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
   /** POST …/spec-edit — the 0-cr type-chip (a Vega-Lite mark edit → new version + re-render). */
   editFigureSpec(
     projectId: string,
@@ -3359,7 +3674,12 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<{ ok: true; n: number; specVersionId: string | null }>;
   /** POST …/versions/:n/restore — copy version n's spec/data/provenance to head + re-render. */
-  restoreFigureVersion(projectId: string, figureId: string, n: number, init?: RequestInitLite): Promise<{ ok: true }>;
+  restoreFigureVersion(
+    projectId: string,
+    figureId: string,
+    n: number,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -3376,9 +3696,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     if (!res.ok) {
       // Surface the api's stable `{error}` code (+ verbatim `detail`) on the ApiError so callers
       // can branch on it / pass it through (REQ-DAT-10's 422 passthrough).
-      const errBody = (await res.json().catch(() => null)) as
-        | { error?: unknown; detail?: unknown }
-        | null;
+      const errBody = (await res.json().catch(() => null)) as {
+        error?: unknown;
+        detail?: unknown;
+      } | null;
       throw new ApiError(
         res.status,
         url,
@@ -3408,7 +3729,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
   }
 
   return {
-    async listProjects(init?: RequestInitLite, opts?: { scope?: "deleted" }): Promise<ProjectRow[]> {
+    async listProjects(
+      init?: RequestInitLite,
+      opts?: { scope?: "deleted" },
+    ): Promise<ProjectRow[]> {
       const body = await json<{ projects: ProjectRow[] }>(
         opts?.scope === "deleted" ? "/projects?scope=deleted" : "/projects",
         {
@@ -3449,17 +3773,31 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         throw e;
       }
     },
-    async estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto> {
+    async estimate(
+      projectId: string,
+      req: EstimateRequestDto,
+      init?: RequestInitLite,
+    ): Promise<EstimateDto> {
       return json<EstimateDto>(`/projects/${encodeURIComponent(projectId)}/estimates`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
-    async createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto> {
+    async createRun(
+      projectId: string,
+      req: CreateRunDto,
+      init?: RequestInitLite,
+    ): Promise<CreatedRunDto> {
       return json<CreatedRunDto>(`/projects/${encodeURIComponent(projectId)}/runs`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -3476,7 +3814,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setConsentPref(dontAskUnder, init): Promise<{ ok: true; dontAskUnder: number }> {
       return json<{ ok: true; dontAskUnder: number }>("/settings/consent", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ dontAskUnder }),
       });
     },
@@ -3485,7 +3826,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/disposition`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3513,7 +3857,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/obligations`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3529,7 +3876,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/findings/bulk-preview`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3539,7 +3889,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/findings/bulk`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3587,7 +3940,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/decisions/${encodeURIComponent(decisionId)}`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ answer }),
         },
       );
@@ -3604,7 +3960,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/gates/${encodeURIComponent(gateId)}/decide`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3614,7 +3973,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/gates/${encodeURIComponent(gateId)}/activity`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ activity }),
         },
       );
@@ -3635,7 +3997,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setApprovalOverrides(projectId, overrides, init): Promise<void> {
       await json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/approval-overrides`, {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ overrides }),
       });
     },
@@ -3651,7 +4016,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/settings/approvals`,
         {
           method: "PUT",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3661,7 +4029,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/gate-overrides`,
         {
           method: "PUT",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3671,7 +4042,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/guidance`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3681,7 +4055,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/guidance/${encodeURIComponent(guidanceId)}/retire`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: "{}",
         },
       );
@@ -3695,7 +4072,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async dismissExplainer(name, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/settings/explainers/${encodeURIComponent(name)}/dismiss`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
@@ -3716,7 +4096,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/responses/${encodeURIComponent(responseId)}/hunks/${encodeURIComponent(hunkId)}/comments`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ text }),
         },
       );
@@ -3735,17 +4118,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       );
     },
     async getBibliography(projectId, init): Promise<BibliographyDto> {
-      return json<BibliographyDto>(
-        `/projects/${encodeURIComponent(projectId)}/bibliography`,
-        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
-      );
+      return json<BibliographyDto>(`/projects/${encodeURIComponent(projectId)}/bibliography`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async importBibliography(projectId, req, init): Promise<BibliographyImportDto> {
       return json<BibliographyImportDto>(
         `/projects/${encodeURIComponent(projectId)}/bibliography`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -3757,10 +4143,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       );
     },
     async getVersions(projectId, init): Promise<VersionRailDto> {
-      return json<VersionRailDto>(
-        `/projects/${encodeURIComponent(projectId)}/versions`,
-        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
-      );
+      return json<VersionRailDto>(`/projects/${encodeURIComponent(projectId)}/versions`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async getVersionDiff(projectId, n, m, init): Promise<VersionDiffDto> {
       return json<VersionDiffDto>(
@@ -3773,16 +4159,19 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/v/${encodeURIComponent(n)}/diff/${encodeURIComponent(m)}/hunks/${encodeURIComponent(hunkId)}/comments`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ text }),
         },
       );
     },
     async getFiles(projectId, init): Promise<FilesDto> {
-      return json<FilesDto>(
-        `/projects/${encodeURIComponent(projectId)}/files`,
-        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
-      );
+      return json<FilesDto>(`/projects/${encodeURIComponent(projectId)}/files`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async listRestorePoints(projectId, draftId, init): Promise<RestorePointsDto> {
       return json<RestorePointsDto>(
@@ -3807,7 +4196,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/save`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ markdown, ...(init?.meta ?? {}) }),
         },
       );
@@ -3817,7 +4209,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/note`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ text }),
         },
       );
@@ -3843,7 +4238,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async recordExhaustedPrompt(actionTaken: string, init?: RequestInitLite): Promise<void> {
       await json<{ ok: true }>("/billing/exhausted-prompt", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ action_taken: actionTaken }),
       });
     },
@@ -3851,7 +4249,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async postAnalyticsEvent(req, init): Promise<{ ok: boolean; recorded: boolean }> {
       return json<{ ok: boolean; recorded: boolean }>("/analytics/events", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -3859,7 +4260,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async postAcquisitionEvent(req, init): Promise<{ ok: boolean; recorded: boolean }> {
       return json<{ ok: boolean; recorded: boolean }>("/analytics/acquisition", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -3889,7 +4293,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setAnalyticsOptOut(analyticsOptOut, init): Promise<PrivacySettingsDto> {
       return json<PrivacySettingsDto>("/settings/privacy", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ analyticsOptOut }),
       });
     },
@@ -3921,14 +4328,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async startCheckout(req, init): Promise<CheckoutSessionDto> {
       return json<CheckoutSessionDto>("/billing/checkout", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async createBillingPortalSession(returnTo, init): Promise<{ url: string }> {
       return json<{ url: string }>("/billing/portal", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(returnTo ? { returnTo } : {}),
       });
     },
@@ -3945,29 +4358,44 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async changePlan(tier, cycle, init) {
-      return json<{ applied: "now" | "scheduled" } | { error: string }>("/billing/subscription/change-plan", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify({ tier, ...(cycle ? { cycle } : {}) }),
-      });
+      return json<{ applied: "now" | "scheduled" } | { error: string }>(
+        "/billing/subscription/change-plan",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify({ tier, ...(cycle ? { cycle } : {}) }),
+        },
+      );
     },
     async getCheckoutSession(sessionId, init): Promise<CheckoutStatusDto> {
-      return json<CheckoutStatusDto>(`/billing/checkout-sessions/${encodeURIComponent(sessionId)}`, {
-        method: "GET",
-        headers: init?.headers as Record<string, string> | undefined,
-      });
+      return json<CheckoutStatusDto>(
+        `/billing/checkout-sessions/${encodeURIComponent(sessionId)}`,
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
     },
     async setAutoReload(req, init): Promise<{ ok: true }> {
       return json<{ ok: true }>("/billing/auto-reload", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async joinTeamWaitlist(req, init): Promise<{ ok: true }> {
       return json<{ ok: true }>("/billing/team-waitlist", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4005,102 +4433,158 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setTheme(appTheme, init): Promise<ThemeSettingsDto> {
       return json<ThemeSettingsDto>("/settings/theme", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ appTheme }),
       });
     },
     async setPaperTheme(projectId, paperTheme, init): Promise<PaperThemeDto> {
       return json<PaperThemeDto>(`/projects/${encodeURIComponent(projectId)}/paper-theme`, {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ paperTheme }),
       });
     },
     // ---- P1.20 — the §14.7 settings tree ----
     async getAccountSettings(init): Promise<AccountSettingsDto> {
-      return json<AccountSettingsDto>("/settings/account", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+      return json<AccountSettingsDto>("/settings/account", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async updateAccountSettings(req, init): Promise<{ ok: true }> {
       return json<{ ok: true }>("/settings/account", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async requestEmailChange(email, init) {
-      return json<{ ok: true; pendingEmail: string } | { error: string }>("/settings/account/email", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify({ email }),
-      });
+      return json<{ ok: true; pendingEmail: string } | { error: string }>(
+        "/settings/account/email",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify({ email }),
+        },
+      );
     },
     async confirmEmailChange(token, init) {
-      return json<{ ok: true; email: string } | { error: string }>("/settings/account/email/confirm", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify({ token }),
-      });
+      return json<{ ok: true; email: string } | { error: string }>(
+        "/settings/account/email/confirm",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify({ token }),
+        },
+      );
     },
     async revokeSession(sessionId, init) {
       return json<{ ok: true } | { error: string }>("/settings/sessions/revoke", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ sessionId }),
       });
     },
     async getPreferencesSettings(init): Promise<PreferencesSettingsDto> {
-      return json<PreferencesSettingsDto>("/settings/preferences", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+      return json<PreferencesSettingsDto>("/settings/preferences", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async updatePreferences(patch, init) {
       return json<{ ok: true; prefs: UserPrefs }>("/settings/preferences", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(patch),
       });
     },
     async getDataSettings(init): Promise<DataSettingsDto> {
-      return json<DataSettingsDto>("/settings/data", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+      return json<DataSettingsDto>("/settings/data", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async setSupportAccess(enabled, init) {
-      return json<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>("/settings/support-access", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify({ enabled }),
-      });
+      return json<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>(
+        "/settings/support-access",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify({ enabled }),
+        },
+      );
     },
     async setPreferenceOptOut(optOut, init) {
       return json<{ ok: true; preferenceOptOut: boolean }>("/settings/preference-profile", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ optOut }),
       });
     },
     async requestAccountDeletion(confirmation, init) {
-      return json<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>(
-        "/settings/account/delete",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-          body: JSON.stringify({ confirmation }),
+      return json<
+        { ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }
+      >("/settings/account/delete", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
         },
-      );
+        body: JSON.stringify({ confirmation }),
+      });
     },
     async cancelAccountDeletion(init) {
       return json<{ ok: true } | { error: string }>("/settings/account/delete/cancel", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({}),
       });
     },
     async getIntegrationsSettings(init): Promise<IntegrationsSettingsDto> {
-      return json<IntegrationsSettingsDto>("/settings/integrations", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+      return json<IntegrationsSettingsDto>("/settings/integrations", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async disconnectIntegration(connectionId, init) {
       return json<{ ok: true } | { error: string }>(
         `/settings/integrations/${encodeURIComponent(connectionId)}/disconnect`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({}),
         },
       );
@@ -4112,18 +4596,27 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async updateProjectSettings(projectId, patch, init) {
-      return json<{ ok: true } | { error: string }>(`/projects/${encodeURIComponent(projectId)}/settings`, {
-        method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(patch),
-      });
+      return json<{ ok: true } | { error: string }>(
+        `/projects/${encodeURIComponent(projectId)}/settings`,
+        {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(patch),
+        },
+      );
     },
     async updateGuidance(projectId, guidanceId, req, init) {
       return json<{ ok: true } | { error: string }>(
         `/projects/${encodeURIComponent(projectId)}/guidance/${encodeURIComponent(guidanceId)}`,
         {
           method: "PUT",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4135,11 +4628,17 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async updateNotificationPrefs(patch, init) {
-      return json<{ ok: true; prefs: NotificationPrefs } | { error: string }>("/notifications/prefs", {
-        method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(patch),
-      });
+      return json<{ ok: true; prefs: NotificationPrefs } | { error: string }>(
+        "/notifications/prefs",
+        {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(patch),
+        },
+      );
     },
     // ---- PRB.10 — Quick Voice / P1.14 — the full Voices workspace ----
     async listVoices(init): Promise<VoiceListRowDto[]> {
@@ -4158,7 +4657,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async createVoice(req, init): Promise<CreatedVoiceDto> {
       return json<CreatedVoiceDto>("/voices", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4171,16 +4673,27 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async addVoiceSample(personaId, req, init): Promise<AddedVoiceSampleDto> {
       return json<AddedVoiceSampleDto>(`/voices/${encodeURIComponent(personaId)}/samples`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
-    async setVoiceSampleIncluded(personaId, itemId, included, init): Promise<{ status: VoiceStatusDto | null }> {
+    async setVoiceSampleIncluded(
+      personaId,
+      itemId,
+      included,
+      init,
+    ): Promise<{ status: VoiceStatusDto | null }> {
       return json<{ status: VoiceStatusDto | null }>(
         `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}`,
         {
           method: "PATCH",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({ included }),
         },
       );
@@ -4188,7 +4701,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async saveVoiceSeed(personaId, req, init): Promise<SavedVoiceSeedDto> {
       return json<SavedVoiceSeedDto>(`/voices/${encodeURIComponent(personaId)}/seed`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4201,14 +4717,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async buildVoice(personaId, req, init): Promise<BuiltVoiceDto> {
       return json<BuiltVoiceDto>(`/voices/${encodeURIComponent(personaId)}/build`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async cancelVoiceRun(runId, init): Promise<{ runId: string; state: string }> {
       return json<{ runId: string; state: string }>(`/runs/${encodeURIComponent(runId)}`, {
         method: "PATCH",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ action: "cancel" }),
       });
     },
@@ -4221,14 +4743,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setProjectVoice(projectId, req, init): Promise<ProjectVoiceDto> {
       return json<ProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice`, {
         method: "PATCH",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async addVoiceSampleUrl(personaId, req, init): Promise<AddedVoiceSampleUrlDto> {
       return json<AddedVoiceSampleUrlDto>(`/voices/${encodeURIComponent(personaId)}/samples/url`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4241,21 +4769,30 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async updateVoice(personaId, req, init): Promise<UpdatedVoiceDto> {
       return json<UpdatedVoiceDto>(`/voices/${encodeURIComponent(personaId)}/update`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async addVoiceCorrection(personaId, req, init): Promise<AddedVoiceCorrectionDto> {
       return json<AddedVoiceCorrectionDto>(`/voices/${encodeURIComponent(personaId)}/corrections`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async forkVoice(personaId, init): Promise<ForkedVoiceDto> {
       return json<ForkedVoiceDto>(`/voices/${encodeURIComponent(personaId)}/fork`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({}),
       });
     },
@@ -4267,28 +4804,49 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async createVoiceConnection(personaId, req, init): Promise<CreatedVoiceConnectionDto> {
-      return json<CreatedVoiceConnectionDto>(`/voices/${encodeURIComponent(personaId)}/connections`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<CreatedVoiceConnectionDto>(
+        `/voices/${encodeURIComponent(personaId)}/connections`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
-    async discoverVoiceConnection(personaId, connectionId, init): Promise<DiscoveredVoiceConnectionDto> {
+    async discoverVoiceConnection(
+      personaId,
+      connectionId,
+      init,
+    ): Promise<DiscoveredVoiceConnectionDto> {
       return json<DiscoveredVoiceConnectionDto>(
         `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/discover`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({}),
         },
       );
     },
-    async confirmVoiceConnection(personaId, connectionId, req, init): Promise<VoiceSyncResponseDto> {
+    async confirmVoiceConnection(
+      personaId,
+      connectionId,
+      req,
+      init,
+    ): Promise<VoiceSyncResponseDto> {
       return json<VoiceSyncResponseDto>(
         `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/confirm`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4298,7 +4856,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/sync`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify({}),
         },
       );
@@ -4306,7 +4867,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async syncAllVoiceConnections(personaId, init): Promise<VoiceSyncResponseDto> {
       return json<VoiceSyncResponseDto>(`/voices/${encodeURIComponent(personaId)}/sync`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({}),
       });
     },
@@ -4315,7 +4879,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}`,
         {
           method: "PATCH",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4344,12 +4911,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         { method: "GET", headers: init?.headers as Record<string, string> | undefined },
       );
     },
-    async reconstructVoiceSample(personaId, itemId, req, init): Promise<ReconstructVoiceSampleResponseDto> {
+    async reconstructVoiceSample(
+      personaId,
+      itemId,
+      req,
+      init,
+    ): Promise<ReconstructVoiceSampleResponseDto> {
       return json<ReconstructVoiceSampleResponseDto>(
         `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}/reconstruct`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4361,29 +4936,44 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async adoptProjectVoice(projectId, req, init): Promise<AdoptedProjectVoiceDto> {
-      return json<AdoptedProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice/adopt`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<AdoptedProjectVoiceDto>(
+        `/projects/${encodeURIComponent(projectId)}/voice/adopt`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
     async forkProjectVoice(projectId, req, init): Promise<ForkedProjectVoiceDto> {
       return json<ForkedProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice/fork`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
     async getVoiceReseedPreview(projectId, init): Promise<ReseedPreviewDto> {
-      return json<ReseedPreviewDto>(`/projects/${encodeURIComponent(projectId)}/voice/reseed-preview`, {
-        method: "GET",
-        headers: init?.headers as Record<string, string> | undefined,
-      });
+      return json<ReseedPreviewDto>(
+        `/projects/${encodeURIComponent(projectId)}/voice/reseed-preview`,
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
     },
     async decideRunGate(runId, gateId, req, init): Promise<void> {
       await json(`/runs/${encodeURIComponent(runId)}/gates/${encodeURIComponent(gateId)}`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4397,7 +4987,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async exportProject(projectId, req, init): Promise<ExportDownloadDto> {
       return download(`/projects/${encodeURIComponent(projectId)}/export`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
     },
@@ -4416,7 +5009,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async appendAiUseAddition(projectId, sentence, init): Promise<AiUseAdditionDto> {
       return json<AiUseAdditionDto>(`/projects/${encodeURIComponent(projectId)}/ai-use/additions`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ sentence }),
       });
     },
@@ -4430,7 +5026,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async requestAccountExport(init): Promise<{ export: AccountExportDto; deduped: boolean }> {
       return json<{ export: AccountExportDto; deduped: boolean }>("/account/export", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
@@ -4453,9 +5052,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: zipBytes instanceof Uint8Array ? zipBytes : new Uint8Array(zipBytes),
       });
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as
-          | { error?: unknown; detail?: unknown }
-          | null;
+        const errBody = (await res.json().catch(() => null)) as {
+          error?: unknown;
+          detail?: unknown;
+        } | null;
         throw new ApiError(
           res.status,
           url,
@@ -4469,19 +5069,26 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto> {
       return json<PresignedImportDto>("/import/presign", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async previewImport(projectId, req, init): Promise<ImportPreviewDto> {
-      const body = await json<{ preview?: ConversionResult; pending?: boolean; quarantineKey?: string }>(
-        `/projects/${encodeURIComponent(projectId)}/import/preview`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-          body: JSON.stringify(req),
+      const body = await json<{
+        preview?: ConversionResult;
+        pending?: boolean;
+        quarantineKey?: string;
+      }>(`/projects/${encodeURIComponent(projectId)}/import/preview`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
         },
-      );
+        body: JSON.stringify(req),
+      });
       // 202 pending ⇒ still converting (the api joined/launched the Job's execution — retry, never re-upload).
       if (body.pending === true || body.preview == null) {
         return { status: "pending", quarantineKey: body.quarantineKey ?? req.quarantineKey };
@@ -4493,7 +5100,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/import/create`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4503,7 +5113,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async createProject(req, init): Promise<CreatedProjectDto> {
       const body = await json<{ project: CreatedProjectDto }>("/projects", {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req),
       });
       return body.project;
@@ -4511,7 +5124,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async renameProject(projectId, title, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/rename`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ title }),
       });
     },
@@ -4520,7 +5136,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/duplicate`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: "{}",
         },
       );
@@ -4529,28 +5148,40 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async archiveProject(projectId, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/archive`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async unarchiveProject(projectId, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/unarchive`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async deleteProject(projectId, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/delete`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async restoreProject(projectId, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/restore`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
@@ -4572,7 +5203,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setProjectGrouping(groupBy, init): Promise<{ ok: true }> {
       return json<{ ok: true }>("/settings/project-grouping", {
         method: "PUT",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ groupBy }),
       });
     },
@@ -4583,14 +5217,18 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       return body.protocols;
     },
     async previewImportWorkspace(req, init): Promise<ImportPreviewDto> {
-      const body = await json<{ preview?: ConversionResult; pending?: boolean; quarantineKey?: string }>(
-        "/import/preview",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-          body: JSON.stringify(req),
+      const body = await json<{
+        preview?: ConversionResult;
+        pending?: boolean;
+        quarantineKey?: string;
+      }>("/import/preview", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
         },
-      );
+        body: JSON.stringify(req),
+      });
       if (body.pending === true || body.preview == null) {
         return { status: "pending", quarantineKey: body.quarantineKey ?? req.quarantineKey };
       }
@@ -4604,50 +5242,61 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async getRunReport(runId, opts, init): Promise<RunReportDto> {
-      return json<RunReportDto>(`/runs/${encodeURIComponent(runId)}/report${opts?.advanced ? "?advanced=1" : ""}`, {
-        method: "GET",
-        headers: { ...(init?.headers as Record<string, string> | undefined) },
-      });
+      return json<RunReportDto>(
+        `/runs/${encodeURIComponent(runId)}/report${opts?.advanced ? "?advanced=1" : ""}`,
+        {
+          method: "GET",
+          headers: { ...(init?.headers as Record<string, string> | undefined) },
+        },
+      );
     },
     async pauseRun(runId, init): Promise<{ ok: true; state: string }> {
       return json(`/runs/${encodeURIComponent(runId)}/pause`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async resumeRun(runId, req, init): Promise<{ ok: true; state: string }> {
       return json(`/runs/${encodeURIComponent(runId)}/resume`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify(req ?? {}),
       });
     },
     async postRunNote(runId, text, init): Promise<{ ok: true; guidanceId: string }> {
       return json(`/runs/${encodeURIComponent(runId)}/notes`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: JSON.stringify({ text }),
       });
     },
     async stopRun(runId, init): Promise<{ ok: true; state: string }> {
       return json(`/runs/${encodeURIComponent(runId)}/stop`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
     async requestRefund(runId, init): Promise<UserRefundResponseDto> {
       return json(`/runs/${encodeURIComponent(runId)}/refund`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: "{}",
-      });
-    },
-    async retryWalkthrough(runId, init): Promise<{ status: string }> {
-      return json(`/runs/${encodeURIComponent(runId)}/walkthrough/retry`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
         body: "{}",
       });
     },
@@ -4659,9 +5308,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { ...baseHeaders, ...(init?.headers as Record<string, string> | undefined) },
       });
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as
-          | { error?: unknown; detail?: unknown }
-          | null;
+        const errBody = (await res.json().catch(() => null)) as {
+          error?: unknown;
+          detail?: unknown;
+        } | null;
         throw new ApiError(
           res.status,
           url,
@@ -4696,11 +5346,17 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       });
     },
     async createChatThread(projectId, req, init): Promise<{ thread: ChatThreadDto }> {
-      return json<{ thread: ChatThreadDto }>(`/projects/${encodeURIComponent(projectId)}/chat/threads`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<{ thread: ChatThreadDto }>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
     async deleteChatThread(projectId, threadId, init): Promise<{ ok: true }> {
       return json<{ ok: true }>(
@@ -4716,7 +5372,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/turns`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4735,7 +5394,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/plan-decision`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4745,7 +5407,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/pins`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4768,42 +5433,71 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         },
       );
     },
-    async postChatCorrection(projectId, threadId, req, init): Promise<{ ok: true; guidanceId: string }> {
+    async postChatCorrection(
+      projectId,
+      threadId,
+      req,
+      init,
+    ): Promise<{ ok: true; guidanceId: string }> {
       return json<{ ok: true; guidanceId: string }>(
         `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/remembers/corrections`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
     },
     async postChatAttachment(projectId, req, init): Promise<ChatAttachmentDto> {
-      return json<ChatAttachmentDto>(`/projects/${encodeURIComponent(projectId)}/chat/attachments`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<ChatAttachmentDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/attachments`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
     async getChatSources(projectId, init): Promise<{ sources: ChatSourceDto[] }> {
-      return json<{ sources: ChatSourceDto[] }>(`/projects/${encodeURIComponent(projectId)}/chat/sources`, {
-        method: "GET",
-        headers: init?.headers as Record<string, string> | undefined,
-      });
+      return json<{ sources: ChatSourceDto[] }>(
+        `/projects/${encodeURIComponent(projectId)}/chat/sources`,
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
     },
     async postChatSuggestion(projectId, req, init): Promise<ChatSuggestionDto> {
-      return json<ChatSuggestionDto>(`/projects/${encodeURIComponent(projectId)}/chat/suggestions`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<ChatSuggestionDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/suggestions`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
     async postChatNote(projectId, req, init): Promise<{ ok: true; path: string }> {
-      return json<{ ok: true; path: string }>(`/projects/${encodeURIComponent(projectId)}/chat/notes`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-        body: JSON.stringify(req),
-      });
+      return json<{ ok: true; path: string }>(
+        `/projects/${encodeURIComponent(projectId)}/chat/notes`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: JSON.stringify(req),
+        },
+      );
     },
 
     // ---- P1.12 — the Outline surface (§7.3) ----
@@ -4821,12 +5515,19 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         { method: "GET", headers: init?.headers as Record<string, string> | undefined },
       );
     },
-    async promoteOutline(projectId, req, init): Promise<{ runId: string; state: string; deduped: boolean; slug: string }> {
+    async promoteOutline(
+      projectId,
+      req,
+      init,
+    ): Promise<{ runId: string; state: string; deduped: boolean; slug: string }> {
       return json<{ runId: string; state: string; deduped: boolean; slug: string }>(
         `/projects/${encodeURIComponent(projectId)}/outline/promotions`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4838,15 +5539,29 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: init?.headers as Record<string, string> | undefined,
       });
     },
-    async patchOutline(projectId, req, init): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }> {
-      return json<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>(
-        `/projects/${encodeURIComponent(projectId)}/outline`,
-        {
-          method: "PATCH",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-          body: JSON.stringify(req),
+    async patchOutline(
+      projectId,
+      req,
+      init,
+    ): Promise<{
+      ok: true;
+      versionIds: string[];
+      versionId: string | null;
+      ordinal: number | null;
+    }> {
+      return json<{
+        ok: true;
+        versionIds: string[];
+        versionId: string | null;
+        ordinal: number | null;
+      }>(`/projects/${encodeURIComponent(projectId)}/outline`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
         },
-      );
+        body: JSON.stringify(req),
+      });
     },
     async deleteOutline(projectId, opts, init): Promise<{ ok: true }> {
       const q = opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : "";
@@ -4855,12 +5570,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: init?.headers as Record<string, string> | undefined,
       });
     },
-    async answerOutlineGap(projectId, gapId, req, init): Promise<{ ok: true; versionIds: string[] }> {
+    async answerOutlineGap(
+      projectId,
+      gapId,
+      req,
+      init,
+    ): Promise<{ ok: true; versionIds: string[] }> {
       return json<{ ok: true; versionIds: string[] }>(
         `/projects/${encodeURIComponent(projectId)}/outline/gaps/${encodeURIComponent(gapId)}/answer`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4884,7 +5607,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}`,
         {
           method: "PATCH",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4894,7 +5620,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/proposals`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );
@@ -4917,12 +5646,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         },
       );
     },
-    async editFigureSpec(projectId, figureId, req, init): Promise<{ ok: true; n: number; specVersionId: string | null }> {
+    async editFigureSpec(
+      projectId,
+      figureId,
+      req,
+      init,
+    ): Promise<{ ok: true; n: number; specVersionId: string | null }> {
       return json<{ ok: true; n: number; specVersionId: string | null }>(
         `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/spec-edit`,
         {
           method: "POST",
-          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         },
       );

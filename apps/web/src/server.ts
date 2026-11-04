@@ -25,15 +25,51 @@ import {
 import { legalElements } from "./legal.js";
 import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
-import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome, DossierData } from "./data.js";
+import type {
+  DataSource,
+  SessionHeaders,
+  ImportInput,
+  ImportPreviewOutcome,
+  DossierData,
+} from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto, EstimateRequestDto, CreatedRunDto, RestorePointsDto, RestorePreviewDto, VersionRailDto } from "@rhema/api-client";
+import type {
+  TimelineDto,
+  RunSheetContextDto,
+  GateCardDto,
+  InboxItemDto,
+  ProjectSettingsPatch,
+  OutlineDto,
+  EstimateRequestDto,
+  CreatedRunDto,
+  RestorePointsDto,
+  RestorePreviewDto,
+  VersionRailDto,
+} from "@rhema/api-client";
 import type { ProjectRow } from "@rhema/api-client";
-import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
+import {
+  parseScopes,
+  scopedInputs,
+  serializeScopes,
+  scopeChip,
+  VERB_TABLE,
+  type ScopeRef,
+} from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
-import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectHandoffHandler, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
+import {
+  bffFail,
+  bffRoute,
+  bodyFields,
+  confirmEmailHandler,
+  mutationOutcome,
+  projectHandoffHandler,
+  projectRow as bffProjectRow,
+  projectRows,
+  swallowDegraded,
+  wantsJson,
+} from "./bff.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
@@ -78,7 +114,20 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, LEGAL_PAGES, type GateKind, type PublicClaimsConfig, type FindingView } from "@rhema/contracts";
+import {
+  GATE_KINDS,
+  isCslStyle,
+  isExportFormat,
+  isMdExportProfile,
+  claimsForAudience,
+  errorClass,
+  stackForLog,
+  REQUEST_ID_HEADER,
+  LEGAL_PAGES,
+  type GateKind,
+  type PublicClaimsConfig,
+  type FindingView,
+} from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -114,7 +163,11 @@ export interface WebDeps {
    * Begin auth AFTER the invite passed (magic link / Google). Default: magic-link "sent". The Context is
    * passed so the live impl can relay the api's Set-Cookie (the OAuth `state` cookie) onto the response.
    */
-  beginAuth?(method: string, args: { code: string; email?: string; next?: string }, c?: Context): Promise<AuthOutcome>;
+  beginAuth?(
+    method: string,
+    args: { code: string; email?: string; next?: string },
+    c?: Context,
+  ): Promise<AuthOutcome>;
   /** End the session (clears the cookie). Default: no-op. */
   endSession?(c: Context): Promise<void>;
   /**
@@ -394,7 +447,9 @@ export function createWebApp(deps: WebDeps): Hono {
     ids: { projectId?: string; runId?: string } = {},
   ): void => {
     try {
-      void deps.dataSource.postAnalyticsEvent(session, { event, props, ...ids }).catch(() => undefined);
+      void deps.dataSource
+        .postAnalyticsEvent(session, { event, props, ...ids })
+        .catch(() => undefined);
     } catch {
       // a seam that isn't bound yet drops the event — telemetry is never fatal to a page render.
     }
@@ -406,7 +461,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // the raw value never leaves this host's cookie jar (no script may read it — HttpOnly).
   const FP_COOKIE = "rhema_fp";
   const cookieValue = (c: Context, name: string): string | undefined => {
-    const raw = c.req.header("cookie") ?? "";  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
+    const raw = c.req.header("cookie") ?? ""; // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
     for (const pair of raw.split(";")) {
       const eq = pair.indexOf("=");
       if (eq < 0) continue;
@@ -423,7 +478,8 @@ export function createWebApp(deps: WebDeps): Hono {
     const fp = randomBytes(24).toString("base64url");
     // Secure when the page is served over https (prod); the dev http stage plants it without.
     const secure = c.req.url.startsWith("https://") ? "; Secure" : "";
-    c.header("set-cookie", `${FP_COOKIE}=${fp}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`, { append: true });  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
+    // prettier-ignore
+    c.header("set-cookie", `${FP_COOKIE}=${fp}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`, { append: true }); // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
     return fp;
   };
 
@@ -470,7 +526,8 @@ export function createWebApp(deps: WebDeps): Hono {
       }
       return c.json(principal);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) return c.json({ error: "unauthenticated" }, 401);
+      if (e instanceof ApiError && e.status === 401)
+        return c.json({ error: "unauthenticated" }, 401);
       logWebRouteError(c, {
         status: 502,
         msg: "session_probe_failed",
@@ -576,7 +633,9 @@ export function createWebApp(deps: WebDeps): Hono {
         rows,
         voices: voices ?? [],
         groupBy: groupBy ?? "attention",
-        balance: bal ? { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } : null,
+        balance: bal
+          ? { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 }
+          : null,
         protocols: protocols ?? [],
         deletedRows: deletedRows ?? [],
         ...(search != null ? { search: { q, results: search } } : {}),
@@ -620,9 +679,7 @@ export function createWebApp(deps: WebDeps): Hono {
             .catch(swallowDegraded),
         ),
       );
-      const gatesById = new Map(
-        gateLists.flatMap((gl) => gl ?? []).map((g) => [g.id, g] as const),
-      );
+      const gatesById = new Map(gateLists.flatMap((gl) => gl ?? []).map((g) => [g.id, g] as const));
       const gateCards: Record<string, GateCardDto> = {};
       for (const it of list) {
         if (it.gate == null) continue;
@@ -670,8 +727,7 @@ export function createWebApp(deps: WebDeps): Hono {
           .catch(swallowDegraded),
       ]);
       return c.json({
-        notifications:
-          notif == null ? null : { ...notif, projects: rows ?? [] },
+        notifications: notif == null ? null : { ...notif, projects: rows ?? [] },
       });
     }),
   );
@@ -747,46 +803,58 @@ export function createWebApp(deps: WebDeps): Hono {
   //  the truthful `data-billing-down` state rather than fabricating a free tier); `balance`'s
   //  `paymentLinkUrl` is re-validated through the Stripe allowlist BEFORE serialization (a refused
   //  value is never on the wire — REQ-BFF-27). ----
-  app.get("/bff/settings/billing", bffRoute(deps, async (c, session) => {
-    const [subscription, plans, balance] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.getSubscription?.(session)).catch(swallowDegraded),
-      Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(swallowDegraded),
-      Promise.resolve().then(() => deps.dataSource.getBillingBalance?.(session)).catch(swallowDegraded),
-    ]);
-    const paymentLinkUrl = balance?.paymentLinkUrl != null
-      ? stripeRedirectTarget(balance.paymentLinkUrl, (m) => console.error(m))
-      : null;
-    return c.json({
-      billing: subscription && plans ? { subscription, plans } : null,
-      balance: balance == null
-        ? null
-        : { ...balance, paymentLinkUrl: paymentLinkUrl ?? undefined },
-    });
-  }));
+  app.get(
+    "/bff/settings/billing",
+    bffRoute(deps, async (c, session) => {
+      const [subscription, plans, balance] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getSubscription?.(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getPlans?.(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getBillingBalance?.(session))
+          .catch(swallowDegraded),
+      ]);
+      const paymentLinkUrl =
+        balance?.paymentLinkUrl != null
+          ? stripeRedirectTarget(balance.paymentLinkUrl, (m) => console.error(m))
+          : null;
+      return c.json({
+        billing: subscription && plans ? { subscription, plans } : null,
+        balance:
+          balance == null ? null : { ...balance, paymentLinkUrl: paymentLinkUrl ?? undefined },
+      });
+    }),
+  );
   // `GET /billing/return`'s twin — the checkout-return read verbatim: `session_id`/`cancelled` ride
   // the query (they are URL state, never payload), the row read degrades to `null`, and
   // `pollAfterSeconds` carries the server's §14.6 webhook-lag verdict (open ∧ ¬cancelled ∧
   // <30 s old ⇒ 5 s; otherwise absent — the leaf never polls on its own judgment, REQ-BFF-15).
-  app.get("/bff/billing/return", bffRoute(deps, async (c, session) => {
-    const sessionId = c.req.query("session_id") ?? "";
-    const cancelled = c.req.query("cancelled") === "1";
-    const checkoutReturn = sessionId
-      ? await Promise.resolve()
-          .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
-          .catch(swallowDegraded)
-      : null;
-    const openAgeMs = checkoutReturn?.createdAt
-      ? Date.now() - Date.parse(checkoutReturn.createdAt)
-      : Number.POSITIVE_INFINITY;
-    const stillPolling = openAgeMs >= 0 && openAgeMs < 30_000;
-    return c.json({
-      checkoutReturn: checkoutReturn ?? null,
-      cancelled,
-      ...(checkoutReturn?.state === "open" && !cancelled && stillPolling
-        ? { pollAfterSeconds: 5 }
-        : {}),
-    });
-  }));
+  app.get(
+    "/bff/billing/return",
+    bffRoute(deps, async (c, session) => {
+      const sessionId = c.req.query("session_id") ?? "";
+      const cancelled = c.req.query("cancelled") === "1";
+      const checkoutReturn = sessionId
+        ? await Promise.resolve()
+            .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
+            .catch(swallowDegraded)
+        : null;
+      const openAgeMs = checkoutReturn?.createdAt
+        ? Date.now() - Date.parse(checkoutReturn.createdAt)
+        : Number.POSITIVE_INFINITY;
+      const stillPolling = openAgeMs >= 0 && openAgeMs < 30_000;
+      return c.json({
+        checkoutReturn: checkoutReturn ?? null,
+        cancelled,
+        ...(checkoutReturn?.state === "open" && !cancelled && stillPolling
+          ? { pollAfterSeconds: 5 }
+          : {}),
+      });
+    }),
+  );
 
   // ---- SPA.13 — the `voices` surface's read twins (REQ-BFF-1/8/9/11/16; design/22 §2
   // voices/voicesNew/voiceDetail/p.voiceReseed) + the import presign (REQ-BFF-16 §5/E-2 — the BFF
@@ -794,64 +862,93 @@ export function createWebApp(deps: WebDeps): Hono {
   // `requiredHeaders`). Each read composes exactly the seams its document GET composes; a degraded
   // seam lands `null`/absent (swallowDegraded's 401 rethrow → `unauthenticated`), never a
   // fabricated value — {error:"not_found"} remains a refusal, never an empty payload. ----
-  app.get("/bff/voices", bffRoute(deps, async (c, session) =>
-    // `GET /voices` — `PageData.voices` verbatim: the §9.1 three-group read, degraded ⇒ null.
-    c.json({ voices: (await Promise.resolve().then(() => deps.dataSource.listVoiceGroups?.(session)).catch(swallowDegraded)) ?? null })));
+  app.get(
+    "/bff/voices",
+    bffRoute(deps, async (c, session) =>
+      // `GET /voices` — `PageData.voices` verbatim: the §9.1 three-group read, degraded ⇒ null.
+      c.json({
+        voices:
+          (await Promise.resolve()
+            .then(() => deps.dataSource.listVoiceGroups?.(session))
+            .catch(swallowDegraded)) ?? null,
+      }),
+    ),
+  );
   // Registered BEFORE /bff/voices/:persona — Hono matches in order and "new" would else land on the
   // param route (the same registration-order rule /v/:persona/samples/url documents).
-  app.get("/bff/voices/new", bffRoute(deps, async (c) =>
-    // `GET /voices/new` — `{voiceNew:{}}` verbatim: the sheet composes no remote reads today (the
-    // form is static copy); the twin keeps the uniform pending/error path and is where future
-    // creation options land.
-    c.json({ voiceNew: {} })));
-  app.get("/bff/voices/:persona", bffRoute(deps, async (c, session) => {
-    // `GET /v/:persona` — `PageData.voice` verbatim: getVoice 404 → not_found; estimate/updatePlan
-    // best-effort; connections/sampleDetail only on ?tab=samples (the document's own composition).
-    const personaId = c.req.param("persona") ?? "";
-    const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!detail) return c.json({ error: "not_found" }, 404);
-    const tab = c.req.query("tab");
-    const sampleId = c.req.query("sample");
-    const [estimate, updatePlan, connections, sampleDetail] = await Promise.all([
-      deps.dataSource.estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick").catch(swallowDegraded),
-      Promise.resolve().then(() => deps.dataSource.getVoiceUpdatePlan?.(session, personaId)).catch(swallowDegraded),
-      tab === "samples" && deps.dataSource.listVoiceConnections
-        ? deps.dataSource.listVoiceConnections(session, personaId).catch(swallowDegraded)
-        : undefined,
-      tab === "samples" && sampleId && deps.dataSource.getVoiceSample
-        ? deps.dataSource.getVoiceSample(session, personaId, sampleId).catch(swallowDegraded)
-        : undefined,
-    ]);
-    return c.json({
-      voice: {
-        detail,
-        ...(estimate ? { estimate } : {}),
-        ...(updatePlan ? { updatePlan } : {}),
-        ...(connections ? { connections } : {}),
-        ...(sampleDetail ? { sampleDetail } : {}),
-        ...(tab ? { tab } : {}),
-      },
-    });
-  }));
-  app.get("/bff/p/:slug/voice/reseed", bffRoute(deps, async (c, session) => {
-    // `GET /p/:slug/voice/reseed` — `PageData.voiceReseed` verbatim: slug→id through the request
-    // memo (REQ-BFF-11); the preview seam's miss is the document's own not_found.
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const preview = await deps.dataSource.getVoiceReseedPreview(session, row.id).catch(swallowDegraded);
-    if (!preview) return c.json({ error: "not_found" }, 404);
-    return c.json({ voiceReseed: { slug, projectId: row.id, preview } });
-  }));
-  app.post("/bff/import/presign", bffRoute(deps, async (c, session) => {
-    // REQ-BFF-16 — the api's POST /import/presign verbatim; a web build without the seam answers
-    // the payload's own refusal rather than a route-level 404.
-    if (deps.dataSource.presignImportUpload == null) return c.json({ error: "upload_unavailable" }, 503);
-    return c.json(await deps.dataSource.presignImportUpload(session));
-  }));
+  app.get(
+    "/bff/voices/new",
+    bffRoute(deps, async (c) =>
+      // `GET /voices/new` — `{voiceNew:{}}` verbatim: the sheet composes no remote reads today (the
+      // form is static copy); the twin keeps the uniform pending/error path and is where future
+      // creation options land.
+      c.json({ voiceNew: {} }),
+    ),
+  );
+  app.get(
+    "/bff/voices/:persona",
+    bffRoute(deps, async (c, session) => {
+      // `GET /v/:persona` — `PageData.voice` verbatim: getVoice 404 → not_found; estimate/updatePlan
+      // best-effort; connections/sampleDetail only on ?tab=samples (the document's own composition).
+      const personaId = c.req.param("persona") ?? "";
+      const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
+      if (!detail) return c.json({ error: "not_found" }, 404);
+      const tab = c.req.query("tab");
+      const sampleId = c.req.query("sample");
+      const [estimate, updatePlan, connections, sampleDetail] = await Promise.all([
+        deps.dataSource
+          .estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick")
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getVoiceUpdatePlan?.(session, personaId))
+          .catch(swallowDegraded),
+        tab === "samples" && deps.dataSource.listVoiceConnections
+          ? deps.dataSource.listVoiceConnections(session, personaId).catch(swallowDegraded)
+          : undefined,
+        tab === "samples" && sampleId && deps.dataSource.getVoiceSample
+          ? deps.dataSource.getVoiceSample(session, personaId, sampleId).catch(swallowDegraded)
+          : undefined,
+      ]);
+      return c.json({
+        voice: {
+          detail,
+          ...(estimate ? { estimate } : {}),
+          ...(updatePlan ? { updatePlan } : {}),
+          ...(connections ? { connections } : {}),
+          ...(sampleDetail ? { sampleDetail } : {}),
+          ...(tab ? { tab } : {}),
+        },
+      });
+    }),
+  );
+  app.get(
+    "/bff/p/:slug/voice/reseed",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/voice/reseed` — `PageData.voiceReseed` verbatim: slug→id through the request
+      // memo (REQ-BFF-11); the preview seam's miss is the document's own not_found.
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const preview = await deps.dataSource
+        .getVoiceReseedPreview(session, row.id)
+        .catch(swallowDegraded);
+      if (!preview) return c.json({ error: "not_found" }, 404);
+      return c.json({ voiceReseed: { slug, projectId: row.id, preview } });
+    }),
+  );
+  app.post(
+    "/bff/import/presign",
+    bffRoute(deps, async (c, session) => {
+      // REQ-BFF-16 — the api's POST /import/presign verbatim; a web build without the seam answers
+      // the payload's own refusal rather than a route-level 404.
+      if (deps.dataSource.presignImportUpload == null)
+        return c.json({ error: "upload_unavailable" }, 503);
+      return c.json(await deps.dataSource.presignImportUpload(session));
+    }),
+  );
 
   // ---- SPA.14 — the `onboarding` surface's read twins (REQ-BFF-1/8/9/11/16, REQ-DAT-1/4/6/9;
   //  design/22 §2 app.new/app.newPreview/p.import/p.importPreview rows). Each mirrors its document
@@ -861,122 +958,149 @@ export function createWebApp(deps: WebDeps): Hono {
   //  server-owned redirects (`?qk` absent, unresolved title, a failed re-preview) become
   //  `{ok:true, redirect}` — a JSON caller is never handed a 302 (REQ-BFF-1). The pending read
   //  carries `pollAfterSeconds` so cadence stays server-owned (REQ-BFF-15; IMPORT_PREVIEW_POLL_SECONDS). ----
-  app.get("/bff/app/new", bffRoute(deps, async (c, session) => {
-    // `GET /app/new` — `loadNewProjectSheet`'s two reads verbatim. `entry`/picks/`held`-intent are
-    // URL+client state per §2 — never payload.
-    const [protocols, voices] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(swallowDegraded),
-      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(swallowDegraded),
-    ]);
-    return c.json({ newProject: { protocols, voices } });
-  }));
-  app.get("/bff/app/new/preview", bffRoute(deps, async (c, session) => {
-    // `GET /app/new/preview` — the quarantine-key re-preview the poll page re-asks. The document's
-    // three redirect legs (missing `qk`, a failed read-back, an empty resolved title) answer as
-    // `{ok:true, redirect:"/app/new?entry=…"}`; `pending` answers the poll contract; `ready` carries
-    // the §5.3 payload + the server-side resolved title (typed → the document's own H1 → filename
-    // stem — the leaf renders, never re-derives).
-    const entryQ = c.req.query("entry") ?? "draft";
-    const entry = entryQ === "scratch" || entryQ === "outline" || entryQ === "draft" ? entryQ : "draft";
-    const entryHref = `/app/new?entry=${entry}`;
-    const qk = c.req.query("qk");
-    if (!qk) return c.json({ ok: true, redirect: entryHref });
-    const picks = newProjectForm(c.req.query() as Record<string, unknown>);
-    const src = c.req.query("src");
-    const sourceLabel = src ?? "the upload";
-    const out = await Promise.resolve()
-      .then(() =>
-        deps.dataSource.previewWorkspaceImport(session, {
-          quarantineKey: qk,
-          ...(src != null ? { fileName: src } : {}),
-        }),
-      )
-      .catch(() => null);
-    if (!out) return c.json({ ok: true, redirect: entryHref });
-    if (out.status === "pending") {
+  app.get(
+    "/bff/app/new",
+    bffRoute(deps, async (c, session) => {
+      // `GET /app/new` — `loadNewProjectSheet`'s two reads verbatim. `entry`/picks/`held`-intent are
+      // URL+client state per §2 — never payload.
+      const [protocols, voices] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.listProtocolCards(session))
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.listVoices(session))
+          .catch(swallowDegraded),
+      ]);
+      return c.json({ newProject: { protocols, voices } });
+    }),
+  );
+  app.get(
+    "/bff/app/new/preview",
+    bffRoute(deps, async (c, session) => {
+      // `GET /app/new/preview` — the quarantine-key re-preview the poll page re-asks. The document's
+      // three redirect legs (missing `qk`, a failed read-back, an empty resolved title) answer as
+      // `{ok:true, redirect:"/app/new?entry=…"}`; `pending` answers the poll contract; `ready` carries
+      // the §5.3 payload + the server-side resolved title (typed → the document's own H1 → filename
+      // stem — the leaf renders, never re-derives).
+      const entryQ = c.req.query("entry") ?? "draft";
+      const entry =
+        entryQ === "scratch" || entryQ === "outline" || entryQ === "draft" ? entryQ : "draft";
+      const entryHref = `/app/new?entry=${entry}`;
+      const qk = c.req.query("qk");
+      if (!qk) return c.json({ ok: true, redirect: entryHref });
+      const picks = newProjectForm(c.req.query() as Record<string, unknown>);
+      const src = c.req.query("src");
+      const sourceLabel = src ?? "the upload";
+      const out = await Promise.resolve()
+        .then(() =>
+          deps.dataSource.previewWorkspaceImport(session, {
+            quarantineKey: qk,
+            ...(src != null ? { fileName: src } : {}),
+          }),
+        )
+        .catch(() => null);
+      if (!out) return c.json({ ok: true, redirect: entryHref });
+      if (out.status === "pending") {
+        return c.json({
+          newProjectPreview: {
+            status: "pending",
+            quarantineKey: out.quarantineKey,
+            sourceLabel,
+            pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
+          },
+        });
+      }
+      const resolvedTitle =
+        picks.title || out.preview.title || sourceLabel.replace(/\.[^.]+$/, "").trim();
+      if (!resolvedTitle) return c.json({ ok: true, redirect: entryHref });
       return c.json({
         newProjectPreview: {
-          status: "pending",
+          status: "ready",
           quarantineKey: out.quarantineKey,
           sourceLabel,
-          pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
+          sourceText: "(the uploaded source — already converted)",
+          convertedMarkdown: out.preview.markdown,
+          countLine: countLine(out.preview.counts),
+          warnings: out.preview.warnings.map((w) => ({
+            message: w.message,
+            blockId: w.anchor?.blockId ?? null,
+          })),
+          title: out.preview.title,
+          resolvedTitle,
         },
       });
-    }
-    const resolvedTitle =
-      picks.title || out.preview.title || sourceLabel.replace(/\.[^.]+$/, "").trim();
-    if (!resolvedTitle) return c.json({ ok: true, redirect: entryHref });
-    return c.json({
-      newProjectPreview: {
-        status: "ready",
-        quarantineKey: out.quarantineKey,
-        sourceLabel,
-        sourceText: "(the uploaded source — already converted)",
-        convertedMarkdown: out.preview.markdown,
-        countLine: countLine(out.preview.counts),
-        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
-        title: out.preview.title,
-        resolvedTitle,
-      },
-    });
-  }));
-  app.get("/bff/p/:slug/import", bffRoute(deps, async (c, session) => {
-    // `GET /p/:slug/import` — project facts + the `ide` block + import-form context (§2 `p.import`).
-    // The document composes `ideContext(c, session, row)`; the twin carries the SAME bag — the leaf
-    // publishes it onto the React chrome (`palette` stays the JSON string the shell re-emits, files/
-    // chat ride their DTOs). `compact` is boot-owned (`deviceClass`) — never payload.
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const ctx = await ideContext(c, session, row);
-    return c.json({
-      import: {
-        project: { title: row.title, pill: row.state.pill, slug },
+    }),
+  );
+  app.get(
+    "/bff/p/:slug/import",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/import` — project facts + the `ide` block + import-form context (§2 `p.import`).
+      // The document composes `ideContext(c, session, row)`; the twin carries the SAME bag — the leaf
+      // publishes it onto the React chrome (`palette` stays the JSON string the shell re-emits, files/
+      // chat ride their DTOs). `compact` is boot-owned (`deviceClass`) — never payload.
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        import: {
+          project: { title: row.title, pill: row.state.pill, slug },
+          paperTheme: ctx.paperTheme ?? "light",
+          ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+          ide: ctx.ide,
+        },
+      });
+    }),
+  );
+  app.get(
+    "/bff/p/:slug/import/preview",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/import/preview` — the poll twin: `previewImport` on the SAME quarantine key (the
+      // api joins the in-flight execution — never a second upload) + the slim
+      // `ideContext(c, session, {id:slug, slug})` the document composes on this leg (its chrome titles
+      // the shell with the SOURCE label, not the project title — verbatim). A missed slug or an
+      // upstream refusal rides `bffFail` at the preserved status; missing `qk` answers the document's
+      // own `../import` bounce as `{ok:true, redirect}`.
+      const slug = c.req.param("slug") ?? "";
+      const qk = c.req.query("qk");
+      if (!qk) return c.json({ ok: true, redirect: `/p/${slug}/import` });
+      const src = c.req.query("src");
+      const input: ImportInput = {
+        projectSlug: slug,
+        quarantineKey: qk,
+        ...(src ? { fileName: src } : {}),
+      };
+      const out = await deps.dataSource.previewImport(session, input);
+      const ctx = await ideContext(c, session, { id: slug, slug });
+      const project = { title: input.fileName ?? slug, pill: "", slug };
+      const shell = {
+        project,
         paperTheme: ctx.paperTheme ?? "light",
         ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
         ide: ctx.ide,
-      },
-    });
-  }));
-  app.get("/bff/p/:slug/import/preview", bffRoute(deps, async (c, session) => {
-    // `GET /p/:slug/import/preview` — the poll twin: `previewImport` on the SAME quarantine key (the
-    // api joins the in-flight execution — never a second upload) + the slim
-    // `ideContext(c, session, {id:slug, slug})` the document composes on this leg (its chrome titles
-    // the shell with the SOURCE label, not the project title — verbatim). A missed slug or an
-    // upstream refusal rides `bffFail` at the preserved status; missing `qk` answers the document's
-    // own `../import` bounce as `{ok:true, redirect}`.
-    const slug = c.req.param("slug") ?? "";
-    const qk = c.req.query("qk");
-    if (!qk) return c.json({ ok: true, redirect: `/p/${slug}/import` });
-    const src = c.req.query("src");
-    const input: ImportInput = { projectSlug: slug, quarantineKey: qk, ...(src ? { fileName: src } : {}) };
-    const out = await deps.dataSource.previewImport(session, input);
-    const ctx = await ideContext(c, session, { id: slug, slug });
-    const project = { title: input.fileName ?? slug, pill: "", slug };
-    const shell = {
-      project,
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    };
-    if (out.status === "pending") {
+      };
+      if (out.status === "pending") {
+        return c.json({
+          importPreview: {
+            ...shell,
+            conversion: {
+              projectSlug: slug,
+              sourceLabel: input.fileName ?? "the upload",
+              pending: true as const,
+              quarantineKey: out.quarantineKey,
+              pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
+            },
+          },
+        });
+      }
       return c.json({
         importPreview: {
           ...shell,
-          conversion: {
-            projectSlug: slug,
-            sourceLabel: input.fileName ?? "the upload",
-            pending: true as const,
-            quarantineKey: out.quarantineKey,
-            pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
-          },
+          conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
         },
       });
-    }
-    return c.json({
-      importPreview: { ...shell, conversion: toConversionData(slug, input, out.preview, out.quarantineKey) },
-    });
-  }));
+    }),
+  );
 
   app.get(
     "/bff/p/:slug/export",
@@ -1043,7 +1167,9 @@ export function createWebApp(deps: WebDeps): Hono {
         unverified: cl.unverified === true,
       })),
     })),
-    ...(o.alternativesConsidered != null ? { alternativesConsidered: o.alternativesConsidered } : {}),
+    ...(o.alternativesConsidered != null
+      ? { alternativesConsidered: o.alternativesConsidered }
+      : {}),
     gaps: o.gaps.map((g) => ({
       id: g.id,
       needed: g.needed,
@@ -1080,7 +1206,11 @@ export function createWebApp(deps: WebDeps): Hono {
       const row = await bffProjectRow(c, deps.dataSource, session, slug);
       if (!row) return c.json({ error: "not_found" }, 404);
       const dto = await deps.dataSource
-        .getOutline?.(session, row.id, c.req.query("slug") ? { slug: c.req.query("slug")! } : undefined)
+        .getOutline?.(
+          session,
+          row.id,
+          c.req.query("slug") ? { slug: c.req.query("slug")! } : undefined,
+        )
         .catch(() => null);
       if (!dto || !dto.outline) return c.json({ outline: null });
       const draftEstimateCredits = outlineDraftEstimate(dto);
@@ -1180,7 +1310,8 @@ export function createWebApp(deps: WebDeps): Hono {
       const slug = c.req.param("slug") ?? "";
       const row = await bffProjectRow(c, deps.dataSource, session, slug);
       if (!row) return c.json({ error: "not_found" }, 404);
-      const items = (await deps.dataSource.listFigures?.(session, row.id).catch(swallowDegraded)) ?? [];
+      const items =
+        (await deps.dataSource.listFigures?.(session, row.id).catch(swallowDegraded)) ?? [];
       return c.json({ figures: { slug, items } });
     }),
   );
@@ -1239,7 +1370,13 @@ export function createWebApp(deps: WebDeps): Hono {
   const ideContext = async (
     c: Context,
     session: SessionHeaders,
-    row: { id: string; slug: string; paperTheme?: "light" | "follow" | "dark"; headDraftId?: string | null; activeRun?: { runId: string; state: string } | null },
+    row: {
+      id: string;
+      slug: string;
+      paperTheme?: "light" | "follow" | "dark";
+      headDraftId?: string | null;
+      activeRun?: { runId: string; state: string } | null;
+    },
     opts: {
       inboxCount?: number;
       findings?: { id: string; severity: string; kind: string; excerpt: string }[];
@@ -1247,10 +1384,23 @@ export function createWebApp(deps: WebDeps): Hono {
       /** P1.05 — the structured Timeline pane read (supersedes `timeline` rows). */
       timelineView?: TimelineDto;
       /** P1.05 — the Desk's Live feed tab (replayed rows + the same-origin events URL). */
-      feed?: { runId: string; eventsUrl: string; density: "summary" | "details" | "verbose"; rows: FeedRow[]; lastSeq?: number };
+      feed?: {
+        runId: string;
+        eventsUrl: string;
+        density: "summary" | "details" | "verbose";
+        rows: FeedRow[];
+        lastSeq?: number;
+      };
       /** the ⌘⇧R "run next step" target. */
       runNextHref?: string;
-      status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
+      status?: {
+        version?: string;
+        words?: number;
+        readMin?: number;
+        venueCap?: string;
+        credits?: number;
+        sync?: "synced" | "syncing" | "offline";
+      };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide" | "compact">> => {
     const [principal, theme, files, chat] = await Promise.all([
@@ -1274,7 +1424,9 @@ export function createWebApp(deps: WebDeps): Hono {
     // findings, Recent runs from the rounds, Settings = the settings links. Threads need no seed —
     // the section hides when empty. Every row is a navigation; the palette never launches a run.
     const next = opts.timelineView?.nextStep;
-    const nextVerb = next?.verb ? (VERB_TABLE.find((v) => v.workflow === next.verb)?.verb ?? null) : null;
+    const nextVerb = next?.verb
+      ? (VERB_TABLE.find((v) => v.workflow === next.verb)?.verb ?? null)
+      : null;
     const paletteData: PaletteData = {
       projectSlug: row.slug,
       ...(next && nextVerb
@@ -1301,7 +1453,11 @@ export function createWebApp(deps: WebDeps): Hono {
         })),
         // P1.07 — REQ-OBJ-10: the palette's free-form obligation lands on the row-creation form
         // (`source: 'user'`, standing — the same write "Add to obligations" takes).
-        { label: "New obligation…", path: `/p/${row.slug}/obligations/new`, keywords: ["obligation", "new", "add", "track"] },
+        {
+          label: "New obligation…",
+          path: `/p/${row.slug}/obligations/new`,
+          keywords: ["obligation", "new", "add", "track"],
+        },
       ],
       recentRuns: (opts.timelineView?.rounds ?? [])
         .flatMap((r) => r.runs)
@@ -1366,7 +1522,10 @@ export function createWebApp(deps: WebDeps): Hono {
       .then(() => deps.dataSource.getRunEvents?.(session, runId))
       .then((events) =>
         events
-          ? { rows: feedRowsFor(events, "details"), lastSeq: events.reduce((m, e) => Math.max(m, e.seq), 0) }
+          ? {
+              rows: feedRowsFor(events, "details"),
+              lastSeq: events.reduce((m, e) => Math.max(m, e.seq), 0),
+            }
           : null,
       )
       .catch(() => null);
@@ -1482,41 +1641,52 @@ export function createWebApp(deps: WebDeps): Hono {
   // `ide` bag republishes onto the React chrome (IDE-framed: `run-sheet` × `ide-chrome` AND-gate —
   // REQ-SEQ-12). `?notice` stays URL state — flashes are never payload. `phone` is boot-owned
   // (`deviceClass`), never the twin's to decide.
-  app.get("/bff/p/:slug/run", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const { view, pretriage, activeRun } = await runSheetComposition(c, session, row, c.req.query());
-    const ctx = await ideContext(c, session, row);
-    return c.json({
-      runSheet: {
-        slug,
-        projectTitle: row.title,
-        view,
-        ...(activeRun ? { activeRun } : {}),
-      },
-      ...(pretriage ? { pretriage } : {}),
-      project: { title: row.title, pill: row.state.pill, slug },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/run",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const { view, pretriage, activeRun } = await runSheetComposition(
+        c,
+        session,
+        row,
+        c.req.query(),
+      );
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        runSheet: {
+          slug,
+          projectTitle: row.title,
+          view,
+          ...(activeRun ? { activeRun } : {}),
+        },
+        ...(pretriage ? { pretriage } : {}),
+        project: { title: row.title, pill: row.state.pill, slug },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
   // REQ-BFF-23 — the typed estimate twin for revalidation + out-of-matrix inputs (design/22 §7.3):
   // the api's `POST /projects/:id/estimates` verbatim — the typed EstimateRequestDto body forwards,
   // the typed EstimateDto lands (the lever-matrix repaint is a client `cells` lookup and never
   // reaches this). A JSON caller is never handed a redirect — failures ride `bffFail` verbatim.
-  app.post("/bff/p/:slug/estimate", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    if (deps.dataSource.estimate == null) return c.json({ error: "estimate_unavailable" }, 503);
-    const body = (await c.req.json().catch(() => null)) as EstimateRequestDto | null;
-    if (body == null || typeof body !== "object" || Array.isArray(body)) {
-      return c.json({ error: "invalid_request" }, 400);
-    }
-    return c.json(await deps.dataSource.estimate(session, row.id, body));
-  }));
+  app.post(
+    "/bff/p/:slug/estimate",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      if (deps.dataSource.estimate == null) return c.json({ error: "estimate_unavailable" }, 503);
+      const body = (await c.req.json().catch(() => null)) as EstimateRequestDto | null;
+      if (body == null || typeof body !== "object" || Array.isArray(body)) {
+        return c.json({ error: "invalid_request" }, 400);
+      }
+      return c.json(await deps.dataSource.estimate(session, row.id, body));
+    }),
+  );
 
   // P1.06 — the ⌘K palette's free-text search proxy (§5.12): same-origin, session-forwarded to the
   // api's project search narrowed to THIS project; hits map to deep links (drafts → the editor,
@@ -1642,7 +1812,10 @@ export function createWebApp(deps: WebDeps): Hono {
           errorClass: errorClass(e),
           stack: stackForLog(e),
         });
-        return { status, code: status === 502 ? "chat_upstream_error" : (e.code ?? "chat_refused") };
+        return {
+          status,
+          code: status === 502 ? "chat_upstream_error" : (e.code ?? "chat_refused"),
+        };
       }
       logWebRouteError(c, {
         status: 502,
@@ -1694,7 +1867,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(typeof body.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
         // R5ECON.2 — the R4 leg's registry pin rides the same post (`{testCheapRoute:false}`;
         // is_test-only at the api). A form post carries it as a JSON string; the island as an object.
-        ...(cogsLeversField(body.cogsLevers) ? { cogsLevers: cogsLeversField(body.cogsLevers) } : {}),
+        ...(cogsLeversField(body.cogsLevers)
+          ? { cogsLevers: cogsLeversField(body.cogsLevers) }
+          : {}),
       }),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -1709,7 +1884,13 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const action = body.action;
-    if (!threadId || (action !== "run_research" && action !== "first_step" && action !== "edit" && action !== "cancel"))
+    if (
+      !threadId ||
+      (action !== "run_research" &&
+        action !== "first_step" &&
+        action !== "edit" &&
+        action !== "cancel")
+    )
       return c.json({ error: "threadId + action required" }, 422);
     const res = await chatCall(c, () =>
       deps.dataSource.postChatPlanDecision?.(session, row.id, threadId, {
@@ -1720,7 +1901,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
     // run_research resolves to the SHEET href — the sheet's Run click is the only run creator.
-    if (action === "run_research" && out.sheet?.href && !wantsJson(c)) return c.redirect(out.sheet.href);
+    if (action === "run_research" && out.sheet?.href && !wantsJson(c))
+      return c.redirect(out.sheet.href);
     return chatReply(c, row.slug, out);
   });
 
@@ -1823,7 +2005,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!("out" in res)) {
       // §7.4 — an over-paragraph refusal is a caller-correctable 422 (the code names /lineedit·/revise);
       // every other refusal keeps the api's truthful status + the structured log line.
-      if (res.code === "suggestion_too_large" && !wantsJson(c)) return c.redirect(`/p/${row.slug}#chat`);
+      if (res.code === "suggestion_too_large" && !wantsJson(c))
+        return c.redirect(`/p/${row.slug}#chat`);
       return chatFail(c, res);
     }
     return chatReply(c, row.slug, res.out, 201);
@@ -1838,9 +2021,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const text = typeof body.text === "string" ? body.text : "";
     if (!text.trim()) return c.json({ error: "text required" }, 422);
-    const res = await chatCall(c, () =>
-      deps.dataSource.postChatNote?.(session, row.id, { text }),
-    );
+    const res = await chatCall(c, () => deps.dataSource.postChatNote?.(session, row.id, { text }));
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
     return chatReply(c, row.slug, out, 201);
@@ -1906,10 +2087,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // the refusal codes through `bffFail` at the preserved status — never a redirect.
   app.post("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const scope = (str("scope") || "thread") as "thread" | "turn" | "research";
@@ -1923,7 +2108,11 @@ export function createWebApp(deps: WebDeps): Hono {
       });
       if (!out) {
         // OBS.1 — the promote seam is unbound: a user-visible 502 gets its one structured line.
-        logWebRouteError(c, { status: 502, msg: "outline_promote_unbound", errorClass: "UnboundSeam" });
+        logWebRouteError(c, {
+          status: 502,
+          msg: "outline_promote_unbound",
+          errorClass: "UnboundSeam",
+        });
         return wantsJson(c)
           ? c.json({ error: "upstream_unavailable" }, 502)
           : c.html(renderDocument(c.req.path, notFoundElement), 502);
@@ -1983,15 +2172,17 @@ export function createWebApp(deps: WebDeps): Hono {
       body.edit != null && typeof body.edit === "object" && !Array.isArray(body.edit)
         ? (body.edit as Record<string, unknown>)
         : (decodeGateEditFields(body) as Record<string, unknown>);
-    const hasEdits = Object.values(edits).some(
-      (v) => (Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0),
+    const hasEdits = Object.values(edits).some((v) =>
+      Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0,
     );
     if (!hasEdits) return mutationOutcome(c, { redirect: `/p/${slug}/outline` });
     const out = await deps.dataSource
       .patchOutline?.(session, row.id, { edit: edits })
       .catch((e: unknown) => e);
     if (out == null || out instanceof Error) {
-      return wantsJson(c) ? c.json({ error: "save_failed" }, 422) : c.redirect(`/p/${slug}/outline`);
+      return wantsJson(c)
+        ? c.json({ error: "save_failed" }, 422)
+        : c.redirect(`/p/${slug}/outline`);
     }
     return wantsJson(c) ? c.json(out) : c.redirect(`/p/${slug}/outline?saved=1`);
   });
@@ -2002,10 +2193,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // envelopes the same `/p/:slug` target.
   app.post("/p/:project/outline/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     try {
       await deps.dataSource.deleteOutline?.(session, row.id, undefined);
       return mutationOutcome(c, { redirect: `/p/${slug}` });
@@ -2025,10 +2220,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // and answers the SAME `/outline?saved=1` target as `{ok,redirect}` — never a 302.
   app.post("/p/:project/outline/gaps/:gapId/answer", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await bodyFields(c);
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!text) return mutationOutcome(c, { redirect: `/p/${slug}/outline` });
@@ -2064,16 +2263,22 @@ export function createWebApp(deps: WebDeps): Hono {
   // an upstream refusal through `bffFail` at the preserved status — never a redirect, never a sheet.
   app.post("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const request = str("request").trim();
     const figureId = str("figureId") || undefined;
     const priorVersion = Number(str("priorVersion"));
-    const specKind = (["vega_lite", "mermaid", "table"] as const).find((k) => k === str("specKind"));
+    const specKind = (["vega_lite", "mermaid", "table"] as const).find(
+      (k) => k === str("specKind"),
+    );
     const est = figureEstimate(figureId != null);
     if (!request) {
       if (wantsJson(c)) {
@@ -2153,11 +2358,15 @@ export function createWebApp(deps: WebDeps): Hono {
   // envelope's `redirect` verbatim (flash state stays URL-owned, never a payload invention).
   app.post("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     try {
@@ -2169,7 +2378,9 @@ export function createWebApp(deps: WebDeps): Hono {
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?saved=1` });
     } catch (e) {
       if (e instanceof ApiError && e.status === 422) {
-        return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent("alt text is limited to 250 characters")}` });
+        return mutationOutcome(c, {
+          redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent("alt text is limited to 250 characters")}`,
+        });
       }
       if (wantsJson(c)) return bffFail(c, e, { msg: "figure_patch_failed" });
       throw e;
@@ -2179,30 +2390,41 @@ export function createWebApp(deps: WebDeps): Hono {
   // The type-chip iterate — a 0-cr mark edit (no run, no model call) → new version + re-render.
   app.post("/p/:project/figures/:figureId/spec-edit", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const mark = typeof form.mark === "string" ? form.mark : "";
     try {
       await deps.dataSource.editFigureSpec?.(session, row.id, figureId, { mark: mark as never });
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
-      const notice = e instanceof ApiError ? String(e.code ?? "chip_not_supported") : "chip_not_supported";
-      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
+      const notice =
+        e instanceof ApiError ? String(e.code ?? "chip_not_supported") : "chip_not_supported";
+      return mutationOutcome(c, {
+        redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
+      });
     }
   });
 
   // Restore v<n> — the version's spec/data/provenance copy back to head as a NEW version + re-render.
   app.post("/p/:project/figures/:figureId/versions/:n/restore", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const n = Number(c.req.param("n"));
     await deps.dataSource.restoreFigureVersion?.(session, row.id, figureId, n).catch(() => null);
     return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
@@ -2211,13 +2433,20 @@ export function createWebApp(deps: WebDeps): Hono {
   // Insert… — the proposal card (alt + source line gate it server-side; nothing touches the draft).
   app.post("/p/:project/figures/:figureId/propose", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
-    const afterBlockId = typeof form.afterBlockId === "string" && form.afterBlockId !== "" ? form.afterBlockId : undefined;
+    const afterBlockId =
+      typeof form.afterBlockId === "string" && form.afterBlockId !== ""
+        ? form.afterBlockId
+        : undefined;
     try {
       const out = await deps.dataSource.proposeFigure?.(session, row.id, figureId, {
         draftId: row.headDraftId ?? "",
@@ -2226,41 +2455,57 @@ export function createWebApp(deps: WebDeps): Hono {
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}`, data: out });
     } catch (e) {
       const notice =
-        e instanceof ApiError && e.status === 409 ? "figure_not_ready" : e instanceof ApiError ? String(e.code ?? "propose_failed") : "propose_failed";
-      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
+        e instanceof ApiError && e.status === 409
+          ? "figure_not_ready"
+          : e instanceof ApiError
+            ? String(e.code ?? "propose_failed")
+            : "propose_failed";
+      return mutationOutcome(c, {
+        redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
+      });
     }
   });
 
   // Accept — ONE tx: the block splices through the draft save path (a frozen draft forks v(N+1)).
   app.post("/p/:project/figures/:figureId/proposals/accept", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     try {
       const out = await deps.dataSource.acceptFigureProposal?.(session, row.id, figureId);
-      if (out?.inserted?.draftN != null) return mutationOutcome(c, { redirect: `/p/${slug}/v/${out.inserted.draftN}`, data: out });
+      if (out?.inserted?.draftN != null)
+        return mutationOutcome(c, { redirect: `/p/${slug}/v/${out.inserted.draftN}`, data: out });
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
       const notice = e instanceof ApiError ? String(e.code ?? "accept_failed") : "accept_failed";
-      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
+      return mutationOutcome(c, {
+        redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
+      });
     }
   });
 
   // Reject — clear the card; the figure asset stays in working figures.
   app.post("/p/:project/figures/:figureId/proposals/reject", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     await deps.dataSource.rejectFigureProposal?.(session, row.id, figureId).catch(() => null);
     return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
   });
-
 
   // PRB.16 — the Better Auth surface, proxied to the api so the OAuth callback + auth cookies live on
   // this host (the browser never talks to api.rhema.tools; see apps/api/src/auth-context.ts).
@@ -2288,13 +2533,25 @@ export function createWebApp(deps: WebDeps): Hono {
   const invite = async (c: Context) =>
     (await signedIn(c))
       ? c.redirect("/app")
-      : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }, { origin: new URL(c.req.url).origin }));
+      : c.html(
+          renderDocument(
+            c.req.path,
+            inviteElement,
+            { invite: { signupOpen } },
+            { origin: new URL(c.req.url).origin },
+          ),
+        );
   app.get("/invite", invite);
 
   // P1.17 — the pre-auth funnel beacons. `landing.viewed` fires server-side on the landing GET
   // (the api hashes the forwarded IP into acquisition_events); the client beacon endpoint relays
   // the drop-zone hold + any landing-side signals. Fire-and-forget — analytics never slow the page.
-  const landingBeacon = (event: "landing.viewed" | "landing.dropzone_used", c: Context, props?: Record<string, unknown>, token?: string) => {
+  const landingBeacon = (
+    event: "landing.viewed" | "landing.dropzone_used",
+    c: Context,
+    props?: Record<string, unknown>,
+    token?: string,
+  ) => {
     try {
       void deps.dataSource
         .recordLandingEvent?.({
@@ -2313,7 +2570,9 @@ export function createWebApp(deps: WebDeps): Hono {
   // page's AUDIENCE (`trial.audience` in pricing.json). A signed-in JOURNEY.1 test tenant can PREVIEW
   // the gated claim with `?audience=test` (`/session`'s `isTest` answers); everyone else — anonymous,
   // real-user, non-test — renders the audience-disabled form. The everyone-flip stays the operator's.
-  const audienceClaims = async (c: Context): Promise<{ claims?: PublicClaimsConfig; isTest: boolean }> => {
+  const audienceClaims = async (
+    c: Context,
+  ): Promise<{ claims?: PublicClaimsConfig; isTest: boolean }> => {
     const session = deps.session(c);
     const principal = session
       ? await Promise.resolve()
@@ -2331,15 +2590,27 @@ export function createWebApp(deps: WebDeps): Hono {
     const { claims, isTest } = await audienceClaims(c);
     const preview = c.req.query("audience") === "test" && isTest;
     if (!preview && (await signedIn(c))) return c.redirect("/app");
-    landingBeacon("landing.viewed", c, c.req.query("src") ? { src: c.req.query("src") } : undefined);
-    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims }, { origin: new URL(c.req.url).origin }));
+    landingBeacon(
+      "landing.viewed",
+      c,
+      c.req.query("src") ? { src: c.req.query("src") } : undefined,
+    );
+    return c.html(
+      renderDocument(
+        c.req.path,
+        landingElement,
+        { invite: { signupOpen }, claims },
+        { origin: new URL(c.req.url).origin },
+      ),
+    );
   });
 
   // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
   // the 15% saving in dollars — REQ-GROWTH-8).
   app.get("/pricing", async (c) => {
     const { claims, isTest } = await audienceClaims(c);
-    if (!(c.req.query("audience") === "test" && isTest) && (await signedIn(c))) return c.redirect("/app");
+    if (!(c.req.query("audience") === "test" && isTest) && (await signedIn(c)))
+      return c.redirect("/app");
     return c.html(
       renderDocument(
         c.req.path,
@@ -2400,13 +2671,24 @@ export function createWebApp(deps: WebDeps): Hono {
 
     // invite mode: no code ⇒ no auth request is ever made (the PRB.01 gate, preserved verbatim).
     if (!signupOpen && !code.trim()) {
-      return renderSignup(c, { error: COPY.login.errorRequired, code, email, entry, src, held }, 400);
+      return renderSignup(
+        c,
+        { error: COPY.login.errorRequired, code, email, entry, src, held },
+        400,
+      );
     }
     if (method === "magic_link") {
       if (!email.trim()) {
         return renderSignup(
           c,
-          { error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired, code, email, entry, src, held },
+          {
+            error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired,
+            code,
+            email,
+            entry,
+            src,
+            held,
+          },
           400,
         );
       }
@@ -2420,14 +2702,24 @@ export function createWebApp(deps: WebDeps): Hono {
           method,
           clientIp: clientIp(c), // the resolved browser IP — stamped web→api per ADR-040
           ...(entry || src || held
-            ? { intent: { ...(entry ? { entry } : {}), ...(src ? { src } : {}), ...(held ? { held: true } : {}) } }
+            ? {
+                intent: {
+                  ...(entry ? { entry } : {}),
+                  ...(src ? { src } : {}),
+                  ...(held ? { held: true } : {}),
+                },
+              }
             : {}),
         });
       } catch {
         res = null;
       }
       if (!res) {
-        return renderSignup(c, { error: COPY.login.errorSignupUnavailable, code, email, entry, src, held }, 400);
+        return renderSignup(
+          c,
+          { error: COPY.login.errorSignupUnavailable, code, email, entry, src, held },
+          400,
+        );
       }
       if (!res.ok) {
         return renderSignup(
@@ -2439,7 +2731,11 @@ export function createWebApp(deps: WebDeps): Hono {
     } else if (!signupOpen || code.trim()) {
       const check = await deps.dataSource.checkInvite(code, undefined);
       if (!check.ok) {
-        return renderSignup(c, { error: loginErrorFor(check.reason), code, email, entry, src, held }, 400);
+        return renderSignup(
+          c,
+          { error: loginErrorFor(check.reason), code, email, entry, src, held },
+          400,
+        );
       }
     }
 
@@ -2493,11 +2789,22 @@ export function createWebApp(deps: WebDeps): Hono {
         .catch(() => undefined);
       const sc = entry?.showcase;
       if (sc) {
-        return c.redirect(sc.reviewRunId ? `/p/${sc.slug}/review/${sc.reviewRunId}` : `/p/${sc.slug}`);
+        return c.redirect(
+          sc.reviewRunId ? `/p/${sc.slug}/review/${sc.reviewRunId}` : `/p/${sc.slug}`,
+        );
       }
-      return c.html(renderDocument(c.req.path, showcaseSignedInElement, {}, { origin: new URL(c.req.url).origin }));
+      return c.html(
+        renderDocument(
+          c.req.path,
+          showcaseSignedInElement,
+          {},
+          { origin: new URL(c.req.url).origin },
+        ),
+      );
     }
-    return c.html(renderDocument(c.req.path, showcaseElement, {}, { origin: new URL(c.req.url).origin }));
+    return c.html(
+      renderDocument(c.req.path, showcaseElement, {}, { origin: new URL(c.req.url).origin }),
+    );
   });
 
   // R6LGL.1 (REQ-LCH-1) — the legal/trust documents (/terms, /privacy, /refunds,
@@ -2507,7 +2814,12 @@ export function createWebApp(deps: WebDeps): Hono {
   for (const legal of LEGAL_PAGES) {
     app.get(legal.routeId, (c) =>
       c.html(
-        renderDocument(c.req.path, legalElements[legal.routeId], {}, { origin: new URL(c.req.url).origin }),
+        renderDocument(
+          c.req.path,
+          legalElements[legal.routeId],
+          {},
+          { origin: new URL(c.req.url).origin },
+        ),
       ),
     );
   }
@@ -2537,12 +2849,15 @@ export function createWebApp(deps: WebDeps): Hono {
     const email = typeof form.email === "string" ? form.email : "";
     const method = typeof form.method === "string" ? form.method : "magic_link";
 
-    const renderLogin = (login: {
-      error?: string;
-      sent?: boolean;
-      code?: string;
-      email?: string;
-    }, status: 200 | 400 | 429) =>
+    const renderLogin = (
+      login: {
+        error?: string;
+        sent?: boolean;
+        code?: string;
+        email?: string;
+      },
+      status: 200 | 400 | 429,
+    ) =>
       // every re-render carries the mode flag — an error page must keep the open-mode copy.
       c.html(
         renderDocument(
@@ -2563,7 +2878,11 @@ export function createWebApp(deps: WebDeps): Hono {
       // a magic link needs an email; Google resolves it via OAuth instead.
       if (!email.trim()) {
         return renderLogin(
-          { error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired, code, email },
+          {
+            error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired,
+            code,
+            email,
+          },
           400,
         );
       }
@@ -2574,7 +2893,12 @@ export function createWebApp(deps: WebDeps): Hono {
       // a returning account resolves `created:false` so a re-login with an exhausted code still sends.
       let res: Awaited<ReturnType<DataSource["signup"]>> | null;
       try {
-        res = await deps.dataSource.signup({ email, ...(code.trim() ? { code } : {}), method, clientIp: clientIp(c) });
+        res = await deps.dataSource.signup({
+          email,
+          ...(code.trim() ? { code } : {}),
+          method,
+          clientIp: clientIp(c),
+        });
       } catch {
         res = null; // a transport/5xx failure is "unavailable", never a refusal
       }
@@ -2634,7 +2958,10 @@ export function createWebApp(deps: WebDeps): Hono {
     if (c.req.query("verified") === "1") {
       try {
         void deps.dataSource
-          .postAcquisitionEvent?.(session, { event: "email.verified", props: { trigger: "magic_link" } })
+          .postAcquisitionEvent?.(session, {
+            event: "email.verified",
+            props: { trigger: "magic_link" },
+          })
           .catch(() => undefined);
       } catch {
         /* telemetry is never fatal */
@@ -2658,10 +2985,13 @@ export function createWebApp(deps: WebDeps): Hono {
       const queryEntry = c.req.query("entry");
       const intentEntry =
         entry?.intent?.entry ??
-        (queryEntry === "draft" || queryEntry === "outline" || queryEntry === "scratch" ? queryEntry : undefined);
+        (queryEntry === "draft" || queryEntry === "outline" || queryEntry === "scratch"
+          ? queryEntry
+          : undefined);
       // The drop-zone hold marker survives the magic-link leg as intent.held (a flag, never bytes) —
       // the OAuth redirect's ?held=1 is the fallback for deploys that skipped the intent write.
-      const heldQuery = entry?.intent?.held === true || c.req.query("held") === "1" ? "&held=1" : "";
+      const heldQuery =
+        entry?.intent?.held === true || c.req.query("held") === "1" ? "&held=1" : "";
       if (intentEntry === "draft" || intentEntry === "outline") {
         // the carried-file precedence (§15.3 rule: the dropped file wins).
         return c.redirect(`/app/new?entry=${intentEntry}${heldQuery}`);
@@ -2685,7 +3015,8 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.15 — the `wantsJson` split (REQ-BFF-1/2/3): a JSON caller posts `{groupBy}` and gets the
     // `{ok:true, redirect:"/app"}` envelope (the 302's target verbatim — grouping drops the live
     // filters, same as the form post); the form post's 302 is unchanged.
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const groupBy = form.groupBy === "voice" ? "voice" : "attention";
     await Promise.resolve()
@@ -2752,7 +3083,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // the document's own POST-time preview is non-addressable state too).
   app.post("/app/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const json = wantsJson(c);
     const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
@@ -2764,13 +3096,18 @@ export function createWebApp(deps: WebDeps): Hono {
     // sheet URL (the leaf holds its own field state) instead of an inline re-render.
     if (entry === "scratch") {
       if (!picks.title) {
-        if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
+        if (json)
+          return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
         return c.redirect(`/app/new?entry=${entry}`);
       }
       let created;
       try {
         created = await deps.dataSource.createProject(session, {
-          title: picks.title, entry, protocolId: picks.protocolId, venue: picks.venue, personaId: picks.personaId,
+          title: picks.title,
+          entry,
+          protocolId: picks.protocolId,
+          venue: picks.venue,
+          personaId: picks.personaId,
         });
       } catch (e) {
         if (json) return bffFail(c, e, { msg: "new_project_create_failed" });
@@ -2791,10 +3128,16 @@ export function createWebApp(deps: WebDeps): Hono {
       (typeof form.fileName === "string" && form.fileName !== "" ? form.fileName : undefined);
     const quarantineKey =
       (typeof form.qk === "string" && form.qk !== "" ? form.qk : undefined) ??
-      (typeof form.quarantineKey === "string" && form.quarantineKey !== "" ? form.quarantineKey : undefined);
+      (typeof form.quarantineKey === "string" && form.quarantineKey !== ""
+        ? form.quarantineKey
+        : undefined);
     const paste = typeof form.paste === "string" ? form.paste : "";
     if (!bytes && !paste.trim() && !quarantineKey) {
-      if (json) return c.json({ error: "source_required", detail: COPY.newProject.uploadOrPasteRequired }, 400);
+      if (json)
+        return c.json(
+          { error: "source_required", detail: COPY.newProject.uploadOrPasteRequired },
+          400,
+        );
       return c.redirect(`/app/new?entry=${entry}`);
     }
     const sourceLabel = fileName ?? (quarantineKey ? "the upload" : "pasted text");
@@ -2817,7 +3160,10 @@ export function createWebApp(deps: WebDeps): Hono {
       // sheet, nothing created.
       if (json) {
         if (raw instanceof ApiError) return bffFail(c, raw, { msg: "new_project_preview_failed" });
-        return c.json({ error: "conversion_start_failed", detail: COPY.newProject.conversionStartFailed }, 502);
+        return c.json(
+          { error: "conversion_start_failed", detail: COPY.newProject.conversionStartFailed },
+          502,
+        );
       }
       return c.redirect(`/app/new?entry=${entry}`);
     }
@@ -2842,7 +3188,8 @@ export function createWebApp(deps: WebDeps): Hono {
       return c.redirect(pollUrl);
     }
     if (!resolvedTitle) {
-      if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
+      if (json)
+        return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
       return c.redirect(`/app/new?entry=${entry}`);
     }
     const preview = {
@@ -2851,7 +3198,10 @@ export function createWebApp(deps: WebDeps): Hono {
       sourceText: paste || (bytes ? `(${bytes.byteLength} bytes)` : ""),
       convertedMarkdown: out.preview.markdown,
       countLine: countLine(out.preview.counts),
-      warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+      warnings: out.preview.warnings.map((w) => ({
+        message: w.message,
+        blockId: w.anchor?.blockId ?? null,
+      })),
     };
     if (json) {
       // The ready preview the document renders on the POST — the leaf paints it in place.
@@ -2859,7 +3209,9 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     // SPA.27 — the SSR preview leg is deleted: the poll URL round-trips the picks + key so the
     // preview leaf recomposes the ready card off the /bff twin.
-    return c.redirect(newProjectPollUrl(entry, out.quarantineKey, { ...picks, title: resolvedTitle }, sourceLabel));
+    return c.redirect(
+      newProjectPollUrl(entry, out.quarantineKey, { ...picks, title: resolvedTitle }, sourceLabel),
+    );
   });
 
   // PRB.21-style poll leg for the new-project preview (meta-refresh target): re-preview the SAME
@@ -2884,7 +3236,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // &hc=` vocabulary verbatim); a still-converting key is the pending contract, never an error.
   app.post("/app/new/create", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const json = wantsJson(c);
     const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
@@ -2938,7 +3291,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (picks.heldToken) q.set("hc", picks.heldToken);
     const action = typeof form.action === "string" ? form.action : "create";
     if (action === "fix_now" && entry === "draft" && created.draftN != null) {
-      return mutationOutcome(c, { redirect: `/p/${created.slug}/v/${created.draftN}?${q.toString()}` });
+      return mutationOutcome(c, {
+        redirect: `/p/${created.slug}/v/${created.draftN}?${q.toString()}`,
+      });
     }
     return mutationOutcome(c, { redirect: `/p/${created.slug}?${q.toString()}` });
   });
@@ -2952,7 +3307,8 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/rename", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
     if (!row) {
@@ -2974,10 +3330,14 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/duplicate", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const copy = await Promise.resolve()
       .then(() => deps.dataSource.duplicateProject(session, row.id))
       .catch(() => null);
@@ -2995,10 +3355,14 @@ export function createWebApp(deps: WebDeps): Hono {
       const session = deps.session(c);
       // SPA.15 — the row actions' JSON branch (REQ-BFF-1/2/3): `{ok:true, redirect:"/app"}`; the
       // swallowed write stays swallowed (a refused action repaints truth on the list refetch).
-      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      if (!session)
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project");
       const row = await projectRowFor(session, slug);
-      if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+      if (!row)
+        return wantsJson(c)
+          ? c.json({ error: "not_found" }, 404)
+          : c.html(renderDocument(c.req.path, notFoundElement), 404);
       await Promise.resolve()
         .then(() => call(deps.dataSource, session, row.id))
         .catch(() => undefined);
@@ -3009,13 +3373,17 @@ export function createWebApp(deps: WebDeps): Hono {
   // Restore resolves against the DELETED rows (the live list never carries them — §5.2's 30-day window).
   app.post("/p/:project/restore", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const deleted = await Promise.resolve()
       .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
       .catch(() => []);
     const row = deleted.find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     await Promise.resolve()
       .then(() => deps.dataSource.restoreProject(session, row.id))
       .catch(() => undefined);
@@ -3038,7 +3406,8 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/inbox/read", async (c) => {
     const session = deps.session(c);
     // A JSON caller never rides the /login document redirect — the BFF convention answers 401.
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const raw = wantsJson(c)
       ? ((await c.req.json().catch(() => null)) as { item?: unknown } | null)?.item
       : (await c.req.parseBody()).item;
@@ -3052,7 +3421,8 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/inbox/read-all", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await Promise.resolve()
       .then(() => deps.dataSource.markInboxAllRead?.(session))
       .catch(() => undefined);
@@ -3085,7 +3455,9 @@ export function createWebApp(deps: WebDeps): Hono {
         .then(() => deps.dataSource.confirmEmailChange?.(session, confirmToken))
         .catch(() => undefined);
       const ok = out != null && "ok" in out && out.ok === true;
-      return c.redirect(`/app/settings/account?notice=${ok ? "email-confirmed" : "email-confirm-failed"}`);
+      return c.redirect(
+        `/app/settings/account?notice=${ok ? "email-confirmed" : "email-confirm-failed"}`,
+      );
     }
     // SPA.27 — sole renderer: the shell (after the confirmEmail consume+redirect so a token
     // round-trip never lands in the shell; `?saved`/`?notice` stay URL flash state).
@@ -3097,12 +3469,15 @@ export function createWebApp(deps: WebDeps): Hono {
   // `{error:"unauthenticated"}` 401, form callers keep the /login bounce.
   app.post("/app/settings/account", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const req: { name?: string; byline?: string | null; image?: string | null } = {};
     if (typeof form.name === "string" && form.name.trim() !== "") req.name = form.name.trim();
-    if (typeof form.byline === "string") req.byline = form.byline.trim() === "" ? null : form.byline.trim();
-    if (typeof form.image === "string") req.image = form.image.trim() === "" ? null : form.image.trim();
+    if (typeof form.byline === "string")
+      req.byline = form.byline.trim() === "" ? null : form.byline.trim();
+    if (typeof form.image === "string")
+      req.image = form.image.trim() === "" ? null : form.image.trim();
     await Promise.resolve()
       .then(() => deps.dataSource.updateAccountSettings?.(session, req))
       .catch(() => undefined);
@@ -3110,18 +3485,22 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/settings/account/email", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const email = typeof form.email === "string" ? form.email : "";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.requestEmailChange?.(session, email))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return mutationOutcome(c, { redirect: `/app/settings/account?notice=${ok ? "email-pending" : "email-invalid"}` });
+    return mutationOutcome(c, {
+      redirect: `/app/settings/account?notice=${ok ? "email-pending" : "email-invalid"}`,
+    });
   });
   app.post("/app/settings/sessions/revoke", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const sessionId = typeof form.sessionId === "string" ? form.sessionId : "";
     if (sessionId) {
@@ -3135,23 +3514,29 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- REQ-ACCT-4 — delete account: typed confirmation → the 14-day grace; cancel inside it. ----
   app.post("/app/settings/account/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const confirmation = typeof form.confirmation === "string" ? form.confirmation : "";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.requestAccountDeletion?.(session, confirmation))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return mutationOutcome(c, { redirect: `/app/settings/data?notice=${ok ? "deletion-scheduled" : "confirmation-required"}` });
+    return mutationOutcome(c, {
+      redirect: `/app/settings/data?notice=${ok ? "deletion-scheduled" : "confirmation-required"}`,
+    });
   });
   app.post("/app/settings/account/delete/cancel", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelAccountDeletion?.(session))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return mutationOutcome(c, { redirect: `/app/settings/data?notice=${ok ? "deletion-cancelled" : "cancel-failed"}` });
+    return mutationOutcome(c, {
+      redirect: `/app/settings/data?notice=${ok ? "deletion-cancelled" : "cancel-failed"}`,
+    });
   });
 
   // ---- Preferences ----
@@ -3165,13 +3550,16 @@ export function createWebApp(deps: WebDeps): Hono {
   // the consent threshold clamps at 1,000 (REQ-BILL-4), the theme write rides P1.01's endpoint.
   app.post("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const prefs: Record<string, unknown> = {};
     const tier = form.defaultModelTier;
-    prefs.defaultModelTier = tier === "base" || tier === "balanced" || tier === "frontier" ? tier : null;
+    prefs.defaultModelTier =
+      tier === "base" || tier === "balanced" || tier === "frontier" ? tier : null;
     const rigor = form.defaultRigor;
-    prefs.defaultRigor = rigor === "quick" || rigor === "standard" || rigor === "full_board" ? rigor : null;
+    prefs.defaultRigor =
+      rigor === "quick" || rigor === "standard" || rigor === "full_board" ? rigor : null;
     const rigorByWorkflow: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(form)) {
       if (!k.startsWith("rigor_") || k === "rigor_default") continue;
@@ -3185,14 +3573,21 @@ export function createWebApp(deps: WebDeps): Hono {
     prefs.rigorByWorkflow = rigorByWorkflow;
     const policy = form.approvalPolicy;
     prefs.approvalPolicy =
-      policy === "named" || policy === "wait_each" || policy === "run_to_completion" ? policy : null;
+      policy === "named" || policy === "wait_each" || policy === "run_to_completion"
+        ? policy
+        : null;
     const editor: Record<string, unknown> = {};
     const paperTheme = form.paperTheme;
-    editor.paperTheme = paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark" ? paperTheme : null;
+    editor.paperTheme =
+      paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark"
+        ? paperTheme
+        : null;
     const fontPreset = form.fontPreset;
-    editor.fontPreset = fontPreset === "serif" || fontPreset === "sans" || fontPreset === "mono" ? fontPreset : null;
+    editor.fontPreset =
+      fontPreset === "serif" || fontPreset === "sans" || fontPreset === "mono" ? fontPreset : null;
     const step = Number(form.fontSizeStep);
-    editor.fontSizeStep = form.fontSizeStep !== "" && Number.isInteger(step) && step >= -2 && step <= 2 ? step : null;
+    editor.fontSizeStep =
+      form.fontSizeStep !== "" && Number.isInteger(step) && step >= -2 && step <= 2 ? step : null;
     prefs.editor = editor;
     const consent = Math.max(0, Math.min(1000, Math.trunc(Number(form.consentUnder) || 0)));
     const appTheme = form.appTheme;
@@ -3215,7 +3610,8 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const email: Record<string, boolean> = {};
     const inApp: Record<string, boolean> = {};
@@ -3237,7 +3633,8 @@ export function createWebApp(deps: WebDeps): Hono {
       };
       const start = hm(form.qh_start);
       const end = hm(form.qh_end);
-      quietHours = start != null && end != null ? { startMinutesUtc: start, endMinutesUtc: end } : undefined;
+      quietHours =
+        start != null && end != null ? { startMinutesUtc: start, endMinutesUtc: end } : undefined;
     } else if (form.qh_enabled === "off") {
       quietHours = null;
     }
@@ -3247,7 +3644,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const accountPatch = {
       email,
       inApp,
-      digest: { run_finished: (form.digest_run_finished === "hourly" ? "hourly" : "off") as "hourly" | "off" },
+      digest: {
+        run_finished: (form.digest_run_finished === "hourly" ? "hourly" : "off") as
+          "hourly" | "off",
+      },
       ...(quietHours !== undefined ? { quietHours } : {}),
     };
     const projectIds = Object.keys(project);
@@ -3268,7 +3668,9 @@ export function createWebApp(deps: WebDeps): Hono {
         break;
       }
     }
-    return mutationOutcome(c, { redirect: `/app/settings/notifications?${ok ? "saved=1" : "notice=rejected"}` });
+    return mutationOutcome(c, {
+      redirect: `/app/settings/notifications?${ok ? "saved=1" : "notice=rejected"}`,
+    });
   });
 
   // ---- Integrations (REQ-ACCT-2's uniform cards; disconnect drops the credential now) ----
@@ -3280,7 +3682,8 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/app/settings/integrations/:id/disconnect", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await Promise.resolve()
       .then(() => deps.dataSource.disconnectIntegration?.(session, c.req.param("id")))
       .catch(() => undefined);
@@ -3298,7 +3701,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // The REQ-PROD-15 toggle's new home — the checkbox posts "on" when EXCLUDE is checked.
   app.post("/app/settings/data/privacy", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     try {
       // Unswallowed verbatim (the document path 500s on a failed write) — but a JSON caller
@@ -3313,7 +3717,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-VIS-11 — the 72-h support grant; revoke is a no-op-safe write either way.
   app.post("/app/settings/data/support-access", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setSupportAccess?.(session, form.enabled === "on"))
@@ -3323,7 +3728,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // Q-26 — the preference-learning toggle stores the opt-OUT (default-on ⇒ unchecked box = optOut).
   app.post("/app/settings/data/preference-learning", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setPreferenceOptOut?.(session, form.learning !== "on"))
@@ -3334,7 +3740,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // the worker's. A repeat click dedupes server-side (the same row answers).
   app.post("/app/settings/data/export", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await deps.dataSource.requestAccountExport?.(session).catch(() => undefined);
     return mutationOutcome(c, { redirect: "/app/settings/data?notice=requested" });
   });
@@ -3355,7 +3762,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // envelope's redirect instead of the 302 — the notice vocabulary lands verbatim either way.
   app.post("/app/settings/data/import", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await c.req.parseBody();
     const file = form.archive;
     const bytes =
@@ -3364,10 +3772,13 @@ export function createWebApp(deps: WebDeps): Hono {
         : null;
     if (!bytes) return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
     try {
-      if (!deps.dataSource.importAccountExport) return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
+      if (!deps.dataSource.importAccountExport)
+        return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
       const r = await deps.dataSource.importAccountExport(session, bytes);
       if (r.deduped) return mutationOutcome(c, { redirect: "/app/settings/data?notice=deduped" });
-      return mutationOutcome(c, { redirect: `/app/settings/data?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}` });
+      return mutationOutcome(c, {
+        redirect: `/app/settings/data?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}`,
+      });
     } catch {
       return mutationOutcome(c, { redirect: "/app/settings/data?notice=importFailed" });
     }
@@ -3409,16 +3820,24 @@ export function createWebApp(deps: WebDeps): Hono {
   // "keep" (venue/protocol). A protocol change stamps the marker the next Review's scope card carries.
   app.post("/p/:project/settings", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find((r) => r.slug === slug);
+    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find(
+      (r) => r.slug === slug,
+    );
     // A JSON caller never gets an HTML not-found — the {error} envelope at 404 is the twin's own
     // answer (REQ-BFF-4); the form leg keeps the notFoundElement document.
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const patch: ProjectSettingsPatch = {};
-    if (typeof form.venue === "string") patch.venue = form.venue.trim() === "" ? null : form.venue.trim();
-    if (typeof form.protocolId === "string" && form.protocolId !== "") patch.protocolId = form.protocolId;
+    if (typeof form.venue === "string")
+      patch.venue = form.venue.trim() === "" ? null : form.venue.trim();
+    if (typeof form.protocolId === "string" && form.protocolId !== "")
+      patch.protocolId = form.protocolId;
     const rigor = form.rigorDefault;
     if (rigor === "quick" || rigor === "standard" || rigor === "full_board" || rigor === "") {
       patch.rigorDefault = rigor === "" ? null : rigor;
@@ -3428,7 +3847,8 @@ export function createWebApp(deps: WebDeps): Hono {
       patch.modelTierDefault = tier === "" ? null : tier;
     }
     const paperTheme = form.paperTheme;
-    if (paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark") patch.paperTheme = paperTheme;
+    if (paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark")
+      patch.paperTheme = paperTheme;
     // protocol overrides — only when at least one override field arrived set/cleared.
     const ovLength = Number(form.ov_length);
     const stage = form.stage === "early" || form.stage === "near_final" ? form.stage : undefined;
@@ -3443,7 +3863,12 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     if (sawOverrideField || typeof form.ov_length === "string" || stage !== undefined) {
       const overrides: NonNullable<ProjectSettingsPatch["protocolOverrides"]> = {};
-      if (typeof form.ov_length === "string" && form.ov_length !== "" && Number.isFinite(ovLength) && ovLength > 0) {
+      if (
+        typeof form.ov_length === "string" &&
+        form.ov_length !== "" &&
+        Number.isFinite(ovLength) &&
+        ovLength > 0
+      ) {
         overrides.length = Math.trunc(ovLength);
       }
       if (Object.keys(phaseDefaults).length > 0) overrides.phaseDefaults = phaseDefaults;
@@ -3455,25 +3880,41 @@ export function createWebApp(deps: WebDeps): Hono {
       .then(() => deps.dataSource.updateProjectSettings?.(session, row.id, patch))
       .catch(() => undefined);
     const ok = out != null && "ok" in out && out.ok === true;
-    return mutationOutcome(c, { redirect: `/p/${slug}/settings?${ok ? "saved=1" : "notice=invalid"}` });
+    return mutationOutcome(c, {
+      redirect: `/p/${slug}/settings?${ok ? "saved=1" : "notice=invalid"}`,
+    });
   });
   // REQ-GATE-10's edit half — a standing rule's body/workflows update in place (retire stays a
   // separate row-level action; guidance never deletes).
   app.post("/p/:project/settings/guidance/:gid", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find(
+      (r) => r.slug === slug,
+    );
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const body = typeof form.body === "string" ? form.body.trim() : "";
     if (body !== "") {
       const workflows =
         typeof form.workflows === "string" && form.workflows.trim() !== ""
-          ? form.workflows.split(",").map((w) => w.trim()).filter((w) => w !== "")
+          ? form.workflows
+              .split(",")
+              .map((w) => w.trim())
+              .filter((w) => w !== "")
           : null;
       await Promise.resolve()
-        .then(() => deps.dataSource.updateGuidance?.(session, row.id, c.req.param("gid"), { body, workflows }))
+        .then(() =>
+          deps.dataSource.updateGuidance?.(session, row.id, c.req.param("gid"), {
+            body,
+            workflows,
+          }),
+        )
         .catch(() => undefined);
     }
     return mutationOutcome(c, { redirect: `/p/${slug}/settings?saved=1` });
@@ -3526,7 +3967,8 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/settings/billing", billingPageHandler);
   // P1.20 — every billing POST mounts on the canonical path AND the beta alias; the redirect returns
   // to whichever surface posted (the Stripe returnTo follows the same base).
-  const billingBase = (c: Context) => (c.req.path.startsWith("/app/") ? "/app/settings/billing" : "/settings/billing");
+  const billingBase = (c: Context) =>
+    c.req.path.startsWith("/app/") ? "/app/settings/billing" : "/settings/billing";
   const billingPost = (path: string, handler: (c: Context, base: string) => Promise<Response>) => {
     app.post(`/app/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
     app.post(`/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
@@ -3537,21 +3979,30 @@ export function createWebApp(deps: WebDeps): Hono {
   // 302 is ever emitted — never a half-minted state, never a non-Stripe hand-off.
   billingPost("subscribe", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? "annual" : "monthly";
     let failure: string | null = null;
     const out = await Promise.resolve()
-      .then(() => deps.dataSource.startCheckout?.(session, {
-        kind: "subscribe", plan: tier, cycle, returnTo: base,
-      }))
+      .then(() =>
+        deps.dataSource.startCheckout?.(session, {
+          kind: "subscribe",
+          plan: tier,
+          cycle,
+          returnTo: base,
+        }),
+      )
       .catch((e) => {
         failure = billingFailureCode(e, "checkout");
-        console.error(`[web] billing subscribe failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        console.error(
+          `[web] billing subscribe failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`,
+        );
         return undefined;
       });
-    if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
+    if (!out?.url)
+      return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
     const target = stripeRedirectTarget(out.url, (m) => console.error(m));
     if (!target) return mutationOutcome(c, { redirect: `${base}?notice=checkout` });
     // REQ-BFF-3/27 — the Stripe hand-off rides the `{url}` envelope for a JSON caller
@@ -3560,20 +4011,28 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   billingPost("topup", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const packId = typeof form.packId === "string" ? form.packId : "";
     let failure: string | null = null;
     const out = await Promise.resolve()
-      .then(() => deps.dataSource.startCheckout?.(session, {
-        kind: "topup", packId, returnTo: base,
-      }))
+      .then(() =>
+        deps.dataSource.startCheckout?.(session, {
+          kind: "topup",
+          packId,
+          returnTo: base,
+        }),
+      )
       .catch((e) => {
         failure = billingFailureCode(e, "checkout");
-        console.error(`[web] billing topup failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        console.error(
+          `[web] billing topup failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`,
+        );
         return undefined;
       });
-    if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
+    if (!out?.url)
+      return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
     const target = stripeRedirectTarget(out.url, (m) => console.error(m));
     if (!target) return mutationOutcome(c, { redirect: `${base}?notice=checkout` });
     return mutationOutcome(c, { url: target });
@@ -3581,10 +4040,11 @@ export function createWebApp(deps: WebDeps): Hono {
   // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
   billingPost("change-plan", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
-    const cycle = form.cycle === "annual" ? "annual" as const : "monthly" as const;
+    const cycle = form.cycle === "annual" ? ("annual" as const) : ("monthly" as const);
     const out = await Promise.resolve()
       .then(() => deps.dataSource.changePlan?.(session, tier, cycle))
       .catch(() => undefined);
@@ -3594,7 +4054,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // Cancel = cancel_at_period_end — access runs to the paid-through date (§14.6).
   billingPost("cancel", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelSubscription?.(session))
       .catch(() => undefined);
@@ -3604,38 +4065,49 @@ export function createWebApp(deps: WebDeps): Hono {
   // Auto-reload — the opt-in, user-capped, only unattended charge path (REQ-BILL-17).
   billingPost("auto-reload", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     // BILL.3 — opt-IN is a purchase-path write (it schedules an unattended charge): keep the api's
     // `purchase_closed` class so the notice is the paused copy, not a generic "didn't save".
     let failure: string | null = null;
     const out = await Promise.resolve()
-      .then(() => deps.dataSource.setAutoReload?.(session, {
-        enabled: form.enabled === "1",
-        ...(typeof form.thresholdCredits === "string" && Number(form.thresholdCredits) > 0
-          ? { thresholdCredits: Number(form.thresholdCredits) } : {}),
-        ...(typeof form.packId === "string" && form.packId ? { packId: form.packId } : {}),
-        ...(typeof form.monthlyCapUsd === "string" && Number(form.monthlyCapUsd) > 0
-          ? { monthlyCapUsd: Number(form.monthlyCapUsd) } : {}),
-      }))
+      .then(() =>
+        deps.dataSource.setAutoReload?.(session, {
+          enabled: form.enabled === "1",
+          ...(typeof form.thresholdCredits === "string" && Number(form.thresholdCredits) > 0
+            ? { thresholdCredits: Number(form.thresholdCredits) }
+            : {}),
+          ...(typeof form.packId === "string" && form.packId ? { packId: form.packId } : {}),
+          ...(typeof form.monthlyCapUsd === "string" && Number(form.monthlyCapUsd) > 0
+            ? { monthlyCapUsd: Number(form.monthlyCapUsd) }
+            : {}),
+        }),
+      )
       .catch((e) => {
         failure = billingFailureCode(e, "autoreload");
-        console.error(`[web] billing auto-reload failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        console.error(
+          `[web] billing auto-reload failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`,
+        );
         return undefined;
       });
-    if (!out?.ok) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "autoreload"}` });
+    if (!out?.ok)
+      return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "autoreload"}` });
     return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // The Stripe Customer-Portal session — payment methods, invoices, receipts live Stripe-side.
   billingPost("portal", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.createBillingPortalSession?.(session, base))
       .catch((e) => {
         failure = billingFailureCode(e, "portal");
-        console.error(`[web] billing portal failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        console.error(
+          `[web] billing portal failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`,
+        );
         return undefined;
       });
     if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "portal"}` });
@@ -3646,13 +4118,18 @@ export function createWebApp(deps: WebDeps): Hono {
   // The Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x).
   billingPost("waitlist", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const out = await Promise.resolve()
-      .then(() => deps.dataSource.joinTeamWaitlist?.(session, {
-        email: typeof form.email === "string" ? form.email : "",
-        ...(typeof form.seats === "string" && Number(form.seats) > 0 ? { seats: Number(form.seats) } : {}),
-      }))
+      .then(() =>
+        deps.dataSource.joinTeamWaitlist?.(session, {
+          email: typeof form.email === "string" ? form.email : "",
+          ...(typeof form.seats === "string" && Number(form.seats) > 0
+            ? { seats: Number(form.seats) }
+            : {}),
+        }),
+      )
       .catch(() => undefined);
     if (!out?.ok) return mutationOutcome(c, { redirect: `${base}?notice=waitlist` });
     return mutationOutcome(c, { redirect: `${base}?saved=1` });
@@ -3682,9 +4159,15 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/a/dwell", async (c) => {
     const session = deps.session(c);
     if (!session) return c.body(null, 401);
-    const body = (await c.req.json().catch(() => null)) as { surface?: unknown; ms?: unknown } | null;
+    const body = (await c.req.json().catch(() => null)) as {
+      surface?: unknown;
+      ms?: unknown;
+    } | null;
     if (typeof body?.surface === "string" && typeof body?.ms === "number" && body.ms > 0) {
-      emit(session, "surface.dwell", { surface: body.surface.slice(0, 40), ms: Math.min(Math.round(body.ms), 3_600_000) });
+      emit(session, "surface.dwell", {
+        surface: body.surface.slice(0, 40),
+        ms: Math.min(Math.round(body.ms), 3_600_000),
+      });
     }
     return c.body(null, 204);
   });
@@ -3754,10 +4237,19 @@ export function createWebApp(deps: WebDeps): Hono {
     row: ProjectRow,
   ) => {
     const slug = row.slug;
-    const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
+    const [
+      gates,
+      decisions,
+      approvalOverrides,
+      approvalSettings,
+      explainersDismissed,
+      projectVoice,
+    ] = await Promise.all([
       deps.dataSource.listGates(session, row.id).catch(() => []),
       deps.dataSource.listDecisions(session, row.id).catch(() => []),
-      deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
+      deps.dataSource
+        .getApprovalOverrides(session, row.id)
+        .catch(() => ({}) as Record<string, number | null>),
       // P1.09 — the full §6.4 settings read (policy + per-kind grid + standing guidance). Optional
       // seam: absent ⇒ the page falls back to the PRB.05 opt-in form.
       Promise.resolve()
@@ -3771,11 +4263,19 @@ export function createWebApp(deps: WebDeps): Hono {
       // PRB.10 — the voice picker: the project's linked-voice facts + the selectable personas (§9.6).
       // (Deferred inside .then so a data source missing the voice seam degrades to no-picker, not a 500.)
       Promise.all([
-        Promise.resolve().then(() => deps.dataSource.getProjectVoice(session, row.id)).catch(() => null),
-        Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
+        Promise.resolve()
+          .then(() => deps.dataSource.getProjectVoice(session, row.id))
+          .catch(() => null),
+        Promise.resolve()
+          .then(() => deps.dataSource.listVoices(session))
+          .catch(() => []),
       ]).then(([current, options]) =>
         current
-          ? { current, options, ...(c.req.query("voice_locked") === "1" ? { locked: true as const } : {}) }
+          ? {
+              current,
+              options,
+              ...(c.req.query("voice_locked") === "1" ? { locked: true as const } : {}),
+            }
           : undefined,
       ),
     ]);
@@ -3785,7 +4285,12 @@ export function createWebApp(deps: WebDeps): Hono {
     // compositions keep).
     for (const g of gates) {
       if (g.presenceDeadlineAt && !g.pausedWhileReading) {
-        emit(session, "gate.presence_timer_shown", { kind: g.kind }, { projectId: row.id, runId: g.runId });
+        emit(
+          session,
+          "gate.presence_timer_shown",
+          { kind: g.kind },
+          { projectId: row.id, runId: g.runId },
+        );
       }
     }
     // P1.02 item 12 — `/p/:project` opens the Page on the working head. The doc read is exact and
@@ -3809,7 +4314,18 @@ export function createWebApp(deps: WebDeps): Hono {
         .catch(() => null),
       row.activeRun ? liveFeedSlice(session, row.activeRun.runId) : Promise.resolve(null),
     ]);
-    return { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad, badge, timeline, feedData };
+    return {
+      gates,
+      decisions,
+      approvalOverrides,
+      approvalSettings,
+      explainersDismissed,
+      projectVoice,
+      pageLoad,
+      badge,
+      timeline,
+      feedData,
+    };
   };
 
   /** SPA.23 — the ide-context opts the overview's two renderers share (timeline + feed + the
@@ -3836,8 +4352,12 @@ export function createWebApp(deps: WebDeps): Hono {
       ? {
           status: {
             version: `v${comp.pageLoad.doc.draftN}`,
-            ...(comp.pageLoad.doc.meters?.words != null ? { words: comp.pageLoad.doc.meters.words } : {}),
-            ...(comp.pageLoad.doc.meters?.readMin != null ? { readMin: comp.pageLoad.doc.meters.readMin } : {}),
+            ...(comp.pageLoad.doc.meters?.words != null
+              ? { words: comp.pageLoad.doc.meters.words }
+              : {}),
+            ...(comp.pageLoad.doc.meters?.readMin != null
+              ? { readMin: comp.pageLoad.doc.meters.readMin }
+              : {}),
             ...(comp.pageLoad.doc.venueCap ? { venueCap: comp.pageLoad.doc.venueCap } : {}),
           },
         }
@@ -3863,12 +4383,14 @@ export function createWebApp(deps: WebDeps): Hono {
     // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404. The BFF twin answers the
     // same arm as `{ok:true, redirect}` — the leaf redirects (server stays authoritative).
     if (!resolved) {
-      return v === "working" ? ({ kind: "redirect" as const } ) : ({ kind: "notFound" as const });
+      return v === "working" ? { kind: "redirect" as const } : { kind: "notFound" as const };
     }
-    const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
+    const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch(
+      (e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      },
+    );
     if (!pageLoad) return { kind: "notFound" as const };
     // P1.08 — the §5.8 version rail over the Page (REQ-IDE-32): the chips read, the restore-point
     // dropdown for THIS draft's live doc, and the `?restore=<id>` preview read. Each read is
@@ -3882,7 +4404,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const restorePick = c.req.query("restore") ?? null;
     const restorePreview = restorePick
       ? ((await Promise.resolve()
-          .then(() => deps.dataSource.previewRestorePoint?.(session, row.id, resolved.draftId, restorePick))
+          .then(() =>
+            deps.dataSource.previewRestorePoint?.(session, row.id, resolved.draftId, restorePick),
+          )
           .catch(() => undefined)) ?? null)
       : null;
     return { kind: "ok" as const, resolved, pageLoad, railData, restorePoints, restorePreview };
@@ -3904,9 +4428,11 @@ export function createWebApp(deps: WebDeps): Hono {
     ...(restorePreview?.ok === true
       ? {
           preview: {
-            point:
-              restorePoints?.points.find((p) => p.id === restorePreview.point.id) ??
-              { ...restorePreview.point, group: "named" as const, advanced: false },
+            point: restorePoints?.points.find((p) => p.id === restorePreview.point.id) ?? {
+              ...restorePreview.point,
+              group: "named" as const,
+              advanced: false,
+            },
             view: restorePreview.view,
           },
         }
@@ -3921,7 +4447,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // P1.19 — REQ-IDE-48: opening a project with an UNREAD finished run lands on its walkthrough
+    // P1.19 — REQ-IDE-48: opening a project with an UNREAD finished run lands on its run card
     // (the row's href is already workflow-shaped: the letter for reviews, what-changed for revisions,
     // v1 on the Page for drafts). The row marks read on the way through so the hand-off fires once —
     // a repeated open lands on the plain project home. A data source without the Inbox seam never
@@ -3929,11 +4455,14 @@ export function createWebApp(deps: WebDeps): Hono {
     if (c.req.query("focus") !== "1" && deps.dataSource.getInbox) {
       const finishedRow = await Promise.resolve()
         .then(() => deps.dataSource.getInbox!(session))
-        .then(
-          (items) =>
-            items.find(
-              (i) => i.kind === "event" && i.type === "run_finished" && i.unread === true && i.projectId === row.id,
-            ),
+        .then((items) =>
+          items.find(
+            (i) =>
+              i.kind === "event" &&
+              i.type === "run_finished" &&
+              i.unread === true &&
+              i.projectId === row.id,
+          ),
         )
         .catch(() => undefined);
       if (finishedRow) {
@@ -3957,7 +4486,15 @@ export function createWebApp(deps: WebDeps): Hono {
       });
     }
     const comp = await projectOverviewComposition(c, session, row);
-    const { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad } = comp;
+    const {
+      gates,
+      decisions,
+      approvalOverrides,
+      approvalSettings,
+      explainersDismissed,
+      projectVoice,
+      pageLoad,
+    } = comp;
     // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
     // that row's controls — never dropped silently.
     const derror = c.req.query("derror");
@@ -4005,9 +4542,7 @@ export function createWebApp(deps: WebDeps): Hono {
                 // R7RO.1 — `forcedSsr` is phone-only now (ADR-128): a showcase overview reaches
                 // the SPA, whose twin carries `readOnly:true` + `ReadOnlyProject{showcase}`.
                 ...(forcedSsr ? { readOnly: true } : {}),
-                ...(deps.collabWsUrl && !forcedSsr
-                  ? { collabWsUrl: deps.collabWsUrl }
-                  : {}),
+                ...(deps.collabWsUrl && !forcedSsr ? { collabWsUrl: deps.collabWsUrl } : {}),
               },
             }
           : {}),
@@ -4038,15 +4573,24 @@ export function createWebApp(deps: WebDeps): Hono {
   // "No voice" — the ad-hoc default, REQ-PERSONA-20); the api pins the profile snapshot server-side.
   app.post("/p/:project/voice", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
-    const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : null;
-    const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
+    const personaId =
+      typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : null;
+    const register =
+      typeof form.register === "string" && form.register !== "" ? form.register : undefined;
     const res = await deps.dataSource
-      .setProjectVoice(session, row.id, { personaId, ...(register !== undefined ? { register } : {}) })
+      .setProjectVoice(session, row.id, {
+        personaId,
+        ...(register !== undefined ? { register } : {}),
+      })
       .then(() => ({ ok: true as const }))
       .catch((e) => ({ ok: false as const, locked: e instanceof ApiError && e.status === 409 }));
     // P1.14 — the soft lock (§9.6): a direct voice change after v1 409s; the redirect lands on the
@@ -4067,10 +4611,14 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/voice/adopt", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const reseed = form.reseed === "true" || form.reseed === "on";
     await deps.dataSource.adoptProjectVoice(session, row.id, { reseed }).catch(() => undefined);
@@ -4079,12 +4627,17 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/voice/fork", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
-    const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : "";
+    const personaId =
+      typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : "";
     if (!personaId) return mutationOutcome(c, { redirect: `/p/${slug}` });
     const forked = await deps.dataSource
       .forkProjectVoice(session, row.id, { personaId })
@@ -4097,7 +4650,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // `approval_overrides` row the api validates (≥2 h, wait-default kinds only — REQ-SPEC-1).
   app.post("/p/:project/approval-overrides", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -4106,7 +4660,9 @@ export function createWebApp(deps: WebDeps): Hono {
         : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     const form = await c.req.parseBody();
-    const current = await deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>);
+    const current = await deps.dataSource
+      .getApprovalOverrides(session, row.id)
+      .catch(() => ({}) as Record<string, number | null>);
     const overrides: Record<string, number | null> = { ...current };
     if (form.approve_triage_24h === "on") overrides.approve_triage = 24 * 60 * 60 * 1000;
     else delete overrides.approve_triage;
@@ -4119,10 +4675,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-GATE-10) + the one-time explainers (§5.11). Plain forms; the api re-validates everything. ----
   app.post("/p/:project/settings/approvals", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const policy =
       form.policy === "named" || form.policy === "wait_each" || form.policy === "run_to_completion"
@@ -4162,15 +4722,22 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/guidance", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const body = typeof form.body === "string" ? form.body.trim() : "";
     const workflows =
       typeof form.workflows === "string" && form.workflows.trim() !== ""
-        ? form.workflows.split(",").map((w) => w.trim()).filter((w) => w !== "")
+        ? form.workflows
+            .split(",")
+            .map((w) => w.trim())
+            .filter((w) => w !== "")
         : undefined;
     if (body !== "") {
       await deps.dataSource.createProjectGuidance?.(session, row.id, {
@@ -4189,15 +4756,19 @@ export function createWebApp(deps: WebDeps): Hono {
   // replacement (the settings section composes the two).
   app.post("/p/:project/guidance/:gid/retire", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     await deps.dataSource.retireGuidance?.(session, row.id, c.req.param("gid"));
     const back =
       typeof (form as Record<string, unknown>).returnTo === "string" &&
-        ((form as Record<string, unknown>).returnTo as string).startsWith("/p/")
+      ((form as Record<string, unknown>).returnTo as string).startsWith("/p/")
         ? ((form as Record<string, unknown>).returnTo as string)
         : `/p/${slug}`;
     return mutationOutcome(c, { redirect: back });
@@ -4222,16 +4793,23 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     // SPA.21 — `wantsJson` dual-mode: the dossier's focused-gate card + the Inbox row post through
     // the envelope (`{error}` at the preserved status; `{ok,redirect}` on success).
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const action = typeof form.action === "string" ? form.action : "";
-    const guidance = typeof form.guidance === "string" && form.guidance.trim() !== "" ? form.guidance : undefined;
+    const guidance =
+      typeof form.guidance === "string" && form.guidance.trim() !== "" ? form.guidance : undefined;
     const standing = form.standing === "true" || form.standing === "on";
     const edits = decodeGateEditFields(form as Record<string, unknown>);
-    const hasEdits = Object.values(edits).some((v) => (Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0));
+    const hasEdits = Object.values(edits).some((v) =>
+      Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0,
+    );
     // the per-run override ("this run only"): resolve the gate's kind from the open-gates read so the
     // posted value can never name a different kind's override.
     let overrides: Record<string, number | null> | undefined;
@@ -4241,12 +4819,17 @@ export function createWebApp(deps: WebDeps): Hono {
         (g) => g.id === c.req.param("gid"),
       );
       if (gate && (GATE_KINDS as readonly string[]).includes(gate.kind)) {
-        overrides = { [gate.kind as GateKind]: runOverride === "wait" ? null : Number(runOverride) };
+        overrides = {
+          [gate.kind as GateKind]: runOverride === "wait" ? null : Number(runOverride),
+        };
       }
     }
     try {
       await deps.dataSource.decideGate(session, row.id, c.req.param("gid"), {
-        action: action === "wait" ? "wait" : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
+        action:
+          action === "wait"
+            ? "wait"
+            : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
         ...(guidance != null ? { guidance } : {}),
         ...(standing ? { standingRule: true } : {}),
         ...(hasEdits ? { edits } : {}),
@@ -4270,15 +4853,19 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.body(null, 404);
     const form = await c.req.parseBody();
     const activity = typeof form.activity === "string" ? form.activity : "";
-    if (activity !== "present" && activity !== "reading" && activity !== "blur") return c.body(null, 422);
-    await deps.dataSource.recordGateActivity(session, row.id, c.req.param("gid"), activity).catch(() => undefined);
+    if (activity !== "present" && activity !== "reading" && activity !== "blur")
+      return c.body(null, 422);
+    await deps.dataSource
+      .recordGateActivity(session, row.id, c.req.param("gid"), activity)
+      .catch(() => undefined);
     return c.body(null, 204);
   });
 
   // PRB.05 — answer a Decisions row (the row's option, or "dismiss").
   app.post("/p/:project/decisions/:dcr", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -4305,7 +4892,8 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/import/preview", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const json = wantsJson(c);
     const slug = c.req.param("project");
     const input = await importInputFromFields(await bodyFields(c), slug);
@@ -4340,7 +4928,10 @@ export function createWebApp(deps: WebDeps): Hono {
     if (json) {
       // The ready preview the document renders on the POST — non-addressable state the leaf
       // paints in place (the GET twin's `qk` leg stays the poll/refresh target).
-      return c.json({ ok: true, data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) } });
+      return c.json({
+        ok: true,
+        data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) },
+      });
     }
     // SPA.27 — the SSR preview leg is deleted: the poll URL round-trips the quarantine key so the
     // preview leaf recomposes the ready card off the /bff twin.
@@ -4363,7 +4954,8 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/import/create", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const input = await importInputFromFields(await bodyFields(c), slug);
     try {
@@ -4371,7 +4963,12 @@ export function createWebApp(deps: WebDeps): Hono {
     } catch (e) {
       // PRB.21 — the converted object wasn't there yet (a stale preview page or a slow Job): the api
       // 409s `conversion_pending` — drop back to the converting state; its poll finishes the preview.
-      if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending" && input.quarantineKey) {
+      if (
+        e instanceof ApiError &&
+        e.status === 409 &&
+        e.code === "conversion_pending" &&
+        input.quarantineKey
+      ) {
         if (wantsJson(c)) {
           return c.json({
             ok: true,
@@ -4406,10 +5003,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // comes in the form. On success the sheet reports the run started (§5.6 item 10).
   app.post("/p/:project/run", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.20 (REQ-BFF-1/2) — a JSON caller posts the SAME flat field map as the form
     // (`bodyFields` decodes both content types; an unchecked checkbox contributes nothing
     // either way — the `toggleKeys` sentinel grammar is unchanged).
@@ -4481,7 +5082,9 @@ export function createWebApp(deps: WebDeps): Hono {
     // settings write before the run create (a pref write never blocks a run — failures swallow).
     const dontAskUnder = Number(str("dontAskUnder"));
     if (Number.isInteger(dontAskUnder) && dontAskUnder >= 0 && str("dontAskUnder") !== "") {
-      await deps.dataSource.setConsentPref?.(session, Math.min(dontAskUnder, 1000)).catch(() => undefined);
+      await deps.dataSource
+        .setConsentPref?.(session, Math.min(dontAskUnder, 1000))
+        .catch(() => undefined);
     }
     let created: CreatedRunDto | undefined;
     try {
@@ -4497,7 +5100,9 @@ export function createWebApp(deps: WebDeps): Hono {
         // R5ECON.2 — a posted `cogsLevers` field (JSON string) is the N6 leg's registry pin; the api
         // resolves it into `inputs.cogsLevers` on is_test only (REQ-ECON-11's opt-out channel).
         inputs: {
-          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+          ...(cogsLeversField(str("cogsLevers"))
+            ? { cogsLevers: cogsLeversField(str("cogsLevers")) }
+            : {}),
         },
         // the sheet's resolved Advanced toggle set — the api freezes it into the run inputs as
         // manifest opt-out flags AND re-derives the estimate from it (PRB.23).
@@ -4519,7 +5124,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(parseUserSourcesField(str("userSources")).length > 0
           ? { userSources: parseUserSourcesField(str("userSources")) }
           : {}),
-        ...(str("approval") ? { approvalPolicy: str("approval") as "named" | "wait_each" | "run_to_completion" } : {}),
+        ...(str("approval")
+          ? { approvalPolicy: str("approval") as "named" | "wait_each" | "run_to_completion" }
+          : {}),
         // P1.09 (§5.6/§6.4) — the sheet's "this run only, autonomously" check posts `autoProceedRun`;
         // the api freezes runs.gates_off on THIS run only (the project policy is untouched).
         ...(form.autoRun === "on" ? { autoProceedRun: true } : {}),
@@ -4579,17 +5186,24 @@ export function createWebApp(deps: WebDeps): Hono {
   // never a form field, so this route is no open redirect.
   app.post("/p/:project/exhausted", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.20 (REQ-BFF-1/2/27) — `bodyFields` decodes both content types; the JSON arms answer the
     // SAME envelope the 302s carried: `{ok,redirect:"…?notice=purchase_paused"}` for a closed
     // purchase switch, `{ok,url}` for the Payment Link hand-off (validated against the Stripe-hosted
     // allowlist AGAIN inside mutationOutcome — a refused link can never reach the wire, and a JSON
     // caller is never handed a 302), `{ok,redirect}` for the plain return.
     const form = await bodyFields(c);
-    const action = typeof form.action_taken === "string" && form.action_taken !== "" ? form.action_taken : "unknown";
+    const action =
+      typeof form.action_taken === "string" && form.action_taken !== ""
+        ? form.action_taken
+        : "unknown";
     await deps.dataSource.recordExhaustedPrompt(session, action).catch(() => undefined);
     if (action === "open_payment_link") {
       const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
@@ -4637,10 +5251,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = row.slug;
     // STB.2 — the api's dossier 404 (a run that completed without a delivered review correspondence)
     // must render the not-found page, not escape as a 500.
-    const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId }).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
+    const dossier = await deps.dataSource
+      .getDossier(session, { projectSlug: slug, runId })
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
     if (!dossier) return null;
     // P1.19 — landing on a run deep link collapses the run's Inbox rows read (REQ-MOBILE-16; the
     // api's mark is idempotent — opening the dossier from anywhere counts as "seen").
@@ -4654,9 +5270,19 @@ export function createWebApp(deps: WebDeps): Hono {
     const savedFindingId = c.req.query("disposed") || undefined;
     // PRB.12 — the reading surface's view emissions (the intake whitelist's whole reason to exist):
     // the report view itself, each rendered finding, and the second-read section when it has content.
-    emit(session, "run.report_viewed", { cost_actual: dossier.runCard.spentCredits }, { projectId: row.id, runId });
+    emit(
+      session,
+      "run.report_viewed",
+      { cost_actual: dossier.runSummary.card.spentCredits },
+      { projectId: row.id, runId },
+    );
     for (const f of dossier.findings) {
-      emit(session, "finding.viewed", { severity: f.severity, phase_of_origin: f.origin }, { projectId: row.id, runId });
+      emit(
+        session,
+        "finding.viewed",
+        { severity: f.severity, phase_of_origin: f.origin },
+        { projectId: row.id, runId },
+      );
     }
     if (dossier.findings.some((f) => f.origin === "second_read")) {
       emit(session, "secondread.opened", {}, { projectId: row.id, runId });
@@ -4665,22 +5291,28 @@ export function createWebApp(deps: WebDeps): Hono {
     // triage mode (?triage=1), the consolidated bulk preview (?bulk=<action>[&bsec]), a dispatch
     // result (?bulkdone), and the notice a bounced finding POST re-renders (?applied/?promoted/?obligated/?ferr).
     const filters: Record<string, string | undefined> = {
-      sev: c.req.query("sev"), kind: c.req.query("kind"), disp: c.req.query("disp"),
-      sec: c.req.query("sec"), url: c.req.query("url"), sug: c.req.query("sug"), obl: c.req.query("obl"),
+      sev: c.req.query("sev"),
+      kind: c.req.query("kind"),
+      disp: c.req.query("disp"),
+      sec: c.req.query("sec"),
+      url: c.req.query("url"),
+      sug: c.req.query("sug"),
+      obl: c.req.query("obl"),
     };
     const filteredRows = filterFindings(
       applySeverityBudget([...dossier.findings], dossier.rigor),
       parseFindingFilters(filters),
     );
     const bulkAction = c.req.query("bulk");
-    const bulkPreview = bulkAction != null && deps.dataSource.previewBulkFindings != null
-      ? await deps.dataSource
-          .previewBulkFindings(session, row.id, runId, {
-            action: bulkAction as "apply_notes" | "defer_minor" | "accept_section",
-            ...(c.req.query("bsec") != null ? { section: c.req.query("bsec")! } : {}),
-          })
-          .catch(() => null)
-      : null;
+    const bulkPreview =
+      bulkAction != null && deps.dataSource.previewBulkFindings != null
+        ? await deps.dataSource
+            .previewBulkFindings(session, row.id, runId, {
+              action: bulkAction as "apply_notes" | "defer_minor" | "accept_section",
+              ...(c.req.query("bsec") != null ? { section: c.req.query("bsec")! } : {}),
+            })
+            .catch(() => null)
+        : null;
     const bulkDone = c.req.query("bulkdone");
     const notice = (() => {
       const applied = c.req.query("applied");
@@ -4726,7 +5358,14 @@ export function createWebApp(deps: WebDeps): Hono {
               },
             }
           : {}),
-        ...(bulkDone != null ? { bulkDone: { count: Number(bulkDone) || 0, skipped: Number(c.req.query("bulkskip") ?? "0") || 0 } } : {}),
+        ...(bulkDone != null
+          ? {
+              bulkDone: {
+                count: Number(bulkDone) || 0,
+                skipped: Number(c.req.query("bulkskip") ?? "0") || 0,
+              },
+            }
+          : {}),
         ...(notice != null ? { notice } : {}),
         ...(focusedGate != null ? { focusedGate } : {}),
       },
@@ -4746,36 +5385,53 @@ export function createWebApp(deps: WebDeps): Hono {
   // the dossier + dossierView + the `ide` chrome bag off the SHARED composition. `?disposed` rides
   // the twin as `triage.savedFindingId` verbatim; `compact` is boot-owned (`deviceClass`), never
   // the twin's to decide.
-  app.get("/bff/p/:slug/review/:runId", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const runId = c.req.param("runId") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const comp = await dossierComposition(c, session, row, runId);
-    if (!comp) return c.json({ error: "not_found" }, 404);
-    const ctx = await ideContext(c, session, row, {
-      findings: comp.filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
-      ...(comp.timeline
-        ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` }
-        : { timeline: [{ id: runId, label: comp.dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
-      status: { version: comp.dossier.versionLabel },
-    });
-    return c.json({
-      dossier: comp.dossier,
-      dossierView: comp.dossierView,
-      ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
-      project: {
-        title: comp.dossier.projectTitle,
-        pill: "",
-        slug,
-        // R7RO.1 — the read-only carrier (the dossier surfaces withhold their write controls).
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/review/:runId",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const runId = c.req.param("runId") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const comp = await dossierComposition(c, session, row, runId);
+      if (!comp) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row, {
+        findings: comp.filteredRows.map((f) => ({
+          id: f.id,
+          severity: f.severity,
+          kind: f.kind,
+          excerpt: f.title,
+        })),
+        ...(comp.timeline
+          ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` }
+          : {
+              timeline: [
+                {
+                  id: runId,
+                  label: comp.dossier.versionLabel,
+                  state: "delivered",
+                  href: `/p/${slug}/review/${runId}`,
+                },
+              ],
+            }),
+        status: { version: comp.dossier.versionLabel },
+      });
+      return c.json({
+        dossier: comp.dossier,
+        dossierView: comp.dossierView,
+        ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
+        project: {
+          title: comp.dossier.projectTitle,
+          pill: "",
+          slug,
+          // R7RO.1 — the read-only carrier (the dossier surfaces withhold their write controls).
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // ---- P1.05 — the run report + §6.5 steering + the live-feed SSE proxy (§5.5/§14.5) ----
 
@@ -4829,41 +5485,44 @@ export function createWebApp(deps: WebDeps): Hono {
   // replayed rows + `lastSeq` + the same-origin events URL let the leaf's `useIdeFeed` bind the
   // one EventSource with `?after=` resume, so the report's run progress + spend ticker is the
   // live binding REQ-UX-15 names (the ticket's KEY PORT).
-  app.get("/bff/p/:slug/r/:runId", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const runId = c.req.param("runId") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const comp = await runReportComposition(c, session, row, runId);
-    if (!comp) return c.json({ error: "not_found" }, 404);
-    const feedData = row.activeRun ? await liveFeedSlice(session, row.activeRun.runId) : null;
-    const ctx = await ideContext(c, session, row, {
-      ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
-      ...(row.activeRun && feedData
-        ? {
-            feed: {
-              runId: row.activeRun.runId,
-              eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
-              density: "details" as const,
-              rows: feedData.rows,
-              lastSeq: feedData.lastSeq,
-            },
-          }
-        : {}),
-    });
-    return c.json({
-      runReport: { slug, runId, report: comp.report },
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/r/:runId",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const runId = c.req.param("runId") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const comp = await runReportComposition(c, session, row, runId);
+      if (!comp) return c.json({ error: "not_found" }, 404);
+      const feedData = row.activeRun ? await liveFeedSlice(session, row.activeRun.runId) : null;
+      const ctx = await ideContext(c, session, row, {
+        ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
+        ...(row.activeRun && feedData
+          ? {
+              feed: {
+                runId: row.activeRun.runId,
+                eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
+                density: "details" as const,
+                rows: feedData.rows,
+                lastSeq: feedData.lastSeq,
+              },
+            }
+          : {}),
+      });
+      return c.json({
+        runReport: { slug, runId, report: comp.report },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // §4.2 — the usage deep-link's canonical redirect: /app/usage/r/:run → /p/<slug>/r/<run>#report.
   app.get("/app/usage/r/:runId", async (c) => {
@@ -4905,7 +5564,11 @@ export function createWebApp(deps: WebDeps): Hono {
       // 502 is the error line's status/severity (a misclassified 4xx→502 is itself worth the trail).
       // The 404 pass-through is the expected "no such run" — not a server fault, no line.
       if (upstream && upstream.status !== 404) {
-        logWebRouteError(c, { status: 502, upstreamStatus: upstream.status, msg: "sse_upstream_refused" });
+        logWebRouteError(c, {
+          status: 502,
+          upstreamStatus: upstream.status,
+          msg: "sse_upstream_refused",
+        });
       }
       return c.json({ error: "upstream_unavailable" }, upstream?.status === 404 ? 404 : 502);
     }
@@ -4939,7 +5602,8 @@ export function createWebApp(deps: WebDeps): Hono {
       // SPA.22 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): a JSON caller is never handed
       // the document's 302/404 HTML arms — `{error}` at the preserved status on refusal,
       // `{ok,redirect}` on success (the leaf navigates the redirect + invalidates).
-      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      if (!session)
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project");
       const runId = c.req.param("runId");
       const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -4958,20 +5622,37 @@ export function createWebApp(deps: WebDeps): Hono {
         // preserved in the envelope so the leaf maps 400/404/409 to invalidate-and-re-read
         // (design/22 §3's stale-state note); the form post keeps the redirect arm.
         if (wantsJson(c)) return bffFail(c, e, { msg: "run_steer_failed" });
-        if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 400))) throw e;
+        if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 400)))
+          throw e;
       }
       return mutationOutcome(c, { redirect: `/p/${slug}` });
     };
 
-  app.post("/p/:project/r/:runId/pause", steerHandler((s, runId) => deps.dataSource.pauseRun(s, runId)));
-  app.post("/p/:project/r/:runId/resume", steerHandler((s, runId, note) => deps.dataSource.resumeRun(s, runId, note)));
-  app.post("/p/:project/r/:runId/stop", steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)));
-  app.post("/p/:project/r/:runId/cancel", steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)));
-  app.post("/p/:project/r/:runId/note", steerHandler(async (s, runId, text) => {
-    if (text == null || text.trim() === "") return; // an empty note is a no-op, never a write
-    return deps.dataSource.postRunNote(s, runId, text);
-  }));
-  app.post("/p/:project/r/:runId/walkthrough", steerHandler((s, runId) => deps.dataSource.retryWalkthrough(s, runId)));
+  app.post(
+    "/p/:project/r/:runId/pause",
+    steerHandler((s, runId) => deps.dataSource.pauseRun(s, runId)),
+  );
+  app.post(
+    "/p/:project/r/:runId/resume",
+    steerHandler((s, runId, note) => deps.dataSource.resumeRun(s, runId, note)),
+  );
+  app.post(
+    "/p/:project/r/:runId/stop",
+    steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)),
+  );
+  app.post(
+    "/p/:project/r/:runId/cancel",
+    steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)),
+  );
+  app.post(
+    "/p/:project/r/:runId/note",
+    steerHandler(async (s, runId, text) => {
+      if (text == null || text.trim() === "") return; // an empty note is a no-op, never a write
+      return deps.dataSource.postRunNote(s, runId, text);
+    }),
+  );
+  // R7COPY.0/ADR-130 — the walkthrough retry POST is retired with the generator (the record-composed
+  // card has nothing to retry). The REQ-IDE-48 landing above stays: it lands on the run card.
 
   // DEF.4 — the §14.4 refund-window POST (plain form; REQ-SPEC-24(6)). The report's `refundWindow`
   // block is the only place this control renders, so the api's flag + eligibility re-check is the
@@ -4983,7 +5664,8 @@ export function createWebApp(deps: WebDeps): Hono {
     // `{accept: application/json}` and follows `{ok,redirect}` (the same `/p/:slug/r/:runId#report`
     // target) — an expected refusal's preserved status maps to invalidate-and-re-read, which is
     // the SSR stale→re-render arm verbatim (design/22 §3's stale-state note).
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -4995,7 +5677,8 @@ export function createWebApp(deps: WebDeps): Hono {
       await deps.dataSource.requestRefund(session, runId);
     } catch (e) {
       if (wantsJson(c)) return bffFail(c, e, { msg: "run_refund_failed" });
-      if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 403))) throw e;
+      if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 403)))
+        throw e;
     }
     return mutationOutcome(c, { redirect: `/p/${slug}/r/${runId}#report` });
   });
@@ -5008,13 +5691,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     // SPA.21 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): a JSON caller is never handed the
     // document's 302/404 HTML arms — `{error}` at the preserved status, `{ok,redirect}` on success.
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const findingId = c.req.param("fid") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row || findingId === "") {
-      return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -5049,7 +5735,9 @@ export function createWebApp(deps: WebDeps): Hono {
       throw e;
     }
     // `{ok,redirect}` carries the IDENTICAL `?disposed=` flash URL the 302 would have.
-    return mutationOutcome(c, { redirect: `${back}${back.includes("?") ? "&" : "?"}disposed=${encodeURIComponent(findingId)}` });
+    return mutationOutcome(c, {
+      redirect: `${back}${back.includes("?") ? "&" : "?"}disposed=${encodeURIComponent(findingId)}`,
+    });
   };
   app.post("/p/:project/review/:runId/findings/:fid/disposition", dispositionHandler);
   app.post("/p/:project/findings/:fid/disposition", dispositionHandler);
@@ -5067,13 +5755,16 @@ export function createWebApp(deps: WebDeps): Hono {
       const session = deps.session(c);
       // SPA.21 — `wantsJson` dual-mode (REQ-BFF-1/3/4): JSON callers get `{error}`/`{ok,redirect}`,
       // never the document's 302/HTML arms.
-      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      if (!session)
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project") ?? "";
       const runId = c.req.param("runId") ?? "";
       const findingId = c.req.param("fid") ?? "";
       const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
       if (!row || findingId === "") {
-        return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+        return wantsJson(c)
+          ? c.json({ error: "not_found" }, 404)
+          : c.html(renderDocument(c.req.path, notFoundElement), 404);
       }
       const form = await bodyFields(c);
       const nextRaw = typeof form["next"] === "string" ? form["next"] : "";
@@ -5090,12 +5781,16 @@ export function createWebApp(deps: WebDeps): Hono {
               : e.status === 422
                 ? "The suggestion can't be applied — its anchor no longer resolves."
                 : "The finding wasn't found.";
-          return c.redirect(`${back}${sep}ferr=${encodeURIComponent(findingId)}&fmsg=${encodeURIComponent(msg)}`);
+          return c.redirect(
+            `${back}${sep}ferr=${encodeURIComponent(findingId)}&fmsg=${encodeURIComponent(msg)}`,
+          );
         }
         throw e;
       }
       const sep = back.includes("?") ? "&" : "?";
-      return mutationOutcome(c, { redirect: `${back}${sep}${notice}=${encodeURIComponent(findingId)}#finding-${encodeURIComponent(findingId)}` });
+      return mutationOutcome(c, {
+        redirect: `${back}${sep}${notice}=${encodeURIComponent(findingId)}#finding-${encodeURIComponent(findingId)}`,
+      });
     };
 
   const callApply = (s: SessionHeaders, p: string, f: string) => {
@@ -5111,12 +5806,24 @@ export function createWebApp(deps: WebDeps): Hono {
     return fn == null ? Promise.reject(new ApiError(404, "finding-write")) : fn(s, p, f);
   };
 
-  app.post("/p/:project/review/:runId/findings/:fid/apply", findingActionHandler(callApply, "applied"));
+  app.post(
+    "/p/:project/review/:runId/findings/:fid/apply",
+    findingActionHandler(callApply, "applied"),
+  );
   app.post("/p/:project/findings/:fid/apply", findingActionHandler(callApply, "applied"));
-  app.post("/p/:project/review/:runId/findings/:fid/promote", findingActionHandler(callPromote, "promoted"));
+  app.post(
+    "/p/:project/review/:runId/findings/:fid/promote",
+    findingActionHandler(callPromote, "promoted"),
+  );
   app.post("/p/:project/findings/:fid/promote", findingActionHandler(callPromote, "promoted"));
-  app.post("/p/:project/review/:runId/findings/:fid/obligations", findingActionHandler(callObligate, "obligated"));
-  app.post("/p/:project/findings/:fid/obligations", findingActionHandler(callObligate, "obligated"));
+  app.post(
+    "/p/:project/review/:runId/findings/:fid/obligations",
+    findingActionHandler(callObligate, "obligated"),
+  );
+  app.post(
+    "/p/:project/findings/:fid/obligations",
+    findingActionHandler(callObligate, "obligated"),
+  );
 
   // ---- P1.07 — the palette's free-form obligation (REQ-OBJ-10). GET renders the one-field form
   //      (the palette row + the Desk's "New obligation" land here); POST files `source: 'user'`
@@ -5132,30 +5839,36 @@ export function createWebApp(deps: WebDeps): Hono {
   // own composition verbatim — slug, project title, the `safeBack`-resolved `back`. The create POST
   // is the SAME `/p/:slug/obligations` path with a `wantsJson` branch (the DOM contract's form action
   // is the wire contract).
-  app.get("/bff/p/:slug/obligations/new", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    // design/22 `p.obligationNew`: `?back` keeps the `safeBack` `/p/…` confinement.
-    const back = safeBack(c.req.query("back") ?? "", `/p/${slug}`);
-    return c.json({
-      obligationNew: {
-        slug,
-        projectTitle: row.title,
-        back,
-        // R7RO.1 — a read-only project withholds the create form (hidden before any request).
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/obligations/new",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      // design/22 `p.obligationNew`: `?back` keeps the `safeBack` `/p/…` confinement.
+      const back = safeBack(c.req.query("back") ?? "", `/p/${slug}`);
+      return c.json({
+        obligationNew: {
+          slug,
+          projectTitle: row.title,
+          back,
+          // R7RO.1 — a read-only project withholds the create form (hidden before any request).
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+      });
+    }),
+  );
   app.post("/p/:project/obligations", async (c) => {
     const session = deps.session(c);
     // SPA.21 — `wantsJson` dual-mode: JSON callers get `{error}`/`{ok,redirect}`, never HTML/302.
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
-      return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     const form = await bodyFields(c);
     const title = typeof form["title"] === "string" ? form["title"].trim() : "";
@@ -5164,7 +5877,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (title === "") {
       // the document's empty-title arm is a 422 re-render; the JSON arm is the same status + a
       // stable code (the leaf re-renders the form's own error line).
-      if (wantsJson(c)) return c.json({ error: "title_required", detail: COPY.obligation.required }, 422);
+      if (wantsJson(c))
+        return c.json({ error: "title_required", detail: COPY.obligation.required }, 422);
       // SPA.27 — the SSR form is deleted: a form-mode failure lands back on the form URL (the
       // leaf holds its own field/error state) with the safeBack-confined `back` preserved.
       return c.redirect(`/p/${slug}/obligations/new?back=${encodeURIComponent(back)}`);
@@ -5198,11 +5912,15 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     // SPA.21 — `wantsJson` dual-mode: the preview bounce is a navigation request — a JSON caller
     // gets `{ok,redirect}` carrying the IDENTICAL `?bulk=&bsec=#findings` URL.
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
     const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
@@ -5215,19 +5933,31 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/review/:runId/findings/bulk", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
     const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
-    const only = form["only"] == null ? undefined
-      : Array.isArray(form["only"]) ? (form["only"] as string[]).filter((s): s is string => typeof s === "string")
-      : typeof form["only"] === "string" ? [form["only"] as string] : undefined;
+    const only =
+      form["only"] == null
+        ? undefined
+        : Array.isArray(form["only"])
+          ? (form["only"] as string[]).filter((s): s is string => typeof s === "string")
+          : typeof form["only"] === "string"
+            ? [form["only"] as string]
+            : undefined;
     const back = `/p/${slug}/review/${runId}`;
-    if (!["apply_notes", "defer_minor", "accept_section"].includes(action) || deps.dataSource.applyBulkFindings == null) {
+    if (
+      !["apply_notes", "defer_minor", "accept_section"].includes(action) ||
+      deps.dataSource.applyBulkFindings == null
+    ) {
       return mutationOutcome(c, { redirect: back });
     }
     try {
@@ -5236,11 +5966,15 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(section !== "" ? { section } : {}),
         ...(only != null ? { only } : {}),
       });
-      return mutationOutcome(c, { redirect: `${back}?bulkdone=${result.count}&bulkskip=${result.skipped.length}#findings` });
+      return mutationOutcome(c, {
+        redirect: `${back}?bulkdone=${result.count}&bulkskip=${result.skipped.length}#findings`,
+      });
     } catch (e) {
       if (wantsJson(c)) return bffFail(c, e, { msg: "dossier_bulk_failed" });
       if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
-        return c.redirect(`${back}?ferr=bulk&fmsg=${encodeURIComponent("The bulk action did not complete — the ledger may be frozen.")}#findings`);
+        return c.redirect(
+          `${back}?ferr=bulk&fmsg=${encodeURIComponent("The bulk action did not complete — the ledger may be frozen.")}#findings`,
+        );
       }
       throw e;
     }
@@ -5278,54 +6012,59 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // `GET /bff/p/:slug` — the project-overview aggregate: the shared composition verbatim + the
   // `ide` chrome bag (timeline/feed/status slices included via `overviewIdeOpts`).
-  app.get("/bff/p/:slug", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const comp = await projectOverviewComposition(c, session, row);
-    const ctx = await ideContext(c, session, { ...row, slug }, overviewIdeOpts(slug, comp, row));
-    const { projectVoice, pageLoad } = comp;
-    const phone = isPhoneRequest(c);
-    return c.json({
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        headDraftId: row.headDraftId,
-        headDraftN: row.headDraftN ?? null,
-        // R7RO.1 (REQ-DWEB-14) — the row facts the request-scoped boot cannot see: `showcase`
-        // stays as a project fact, and the ReadOnlyProject carrier names the reason. A run lock
-        // on the working head reads as `run_lock` (DS §5.4 — a frozen version is NOT a reason).
-        ...(row.showcase === true ? { showcase: true } : {}),
-        readOnlyProject:
-          row.showcase === true
-            ? { reason: "showcase" as const }
-            : pageLoad?.doc.lock != null
-              ? { reason: "run_lock" as const }
-              : null,
-      },
-      gates: comp.gates,
-      decisions: comp.decisions,
-      approvalOverrides: comp.approvalOverrides,
-      ...(comp.approvalSettings ? { approvalSettings: comp.approvalSettings } : {}),
-      explainersDismissed: comp.explainersDismissed,
-      ...(projectVoice ? { projectVoice } : {}),
-      ...(pageLoad
-        ? {
-            page: {
-              slug,
-              projectId: row.id,
-              doc: pageLoad.doc,
-              ...(phone || row.showcase ? { readOnly: true } : {}),
-              ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
-            },
-          }
-        : {}),
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const comp = await projectOverviewComposition(c, session, row);
+      const ctx = await ideContext(c, session, { ...row, slug }, overviewIdeOpts(slug, comp, row));
+      const { projectVoice, pageLoad } = comp;
+      const phone = isPhoneRequest(c);
+      return c.json({
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          headDraftN: row.headDraftN ?? null,
+          // R7RO.1 (REQ-DWEB-14) — the row facts the request-scoped boot cannot see: `showcase`
+          // stays as a project fact, and the ReadOnlyProject carrier names the reason. A run lock
+          // on the working head reads as `run_lock` (DS §5.4 — a frozen version is NOT a reason).
+          ...(row.showcase === true ? { showcase: true } : {}),
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : pageLoad?.doc.lock != null
+                ? { reason: "run_lock" as const }
+                : null,
+        },
+        gates: comp.gates,
+        decisions: comp.decisions,
+        approvalOverrides: comp.approvalOverrides,
+        ...(comp.approvalSettings ? { approvalSettings: comp.approvalSettings } : {}),
+        explainersDismissed: comp.explainersDismissed,
+        ...(projectVoice ? { projectVoice } : {}),
+        ...(pageLoad
+          ? {
+              page: {
+                slug,
+                projectId: row.id,
+                doc: pageLoad.doc,
+                ...(phone || row.showcase ? { readOnly: true } : {}),
+                ...(deps.collabWsUrl && !(phone || row.showcase)
+                  ? { collabWsUrl: deps.collabWsUrl }
+                  : {}),
+              },
+            }
+          : {}),
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // REQ-BFF-22 — the handoff POST (the `?focus=1` suppression + the unread-run_finished consume live
   // inside `projectHandoffHandler`, verbatim with the document's redirect arm).
@@ -5333,147 +6072,163 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // `GET /bff/p/:slug/v/:v` — the version Page. The `working`-miss arm answers
   // `{ok:true, redirect:"/p/:slug"}` (the document's 302 verbatim; REQ-BFF-8).
-  app.get("/bff/p/:slug/v/:v", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const v = c.req.param("v") ?? "working";
-    const vcomp = await versionPageComposition(c, session, row, v);
-    if (vcomp.kind === "redirect") return c.json({ ok: true, redirect: `/p/${slug}` });
-    if (vcomp.kind === "notFound") return c.json({ error: "not_found" }, 404);
-    const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
-    const { doc } = pageLoad;
-    const phone = isPhoneRequest(c);
-    const ctx = await ideContext(c, session, row, {
-      status: {
-        version: `v${doc.draftN}`,
-        ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
-        ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
-        ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
-      },
-    });
-    return c.json({
-      page: {
-        slug,
-        projectId: row.id,
-        doc,
-        ...(phone || row.showcase ? { readOnly: true } : {}),
-        ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
-        ...(railData && !phone
-          ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview) }
-          : {}),
-      },
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        headDraftId: row.headDraftId,
-        ...(row.showcase === true ? { showcase: true } : {}),
-        // R7RO.1 — showcase rows read as read-only; a held run lock reads as `run_lock`.
-        readOnlyProject:
-          row.showcase === true
-            ? { reason: "showcase" as const }
-            : doc.lock != null
-              ? { reason: "run_lock" as const }
-              : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/v/:v",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const v = c.req.param("v") ?? "working";
+      const vcomp = await versionPageComposition(c, session, row, v);
+      if (vcomp.kind === "redirect") return c.json({ ok: true, redirect: `/p/${slug}` });
+      if (vcomp.kind === "notFound") return c.json({ error: "not_found" }, 404);
+      const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
+      const { doc } = pageLoad;
+      const phone = isPhoneRequest(c);
+      const ctx = await ideContext(c, session, row, {
+        status: {
+          version: `v${doc.draftN}`,
+          ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+          ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+          ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
+        },
+      });
+      return c.json({
+        page: {
+          slug,
+          projectId: row.id,
+          doc,
+          ...(phone || row.showcase ? { readOnly: true } : {}),
+          ...(deps.collabWsUrl && !(phone || row.showcase)
+            ? { collabWsUrl: deps.collabWsUrl }
+            : {}),
+          ...(railData && !phone
+            ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview) }
+            : {}),
+        },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          ...(row.showcase === true ? { showcase: true } : {}),
+          // R7RO.1 — showcase rows read as read-only; a held run lock reads as `run_lock`.
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : doc.lock != null
+                ? { reason: "run_lock" as const }
+                : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // `GET /bff/p/:slug/v/:n/diff/:m` — the §5.8 generalized compare (`?layout`/`?commented` are
   // leaf-owned echoes; `m` may be `working`).
-  app.get("/bff/p/:slug/v/:n/diff/:m", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const n = c.req.param("n") ?? "";
-    const m = c.req.param("m") ?? "";
-    const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!data) return c.json({ error: "not_found" }, 404);
-    const ctx = await ideContext(c, session, row);
-    return c.json({
-      compare: { slug, n, m, data },
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        headDraftId: row.headDraftId,
-        ...(row.showcase === true ? { showcase: true } : {}),
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
-
-  // `GET /bff/p/:slug/a/:artifactId` — the read-only artifact Page (415/404 → the twin's 404).
-  app.get("/bff/p/:slug/a/:artifactId", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const doc = await deps.dataSource
-      .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
-      .catch((e) => {
-        if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
+  app.get(
+    "/bff/p/:slug/v/:n/diff/:m",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const n = c.req.param("n") ?? "";
+      const m = c.req.param("m") ?? "";
+      const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
         throw e;
       });
-    if (!doc) return c.json({ error: "not_found" }, 404);
-    const ctx = await ideContext(c, session, row, {
-      status: {
-        version: `v${doc.draftN}`,
-        ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
-        ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
-      },
-    });
-    return c.json({
-      page: { slug, projectId: row.id, doc, readOnly: true },
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        headDraftId: row.headDraftId,
-        ...(row.showcase === true ? { showcase: true } : {}),
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+      if (!data) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        compare: { slug, n, m, data },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          ...(row.showcase === true ? { showcase: true } : {}),
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
+
+  // `GET /bff/p/:slug/a/:artifactId` — the read-only artifact Page (415/404 → the twin's 404).
+  app.get(
+    "/bff/p/:slug/a/:artifactId",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const doc = await deps.dataSource
+        .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
+        .catch((e) => {
+          if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
+          throw e;
+        });
+      if (!doc) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row, {
+        status: {
+          version: `v${doc.draftN}`,
+          ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+          ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+        },
+      });
+      return c.json({
+        page: { slug, projectId: row.id, doc, readOnly: true },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          ...(row.showcase === true ? { showcase: true } : {}),
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // `GET /bff/p/:slug/revisions/:cid` — the What-changed read (`?commented` is a leaf-owned echo).
-  app.get("/bff/p/:slug/revisions/:cid", bffRoute(deps, async (c, session) => {
-    const slug = c.req.param("slug") ?? "";
-    const row = await bffProjectRow(c, deps.dataSource, session, slug);
-    if (!row) return c.json({ error: "not_found" }, 404);
-    const data = await deps.dataSource.getWhatChanged(session, row.id, c.req.param("cid") ?? "").catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!data) return c.json({ error: "not_found" }, 404);
-    const ctx = await ideContext(c, session, row);
-    return c.json({
-      revision: { slug, data },
-      project: {
-        title: row.title,
-        pill: row.state.pill,
-        slug,
-        headDraftId: row.headDraftId,
-        ...(row.showcase === true ? { showcase: true } : {}),
-        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
-      },
-      paperTheme: ctx.paperTheme ?? "light",
-      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
-      ide: ctx.ide,
-    });
-  }));
+  app.get(
+    "/bff/p/:slug/revisions/:cid",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const data = await deps.dataSource
+        .getWhatChanged(session, row.id, c.req.param("cid") ?? "")
+        .catch((e) => {
+          if (e instanceof ApiError && e.status === 404) return null;
+          throw e;
+        });
+      if (!data) return c.json({ error: "not_found" }, 404);
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        revision: { slug, data },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          ...(row.showcase === true ? { showcase: true } : {}),
+          readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   app.get("/p/:project/revisions/:cid", async (c) => {
     const session = deps.session(c);
@@ -5511,7 +6266,8 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const cid = c.req.param("cid");
     const hunkId = c.req.param("hunkId");
@@ -5524,7 +6280,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const form = await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
     if (text !== "") {
-      await deps.dataSource.commentOnHunk(session, row.id, cid, hunkId, text).catch(() => undefined);
+      await deps.dataSource
+        .commentOnHunk(session, row.id, cid, hunkId, text)
+        .catch(() => undefined);
     }
     const href = `/p/${slug}/revisions/${cid}?commented=${encodeURIComponent(hunkId)}`;
     // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
@@ -5577,7 +6335,8 @@ export function createWebApp(deps: WebDeps): Hono {
       // back to the project page (the empty-state cards / import affordance live there) instead of
       // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404.
       if (vcomp.kind === "redirect") return c.redirect(`/p/${slug}`);
-      if (vcomp.kind === "notFound") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      if (vcomp.kind === "notFound")
+        return c.html(renderDocument(c.req.path, notFoundElement), 404);
       const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
       const { doc } = pageLoad;
 
@@ -5621,10 +6380,14 @@ export function createWebApp(deps: WebDeps): Hono {
             // a read-only SSR page gets NO collab wire: the island mounts the static view and nothing
             // connects, types, or forks (locks mid-session still attach read-only + the rhema.readonly
             // stateless flips the pill — the socket stays for pages that were writable at render).
-            ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
+            ...(deps.collabWsUrl && !(phone || row.showcase)
+              ? { collabWsUrl: deps.collabWsUrl }
+              : {}),
             ...(c.req.query("noted") ? { noteSaved: true } : {}),
             ...(railData && !phone
-              ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview, restoredN) }
+              ? {
+                  rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview, restoredN),
+                }
               : {}),
           },
           dwellSurface: "page",
@@ -5642,7 +6405,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // saveManualRevision (frozen ⇒ fork; agent/imported head ⇒ 409 → the page re-renders unchanged).
   app.post("/p/:project/v/:v/restore/:rp", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -5658,7 +6422,14 @@ export function createWebApp(deps: WebDeps): Hono {
         : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     const applied = await Promise.resolve()
-      .then(() => deps.dataSource.applyRestorePoint?.(session, row.id, resolved.draftId, c.req.param("rp") ?? ""))
+      .then(() =>
+        deps.dataSource.applyRestorePoint?.(
+          session,
+          row.id,
+          resolved.draftId,
+          c.req.param("rp") ?? "",
+        ),
+      )
       .catch(() => undefined);
     // A 409/404/503 (locked, unknown, unavailable) re-renders the page without the notice — the
     // preview card simply re-appears; a success redirects with `?restored=<n>` on the new head.
@@ -5700,7 +6471,14 @@ export function createWebApp(deps: WebDeps): Hono {
         renderDocument(c.req.path, compareElement, {
           ...(await ideContext(c, session, row)),
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
+          compare: {
+            slug,
+            n,
+            m,
+            layout,
+            data,
+            ...(commented ? { commentedHunkId: commented } : {}),
+          },
           compact: isPhoneRequest(c),
           ssrCause: "phone",
           dwellSurface: "page",
@@ -5717,7 +6495,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // anchored server-side on the resolved hunk). Progressive enhancement: plain form POST → redirect.
   app.post("/p/:project/v/:n/diff/:m/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -5731,7 +6510,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const form = await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
     if (text !== "") {
-      await deps.dataSource.commentOnCompareHunk(session, row.id, n, m, hunkId, text).catch(() => undefined);
+      await deps.dataSource
+        .commentOnCompareHunk(session, row.id, n, m, hunkId, text)
+        .catch(() => undefined);
     }
     const href = `/p/${slug}/v/${n}/diff/${m}?commented=${encodeURIComponent(hunkId)}`;
     // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
@@ -5832,7 +6613,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const contentType = c.req.header("content-type") ?? "";
     let markdown: string | null = null;
     // P1.02 — the Page's live provenance capture rides the same JSON save body.
-    let meta: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] } | undefined;
+    let meta:
+      | {
+          provenanceSpans?: { blockId: string; source: unknown }[];
+          agentSpans?: { blockId: string; from: number; to: number }[];
+        }
+      | undefined;
     if (contentType.includes("text/plain")) {
       markdown = await c.req.text();
     } else {
@@ -5865,7 +6651,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // The note field → a Guidance row (REQ-DATA-41's beta form). Progressive enhancement: a plain form POST.
   app.post("/p/:project/edit/:draftId/note", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -5875,7 +6662,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const form = await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
     if (text !== "") {
-      await deps.dataSource.postEditorNote(session, t.row.id, t.draftId, text).catch(() => undefined);
+      await deps.dataSource
+        .postEditorNote(session, t.row.id, t.draftId, text)
+        .catch(() => undefined);
     }
     const href = `/p/${t.slug}/edit/${t.draftId}?noted=1`;
     // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect (the
@@ -5888,7 +6677,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // re-renders — the next doc poll shows the released lock.
   app.post("/p/:project/edit/:draftId/cancel-run", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -5906,7 +6696,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // project page where the new run's card reports progress.
   app.post("/p/:project/edit/:draftId/revise", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -5945,16 +6736,21 @@ export function createWebApp(deps: WebDeps): Hono {
   // The export POST — a plain form POST that streams the download back (progressive enhancement: no JS).
   app.post("/p/:project/export", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await projectRow(c, session);
-    if (!t) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.17 (REQ-BFF-17) — the export's product is a binary `content-disposition` Response:
     // bytes never traverse a JSON envelope, so a `wantsJson` caller gets the honest refusal
     // instead of a 302 it could never follow to a file. The SPA keeps the NATIVE form POST —
     // the download IS the document navigation (design/22 §5).
     if (wantsJson(c)) return c.json({ error: "binary_download" }, 400);
     const form = await c.req.parseBody();
-    const format = typeof form.format === "string" && isExportFormat(form.format) ? form.format : null;
+    const format =
+      typeof form.format === "string" && isExportFormat(form.format) ? form.format : null;
     if (!format) {
       return c.redirect(`/p/${t.slug}/export?error=1`);
     }
@@ -5989,9 +6785,13 @@ export function createWebApp(deps: WebDeps): Hono {
   // The append-only statement write — one sentence at a time (REQ-VIS-10; no edit/delete exists).
   app.post("/p/:project/export/addition", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const t = await projectRow(c, session);
-    if (!t) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!t)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.17 — the `wantsJson` split (REQ-BFF-1/2/3): a JSON caller posts `{sentence}` and gets
     // the `{ok,redirect}` envelope whose redirect is the SAME `?added=1` flash target; the form
     // post's 302 is verbatim.
@@ -6013,7 +6813,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!isExportFormat(fmt)) {
       return c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
-    const dl = await deps.dataSource.downloadAiUseStatement(session, t.row.id, fmt).catch(() => null);
+    const dl = await deps.dataSource
+      .downloadAiUseStatement(session, t.row.id, fmt)
+      .catch(() => null);
     if (!dl) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     return new Response(dl.bytes, {
       status: 200,
@@ -6035,10 +6837,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // run is NEVER blocked by voice state — this is the optional chained action only.
   app.post("/p/:project/update-voice", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
-    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const personaId = typeof form.voice_persona === "string" ? form.voice_persona : "";
@@ -6047,7 +6853,9 @@ export function createWebApp(deps: WebDeps): Hono {
         .buildVoice(session, personaId, {
           tier: "quick",
           projectId: row.id,
-          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+          ...(cogsLeversField(str("cogsLevers"))
+            ? { cogsLevers: cogsLeversField(str("cogsLevers")) }
+            : {}),
         })
         .catch(() => undefined);
     }
@@ -6074,14 +6882,16 @@ export function createWebApp(deps: WebDeps): Hono {
   // §9.5 model, and — on "Create and build" — start the profile_voice{tier: quick} run (§9.2 item 3).
   app.post("/voices/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const name = str("name").trim();
     if (!name) {
       // SPA.13 — the JSON caller gets the refusal the document would re-render (REQ-BFF-2): the
       // SAME copy as `voiceNew.error`, stable code, preserved status.
-      if (wantsJson(c)) return c.json({ error: "name_required", detail: COPY.voice.new.nameRequired }, 400);
+      if (wantsJson(c))
+        return c.json({ error: "name_required", detail: COPY.voice.new.nameRequired }, 400);
       // SPA.27 — the SSR sheet is deleted: a form-mode failure lands back on the form URL (the
       // leaf holds its own field/error state; `?err` rides the notice vocabulary).
       return c.redirect("/voices/new?err=name_required");
@@ -6106,13 +6916,15 @@ export function createWebApp(deps: WebDeps): Hono {
     // description or ≥1 sample; Full needs ≥4 samples — the creation sheet attaches at most two
     // (text/file + URL), so a Full build always lands on the detail page to add the rest.
     if (intent === "build" && tier === "quick" && !hasSample && !sampleUrl) {
-      if (wantsJson(c)) return c.json({ error: "sample_required", detail: COPY.voice.new.sampleRequired }, 400);
+      if (wantsJson(c))
+        return c.json({ error: "sample_required", detail: COPY.voice.new.sampleRequired }, 400);
       return c.redirect("/voices/new?err=sample_required");
     }
     if (intent === "build" && tier === "full") {
       const hasCorpus = hasSample || sampleUrl !== "";
       if (!hasCorpus) {
-        if (wantsJson(c)) return c.json({ error: "full_required", detail: COPY.voice.new.fullRequired }, 400);
+        if (wantsJson(c))
+          return c.json({ error: "full_required", detail: COPY.voice.new.fullRequired }, 400);
         return c.redirect("/voices/new?err=full_required");
       }
     }
@@ -6149,7 +6961,9 @@ export function createWebApp(deps: WebDeps): Hono {
       const built = await deps.dataSource
         .buildVoice(session, created.personaId, {
           tier,
-          ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+          ...(cogsLeversField(str("cogsLevers"))
+            ? { cogsLevers: cogsLeversField(str("cogsLevers")) }
+            : {}),
         })
         .then(() => true)
         .catch(() => false);
@@ -6174,7 +6988,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // The seed editor's save — recomputes the J9 hash; the pill flips live on the redirect (§9.3).
   app.post("/v/:persona/seed", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -6196,7 +7011,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // estimate's <500 ms refresh (REQ-PERSONA-3); the redirect re-reads them.
   app.post("/v/:persona/samples", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -6233,11 +7049,13 @@ export function createWebApp(deps: WebDeps): Hono {
   // Registered BEFORE /samples/:itemId — otherwise `url` would be eaten as an item id.
   app.post("/v/:persona/samples/url", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const url = typeof form.url === "string" ? form.url.trim() : "";
-    const title = typeof form.title === "string" && form.title.trim() !== "" ? form.title.trim() : undefined;
+    const title =
+      typeof form.title === "string" && form.title.trim() !== "" ? form.title.trim() : undefined;
     if (url) {
       await deps.dataSource
         .addVoiceSampleUrl(session, personaId, { url, ...(title ? { title } : {}) })
@@ -6249,7 +7067,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // The per-item include/omit toggle (REQ-INGEST-4).
   app.post("/v/:persona/samples/:itemId", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const included = form.included === true || form.included === "true" || form.included === "on";
@@ -6266,7 +7085,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // the substack_export connection). There is NO credential field anywhere in the form (AC-I-B).
   app.post("/v/:persona/connections", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string).trim() : "");
@@ -6310,7 +7130,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // Samples tab then shows them awaiting the confirm checkboxes.
   app.post("/v/:persona/connections/:cid/discover", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .discoverVoiceConnection(session, personaId, c.req.param("cid"))
@@ -6322,15 +7143,15 @@ export function createWebApp(deps: WebDeps): Hono {
   // everything the provider listed but the box left unchecked is omitted.
   app.post("/v/:persona/connections/:cid/confirm", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const cid = c.req.param("cid");
     // Multi-value grammar: a form post repeats `include`/`known` (parseBody all:true); a JSON caller
     // posts string arrays — bodyFields decodes them verbatim (REQ-BFF-2's flat-field contract).
-    const form = wantsJson(c)
-      ? await bodyFields(c)
-      : await c.req.parseBody({ all: true });
-    const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : v != null && v !== "" ? [v] : []);
+    const form = wantsJson(c) ? await bodyFields(c) : await c.req.parseBody({ all: true });
+    const list = (v: unknown): unknown[] =>
+      Array.isArray(v) ? v : v != null && v !== "" ? [v] : [];
     const included = new Set(list(form.include).filter((v): v is string => typeof v === "string"));
     const known = list(form.known).filter((v): v is string => typeof v === "string");
     await deps.dataSource
@@ -6344,7 +7165,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // The manual Re-sync (REQ-INGEST-6) + "Re-sync all".
   app.post("/v/:persona/connections/:cid/sync", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .syncVoiceConnection(session, personaId, c.req.param("cid"))
@@ -6353,7 +7175,8 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/v/:persona/sync", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource.syncAllVoiceConnections(session, personaId).catch(() => undefined);
     return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
@@ -6362,12 +7185,16 @@ export function createWebApp(deps: WebDeps): Hono {
   // The per-source settings (auto-include new items; daily auto-sync).
   app.post("/v/:persona/connections/:cid/settings", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     await deps.dataSource
       .patchVoiceConnection(session, personaId, c.req.param("cid"), {
-        autoIncludeNew: form.autoIncludeNew === "on" || form.autoIncludeNew === "true" || form.autoIncludeNew === true,
+        autoIncludeNew:
+          form.autoIncludeNew === "on" ||
+          form.autoIncludeNew === "true" ||
+          form.autoIncludeNew === true,
         dailySync: form.dailySync === "on" || form.dailySync === "true" || form.dailySync === true,
       })
       .catch(() => undefined);
@@ -6377,7 +7204,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // Remove — soft-detach the source; the items + versions stay in the corpus.
   app.post("/v/:persona/connections/:cid/remove", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .removeVoiceConnection(session, personaId, c.req.param("cid"))
@@ -6390,7 +7218,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // metered worker job (never inline, never inside convert).
   app.post("/v/:persona/samples/:itemId/reconstruct", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const itemId = c.req.param("itemId");
     const form = await bodyFields(c);
@@ -6398,13 +7227,16 @@ export function createWebApp(deps: WebDeps): Hono {
     await deps.dataSource
       .reconstructVoiceSample(session, personaId, itemId, { tier, confirmed: true })
       .catch(() => undefined);
-    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples&sample=${itemId}&reconstruct=queued` });
+    return mutationOutcome(c, {
+      redirect: `/v/${personaId}?tab=samples&sample=${itemId}&reconstruct=queued`,
+    });
   });
 
   // Delete the voice (REQ-INGEST-16): the persona vanishes from every read; the purge job cascades.
   app.post("/v/:persona/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     // The typed-name confirm (the form requires it) — belt, since the api cascade is destructive.
@@ -6418,7 +7250,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // "Build voice" — a profile_voice{tier} run (§9.2 item 3); the api's gate owns the tier checks.
   app.post("/v/:persona/build", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -6428,7 +7261,9 @@ export function createWebApp(deps: WebDeps): Hono {
     await deps.dataSource
       .buildVoice(session, personaId, {
         tier,
-        ...(cogsLeversField(str("cogsLevers")) ? { cogsLevers: cogsLeversField(str("cogsLevers")) } : {}),
+        ...(cogsLeversField(str("cogsLevers"))
+          ? { cogsLevers: cogsLeversField(str("cogsLevers")) }
+          : {}),
       })
       .catch(() => undefined);
     return mutationOutcome(c, { redirect: `/v/${personaId}` });
@@ -6438,11 +7273,13 @@ export function createWebApp(deps: WebDeps): Hono {
   // (cheapest sufficient); `scope=full_from_quick` is the Quick→Full upgrade the button carries.
   app.post("/v/:persona/update", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const scope = typeof form.scope === "string" && form.scope !== "" ? form.scope : undefined;
-    const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
+    const register =
+      typeof form.register === "string" && form.register !== "" ? form.register : undefined;
     await deps.dataSource
       .updateVoice(session, personaId, {
         ...(scope ? { scope: scope as "full_from_quick" } : {}),
@@ -6455,7 +7292,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // P1.14 — the approve_sample card's decision (§9.2/§6.4): run-scoped (the build is a persona run).
   app.post("/v/:persona/gates/:gid", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const action = typeof form.action === "string" ? form.action : "";
@@ -6463,7 +7301,9 @@ export function createWebApp(deps: WebDeps): Hono {
     // The card's form posts the gate id; the run id rides a hidden field so a stale page can't
     // aim the decision at a different run's gate.
     if (runId && (action === "approve" || action === "wait" || action === "stop")) {
-      await deps.dataSource.decideRunGate(session, runId, c.req.param("gid"), { action }).catch(() => undefined);
+      await deps.dataSource
+        .decideRunGate(session, runId, c.req.param("gid"), { action })
+        .catch(() => undefined);
     }
     return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
@@ -6472,12 +7312,19 @@ export function createWebApp(deps: WebDeps): Hono {
   // consume-once corrections row write together at the api.
   app.post("/v/:persona/corrections", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const text = typeof form.text === "string" ? form.text.trim() : "";
-    const statementRef = typeof form.statementRef === "string" && form.statementRef.trim() !== "" ? form.statementRef.trim() : undefined;
-    const artifactId = typeof form.artifactId === "string" && form.artifactId.trim() !== "" ? form.artifactId.trim() : undefined;
+    const statementRef =
+      typeof form.statementRef === "string" && form.statementRef.trim() !== ""
+        ? form.statementRef.trim()
+        : undefined;
+    const artifactId =
+      typeof form.artifactId === "string" && form.artifactId.trim() !== ""
+        ? form.artifactId.trim()
+        : undefined;
     if (text) {
       await deps.dataSource
         .addVoiceCorrection(session, personaId, {
@@ -6493,7 +7340,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // P1.14 — the house/shared card's Fork (§9.1): the copy becomes your editable persona.
   app.post("/v/:persona/fork", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const forked = await deps.dataSource.forkVoice(session, personaId).catch(() => null);
     if (!forked) return mutationOutcome(c, { redirect: `/v/${personaId}` });
@@ -6503,7 +7351,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // Cancel an open build (the detail page's Cancel).
   app.post("/v/:persona/cancel", async (c) => {
     const session = deps.session(c);
-    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const runId = typeof form.runId === "string" ? form.runId : "";
@@ -6518,7 +7367,9 @@ export function createWebApp(deps: WebDeps): Hono {
   // not-found HTML.)
   for (const entry of CLIENT_ENTRIES) {
     app.get(`/assets/${entry}.js`, async (c) => {
-      const body = await readFile(new URL(`../public/${entry}.js`, import.meta.url)).catch(() => null);
+      const body = await readFile(new URL(`../public/${entry}.js`, import.meta.url)).catch(
+        () => null,
+      );
       if (!body) return c.body(null, 404);
       return c.body(body, 200, {
         "content-type": "text/javascript; charset=utf-8",
@@ -6532,7 +7383,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/assets/fonts/:file", async (c) => {
     const file = c.req.param("file") ?? "";
     if (!/^[\w.-]+\.woff2$/.test(file)) return c.body(null, 404);
-    const body = await readFile(new URL(`../public/fonts/${file}`, import.meta.url)).catch(() => null);
+    const body = await readFile(new URL(`../public/fonts/${file}`, import.meta.url)).catch(
+      () => null,
+    );
     if (!body) return c.body(null, 404);
     return c.body(body, 200, {
       "content-type": "font/woff2",
@@ -6608,7 +7461,10 @@ function safeBack(next: string, fallback: string): string {
  * Composed via `URL` (an existing query on the configured link survives; `set` never double-appends).
  * A malformed configured URL or a missing account id returns the link unchanged — the redirect never breaks.
  */
-export function paymentLinkWithReference(link: string, billingAccountId: string | undefined): string {
+export function paymentLinkWithReference(
+  link: string,
+  billingAccountId: string | undefined,
+): string {
   if (!billingAccountId) return link;
   try {
     const url = new URL(link);
@@ -6705,7 +7561,12 @@ function cogsLeversField(raw: unknown): Readonly<Record<string, unknown>> | unde
  *  the degraded fallback (an api outage must not block the sheet). */
 function buildSheet(
   query: Record<string, string>,
-  billing?: { spendableCredits: number; suspended: boolean; paymentLinkUrl?: string; purchase?: "open" | "closed" },
+  billing?: {
+    spendableCredits: number;
+    suspended: boolean;
+    paymentLinkUrl?: string;
+    purchase?: "open" | "closed";
+  },
   planOfferUrl?: string,
   // P1.06 — the api's run-sheet context (head draft, sections, obligations, entitlement, consent pref,
   // the project scope defaults). Unset ⇒ the sheet renders its bare defaults (context fetch failed open).
@@ -6735,7 +7596,8 @@ function buildSheet(
     audit: "audit",
   };
   const toggles: ToggleState = {};
-  const selectedProtocolId = (query.protocol || ctx?.project?.protocol || null)?.toLowerCase() ?? null;
+  const selectedProtocolId =
+    (query.protocol || ctx?.project?.protocol || null)?.toLowerCase() ?? null;
   const protoDefaults = selectedProtocolId
     ? ctx?.project?.protocolDefaults?.[selectedProtocolId]?.phaseDefaults
     : undefined;
@@ -6761,7 +7623,13 @@ function buildSheet(
   for (const key of Object.keys(toggles) as ToggleKey[]) {
     if (toggles[key] === true && rigorToggleDefaults[key] === false) delete toggles[key];
   }
-  for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
+  for (const key of [
+    "fact_check",
+    "discourse",
+    "second_read",
+    "repair_research",
+    "gap_check",
+  ] as const) {
     if (query[`toggle.${key}`] === "on") toggles[key] = true;
     else if (query[`toggle.${key}`] === "off") toggles[key] = false;
   }
@@ -6795,7 +7663,9 @@ function buildSheet(
   // P1.06 (REQ-SPEC-17's sheet half) — the scope-gate blocking condition the sheet surfaces: Full
   // board, or a `--protocol`/`--venue` lever (or edited field) that departs the project's pinned scope.
   const approvalPick =
-    query.approvals === "named" || query.approvals === "wait_each" || query.approvals === "run_to_completion"
+    query.approvals === "named" ||
+    query.approvals === "wait_each" ||
+    query.approvals === "run_to_completion"
       ? query.approvals
       : ctx?.project?.approvalPolicy;
   const scopeBlocking =
@@ -6825,7 +7695,9 @@ function buildSheet(
       protocol: query.protocol || ctx?.project?.protocol || "Essay",
       // P1.21 — the four §6.7 protocol options (id+name) the selector renders, from the api context.
       ...(ctx?.protocols ? { protocolOptions: ctx.protocols } : {}),
-      ...(query.venue || ctx?.project?.venue ? { venue: query.venue || ctx?.project?.venue || "" } : {}),
+      ...(query.venue || ctx?.project?.venue
+        ? { venue: query.venue || ctx?.project?.venue || "" }
+        : {}),
       // P1.22 W10 — `--stage` lever > stored override > the selected protocol's own stage default
       // (Op-ed's `near_final`) > unset.
       ...(() => {
@@ -6851,10 +7723,14 @@ function buildSheet(
       : {}),
     // P1.06 — the collapsed-row rows: the project's approval policy + the user's consent pref.
     // §7.2's `--wait`/`--auto` preset the Approvals pick; `--budget N` presets the editable cap.
-    ...(approvalPick ? { approvalPolicy: approvalPick as "named" | "wait_each" | "run_to_completion" } : {}),
+    ...(approvalPick
+      ? { approvalPolicy: approvalPick as "named" | "wait_each" | "run_to_completion" }
+      : {}),
     // RUN.1 (ADR-050) — the project's gate overrides ride so the scope line and the parked gate can
     // never disagree (approve_scope:null ⇒ "waits for you" on both).
-    ...(ctx?.project?.approvalOverrides ? { projectGateOverrides: ctx.project.approvalOverrides } : {}),
+    ...(ctx?.project?.approvalOverrides
+      ? { projectGateOverrides: ctx.project.approvalOverrides }
+      : {}),
     scopeBlocking,
     ...(protocolChanged ? { protocolChanged: true } : {}),
     ...(ctx?.dontAskUnder != null ? { dontAskUnder: ctx.dontAskUnder } : {}),
@@ -6862,9 +7738,13 @@ function buildSheet(
     ...(Number(query.budget) > 0 ? { capOverrideCredits: Math.round(Number(query.budget)) } : {}),
     ...(typeof query.guidance === "string" && query.guidance ? { guidance: query.guidance } : {}),
     // P1.21 — the memo sheet's typed user_sources text round-trips on re-render.
-    ...(typeof query.userSources === "string" && query.userSources ? { userSourcesText: query.userSources } : {}),
+    ...(typeof query.userSources === "string" && query.userSources
+      ? { userSourcesText: query.userSources }
+      : {}),
     // P1.06 — the promote-on-launch line: a WORKING head freezes to its vN on launch (§5.6 item 7).
-    ...(ctx?.headDraft ? { headState: ctx.headDraft.state, promoteToVersion: `v${ctx.headDraft.n}` } : {}),
+    ...(ctx?.headDraft
+      ? { headState: ctx.headDraft.state, promoteToVersion: `v${ctx.headDraft.n}` }
+      : {}),
     // §14.3/ACT.1 — the claimable (locked-or-unused) trial entitlement → the `Included` rendering
     // (+ its word-cap detail). The row `id` round-trips as the Run form's hidden `entitlementId`.
     ...(entitlement
@@ -6883,8 +7763,11 @@ function buildSheet(
     ...(ctx
       ? {
           scopeLine:
-            (workflow === "review" ? ctx.reviewScopeLine : workflow === "revise" ? ctx.reviseScopeLine : null) ??
-            undefined,
+            (workflow === "review"
+              ? ctx.reviewScopeLine
+              : workflow === "revise"
+                ? ctx.reviseScopeLine
+                : null) ?? undefined,
         }
       : {}),
     // BILL.3 — purchase closed ⇒ the exhaustion panel renders the paused line, never the link button.
@@ -6903,7 +7786,13 @@ function buildSheet(
 function countLine(c: ConversionResult["counts"]): string {
   const n = (x: number) => x.toLocaleString("en-US");
   const p = (x: number, one: string) => `${n(x)} ${x === 1 ? one : one + "s"}`;
-  return [p(c.words, "word"), p(c.footnotes, "footnote"), `${n(c.citationSpans)} citation-like ${c.citationSpans === 1 ? "span" : "spans"}`, p(c.tables, "table"), p(c.figures, "figure")].join(" · ");
+  return [
+    p(c.words, "word"),
+    p(c.footnotes, "footnote"),
+    `${n(c.citationSpans)} citation-like ${c.citationSpans === 1 ? "span" : "spans"}`,
+    p(c.tables, "table"),
+    p(c.figures, "figure"),
+  ].join(" · ");
 }
 
 /**
@@ -6923,7 +7812,10 @@ function importPollUrl(slug: string, quarantineKey: string, sourceLabel?: string
  * the JSON upload leg additionally accepts the REQ-BFF-16 `quarantineKey`/`fileName` pair it minted
  * — the BFF still never proxies bytes (a JSON `file` is never a File).
  */
-async function importInputFromFields(form: Record<string, unknown>, slug: string): Promise<ImportInput> {
+async function importInputFromFields(
+  form: Record<string, unknown>,
+  slug: string,
+): Promise<ImportInput> {
   const qk =
     (typeof form.qk === "string" && form.qk ? form.qk : undefined) ??
     (typeof form.quarantineKey === "string" && form.quarantineKey ? form.quarantineKey : undefined);
@@ -6947,18 +7839,28 @@ async function importInputFromFields(form: Record<string, unknown>, slug: string
   };
 }
 
-
-
-function toConversionData(slug: string, input: ImportInput, result: ConversionResult, quarantineKey: string) {
+function toConversionData(
+  slug: string,
+  input: ImportInput,
+  result: ConversionResult,
+  quarantineKey: string,
+) {
   return {
     projectSlug: slug,
     sourceLabel: input.fileName ?? "pasted text",
     // A re-polled preview (PRB.21) carries only the quarantine key — the source bytes already live in
     // quarantine, so the source pane states that plainly rather than rendering blank.
-    sourceText: input.text ?? (input.bytes ? `(${input.bytes.byteLength} bytes)` : "(the uploaded source — already converted)"),
+    sourceText:
+      input.text ??
+      (input.bytes
+        ? `(${input.bytes.byteLength} bytes)`
+        : "(the uploaded source — already converted)"),
     convertedMarkdown: result.markdown,
     countLine: countLine(result.counts),
-    warnings: result.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+    warnings: result.warnings.map((w) => ({
+      message: w.message,
+      blockId: w.anchor?.blockId ?? null,
+    })),
     // the create form replays this verbatim — no second upload, no second convert run.
     quarantineKey,
   };

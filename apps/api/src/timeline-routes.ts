@@ -1,14 +1,14 @@
 // P1.05 — the Timeline / run-report / steering routes (§5.5/§5.6; §6.5; §14.5). Session-authed, thin:
 //   GET  /projects/:id/timeline        — the round log: drafts, per-run cards (orchestrator facts only,
-//                                        REQ-IDE-11), rounds, the next-step card. Lazily enqueues the
-//                                        walkthrough for delivered runs missing one (§5.5 D20).
+//                                        REQ-IDE-11), rounds, the next-step card. R7COPY.0 (ADR-130):
+//                                        the delivered card's "What it delivered" is composed from
+//                                        the record (REQ-COPY-4) — the generated walkthrough is gone.
 //   GET  /runs/:id/report              — the Level-3 report; `?advanced=1` adds the Level-4 drill-down.
 //   POST /runs/:id/pause               — "Pause after this phase" (the flag commitStep honors).
 //   POST /runs/:id/resume              — resume a steering-parked run; body {note?} (Resume-with-note).
 //   POST /runs/:id/notes               — queue a note for the next phase → Guidance{queued_message}.
 //   POST /runs/:id/stop                — Stop, keep partials (the canonical cancelRun path).
 //   POST /runs/:id/refund              — DEF.4 the §14.4 refund window (flag-gated; REQ-SPEC-24(6)).
-//   POST /runs/:id/walkthrough/retry   — re-enqueue the one package-class walkthrough call after failure.
 // No prompt, transcript, reasoning, private memory, or source-note body ever leaves these endpoints —
 // the read models come from @rhema/findings-core's whitelisted row shapes.
 
@@ -17,19 +17,24 @@ import type { RunState, WorkflowKey } from "@rhema/contracts";
 import { deliveryLabelFromRow } from "@rhema/contracts";
 import {
   buildRunCardView,
+  composeDeliveredSummary,
+  deliveredRecordCounts,
   etaBandForPhases,
   groupRounds,
   collapsedRoundParts,
   nextStepVerb,
+  parseLetterSections,
   queuePosition,
   buildRunReport,
   buildRunReportAdvanced,
+  type DeliveredLinkKey,
   type TimelineDraft,
   type TimelineRun,
   type PhaseProgress,
   type PhaseStatus,
   type DeliverableChip,
-  type WalkthroughState,
+  type DeliveredFindingFact,
+  type LetterSectionLike,
   type ReportStepRow,
   type ReportUsageRow,
 } from "@rhema/findings-core";
@@ -38,10 +43,8 @@ import {
   requestPause,
   resumePausedRun,
   queueRunNote,
-  maybeEnqueueWalkthrough,
   phaseShapeForWorkflow,
   projectState,
-  RUN_JOBS,
   TIER_MODEL,
   type OrchestratorDeps,
   type SqlClient,
@@ -109,7 +112,6 @@ interface RunRow {
   cap_credits: number;
   spent_credits: number;
   failure: { code?: string } | null;
-  walkthrough: { status?: string; text?: string; attempts?: number } | null;
   paused_at: string | Date | null;
   inputs: Record<string, unknown> | string;
   /** RES.2 — the persisted run-level delivery blob (label + counts + settlement markers). */
@@ -126,9 +128,15 @@ interface StepRow {
   ended_at: string | Date | null;
 }
 
-const TERMINAL: Readonly<Set<string>> = new Set(["completed", "completed_partial", "failed", "cancelled"]);
+const TERMINAL: Readonly<Set<string>> = new Set([
+  "completed",
+  "completed_partial",
+  "failed",
+  "cancelled",
+]);
 
-function parseInputs(v: RunRow["inputs"]): Record<string, unknown> {
+/** Exported for the dossier route — the same inputs parser the timeline's card assembly uses. */
+export function parseInputs(v: RunRow["inputs"]): Record<string, unknown> {
   if (typeof v === "string") {
     try {
       return JSON.parse(v) as Record<string, unknown>;
@@ -139,15 +147,12 @@ function parseInputs(v: RunRow["inputs"]): Record<string, unknown> {
   return v ?? {};
 }
 
-function walkthroughState(w: RunRow["walkthrough"], delivered: boolean): WalkthroughState | undefined {
-  if (!delivered) return undefined;
-  if (w?.status === "ready" && typeof w.text === "string") return { status: "ready", text: w.text };
-  if (w?.status === "failed") return { status: "failed" };
-  return { status: "pending" };
-}
-
-/** Map step rows onto the workflow's manifest phases (off/pending/done/running; counts + credits only). */
-function phasesForRun(
+/**
+ * Map step rows onto the workflow's manifest phases (off/pending/done/running; counts + credits only).
+ * R7COPY.0 (REQ-SYNC-1) — exported for the dossier route: BOTH run-card assemblies use this one
+ * step→phase mapping so the dossier card can never diverge from the Timeline's (R5 C4).
+ */
+export function phasesForRun(
   workflow: string,
   inputs: Record<string, unknown>,
   steps: readonly StepRow[],
@@ -157,7 +162,10 @@ function phasesForRun(
   const byPhase = new Map<string, StepRow>();
   // the latest attempt per phase wins the row (a retried step's newest row carries the outcome)
   for (const s of steps) byPhase.set(s.phase, s);
-  const runningStep = runState === "running" || runState === "cancelling" ? [...byPhase.values()].find((s) => s.state === "running") : undefined;
+  const runningStep =
+    runState === "running" || runState === "cancelling"
+      ? [...byPhase.values()].find((s) => s.state === "running")
+      : undefined;
   const seen = new Set<string>();
   const out: PhaseProgress[] = shape.map((p, i) => {
     seen.add(p.key);
@@ -184,7 +192,14 @@ function phasesForRun(
     out.push({
       key: s.phase,
       ordinal: s.ordinal,
-      status: s.state === "done" ? "done" : s.state === "failed" ? "skipped" : s.state === "running" ? "running" : "pending",
+      status:
+        s.state === "done"
+          ? "done"
+          : s.state === "failed"
+            ? "skipped"
+            : s.state === "running"
+              ? "running"
+              : "pending",
       credits: s.credits,
     });
   }
@@ -209,19 +224,30 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           [projectId, principal.workspaceId],
         )
       ).rows[0] as
-        | { id: string; slug: string; title: string; archived_at: string | Date | null; deleted_at: string | Date | null; accepted_draft_id: string | null; rigor_default: string | null; model_tier_default: string | null }
+        | {
+            id: string;
+            slug: string;
+            title: string;
+            archived_at: string | Date | null;
+            deleted_at: string | Date | null;
+            accepted_draft_id: string | null;
+            rigor_default: string | null;
+            model_tier_default: string | null;
+          }
         | undefined;
       if (!project || project.deleted_at != null) return { kind: "not_found" } as const;
 
       const drafts = (
-        await tx.query(`select id, n, origin from drafts where project_id = $1 order by n`, [projectId])
+        await tx.query(`select id, n, origin from drafts where project_id = $1 order by n`, [
+          projectId,
+        ])
       ).rows as { id: string; n: number; origin: string }[];
       const draftNById = new Map(drafts.map((d) => [d.id, d.n]));
 
       const runs = (
         await tx.query(
           `select id, workflow, state, created_at, started_at, ended_at, estimate_credits, cap_credits,
-                  spent_credits, failure, walkthrough, paused_at, inputs, delivery
+                  spent_credits, failure, paused_at, inputs, delivery
              from runs where project_id = $1 order by created_at desc, id`,
           [projectId],
         )
@@ -250,7 +276,9 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       // INFORMATIONAL gate (blocking:false — the default approve_scope) rides its RUNNING run until the
       // letter phase (the card is observability; `waitingGate` stays truthful below — the run never
       // waited). A steering-paused run mounts nothing (its park isn't a gate).
-      const gateRunIds = runs.filter((r) => !TERMINAL.has(r.state) && r.paused_at == null).map((r) => r.id);
+      const gateRunIds = runs
+        .filter((r) => !TERMINAL.has(r.state) && r.paused_at == null)
+        .map((r) => r.id);
       const gates =
         gateRunIds.length === 0
           ? []
@@ -297,20 +325,28 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
             ).rows as { run_id: string; n: number }[]);
       const notesByRun = new Map(noteCounts.map((r) => [r.run_id, r.n]));
 
-      // deliverable chips for terminal runs: correspondence kind + finding/claim counts + produced kinds
+      // deliverable chips + the composed summary for terminal runs: correspondence kind + the finding
+      // slot facts + claim count (REQ-SYNC-2's one rule runs in code — SQL transports the record only)
+      // + the letter's artifact ids for the record-composed "What it delivered" (REQ-COPY-4).
       const terminalIds = runs.filter((r) => TERMINAL.has(r.state)).map((r) => r.id);
       const corr =
         terminalIds.length === 0
           ? []
           : ((
               await tx.query(
-                `select ci.run_id, ci.kind,
-                        (select count(*)::int from findings f where f.correspondence_id = ci.id) as findings,
-                        (select count(*)::int from claims cl where cl.correspondence_id = ci.id) as claims
+                `select ci.run_id, ci.kind, ci.artifact_ids,
+                        (select count(*)::int from claims cl where cl.correspondence_id = ci.id) as claims,
+                        (select array_agg(f.letter_section) from findings f where f.correspondence_id = ci.id) as finding_sections
                    from correspondence_items ci where ci.run_id = any($1::text[])`,
                 [terminalIds],
               )
-            ).rows as { run_id: string; kind: string; findings: number; claims: number }[]);
+            ).rows as {
+              run_id: string;
+              kind: string;
+              artifact_ids: string[];
+              claims: number;
+              finding_sections: (string | null)[] | null;
+            }[]);
       const corrByRun = new Map<string, typeof corr>();
       for (const row of corr) {
         const l = corrByRun.get(row.run_id) ?? [];
@@ -334,6 +370,43 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         const s = kindsByRun.get(k.run_id) ?? new Set<string>();
         s.add(k.kind);
         kindsByRun.set(k.run_id, s);
+      }
+
+      // R7COPY.0 (REQ-COPY-4) — the letter versions behind each corr item's artifacts: the verdict
+      // quote is parsed off the letter's own markdown (verbatim, never generated); a missing
+      // store/bytes composes the block with counts+links and no quote line (REQ-COPY-4's
+      // "no verdict section ⇒ show none" rule extends to an unread letter).
+      const letterArtifactIds = corr.flatMap((row) => row.artifact_ids ?? []);
+      const letterVersions =
+        letterArtifactIds.length === 0
+          ? []
+          : ((
+              await tx.query(
+                `select av.id, av.content_sha256, a.kind from artifact_versions av
+                   join artifacts a on a.id = av.artifact_id where av.id = any($1::text[])`,
+                [letterArtifactIds],
+              )
+            ).rows as { id: string; content_sha256: string; kind: string }[]);
+      const letterByVersionId = new Map(letterVersions.map((v) => [v.id, v]));
+      const letterStore =
+        deps.contentStoreFor != null
+          ? await deps.contentStoreFor(principal.workspaceId).catch(() => null)
+          : (deps.store ?? null);
+      const sectionsByRun = new Map<string, LetterSectionLike[] | null>();
+      for (const row of corr) {
+        if (sectionsByRun.has(row.run_id)) continue;
+        const letterV = (row.artifact_ids ?? [])
+          .map((id) => letterByVersionId.get(id))
+          .find((v) => v != null && (v.kind === "editors_letter" || v.kind === "response_letter"));
+        if (letterV == null || letterStore == null) {
+          sectionsByRun.set(row.run_id, null);
+          continue;
+        }
+        const bytes = await letterStore.get(letterV.content_sha256).catch(() => null);
+        sectionsByRun.set(
+          row.run_id,
+          bytes == null ? null : parseLetterSections(Buffer.from(bytes).toString("utf8")),
+        );
       }
 
       // refunds (the cost.refunded Σ per run) — read-model input, not inferred from state
@@ -403,9 +476,13 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           [projectId],
         )
       ).rows as { review_draft_n: number }[];
-      const outlinePresent = (
-        await tx.query(`select 1 from artifacts where project_id = $1 and kind = 'outline' limit 1`, [projectId])
-      ).rows.length > 0;
+      const outlinePresent =
+        (
+          await tx.query(
+            `select 1 from artifacts where project_id = $1 and kind = 'outline' limit 1`,
+            [projectId],
+          )
+        ).rows.length > 0;
 
       const state = projectState({
         outlinePresent,
@@ -413,27 +490,50 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         reviews: reviews.map((r) => ({ draftN: r.draft_n, letterOpenedAt: r.letter_opened_at })),
         responses: responses.map((r) => ({ reviewDraftN: r.review_draft_n })),
         runs: runs.map((r) => ({ state: r.state })),
-        acceptedVersionN: project.accepted_draft_id != null ? (draftNById.get(project.accepted_draft_id) ?? null) : null,
+        acceptedVersionN:
+          project.accepted_draft_id != null
+            ? (draftNById.get(project.accepted_draft_id) ?? null)
+            : null,
         exports: [],
         archivedAt: project.archived_at,
       });
 
-      const timelineDrafts: TimelineDraft[] = drafts.map((d) => ({ draftId: d.id, n: d.n, origin: d.origin }));
+      const timelineDrafts: TimelineDraft[] = drafts.map((d) => ({
+        draftId: d.id,
+        n: d.n,
+        origin: d.origin,
+      }));
 
       const timelineRuns: TimelineRun[] = runs.map((r) => {
         const inputs = parseInputs(r.inputs);
-        const subjectN = typeof inputs["draftId"] === "string" ? (draftNById.get(inputs["draftId"] as string) ?? null) : null;
+        const subjectN =
+          typeof inputs["draftId"] === "string"
+            ? (draftNById.get(inputs["draftId"] as string) ?? null)
+            : null;
         const producedN =
-          typeof inputs["nextDraftId"] === "string" ? (draftNById.get(inputs["nextDraftId"] as string) ?? null) : null;
+          typeof inputs["nextDraftId"] === "string"
+            ? (draftNById.get(inputs["nextDraftId"] as string) ?? null)
+            : null;
         const runSteps = stepsByRun.get(r.id) ?? [];
         const delivered = TERMINAL.has(r.state);
         const deliverables: DeliverableChip[] = delivered
           ? [
-              ...(corrByRun.get(r.id) ?? []).flatMap((row) => [
-                { key: row.kind === "response" ? "response" : "letter" },
-                ...(row.findings > 0 ? [{ key: "findings", count: row.findings }] : []),
-                ...(row.claims > 0 ? [{ key: "claims", count: row.claims }] : []),
-              ]),
+              // REQ-SYNC-2 — the chips' finding/claim figures come from ONE count rule
+              // (`deliveredRecordCounts`): findings exclude `strength`-slot rows, which ride
+              // their own chip (the old single "findings" count that double-counted strengths
+              // is gone — R5 C5).
+              ...(corrByRun.get(r.id) ?? []).flatMap((row) => {
+                const counts = deliveredRecordCounts({
+                  findings: (row.finding_sections ?? []).map((s) => ({ letterSection: s })),
+                  claims: row.claims,
+                });
+                return [
+                  { key: row.kind === "response" ? "response" : "letter" },
+                  ...(counts.findings > 0 ? [{ key: "findings", count: counts.findings }] : []),
+                  ...(counts.strengths > 0 ? [{ key: "strengths", count: counts.strengths }] : []),
+                  ...(counts.claims > 0 ? [{ key: "claims", count: counts.claims }] : []),
+                ];
+              }),
               ...(kindsByRun.has(r.id)
                 ? [...kindsByRun.get(r.id)!]
                     .filter((k) => k !== "letter" && k !== "response")
@@ -445,7 +545,8 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         // RPT.1 — the latest tick is the card's live figure when it moved past the committed total;
         // its `provisional` marker labels the meter (the committed figure wins ties).
         const tick = tickByRun.get(r.id);
-        const meterSpent = tick != null && tick.spent > r.spent_credits ? tick.spent : r.spent_credits;
+        const meterSpent =
+          tick != null && tick.spent > r.spent_credits ? tick.spent : r.spent_credits;
         const meterProvisional = tick != null && tick.spent > r.spent_credits && tick.provisional;
         const card = buildRunCardView({
           runId: r.id,
@@ -458,8 +559,9 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           ...(r.started_at != null
             ? {
                 elapsedMs:
-                  (r.ended_at != null ? new Date(r.ended_at).getTime() : deps.clock.now().getTime()) -
-                  new Date(r.started_at).getTime(),
+                  (r.ended_at != null
+                    ? new Date(r.ended_at).getTime()
+                    : deps.clock.now().getTime()) - new Date(r.started_at).getTime(),
               }
             : {}),
           estimateCredits: r.estimate_credits,
@@ -489,16 +591,39 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
                   kind: gateByRun.get(r.id)!.row.kind,
                   deadlineAt:
                     gateByRun.get(r.id)!.row.deadline_at != null
-                      ? new Date(gateByRun.get(r.id)!.row.deadline_at as string | Date).toISOString()
+                      ? new Date(
+                          gateByRun.get(r.id)!.row.deadline_at as string | Date,
+                        ).toISOString()
                       : null,
                 }
               : null,
           // P1.09 — the run's permanent approval-decision records (§6.4 item 8).
           ...(decisionsByRun.has(r.id) ? { decisions: decisionsByRun.get(r.id) } : {}),
           deliverables,
-          walkthrough: walkthroughState(r.walkthrough, delivered),
+          // R7COPY.0 (REQ-COPY-4) — the record-composed "What it delivered": the letter's verdict
+          // line quoted verbatim + the one-rule counts + dossier/letter/ledger links. Composed
+          // only on delivered runs with a correspondence item; never generated.
+          delivered:
+            delivered && (corrByRun.get(r.id)?.length ?? 0) > 0
+              ? composeDeliveredSummary({
+                  letterSections: sectionsByRun.get(r.id) ?? null,
+                  findings: (corrByRun.get(r.id) ?? []).flatMap((row): DeliveredFindingFact[] =>
+                    (row.finding_sections ?? []).map((s) => ({ letterSection: s })),
+                  ),
+                  claims: (corrByRun.get(r.id) ?? []).reduce((n, row) => n + row.claims, 0),
+                  links: [
+                    ...new Set(
+                      (corrByRun.get(r.id) ?? []).flatMap((row): DeliveredLinkKey[] =>
+                        row.kind === "response" ? ["letter"] : ["dossier", "letter", "ledger"],
+                      ),
+                    ),
+                  ],
+                })
+              : null,
           failureCode: r.failure?.code ?? null,
-          resumable: (r.state === "completed_partial" || r.state === "failed" || r.state === "cancelled") && runSteps.some((s) => s.state === "done"),
+          resumable:
+            (r.state === "completed_partial" || r.state === "failed" || r.state === "cancelled") &&
+            runSteps.some((s) => s.state === "done"),
           queuedNotes: notesByRun.get(r.id) ?? 0,
           // RES.2 — the write-once run-level label; the card renders it above the state line.
           deliveryLabel: deliveryLabelFromRow(r.delivery),
@@ -517,7 +642,10 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       });
 
       const { rounds, ungrouped } = groupRounds(timelineDrafts, timelineRuns);
-      const head = drafts.reduce<(typeof drafts)[number] | null>((b, d) => (b == null || d.n > b.n ? d : b), null);
+      const head = drafts.reduce<(typeof drafts)[number] | null>(
+        (b, d) => (b == null || d.n > b.n ? d : b),
+        null,
+      );
 
       // the next-step card's estimate — re-derived for the suggested verb's workflow over the head draft
       // (the same estimator the sheet uses; §5.5 "est. 1,240 cr"); skipped where the verb isn't a run.
@@ -546,16 +674,20 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           const words =
             head != null
               ? ((
-                  await tx.query(
-                    `select av.word_count from drafts d join artifact_versions av on av.id = d.promoted_version_id where d.id = $1`,
-                    [head.id],
-                  )
-                ).rows[0] as { word_count: number | null } | undefined)?.word_count ?? 0
+                  (
+                    await tx.query(
+                      `select av.word_count from drafts d join artifact_versions av on av.id = d.promoted_version_id where d.id = $1`,
+                      [head.id],
+                    )
+                  ).rows[0] as { word_count: number | null } | undefined
+                )?.word_count ?? 0)
               : 0;
           const prefsRow = (
             await tx.query(`select prefs from "user" where id = $1`, [principal.userId])
           ).rows[0] as { prefs: unknown } | undefined;
-          const planTier = await effectivePlanTier(tx, principal.billingAccountId).catch(() => null);
+          const planTier = await effectivePlanTier(tx, principal.billingAccountId).catch(
+            () => null,
+          );
           const resolved = resolveSheetConfig({
             workflow: verb,
             projectRigorDefault: project.rigor_default,
@@ -608,20 +740,6 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     });
 
     if (view.kind === "not_found") return c.json({ error: "not_found" }, 404);
-
-    // lazy walkthrough enqueue (§5.5 D20) — post-read, covering grouped AND ungrouped runs; the singleton
-    // key dedupes concurrent renders.
-    for (const run of [...view.rounds.flatMap((r) => r.runs), ...view.ungrouped]) {
-      const w = run.card.walkthrough;
-      if (w?.status === "pending") {
-        await maybeEnqueueWalkthrough(deps, {
-          runId: run.runId,
-          workspaceId: principal.workspaceId,
-          state: run.state,
-          walkthrough: null,
-        });
-      }
-    }
     return c.json(view);
   });
 
@@ -643,7 +761,21 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           [runId, principal.workspaceId],
         )
       ).rows[0] as
-        | { id: string; project_id: string | null; project_slug: string | null; workflow: string; state: RunState; estimate_credits: number; cap_credits: number; spent_credits: number; model_tier: string; inputs: Record<string, unknown> | string; rate_table_version: number | null; entitlement_id: string | null; showcase: boolean }
+        | {
+            id: string;
+            project_id: string | null;
+            project_slug: string | null;
+            workflow: string;
+            state: RunState;
+            estimate_credits: number;
+            cap_credits: number;
+            spent_credits: number;
+            model_tier: string;
+            inputs: Record<string, unknown> | string;
+            rate_table_version: number | null;
+            entitlement_id: string | null;
+            showcase: boolean;
+          }
         | undefined;
       if (!run) return { kind: "not_found" } as const;
 
@@ -654,7 +786,14 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
              from steps where run_id = $1 order by ordinal`,
           [runId],
         )
-      ).rows as { phase: string; ordinal: number; state: string; credits: number; attempt: number; duration_ms: string | null }[];
+      ).rows as {
+        phase: string;
+        ordinal: number;
+        state: string;
+        credits: number;
+        attempt: number;
+        duration_ms: string | null;
+      }[];
 
       // Level-4 usage buckets: phase × seat × model-tier, aggregated from usage_records (step_id → phase).
       // ECON.1 (D-A): `source='proxy'` ONLY — the meter of record. `sdk_estimate`/`sdk_stream` are twin
@@ -757,13 +896,26 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         return {
           key: p.key,
           ordinal: s?.ordinal ?? i + 1,
-          status: (p.off ? "off" : s?.state === "done" ? "done" : s?.state === "failed" ? "skipped" : s != null ? "running" : "pending") as PhaseStatus,
+          status: (p.off
+            ? "off"
+            : s?.state === "done"
+              ? "done"
+              : s?.state === "failed"
+                ? "skipped"
+                : s != null
+                  ? "running"
+                  : "pending") as PhaseStatus,
           seat: p.seat,
         };
       });
       for (const s of steps) {
         if (!phases.some((p) => p.key === s.phase)) {
-          phases.push({ key: s.phase, ordinal: s.ordinal, status: s.state === "done" ? "done" : "skipped", seat: null });
+          phases.push({
+            key: s.phase,
+            ordinal: s.ordinal,
+            status: s.state === "done" ? "done" : "skipped",
+            seat: null,
+          });
         }
       }
 
@@ -810,10 +962,15 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         phases,
         steps: reportSteps,
         usage: reportUsage,
-        claims: claims != null && claims.checked > 0 ? { checked: claims.checked, verified: claims.verified } : null,
+        claims:
+          claims != null && claims.checked > 0
+            ? { checked: claims.checked, verified: claims.verified }
+            : null,
         modelTier: run.model_tier,
         // REQ-BILL-19 — the report links its frozen rate-table version to /pricing/rates.
-        ...(run.rate_table_version != null ? { rateTableVersion: Number(run.rate_table_version) } : {}),
+        ...(run.rate_table_version != null
+          ? { rateTableVersion: Number(run.rate_table_version) }
+          : {}),
       });
       // DEF.4 — the §14.4 refund affordance (REQ-SPEC-29): the block is present ONLY while the
       // refundWindow flag admits this workspace — absent ⇒ the surface renders no control at all.
@@ -862,8 +1019,15 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
   app.post("/runs/:id/pause", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const res = await requestPause(deps, { runId: c.req.param("id"), workspaceId: principal.workspaceId });
-    if (!res.ok) return c.json({ error: res.reason, ...(res.state != null ? { state: res.state } : {}) }, res.reason === "not_found" ? 404 : 409);
+    const res = await requestPause(deps, {
+      runId: c.req.param("id"),
+      workspaceId: principal.workspaceId,
+    });
+    if (!res.ok)
+      return c.json(
+        { error: res.reason, ...(res.state != null ? { state: res.state } : {}) },
+        res.reason === "not_found" ? 404 : 409,
+      );
     return c.json(res);
   });
 
@@ -875,9 +1039,12 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     const runId = c.req.param("id");
     // the project id is server truth — resolve it from the run row, never trust the body's.
     const projectId = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const r = (await tx.query("select project_id from runs where id = $1 and workspace_id = $2", [runId, principal.workspaceId])).rows[0] as
-        | { project_id: string | null }
-        | undefined;
+      const r = (
+        await tx.query("select project_id from runs where id = $1 and workspace_id = $2", [
+          runId,
+          principal.workspaceId,
+        ])
+      ).rows[0] as { project_id: string | null } | undefined;
       return r?.project_id ?? null;
     });
     if (projectId == null) return c.json({ error: "not_found" }, 404);
@@ -919,12 +1086,16 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const body = (await c.req.json().catch(() => ({}))) as { text?: string };
-    if (typeof body.text !== "string" || body.text.trim() === "") return c.json({ error: "empty" }, 400);
+    if (typeof body.text !== "string" || body.text.trim() === "")
+      return c.json({ error: "empty" }, 400);
     const runId = c.req.param("id");
     const projectId = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const r = (await tx.query("select project_id from runs where id = $1 and workspace_id = $2", [runId, principal.workspaceId])).rows[0] as
-        | { project_id: string | null }
-        | undefined;
+      const r = (
+        await tx.query("select project_id from runs where id = $1 and workspace_id = $2", [
+          runId,
+          principal.workspaceId,
+        ])
+      ).rows[0] as { project_id: string | null } | undefined;
       return r?.project_id ?? null;
     });
     if (projectId == null) return c.json({ error: "not_found" }, 404);
@@ -935,7 +1106,11 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       userId: principal.userId,
       text: body.text,
     });
-    if (!res.ok) return c.json({ error: res.reason }, res.reason === "not_found" ? 404 : res.reason === "empty" ? 400 : 409);
+    if (!res.ok)
+      return c.json(
+        { error: res.reason },
+        res.reason === "not_found" ? 404 : res.reason === "empty" ? 400 : 409,
+      );
     return c.json(res, 201);
   });
 
@@ -943,8 +1118,15 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
   app.post("/runs/:id/stop", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const res = await cancelRun(deps, { runId: c.req.param("id"), workspaceId: principal.workspaceId });
-    if (!res.ok) return c.json({ error: res.reason, ...(res.state != null ? { state: res.state } : {}) }, res.reason === "not_found" ? 404 : 409);
+    const res = await cancelRun(deps, {
+      runId: c.req.param("id"),
+      workspaceId: principal.workspaceId,
+    });
+    if (!res.ok)
+      return c.json(
+        { error: res.reason, ...(res.state != null ? { state: res.state } : {}) },
+        res.reason === "not_found" ? 404 : 409,
+      );
     return c.json(res);
   });
 
@@ -969,33 +1151,11 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     if (res.kind === "ineligible") return c.json({ error: res.reason }, 409);
     if (res.kind === "denied") return c.json({ error: "denied", requestId: res.requestId }, 409);
     if (res.kind === "pending_review")
-      return c.json({ status: "pending_review", requestId: res.requestId, credits: res.credits }, 202);
+      return c.json(
+        { status: "pending_review", requestId: res.requestId, credits: res.credits },
+        202,
+      );
     return c.json({ status: "refunded", requestId: res.requestId, credits: res.credits });
-  });
-
-  // Walkthrough retry — clears the failed record and re-enqueues the one package-class call.
-  app.post("/runs/:id/walkthrough/retry", async (c) => {
-    const principal = deps.principal(c);
-    if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const runId = c.req.param("id");
-    const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const r = (
-        await tx.query("select state, walkthrough from runs where id = $1 and workspace_id = $2 for update", [runId, principal.workspaceId])
-      ).rows[0] as { state: RunState; walkthrough: { status?: string } | null } | undefined;
-      if (!r) return { kind: "not_found" } as const;
-      if (!TERMINAL.has(r.state) || (r.state !== "completed" && r.state !== "completed_partial")) {
-        return { kind: "not_delivered" } as const;
-      }
-      if (r.walkthrough?.status === "ready") return { kind: "ready" } as const;
-      // clear the record so maybeEnqueueWalkthrough's null-check re-arms the job
-      await tx.query("update runs set walkthrough = null where id = $1", [runId]);
-      return { kind: "requeued" } as const;
-    });
-    if (res.kind === "not_found") return c.json({ error: "not_found" }, 404);
-    if (res.kind === "not_delivered") return c.json({ error: "not_delivered" }, 409);
-    if (res.kind === "ready") return c.json({ status: "ready" });
-    await deps.queue.send(RUN_JOBS.walkthrough, { runId, workspaceId: principal.workspaceId }, { singletonKey: `walkthrough:${runId}` });
-    return c.json({ status: "requeued" }, 202);
   });
 
   return app;

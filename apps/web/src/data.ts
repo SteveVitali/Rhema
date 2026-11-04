@@ -218,7 +218,10 @@ export interface DataSource {
   /** The signed-in principal's projects with derived §6.3 state (session forwarded to the api). */
   listProjects(session: SessionHeaders): Promise<ProjectRow[]>;
   /** The delivered-review dossier for a run (PRB.04 reading surface; live-bound in PRB.16, D-PRB.04-1). */
-  getDossier(session: SessionHeaders, args: { projectSlug: string; runId: string }): Promise<DossierData>;
+  getDossier(
+    session: SessionHeaders,
+    args: { projectSlug: string; runId: string },
+  ): Promise<DossierData>;
   /** Validate a beta invite before any auth request is made (REQ-BETA-19). */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
   /**
@@ -261,13 +264,24 @@ export interface DataSource {
     args?: { workflow?: string; scope?: string },
   ): Promise<RunSheetContextDto>;
   /** P1.06 (REQ-BILL-4) — the "don't ask under N credits" pref (`PUT /settings/consent`). */
-  setConsentPref?(session: SessionHeaders, dontAskUnder: number): Promise<{ ok: true; dontAskUnder: number }>;
+  setConsentPref?(
+    session: SessionHeaders,
+    dontAskUnder: number,
+  ): Promise<{ ok: true; dontAskUnder: number }>;
   /** SPA.20 — the server-owned estimate revalidation (`POST /projects/:id/estimates`): the BFF
    *  `/bff/p/:slug/estimate` twin's upstream (REQ-BFF-23). Optional — a fixture without it answers
    *  the seam's unavailable refusal. */
-  estimate?(session: SessionHeaders, projectId: string, req: EstimateRequestDto): Promise<EstimateDto>;
+  estimate?(
+    session: SessionHeaders,
+    projectId: string,
+    req: EstimateRequestDto,
+  ): Promise<EstimateDto>;
   /** P1.06 — the palette's free-text search over the project index (`GET /projects/search?q=`). */
-  searchPalette?(session: SessionHeaders, q: string, projectId?: string): Promise<ProjectSearchHitDto[]>;
+  searchPalette?(
+    session: SessionHeaders,
+    q: string,
+    projectId?: string,
+  ): Promise<ProjectSearchHitDto[]>;
   /** PRB.05 — write the user's disposition on a finding (§5.7; reversible until freeze). */
   recordDisposition(
     session: SessionHeaders,
@@ -277,7 +291,11 @@ export interface DataSource {
   ): Promise<DispositionDto>;
   /** P1.07 — Apply (REQ-SPEC-6): splice the suggestion into the working head + accept·applied.
    *  Optional like the other live-write seams: a fixture without it renders Apply disabled. */
-  applyFinding?(session: SessionHeaders, projectId: string, findingId: string): Promise<ApplyResultDto>;
+  applyFinding?(
+    session: SessionHeaders,
+    projectId: string,
+    findingId: string,
+  ): Promise<ApplyResultDto>;
   /** P1.07 — promote a reconciliation-rejected finding to the main list (REQ-IDE-26). */
   promoteFinding?(
     session: SessionHeaders,
@@ -297,7 +315,11 @@ export interface DataSource {
     req: { title: string; severity?: "blocking" | "major" | "minor" | "note" },
   ): Promise<{ ok: true; obligationId: string }>;
   /** P1.07 — the shared deep link: resolve a finding to its dossier run + anchor. */
-  resolveFinding?(session: SessionHeaders, projectId: string, findingId: string): Promise<FindingResolveDto>;
+  resolveFinding?(
+    session: SessionHeaders,
+    projectId: string,
+    findingId: string,
+  ): Promise<FindingResolveDto>;
   /** P1.07 — the consolidated bulk preview (§5.7) before any writes. */
   previewBulkFindings?(
     session: SessionHeaders,
@@ -315,7 +337,12 @@ export interface DataSource {
   /** PRB.05 — the open gate cards for the project's runs (the Needs-you surface). */
   listGates(session: SessionHeaders, projectId: string): Promise<GateCardDto[]>;
   /** PRB.05 — a gate card's decision (approve / wait / stop / …). */
-  decideGate(session: SessionHeaders, projectId: string, gateId: string, req: GateDecisionDto): Promise<void>;
+  decideGate(
+    session: SessionHeaders,
+    projectId: string,
+    gateId: string,
+    req: GateDecisionDto,
+  ): Promise<void>;
   /** PRB.05 — a presence/reading ping for the gate's timer (§6.4 item 2; REQ-SPEC-18). */
   recordGateActivity(
     session: SessionHeaders,
@@ -326,7 +353,12 @@ export interface DataSource {
   /** PRB.05 — the Decisions list (open decision_requests for the project). */
   listDecisions(session: SessionHeaders, projectId: string): Promise<DecisionItemDto[]>;
   /** PRB.05 — answer a Decisions row. */
-  answerDecision(session: SessionHeaders, projectId: string, decisionId: string, answer: string): Promise<void>;
+  answerDecision(
+    session: SessionHeaders,
+    projectId: string,
+    decisionId: string,
+    answer: string,
+  ): Promise<void>;
   // ---- P1.19 — the §5.11 Inbox (REQ-IDE-2 amended; REQ-MOBILE-19). Optional seams like the other
   // live reads: a fixture without them renders the Inbox empty rather than failing the page. ----
   /** The globally-ordered Inbox rows (blocked-on-you → unread events → stale voices). */
@@ -372,13 +404,21 @@ export interface DataSource {
     req: { body: string; workflows?: readonly string[] },
   ): Promise<{ ok: true; guidanceId: string }>;
   /** `POST /projects/:id/guidance/:gid/retire` — standing guidance retires, never deletes. */
-  retireGuidance?(session: SessionHeaders, projectId: string, guidanceId: string): Promise<{ ok: true }>;
+  retireGuidance?(
+    session: SessionHeaders,
+    projectId: string,
+    guidanceId: string,
+  ): Promise<{ ok: true }>;
   /** `GET /settings/explainers` — the user's dismissed one-time inline explainers (§5.11/§6.4). */
   getExplainers?(session: SessionHeaders): Promise<ExplainersDto>;
   /** `POST /settings/explainers/:name/dismiss` — mark the one-time explainer seen. */
   dismissExplainer?(session: SessionHeaders, name: string): Promise<{ ok: true }>;
   /** PRB.06 — the What-changed read for a delivered response (§5.8 move cards + Inline hunks). */
-  getWhatChanged(session: SessionHeaders, projectId: string, responseId: string): Promise<WhatChangedDto>;
+  getWhatChanged(
+    session: SessionHeaders,
+    projectId: string,
+    responseId: string,
+  ): Promise<WhatChangedDto>;
   /** PRB.06 — a hunk comment → a Guidance row the next Revise consumes (§6.5). */
   commentOnHunk(
     session: SessionHeaders,
@@ -395,7 +435,11 @@ export interface DataSource {
     opts?: { exact?: boolean },
   ): Promise<EditorDocDto>;
   /** P1.02 — resolve a `/v/:n|working` ref to its draft id (the Page's versioned routes). */
-  resolveEditorDraft(session: SessionHeaders, projectId: string, v: string): Promise<EditorResolveDto>;
+  resolveEditorDraft(
+    session: SessionHeaders,
+    projectId: string,
+    v: string,
+  ): Promise<EditorResolveDto>;
   /** P1.02 — the project's stored CSL-JSON bibliography items. */
   getBibliography(session: SessionHeaders, projectId: string): Promise<BibliographyDto>;
   /** P1.02 — import BibTeX/CSL-JSON/Zotero text into the project's bibliography items. */
@@ -405,12 +449,21 @@ export interface DataSource {
     req: { format?: string; content: string },
   ): Promise<BibliographyImportDto>;
   /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
-  getArtifactPage(session: SessionHeaders, projectId: string, artifactId: string): Promise<EditorDocDto>;
+  getArtifactPage(
+    session: SessionHeaders,
+    projectId: string,
+    artifactId: string,
+  ): Promise<EditorDocDto>;
   // ---- P1.08 — §5.8 versions/compare/restore + the §5.13 Files pane ----
   /** the version rail read model (every origin, reviewed/answered flags, the ⚑ chip). */
   getVersions(session: SessionHeaders, projectId: string): Promise<VersionRailDto>;
   /** the generalized compare — any draft pair (`m` may be `working`), server-projected. */
-  getVersionDiff(session: SessionHeaders, projectId: string, n: string, m: string): Promise<VersionDiffDto>;
+  getVersionDiff(
+    session: SessionHeaders,
+    projectId: string,
+    n: string,
+    m: string,
+  ): Promise<VersionDiffDto>;
   /** a compare-hunk comment → `Guidance{source:'inline_comment'}` (the next Revise consumes it). */
   commentOnCompareHunk(
     session: SessionHeaders,
@@ -424,7 +477,11 @@ export interface DataSource {
    *  fixture without it renders the Files strip unchanged. */
   getFiles?(session: SessionHeaders, projectId: string): Promise<FilesDto>;
   /** the §5.8-grouped restore points for a draft's live doc. */
-  listRestorePoints?(session: SessionHeaders, projectId: string, draftId: string): Promise<RestorePointsDto>;
+  listRestorePoints?(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+  ): Promise<RestorePointsDto>;
   /** a point's reconstructed content diffed against the current head. */
   previewRestorePoint?(
     session: SessionHeaders,
@@ -445,7 +502,10 @@ export interface DataSource {
     projectId: string,
     draftId: string,
     markdown: string,
-    meta?: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] },
+    meta?: {
+      provenanceSpans?: { blockId: string; source: unknown }[];
+      agentSpans?: { blockId: string; from: number; to: number }[];
+    },
   ): Promise<EditorSaveDto>;
   /** PRB.07 — the one note field → a Guidance row (§6.3's comment path; REQ-DATA-41 beta form). */
   postEditorNote(
@@ -455,9 +515,17 @@ export interface DataSource {
     text: string,
   ): Promise<EditorNoteDto>;
   /** PRB.07 — the banner's "Cancel run to edit" release (§6.3). */
-  cancelEditorRun(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorCancelRunDto>;
+  cancelEditorRun(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+  ): Promise<EditorCancelRunDto>;
   /** PRB.07 — "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. */
-  reviseWithEdits(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorReviseDto>;
+  reviseWithEdits(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+  ): Promise<EditorReviseDto>;
   /** PRB.08 — the account's spendable balance + suspension + the beta Payment Link (§14.6). Drives the run
    *  sheet's real balance (replacing the flat beta constant) + the exhaustion panel's Payment Link. */
   getBillingBalance(session: SessionHeaders): Promise<BillingBalanceDto>;
@@ -472,7 +540,11 @@ export interface DataSource {
   /** the detail page's full read (status + samples + history + artifacts + the seed text). */
   getVoice(session: SessionHeaders, personaId: string): Promise<VoiceDetailDto>;
   /** a pasted sample through the §9.5 model; returns the refreshed corpus words + status (REQ-PERSONA-3). */
-  addVoiceSample(session: SessionHeaders, personaId: string, req: AddVoiceSampleDto): Promise<AddedVoiceSampleDto>;
+  addVoiceSample(
+    session: SessionHeaders,
+    personaId: string,
+    req: AddVoiceSampleDto,
+  ): Promise<AddedVoiceSampleDto>;
   /** the per-item include/omit toggle (REQ-INGEST-4). */
   setVoiceSampleIncluded(
     session: SessionHeaders,
@@ -481,11 +553,23 @@ export interface DataSource {
     included: boolean,
   ): Promise<{ status: VoiceStatusDto | null }>;
   /** the seed editor's save — recomputes the J9 hash; the returned status is the live pill (§9.3). */
-  saveVoiceSeed(session: SessionHeaders, personaId: string, req: SaveVoiceSeedDto): Promise<SavedVoiceSeedDto>;
+  saveVoiceSeed(
+    session: SessionHeaders,
+    personaId: string,
+    req: SaveVoiceSeedDto,
+  ): Promise<SavedVoiceSeedDto>;
   /** the tier estimate over the current included corpus (REQ-PERSONA-3). */
-  estimateVoice(session: SessionHeaders, personaId: string, tier: "quick" | "full"): Promise<VoiceEstimateDto>;
+  estimateVoice(
+    session: SessionHeaders,
+    personaId: string,
+    tier: "quick" | "full",
+  ): Promise<VoiceEstimateDto>;
   /** "Create and build" / "Update voice" — a profile_voice{tier} run (§9.2 item 3). */
-  buildVoice(session: SessionHeaders, personaId: string, req: BuildVoiceDto): Promise<BuiltVoiceDto>;
+  buildVoice(
+    session: SessionHeaders,
+    personaId: string,
+    req: BuildVoiceDto,
+  ): Promise<BuiltVoiceDto>;
   /** cancel an open build run. */
   cancelVoiceRun(session: SessionHeaders, runId: string): Promise<{ runId: string; state: string }>;
   /** the project's linked-voice facts (§9.6). */
@@ -508,7 +592,11 @@ export interface DataSource {
   /** the diff-of-inputs sheet's pre-computed route + estimate (§9.3). */
   getVoiceUpdatePlan(session: SessionHeaders, personaId: string): Promise<VoiceUpdatePlanDto>;
   /** the ONE Update-voice verb (§9.3; REQ-SPEC-27's scope routing). */
-  updateVoice(session: SessionHeaders, personaId: string, req: UpdateVoiceDto): Promise<UpdatedVoiceDto>;
+  updateVoice(
+    session: SessionHeaders,
+    personaId: string,
+    req: UpdateVoiceDto,
+  ): Promise<UpdatedVoiceDto>;
   /** "Correct this in your description" — blockquote + consume-once row (§9.4; REQ-PERSONA-7). */
   addVoiceCorrection(
     session: SessionHeaders,
@@ -546,7 +634,10 @@ export interface DataSource {
     connectionId: string,
   ): Promise<VoiceSyncResponseDto>;
   /** "Re-sync all" — one job per live connection. */
-  syncAllVoiceConnections(session: SessionHeaders, personaId: string): Promise<VoiceSyncResponseDto>;
+  syncAllVoiceConnections(
+    session: SessionHeaders,
+    personaId: string,
+  ): Promise<VoiceSyncResponseDto>;
   /** the per-source settings (auto-include new items; daily auto-sync). */
   patchVoiceConnection(
     session: SessionHeaders,
@@ -638,11 +729,19 @@ export interface DataSource {
   /** the latest account-export build state (null when never requested). */
   getAccountExportState?(session: SessionHeaders): Promise<{ export: AccountExportDto | null }>;
   /** "Export everything" — enqueue the build (deduped while one runs or a link still lives). */
-  requestAccountExport?(session: SessionHeaders): Promise<{ export: AccountExportDto; deduped: boolean }>;
+  requestAccountExport?(
+    session: SessionHeaders,
+  ): Promise<{ export: AccountExportDto; deduped: boolean }>;
   /** a presigned download URL for the ready zip (410 when the link expired). */
-  getAccountExportDownloadUrl?(session: SessionHeaders, exportId?: string): Promise<{ downloadUrl: string }>;
+  getAccountExportDownloadUrl?(
+    session: SessionHeaders,
+    exportId?: string,
+  ): Promise<{ downloadUrl: string }>;
   /** replay an export zip into this account — a re-import is a no-op (`deduped: true`). */
-  importAccountExport?(session: SessionHeaders, zipBytes: Uint8Array): Promise<AccountImportResultDto>;
+  importAccountExport?(
+    session: SessionHeaders,
+    zipBytes: Uint8Array,
+  ): Promise<AccountImportResultDto>;
   // ---- PRB.12 — beta analytics + the privacy toggle + the usage glance ----
   /** mint a client-whitelisted analytics event (the SSR surfaces' view/dwell/timer emissions). */
   postAnalyticsEvent(
@@ -673,7 +772,10 @@ export interface DataSource {
   /** the account's analytics opt-out flag (the Settings toggle). */
   getPrivacySettings(session: SessionHeaders): Promise<PrivacySettingsDto>;
   /** flip `analytics_opt_out` — stops future writes AND hides existing rows from reads (REQ-PROD-15). */
-  setAnalyticsOptOut(session: SessionHeaders, analyticsOptOut: boolean): Promise<PrivacySettingsDto>;
+  setAnalyticsOptOut(
+    session: SessionHeaders,
+    analyticsOptOut: boolean,
+  ): Promise<PrivacySettingsDto>;
   /** the level-1 usage glance: balance + recent runs' spend (§14.5). */
   getUsage(session: SessionHeaders): Promise<UsageDto>;
   // ---- P1.16 — billing, full (§14.2/14.3/14.5/14.6) ----
@@ -718,7 +820,10 @@ export interface DataSource {
   /** the account's app theme (GET /settings/theme) — dark | light | auto. */
   getTheme(session: SessionHeaders): Promise<ThemeSettingsDto>;
   /** set the app theme (the IDE theme menu's POST → PUT /settings/theme). */
-  setTheme(session: SessionHeaders, appTheme: ThemeSettingsDto["appTheme"]): Promise<ThemeSettingsDto>;
+  setTheme(
+    session: SessionHeaders,
+    appTheme: ThemeSettingsDto["appTheme"],
+  ): Promise<ThemeSettingsDto>;
   /** set the project's paper pin (⌘⇧L → PUT /projects/:id/paper-theme). */
   setPaperTheme(
     session: SessionHeaders,
@@ -729,7 +834,10 @@ export interface DataSource {
   /** POST /projects — the three-entry create; upload entries adopt the quarantined conversion. */
   createProject(session: SessionHeaders, req: CreateProjectDto): Promise<CreatedProjectDto>;
   /** The workspace-scoped conversion preview — the new-project flow's leg before any project exists. */
-  previewWorkspaceImport(session: SessionHeaders, input: WorkspaceImportInput): Promise<ImportPreviewOutcome>;
+  previewWorkspaceImport(
+    session: SessionHeaders,
+    input: WorkspaceImportInput,
+  ): Promise<ImportPreviewOutcome>;
   /** Row action — rename (the slug stays put). */
   renameProject(session: SessionHeaders, projectId: string, title: string): Promise<void>;
   /** Row action — duplicate drafts + outline + Voice link (never correspondence; origin=duplicate). */
@@ -756,19 +864,29 @@ export interface DataSource {
   /** `GET /projects/:id/timeline` — the round log (project resolved from its slug). */
   getTimeline(session: SessionHeaders, projectSlug: string): Promise<TimelineDto>;
   /** `GET /runs/:id/report` — Level 3; `advanced` adds the Level-4 drill-down. */
-  getRunReport(session: SessionHeaders, runId: string, opts?: { advanced?: boolean }): Promise<RunReportDto>;
+  getRunReport(
+    session: SessionHeaders,
+    runId: string,
+    opts?: { advanced?: boolean },
+  ): Promise<RunReportDto>;
   /** `POST /runs/:id/pause` — "Pause after this phase" (honored at the next committed boundary). */
   pauseRun(session: SessionHeaders, runId: string): Promise<{ ok: true; state: string }>;
   /** `POST /runs/:id/resume` — resume a steering-parked run; `note` is Resume-with-note. */
-  resumeRun(session: SessionHeaders, runId: string, note?: string): Promise<{ ok: true; state: string }>;
+  resumeRun(
+    session: SessionHeaders,
+    runId: string,
+    note?: string,
+  ): Promise<{ ok: true; state: string }>;
   /** `POST /runs/:id/notes` — a note for the next phase → Guidance{queued_message}. */
-  postRunNote(session: SessionHeaders, runId: string, text: string): Promise<{ ok: true; guidanceId: string }>;
+  postRunNote(
+    session: SessionHeaders,
+    runId: string,
+    text: string,
+  ): Promise<{ ok: true; guidanceId: string }>;
   /** `POST /runs/:id/stop` — Stop, keep partials. */
   stopRun(session: SessionHeaders, runId: string): Promise<{ ok: true; state: string }>;
   /** `POST /runs/:id/refund` — DEF.4's §14.4 refund-window request (200 refunded / 202 review). */
   requestRefund(session: SessionHeaders, runId: string): Promise<UserRefundResponseDto>;
-  /** `POST /runs/:id/walkthrough/retry` — re-enqueue the one package-class walkthrough call. */
-  retryWalkthrough(session: SessionHeaders, runId: string): Promise<{ status: string }>;
   /**
    * The run's user-visible events — the `GET /runs/:id/events?poll=1` finite replay parsed to rows
    * (the SSR feed's initial rows; the island tails the live stream afterwards).
@@ -789,7 +907,11 @@ export interface DataSource {
   // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6; every method session-forwards) ----
   /** `GET /projects/:id/chat` — the Desk Chat read (threads + ensured default, turns, pins, sources,
    *  the §7.6 empty-state model, the live-run flag). Optional seam: absent ⇒ the tab's placeholder. */
-  getChat?(session: SessionHeaders, projectId: string, opts?: { thread?: string }): Promise<ChatPanelDto>;
+  getChat?(
+    session: SessionHeaders,
+    projectId: string,
+    opts?: { thread?: string },
+  ): Promise<ChatPanelDto>;
   /** `POST …/threads/:tid/turns` — send a message; creates the turn's `chat_turn` run. */
   postChatTurn?(
     session: SessionHeaders,
@@ -818,7 +940,11 @@ export interface DataSource {
     req: { name: string },
   ): Promise<{ thread: ChatThreadDto }>;
   /** `DELETE /projects/:id/chat/threads/:tid` — the default thread is undeletable (the api's rule). */
-  deleteChatThread?(session: SessionHeaders, projectId: string, threadId: string): Promise<{ ok: true }>;
+  deleteChatThread?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+  ): Promise<{ ok: true }>;
   /** `POST …/threads/:tid/pins` — pin a fact/ref/source (≤12; `dropOldest` rotates). */
   addChatPin?(
     session: SessionHeaders,
@@ -856,14 +982,27 @@ export interface DataSource {
   postChatAttachment?(
     session: SessionHeaders,
     projectId: string,
-    req: { quarantineKey: string; filename: string; mediaType: string; threadId?: string; waitMs?: number },
+    req: {
+      quarantineKey: string;
+      filename: string;
+      mediaType: string;
+      threadId?: string;
+      waitMs?: number;
+    },
   ): Promise<ChatAttachmentDto>;
   // ---- P1.12 — the Outline surface (§7.3; every method session-forwards) ----
   /** `GET /projects/:id/outline/promotion` — the promotion sheet's facts. */
   getOutlinePromotion?(
     session: SessionHeaders,
     projectId: string,
-    opts: { scope?: "thread" | "turn" | "research"; threadId?: string; turnId?: string; tier?: string; rigor?: string; slug?: string },
+    opts: {
+      scope?: "thread" | "turn" | "research";
+      threadId?: string;
+      turnId?: string;
+      tier?: string;
+      rigor?: string;
+      slug?: string;
+    },
   ): Promise<OutlinePromotionDto>;
   /** `POST /projects/:id/outline/promotions` — create the `outline` run (Promote = consent). */
   promoteOutline?(
@@ -872,7 +1011,11 @@ export interface DataSource {
     req: OutlinePromoteRequestDto,
   ): Promise<{ runId: string; state: string; deduped: boolean; slug: string }>;
   /** `GET /projects/:id/outline` — the editor DTO (head artifact + parsed twin + citations). */
-  getOutline?(session: SessionHeaders, projectId: string, opts?: { slug?: string }): Promise<OutlineDto>;
+  getOutline?(
+    session: SessionHeaders,
+    projectId: string,
+    opts?: { slug?: string },
+  ): Promise<OutlineDto>;
   /** `PATCH /projects/:id/outline` — the autosave: a structured `ed.*` delta → a new version pair. */
   patchOutline?(
     session: SessionHeaders,
@@ -880,7 +1023,11 @@ export interface DataSource {
     req: OutlinePatchDto,
   ): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>;
   /** `DELETE /projects/:id/outline` — refused 409 `outline_cited` while a draft cites the outline. */
-  deleteOutline?(session: SessionHeaders, projectId: string, opts?: { slug?: string }): Promise<{ ok: true }>;
+  deleteOutline?(
+    session: SessionHeaders,
+    projectId: string,
+    opts?: { slug?: string },
+  ): Promise<{ ok: true }>;
   /** `POST /projects/:id/outline/gaps/:gapId/answer` — a gap's Answer → a `user_typed` claim row. */
   answerOutlineGap?(
     session: SessionHeaders,
@@ -908,9 +1055,17 @@ export interface DataSource {
     req: FigureProposeDto,
   ): Promise<FigureProposedDto>;
   /** `POST …/proposals/accept` — the one-tx splice (frozen draft ⇒ forked v(N+1)). */
-  acceptFigureProposal?(session: SessionHeaders, projectId: string, figureId: string): Promise<FigureAcceptedDto>;
+  acceptFigureProposal?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+  ): Promise<FigureAcceptedDto>;
   /** `POST …/proposals/reject` — clear the card; the asset stays in working figures. */
-  rejectFigureProposal?(session: SessionHeaders, projectId: string, figureId: string): Promise<{ ok: true }>;
+  rejectFigureProposal?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+  ): Promise<{ ok: true }>;
   /** `POST …/spec-edit` — the 0-cr type-chip mark edit → new version + re-render. */
   editFigureSpec?(
     session: SessionHeaders,
@@ -919,7 +1074,12 @@ export interface DataSource {
     req: FigureSpecEditDto,
   ): Promise<{ ok: true; n: number; specVersionId: string | null }>;
   /** `POST …/versions/:n/restore` — copy the version's spec/data/provenance to head + re-render. */
-  restoreFigureVersion?(session: SessionHeaders, projectId: string, figureId: string, n: number): Promise<{ ok: true }>;
+  restoreFigureVersion?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+    n: number,
+  ): Promise<{ ok: true }>;
   // ---- P1.20 — the §14.7 settings tree. All optional like the other live seams: a fixture without
   // them renders the section's lede + a "not available" note rather than failing the page. ----
   /** `GET /settings/account` — profile + sign-in methods + sessions + the deletion banner state. */
@@ -930,15 +1090,27 @@ export interface DataSource {
     req: { name?: string; byline?: string | null; image?: string | null },
   ): Promise<{ ok: true }>;
   /** `POST /settings/account/email` — start the magic-link email change. */
-  requestEmailChange?(session: SessionHeaders, email: string): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
+  requestEmailChange?(
+    session: SessionHeaders,
+    email: string,
+  ): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
   /** `POST /settings/account/email/confirm` — consume the emailed token. */
-  confirmEmailChange?(session: SessionHeaders, token: string): Promise<{ ok: true; email: string } | { error: string }>;
+  confirmEmailChange?(
+    session: SessionHeaders,
+    token: string,
+  ): Promise<{ ok: true; email: string } | { error: string }>;
   /** `POST /settings/sessions/revoke` — kill one active session server-side. */
-  revokeSession?(session: SessionHeaders, sessionId: string): Promise<{ ok: true } | { error: string }>;
+  revokeSession?(
+    session: SessionHeaders,
+    sessionId: string,
+  ): Promise<{ ok: true } | { error: string }>;
   /** `GET /settings/preferences` — the account-defaults blob + consent threshold + app theme. */
   getPreferencesSettings?(session: SessionHeaders): Promise<PreferencesSettingsDto>;
   /** `PUT /settings/preferences` — merge a validated UserPrefs patch (unknown keys 422). */
-  updatePreferences?(session: SessionHeaders, patch: UserPrefs): Promise<{ ok: true; prefs: UserPrefs }>;
+  updatePreferences?(
+    session: SessionHeaders,
+    patch: UserPrefs,
+  ): Promise<{ ok: true; prefs: UserPrefs }>;
   /** `GET /settings/data` — privacy toggles, support grant + visible log, pending deletion. */
   getDataSettings?(session: SessionHeaders): Promise<DataSettingsDto>;
   /** `POST /settings/support-access` — grant/revoke the 72-h support grant (REQ-VIS-11). */
@@ -947,18 +1119,26 @@ export interface DataSource {
     enabled: boolean,
   ): Promise<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>;
   /** `PUT /settings/preference-profile` — the Q-26 capture opt-out (default-on; REQ-OBJ-14). */
-  setPreferenceOptOut?(session: SessionHeaders, optOut: boolean): Promise<{ ok: true; preferenceOptOut: boolean }>;
+  setPreferenceOptOut?(
+    session: SessionHeaders,
+    optOut: boolean,
+  ): Promise<{ ok: true; preferenceOptOut: boolean }>;
   /** `POST /settings/account/delete` — typed confirmation starts the 14-day grace (REQ-ACCT-4). */
   requestAccountDeletion?(
     session: SessionHeaders,
     confirmation: string,
-  ): Promise<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>;
+  ): Promise<
+    { ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }
+  >;
   /** `POST /settings/account/delete/cancel` — cancel inside the grace window. */
   cancelAccountDeletion?(session: SessionHeaders): Promise<{ ok: true } | { error: string }>;
   /** `GET /settings/integrations` — the uniform provider cards (P1.15's connections). */
   getIntegrationsSettings?(session: SessionHeaders): Promise<IntegrationsSettingsDto>;
   /** `POST /settings/integrations/:id/disconnect` — drops the credential now; samples stay. */
-  disconnectIntegration?(session: SessionHeaders, connectionId: string): Promise<{ ok: true } | { error: string }>;
+  disconnectIntegration?(
+    session: SessionHeaders,
+    connectionId: string,
+  ): Promise<{ ok: true } | { error: string }>;
   /** `GET /projects/:id/settings` — the §4.2 project-settings read (approval policy + safe protocol). */
   getProjectSettings?(session: SessionHeaders, projectId: string): Promise<ProjectSettingsDto>;
   /** `PUT /projects/:id/settings` — the REQ-GENRE-2 safe-field patch; a protocol change marks the
@@ -1019,7 +1199,10 @@ export function apiDataSource(
   // failure into a degraded page (`.catch(() => null)`). <5xx responses are ordinary answers, not
   // degradation.
   const baseFetch = fetchImpl ?? fetch;
-  const f: typeof fetch = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+  const f: typeof fetch = (async (
+    url: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => {
     try {
       const res = await baseFetch(url, init);
       if (res.status >= 500) noteDegradedUpstream();
@@ -1040,11 +1223,16 @@ export function apiDataSource(
   // to GCS on the signed URL with the signed headers echoed verbatim. The session cookie rides ONLY the
   // api calls — it never leaves for a third-party origin. A replayed `quarantineKey` (the preview form's
   // hidden field) skips the upload entirely.
-  const uploadKey = async (session: SessionHeaders, input: WorkspaceImportInput): Promise<string> => {
+  const uploadKey = async (
+    session: SessionHeaders,
+    input: WorkspaceImportInput,
+  ): Promise<string> => {
     if (input.quarantineKey) return input.quarantineKey;
     const bytes =
-      input.bytes ?? (typeof input.text === "string" ? new TextEncoder().encode(input.text) : undefined);
-    if (!bytes || bytes.byteLength === 0) throw new ApiError(400, "import", "import source required");
+      input.bytes ??
+      (typeof input.text === "string" ? new TextEncoder().encode(input.text) : undefined);
+    if (!bytes || bytes.byteLength === 0)
+      throw new ApiError(400, "import", "import source required");
     const pre = await client(session).presignImportUpload();
     if (bytes.byteLength > pre.maxBytes)
       throw new ApiError(413, pre.key, `upload exceeds ${pre.maxBytes} bytes`);
@@ -1078,8 +1266,7 @@ export function apiDataSource(
       if (!row) throw new ApiError(404, `project ${projectSlug}`);
       return client.getDossier(row.id, runId);
     },
-    checkInvite: (code, email) =>
-      createApiClient({ baseUrl, fetch: f }).checkInvite(code, email),
+    checkInvite: (code, email) => createApiClient({ baseUrl, fetch: f }).checkInvite(code, email),
     // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
     // SEC.2 — the resolved browser IP rides the trusted stamp (ADR-040), so a web-mediated signup lands
     // in the REAL caller's bucket, not the web instance's shared one. `clientIp` is a transport key —
@@ -1126,7 +1313,11 @@ export function apiDataSource(
         ...(projectId ? { projectId } : {}),
       }),
     recordDisposition: (session, projectId, findingId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).recordDisposition(projectId, findingId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).recordDisposition(
+        projectId,
+        findingId,
+        req,
+      ),
     // P1.07 — the findings surface writes: Apply, promote, Add-to-obligations, the deep-link resolve,
     // and the one-preview bulk actions (§5.7; REQ-SPEC-6, REQ-IDE-26, REQ-OBJ-9).
     applyFinding: (session, projectId, findingId) =>
@@ -1134,25 +1325,44 @@ export function apiDataSource(
     promoteFinding: (session, projectId, findingId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).promoteFinding(projectId, findingId),
     addFindingToObligations: (session, projectId, findingId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).addFindingToObligations(projectId, findingId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).addFindingToObligations(
+        projectId,
+        findingId,
+      ),
     createObligation: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).createObligation(projectId, req),
     resolveFinding: (session, projectId, findingId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).resolveFinding(projectId, findingId),
     previewBulkFindings: (session, projectId, runId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).previewBulkFindings(projectId, runId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).previewBulkFindings(
+        projectId,
+        runId,
+        req,
+      ),
     applyBulkFindings: (session, projectId, runId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).applyBulkFindings(projectId, runId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).applyBulkFindings(
+        projectId,
+        runId,
+        req,
+      ),
     listGates: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).listGates(projectId),
     decideGate: (session, projectId, gateId, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).decideGate(projectId, gateId, req),
     recordGateActivity: (session, projectId, gateId, activity) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).recordGateActivity(projectId, gateId, activity),
+      createApiClient({ baseUrl, fetch: f, headers: session }).recordGateActivity(
+        projectId,
+        gateId,
+        activity,
+      ),
     listDecisions: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).listDecisions(projectId),
     answerDecision: (session, projectId, decisionId, answer) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).answerDecision(projectId, decisionId, answer),
+      createApiClient({ baseUrl, fetch: f, headers: session }).answerDecision(
+        projectId,
+        decisionId,
+        answer,
+      ),
     // P1.19 — the Inbox reads/writes ride the api's session-authed routes (the api owns the ordering,
     // the badge rule, and the read receipts — web never re-derives them).
     getInbox: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).getInbox(),
@@ -1169,10 +1379,12 @@ export function apiDataSource(
     getApprovalOverrides: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getApprovalOverrides(projectId),
     setApprovalOverrides: (session, projectId, overrides) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).setApprovalOverrides(projectId, overrides),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setApprovalOverrides(
+        projectId,
+        overrides,
+      ),
     // P1.09 — the §6.4 approval-policy surface + standing guidance + explainers.
-    getApprovalSettings: (session, projectId) =>
-      client(session).getApprovalSettings(projectId),
+    getApprovalSettings: (session, projectId) => client(session).getApprovalSettings(projectId),
     putApprovalSettings: (session, projectId, req) =>
       client(session).putApprovalSettings(projectId, req),
     setRunGateOverrides: (session, projectId, runId, req) =>
@@ -1184,11 +1396,21 @@ export function apiDataSource(
     getExplainers: (session) => client(session).getExplainers(),
     dismissExplainer: (session, name) => client(session).dismissExplainer(name),
     getWhatChanged: (session, projectId, responseId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getWhatChanged(projectId, responseId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getWhatChanged(
+        projectId,
+        responseId,
+      ),
     commentOnHunk: (session, projectId, responseId, hunkId, text) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnHunk(
+        projectId,
+        responseId,
+        hunkId,
+        text,
+      ),
     getEditorDoc: (session, projectId, draftId, opts) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getEditorDoc(projectId, draftId, { opts }),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getEditorDoc(projectId, draftId, {
+        opts,
+      }),
     resolveEditorDraft: (session, projectId, v) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).resolveEditorDraft(projectId, v),
     getBibliography: (session, projectId) =>
@@ -1196,7 +1418,10 @@ export function apiDataSource(
     importBibliography: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).importBibliography(projectId, req),
     getArtifactPage: (session, projectId, artifactId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getArtifactPage(projectId, artifactId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getArtifactPage(
+        projectId,
+        artifactId,
+      ),
     // P1.08 — the version rail, the generalized compare + hunk comments, the Files pane, and the
     // restore-point browse/preview/apply (§5.8, §5.13).
     getVersions: (session, projectId) =>
@@ -1204,19 +1429,45 @@ export function apiDataSource(
     getVersionDiff: (session, projectId, n, m) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getVersionDiff(projectId, n, m),
     commentOnCompareHunk: (session, projectId, n, m, hunkId, text) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnCompareHunk(projectId, n, m, hunkId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnCompareHunk(
+        projectId,
+        n,
+        m,
+        hunkId,
+        text,
+      ),
     getFiles: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getFiles(projectId),
     listRestorePoints: (session, projectId, draftId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).listRestorePoints(projectId, draftId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listRestorePoints(
+        projectId,
+        draftId,
+      ),
     previewRestorePoint: (session, projectId, draftId, pointId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).previewRestorePoint(projectId, draftId, pointId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).previewRestorePoint(
+        projectId,
+        draftId,
+        pointId,
+      ),
     applyRestorePoint: (session, projectId, draftId, pointId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).applyRestorePoint(projectId, draftId, pointId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).applyRestorePoint(
+        projectId,
+        draftId,
+        pointId,
+      ),
     saveEditorDraft: (session, projectId, draftId, markdown, meta) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).saveEditorDraft(projectId, draftId, markdown, { meta }),
+      createApiClient({ baseUrl, fetch: f, headers: session }).saveEditorDraft(
+        projectId,
+        draftId,
+        markdown,
+        { meta },
+      ),
     postEditorNote: (session, projectId, draftId, text) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).postEditorNote(projectId, draftId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).postEditorNote(
+        projectId,
+        draftId,
+        text,
+      ),
     cancelEditorRun: (session, projectId, draftId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).cancelEditorRun(projectId, draftId),
     reviseWithEdits: (session, projectId, draftId) =>
@@ -1226,8 +1477,7 @@ export function apiDataSource(
     recordExhaustedPrompt: (session, actionTaken) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).recordExhaustedPrompt(actionTaken),
     // ---- PRB.10 — Quick Voice ----
-    listVoices: (session) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).listVoices(),
+    listVoices: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).listVoices(),
     createVoice: (session, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).createVoice(req),
     getVoice: (session, personaId) =>
@@ -1235,7 +1485,11 @@ export function apiDataSource(
     addVoiceSample: (session, personaId, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).addVoiceSample(personaId, req),
     setVoiceSampleIncluded: (session, personaId, itemId, included) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).setVoiceSampleIncluded(personaId, itemId, included),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setVoiceSampleIncluded(
+        personaId,
+        itemId,
+        included,
+      ),
     saveVoiceSeed: (session, personaId, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).saveVoiceSeed(personaId, req),
     estimateVoice: (session, personaId, tier) =>
@@ -1265,19 +1519,39 @@ export function apiDataSource(
     listVoiceConnections: (session, personaId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceConnections(personaId),
     createVoiceConnection: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).createVoiceConnection(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createVoiceConnection(
+        personaId,
+        req,
+      ),
     discoverVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).discoverVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).discoverVoiceConnection(
+        personaId,
+        connectionId,
+      ),
     confirmVoiceConnection: (session, personaId, connectionId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).confirmVoiceConnection(personaId, connectionId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).confirmVoiceConnection(
+        personaId,
+        connectionId,
+        req,
+      ),
     syncVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).syncVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).syncVoiceConnection(
+        personaId,
+        connectionId,
+      ),
     syncAllVoiceConnections: (session, personaId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).syncAllVoiceConnections(personaId),
     patchVoiceConnection: (session, personaId, connectionId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).patchVoiceConnection(personaId, connectionId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).patchVoiceConnection(
+        personaId,
+        connectionId,
+        req,
+      ),
     removeVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).removeVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).removeVoiceConnection(
+        personaId,
+        connectionId,
+      ),
     linkVoiceExportZip: async (session, personaId, bytes) => {
       // The quarantine leg (D-PRB.02-1): presign → PUT → link the export-zip source by key.
       const quarantineKey = await uploadKey(session, { bytes });
@@ -1289,9 +1563,16 @@ export function apiDataSource(
     getVoiceSample: (session, personaId, itemId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getVoiceSample(personaId, itemId),
     listVoiceSampleVersions: (session, personaId, itemId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceSampleVersions(personaId, itemId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceSampleVersions(
+        personaId,
+        itemId,
+      ),
     reconstructVoiceSample: (session, personaId, itemId, req) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).reconstructVoiceSample(personaId, itemId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).reconstructVoiceSample(
+        personaId,
+        itemId,
+        req,
+      ),
     deleteVoice: (session, personaId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).deleteVoice(personaId),
     adoptProjectVoice: (session, projectId, req) =>
@@ -1310,16 +1591,24 @@ export function apiDataSource(
     getAiUseStatement: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getAiUseStatement(projectId),
     downloadAiUseStatement: (session, projectId, format) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).downloadAiUseStatement(projectId, format),
+      createApiClient({ baseUrl, fetch: f, headers: session }).downloadAiUseStatement(
+        projectId,
+        format,
+      ),
     appendAiUseAddition: (session, projectId, sentence) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).appendAiUseAddition(projectId, sentence),
+      createApiClient({ baseUrl, fetch: f, headers: session }).appendAiUseAddition(
+        projectId,
+        sentence,
+      ),
     // ---- P1.18 — the whole-account zip ----
     getAccountExportState: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getAccountExportState(),
     requestAccountExport: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).requestAccountExport(),
     getAccountExportDownloadUrl: (session, exportId) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getAccountExportDownloadUrl(exportId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getAccountExportDownloadUrl(
+        exportId,
+      ),
     importAccountExport: (session, zipBytes) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).importAccountExport(zipBytes),
     // ---- PRB.12 — analytics + privacy + usage ----
@@ -1338,11 +1627,9 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f, headers: session }).getPrivacySettings(),
     setAnalyticsOptOut: (session, analyticsOptOut) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).setAnalyticsOptOut(analyticsOptOut),
-    getUsage: (session) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getUsage(),
+    getUsage: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).getUsage(),
     // ---- P1.16 — billing, full ----
-    getPlans: (session) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getPlans(),
+    getPlans: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).getPlans(),
     startCheckout: (session, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).startCheckout(req),
     createBillingPortalSession: (session, returnTo) =>
@@ -1367,13 +1654,11 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f, headers: session }).getUsageRunAdvanced(runId),
     downloadUsageCsv: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).downloadUsageCsv(),
-    getRatesPublication: () =>
-      createApiClient({ baseUrl, fetch: f }).getRates(),
+    getRatesPublication: () => createApiClient({ baseUrl, fetch: f }).getRates(),
     // ---- P1.01 — theme policy ----
     getSessionPrincipal: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getSession(),
-    getTheme: (session) =>
-      createApiClient({ baseUrl, fetch: f, headers: session }).getTheme(),
+    getTheme: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).getTheme(),
     setTheme: (session, appTheme) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).setTheme(appTheme),
     setPaperTheme: (session, projectId, paperTheme) =>
@@ -1393,7 +1678,10 @@ export function apiDataSource(
       return { status: "ready", preview: out.preview, quarantineKey };
     },
     renameProject: async (session, projectId, title) => {
-      await createApiClient({ baseUrl, fetch: f, headers: session }).renameProject(projectId, title);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).renameProject(
+        projectId,
+        title,
+      );
     },
     duplicateProject: (session, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).duplicateProject(projectId),
@@ -1434,7 +1722,7 @@ export function apiDataSource(
     postRunNote: (session, runId, text) => client(session).postRunNote(runId, text),
     stopRun: (session, runId) => client(session).stopRun(runId),
     requestRefund: (session, runId) => client(session).requestRefund(runId),
-    retryWalkthrough: (session, runId) => client(session).retryWalkthrough(runId),
+    // R7COPY.0 — `retryWalkthrough` retired (ADR-130; the api route is gone).
     // SPA.5 (REQ-DAT-13) — the feed's raw-fetch seams are now typed api-client members: the client
     // owns the `?poll=1` replay parse + the live stream's accept/last-event-id forwarding.
     getRunEvents: (session, runId) => client(session).getRunEvents(runId),
@@ -1457,7 +1745,8 @@ export function apiDataSource(
       client(session).removeChatPin(projectId, threadId, pinId),
     postChatCorrection: (session, projectId, threadId, req) =>
       client(session).postChatCorrection(projectId, threadId, req),
-    postChatSuggestion: (session, projectId, req) => client(session).postChatSuggestion(projectId, req),
+    postChatSuggestion: (session, projectId, req) =>
+      client(session).postChatSuggestion(projectId, req),
     postChatNote: (session, projectId, req) => client(session).postChatNote(projectId, req),
     postChatAttachment: (session, projectId, req) =>
       client(session).postChatAttachment(projectId, req),
@@ -1465,8 +1754,7 @@ export function apiDataSource(
     // ---- P1.12 — the Outline surface ----
     getOutlinePromotion: (session, projectId, opts) =>
       client(session).getOutlinePromotion(projectId, opts),
-    promoteOutline: (session, projectId, req) =>
-      client(session).promoteOutline(projectId, req),
+    promoteOutline: (session, projectId, req) => client(session).promoteOutline(projectId, req),
     getOutline: (session, projectId, opts) => client(session).getOutline(projectId, opts),
     patchOutline: (session, projectId, req) => client(session).patchOutline(projectId, req),
     deleteOutline: (session, projectId, opts) => client(session).deleteOutline(projectId, opts),
@@ -1499,10 +1787,12 @@ export function apiDataSource(
     getDataSettings: (session) => client(session).getDataSettings(),
     setSupportAccess: (session, enabled) => client(session).setSupportAccess(enabled),
     setPreferenceOptOut: (session, optOut) => client(session).setPreferenceOptOut(optOut),
-    requestAccountDeletion: (session, confirmation) => client(session).requestAccountDeletion(confirmation),
+    requestAccountDeletion: (session, confirmation) =>
+      client(session).requestAccountDeletion(confirmation),
     cancelAccountDeletion: (session) => client(session).cancelAccountDeletion(),
     getIntegrationsSettings: (session) => client(session).getIntegrationsSettings(),
-    disconnectIntegration: (session, connectionId) => client(session).disconnectIntegration(connectionId),
+    disconnectIntegration: (session, connectionId) =>
+      client(session).disconnectIntegration(connectionId),
     getProjectSettings: (session, projectId) => client(session).getProjectSettings(projectId),
     updateProjectSettings: (session, projectId, patch) =>
       client(session).updateProjectSettings(projectId, patch),

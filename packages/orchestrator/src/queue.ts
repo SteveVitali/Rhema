@@ -10,8 +10,8 @@ export const RUN_JOBS = {
   reap: "run.reap",
   /** PRB.08 — re-drives a delivery a chargeback withheld (the stashed `runs.pending_delivery`). */
   deliver: "run.deliver",
-  /** P1.05 — the one package-class model call that writes a delivered run's walkthrough (§5.6). */
-  walkthrough: "run.walkthrough",
+  // R7COPY.0/ADR-130 — `run.walkthrough` is retired (the generated summary was a lazy post-delivery
+  // call; already-queued jobs drain on the old consumer or expire under pg-boss's job expiry).
   /**
    * P1.12 — completes a run whose LAST phase ended in a gate (Outline's approve_outline): the gate
    * resolves `waiting_gate → finalizing` (no `run.resume` — there is no uncommitted phase to launch)
@@ -55,7 +55,10 @@ export async function scheduleGateExpiry(
   await deps.queue.send(
     GATE_EXPIRY_QUEUE,
     { gateId: args.gateId, workspaceId: args.workspaceId },
-    { singletonKey: `${GATE_EXPIRY_QUEUE}:${args.gateId}:${args.deadlineAt.getTime()}`, startAfterMs },
+    {
+      singletonKey: `${GATE_EXPIRY_QUEUE}:${args.gateId}:${args.deadlineAt.getTime()}`,
+      startAfterMs,
+    },
   );
 }
 
@@ -86,7 +89,12 @@ export class InMemoryQueue implements Queue {
       const active = this.sent.some((j) => j.name === name && j.singletonKey === opts.singletonKey);
       if (active) return Promise.resolve(); // singleton: a duplicate active job is a no-op
     }
-    this.sent.push({ name, payload, singletonKey: opts.singletonKey, startAfterMs: opts.startAfterMs });
+    this.sent.push({
+      name,
+      payload,
+      singletonKey: opts.singletonKey,
+      startAfterMs: opts.startAfterMs,
+    });
     return Promise.resolve();
   }
 

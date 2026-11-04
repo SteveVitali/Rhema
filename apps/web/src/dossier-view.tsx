@@ -43,7 +43,6 @@ import {
   applySeverityBudget,
   buildRubricDelta,
   buildRubricView,
-  buildRunCardView,
   buildTrustChip,
   buildTriageQueue,
   claimUrlViews,
@@ -63,7 +62,7 @@ import {
   LIVE_OBLIGATION_STATES,
   type AccessReportFacts,
   type RubricRowInput,
-  type RunCardInput,
+  type RunSummaryView,
   type TrustChipLabels,
 } from "@rhema/findings-core";
 import {
@@ -104,7 +103,13 @@ export interface DossierViewData {
   readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
   readonly addressedObligations: number;
-  readonly runCard: RunCardInput;
+  /**
+   * R7COPY.0 (REQ-SYNC-1; R5 C4) — the ONE run summary: the same SQL-fact card assembly the
+   * Timeline mounts (replaces the event-derived `RunCardInput`, which could show a stale
+   * `created` state beside the Timeline's `completed`). The view is prebuilt — render
+   * `runSummary.card` verbatim.
+   */
+  readonly runSummary: RunSummaryView;
   readonly letterTitle: string;
   readonly letterSections: readonly LetterSection[];
   readonly claims: readonly Claim[];
@@ -205,12 +210,17 @@ export const runCardLabels: RunCardLabels = {
     : action === "note" ? COPY.steer.note
     : action === "report" ? COPY.steer.report
     : action === "open_deliverable" ? COPY.steer.openDeliverable
-    : action === "live_feed" ? COPY.steer.liveFeed
-    : COPY.steer.retryWalkthrough,
+    : COPY.steer.liveFeed,
   notePlaceholder: COPY.steer.notePlaceholder,
-  walkthroughHeading: COPY.steer.walkthroughHeading,
-  walkthroughPendingLabel: COPY.steer.walkthroughPending,
-  walkthroughFailedLabel: COPY.steer.walkthroughFailed,
+  // R7COPY.0 (REQ-COPY-4) — the record-composed delivered block's labels.
+  deliveredHeading: COPY.steer.deliveredHeading,
+  deliveredCountsLabel: (c) =>
+    fmt(COPY.steer.deliveredCountsFmt, {
+      findings: c.findings,
+      strengths: c.strengths > 0 ? fmt(COPY.steer.deliveredStrengthsFmt, { n: c.strengths, s: c.strengths === 1 ? "" : "s" }) : "",
+      claims: c.claims,
+    }),
+  deliveredLinkLabel: (key) => COPY.steer.deliveredLinkLabel[key] ?? key,
   reportLabel: COPY.steer.report,
   // P1.09 (§6.4 item 8; REQ-RUN-5/6) — the permanent approval-decision lines under the run card.
   decisionLabel: (d) => decisionLine(d),
@@ -244,6 +254,14 @@ export function timelineHrefs(slug: string): TimelineHrefs {
     reportHref: (runId) => `/p/${slug}/r/${runId}#report`,
     deliverableHref: (runId) => `/p/${slug}/review/${runId}`,
     steeringHref: (runId, action) => `/p/${slug}/r/${runId}/${action}`,
+    // R7COPY.0 (REQ-COPY-4) — the composed block's links: dossier page; the letter sits inside it
+    // (#letter), as does the claims ledger (#claims).
+    deliveredLinkHref: (runId, key) =>
+      key === "letter"
+        ? `/p/${slug}/review/${runId}#letter`
+        : key === "ledger"
+          ? `/p/${slug}/review/${runId}#claims`
+          : `/p/${slug}/review/${runId}`,
     gateHref: () => `/p/${slug}`,
     versionHref: (n) => `/p/${slug}/v/${n}`,
     verbHref: (verb) => `/p/${slug}/run?workflow=${verb}`,
@@ -399,8 +417,17 @@ export const marginLabels: MarginLabels = {
   fetchedLabel: findingsLabels.fetchedLabel,
   searchResultLabel: findingsLabels.searchResultLabel,
   accessedLabel: findingsLabels.accessedLabel,
-  chipLabel: (count, topSeverityLabel, topCount) =>
-    fmt(R.marginChipFmt, { count, top: topCount, severity: topSeverityLabel }),
+  // REQ-SYNC-2 — the stack's figure rides the ONE count rule (strengths read as strengths, never
+  // folded into findings — the rail and the run card show the same split).
+  chipLabel: (counts, topSeverityLabel, topCount) =>
+    fmt(R.marginChipFmt, {
+      count: counts.findings,
+      strengths: counts.strengths > 0
+        ? ` · ${counts.strengths} strength${counts.strengths === 1 ? "" : "s"}`
+        : "",
+      top: topCount,
+      severity: topSeverityLabel,
+    }),
   chipAria: (count) => fmt(R.marginChipAriaFmt, { count }),
 };
 
@@ -836,20 +863,26 @@ export function DossierArticle({
       ) : null}
 
       <div style={{ margin: "16px 0" }}>
-        {/* P1.05 — the dossier card carries the same actions the Timeline's card does (report link,
-            walkthrough block, retry) — same view model, same labels (re-skin, never a fork). */}
+        {/* R7COPY.0 (REQ-SYNC-1) — the dossier mounts the SAME RunSummaryView the Timeline's card
+            carries (one query's facts, one builder — C4's "Created 0 cr vs Completed" desync is
+            structurally impossible). The delivered links resolve to this dossier + its anchors. */}
         <RunCard
-          view={buildRunCardView(dossier.runCard)}
+          view={dossier.runSummary.card}
           labels={runCardLabels}
           hrefs={{
             report: `/p/${dossier.slug}/r/${dossier.runId}#report`,
             deliverable: `/p/${dossier.slug}/review/${dossier.runId}`,
-            retryWalkthrough: `/p/${dossier.slug}/r/${dossier.runId}/walkthrough`,
+            deliveredLink: (key) =>
+              key === "letter"
+                ? `/p/${dossier.slug}/review/${dossier.runId}#letter`
+                : key === "ledger"
+                  ? `/p/${dossier.slug}/review/${dossier.runId}#claims`
+                  : `/p/${dossier.slug}/review/${dossier.runId}`,
           }}
         />
       </div>
 
-      <div style={{ margin: "16px 0" }}>
+      <div id="letter" style={{ margin: "16px 0" }}>
         {/* P1.07 — the letter's passage links resolve to the finding cards/rows (§5.7): each
             section lists the findings filed under its `letterSection` key. */}
         <LetterView
@@ -865,7 +898,7 @@ export function DossierArticle({
         />
       </div>
 
-      <div style={{ margin: "16px 0" }}>
+      <div id="claims" style={{ margin: "16px 0" }}>
         <ClaimsTable rows={claimRows} labels={claimsLabels} />
       </div>
 

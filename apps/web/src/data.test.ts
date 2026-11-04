@@ -32,7 +32,13 @@ const DOSSIER = {
   versionLabel: "Review of v1",
   openObligations: 1,
   addressedObligations: 0,
-  runCard: { runId: "run_1", state: "completed", phases: [], spent: 520, cap: 840 },
+  runSummary: {
+    runId: "run_1",
+    workflow: "review",
+    state: "completed",
+    createdAt: "2026-11-01T00:00:00Z",
+    card: { runId: "run_1", state: "completed", spentCredits: 520, capCredits: 840 },
+  },
   letterTitle: "The Politics of Visibility",
   letterSections: [{ id: "verdict", title: "Verdict", paragraphs: ["…"] }],
   claims: [],
@@ -121,10 +127,24 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
       seen.push({ url, init });
       if (url.endsWith("/projects")) return new Response(JSON.stringify({ projects: [PROJECT] }));
       if (url.endsWith("/import/presign")) return new Response(JSON.stringify(PRESIGN));
-      if (url.startsWith("https://storage.googleapis.com/")) return new Response(null, { status: 200 });
-      if (url.endsWith("/import/preview")) return new Response(JSON.stringify({ preview: CONVERSION }));
+      if (url.startsWith("https://storage.googleapis.com/"))
+        return new Response(null, { status: 200 });
+      if (url.endsWith("/import/preview"))
+        return new Response(JSON.stringify({ preview: CONVERSION }));
       if (url.endsWith("/import/create"))
-        return new Response(JSON.stringify({ draft: { draftId: "d1", versionId: "v1", artifactId: "a1", n: 1, wordCount: 1, contentSha256: "sha" } }), { status: 201 });
+        return new Response(
+          JSON.stringify({
+            draft: {
+              draftId: "d1",
+              versionId: "v1",
+              artifactId: "a1",
+              n: 1,
+              wordCount: 1,
+              contentSha256: "sha",
+            },
+          }),
+          { status: 201 },
+        );
       return new Response("not found", { status: 404 });
     });
   }
@@ -153,7 +173,10 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
     expect(put.init.headers).not.toHaveProperty("cookie");
     expect(new TextDecoder().decode(put.init.body as Uint8Array)).toBe("# Hi");
     // preview posts the minted key + the PRB.21 wait budget (the api holds at most that long, then 202s).
-    expect(JSON.parse(seen[3]!.init.body as string)).toEqual({ quarantineKey: PRESIGN.key, waitMs: 20_000 });
+    expect(JSON.parse(seen[3]!.init.body as string)).toEqual({
+      quarantineKey: PRESIGN.key,
+      waitMs: 20_000,
+    });
     expect(out).toEqual({ status: "ready", preview: CONVERSION, quarantineKey: PRESIGN.key });
   });
 
@@ -163,12 +186,17 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
       fakeFetch((url) => {
         if (url.endsWith("/projects")) return new Response(JSON.stringify({ projects: [PROJECT] }));
         if (url.endsWith("/import/preview"))
-          return new Response(JSON.stringify({ pending: true, quarantineKey: PRESIGN.key }), { status: 202 });
+          return new Response(JSON.stringify({ pending: true, quarantineKey: PRESIGN.key }), {
+            status: 202,
+          });
         return new Response("not found", { status: 404 });
       }),
     );
     // a replayed quarantineKey skips the upload entirely — this is the poll leg.
-    const out = await ds.previewImport(SESSION, { projectSlug: PROJECT.slug, quarantineKey: PRESIGN.key });
+    const out = await ds.previewImport(SESSION, {
+      projectSlug: PROJECT.slug,
+      quarantineKey: PRESIGN.key,
+    });
     expect(out).toEqual({ status: "pending", quarantineKey: PRESIGN.key });
   });
 
@@ -183,7 +211,10 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
   it("create replays the preview's quarantine key — no second presign, no second PUT", async () => {
     const seen: { url: string; init: RequestInit }[] = [];
     const ds = apiDataSource("http://api.local", flowFetch(seen));
-    const out = await ds.createImport(SESSION, { projectSlug: PROJECT.slug, quarantineKey: PRESIGN.key });
+    const out = await ds.createImport(SESSION, {
+      projectSlug: PROJECT.slug,
+      quarantineKey: PRESIGN.key,
+    });
     expect(seen.map((s) => s.url)).toEqual([
       "http://api.local/projects",
       `http://api.local/projects/${PROJECT.id}/import/create`,
@@ -218,7 +249,12 @@ describe("SEC.2 — apiDataSource.signup carries the trusted client-IP stamp (AD
       }),
       async (ip) => ({ "x-rhema-client-ip": ip, "x-rhema-internal-token": "tok_abc" }),
     );
-    const out = await ds.signup({ email: "a@b.com", code: "GOOD", method: "magic_link", clientIp: "198.51.100.7" });
+    const out = await ds.signup({
+      email: "a@b.com",
+      code: "GOOD",
+      method: "magic_link",
+      clientIp: "198.51.100.7",
+    });
     expect(out).toEqual({ ok: true, created: true });
     expect(seen).toHaveLength(1);
     expect(seen[0]!.url).toBe("http://api.local/signup");

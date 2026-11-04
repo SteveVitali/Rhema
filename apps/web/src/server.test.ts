@@ -13,49 +13,178 @@ const DOSSIER: DossierData = {
   versionLabel: "Review of v2",
   openObligations: 3,
   addressedObligations: 2,
-  runCard: {
+  runSummary: {
     runId: "run_1",
+    workflow: "review",
     state: "completed",
-    phases: [
-      { key: "reading_the_piece", ordinal: 1, status: "done" },
-      { key: "checking_claims", ordinal: 2, status: "done", counters: [{ key: "claims", value: 56, of: 56 }] },
-      { key: "mapping_the_field", ordinal: 3, status: "off" },
-      { key: "second_read", ordinal: 4, status: "done" },
-    ],
-    spentCredits: 412,
-    capCredits: 1860,
+    createdAt: "2026-11-01T00:00:00Z",
+    card: {
+      runId: "run_1",
+      state: "completed",
+      phases: [
+        { key: "reading_the_piece", ordinal: 1, status: "done" },
+        {
+          key: "checking_claims",
+          ordinal: 2,
+          status: "done",
+          counters: [{ key: "claims", value: 56, of: 56 }],
+        },
+        { key: "mapping_the_field", ordinal: 3, status: "off" },
+        { key: "second_read", ordinal: 4, status: "done" },
+      ],
+      spentCredits: 412,
+      capCredits: 1860,
+    },
   },
   letterTitle: "The Politics of Visibility",
   letterSections: [
     { id: "verdict", title: "Verdict", paragraphs: ["The center holds."] },
-    { id: "one-thing", title: "The one thing", paragraphs: ["Answer the strongest counterargument."], findingRefs: [{ findingId: "f_1", label: "See finding 1" }] },
+    {
+      id: "one-thing",
+      title: "The one thing",
+      paragraphs: ["Answer the strongest counterargument."],
+      findingRefs: [{ findingId: "f_1", label: "See finding 1" }],
+    },
   ],
   claims: [
-    { id: "cl_12", correspondenceId: "c_1", draftId: "d_1", ordinal: 12, text: "The court struck it down.", tier: 1, verdict: "contradicted", url: "https://www.courtlistener.com/o/1?x=1", normalizedUrl: "https://courtlistener.com/o/1", accessedAt: "2026-09-16T00:00:00Z", humanAdded: false },
-    { id: "cl_20", correspondenceId: "c_1", draftId: "d_1", ordinal: 20, text: "A contested reading.", tier: 2, verdict: "misleading_in_context", humanAdded: false, sources: [
-      { url: "https://a.test/s", normalizedUrl: "https://a.test/s", accessedAt: "2026-09-16T00:00:00Z", stance: "supports" },
-      { url: "https://courtlistener.com/o/1", normalizedUrl: "https://courtlistener.com/o/1", accessedAt: "2026-09-16T00:00:00Z", stance: "contradicts" },
-    ] },
-    { id: "cl_30", correspondenceId: "c_1", draftId: "d_1", ordinal: 30, text: "The most important essay of the decade.", tier: 3, verdict: "unverifiable", kind: "interpretive", humanAdded: false },
+    {
+      id: "cl_12",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      ordinal: 12,
+      text: "The court struck it down.",
+      tier: 1,
+      verdict: "contradicted",
+      url: "https://www.courtlistener.com/o/1?x=1",
+      normalizedUrl: "https://courtlistener.com/o/1",
+      accessedAt: "2026-09-16T00:00:00Z",
+      humanAdded: false,
+    },
+    {
+      id: "cl_20",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      ordinal: 20,
+      text: "A contested reading.",
+      tier: 2,
+      verdict: "misleading_in_context",
+      humanAdded: false,
+      sources: [
+        {
+          url: "https://a.test/s",
+          normalizedUrl: "https://a.test/s",
+          accessedAt: "2026-09-16T00:00:00Z",
+          stance: "supports",
+        },
+        {
+          url: "https://courtlistener.com/o/1",
+          normalizedUrl: "https://courtlistener.com/o/1",
+          accessedAt: "2026-09-16T00:00:00Z",
+          stance: "contradicts",
+        },
+      ],
+    },
+    {
+      id: "cl_30",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      ordinal: 30,
+      text: "The most important essay of the decade.",
+      tier: 3,
+      verdict: "unverifiable",
+      kind: "interpretive",
+      humanAdded: false,
+    },
   ],
   fetchLog: ["https://courtlistener.com/o/1"],
   findings: [
-    { id: "f_1", correspondenceId: "c_1", draftId: "d_1", kind: "argument", severity: "blocking", origin: "both", anchor: null, title: "The injury is the least-evidenced thing in the piece.", body: "Asserted more than shown.", rubricDims: [], provisional: false },
-    { id: "f_2", correspondenceId: "c_1", draftId: "d_1", kind: "claim", severity: "major", origin: "editor", anchor: { blockId: "b1", quote: "q", startOffset: 0, endOffset: 1, confidence: 1 }, title: "A load-bearing citation is misstated.", body: "The ruling did the opposite.", rubricDims: [], provisional: false },
-    { id: "f_conf", correspondenceId: "c_1", draftId: "d_1", kind: "discourse", severity: "major", origin: "second_read", reconciliation: "rejected", anchor: { blockId: "b2", quote: "z", startOffset: 0, endOffset: 1, confidence: 1 }, title: "The lineage claim.", body: "Withdrawn by the second read.", rubricDims: [], provisional: false, disposition: { kind: "accept", by: { kind: "user", userId: "u_1" }, at: "2026-09-16T00:00:00Z", frozen: false } },
-    { id: "f_rej", correspondenceId: "c_1", draftId: "d_1", kind: "craft", severity: "minor", origin: "second_read", reconciliation: "rejected", anchor: null, title: "A withdrawn craft note.", body: "On reflection, fine.", rubricDims: [], provisional: false },
+    {
+      id: "f_1",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      kind: "argument",
+      severity: "blocking",
+      origin: "both",
+      anchor: null,
+      title: "The injury is the least-evidenced thing in the piece.",
+      body: "Asserted more than shown.",
+      rubricDims: [],
+      provisional: false,
+    },
+    {
+      id: "f_2",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      kind: "claim",
+      severity: "major",
+      origin: "editor",
+      anchor: { blockId: "b1", quote: "q", startOffset: 0, endOffset: 1, confidence: 1 },
+      title: "A load-bearing citation is misstated.",
+      body: "The ruling did the opposite.",
+      rubricDims: [],
+      provisional: false,
+    },
+    {
+      id: "f_conf",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      kind: "discourse",
+      severity: "major",
+      origin: "second_read",
+      reconciliation: "rejected",
+      anchor: { blockId: "b2", quote: "z", startOffset: 0, endOffset: 1, confidence: 1 },
+      title: "The lineage claim.",
+      body: "Withdrawn by the second read.",
+      rubricDims: [],
+      provisional: false,
+      disposition: {
+        kind: "accept",
+        by: { kind: "user", userId: "u_1" },
+        at: "2026-09-16T00:00:00Z",
+        frozen: false,
+      },
+    },
+    {
+      id: "f_rej",
+      correspondenceId: "c_1",
+      draftId: "d_1",
+      kind: "craft",
+      severity: "minor",
+      origin: "second_read",
+      reconciliation: "rejected",
+      anchor: null,
+      title: "A withdrawn craft note.",
+      body: "On reflection, fine.",
+      rubricDims: [],
+      provisional: false,
+    },
   ],
   rubric: [
     { dimension: "thesis_contribution", score: 4 },
     { dimension: "argument_rigor", score: 3 },
-    { dimension: "evidence_accuracy", score: 2, cap: { at: 2, reason: "a contradicted Tier-1 claim caps Evidence at 2", entailedByFindingOrdinal: 12 } },
+    {
+      dimension: "evidence_accuracy",
+      score: 2,
+      cap: {
+        at: 2,
+        reason: "a contradicted Tier-1 claim caps Evidence at 2",
+        entailedByFindingOrdinal: 12,
+      },
+    },
     { dimension: "originality_situatedness", score: 3 },
     { dimension: "structure", score: 4 },
     { dimension: "prose", score: 5 },
     { dimension: "voice_audience_fit", score: 4 },
     { dimension: "intellectual_honesty", score: 5 },
   ],
-  accessReport: { seat: "editor", mountedPathCount: 12, fetches: 52, deniedAttempts: 1, violations: 0, subagents: [{ label: "Second read", inputsKind: "explicit_files", fileCount: 1 }] },
+  accessReport: {
+    seat: "editor",
+    mountedPathCount: 12,
+    fetches: 52,
+    deniedAttempts: 1,
+    violations: 0,
+    subagents: [{ label: "Second read", inputsKind: "explicit_files", fileCount: 1 }],
+  },
 };
 
 // AC1 (invite gating), AC2 (state-fn rows), AC3 (read-only sample dossier), AC5 (no pricing). Driven via
@@ -77,7 +206,12 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_new",
     slug: "new-essay",
     title: "New Essay",
-    state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "review", label: "Review" } },
+    state: {
+      key: "draft",
+      pill: "Draft",
+      overlay: null,
+      suggested: { action: "review", label: "Review" },
+    },
   },
 ];
 
@@ -90,10 +224,25 @@ const PHONE = { headers: { "sec-ch-ua-mobile": "?1" } };
 
 const PREVIEW = {
   sourceFormat: "html" as const,
-  markdown: "## Heading\n\nA paragraph.\n\n<!-- rhema:unconverted id=\"unconv-1\" -->\n<iframe></iframe>\n<!-- /rhema:unconverted -->\n",
+  markdown:
+    '## Heading\n\nA paragraph.\n\n<!-- rhema:unconverted id="unconv-1" -->\n<iframe></iframe>\n<!-- /rhema:unconverted -->\n',
   counts: { words: 3, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
-  warnings: [{ kind: "unconverted_span" as const, message: "1 iframe block could not be converted — kept verbatim", anchor: { blockId: "unconv-1", quote: "<iframe>", startOffset: 0, endOffset: 8, confidence: 1 } }],
-  unconverted: [{ blockId: "unconv-1", raw: "<iframe></iframe>", reason: "<iframe> is not convertible" }],
+  warnings: [
+    {
+      kind: "unconverted_span" as const,
+      message: "1 iframe block could not be converted — kept verbatim",
+      anchor: {
+        blockId: "unconv-1",
+        quote: "<iframe>",
+        startOffset: 0,
+        endOffset: 8,
+        confidence: 1,
+      },
+    },
+  ],
+  unconverted: [
+    { blockId: "unconv-1", raw: "<iframe></iframe>", reason: "<iframe> is not convertible" },
+  ],
   quality: "partial" as const,
   qualityNotes: [],
 };
@@ -108,7 +257,9 @@ function makeDeps(
     dataSource: {
       checkSession,
       listProjects: async () => PROJECTS,
-      checkInvite: checkInvite ?? (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
+      checkInvite:
+        checkInvite ??
+        (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
       // The api's POST /signup stand-in (PRB.13): "GOOD" redeems, anything else refuses like the real
       // invite reasons; a missing code answers `invite_required` (the api's invite-mode refusal).
       signup:
@@ -119,11 +270,19 @@ function makeDeps(
             : req.code == null
               ? { ok: false as const, status: 403, error: "invite_required" }
               : { ok: false as const, status: 403, error: "unknown" }),
-      previewImport: async () => ({ status: "ready" as const, preview: PREVIEW, quarantineKey: "quarantine/ws1/up1" }),
+      previewImport: async () => ({
+        status: "ready" as const,
+        preview: PREVIEW,
+        quarantineKey: "quarantine/ws1/up1",
+      }),
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
-      getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+      getBillingBalance: async () => ({
+        spendableCredits: 200_000,
+        suspended: false,
+        clawbackDebt: 0,
+      }),
       recordExhaustedPrompt: async () => undefined,
     },
     session: () => null,
@@ -140,18 +299,26 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
 
 describe("AC1 — invite gating", () => {
   it("refuses signup with no code (no auth attempted)", async () => {
-    const beginAuth = vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
+    const beginAuth =
+      vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
     const app = createWebApp(makeDeps({ beginAuth }));
-    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(400);
     expect(await res.text()).toContain("An invitation code is required");
     expect(beginAuth).not.toHaveBeenCalled();
   });
 
   it("refuses signup with an invalid code (no auth attempted)", async () => {
-    const beginAuth = vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
+    const beginAuth =
+      vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
     const app = createWebApp(makeDeps({ beginAuth }));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "NOPE", email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "NOPE", email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(400);
     expect(await res.text()).toContain("code isn"); // "That invitation code isn't valid." (apostrophe HTML-escaped)
     expect(beginAuth).not.toHaveBeenCalled();
@@ -160,15 +327,27 @@ describe("AC1 — invite gating", () => {
   it("with a valid code + email, begins the magic-link flow and shows the sent state", async () => {
     const beginAuth = vi.fn(async () => ({ sent: true }) as AuthOutcome);
     const app = createWebApp(makeDeps({ beginAuth }));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(200);
-    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "GOOD", email: "a@b.com" }, expect.anything());
+    expect(beginAuth).toHaveBeenCalledWith(
+      "magic_link",
+      { code: "GOOD", email: "a@b.com" },
+      expect.anything(),
+    );
     expect(await res.text()).toContain("Check your email");
   });
 
   it("with a valid code and Google, redirects into the OAuth start", async () => {
-    const app = createWebApp(makeDeps({ beginAuth: async () => ({ redirect: "/auth/google/start" }) }));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    const app = createWebApp(
+      makeDeps({ beginAuth: async () => ({ redirect: "/auth/google/start" }) }),
+    );
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", method: "google" }),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/auth/google/start");
   });
@@ -176,7 +355,10 @@ describe("AC1 — invite gating", () => {
   it("MAINT.5 — Google redirects to an absolute accounts.google.com URL (the CSP form-action target)", async () => {
     const google = "https://accounts.google.com/o/oauth2/v2/auth?state=x";
     const app = createWebApp(makeDeps({ beginAuth: async () => ({ redirect: google }) }));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", method: "google" }),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(google);
     // and the CSP the page carries admits that origin as a form-action redirect target
@@ -190,7 +372,10 @@ describe("AC1 — invite gating", () => {
     const app = createWebApp(
       makeDeps({ beginAuth: async () => ({ redirect: "https://evil.example/steal?state=x" }) }),
     );
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", method: "google" }),
+    });
     expect(res.status).toBe(400);
     expect(res.headers.get("location")).toBeNull();
     expect(await res.text()).toContain("try again shortly");
@@ -202,16 +387,25 @@ describe("AC1 — invite gating", () => {
       seen.push(email);
       return code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" };
     };
-    const app = createWebApp(makeDeps({ beginAuth: async () => ({ redirect: "/auth/google/start" }) }, checkInvite));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "google" }) });
+    const app = createWebApp(
+      makeDeps({ beginAuth: async () => ({ redirect: "/auth/google/start" }) }, checkInvite),
+    );
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", method: "google" }),
+    });
     expect(res.status).toBe(302);
     expect(seen).toEqual([undefined]); // no email passed to checkInvite for the Google path
   });
 
   it("a magic link with no email is refused with a clear message", async () => {
-    const beginAuth = vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
+    const beginAuth =
+      vi.fn<(m: string, a: { code: string; email?: string }) => Promise<AuthOutcome>>();
     const app = createWebApp(makeDeps({ beginAuth }));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "GOOD", method: "magic_link" }),
+    });
     expect(res.status).toBe(400);
     expect(beginAuth).not.toHaveBeenCalled();
   });
@@ -287,18 +481,32 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     const beginAuth = vi.fn(async () => ({ sent: true }) as AuthOutcome);
     const signup = vi.fn(openSignup);
     const app = createWebApp(makeDeps({ signupMode: "open", beginAuth }, undefined, signup));
-    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(200);
     // no code field; SEC.2 — the resolved browser IP rides the request (headerless test ⇒ "unknown").
-    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link", clientIp: "unknown" });
-    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "", email: "a@b.com" }, expect.anything());
+    expect(signup).toHaveBeenCalledWith({
+      email: "a@b.com",
+      method: "magic_link",
+      clientIp: "unknown",
+    });
+    expect(beginAuth).toHaveBeenCalledWith(
+      "magic_link",
+      { code: "", email: "a@b.com" },
+      expect.anything(),
+    );
     expect(await res.text()).toContain("Check your email");
   });
 
   it("open mode: a supplied bad code still refuses (partner codes are never silently ignored)", async () => {
     const beginAuth = vi.fn();
     const app = createWebApp(makeDeps({ signupMode: "open", beginAuth }, undefined, openSignup));
-    const res = await app.request("/login", { method: "POST", ...form({ code: "NOPE", email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ code: "NOPE", email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(400);
     const html = await res.text();
     expect(html).toContain("code isn");
@@ -318,7 +526,10 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
   it("open mode: Google with no code skips the invite check entirely", async () => {
     const checkInvite = vi.fn(async () => ({ ok: false as const, reason: "unknown" }));
     const app = createWebApp(
-      makeDeps({ signupMode: "open", beginAuth: async () => ({ redirect: "/auth/google/start" }) }, checkInvite),
+      makeDeps(
+        { signupMode: "open", beginAuth: async () => ({ redirect: "/auth/google/start" }) },
+        checkInvite,
+      ),
     );
     const res = await app.request("/login", { method: "POST", ...form({ method: "google" }) });
     expect(res.status).toBe(302);
@@ -347,7 +558,10 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
         openSignup,
       ),
     );
-    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(429);
     expect(await res.text()).toContain("Too many attempts");
   });
@@ -355,12 +569,18 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
   it("a transient auth-call failure is 'unavailable' copy, never a false sent state", async () => {
     const app = createWebApp(
       makeDeps(
-        { signupMode: "open", beginAuth: async () => ({ error: "auth_unavailable" }) as AuthOutcome },
+        {
+          signupMode: "open",
+          beginAuth: async () => ({ error: "auth_unavailable" }) as AuthOutcome,
+        },
         undefined,
         openSignup,
       ),
     );
-    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(400);
     const html = await res.text();
     expect(html).not.toContain("Check your email");
@@ -374,16 +594,30 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     // never reach the api; the penultimate (LB-appended) hop is the real client.
     await app.request("/login", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "6.6.6.6, 198.51.100.7, 35.0.0.1" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": "6.6.6.6, 198.51.100.7, 35.0.0.1",
+      },
       body: new URLSearchParams({ email: "a@b.com", method: "magic_link" }).toString(),
     });
-    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link", clientIp: "198.51.100.7" });
+    expect(signup).toHaveBeenCalledWith({
+      email: "a@b.com",
+      method: "magic_link",
+      clientIp: "198.51.100.7",
+    });
   });
 
   it("an api-side 429 (account-creation throttle) propagates as the rate-limit copy", async () => {
-    const signup: DataSource["signup"] = async () => ({ ok: false as const, status: 429, error: "rate_limited" });
+    const signup: DataSource["signup"] = async () => ({
+      ok: false as const,
+      status: 429,
+      error: "rate_limited",
+    });
     const app = createWebApp(makeDeps({ signupMode: "open" }, undefined, signup));
-    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    const res = await app.request("/login", {
+      method: "POST",
+      ...form({ email: "a@b.com", method: "magic_link" }),
+    });
     expect(res.status).toBe(429);
     expect(await res.text()).toContain("Too many attempts");
   });
@@ -435,7 +669,13 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
-      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_uv", estimateCredits: "560", capCredits: "840" }),
+      ...form({
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_uv",
+        estimateCredits: "560",
+        capCredits: "840",
+      }),
     });
     // SPA.27 — the SSR re-render arm is deleted: a form-mode refusal lands back on the sheet URL
     // and the leaf recomposes the verification notice off the twin's context read (the
@@ -481,7 +721,10 @@ describe("SEC.2 — form order: email leads in open mode on BOTH forms", () => {
       expect(codeAt).toBeGreaterThanOrEqual(0);
       // The code input carries `required` — attribute presence on the tag, not a serialization pin
       // (React 19 emits boolean attrs as `required=""` and orders attrs differently than 18).
-      const codeInputTag = body.slice(body.lastIndexOf("<input", codeAt), body.indexOf(">", codeAt) + 1);
+      const codeInputTag = body.slice(
+        body.lastIndexOf("<input", codeAt),
+        body.indexOf(">", codeAt) + 1,
+      );
       expect(codeInputTag).toMatch(/\brequired(\s*=\s*"[^"]*")?/);
       expect(emailAt).toBeGreaterThanOrEqual(0);
       expect(codeAt).toBeLessThan(emailAt); // invite-first ordering
@@ -526,20 +769,28 @@ describe("§5.3 import flow (deliverable 4)", () => {
   // quarantine key replayed verbatim, create → the project.
 
   it("POST preview answers the server-owned poll URL (the leaf's refetchInterval keeps the cadence)", async () => {
-    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import/preview", {
-      method: "POST",
-      ...form({ paste: "<h1>Heading</h1><p>A paragraph.</p><iframe></iframe>" }),
-    });
+    const res = await createWebApp(authed()).request(
+      "/p/the-politics-of-visibility/import/preview",
+      {
+        method: "POST",
+        ...form({ paste: "<h1>Heading</h1><p>A paragraph.</p><iframe></iframe>" }),
+      },
+    );
     // the SSR preview document is deleted: the ready preview recomposes off the poll URL's /bff twin.
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toContain("/p/the-politics-of-visibility/import/preview?qk=");
+    expect(res.headers.get("location")).toContain(
+      "/p/the-politics-of-visibility/import/preview?qk=",
+    );
   });
 
   it("POST create makes the draft and redirects to the project", async () => {
-    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import/create", {
-      method: "POST",
-      ...form({ paste: "hello" }),
-    });
+    const res = await createWebApp(authed()).request(
+      "/p/the-politics-of-visibility/import/create",
+      {
+        method: "POST",
+        ...form({ paste: "hello" }),
+      },
+    );
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility");
   });
@@ -554,7 +805,10 @@ describe("§5.3 import flow (deliverable 4)", () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
-      previewImport: async () => ({ status: "pending" as const, quarantineKey: "quarantine/ws1/up1" }),
+      previewImport: async () => ({
+        status: "pending" as const,
+        quarantineKey: "quarantine/ws1/up1",
+      }),
     };
     const res = await createWebApp(deps).request("/p/the-politics-of-visibility/import/preview", {
       method: "POST",
@@ -587,11 +841,19 @@ describe("§5.3 import flow (deliverable 4)", () => {
       },
     };
     const app = createWebApp(deps);
-    const url = "/bff/p/the-politics-of-visibility/import/preview?qk=" + encodeURIComponent("quarantine/ws1/up1");
+    const url =
+      "/bff/p/the-politics-of-visibility/import/preview?qk=" +
+      encodeURIComponent("quarantine/ws1/up1");
 
     const p1 = await app.request(url);
     expect(p1.status).toBe(200);
-    expect(((await p1.json()) as { importPreview: { conversion: { pending: boolean; quarantineKey: string } } }).importPreview.conversion).toMatchObject({
+    expect(
+      (
+        (await p1.json()) as {
+          importPreview: { conversion: { pending: boolean; quarantineKey: string } };
+        }
+      ).importPreview.conversion,
+    ).toMatchObject({
       pending: true,
       quarantineKey: "quarantine/ws1/up1",
     });
@@ -610,7 +872,12 @@ describe("§5.3 import flow (deliverable 4)", () => {
     deps.dataSource = {
       ...deps.dataSource,
       createImport: async () => {
-        throw new ApiError(409, "http://api/projects/proj_pv/import/create", undefined, "conversion_pending");
+        throw new ApiError(
+          409,
+          "http://api/projects/proj_pv/import/create",
+          undefined,
+          "conversion_pending",
+        );
       },
     };
     const res = await createWebApp(deps).request("/p/the-politics-of-visibility/import/create", {
@@ -681,7 +948,14 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
-      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_sheet", estimateCredits: "560", capCredits: "840", modelTier: "balanced" }),
+      ...form({
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_sheet",
+        estimateCredits: "560",
+        capCredits: "840",
+        modelTier: "balanced",
+      }),
     });
     // SPA.27 — the `started` re-render is deleted: a form-mode success redirects to the sheet URL
     // and the invalidated twin reports the now-active run; a JSON caller gets `{ok,data:{runId,state}}`.
@@ -708,8 +982,11 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
       ...form({
-        workflow: "review", rigor: "quick", idempotencyKey: "idem_tgl",
-        estimateCredits: "288", capCredits: "432",
+        workflow: "review",
+        rigor: "quick",
+        idempotencyKey: "idem_tgl",
+        estimateCredits: "288",
+        capCredits: "432",
         toggleRigor: "quick", // the sheet rendered this rigor — the set is coherent
         toggleKeys: "fact_check,discourse,second_read",
         "toggle.fact_check": "on",
@@ -739,8 +1016,11 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
       ...form({
-        workflow: "review", rigor: "quick", idempotencyKey: "idem_stale",
-        estimateCredits: "288", capCredits: "432",
+        workflow: "review",
+        rigor: "quick",
+        idempotencyKey: "idem_stale",
+        estimateCredits: "288",
+        capCredits: "432",
         toggleRigor: "standard", // rendered for Standard, submitted under Quick → stale
         toggleKeys: "fact_check,discourse,second_read",
         "toggle.fact_check": "on",
@@ -803,18 +1083,26 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     // `/bff/p/:slug/run` twin — `toggleDeltas[].enabled` is the resolved box state the leaf
     // prefills, so the disable-only rule pins on the payload it consumed from.
     const enabledOf = async (q: string) => {
-      const view = ((await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
-        runSheet: { view: { toggleDeltas?: { toggle: string; enabled: boolean }[] } };
-      }).runSheet.view;
+      const view = (
+        (await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
+          runSheet: { view: { toggleDeltas?: { toggle: string; enabled: boolean }[] } };
+        }
+      ).runSheet.view;
       return Object.fromEntries((view.toggleDeltas ?? []).map((t) => [t.toggle, t.enabled]));
     };
     const enabled = await enabledOf("workflow=review&rigor=quick");
-    expect(enabled.discourse, "seed discourse:true must not render enabled under Quick").toBe(false);
-    expect(enabled.second_read, "seed secondRead:true must not render enabled under Quick").toBe(false);
+    expect(enabled.discourse, "seed discourse:true must not render enabled under Quick").toBe(
+      false,
+    );
+    expect(enabled.second_read, "seed secondRead:true must not render enabled under Quick").toBe(
+      false,
+    );
     expect(enabled.fact_check, "Quick keeps fact-check on — the preset's own true").toBe(true);
     // the user's explicit lever still wins in both directions.
     const enabledOn = await enabledOf("workflow=review&rigor=quick&toggle.discourse=on");
-    expect(enabledOn.discourse, "?toggle.discourse=on still renders enabled under Quick").toBe(true);
+    expect(enabledOn.discourse, "?toggle.discourse=on still renders enabled under Quick").toBe(
+      true,
+    );
   });
 
   it("MAINT.3 — a trial entitlement renders `Included` only at its own shape; any other shape prices honestly", async () => {
@@ -841,7 +1129,13 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       reviewScopeLine: null,
       reviseScopeLine: null,
       standingNotes: 0,
-      entitlement: { id: "ent_1", kind: "review", wordCap: 2800, rigor: "standard", modelTier: "base" },
+      entitlement: {
+        id: "ent_1",
+        kind: "review",
+        wordCap: 2800,
+        rigor: "standard",
+        modelTier: "base",
+      },
       dontAskUnder: 0,
       activeRuns: [],
       blockedBy: null,
@@ -854,9 +1148,11 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     // the shape gate is pinned on `view.entitlementId` (the leaf renders `Included` + the hidden id
     // off it).
     const viewOf = async (q: string) =>
-      ((await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
-        runSheet: { view: { entitlementId?: string; estimate?: unknown } };
-      }).runSheet.view;
+      (
+        (await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
+          runSheet: { view: { entitlementId?: string; estimate?: unknown } };
+        }
+      ).runSheet.view;
 
     // the mismatching shape: the funded estimate answers, the entitlement does not.
     const quick = await viewOf("workflow=review&rigor=quick");
@@ -881,7 +1177,13 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
-      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_tgl2", estimateCredits: "560", capCredits: "840" }),
+      ...form({
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_tgl2",
+        estimateCredits: "560",
+        capCredits: "840",
+      }),
     });
     expect(res.status).toBe(302);
     expect(seen).toEqual([{}]);
@@ -899,7 +1201,9 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     // leaf replaces the Run affordance (the panel can never spawn a duplicate).
     const res = await app.request("/bff/p/the-politics-of-visibility/run");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { runSheet: { activeRun?: { runId: string; state: string } } };
+    const body = (await res.json()) as {
+      runSheet: { activeRun?: { runId: string; state: string } };
+    };
     expect(body.runSheet.activeRun).toEqual({ runId: "run_live", state: "running" });
   });
 
@@ -914,7 +1218,13 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
-      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_dup", estimateCredits: "560", capCredits: "840" }),
+      ...form({
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_dup",
+        estimateCredits: "560",
+        capCredits: "840",
+      }),
     });
     // SPA.27 — the re-render arm is deleted: the form post redirects to the sheet URL; the leaf's
     // invalidated twin re-reads the (now-active) run and collapses to the in-progress arm.
@@ -937,7 +1247,13 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
-      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_x", estimateCredits: "560", capCredits: "840" }),
+      ...form({
+        workflow: "review",
+        rigor: "standard",
+        idempotencyKey: "idem_x",
+        estimateCredits: "560",
+        capCredits: "840",
+      }),
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
@@ -988,7 +1304,11 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     deps.dataSource = {
       ...deps.dataSource,
       getDossier: async () => DOSSIER,
-      getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+      getSessionPrincipal: async () => ({
+        userId: "u_1",
+        workspaceId: "ws_1",
+        billingAccountId: "ba_1",
+      }),
       resolveFinding: async (_s, _pid, fid) => ({
         findingId: fid,
         runId: "run_1",
@@ -998,7 +1318,9 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/f/f_2");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/review/run_1#finding-f_2");
+    expect(res.headers.get("location")).toBe(
+      "/p/the-politics-of-visibility/review/run_1#finding-f_2",
+    );
 
     // SPA.27 — the landed document is the shell now: the layout-restore seam is the twin's `ide`
     // bag + the leaf's client-side ide state (the SSR `data-ide`/`data-user` attrs are deleted).
@@ -1016,7 +1338,13 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
   it("an unknown project slug serves the shell — the leaf owns not-found (no dossier read attempted)", async () => {
     let called = false;
     const deps = makeDeps({ session: () => ({}) });
-    deps.dataSource = { ...deps.dataSource, getDossier: async () => { called = true; return DOSSIER; } };
+    deps.dataSource = {
+      ...deps.dataSource,
+      getDossier: async () => {
+        called = true;
+        return DOSSIER;
+      },
+    };
     const app = createWebApp(deps);
     const res = await app.request("/p/no-such-project/review/run_1");
     // SPA.27 — the document 404 is deleted; the twin's miss is the leaf's not-found.
@@ -1062,14 +1390,30 @@ describe("PRB.06 — the revision (What-changed) page", () => {
           type: "argument",
           findings: [{ findingOrdinal: 1, kind: "accept" as const }],
           dischargeLines: [
-            { obligationId: "obl_1", label: "OBL-1", lineage: "(F-01, carried from v2)", verifiedBy: "gap_check" as const, state: "discharged" },
+            {
+              obligationId: "obl_1",
+              label: "OBL-1",
+              lineage: "(F-01, carried from v2)",
+              verifiedBy: "gap_check" as const,
+              state: "discharged",
+            },
           ],
           hunks: [
             {
               id: "h1",
               kind: "edited" as const,
-              before: [{ index: 2, blockId: "b2", text: "The old claim.", startOffset: 0, endOffset: 14 }],
-              after: [{ index: 2, blockId: "b2", text: "The restated claim.", startOffset: 0, endOffset: 19 }],
+              before: [
+                { index: 2, blockId: "b2", text: "The old claim.", startOffset: 0, endOffset: 14 },
+              ],
+              after: [
+                {
+                  index: 2,
+                  blockId: "b2",
+                  text: "The restated claim.",
+                  startOffset: 0,
+                  endOffset: 19,
+                },
+              ],
               charsChanged: 33,
             },
           ],
@@ -1081,13 +1425,17 @@ describe("PRB.06 — the revision (What-changed) page", () => {
             id: "h2",
             kind: "added" as const,
             before: [],
-            after: [{ index: 4, blockId: "b4", text: "A new paragraph.", startOffset: 0, endOffset: 16 }],
+            after: [
+              { index: 4, blockId: "b4", text: "A new paragraph.", startOffset: 0, endOffset: 16 },
+            ],
             charsChanged: 16,
           },
         ],
         entries: [],
       },
-      rebutted: [{ findingOrdinal: 2, title: "unsupported stat", rationale: "the stat is sourced in §2" }],
+      rebutted: [
+        { findingOrdinal: 2, title: "unsupported stat", rationale: "the stat is sourced in §2" },
+      ],
     },
   };
 
@@ -1121,8 +1469,12 @@ describe("PRB.06 — the revision (What-changed) page", () => {
     expect(html).toContain('data-rebutted-finding="2"');
     expect(html).toContain("the stat is sourced in §2");
     // every hunk carries a no-JS comment form (→ Guidance for the next Revise).
-    expect(html).toContain('action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments"');
-    expect(html).toContain('action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h2/comments"');
+    expect(html).toContain(
+      'action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments"',
+    );
+    expect(html).toContain(
+      'action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h2/comments"',
+    );
   });
 
   it("the hunk-comment POST forwards the text and redirects back with the saved marker", async () => {
@@ -1134,16 +1486,24 @@ describe("PRB.06 — the revision (What-changed) page", () => {
       },
     });
     const app = createWebApp(deps);
-    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments", {
-      method: "POST",
-      ...form({ text: "tighten this" }),
-    });
+    const res = await app.request(
+      "/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments",
+      {
+        method: "POST",
+        ...form({ text: "tighten this" }),
+      },
+    );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
+    expect(res.headers.get("location")).toBe(
+      "/p/the-politics-of-visibility/revisions/corr_resp?commented=h1",
+    );
     expect(calls).toEqual([{ responseId: "corr_resp", hunkId: "h1", text: "tighten this" }]);
     // the saved marker renders on the redirect target (forced-SSR phone arm — a desktop GET is
     // the shell).
-    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1", PHONE);
+    const page = await app.request(
+      "/p/the-politics-of-visibility/revisions/corr_resp?commented=h1",
+      PHONE,
+    );
     expect((await page.text()).includes('data-comment-saved="true"')).toBe(true);
   });
 
@@ -1156,17 +1516,22 @@ describe("PRB.06 — the revision (What-changed) page", () => {
       },
     });
     const app = createWebApp(deps);
-    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments", {
-      method: "POST",
-      ...form({ text: "   " }),
-    });
+    const res = await app.request(
+      "/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments",
+      {
+        method: "POST",
+        ...form({ text: "   " }),
+      },
+    );
     expect(res.status).toBe(302);
     expect(called).toBe(false);
   });
 
   it("unauthenticated GET redirects to login; unknown response 404s", async () => {
     const unauth = createWebApp(makeDeps());
-    expect((await unauth.request("/p/the-politics-of-visibility/revisions/corr_resp")).status).toBe(302);
+    expect((await unauth.request("/p/the-politics-of-visibility/revisions/corr_resp")).status).toBe(
+      302,
+    );
     const deps = revisionDeps({
       getWhatChanged: async () => {
         throw new ApiError(404, "/x", "not_found");
@@ -1174,7 +1539,10 @@ describe("PRB.06 — the revision (What-changed) page", () => {
     });
     // R7RO.1 — the desktop document 404 is deleted (the shell serves + the leaf owns not-found);
     // the forced-SSR phone arm keeps the api-404 → not-found seam.
-    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope", PHONE);
+    const res = await createWebApp(deps).request(
+      "/p/the-politics-of-visibility/revisions/nope",
+      PHONE,
+    );
     expect(res.status).toBe(404);
   });
 });
@@ -1231,7 +1599,11 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
           throw new ApiError(404, "none");
         },
         listVoices: async () => [],
-        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getSessionPrincipal: async () => ({
+          userId: "u_1",
+          workspaceId: "ws_1",
+          billingAccountId: "ba_1",
+        }),
         getTheme: async () => ({ appTheme: "auto" as const }),
         setTheme: vi.fn(async () => ({ appTheme: "light" as const })),
         setPaperTheme: vi.fn(async () => ({ paperTheme: "dark" as const })),
@@ -1246,7 +1618,15 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     // the seven §5.1 regions
-    for (const cls of ["ide-rail", "ide-files", "ide-page", "ide-margin", "ide-timeline", "ide-desk", "ide-statusbar"]) {
+    for (const cls of [
+      "ide-rail",
+      "ide-files",
+      "ide-page",
+      "ide-margin",
+      "ide-timeline",
+      "ide-desk",
+      "ide-statusbar",
+    ]) {
       expect(html).toContain(cls);
     }
     expect(html).toContain('data-ide="1"');
@@ -1261,18 +1641,29 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
   });
 
   it("?focus=1 seeds the Focus view (the island strips the flag)", async () => {
-    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1", PHONE)).text();
+    const html = await (
+      await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1", PHONE)
+    ).text();
     expect(html).toContain('data-view="focus"');
   });
 
   it("a stored light pref stamps data-theme=light; an absent pref stamps no data-app-theme", async () => {
-    const light = await (await createWebApp(ideDeps({ getTheme: async () => ({ appTheme: "light" as const }) }))
-      .request("/p/the-politics-of-visibility")).text();
+    const light = await (
+      await createWebApp(
+        ideDeps({ getTheme: async () => ({ appTheme: "light" as const }) }),
+      ).request("/p/the-politics-of-visibility")
+    ).text();
     expect(light).toContain('data-app-theme="light"');
     expect(light).toContain('data-theme="light"');
-    const none = await (await createWebApp(
-      ideDeps({ getTheme: async () => { throw new ApiError(500, "down"); } }),
-    ).request("/p/the-politics-of-visibility")).text();
+    const none = await (
+      await createWebApp(
+        ideDeps({
+          getTheme: async () => {
+            throw new ApiError(500, "down");
+          },
+        }),
+      ).request("/p/the-politics-of-visibility")
+    ).text();
     expect(none).not.toContain('data-app-theme="'); // the <html> pref attr (data-app-theme-pref is the shell's)
     expect(none).toContain('data-theme="dark"'); // the default, never a broken page
   });
@@ -1300,7 +1691,9 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
       body: JSON.stringify({ appTheme: "sepia" }),
     });
     expect(bad.status).toBe(422);
-    expect((await createWebApp(makeDeps()).request("/ide/theme", { method: "POST" })).status).toBe(401);
+    expect((await createWebApp(makeDeps()).request("/ide/theme", { method: "POST" })).status).toBe(
+      401,
+    );
   });
 
   it("POST /p/:project/paper-theme resolves the slug → id and forwards; bad values 422", async () => {
@@ -1359,11 +1752,16 @@ describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the
 
   it("a bad theme value is refused (no write) but still redirects — the form is progressive enhancement", async () => {
     const setTheme = vi.fn(async () => ({ appTheme: "dark" as const }));
-    const app = createWebApp(makeDeps({
-      session: () => SESSION,
-      dataSource: { ...makeDeps().dataSource, setTheme },
-    }));
-    const res = await app.request("/settings/theme", { method: "POST", ...form({ appTheme: "sepia" }) });
+    const app = createWebApp(
+      makeDeps({
+        session: () => SESSION,
+        dataSource: { ...makeDeps().dataSource, setTheme },
+      }),
+    );
+    const res = await app.request("/settings/theme", {
+      method: "POST",
+      ...form({ appTheme: "sepia" }),
+    });
     expect(res.status).toBe(302);
     expect(setTheme).not.toHaveBeenCalled();
   });
@@ -1421,7 +1819,11 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
         getProjectVoice: async () => {
           throw new ApiError(404, "none");
         },
-        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getSessionPrincipal: async () => ({
+          userId: "u_1",
+          workspaceId: "ws_1",
+          billingAccountId: "ba_1",
+        }),
         createProject: async () => ({ id: "p_new", slug: "my-essay", draftId: "d3", draftN: 3 }),
         previewWorkspaceImport: async () => ({
           status: "ready" as const,
@@ -1454,7 +1856,10 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
   it("POST /app/grouping persists the per-user pref and returns home", async () => {
     const setProjectGrouping = vi.fn(async () => undefined);
     const app = createWebApp(homeDeps({ setProjectGrouping }));
-    const res = await app.request("/app/grouping", { method: "POST", ...form({ groupBy: "voice" }) });
+    const res = await app.request("/app/grouping", {
+      method: "POST",
+      ...form({ groupBy: "voice" }),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app");
     expect(setProjectGrouping).toHaveBeenCalledWith(expect.objectContaining(SESSION), "voice");
@@ -1512,8 +1917,14 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     const res = await app.request("/app/new/create", {
       method: "POST",
       ...form({
-        entry: "draft", title: "My Essay", protocolId: "essay", venue: "n+1",
-        personaId: "per_self", startVersion: "3", qk: "quarantine/ws1/up_new", action: "fix_now",
+        entry: "draft",
+        title: "My Essay",
+        protocolId: "essay",
+        venue: "n+1",
+        personaId: "per_self",
+        startVersion: "3",
+        qk: "quarantine/ws1/up_new",
+        action: "fix_now",
       }),
     });
     expect(res.status).toBe(302);
@@ -1522,8 +1933,13 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(createProject).toHaveBeenCalledWith(
       expect.objectContaining(SESSION),
       expect.objectContaining({
-        title: "My Essay", entry: "draft", protocolId: "essay", venue: "n+1",
-        personaId: "per_self", startVersion: 3, quarantineKey: "quarantine/ws1/up_new",
+        title: "My Essay",
+        entry: "draft",
+        protocolId: "essay",
+        venue: "n+1",
+        personaId: "per_self",
+        startVersion: 3,
+        quarantineKey: "quarantine/ws1/up_new",
       }),
     );
     // the default action lands on the project page with the next-step card
@@ -1592,17 +2008,31 @@ describe("P1.05 — timeline, run page, steering", () => {
     paused: false,
     waitingGate: null,
     deliverables: [{ key: "letter" }, { key: "findings", count: 49 }],
-    walkthrough: { status: "ready" as const, text: "A letter and a claims ledger were delivered." },
+    delivered: {
+      verdict: "A letter and a claims ledger were delivered.",
+      counts: { findings: 5, strengths: 0, claims: 49 },
+      links: ["dossier" as const, "letter" as const, "ledger" as const],
+    },
     failureCode: null,
     resumable: false,
     queuedNotes: 0,
     actions: ["open_deliverable" as const, "report" as const],
+    deliveryLabel: null,
   };
 
   const TIMELINE = {
-    project: { id: "proj_pv", slug: "the-politics-of-visibility", title: "The Politics of Visibility" },
+    project: {
+      id: "proj_pv",
+      slug: "the-politics-of-visibility",
+      title: "The Politics of Visibility",
+    },
     state: PROJECTS[0]!.state,
-    nextStep: { verb: "revise", label: "Revise using your edits", estimateCredits: 1240, headDraftN: 2 },
+    nextStep: {
+      verb: "revise",
+      label: "Revise using your edits",
+      estimateCredits: 1240,
+      headDraftN: 2,
+    },
     rounds: [
       {
         n: 1,
@@ -1645,10 +2075,22 @@ describe("P1.05 — timeline, run page, steering", () => {
       meteredCredits: 520,
       differences: [],
       phases: [
-        { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 120000, searches: 12, fetches: 40, subagentLabels: [] },
+        {
+          key: "checking_claims",
+          ordinal: 2,
+          status: "done" as const,
+          seat: "verifier",
+          credits: 300,
+          durationMs: 120000,
+          searches: 12,
+          fetches: 40,
+          subagentLabels: [],
+        },
       ],
       seatSplit: [{ seat: "verifier", credits: 300, share: 1 }],
-      flags: [{ key: "fact_check_dominated" as const, sharePct: 58, phase: "checking_claims", count: 50 }],
+      flags: [
+        { key: "fact_check_dominated" as const, sharePct: 58, phase: "checking_claims", count: 50 },
+      ],
       claims: { checked: 56, verified: 50, creditsPerVerified: 10.4 },
       drivers: [{ key: "phase_share" as const, phase: "checking_claims", share: 0.58 }],
       suggestedGuidance: ["guidance.fact_check_dominated"],
@@ -1667,7 +2109,11 @@ describe("P1.05 — timeline, run page, steering", () => {
         getProjectVoice: async () => {
           throw new ApiError(404, "none");
         },
-        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getSessionPrincipal: async () => ({
+          userId: "u_1",
+          workspaceId: "ws_1",
+          billingAccountId: "ba_1",
+        }),
         getTimeline: async () => TIMELINE as never,
         getRunReport: async (_s: unknown, _r: unknown, opts?: { advanced?: boolean }) =>
           ({
@@ -1698,15 +2144,27 @@ describe("P1.05 — timeline, run page, steering", () => {
                 }
               : {}),
           }) as never,
-        getRunEvents: async () => [
-          { seq: 1, type: "run.state_changed", payload: { to: "running" }, density: "summary", at: "2026-09-01T12:00:00Z" },
-          { seq: 2, type: "claim.checked", payload: { claimOrdinal: 3, verdict: "verified" }, density: "normal", at: "2026-09-01T12:01:00Z" },
-        ] as never,
+        getRunEvents: async () =>
+          [
+            {
+              seq: 1,
+              type: "run.state_changed",
+              payload: { to: "running" },
+              density: "summary",
+              at: "2026-09-01T12:00:00Z",
+            },
+            {
+              seq: 2,
+              type: "claim.checked",
+              payload: { claimOrdinal: 3, verdict: "verified" },
+              density: "normal",
+              at: "2026-09-01T12:01:00Z",
+            },
+          ] as never,
         pauseRun: vi.fn(async () => ({ ok: true as const, state: "running" })),
         resumeRun: vi.fn(async () => ({ ok: true as const, state: "queued" })),
         stopRun: vi.fn(async () => ({ ok: true as const, state: "cancelled" })),
         postRunNote: vi.fn(async () => ({ ok: true as const, guidanceId: "gdn_1" })),
-        retryWalkthrough: vi.fn(async () => ({ status: "requeued" })),
         ...over,
       },
     });
@@ -1715,17 +2173,21 @@ describe("P1.05 — timeline, run page, steering", () => {
     // R7RO.1 — the desktop document is the shell; the Timeline pane render survives on the Page
     // family's forced-SSR PHONE arm (the `?ssr=1` escape is gone).
     const deps = p105Deps({ listProjects: async () => SHOWCASE_PROJECTS });
-    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)).text();
-    expect(html).toContain('data-timeline-pane');
+    const html = await (
+      await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)
+    ).text();
+    expect(html).toContain("data-timeline-pane");
     // §5.5's three verbs row — each opens the run sheet for that workflow
-    expect(html).toContain('data-timeline-verbs');
-    expect(html).toContain('href="/p/the-politics-of-visibility/run?workflow=draft" data-verb="draft"');
+    expect(html).toContain("data-timeline-verbs");
+    expect(html).toContain(
+      'href="/p/the-politics-of-visibility/run?workflow=draft" data-verb="draft"',
+    );
     expect(html).toContain('data-verb="review"');
     expect(html).toContain('data-verb="revise"');
     expect(html).toContain('data-next-step="revise"');
     expect(html).toContain('data-run-card="run_tl"');
     // the card's report href lands on the run page
-    expect(html).toContain('/p/the-politics-of-visibility/r/run_tl');
+    expect(html).toContain("/p/the-politics-of-visibility/r/run_tl");
   });
 
   it("P1.09 — a waiting run mounts the IDENTICAL gate card inline + its permanent decision lines (§6.4)", async () => {
@@ -1777,7 +2239,10 @@ describe("P1.05 — timeline, run page, steering", () => {
       rounds: [{ ...TIMELINE.rounds[0]!, runs: [WAITING_RUN, ...TIMELINE.rounds[0]!.runs] }],
     };
     const app = createWebApp(
-      p105Deps({ getTimeline: async () => timeline as never, listProjects: async () => SHOWCASE_PROJECTS }),
+      p105Deps({
+        getTimeline: async () => timeline as never,
+        listProjects: async () => SHOWCASE_PROJECTS,
+      }),
     );
     // the forced-SSR PHONE arm (R7RO.1 deleted the `showcase` arm with `?ssr=1` long gone).
     const html = await (await app.request("/p/the-politics-of-visibility", PHONE)).text();
@@ -1786,7 +2251,7 @@ describe("P1.05 — timeline, run page, steering", () => {
     expect(html).toContain('data-gate-card="approve_plan"');
     expect(html).toContain('action="/p/the-politics-of-visibility/gates/gate_wait"');
     // the decision line rides the run card — the "with N changes" record (REQ-RUN-5).
-    expect(html).toContain('data-run-decisions');
+    expect(html).toContain("data-run-decisions");
     expect(html).toContain('data-decision="gate_done"');
     expect(html).toMatch(/with 3 changes|3 changes/);
   });
@@ -1798,10 +2263,12 @@ describe("P1.05 — timeline, run page, steering", () => {
       PROJECTS[1]!,
     ];
     const deps = p105Deps({ listProjects: async () => live });
-    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)).text();
+    const html = await (
+      await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)
+    ).text();
     expect(html).toContain('data-feed-events="/p/the-politics-of-visibility/r/run_live/events"');
     expect(html).toContain('data-feed-last-seq="2"');
-    expect(html).toContain('data-feed-labels='); // the island's embedded label maps
+    expect(html).toContain("data-feed-labels="); // the island's embedded label maps
   });
 
   it("/p/:slug/r/:runId serves the shell; the twin splits the Level-3/Level-4 reads on ?advanced=1", async () => {
@@ -1816,13 +2283,19 @@ describe("P1.05 — timeline, run page, steering", () => {
       runReport: { report: { advancedView?: unknown } };
     };
     expect(l3.runReport.report.advancedView).toBeUndefined();
-    const adv = (await (await app.request("/bff/p/the-politics-of-visibility/r/run_tl?advanced=1")).json()) as {
+    const adv = (await (
+      await app.request("/bff/p/the-politics-of-visibility/r/run_tl?advanced=1")
+    ).json()) as {
       runReport: { report: { advancedView?: { rows: { inputTokens: number }[] } } };
     };
     expect(adv.runReport.report.advancedView?.rows[0]?.inputTokens).toBe(4000);
     // 404 when the api has no report for the run — the twin answers not_found, never a 500.
     const missing = createWebApp(
-      p105Deps({ getRunReport: async () => { throw new ApiError(404, "no"); } }),
+      p105Deps({
+        getRunReport: async () => {
+          throw new ApiError(404, "no");
+        },
+      }),
     );
     expect((await missing.request("/bff/p/the-politics-of-visibility/r/run_x")).status).toBe(404);
   });
@@ -1833,21 +2306,53 @@ describe("P1.05 — timeline, run page, steering", () => {
       report: {
         ...REPORT.report,
         phases: [
-          { key: "reading_the_piece", ordinal: 1, status: "done" as const, seat: "editor", credits: 40, durationMs: 45_000, searches: 0, fetches: 0, subagentLabels: [] },
-          { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 0, searches: 0, fetches: 0, subagentLabels: [] },
-          { key: "editors_letter", ordinal: 3, status: "done" as const, seat: "editor", credits: 180, durationMs: 120_000, searches: 0, fetches: 0, subagentLabels: [] },
+          {
+            key: "reading_the_piece",
+            ordinal: 1,
+            status: "done" as const,
+            seat: "editor",
+            credits: 40,
+            durationMs: 45_000,
+            searches: 0,
+            fetches: 0,
+            subagentLabels: [],
+          },
+          {
+            key: "checking_claims",
+            ordinal: 2,
+            status: "done" as const,
+            seat: "verifier",
+            credits: 300,
+            durationMs: 0,
+            searches: 0,
+            fetches: 0,
+            subagentLabels: [],
+          },
+          {
+            key: "editors_letter",
+            ordinal: 3,
+            status: "done" as const,
+            seat: "editor",
+            credits: 180,
+            durationMs: 120_000,
+            searches: 0,
+            fetches: 0,
+            subagentLabels: [],
+          },
         ],
       },
     };
-    const app = createWebApp(
-      p105Deps({ getRunReport: async () => report as never }),
-    );
+    const app = createWebApp(p105Deps({ getRunReport: async () => report as never }));
     // SPA.27 — the '45 sec'/'—'/'2 min' paint is the leaf's; the server contract is the payload:
     // durationMs flows through unmassaged (0 stays 0 — the leaf's formatter owns the '—').
-    const body = (await (await app.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+    const body = (await (
+      await app.request("/bff/p/the-politics-of-visibility/r/run_tl")
+    ).json()) as {
       runReport: { report: { report: { phases: { durationMs: number }[] } } };
     };
-    expect(body.runReport.report.report.phases.map((p) => p.durationMs)).toEqual([45_000, 0, 120_000]);
+    expect(body.runReport.report.report.phases.map((p) => p.durationMs)).toEqual([
+      45_000, 0, 120_000,
+    ]);
   });
 
   it("/app/usage/r/:run redirects to the canonical /p/ path with #report", async () => {
@@ -1863,7 +2368,10 @@ describe("P1.05 — timeline, run page, steering", () => {
     const stopRun = vi.fn(async () => ({ ok: true as const, state: "cancelled" }));
     const app = createWebApp(p105Deps({ pauseRun, resumeRun, postRunNote, stopRun }));
 
-    const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", { method: "POST", ...form({}) });
+    const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      method: "POST",
+      ...form({}),
+    });
     expect(pause.status).toBe(302);
     expect(pause.headers.get("location")).toBe("/p/the-politics-of-visibility");
     expect(pauseRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
@@ -1879,10 +2387,17 @@ describe("P1.05 — timeline, run page, steering", () => {
       method: "POST",
       ...form({ text: "check §2" }),
     });
-    expect(postRunNote).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl", "check §2");
+    expect(postRunNote).toHaveBeenCalledWith(
+      expect.objectContaining(SESSION),
+      "run_tl",
+      "check §2",
+    );
     expect(note.status).toBe(302);
 
-    const stop = await app.request("/p/the-politics-of-visibility/r/run_tl/stop", { method: "POST", ...form({}) });
+    const stop = await app.request("/p/the-politics-of-visibility/r/run_tl/stop", {
+      method: "POST",
+      ...form({}),
+    });
     expect(stopRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
     expect(stop.status).toBe(302);
   });
@@ -1892,7 +2407,10 @@ describe("P1.05 — timeline, run page, steering", () => {
       throw new ApiError(409, "http://api/runs/run_tl/pause", undefined, "not_running");
     });
     const app = createWebApp(p105Deps({ pauseRun }));
-    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", { method: "POST", ...form({}) });
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility");
   });
@@ -1909,19 +2427,27 @@ describe("P1.05 — timeline, run page, steering", () => {
   });
 
   it("the events proxy pipes the upstream SSE body through same-origin (session forwarded)", async () => {
-    const sse = "id: 1\nevent: run.state_changed\ndata: {\"seq\":1,\"type\":\"run.state_changed\"}\n\n";
+    const sse = 'id: 1\nevent: run.state_changed\ndata: {"seq":1,"type":"run.state_changed"}\n\n';
     const streamRunEvents = vi.fn(async () => new Response(sse, { status: 200 }));
     const app = createWebApp(p105Deps({ streamRunEvents: streamRunEvents as never }));
     const res = await app.request("/p/the-politics-of-visibility/r/run_live/events?after=0");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/event-stream");
     expect(await res.text()).toBe(sse);
-    expect(streamRunEvents).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_live", { after: "0" });
+    expect(streamRunEvents).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_live", {
+      after: "0",
+    });
     // upstream down → 502, never an empty page
     const down = createWebApp(
-      p105Deps({ streamRunEvents: async () => { throw new ApiError(502, "down"); } }),
+      p105Deps({
+        streamRunEvents: async () => {
+          throw new ApiError(502, "down");
+        },
+      }),
     );
-    expect((await down.request("/p/the-politics-of-visibility/r/run_live/events")).status).toBe(502);
+    expect((await down.request("/p/the-politics-of-visibility/r/run_live/events")).status).toBe(
+      502,
+    );
   });
 });
 
@@ -1938,11 +2464,32 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
         getRunReport: async () =>
           ({
             kind: "ok",
-            report: { runId: "run_tl", workflow: "review", state: "completed", estimateCredits: 840, spentCredits: 520, capCredits: 840, refundedCredits: 0, estimateRatio: 0.62, meteredCredits: 520, differences: [], phases: [], seatSplit: [], flags: [], claims: null, drivers: [], suggestedGuidance: [] },
+            report: {
+              runId: "run_tl",
+              workflow: "review",
+              state: "completed",
+              estimateCredits: 840,
+              spentCredits: 520,
+              capCredits: 840,
+              refundedCredits: 0,
+              estimateRatio: 0.62,
+              meteredCredits: 520,
+              differences: [],
+              phases: [],
+              seatSplit: [],
+              flags: [],
+              claims: null,
+              drivers: [],
+              suggestedGuidance: [],
+            },
             projectSlug: "the-politics-of-visibility",
             ...(over.refundWindow !== undefined ? { refundWindow: over.refundWindow } : {}),
           }) as never,
-        requestRefund: vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 })),
+        requestRefund: vi.fn(async () => ({
+          status: "refunded" as const,
+          requestId: "urr_1",
+          credits: 160,
+        })),
         ...over,
       } as DataSource,
     });
@@ -1951,14 +2498,20 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
     // SPA.27 — the 'Get N cr back' control + verdict text are the leaf's paint; the server
     // contract is the payload: `refundWindow` rides the report verbatim and is absent when the
     // api emits none.
-    const eligible = createWebApp(p105RefundDeps({ refundWindow: { state: "eligible", credits: 160 } }));
-    const body = (await (await eligible.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+    const eligible = createWebApp(
+      p105RefundDeps({ refundWindow: { state: "eligible", credits: 160 } }),
+    );
+    const body = (await (
+      await eligible.request("/bff/p/the-politics-of-visibility/r/run_tl")
+    ).json()) as {
       runReport: { report: { refundWindow?: { state: string; credits: number } } };
     };
     expect(body.runReport.report.refundWindow).toEqual({ state: "eligible", credits: 160 });
 
     const closed = createWebApp(p105RefundDeps({})); // no refundWindow — the flag admitted nothing
-    const body2 = (await (await closed.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+    const body2 = (await (
+      await closed.request("/bff/p/the-politics-of-visibility/r/run_tl")
+    ).json()) as {
       runReport: { report: { refundWindow?: unknown } };
     };
     expect(body2.runReport.report.refundWindow).toBeUndefined();
@@ -1966,19 +2519,31 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
 
   it("refunded / pending_review / denied blocks ride the twin with their recorded state, never a live control", async () => {
     const stateOf = async (state: string) =>
-      (((await (await createWebApp(p105RefundDeps({ refundWindow: { state, credits: 160 } }))
-        .request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
-        runReport: { report: { refundWindow?: { state: string } } };
-      }).runReport.report.refundWindow?.state);
+      (
+        (await (
+          await createWebApp(p105RefundDeps({ refundWindow: { state, credits: 160 } })).request(
+            "/bff/p/the-politics-of-visibility/r/run_tl",
+          )
+        ).json()) as {
+          runReport: { report: { refundWindow?: { state: string } } };
+        }
+      ).runReport.report.refundWindow?.state;
     expect(await stateOf("refunded")).toBe("refunded");
     expect(await stateOf("pending_review")).toBe("pending_review");
     expect(await stateOf("denied")).toBe("denied");
   });
 
   it("the POST forwards requestRefund and redirects back to the report (fresh block state)", async () => {
-    const requestRefund = vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 }));
+    const requestRefund = vi.fn(async () => ({
+      status: "refunded" as const,
+      requestId: "urr_1",
+      credits: 160,
+    }));
     const app = createWebApp(p105RefundDeps({ requestRefund }));
-    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", { method: "POST", ...form({}) });
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
     expect(requestRefund).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
@@ -1989,7 +2554,10 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
       throw new ApiError(409, "http://api/runs/run_tl/refund", undefined, "window_expired");
     });
     const app = createWebApp(p105RefundDeps({ requestRefund }));
-    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", { method: "POST", ...form({}) });
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      method: "POST",
+      ...form({}),
+    });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
   });
@@ -2019,7 +2587,17 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
       meteredCredits: 520,
       differences: [],
       phases: [
-        { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 120000, searches: 12, fetches: 40, subagentLabels: [] },
+        {
+          key: "checking_claims",
+          ordinal: 2,
+          status: "done" as const,
+          seat: "verifier",
+          credits: 300,
+          durationMs: 120000,
+          searches: 12,
+          fetches: 40,
+          subagentLabels: [],
+        },
       ],
       seatSplit: [{ seat: "verifier", credits: 300, share: 1 }],
       flags: [],
@@ -2031,12 +2609,19 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
     projectSlug: "the-politics-of-visibility",
   };
 
-  const spa22Deps = (over: Partial<DataSource> = {}, session: WebDeps["session"] = () => SESSION): WebDeps =>
+  const spa22Deps = (
+    over: Partial<DataSource> = {},
+    session: WebDeps["session"] = () => SESSION,
+  ): WebDeps =>
     makeDeps({
       session,
       dataSource: {
         ...makeDeps().dataSource,
-        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getSessionPrincipal: async () => ({
+          userId: "u_1",
+          workspaceId: "ws_1",
+          billingAccountId: "ba_1",
+        }),
         getRunReport: async (_s: unknown, _r: unknown, opts?: { advanced?: boolean }) =>
           ({
             ...REPORT,
@@ -2067,13 +2652,20 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
               : {}),
           }) as never,
         pauseRun: vi.fn(async () => ({ ok: true as const, state: "running" })),
-        requestRefund: vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 })),
+        requestRefund: vi.fn(async () => ({
+          status: "refunded" as const,
+          requestId: "urr_1",
+          credits: 160,
+        })),
         ...over,
       } as DataSource,
     });
 
   const JSON_GET = { headers: { accept: "application/json" } };
-  const jsonPost = { method: "POST", headers: { "content-type": "application/json", accept: "application/json" } };
+  const jsonPost = {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+  };
 
   it("returns the composition verbatim — {runReport, project, paperTheme, ide} — and marks the run read", async () => {
     const markInboxRunRead = vi.fn(async () => undefined);
@@ -2111,8 +2703,20 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
       PROJECTS[1]!,
     ];
     const getRunEvents = vi.fn(async () => [
-      { seq: 1, type: "run.state_changed", payload: { to: "running" }, density: "summary", at: "2026-09-01T12:00:00Z" },
-      { seq: 7, type: "usage.tick", payload: { spentCredits: 10 }, density: "details", at: "2026-09-01T12:01:00Z" },
+      {
+        seq: 1,
+        type: "run.state_changed",
+        payload: { to: "running" },
+        density: "summary",
+        at: "2026-09-01T12:00:00Z",
+      },
+      {
+        seq: 7,
+        type: "usage.tick",
+        payload: { spentCredits: 10 },
+        density: "details",
+        at: "2026-09-01T12:01:00Z",
+      },
     ]);
     const res = await createWebApp(
       spa22Deps({ listProjects: async () => live, getRunEvents: getRunEvents as never }),
@@ -2135,8 +2739,13 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
     expect((await res.json()).ide.feed).toBeUndefined();
     const degraded = createWebApp(
       spa22Deps({
-        listProjects: async () => [{ ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } }, PROJECTS[1]!],
-        getRunEvents: async () => { throw new ApiError(502, "down"); },
+        listProjects: async () => [
+          { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
+          PROJECTS[1]!,
+        ],
+        getRunEvents: async () => {
+          throw new ApiError(502, "down");
+        },
       }),
     );
     const res2 = await degraded.request("/bff/p/the-politics-of-visibility/r/run_tl", JSON_GET);
@@ -2155,20 +2764,31 @@ describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branc
     expect(missing.status).toBe(404);
     expect(await missing.json()).toEqual({ error: "not_found" });
     const noReport = await createWebApp(
-      spa22Deps({ getRunReport: async () => { throw new ApiError(404, "none"); } }),
+      spa22Deps({
+        getRunReport: async () => {
+          throw new ApiError(404, "none");
+        },
+      }),
     ).request("/bff/p/the-politics-of-visibility/r/run_x", JSON_GET);
     expect(noReport.status).toBe(404);
   });
 
   it("the refund POST's JSON caller gets {ok,redirect} — the 302's identical twin; a refusal preserves status", async () => {
-    const requestRefund = vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 }));
+    const requestRefund = vi.fn(async () => ({
+      status: "refunded" as const,
+      requestId: "urr_1",
+      credits: 160,
+    }));
     const app = createWebApp(spa22Deps({ requestRefund }));
     const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
       ...jsonPost,
       body: "{}",
     });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/r/run_tl#report" });
+    expect(await res.json()).toEqual({
+      ok: true,
+      redirect: "/p/the-politics-of-visibility/r/run_tl#report",
+    });
     expect(requestRefund).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
 
     const closed = createWebApp(
@@ -2330,16 +2950,28 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     view: WHAT_CHANGED.view,
   };
 
-  const spa23Deps = (over: Partial<DataSource> = {}, session: WebDeps["session"] = () => SESSION): WebDeps =>
+  const spa23Deps = (
+    over: Partial<DataSource> = {},
+    session: WebDeps["session"] = () => SESSION,
+  ): WebDeps =>
     makeDeps({
       session,
       dataSource: {
         ...makeDeps().dataSource,
-        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getSessionPrincipal: async () => ({
+          userId: "u_1",
+          workspaceId: "ws_1",
+          billingAccountId: "ba_1",
+        }),
         listProjects: async () => [{ ...PROJECTS[0]!, headDraftId: "d_7" }],
         listGates: async () => [],
         listDecisions: async () => [],
-        resolveEditorDraft: async () => ({ draftId: "d_7", draftN: 7, state: "open", origin: "human_revision" }),
+        resolveEditorDraft: async () => ({
+          draftId: "d_7",
+          draftN: 7,
+          state: "open",
+          origin: "human_revision",
+        }),
         getEditorDoc: async () => DOC,
         getArtifactPage: async () => DOC,
         getVersions: async () => RAIL,
@@ -2358,10 +2990,16 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     });
 
   const JSON_GET = { headers: { accept: "application/json" } };
-  const jsonPost = { method: "POST", headers: { "content-type": "application/json", accept: "application/json" } };
+  const jsonPost = {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+  };
 
   it("GET /bff/p/:slug returns the project-page composition verbatim — {project, page, ide} + the gates/decisions rows", async () => {
-    const res = await createWebApp(spa23Deps()).request("/bff/p/the-politics-of-visibility", JSON_GET);
+    const res = await createWebApp(spa23Deps()).request(
+      "/bff/p/the-politics-of-visibility",
+      JSON_GET,
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.project.slug).toBe("the-politics-of-visibility");
@@ -2383,7 +3021,11 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     const app = createWebApp(spa23Deps({ resolveEditorDraft }));
     const working = await app.request("/bff/p/the-politics-of-visibility/v/working", JSON_GET);
     expect(working.status).toBe(200);
-    expect(resolveEditorDraft).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "working");
+    expect(resolveEditorDraft).toHaveBeenCalledWith(
+      expect.objectContaining(SESSION),
+      "proj_pv",
+      "working",
+    );
     const body = await working.json();
     expect(body.page.doc.draftId).toBe("d_7");
     // the version rail rides the same `rail` bag the SSR PageEditor consumes.
@@ -2392,7 +3034,11 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     expect(body.page.rail.currentN).toBe(7);
     const v6 = await app.request("/bff/p/the-politics-of-visibility/v/6", JSON_GET);
     expect(v6.status).toBe(200);
-    expect(resolveEditorDraft).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "6");
+    expect(resolveEditorDraft).toHaveBeenCalledWith(
+      expect.objectContaining(SESSION),
+      "proj_pv",
+      "6",
+    );
   });
 
   it("GET /bff/p/:slug/v/:n/diff/:m carries the pair + the joined view — the compare leaf's verbatim slice", async () => {
@@ -2416,7 +3062,11 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
       JSON_GET,
     );
     expect(res.status).toBe(200);
-    expect(getArtifactPage).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "a_1");
+    expect(getArtifactPage).toHaveBeenCalledWith(
+      expect.objectContaining(SESSION),
+      "proj_pv",
+      "a_1",
+    );
     const body = await res.json();
     expect(body.page.doc.draftId).toBe("d_7");
     // the artifact arm is always read-only (REQ-ED-4 — server-decided, never client-decided).
@@ -2437,10 +3087,13 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
   });
 
   it("POST /bff/p/:slug/handoff is wired on the real app — {handoff:null} when nothing is owed", async () => {
-    const res = await createWebApp(spa23Deps()).request("/bff/p/the-politics-of-visibility/handoff", {
-      ...jsonPost,
-      body: "{}",
-    });
+    const res = await createWebApp(spa23Deps()).request(
+      "/bff/p/the-politics-of-visibility/handoff",
+      {
+        ...jsonPost,
+        body: "{}",
+      },
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, data: { handoff: null } });
   });
@@ -2461,26 +3114,39 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
   it("the revision-hunk comment POST answers JSON callers the {ok,redirect} envelope; form posts keep the 302", async () => {
     const commentOnHunk = vi.fn(async () => ({ guidanceId: "g_1", hunkId: "h_1" }));
     const app = createWebApp(spa23Deps({ commentOnHunk: commentOnHunk as never }));
-    const json = await app.request("/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments", {
-      ...jsonPost,
-      body: JSON.stringify({ text: "check this" }),
-    });
+    const json = await app.request(
+      "/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments",
+      {
+        ...jsonPost,
+        body: JSON.stringify({ text: "check this" }),
+      },
+    );
     expect(json.status).toBe(200);
     const env = await json.json();
     expect(env.ok).toBe(true);
     expect(env.redirect).toBe("/p/the-politics-of-visibility/revisions/c_1?commented=h_1");
-    const formRes = await app.request("/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments", {
-      method: "POST",
-      ...form({ text: "check this" }),
-    });
+    const formRes = await app.request(
+      "/p/the-politics-of-visibility/revisions/c_1/hunks/h_1/comments",
+      {
+        method: "POST",
+        ...form({ text: "check this" }),
+      },
+    );
     expect(formRes.status).toBe(302);
-    expect(formRes.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/c_1?commented=h_1");
+    expect(formRes.headers.get("location")).toBe(
+      "/p/the-politics-of-visibility/revisions/c_1?commented=h_1",
+    );
   });
 
   it("the editor autosave/note POSTs answer the JSON envelope — {ok,data} on save, {ok,redirect} on note", async () => {
     const saveEditorDraft = vi.fn(async () => ({ draftId: "d_7", n: 7, forked: false }));
     const postEditorNote = vi.fn(async () => ({ guidanceId: "g_1" }));
-    const app = createWebApp(spa23Deps({ saveEditorDraft: saveEditorDraft as never, postEditorNote: postEditorNote as never }));
+    const app = createWebApp(
+      spa23Deps({
+        saveEditorDraft: saveEditorDraft as never,
+        postEditorNote: postEditorNote as never,
+      }),
+    );
     const save = await app.request("/p/the-politics-of-visibility/edit/d_7/save", {
       ...jsonPost,
       body: JSON.stringify({ markdown: "## A draft\n\nEdited." }),
@@ -2514,10 +3180,15 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
   // navigation back to a document load (the server's `isPhoneRequest(c) || row.showcase === true`
   // arm then serves the forced-SSR document). A non-showcase row omits the key.
   const spa23ShowcaseDeps = () =>
-    spa23Deps({ listProjects: async () => [{ ...PROJECTS[0]!, headDraftId: "d_7", showcase: true }] });
+    spa23Deps({
+      listProjects: async () => [{ ...PROJECTS[0]!, headDraftId: "d_7", showcase: true }],
+    });
 
   it("GET /bff/p/:slug on a showcase row ships the ReadOnlyProject carrier + page.readOnly", async () => {
-    const res = await createWebApp(spa23ShowcaseDeps()).request("/bff/p/the-politics-of-visibility", JSON_GET);
+    const res = await createWebApp(spa23ShowcaseDeps()).request(
+      "/bff/p/the-politics-of-visibility",
+      JSON_GET,
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.project.showcase).toBe(true);
@@ -2561,7 +3232,12 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     const frozen = await createWebApp(
       spa23Deps({
         getEditorDoc: async () => ({ ...DOC, state: "frozen" }),
-        resolveEditorDraft: async () => ({ draftId: "d_7", draftN: 7, state: "frozen", origin: "import" }),
+        resolveEditorDraft: async () => ({
+          draftId: "d_7",
+          draftN: 7,
+          state: "frozen",
+          origin: "import",
+        }),
       }),
     ).request("/bff/p/the-politics-of-visibility", JSON_GET);
     const frozenBody = await frozen.json();

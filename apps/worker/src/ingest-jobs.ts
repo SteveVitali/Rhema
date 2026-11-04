@@ -90,7 +90,7 @@ export interface SampleMeter {
 }
 
 /** The model seam behind `ingest.reconstruct` — prod binds Anthropic (Secret-Manager key like the
- *  walkthrough generator); tests inject a deterministic fake. */
+ *  retired walkthrough generator did); tests inject a deterministic fake. */
 export interface Reconstructor {
   /** True when the seam consumes the raw PDF bytes itself (a document block) — then the visual tier
    *  needs no `pageImages` raster. False/absent ⇒ visual jobs require `deps.pageImages`. */
@@ -115,7 +115,7 @@ const RECONSTRUCT_MAX_TOKENS = 16_000;
 /** The deploy-bound Reconstructor: POST /v1/messages — text tier sends the degraded extraction +
  *  the fix brief; the visual tier sends the raw PDF as a `document` block (the provider API reads
  *  PDFs natively, so no page rasterization is needed). Server-side only; the prompt never reaches a
- *  payload. Same posture as AnthropicWalkthroughGenerator (Secret-Manager key, one call). */
+ *  payload. Same posture the retired AnthropicWalkthroughGenerator had (Secret-Manager key, one call). */
 export class AnthropicReconstructor implements Reconstructor {
   readonly acceptsDocumentBytes = true;
   // never-cookies note: `apiKey` is the WORKER's own egress model key (Secret Manager), not a
@@ -190,7 +190,9 @@ export interface WorkerIngestDeps {
   readonly queue?: Queue;
   readonly fetcher?: FetchPort;
   readonly ingestBlobs?: IngestBlobStore;
-  readonly converter?: { preview(key: string, opts?: { waitMs?: number }): Promise<ConversionResult | null> };
+  readonly converter?: {
+    preview(key: string, opts?: { waitMs?: number }): Promise<ConversionResult | null>;
+  };
   readonly contentStoreFor?: (workspaceId: string) => Promise<ContentStore> | ContentStore;
   readonly meter?: SampleMeter;
   readonly reconstructor?: Reconstructor;
@@ -220,7 +222,9 @@ export const sqlSampleMeter: (deps: EntryDeps) => SampleMeter = (deps) => ({
     // Row-lock the billing account BEFORE the headroom read (REQ-SPEC-24.2 ordering — the same guard
     // the canonical hold takes), so two concurrent priced ops cannot both pass the available check and
     // race one over the balance; the check(available >= 0) is the backstop.
-    await tx.query("select id from billing_accounts where id = $1 for update", [ws.billing_account_id]);
+    await tx.query("select id from billing_accounts where id = $1 for update", [
+      ws.billing_account_id,
+    ]);
     // Draw from the first bucket with headroom (included → topup → daily), respecting the
     // credit_balances check(available >= 0).
     const balances = (
@@ -230,7 +234,8 @@ export const sqlSampleMeter: (deps: EntryDeps) => SampleMeter = (deps) => ({
         [ws.billing_account_id],
       )
     ).rows as { bucket: string; available: number }[];
-    const bucket = balances.find((b) => b.available >= args.credits)?.bucket as HoldBucket | undefined;
+    const bucket = balances.find((b) => b.available >= args.credits)?.bucket as
+      HoldBucket | undefined;
     if (!bucket) return { ok: false, reason: "insufficient_balance" };
     const entry = {
       workspaceId: args.workspaceId,
@@ -272,7 +277,12 @@ export function jobConvertPort(
       // A worker job can wait past the api's 25s bound — but still bounded (the Job is ~2.5–4 min cold).
       const pv = await converter.preview(key, { waitMs: 240_000 });
       if (!pv) throw new Error("conversion_pending");
-      return { markdown: pv.markdown, quality: pv.quality, qualityNotes: pv.qualityNotes, counts: pv.counts };
+      return {
+        markdown: pv.markdown,
+        quality: pv.quality,
+        qualityNotes: pv.qualityNotes,
+        counts: pv.counts,
+      };
     },
   };
 }
@@ -361,10 +371,20 @@ export async function handleIngestReconstruct(
         [payload.itemId, payload.personaId],
       )
     ).rows[0] as
-      | { id: string; title: string | null; url: string | null; date: string | null;
-          external_id: string | null; connection_id: string; provider: string; sv_id: string | null;
-          content_sha256: string | null; original_sha256: string | null; original_key: string | null;
-          quality: string | null }
+      | {
+          id: string;
+          title: string | null;
+          url: string | null;
+          date: string | null;
+          external_id: string | null;
+          connection_id: string;
+          provider: string;
+          sv_id: string | null;
+          content_sha256: string | null;
+          original_sha256: string | null;
+          original_key: string | null;
+          quality: string | null;
+        }
       | undefined;
     if (!row || !row.sv_id) return { ok: false, reason: "item_missing" };
     if (row.quality === "clean") return { ok: false, reason: "already_clean" };
@@ -385,7 +405,8 @@ export async function handleIngestReconstruct(
     let originalBytes: Uint8Array | undefined;
     if (payload.tier === "visual") {
       if (row.original_key && deps.ingestBlobs) {
-        originalBytes = (await deps.ingestBlobs.read(row.original_key).catch(() => null)) ?? undefined;
+        originalBytes =
+          (await deps.ingestBlobs.read(row.original_key).catch(() => null)) ?? undefined;
       }
       if (!originalBytes && row.original_sha256) {
         originalBytes = (await cs.get(row.original_sha256).catch(() => null)) ?? undefined;
@@ -397,7 +418,9 @@ export async function handleIngestReconstruct(
       }
     }
     const pageImages =
-      payload.tier === "visual" && originalBytes ? await deps.pageImages!(originalBytes) : undefined;
+      payload.tier === "visual" && originalBytes
+        ? await deps.pageImages!(originalBytes)
+        : undefined;
 
     const out = await deps.reconstructor!.reconstruct({
       tier: payload.tier,
@@ -483,9 +506,10 @@ export async function handleVoicePurge(
   const deleted: Record<string, number> = {};
   const purged = await deps.txRunner.run(payload.workspaceId, async (tx) => {
     const p = (
-      await tx.query(`select id, workspace_id from personas where id = $1 and deleted_at is not null`, [
-        payload.personaId,
-      ])
+      await tx.query(
+        `select id, workspace_id from personas where id = $1 and deleted_at is not null`,
+        [payload.personaId],
+      )
     ).rows[0] as { id: string; workspace_id: string } | undefined;
     if (!p) return false;
 
@@ -526,9 +550,15 @@ export async function handleVoicePurge(
       [payload.personaId],
     );
     await del("connections", `delete from connections where persona_id = $1`, [payload.personaId]);
-    await del("profile_corrections", `delete from profile_corrections where persona_id = $1`, [payload.personaId]);
-    await del("persona_build_notes", `delete from persona_build_notes where persona_id = $1`, [payload.personaId]);
-    await del("persona_profiles", `delete from persona_profiles where persona_id = $1`, [payload.personaId]);
+    await del("profile_corrections", `delete from profile_corrections where persona_id = $1`, [
+      payload.personaId,
+    ]);
+    await del("persona_build_notes", `delete from persona_build_notes where persona_id = $1`, [
+      payload.personaId,
+    ]);
+    await del("persona_profiles", `delete from persona_profiles where persona_id = $1`, [
+      payload.personaId,
+    ]);
     await del(
       "persona_members",
       `delete from persona_members where composite_id = $1 or member_id = $1`,

@@ -11,8 +11,13 @@ import type { ObligationStateKind } from "./chips.js";
 // `data-finding-id` + `#finding-<id>` anchors (the island syncs Margin ↔ Desk ↔ the passage marks).
 
 export interface MarginLabels extends FindingCardLabels {
-  /** the stacked chip's summary — (count, topSeverity, topCount) => "3 findings · 1 major". */
-  readonly chipLabel: (count: number, topSeverityLabel: string, topCount: number) => string;
+  /** the stacked chip's summary — (counts, topSeverity, topCount) => "3 findings · 1 major"; the
+   *  counts come from findings-core's ONE rule (strength-slot rows read as strengths, REQ-SYNC-2). */
+  readonly chipLabel: (
+    counts: { findings: number; strengths: number },
+    topSeverityLabel: string,
+    topCount: number,
+  ) => string;
   /** the chip group's accessible name. */
   readonly chipAria: (count: number) => string;
 }
@@ -104,7 +109,7 @@ function MarginChip({
         style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", color: "var(--paper-fg)", listStyle: "none" }}
       >
         <span style={{ fontWeight: 600, color: severityColor(item.topSeverity) }}>
-          {labels.chipLabel(item.count, topLabel, item.topCount)}
+          {labels.chipLabel(item.counts, topLabel, item.topCount)}
         </span>
       </summary>
       <div style={{ padding: "0 8px 4px" }}>

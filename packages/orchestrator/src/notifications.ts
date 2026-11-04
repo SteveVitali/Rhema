@@ -67,7 +67,13 @@ export const CREDIT_THRESHOLDS = [50, 80, 100] as const;
 
 /** The email-sending seam. The worker binds Resend; tests bind a fixture. */
 export interface MailSender {
-  send(msg: { to: string; subject: string; text: string; html: string; from?: string }): Promise<{ id: string }>;
+  send(msg: {
+    to: string;
+    subject: string;
+    text: string;
+    html: string;
+    from?: string;
+  }): Promise<{ id: string }>;
 }
 
 export interface NotificationJobPayload {
@@ -79,10 +85,10 @@ export interface NotificationJobPayload {
     | "credits_check"
     | "trial_payment"
     // P1.19 — the in-app channel + the deferred §5.11 email rows.
-    | "run_progress"     // per-PROJECT Advanced opt-in (step.finished → the run's Inbox row updates)
-    | "voice_digest"    // the weekly stale-voice sweep (in-app rows + the digest email)
-    | "trial_ending"    // the daily day-12 sweep (trial_payment mail + in-app row)
-    | "run_digest"      // the hourly run-finished digest for digest-pref users
+    | "run_progress" // per-PROJECT Advanced opt-in (step.finished → the run's Inbox row updates)
+    | "voice_digest" // the weekly stale-voice sweep (in-app rows + the digest email)
+    | "trial_ending" // the daily day-12 sweep (trial_payment mail + in-app row)
+    | "run_digest" // the hourly run-finished digest for digest-pref users
     | "product_update"; // email only, off by default
   readonly workspaceId: string;
   readonly gateId?: string;
@@ -155,7 +161,13 @@ export async function scheduleGateNotifications(
  */
 export async function scheduleGateReminders(
   deps: { queue: Queue; clock: Clock },
-  args: { gateId: string; workspaceId: string; onExpiry: GateOnExpiry; deadlineAt: Date; now: Date },
+  args: {
+    gateId: string;
+    workspaceId: string;
+    onExpiry: GateOnExpiry;
+    deadlineAt: Date;
+    now: Date;
+  },
 ): Promise<void> {
   if (!isAutoProceed(args.onExpiry)) return;
   for (const offsetMs of REMINDER_OFFSETS_MS) {
@@ -195,7 +207,12 @@ export async function scheduleRunTerminalNotification(
 ): Promise<void> {
   await deps.queue.send(
     NOTIFY_QUEUE,
-    { type: "run_terminal", runId: args.runId, workspaceId: args.workspaceId, outcome: args.outcome },
+    {
+      type: "run_terminal",
+      runId: args.runId,
+      workspaceId: args.workspaceId,
+      outcome: args.outcome,
+    },
     { singletonKey: `notify:terminal:${args.runId}:${args.outcome}` },
   );
 }
@@ -231,7 +248,11 @@ export async function scheduleCreditsCheck(
 ): Promise<void> {
   await deps.queue.send(
     NOTIFY_QUEUE,
-    { type: "credits_check", billingAccountId: args.billingAccountId, workspaceId: args.workspaceId },
+    {
+      type: "credits_check",
+      billingAccountId: args.billingAccountId,
+      workspaceId: args.workspaceId,
+    },
     // a second check while one is active is a no-op; the handler reads live totals anyway.
     { singletonKey: `notify:credits:${args.billingAccountId}` },
   );
@@ -240,7 +261,11 @@ export async function scheduleCreditsCheck(
 // ------------------------------------------------------------------ the notify job handler
 
 export type NotifyOutcome =
-  | { readonly action: "mailed"; readonly deliveryId: string; readonly eventType: NotificationEventType }
+  | {
+      readonly action: "mailed";
+      readonly deliveryId: string;
+      readonly eventType: NotificationEventType;
+    }
   /** P1.19 — the event delivered through the in-app channel only (no mail arm, or mail suppressed). */
   | { readonly action: "inbox"; readonly eventType: NotificationEventType }
   | { readonly action: "rescheduled"; readonly at: Date }
@@ -303,7 +328,7 @@ export function runLandingPath(args: {
   switch (args.workflow) {
     case "review":
     case "fact_check":
-      // the letter lives on the dossier (the walkthrough card IS this surface — REQ-IDE-48).
+      // the letter lives on the dossier (the run card IS this surface — REQ-IDE-48).
       return slug ? `/p/${slug}/review/${args.runId}` : "/app/inbox";
     case "revise":
       return slug
@@ -336,7 +361,11 @@ export function runLandingPath(args: {
 }
 
 /** The gate-focused deep link (§4.2 `/p/:slug/r/:run/g/:gate` → the dossier's focused card). */
-export function gateLandingPath(args: { projectSlug: string | null; runId: string; gateId?: string }): string {
+export function gateLandingPath(args: {
+  projectSlug: string | null;
+  runId: string;
+  gateId?: string;
+}): string {
   if (!args.projectSlug) return "/app/inbox";
   const base = `/p/${args.projectSlug}/review/${args.runId}`;
   return args.gateId ? `${base}?gate=${args.gateId}` : base;
@@ -357,16 +386,14 @@ async function runRecipient(tx: SqlClient, runId: string): Promise<string | null
 }
 
 async function readPrefs(tx: SqlClient, userId: string): Promise<NotificationPrefs> {
-  const row = (
-    await tx.query("select prefs from notification_prefs where user_id = $1", [userId])
-  ).rows[0] as { prefs: unknown } | undefined;
+  const row = (await tx.query("select prefs from notification_prefs where user_id = $1", [userId]))
+    .rows[0] as { prefs: unknown } | undefined;
   return row ? notificationPrefsSchema.parse(row.prefs) : {};
 }
 
 async function recipientEmail(tx: SqlClient, userId: string): Promise<string | null> {
   const row = (await tx.query(`select email from "user" where id = $1`, [userId])).rows[0] as
-    | { email: string }
-    | undefined;
+    { email: string } | undefined;
   return row?.email ?? null;
 }
 
@@ -559,31 +586,46 @@ export async function handleNotifyJob(
   const now = deps.clock.now();
   const box: {
     mail: MailJob | null;
-    reschedule: { startAfterMs: number; singletonKey: string; payload: NotificationJobPayload } | null;
+    reschedule: {
+      startAfterMs: number;
+      singletonKey: string;
+      payload: NotificationJobPayload;
+    } | null;
   } = {
     mail: null,
     reschedule: null,
   };
 
-  const outcome = await deps.txRunner.run(payload.workspaceId, async (tx): Promise<NotifyOutcome> => {
-    if (payload.type === "credits_check") return creditsCheck(tx, deps, config, payload, now, box);
-    if (payload.type === "trial_payment") return trialPayment(tx, deps, config, payload, now, box);
-    if (payload.type === "run_terminal") return runTerminal(tx, deps, config, payload, now, box);
-    if (payload.type === "auto_proceeded") return autoProceeded(tx, deps, config, payload, now, box);
-    if (payload.type === "run_progress") return runProgress(tx, deps, payload, now);
-    if (payload.type === "voice_digest") return voiceDigest(tx, deps, config, payload, now, box);
-    if (payload.type === "trial_ending") return trialEnding(tx, deps, config, payload, now, box);
-    if (payload.type === "run_digest") return runDigest(tx, deps, config, payload, now, box);
-    if (payload.type === "product_update") return productUpdate(tx, deps, config, payload, now, box);
-    return gateNotice(tx, deps, config, payload, now, box);
-  });
+  const outcome = await deps.txRunner.run(
+    payload.workspaceId,
+    async (tx): Promise<NotifyOutcome> => {
+      if (payload.type === "credits_check")
+        return creditsCheck(tx, deps, config, payload, now, box);
+      if (payload.type === "trial_payment")
+        return trialPayment(tx, deps, config, payload, now, box);
+      if (payload.type === "run_terminal") return runTerminal(tx, deps, config, payload, now, box);
+      if (payload.type === "auto_proceeded")
+        return autoProceeded(tx, deps, config, payload, now, box);
+      if (payload.type === "run_progress") return runProgress(tx, deps, payload, now);
+      if (payload.type === "voice_digest") return voiceDigest(tx, deps, config, payload, now, box);
+      if (payload.type === "trial_ending") return trialEnding(tx, deps, config, payload, now, box);
+      if (payload.type === "run_digest") return runDigest(tx, deps, config, payload, now, box);
+      if (payload.type === "product_update")
+        return productUpdate(tx, deps, config, payload, now, box);
+      return gateNotice(tx, deps, config, payload, now, box);
+    },
+  );
 
   if (box.mail) await deps.queue.send(MAIL_SEND_QUEUE, { ...box.mail });
   if (box.reschedule) {
-    await deps.queue.send(NOTIFY_QUEUE, { ...box.reschedule.payload }, {
-      startAfterMs: box.reschedule.startAfterMs,
-      singletonKey: box.reschedule.singletonKey,
-    });
+    await deps.queue.send(
+      NOTIFY_QUEUE,
+      { ...box.reschedule.payload },
+      {
+        startAfterMs: box.reschedule.startAfterMs,
+        singletonKey: box.reschedule.singletonKey,
+      },
+    );
   }
   return outcome;
 }
@@ -596,7 +638,14 @@ async function gateNotice(
   config: EmailActionConfig,
   payload: NotificationJobPayload,
   now: Date,
-  box: { mail: MailJob | null; reschedule: { startAfterMs: number; singletonKey: string; payload: NotificationJobPayload } | null },
+  box: {
+    mail: MailJob | null;
+    reschedule: {
+      startAfterMs: number;
+      singletonKey: string;
+      payload: NotificationJobPayload;
+    } | null;
+  },
 ): Promise<NotifyOutcome> {
   const g = (
     await tx.query(
@@ -615,7 +664,8 @@ async function gateNotice(
   const effective = g.presence_deadline_at ?? g.deadline_at;
 
   if (payload.type === "gate_reminder") {
-    if (effective == null || !isAutoProceed(g.on_expiry)) return { action: "noop", reason: "deadline_moved" };
+    if (effective == null || !isAutoProceed(g.on_expiry))
+      return { action: "noop", reason: "deadline_moved" };
     if (effective.getTime() !== payload.deadlineMs) {
       // the deadline moved: re-arm this offset against the CURRENT deadline (a fresh singleton key, the NEW
       // deadlineMs in the payload so a later stale fire compares against the right instant).
@@ -634,7 +684,17 @@ async function gateNotice(
   }
 
   // gate_waiting — the one-per-gate waiting notice (approval_waiting at +15 min / spend_gate at open).
-  return sendGateEmail(tx, deps, config, payload, g, effective, now, box, notificationEventForGate(g.kind));
+  return sendGateEmail(
+    tx,
+    deps,
+    config,
+    payload,
+    g,
+    effective,
+    now,
+    box,
+    notificationEventForGate(g.kind),
+  );
 }
 
 async function sendGateEmail(
@@ -678,9 +738,7 @@ async function sendGateEmail(
   });
 
   if (!emailEnabled(prefs, eventType)) {
-    return inboxed
-      ? { action: "inbox", eventType }
-      : { action: "noop", reason: "disabled" };
+    return inboxed ? { action: "inbox", eventType } : { action: "noop", reason: "disabled" };
   }
 
   const dedupKey =
@@ -694,7 +752,8 @@ async function sendGateEmail(
     eventType,
     dedupKey,
     runId: g.run_id,
-    render: () => renderGateEmail(tx, deps, config, payload, g, effectiveDeadline, userId, now, eventType),
+    render: () =>
+      renderGateEmail(tx, deps, config, payload, g, effectiveDeadline, userId, now, eventType),
   });
   if (!claim.claimed) return { action: "noop", reason: "already_sent" };
 
@@ -819,7 +878,9 @@ async function autoProceeded(
     now,
   });
   if (!emailEnabled(prefs, "auto_proceeded")) {
-    return inboxed ? { action: "inbox", eventType: "auto_proceeded" } : { action: "noop", reason: "disabled" };
+    return inboxed
+      ? { action: "inbox", eventType: "auto_proceeded" }
+      : { action: "noop", reason: "disabled" };
   }
 
   const claim = await claimDelivery(tx, deps, {
@@ -861,7 +922,14 @@ async function runTerminal(
   config: EmailActionConfig,
   payload: NotificationJobPayload,
   now: Date,
-  box: { mail: MailJob | null; reschedule: { startAfterMs: number; singletonKey: string; payload: NotificationJobPayload } | null },
+  box: {
+    mail: MailJob | null;
+    reschedule: {
+      startAfterMs: number;
+      singletonKey: string;
+      payload: NotificationJobPayload;
+    } | null;
+  },
 ): Promise<NotifyOutcome> {
   const r = (
     await tx.query(
@@ -879,7 +947,9 @@ async function runTerminal(
   if (!r) return { action: "noop", reason: "not_found" };
   // a later transition supersedes a stale terminal job (e.g. a cancel raced a completion).
   if (r.state !== payload.outcome) {
-    const recoveredOk = payload.outcome === "recovered" && (r.state === "queued" || r.state === "running" || r.state === "waiting_gate");
+    const recoveredOk =
+      payload.outcome === "recovered" &&
+      (r.state === "queued" || r.state === "running" || r.state === "waiting_gate");
     if (!recoveredOk) return { action: "noop", reason: "not_found" };
   }
 
@@ -897,7 +967,11 @@ async function runTerminal(
           ? "run_failed"
           : "run_cancelled_recovered";
   const variant: "cancelled" | "recovered" | undefined =
-    eventType === "run_cancelled_recovered" ? (outcome === "cancelled" ? "cancelled" : "recovered") : undefined;
+    eventType === "run_cancelled_recovered"
+      ? outcome === "cancelled"
+        ? "cancelled"
+        : "recovered"
+      : undefined;
 
   const userId = await runRecipient(tx, payload.runId!);
   if (!userId) return { action: "noop", reason: "no_recipient" };
@@ -912,7 +986,8 @@ async function runTerminal(
   const projectTitle = r.project_title ? r.project_title.slice(0, 140) : undefined;
   // RES.2 — the persisted run-level label rides both surfaces (Inbox copy + the mail body) as the
   // display word; the row's own delivery blob is the only source (never recomputed here).
-  const deliveryLabel = deliveryLabelFromRow(r.delivery) === "unverified" ? "Unverified" : undefined;
+  const deliveryLabel =
+    deliveryLabelFromRow(r.delivery) === "unverified" ? "Unverified" : undefined;
   const copy =
     eventType === "run_cancelled_recovered"
       ? { variant: variant!, ...(projectTitle ? { projectTitle } : {}) }
@@ -947,7 +1022,8 @@ async function runTerminal(
     ...(variant === "recovered" ? { keepReadOnRepeat: true } : {}),
   });
 
-  if (inAppOnly) return inboxed ? { action: "inbox", eventType } : { action: "noop", reason: "disabled" };
+  if (inAppOnly)
+    return inboxed ? { action: "inbox", eventType } : { action: "noop", reason: "disabled" };
   if (!emailEnabled(prefs, eventType)) {
     return inboxed ? { action: "inbox", eventType } : { action: "noop", reason: "disabled" };
   }
@@ -978,7 +1054,11 @@ async function runTerminal(
       renderEmail(eventType, {
         ...(r.project_title ? { projectTitle: r.project_title.slice(0, 140) } : {}),
         ...(deliveryLabel ? { deliveryLabel } : {}),
-        openUrl: runDeepLink(config.appBaseUrl, { projectSlug: r.project_slug, landingPath: landing, runId: payload.runId }),
+        openUrl: runDeepLink(config.appBaseUrl, {
+          projectSlug: r.project_slug,
+          landingPath: landing,
+          runId: payload.runId,
+        }),
       }),
   });
   if (!claim.claimed) return { action: "noop", reason: "already_sent" };
@@ -1056,16 +1136,25 @@ async function creditsCheck(
       [deliveryId, payload.workspaceId, userId, `credits:${payload.billingAccountId}:${t}`],
     );
     if ((inserted.rows as unknown[]).length === 0) continue; // this level already fired
-    const email = renderEmail("credits_threshold", { percent: t, openUrl: billingDeepLink(config.appBaseUrl) });
-    await tx.query("update notification_deliveries set subject = $2 where id = $1", [deliveryId, email.subject]);
+    const email = renderEmail("credits_threshold", {
+      percent: t,
+      openUrl: billingDeepLink(config.appBaseUrl),
+    });
+    await tx.query("update notification_deliveries set subject = $2 where id = $1", [
+      deliveryId,
+      email.subject,
+    ]);
     // a single notify job carries one mail.send payload; crossing several levels at once enqueues one job
     // per extra level through the caller's drain (the box holds the last render; extra sends reuse dedup).
     box.mail = { deliveryId, workspaceId: payload.workspaceId, to, ...email };
     mailed = { deliveryId, pct: t };
   }
-  if (mailed) return { action: "mailed", deliveryId: mailed.deliveryId, eventType: "credits_threshold" };
+  if (mailed)
+    return { action: "mailed", deliveryId: mailed.deliveryId, eventType: "credits_threshold" };
   if (!emailOn) {
-    return inboxedAny ? { action: "inbox", eventType: "credits_threshold" } : { action: "noop", reason: "disabled" };
+    return inboxedAny
+      ? { action: "inbox", eventType: "credits_threshold" }
+      : { action: "noop", reason: "disabled" };
   }
   if (!to) return { action: "noop", reason: "no_recipient" };
   return inboxedAny
@@ -1112,7 +1201,10 @@ async function trialPayment(
   });
 
   const to = await recipientEmail(tx, userId);
-  if (!to) return inboxed ? { action: "inbox", eventType: "trial_payment" } : { action: "noop", reason: "no_recipient" };
+  if (!to)
+    return inboxed
+      ? { action: "inbox", eventType: "trial_payment" }
+      : { action: "noop", reason: "no_recipient" };
   const claim = await claimDelivery(tx, deps, {
     workspaceId: payload.workspaceId,
     userId,
@@ -1128,7 +1220,9 @@ async function trialPayment(
       }),
   });
   if (!claim.claimed) {
-    return inboxed ? { action: "inbox", eventType: "trial_payment" } : { action: "noop", reason: "already_sent" };
+    return inboxed
+      ? { action: "inbox", eventType: "trial_payment" }
+      : { action: "noop", reason: "already_sent" };
   }
   box.mail = { deliveryId: claim.deliveryId, workspaceId: payload.workspaceId, to, ...claim.email };
   return { action: "mailed", deliveryId: claim.deliveryId, eventType: "trial_payment" };
@@ -1154,7 +1248,12 @@ async function runProgress(
       [payload.runId],
     )
   ).rows[0] as
-    | { state: string; project_id: string | null; project_title: string | null; project_slug: string | null }
+    | {
+        state: string;
+        project_id: string | null;
+        project_title: string | null;
+        project_slug: string | null;
+      }
     | undefined;
   // a stale progress job after the run went terminal is a no-op — the terminal row owns the collapse key.
   if (!r || !["queued", "provisioning", "running", "waiting_gate"].includes(r.state)) {
@@ -1179,7 +1278,9 @@ async function runProgress(
     },
     now,
   });
-  return inboxed ? { action: "inbox", eventType: "run_progress" } : { action: "noop", reason: "disabled" };
+  return inboxed
+    ? { action: "inbox", eventType: "run_progress" }
+    : { action: "noop", reason: "disabled" };
 }
 
 /**
@@ -1258,11 +1359,18 @@ async function voiceDigest(
         }),
     });
     if (!claim.claimed) continue;
-    box.mail = { deliveryId: claim.deliveryId, workspaceId: payload.workspaceId, to, ...claim.email };
+    box.mail = {
+      deliveryId: claim.deliveryId,
+      workspaceId: payload.workspaceId,
+      to,
+      ...claim.email,
+    };
     mailed = claim.deliveryId;
   }
   if (mailed) return { action: "mailed", deliveryId: mailed, eventType: "voice_stale" };
-  return inboxedAny ? { action: "inbox", eventType: "voice_stale" } : { action: "noop", reason: "not_found" };
+  return inboxedAny
+    ? { action: "inbox", eventType: "voice_stale" }
+    : { action: "noop", reason: "not_found" };
 }
 
 /**
@@ -1330,17 +1438,28 @@ async function runDigest(
             ...(r.project_title ? { projectTitle: r.project_title.slice(0, 140) } : {}),
             openUrl: runDeepLink(config.appBaseUrl, {
               projectSlug: r.project_slug,
-              landingPath: runLandingPath({ workflow: r.workflow, projectSlug: r.project_slug, runId: r.id }),
+              landingPath: runLandingPath({
+                workflow: r.workflow,
+                projectSlug: r.project_slug,
+                runId: r.id,
+              }),
               runId: r.id,
             }),
           })),
         }),
     });
     if (!claim.claimed) continue;
-    box.mail = { deliveryId: claim.deliveryId, workspaceId: payload.workspaceId, to, ...claim.email };
+    box.mail = {
+      deliveryId: claim.deliveryId,
+      workspaceId: payload.workspaceId,
+      to,
+      ...claim.email,
+    };
     mailed = claim.deliveryId;
   }
-  return mailed ? { action: "mailed", deliveryId: mailed, eventType: "run_finished" } : { action: "noop", reason: "not_found" };
+  return mailed
+    ? { action: "mailed", deliveryId: mailed, eventType: "run_finished" }
+    : { action: "noop", reason: "not_found" };
 }
 
 /**
@@ -1416,18 +1535,38 @@ async function trialEnding(
         renderEmail("trial_payment", { reason, openUrl: billingDeepLink(config.appBaseUrl) }),
     });
     if (!claim.claimed) return;
-    box.mail = { deliveryId: claim.deliveryId, workspaceId: payload.workspaceId, to, ...claim.email };
+    box.mail = {
+      deliveryId: claim.deliveryId,
+      workspaceId: payload.workspaceId,
+      to,
+      ...claim.email,
+    };
     mailed = claim.deliveryId;
   };
   for (const t of trials) {
-    const days = Math.max(1, Math.ceil((t.trial_ends_at.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
-    await emit(t.user_id, t.billing_account_id, `Your trial ends in ${days} day${days === 1 ? "" : "s"}`, "ending");
+    const days = Math.max(
+      1,
+      Math.ceil((t.trial_ends_at.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)),
+    );
+    await emit(
+      t.user_id,
+      t.billing_account_id,
+      `Your trial ends in ${days} day${days === 1 ? "" : "s"}`,
+      "ending",
+    );
   }
   for (const f of failed) {
-    await emit(f.user_id, f.billing_account_id, "A payment failed — update your card to keep runs going", "payment_failed");
+    await emit(
+      f.user_id,
+      f.billing_account_id,
+      "A payment failed — update your card to keep runs going",
+      "payment_failed",
+    );
   }
   if (mailed) return { action: "mailed", deliveryId: mailed, eventType: "trial_payment" };
-  return inboxedAny ? { action: "inbox", eventType: "trial_payment" } : { action: "noop", reason: "not_found" };
+  return inboxedAny
+    ? { action: "inbox", eventType: "trial_payment" }
+    : { action: "noop", reason: "not_found" };
 }
 
 /**
@@ -1445,9 +1584,8 @@ async function productUpdate(
 ): Promise<NotifyOutcome> {
   void now;
   if (!payload.subject) return { action: "noop", reason: "not_found" };
-  const members = (
-    await tx.query(`select user_id from workspace_members order by user_id`, [])
-  ).rows as { user_id: string }[];
+  const members = (await tx.query(`select user_id from workspace_members order by user_id`, []))
+    .rows as { user_id: string }[];
   let mailed: string | null = null;
   for (const m of members) {
     const prefs = await readPrefs(tx, m.user_id);
@@ -1468,10 +1606,17 @@ async function productUpdate(
         }),
     });
     if (!claim.claimed) continue;
-    box.mail = { deliveryId: claim.deliveryId, workspaceId: payload.workspaceId, to, ...claim.email };
+    box.mail = {
+      deliveryId: claim.deliveryId,
+      workspaceId: payload.workspaceId,
+      to,
+      ...claim.email,
+    };
     mailed = claim.deliveryId;
   }
-  return mailed ? { action: "mailed", deliveryId: mailed, eventType: "product_update" } : { action: "noop", reason: "disabled" };
+  return mailed
+    ? { action: "mailed", deliveryId: mailed, eventType: "product_update" }
+    : { action: "noop", reason: "disabled" };
 }
 
 // ------------------------------------------------------------------ the mail.send handler
@@ -1493,10 +1638,10 @@ export async function handleMailSendJob(
     ...(deps.emailFrom ? { from: deps.emailFrom } : {}),
   });
   await deps.txRunner.run(payload.workspaceId, (tx) =>
-    tx.query(
-      "update notification_deliveries set status = 'sent', sent_at = $2 where id = $1",
-      [payload.deliveryId, deps.clock.now()],
-    ),
+    tx.query("update notification_deliveries set status = 'sent', sent_at = $2 where id = $1", [
+      payload.deliveryId,
+      deps.clock.now(),
+    ]),
   );
   return { sent: true, id: res.id };
 }
