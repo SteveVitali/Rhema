@@ -1,0 +1,130 @@
+{
+ "dto": {
+  "baseDraftId": "v1",
+  "baseDraftN": 1,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bdeb0ac908711381",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "2ec83b25dfb24726",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "22627177a2fc8d9b",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "a7093446832ba01d",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "0a3160177eff06dc",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "b87693fa7ff77493",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "28bdf8607e909abc",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "6ae97f66f8e2746f",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "66c4e51bed7917e6",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "50587756a89c6cda",
+    "ordinal": 18
+   },
+   "b2": {
+    "contentHash": "116416cd22e62148",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "a9a64b2451f46340",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "60a137deec876dea",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "a567f228081b3f6a",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "d1d3f4626283a8cd",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "bd5b81ef59591f17",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "aad88510042f1634",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "52b153e3d4bbfebf",
+    "ordinal": 9
+   }
+  },
+  "demo": {
+   "importRule": {
+    "claims[].accessedAt": "assigned by import rule",
+    "claims[].sources[].accessedAt": "assigned by import rule",
+    "claims[].sources[].stance": "assigned by import rule",
+    "findings[].evidence.urls[].accessed": "assigned by import rule",
+    "findings[].kind": "assigned by import rule",
+    "findings[].origin": "assigned by import rule",
+    "findings[].reconciliation": "assigned by import rule",
+    "findings[].severity": "assigned by import rule"
+   },
+   "roles": {
+    "drafting": "the drafting agent",
+    "editor": "the editor (agent)",
+    "revising": "the revising agent",
+    "writer": "the writer"
+   }
+  },
+  "draftId": "v2",
+  "draftN": 2,
+  "findings": [
+   {
+    "anchor": null,
+    "findingId": "The one thing",
+    "kind": "argument",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The one thing"
+   }
+  ],
+  "lock": null,
+  "markdown": "# The Borrowed Commons\n\nShared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible.\n\nThe commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material, and that the record shows the failure before the field does.\n\n## A pump, a bridge, a ledger\n\nConsider the lifting pump at Averly Quay, maintained by a parish council that had stopped writing down who last serviced it. When the seal failed in March of a wet year, the repair log showed eleven entries over nine years and none that named a party. The pump did not fail because iron is faithless; it failed because the ledger had no grammatical subject. Mirella Ondatje, in her study of Fenland drainage boards, calls this \"the silent nominative\": the doer the sentence omits because everyone presumed the doing.\n\nThe same omission appears in richer places. Steven Marsh's history of the Averly footbridge — a real bridge, in this invented county — shows toll ledgers kept in three hands over forty years, each assuming the previous hand had ordered the ironwork. The bridge held. The record did not.\n\n## The shape of the failure\n\nWhat fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost.\n\nThis is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times in two years.\n\n![The maintenance map](figures/figure_1_signal_map.png)\n\nThe figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge.\n\n## Why the roster, and not the budget\n\nThe review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution.\n\n## Two objections\n\nThe first objection is that commons failure is a funding story: parishes lose revenue, seals go unreplaced. It is not wrong, but it is incomplete — the Averly parish was funded through the failure year and the money sat in a reserve line while the roster stayed unwritten.\n\nThe second is that the problem is scale: a pump is small, a network is large. The county water board's own minutes suggest the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision.\n\n## What would have to be true\n\nFor the commons to be kept, three sentences have to be writable: who maintains, with what account, checked by whom. These are not engineering requirements. They are the grammar of a ledger, and the claim of this essay is that the grammar precedes the budget. Where the three sentences cannot be written, the seal has already failed; the water just has not arrived yet.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 565
+  },
+  "origin": "response_to_review",
+  "proposals": [],
+  "provenance": null,
+  "sha256": "6ec25cf8d384d471b8ceafe5e17bbf265a8d49c275dc8c5ba329f98eb8f55c4e",
+  "state": "frozen",
+  "venueCap": null,
+  "versionLabel": "v2"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v2",
+ "kind": "editor-doc"
+}

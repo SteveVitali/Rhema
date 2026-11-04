@@ -1,0 +1,43 @@
+{
+ "dto": {
+  "artifactKind": "draft_ledger",
+  "artifactPath": "agents/author/drafting/v1/04-draft-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5e8d842be07cb326",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "8cf69cf497f935b1",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "558560970021aff0",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "5f37972b0b29deb9",
+    "ordinal": 4
+   }
+  },
+  "draftId": "agents/author/drafting/v1/04-draft-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Draft ledger — v1\n\n## Sections\n\n| # | § | Budget | Actual | Note |\n|---|---|---|---|---|\n| I | pump/bridge/ledger | 400 | 430 | over by an anecdote; kept |\n| II | failure shape | 350 | 310 | — |\n| III | objections | 250 | 260 | — |\n| IV | hinge | 250 | 240 | — |\n\nRun log: 12 claims, 0 contradicted, zero `[unverified]` shipped. Approved by the writer \"go ahead\"\nbefore the review dossier opened.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 55
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0a7f38ac6c01951280ee6fcad372504b6aa0a18499a70f2dd86edd58d3c19c29",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/drafting/v1/04-draft-ledger.md",
+ "kind": "artifact-page"
+}

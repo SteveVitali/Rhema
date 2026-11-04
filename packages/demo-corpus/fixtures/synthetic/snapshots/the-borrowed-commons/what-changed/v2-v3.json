@@ -1,0 +1,58 @@
+{
+ "dto": {
+  "afterN": 3,
+  "beforeN": 2,
+  "ok": true,
+  "responseId": "v2-v3",
+  "reviewId": null,
+  "view": {
+   "moves": [],
+   "rebutted": [],
+   "strip": {
+    "addressed": 1,
+    "hunks": 1,
+    "moves": 0,
+    "rebutted": 0,
+    "stillOpen": 0
+   },
+   "unlinked": {
+    "entries": [
+     {
+      "findingOrdinal": 0,
+      "kind": "accept",
+      "status": "done"
+     }
+    ],
+    "hunks": [
+     {
+      "after": [
+       {
+        "blockId": "b1",
+        "endOffset": 49,
+        "index": 1,
+        "startOffset": 0,
+        "text": "# The Borrowed Commons: a Grammar of Shared Decay"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b1",
+        "endOffset": 22,
+        "index": 1,
+        "startOffset": 0,
+        "text": "# The Borrowed Commons"
+       }
+      ],
+      "charsChanged": 71,
+      "id": "h1",
+      "kind": "edited"
+     }
+    ]
+   }
+  }
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v2-v3",
+ "kind": "what-changed"
+}

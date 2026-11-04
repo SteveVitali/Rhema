@@ -9,7 +9,13 @@
   ],
   "references": [
     {
+      "path": "../api-client"
+    },
+    {
       "path": "../contracts"
+    },
+    {
+      "path": "../editor"
     },
     {
       "path": "../findings-core"

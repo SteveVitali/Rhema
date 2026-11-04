@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "piece_brief",
+  "artifactPath": "correspondence/v1-review/00-piece-brief.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f4e6e430c5c4dcfb",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "945ad9581ac04eb0",
+    "ordinal": 2
+   }
+  },
+  "draftId": "correspondence/v1-review/00-piece-brief.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Piece brief — The Borrowed Commons v1\n\n- Draft read: `drafts/v1.md` (from the writer's Substack package)\n- The piece: a ~1,500-word argument that commons failure is grammatical before it is material.\n- Success: a reader who arrived with \"commons tragedy\" leaves holding the roster/ledger distinction.\n- Companion artifact: `drafts/taxonomy_reference_sheet.md` (cited by the later sections).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 50
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b33f732798d6523ab4e81c090a9e5cceea36bcedd57aae0df94ff1713924f50b",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/00-piece-brief.md",
+ "kind": "artifact-page"
+}

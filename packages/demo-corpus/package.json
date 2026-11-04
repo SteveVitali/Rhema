@@ -20,7 +20,9 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@rhema/api-client": "workspace:*",
     "@rhema/contracts": "workspace:*",
+    "@rhema/editor": "workspace:*",
     "@rhema/findings-core": "workspace:*",
     "@rhema/protocols": "workspace:*"
   }

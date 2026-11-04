@@ -1,0 +1,43 @@
+{
+ "dto": {
+  "artifactKind": "drafting_note",
+  "artifactPath": "correspondence/v1-drafting-note.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7c7afa3e092f9743",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "24ff3d213c34d921",
+    "ordinal": 2
+   }
+  },
+  "demo": {
+   "notPublishedRefs": [
+    {
+     "line": 4,
+     "path": "agents/author/outline/01-outline.md"
+    }
+   ]
+  },
+  "draftId": "correspondence/v1-drafting-note.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Drafting note — v1\n\nThe drafting agent's note to the writer on the first pass: the pump anecdote anchors §I, the\noutline's cut list (agents/author/outline/01-outline.md) removed a second parish for length.\nEvery citation carried a tracking parameter and is therefore unverified — see the ledger.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 45
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e6c13bdb5597062244c2fb74d3d4432d016985c253e41c6b1dbc058b9968374a",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-drafting-note.md",
+ "kind": "artifact-page"
+}

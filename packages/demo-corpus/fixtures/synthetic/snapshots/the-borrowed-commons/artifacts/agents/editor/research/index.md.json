@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "research_note",
+  "artifactPath": "agents/editor/research/index.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4db12bda4f0410fe",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fbc31823278300db",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/index.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Research index — editor pass\n\n| Slug | Source | Date |\n|---|---|---|\n| freeform-gazette-note | Averly Gazette clippings file | n/a |\n| workdocs-log-note | WorkDocs audit-log page | 2026 |\n",
+  "meters": {
+   "readMin": 1,
+   "words": 19
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "59db17c0878f496037b3d24b9ccf1094ec6d2e9447f2577d3eaab1217e21d220",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/editor/research/index.md",
+ "kind": "artifact-page"
+}

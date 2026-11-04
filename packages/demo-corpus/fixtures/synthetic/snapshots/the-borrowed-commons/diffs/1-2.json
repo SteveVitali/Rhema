@@ -1,0 +1,656 @@
+{
+ "dto": {
+  "after": {
+   "claimsPendingVerification": false,
+   "createdAt": "2026-11-03T00:00:00.000Z",
+   "draftId": "v2",
+   "frozenAt": "2026-11-03T00:00:00.000Z",
+   "n": 2,
+   "origin": "response_to_review",
+   "state": "frozen"
+  },
+  "before": {
+   "claimsPendingVerification": false,
+   "createdAt": "2026-11-03T00:00:00.000Z",
+   "draftId": "v1",
+   "frozenAt": "2026-11-03T00:00:00.000Z",
+   "n": 1,
+   "origin": "drafted_from_outline",
+   "state": "frozen"
+  },
+  "diff": {
+   "afterBlocks": [
+    {
+     "blockId": "b1",
+     "endOffset": 22,
+     "index": 1,
+     "startOffset": 0,
+     "text": "# The Borrowed Commons"
+    },
+    {
+     "blockId": "b2",
+     "endOffset": 129,
+     "index": 2,
+     "startOffset": 24,
+     "text": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible."
+    },
+    {
+     "blockId": "b3",
+     "endOffset": 496,
+     "index": 3,
+     "startOffset": 131,
+     "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material, and that the record shows the failure before the field does."
+    },
+    {
+     "blockId": "b4",
+     "endOffset": 527,
+     "index": 4,
+     "startOffset": 498,
+     "text": "## A pump, a bridge, a ledger"
+    },
+    {
+     "blockId": "b5",
+     "endOffset": 1045,
+     "index": 5,
+     "startOffset": 529,
+     "text": "Consider the lifting pump at Averly Quay, maintained by a parish council that had stopped writing down who last serviced it. When the seal failed in March of a wet year, the repair log showed eleven entries over nine years and none that named a party. The pump did not fail because iron is faithless; it failed because the ledger had no grammatical subject. Mirella Ondatje, in her study of Fenland drainage boards, calls this \"the silent nominative\": the doer the sentence omits because everyone presumed the doing."
+    },
+    {
+     "blockId": "b6",
+     "endOffset": 1333,
+     "index": 6,
+     "startOffset": 1047,
+     "text": "The same omission appears in richer places. Steven Marsh's history of the Averly footbridge — a real bridge, in this invented county — shows toll ledgers kept in three hands over forty years, each assuming the previous hand had ordered the ironwork. The bridge held. The record did not."
+    },
+    {
+     "blockId": "b7",
+     "endOffset": 1362,
+     "index": 7,
+     "startOffset": 1335,
+     "text": "## The shape of the failure"
+    },
+    {
+     "blockId": "b8",
+     "endOffset": 1573,
+     "index": 8,
+     "startOffset": 1364,
+     "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost."
+    },
+    {
+     "blockId": "b9",
+     "endOffset": 1785,
+     "index": 9,
+     "startOffset": 1575,
+     "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times in two years."
+    },
+    {
+     "blockId": "b10",
+     "endOffset": 1842,
+     "index": 10,
+     "startOffset": 1787,
+     "text": "![The maintenance map](figures/figure_1_signal_map.png)"
+    },
+    {
+     "blockId": "b11",
+     "endOffset": 1950,
+     "index": 11,
+     "startOffset": 1844,
+     "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge."
+    },
+    {
+     "blockId": "b12",
+     "endOffset": 1989,
+     "index": 12,
+     "startOffset": 1952,
+     "text": "## Why the roster, and not the budget"
+    },
+    {
+     "blockId": "b13",
+     "endOffset": 2351,
+     "index": 13,
+     "startOffset": 1991,
+     "text": "The review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution."
+    },
+    {
+     "blockId": "b14",
+     "endOffset": 2370,
+     "index": 14,
+     "startOffset": 2353,
+     "text": "## Two objections"
+    },
+    {
+     "blockId": "b15",
+     "endOffset": 2644,
+     "index": 15,
+     "startOffset": 2372,
+     "text": "The first objection is that commons failure is a funding story: parishes lose revenue, seals go unreplaced. It is not wrong, but it is incomplete — the Averly parish was funded through the failure year and the money sat in a reserve line while the roster stayed unwritten."
+    },
+    {
+     "blockId": "b16",
+     "endOffset": 2896,
+     "index": 16,
+     "startOffset": 2646,
+     "text": "The second is that the problem is scale: a pump is small, a network is large. The county water board's own minutes suggest the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+    },
+    {
+     "blockId": "b17",
+     "endOffset": 2927,
+     "index": 17,
+     "startOffset": 2898,
+     "text": "## What would have to be true"
+    },
+    {
+     "blockId": "b18",
+     "endOffset": 3297,
+     "index": 18,
+     "startOffset": 2929,
+     "text": "For the commons to be kept, three sentences have to be writable: who maintains, with what account, checked by whom. These are not engineering requirements. They are the grammar of a ledger, and the claim of this essay is that the grammar precedes the budget. Where the three sentences cannot be written, the seal has already failed; the water just has not arrived yet."
+    }
+   ],
+   "beforeBlocks": [
+    {
+     "blockId": "b1",
+     "endOffset": 22,
+     "index": 1,
+     "startOffset": 0,
+     "text": "# The Borrowed Commons"
+    },
+    {
+     "blockId": "b2",
+     "endOffset": 78,
+     "index": 2,
+     "startOffset": 24,
+     "text": "Shared infrastructure fails quietly, then all at once."
+    },
+    {
+     "blockId": "b3",
+     "endOffset": 507,
+     "index": 3,
+     "startOffset": 80,
+     "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material. We misread the commons because the sentence we reach for — \"someone should fix this\" — has no subject the record can name."
+    },
+    {
+     "blockId": "b4",
+     "endOffset": 538,
+     "index": 4,
+     "startOffset": 509,
+     "text": "## A pump, a bridge, a ledger"
+    },
+    {
+     "blockId": "b5",
+     "endOffset": 1056,
+     "index": 5,
+     "startOffset": 540,
+     "text": "Consider the lifting pump at Averly Quay, maintained by a parish council that had stopped writing down who last serviced it. When the seal failed in March of a wet year, the repair log showed eleven entries over nine years and none that named a party. The pump did not fail because iron is faithless; it failed because the ledger had no grammatical subject. Mirella Ondatje, in her study of Fenland drainage boards, calls this \"the silent nominative\": the doer the sentence omits because everyone presumed the doing."
+    },
+    {
+     "blockId": "b6",
+     "endOffset": 1344,
+     "index": 6,
+     "startOffset": 1058,
+     "text": "The same omission appears in richer places. Steven Marsh's history of the Averly footbridge — a real bridge, in this invented county — shows toll ledgers kept in three hands over forty years, each assuming the previous hand had ordered the ironwork. The bridge held. The record did not."
+    },
+    {
+     "blockId": "b7",
+     "endOffset": 1373,
+     "index": 7,
+     "startOffset": 1346,
+     "text": "## The shape of the failure"
+    },
+    {
+     "blockId": "b8",
+     "endOffset": 1727,
+     "index": 8,
+     "startOffset": 1375,
+     "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost. A council that cannot say who maintains the pump cannot say why the seal went unmended for six months, and so it says the weather was unusual."
+    },
+    {
+     "blockId": "b9",
+     "endOffset": 1926,
+     "index": 9,
+     "startOffset": 1729,
+     "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times."
+    },
+    {
+     "blockId": "b10",
+     "endOffset": 1983,
+     "index": 10,
+     "startOffset": 1928,
+     "text": "![The maintenance map](figures/figure_1_signal_map.png)"
+    },
+    {
+     "blockId": "b11",
+     "endOffset": 2253,
+     "index": 11,
+     "startOffset": 1985,
+     "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument."
+    },
+    {
+     "blockId": "b12",
+     "endOffset": 2272,
+     "index": 12,
+     "startOffset": 2255,
+     "text": "## Two objections"
+    },
+    {
+     "blockId": "b13",
+     "endOffset": 2546,
+     "index": 13,
+     "startOffset": 2274,
+     "text": "The first objection is that commons failure is a funding story: parishes lose revenue, seals go unreplaced. It is not wrong, but it is incomplete — the Averly parish was funded through the failure year and the money sat in a reserve line while the roster stayed unwritten."
+    },
+    {
+     "blockId": "b14",
+     "endOffset": 2844,
+     "index": 14,
+     "startOffset": 2548,
+     "text": "The second is that the problem is scale: a pump is small, a network is large. The record of the county water board, described in the round log (`manifest.md`), suggests the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+    },
+    {
+     "blockId": "b15",
+     "endOffset": 2875,
+     "index": 15,
+     "startOffset": 2846,
+     "text": "## What would have to be true"
+    },
+    {
+     "blockId": "b16",
+     "endOffset": 3245,
+     "index": 16,
+     "startOffset": 2877,
+     "text": "For the commons to be kept, three sentences have to be writable: who maintains, with what account, checked by whom. These are not engineering requirements. They are the grammar of a ledger, and the claim of this essay is that the grammar precedes the budget. Where the three sentences cannot be written, the seal has already failed; the water just has not arrived yet."
+    }
+   ],
+   "hunks": [
+    {
+     "after": [
+      {
+       "blockId": "b2",
+       "endOffset": 129,
+       "index": 2,
+       "startOffset": 24,
+       "text": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible."
+      },
+      {
+       "blockId": "b3",
+       "endOffset": 496,
+       "index": 3,
+       "startOffset": 131,
+       "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material, and that the record shows the failure before the field does."
+      }
+     ],
+     "before": [
+      {
+       "blockId": "b2",
+       "endOffset": 78,
+       "index": 2,
+       "startOffset": 24,
+       "text": "Shared infrastructure fails quietly, then all at once."
+      },
+      {
+       "blockId": "b3",
+       "endOffset": 507,
+       "index": 3,
+       "startOffset": 80,
+       "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material. We misread the commons because the sentence we reach for — \"someone should fix this\" — has no subject the record can name."
+      }
+     ],
+     "charsChanged": 951,
+     "id": "h1",
+     "kind": "mixed"
+    },
+    {
+     "after": [
+      {
+       "blockId": "b8",
+       "endOffset": 1573,
+       "index": 8,
+       "startOffset": 1364,
+       "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost."
+      },
+      {
+       "blockId": "b9",
+       "endOffset": 1785,
+       "index": 9,
+       "startOffset": 1575,
+       "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times in two years."
+      }
+     ],
+     "before": [
+      {
+       "blockId": "b8",
+       "endOffset": 1727,
+       "index": 8,
+       "startOffset": 1375,
+       "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost. A council that cannot say who maintains the pump cannot say why the seal went unmended for six months, and so it says the weather was unusual."
+      },
+      {
+       "blockId": "b9",
+       "endOffset": 1926,
+       "index": 9,
+       "startOffset": 1729,
+       "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times."
+      }
+     ],
+     "charsChanged": 968,
+     "id": "h2",
+     "kind": "mixed"
+    },
+    {
+     "after": [
+      {
+       "blockId": "b11",
+       "endOffset": 1950,
+       "index": 11,
+       "startOffset": 1844,
+       "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge."
+      },
+      {
+       "blockId": "b12",
+       "endOffset": 1989,
+       "index": 12,
+       "startOffset": 1952,
+       "text": "## Why the roster, and not the budget"
+      },
+      {
+       "blockId": "b13",
+       "endOffset": 2351,
+       "index": 13,
+       "startOffset": 1991,
+       "text": "The review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution."
+      }
+     ],
+     "before": [
+      {
+       "blockId": "b11",
+       "endOffset": 2253,
+       "index": 11,
+       "startOffset": 1985,
+       "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument."
+      }
+     ],
+     "charsChanged": 771,
+     "id": "h3",
+     "kind": "mixed"
+    },
+    {
+     "after": [
+      {
+       "blockId": "b16",
+       "endOffset": 2896,
+       "index": 16,
+       "startOffset": 2646,
+       "text": "The second is that the problem is scale: a pump is small, a network is large. The county water board's own minutes suggest the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+      }
+     ],
+     "before": [
+      {
+       "blockId": "b14",
+       "endOffset": 2844,
+       "index": 14,
+       "startOffset": 2548,
+       "text": "The second is that the problem is scale: a pump is small, a network is large. The record of the county water board, described in the round log (`manifest.md`), suggests the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+      }
+     ],
+     "charsChanged": 546,
+     "id": "h4",
+     "kind": "edited"
+    }
+   ],
+   "unchanged": 10
+  },
+  "ok": true,
+  "responseId": "v1-v2",
+  "reviewId": "v1-review",
+  "view": {
+   "moves": [
+    {
+     "dischargeLines": [],
+     "findings": [
+      {
+       "findingId": "Major 1",
+       "findingOrdinal": 1,
+       "kind": "accept",
+       "severity": "major",
+       "title": "The grammar/budget hinge is asserted, not earned"
+      }
+     ],
+     "hunks": [
+      {
+       "after": [
+        {
+         "blockId": "b11",
+         "endOffset": 1950,
+         "index": 11,
+         "startOffset": 1844,
+         "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge."
+        },
+        {
+         "blockId": "b12",
+         "endOffset": 1989,
+         "index": 12,
+         "startOffset": 1952,
+         "text": "## Why the roster, and not the budget"
+        },
+        {
+         "blockId": "b13",
+         "endOffset": 2351,
+         "index": 13,
+         "startOffset": 1991,
+         "text": "The review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution."
+        }
+       ],
+       "before": [
+        {
+         "blockId": "b11",
+         "endOffset": 2253,
+         "index": 11,
+         "startOffset": 1985,
+         "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument."
+        }
+       ],
+       "charsChanged": 771,
+       "id": "h3",
+       "kind": "mixed"
+      }
+     ],
+     "moveId": "M1",
+     "moveOrdinal": 1,
+     "title": "New §IV \"Why the roster, and not the budget\"",
+     "type": "insert"
+    },
+    {
+     "dischargeLines": [],
+     "findings": [
+      {
+       "findingId": "Major 2",
+       "findingOrdinal": 2,
+       "kind": "adapt",
+       "severity": "major",
+       "title": "The roster is named but never shown failing"
+      }
+     ],
+     "hunks": [
+      {
+       "after": [
+        {
+         "blockId": "b11",
+         "endOffset": 1950,
+         "index": 11,
+         "startOffset": 1844,
+         "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge."
+        },
+        {
+         "blockId": "b12",
+         "endOffset": 1989,
+         "index": 12,
+         "startOffset": 1952,
+         "text": "## Why the roster, and not the budget"
+        },
+        {
+         "blockId": "b13",
+         "endOffset": 2351,
+         "index": 13,
+         "startOffset": 1991,
+         "text": "The review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution."
+        }
+       ],
+       "before": [
+        {
+         "blockId": "b11",
+         "endOffset": 2253,
+         "index": 11,
+         "startOffset": 1985,
+         "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument."
+        }
+       ],
+       "charsChanged": 771,
+       "id": "h3",
+       "kind": "mixed"
+      }
+     ],
+     "moveId": "M3",
+     "moveOrdinal": 3,
+     "title": "Let the figure's missing edge carry §II",
+     "type": "reorder"
+    }
+   ],
+   "rebutted": [
+    {
+     "findingId": "Minor 1",
+     "findingOrdinal": 8,
+     "rationale": "rebut with evidence",
+     "severity": "minor",
+     "title": "Ledger C7b is right that \"none that named a party\" overclaims (ref [1])."
+    },
+    {
+     "findingId": "Minor 2",
+     "findingOrdinal": 9,
+     "rationale": "decline",
+     "severity": "minor",
+     "title": "The \"eleven times\" count needs the minute cited or the quotation dropped."
+    }
+   ],
+   "strip": {
+    "addressed": 2,
+    "hunks": 4,
+    "moves": 2,
+    "rebutted": 2,
+    "stillOpen": 1
+   },
+   "unlinked": {
+    "entries": [
+     {
+      "findingOrdinal": 13,
+      "kind": "escalate",
+      "rationale": "escalate",
+      "status": "escalated"
+     }
+    ],
+    "hunks": [
+     {
+      "after": [
+       {
+        "blockId": "b2",
+        "endOffset": 129,
+        "index": 2,
+        "startOffset": 24,
+        "text": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible."
+       },
+       {
+        "blockId": "b3",
+        "endOffset": 496,
+        "index": 3,
+        "startOffset": 131,
+        "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material, and that the record shows the failure before the field does."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b2",
+        "endOffset": 78,
+        "index": 2,
+        "startOffset": 24,
+        "text": "Shared infrastructure fails quietly, then all at once."
+       },
+       {
+        "blockId": "b3",
+        "endOffset": 507,
+        "index": 3,
+        "startOffset": 80,
+        "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material. We misread the commons because the sentence we reach for — \"someone should fix this\" — has no subject the record can name."
+       }
+      ],
+      "charsChanged": 951,
+      "id": "h1",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b8",
+        "endOffset": 1573,
+        "index": 8,
+        "startOffset": 1364,
+        "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost."
+       },
+       {
+        "blockId": "b9",
+        "endOffset": 1785,
+        "index": 9,
+        "startOffset": 1575,
+        "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times in two years."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b8",
+        "endOffset": 1727,
+        "index": 8,
+        "startOffset": 1375,
+        "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost. A council that cannot say who maintains the pump cannot say why the seal went unmended for six months, and so it says the weather was unusual."
+       },
+       {
+        "blockId": "b9",
+        "endOffset": 1926,
+        "index": 9,
+        "startOffset": 1729,
+        "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times."
+       }
+      ],
+      "charsChanged": 968,
+      "id": "h2",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b16",
+        "endOffset": 2896,
+        "index": 16,
+        "startOffset": 2646,
+        "text": "The second is that the problem is scale: a pump is small, a network is large. The county water board's own minutes suggest the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b14",
+        "endOffset": 2844,
+        "index": 14,
+        "startOffset": 2548,
+        "text": "The second is that the problem is scale: a pump is small, a network is large. The record of the county water board, described in the round log (`manifest.md`), suggests the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+       }
+      ],
+      "charsChanged": 546,
+      "id": "h4",
+      "kind": "edited"
+     }
+    ]
+   }
+  }
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "1:2",
+ "kind": "version-diff"
+}

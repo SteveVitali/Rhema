@@ -703,9 +703,15 @@ importers:
 
   packages/demo-corpus:
     dependencies:
+      '@rhema/api-client':
+        specifier: workspace:*
+        version: link:../api-client
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@rhema/editor':
+        specifier: workspace:*
+        version: link:../editor
       '@rhema/findings-core':
         specifier: workspace:*
         version: link:../findings-core

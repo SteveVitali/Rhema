@@ -1,0 +1,47 @@
+{
+ "dto": {
+  "artifactKind": "structure_plan",
+  "artifactPath": "agents/author/drafting/v1/02-structure-plan.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2f0e434b55df5b54",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "2cca7f492b72df8f",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "95c8abd609c9af0a",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "476a2f64b4f78b1e",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "39d7b091c77620c3",
+    "ordinal": 5
+   }
+  },
+  "draftId": "agents/author/drafting/v1/02-structure-plan.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Structure plan — The Borrowed Commons\n\n## The spine\n\n1. The commons is an agreement, not a meadow.\n2. The Averly pump: the ledger with no subject.\n3. The footbridge: three hands, one ironwork.\n4. The roster fails before the seal.\n5. The grammar precedes the budget.\n\n## Section map\n\n| § | Title | Budget | Function |\n|---|---|---|---|\n| I | A pump, a bridge, a ledger | 400 | establish |\n| II | The shape of the failure | 350 | name the mechanism |\n| III | Two objections | 250 | steelman |\n| IV | What would have to be true | 250 | the hinge |\n",
+  "meters": {
+   "readMin": 1,
+   "words": 81
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9e2b6915e87891f83ee44928fb9ee33832d7cf5089a6b36541669c79efee36ee",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/drafting/v1/02-structure-plan.md",
+ "kind": "artifact-page"
+}

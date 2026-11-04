@@ -1,0 +1,167 @@
+{
+ "dto": {
+  "artifactKind": "claim_ledger",
+  "artifactPath": "correspondence/v1-review/01-claim-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1dc5501a6a1bbd7d",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "7def1b7e12b253a7",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "666dd949402cdc2a",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "ffe92574dfb84f1d",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "200b6bf6ede11777",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "a302c193c99d3399",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "1b9ac204154af2b8",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "34e6f2e29078f80e",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "f14c84c23dc5e590",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "7441418519035a18",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "49d9da5271fa793e",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "8a4940721a366443",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "de0669e6e1791d90",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "6c692c3c57bfd96a",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "4da3418b6380e7db",
+    "ordinal": 22
+   },
+   "b23": {
+    "contentHash": "d2f8b6fa88d722c5",
+    "ordinal": 23
+   },
+   "b24": {
+    "contentHash": "a722bb9e7aa2ae9f",
+    "ordinal": 24
+   },
+   "b25": {
+    "contentHash": "7def1b7e12b253a7",
+    "ordinal": 25
+   },
+   "b26": {
+    "contentHash": "42f43a9e086dba35",
+    "ordinal": 26
+   },
+   "b27": {
+    "contentHash": "21e47e9eaf8be55c",
+    "ordinal": 27
+   },
+   "b28": {
+    "contentHash": "b7758479d4b20df5",
+    "ordinal": 28
+   },
+   "b29": {
+    "contentHash": "41038d337a904858",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "dab9462bdaa2f766",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "4c823357aece6955",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "4c59246c69bcc5fc",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "f52e0a997632f77e",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "07e86fa624b0610d",
+    "ordinal": 33
+   },
+   "b34": {
+    "contentHash": "b75018dee4679c57",
+    "ordinal": 34
+   },
+   "b35": {
+    "contentHash": "2daaad69a82fe498",
+    "ordinal": 35
+   },
+   "b4": {
+    "contentHash": "66dedcbafd1a40f9",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "5815f937f9071ea0",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "4d4f025306cb86ea",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "c0fe4311a883eca0",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "04bc331d39cd5ed0",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "10b817acdc0fac93",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v1-review/01-claim-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Claim ledger — The Borrowed Commons (v1)\n\nClaims inventoried: 24 · Checked 2026-08-02 · session opened during this session (2026-08-02)\n\n### C7b · Tier 2, escalated to Tier 1 · Contradicted\n\n> \"the repair log showed eleven entries over nine years and none that named a party\" (§I)\n\nThe Averly parish book shows a named warden on entries 4 and 9; \"none that named a party\" is\nwrong as written, though the warden's role was ceremonial. Fix: name the ceremonial row.\n\n- Source: https://records.example.org/averly/parish-book-1994 (checked 2026-08-02)\n- Fix: name the ceremonial row in the sentence.\n\n### III4 · Tier 1 · Verified\n\n> \"the parish was funded through the failure year\" (§IV)\n\nReserve line shows an unspent maintenance allocation for the failure year.\n\n- Source: https://records.example.org/averly/accounts-2001 (checked 2026-08-02)\n\n### IV2-scope · Tier 2 (escalated: reputationally protective) · Substantially accurate on substance; the quotation is unverifiable and must be de-quoted\n\n> \"eleven times in two years\" (§II)\n\nThe count is right for \"maintenance was performed\" but the quotation cannot be traced to a\nminute; de-quote and attribute the count instead.\n\n- Source: https://records.example.org/averly/minutes-index (checked 2026-08-02)\n\n### V3 (reuse C2, fix checked) · Tier 1 · Verified (reuse confirmation)\n\n> \"toll ledgers kept in three hands over forty years\" (§I)\n\nReused note: marsh-viscosity-2021.\n\n### P4 · Tier 2 (epigraph) · Misleading in context\n\n> \"the commons of a town is not a meadow\" (opening)\n\nTrue as metaphor, but the paragraph implies enclosures never worked; two Fenland boards did\nkeep ledgers. Misleading without the Ondatje contrast, which the essay supplies later.\n\n- Source: https://press.example.org/ondatje/fenland-boards (checked 2026-08-02)\n\n### C9 · Tier 1 · Contradicted in one clause (major escalation); the rest Substantially accurate\n\n> \"money sat in a reserve line while the roster stayed unwritten\" (§IV)\n\nThe reserve-line clause is contradicted by the accounts note; the roster clause stands.\n\n- Source: https://records.example.org/averly/accounts-2001 (checked 2026-08-02)\n\n### X11 · Tier 3 · Skipped\n\n(not scored — evaluative)\n\n> \"the seal has already failed; the water just has not arrived yet\" (§V)\n\nA rhetorical close; not a checkable claim.\n\n## Reuse confirmations\n\n- **C2 · Tier 1** — three-hand toll ledgers, as in III4.\n- **C5 · Tier 2** — silent nominative attribution.\n\n## References checked\n\n- [1] Ondatje study link resolves; page range not checked.\n\n## Summary\n\nVerified 2 · Substantially accurate 1 · Misleading in context 1 · Contradicted 2 · Unverifiable 1\n",
+  "meters": {
+   "readMin": 2,
+   "words": 372
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "706e4c6cee57a065a0010acae99e2c62d8630551e546864224c456f388544900",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/01-claim-ledger.md",
+ "kind": "artifact-page"
+}

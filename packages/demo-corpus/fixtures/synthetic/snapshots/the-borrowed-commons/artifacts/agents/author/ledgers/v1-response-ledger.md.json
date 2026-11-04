@@ -1,0 +1,63 @@
+{
+ "dto": {
+  "artifactKind": "response_ledger",
+  "artifactPath": "agents/author/ledgers/v1-response-ledger.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a257cc0344368def",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "34957fbaabcf7623",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "558820f14dd96d27",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "58d71e5bd3dd2377",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "4c25a9469c223dd1",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "43f40a07d84cc888",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "c25a2dbbcd3eab95",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "12a755c7ffa0bee0",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "3c24e864e1a4bc4b",
+    "ordinal": 9
+   }
+  },
+  "draftId": "agents/author/ledgers/v1-response-ledger.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# v1 response ledger — The Borrowed Commons\n\nPrepared under the the S. J. Sebastian corpus corpus conventions by the revising agent; by the writer \"approved, proceed.\" the revision plan went ahead on 2026-08-04.\n\n| Row | Source | Disposition | Status | Note |\n|---|---|---|---|---|\n| F1 | L Major 1 | accept | done | New §IV argues the funded-but-unwritten case. |\n| F2 | L Major 2 | adapt | done | The figure's missing edge now carries the mechanism. |\n| F3 | SR 1 | accept | done | Counterfactual argued, not gestured. |\n| F4 | L Minor 1 | rebut with evidence | done | The warden row is ceremonial; named in the fix. |\n| F5 | L Minor 2 | decline | done | Reversible if the editor disagrees; count kept, quote dropped. |\n| F6 | OQ 1 | escalate | escalated | County board record quotability — awaiting the writer. |\n| F7 | CL C7b | §3.B accept; the volume point **rebut** | done | Mixed cell: clause fixed, volume point rebutted. |\n| F8 | DR §2 | operational | open | Process row; no letter finding. |\n| F9 | self | (causes are F1, F3) | done | Mapping only. |\n\n## Revision plan\n\n| Move | Title | Type | Status | Discharges |\n|---|---|---|---|---|\n| M1 | New §IV \"Why the roster, and not the budget\" | insert | done | F1, F3 |\n| M2 | Drop the \"eleven times\" quotation to a count | edit | done | F5 |\n| M3 | Let the figure's missing edge carry §II | reorder | done | F2 |\n\n## Invariants\n\nNothing in the letter's strengths list was weakened by the moves.\n\n## Discharge evidence\n\n- **F1:** \"is this a funding story wearing a grammar's clothes\"\n- **F2:** \"The pump has no edge\"\n- **F5:** \"eleven times in two years\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 234
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3a5a71eb3e81885cc335062fbf0a667e0141843de144274b22871c6bcd735504",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "agents/author/ledgers/v1-response-ledger.md",
+ "kind": "artifact-page"
+}

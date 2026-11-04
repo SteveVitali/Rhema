@@ -1,0 +1,94 @@
+{
+ "chunks": {
+  "artifact-page": {
+   "agents/author/drafting/v1/00-commissioning-brief.md": "artifacts/agents/author/drafting/v1/00-commissioning-brief.md.json",
+   "agents/author/drafting/v1/01-voice-brief.md": "artifacts/agents/author/drafting/v1/01-voice-brief.md.json",
+   "agents/author/drafting/v1/02-structure-plan.md": "artifacts/agents/author/drafting/v1/02-structure-plan.md.json",
+   "agents/author/drafting/v1/03-claim-ledger.md": "artifacts/agents/author/drafting/v1/03-claim-ledger.md.json",
+   "agents/author/drafting/v1/04-draft-ledger.md": "artifacts/agents/author/drafting/v1/04-draft-ledger.md.json",
+   "agents/author/drafting/v1/06-fidelity-audit.md": "artifacts/agents/author/drafting/v1/06-fidelity-audit.md.json",
+   "agents/author/ledgers/v1-response-ledger.md": "artifacts/agents/author/ledgers/v1-response-ledger.md.json",
+   "agents/author/ledgers/v2-response-ledger.md": "artifacts/agents/author/ledgers/v2-response-ledger.md.json",
+   "agents/author/research/index.md": "artifacts/agents/author/research/index.md.json",
+   "agents/author/research/sources/ekwueme-commons-2019.md": "artifacts/agents/author/research/sources/ekwueme-commons-2019.md.json",
+   "agents/author/research/sources/marsh-viscosity-2021.md": "artifacts/agents/author/research/sources/marsh-viscosity-2021.md.json",
+   "agents/author/research/sources/ondatje-ledger-2024.md": "artifacts/agents/author/research/sources/ondatje-ledger-2024.md.json",
+   "agents/editor/research/index.md": "artifacts/agents/editor/research/index.md.json",
+   "agents/editor/research/sources/freeform-gazette-note.md": "artifacts/agents/editor/research/sources/freeform-gazette-note.md.json",
+   "agents/editor/research/sources/workdocs-log-note.md": "artifacts/agents/editor/research/sources/workdocs-log-note.md.json",
+   "correspondence/v1-drafting-note.md": "artifacts/correspondence/v1-drafting-note.md.json",
+   "correspondence/v1-response.md": "artifacts/correspondence/v1-response.md.json",
+   "correspondence/v1-review/00-piece-brief.md": "artifacts/correspondence/v1-review/00-piece-brief.md.json",
+   "correspondence/v1-review/01-claim-ledger.md": "artifacts/correspondence/v1-review/01-claim-ledger.md.json",
+   "correspondence/v1-review/02-discourse-report.md": "artifacts/correspondence/v1-review/02-discourse-report.md.json",
+   "correspondence/v1-review/03-argument-notes.md": "artifacts/correspondence/v1-review/03-argument-notes.md.json",
+   "correspondence/v1-review/04-craft-notes.md": "artifacts/correspondence/v1-review/04-craft-notes.md.json",
+   "correspondence/v1-review/05-second-read.md": "artifacts/correspondence/v1-review/05-second-read.md.json",
+   "correspondence/v1-review/editors-letter.md": "artifacts/correspondence/v1-review/editors-letter.md.json",
+   "correspondence/v2-response.md": "artifacts/correspondence/v2-response.md.json",
+   "correspondence/v2-review/01-claim-ledger.md": "artifacts/correspondence/v2-review/01-claim-ledger.md.json",
+   "correspondence/v2-review/editors-letter.md": "artifacts/correspondence/v2-review/editors-letter.md.json",
+   "drafts/taxonomy_reference_sheet.md": "artifacts/drafts/taxonomy_reference_sheet.md.json"
+  },
+  "editor-doc": {
+   "published": "drafts/published.json",
+   "v1": "drafts/v1.json",
+   "v2": "drafts/v2.json",
+   "v3": "drafts/v3.json"
+  },
+  "files": {
+   "": "files.json"
+  },
+  "version-diff": {
+   "1:2": "diffs/1-2.json",
+   "2:3": "diffs/2-3.json",
+   "3:4": "diffs/3-4.json"
+  },
+  "versions": {
+   "": "versions.json"
+  },
+  "what-changed": {
+   "v1-v2": "what-changed/v1-v2.json",
+   "v2-v3": "what-changed/v2-v3.json",
+   "v3-published": "what-changed/v3-published.json"
+  }
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "head": {
+  "draftId": "published",
+  "n": 4
+ },
+ "resolve": {
+  "1": {
+   "draftId": "v1",
+   "draftN": 1,
+   "origin": "drafted_from_outline",
+   "state": "frozen"
+  },
+  "2": {
+   "draftId": "v2",
+   "draftN": 2,
+   "origin": "response_to_review",
+   "state": "frozen"
+  },
+  "3": {
+   "draftId": "v3",
+   "draftN": 3,
+   "origin": "human_revision",
+   "state": "frozen"
+  },
+  "4": {
+   "draftId": "published",
+   "draftN": 4,
+   "origin": "imported",
+   "state": "working"
+  },
+  "working": {
+   "draftId": "published",
+   "draftN": 4,
+   "origin": "imported",
+   "state": "working"
+  }
+ }
+}

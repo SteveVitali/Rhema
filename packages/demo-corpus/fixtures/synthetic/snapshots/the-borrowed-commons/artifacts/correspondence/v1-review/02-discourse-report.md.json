@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "discourse_report",
+  "artifactPath": "correspondence/v1-review/02-discourse-report.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dae81b762bb4c087",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "1b3a4cf7fa5296a3",
+    "ordinal": 2
+   }
+  },
+  "draftId": "correspondence/v1-review/02-discourse-report.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Discourse report (rendered raw)\n\nThe conversation the essay enters: commons-tragedy framings (Hardin's grammar of inevitable\noveruse), Ostrom's design principles, and the maintenance-studies literature that treats upkeep as\nsocial fact. The essay's wedge — failure recorded before it is visible — is its contribution.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 43
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "32e85931b412bd83e2342dc0054c6afe461ef277abddb93e535bf0fff1c73112",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v1-review/02-discourse-report.md",
+ "kind": "artifact-page"
+}

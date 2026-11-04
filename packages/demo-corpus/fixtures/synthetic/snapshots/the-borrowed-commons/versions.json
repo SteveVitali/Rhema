@@ -1,0 +1,88 @@
+{
+ "dto": {
+  "chip": {
+   "addressed": 3,
+   "open": 1
+  },
+  "drafts": [
+   {
+    "answered": true,
+    "claimsPendingVerification": false,
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "draftId": "v1",
+    "frozen": true,
+    "frozenAt": "2026-11-03T00:00:00.000Z",
+    "label": "v1",
+    "n": 1,
+    "obligations": {
+     "addressed": 2,
+     "open": 1
+    },
+    "origin": "drafted_from_outline",
+    "reviewed": true,
+    "state": "frozen",
+    "words": 550
+   },
+   {
+    "answered": true,
+    "claimsPendingVerification": false,
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "draftId": "v2",
+    "frozen": true,
+    "frozenAt": "2026-11-03T00:00:00.000Z",
+    "label": "v2",
+    "n": 2,
+    "obligations": {
+     "addressed": 1,
+     "open": 0
+    },
+    "origin": "response_to_review",
+    "reviewed": true,
+    "state": "frozen",
+    "words": 565
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "draftId": "v3",
+    "frozen": true,
+    "frozenAt": "2026-11-03T00:00:00.000Z",
+    "label": "Writer-directed edit (not reviewed)",
+    "n": 3,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "human_revision",
+    "reviewed": false,
+    "state": "frozen",
+    "words": 570
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "draftId": "published",
+    "frozen": false,
+    "frozenAt": null,
+    "label": "Published · sjsebastian.example.org · fetched 2026-09-01",
+    "n": 4,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "imported",
+    "reviewed": false,
+    "state": "working",
+    "words": 54
+   }
+  ],
+  "outline": null,
+  "workingN": 4
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "",
+ "kind": "versions"
+}

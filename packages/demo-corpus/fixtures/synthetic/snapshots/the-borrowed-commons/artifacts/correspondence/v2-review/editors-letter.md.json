@@ -1,0 +1,47 @@
+{
+ "dto": {
+  "artifactKind": "editors_letter",
+  "artifactPath": "correspondence/v2-review/editors-letter.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "dcbf4a1e1bcf7c59",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "445338ffd0672025",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "63238e201d791dce",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "deaa2b89fffac583",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "1fe50c9e49b12bf6",
+    "ordinal": 5
+   }
+  },
+  "draftId": "correspondence/v2-review/editors-letter.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Editor's letter — The Borrowed Commons v2\n\n- Verdict: minor revisions\n- The hinge now argues its case; the remaining flag is the smallest-first scope claim.\n\n**The one thing:** the scope sentence promises more than the record shows — limit it to water\nboards and the piece is done.\n\n## Scorecard\n\n| Dimension | Score | Basis |\n|---|---|---|\n| Thesis & contribution | 5 | hinge now earned |\n| Rigor & reasoning | 4 | one scope flag |\n| Evidence & accuracy | 4 | ledger clean |\n| Originality | 4 | — |\n| Structure | 4 | — |\n| Prose & style | 4 | — |\n| Voice & audience fit | 4 | — |\n| Intellectual honesty | 4 | — |\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "418b139b91e707dadf1ddc40408625a457f7115344b77d01d2b87a6dc6fabd47",
+  "state": "frozen"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "correspondence/v2-review/editors-letter.md",
+ "kind": "artifact-page"
+}
