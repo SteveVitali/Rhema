@@ -54,13 +54,22 @@ function scanLines(file: string, text: string, patterns: readonly DenyPattern[])
   return hits;
 }
 
+/**
+ * Binary artifacts are never line-scanned: a `.png` in any corpus dir is exporter output — bytes
+ * re-encoded by the sanitizer, where text patterns only false-fire on image data (2026-11-04
+ * real-data fix: `~/` byte pairs inside PNG IDAT). Markdown/JSON/text stay scanned.
+ */
+const BINARY_EXT = /\.png$/i;
+
 /** Scan one preloaded file list (the unit-test + in-export path). */
 export function gateFiles(
   files: readonly { relPath: string; text: string }[],
   patterns: readonly DenyPattern[],
   allowlist: readonly AllowlistEntry[],
 ): GateResult {
-  const hits = files.flatMap((f) => scanLines(f.relPath, f.text, patterns));
+  const hits = files
+    .filter((f) => !BINARY_EXT.test(f.relPath))
+    .flatMap((f) => scanLines(f.relPath, f.text, patterns));
   const allowed = new Set(allowlist.map((a) => `${a.file}:${a.line}`));
   const hitLines = new Set(hits.map((h) => `${h.file}:${h.line}`));
   const violations = hits.filter((h) => !allowed.has(`${h.file}:${h.line}`));

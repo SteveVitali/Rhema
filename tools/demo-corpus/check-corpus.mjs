@@ -62,6 +62,8 @@ for (const root of dirs) {
   for (const abs of walk(root)) {
     const rel = relative(root, abs).split("\\").join("/");
     if (rel.startsWith("_rules/") || rel === "export-manifest.json") continue;
+    // .png output is re-encoded binary — text patterns only false-fire on image bytes.
+    if (rel.endsWith(".png")) continue;
     const text = readFileSync(abs).toString("latin1");
     text.split("\n").forEach((line, i) => {
       for (const { id, re } of compiled) {

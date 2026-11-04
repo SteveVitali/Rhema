@@ -185,6 +185,7 @@ function exportSlug(
       k.relPath,
       raw.toString("utf8"),
       rules.rewrites,
+      slug,
     );
     redactions.push(...reds);
     excludedRefs.push(...findExcludedRefs(k.relPath, text, excluded));

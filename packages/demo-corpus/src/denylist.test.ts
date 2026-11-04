@@ -66,6 +66,40 @@ describe("denylist gate (REQ-CORPUS-2)", () => {
     expect(g2.ok).toBe(true);
   });
 
+  it("identity-vitali still catches every real token form but not scholarly prose (real-data fix)", () => {
+    // The real corpus's kept source notes quote Ligthart's "Revitalization through
+    // Relativization" — `vitali` bare-substring false-fired on it; `(?![a-z])` ends that class.
+    const prose =
+      "the Revitalization through Relativization section; revitalizing the doctrine; Vitalis, 1634.";
+    expect(gateFiles(FILES(prose), patterns, []).ok).toBe(true);
+    for (const tok of [
+      ["Steve", "Vitali"].join(""),
+      ["steven", "vitali"].join(""),
+      ["all-steven-", "vitali"].join(""),
+      ["steven-j-", "vitali"].join(""),
+      ["V", "ITALI"].join(""),
+      ["Vitali", "'s"].join(""),
+    ]) {
+      const g = gateFiles(FILES(`token ${tok} here`), patterns, []);
+      expect(g.ok, tok).toBe(false);
+      expect(g.violations[0]?.ruleId, tok).toBe("identity-vitali");
+    }
+  });
+
+  it(".png artifacts are never line-scanned — binary bytes false-fire text patterns (real-data fix)", () => {
+    // The real export's sanitized PNGs contain `~/` byte pairs in IDAT data.
+    const pngBytes = "PNG-binary " + "~" + "/idat " + ["steven", "vitali"].join("") + " bytes";
+    const g = gateFiles([{ relPath: "slug/drafts/figures/fig.png", text: pngBytes }], patterns, []);
+    expect(g.ok).toBe(true);
+    // parity: the always-run checker agrees on a planted .png negative
+    const dir = mkdtempSync(join(tmpdir(), "deny-png-"));
+    mkdirSync(join(dir, "slug"), { recursive: true });
+    writeFileSync(join(dir, "slug", "fig.png"), pngBytes);
+    writeFileSync(join(dir, "slug", "f.md"), "clean\n");
+    const out = execFileSync("node", [CHECKER, "--dir", dir], { encoding: "utf8" });
+    expect(out).toContain("0 violations");
+  });
+
   it("a stale allowlist entry fails", () => {
     const g = gateFiles(FILES("clean line\n"), patterns, [
       { id: "la-stale", file: "slug/f.md", line: 9, reason: "points at a line with no hit" },
