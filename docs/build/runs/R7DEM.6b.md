@@ -7,7 +7,7 @@
 - **Skills:** implement-spec (loaded from `~/agent-skills`; self-review + build-memory siblings)
 - **Spend:** $0 — Stage A only (GD-PREVIEW.R7: no per-ticket preview; D-R7DEM.6b-1 carries Stage B → 224)
 - **Started:** 2026-11-04T17:46:09Z (`date -u`)
-- **Closed:** pending
+- **Closed:** run record + boundary read complete
 
 ## Deferrals read
 
@@ -127,7 +127,25 @@ contributes REQ-DACC-3 (the single permitted non-GET). Invariants: §8.1 (sole s
 
 ## Evidence report
 
-(pending closeout)
+| Check | Result |
+|---|---|
+| `check-additive-migrations --files 0061_demo_events.sql` | PASS — 0 violations |
+| `scripts/check-additive-migrations.test.mjs` | PASS (committed file clean; GRANT-membership variant → `role_change`; census updated) |
+| `security-checks/src/demo-events.test.ts` | PASS — role denials, definer insert, bad-arg rejects, owner+prosecdef, no-PII census |
+| `rls-catalog` + schema parity | PASS — `demo_events` NON_TENANT + `-`; Drizzle parity added |
+| api `/analytics/demo` tests | PASS — valid→row; malformed/oversize/out-of-enum→204 no row; no Set-Cookie |
+| web `/a/demo` tests | PASS — forward w/o session; bucket burst-drop; identity-read grep |
+| suppression contract | PASS — catalogue-driven; DOM zero-emission both signed states; planted emitter fails |
+| emission-audit | PASS — 3 `demo.*` classified `emitted` |
+| `demo-readonly.local.test.ts` | PASS — extended D3 body green (anon+returning) |
+| `demo-side-effects.local.test.ts` | PASS — `/a/demo` the only non-GET; table regenerated |
+| build/lint/typecheck + check:* | PASS |
+| `pnpm test` full sweep | SKIPPED — CI legs run it (focused vitest green) |
+| preview/live legs | N/A — $0 Stage A (GD-PREVIEW.R7) |
+
+**PR:** #258 (base `stevevitali/r7dem-6a-tour`, unmerged — mergePolicy OPERATOR).
+**Commits:** `c69bf5d5` (implementation) + `c3f4826` (records) · boundary: `logs/ci-R7DEM.6b.json`.
+**Deferrals:** opened D-R7DEM.6b-1 → 224; D-R5OPS.1-1 explicitly stays OPEN.
 
 ## Gap table
 
