@@ -6,7 +6,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Spend:** $0 — Stage A only (GD-PREVIEW.R7: no per-ticket preview; D-R7DEM.6a-1 carries Stage B → 224)
 - **Opened:** 2026-11-04 (UTC, `date -u`)
-- **Closed:** (pending)
+- **Closed:** pending the CI boundary read
 
 ## Phase status
 
@@ -119,7 +119,8 @@ it because the recording proxy asserts coverage/non-4xx, never surface content.
   same warnings, all renderer markers `ssr`.
 - `registry.test.ts`/`runner.test.ts` — `D2.tour` joined the REAL_BODIES arm; still `expected:"red"`.
 
-**Commits:** (filled at push) | **CI at head:** (filled after push)
+**Commits:** `e3d60228` (implementation+evidence), `5a185883` (records), `62934efc` (dom-contract fix), `02f5a3f7` (aside/cta test fix).
+**CI at head `02f5a3f7`:** run `41869030183` in progress at record time — prior reads: `41852045588` canceled (superseded by records push), `41852315133` fail at `check:dom-contract` (two violations — literal `tour` urlparam token + `data-demo-tour-aside` unasserted — fixed in `62934efc`, locally re-verified), `41857215112` fail at `pnpm test` on `demo-tour.dom.test.tsx` (double-mount of the engine in one test — fixed in `02f5a3f7`, locally 11/11). Boundary record `logs/ci-R7DEM.6a.json` written on conclusion.
 
 **Deferrals:** opened `D-R7DEM.6a-1` (Stage-B → 224). Closed none. `D-P1.17-2` stays open per
 the ticket note. **Operator asks:** none beyond the ordinary OPERATOR merge gate.
