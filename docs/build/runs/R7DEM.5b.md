@@ -117,6 +117,11 @@ See the ticket's AC block — tracked one row per AC in the gap table below.
 - 12:27Z — LEDGER advance (lastCompleted `R7DEM.5b`, nextTicket `222_R7DEM.6a`, chainTip
   `stevevitali/r7dem-5b-hub`) + PHASE LOG row; `check-build-memory.sh` 0 violations (pre-existing
   warnings only); `check-append-only.mjs --base stevevitali/r7dem-5-side-effects` OK.
+- 12:50Z — first ci-boundary read: **fail** run 41828260684 (`typecheck / lint / unit`) —
+  `registry.test.ts` + `runner.test.ts`: `D1.hub` now throws its own offline error, not the
+  owed-stub message. Fix per the established convention (R7DEM.4b/`D3.readonly` precedent):
+  `D1.hub` joins the `REAL_BODIES` set in both tests — it still classifies `owed` (red until 224),
+  only the error-message arm differs. Commit `223f2134`; bounded re-read follows.
 
 ## Gap table
 
