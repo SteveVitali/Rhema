@@ -1,0 +1,63 @@
+{
+ "dto": {
+  "arc": [
+   {
+    "draftId": "v1",
+    "kind": "draft",
+    "label": "v1",
+    "n": 1
+   },
+   {
+    "kind": "review",
+    "runId": "v1-review",
+    "subjectN": 1
+   },
+   {
+    "draftId": "v2",
+    "kind": "draft",
+    "label": "v2",
+    "n": 2
+   },
+   {
+    "kind": "review",
+    "runId": "v2-review",
+    "subjectN": 2
+   },
+   {
+    "draftId": "v3",
+    "kind": "draft",
+    "label": "Writer-directed edit (not reviewed)",
+    "n": 3
+   },
+   {
+    "draftId": "published",
+    "kind": "draft",
+    "label": "Published · sjsebastian.example.org · fetched 2026-09-01",
+    "n": 4
+   }
+  ],
+  "counts": {
+   "claimsChecked": 9,
+   "major": 4,
+   "minor": 6,
+   "strengths": 5
+  },
+  "essay": "the-borrowed-commons",
+  "publishedLabel": "Published · sjsebastian.example.org · fetched 2026-09-01",
+  "publishedOn": "2026-09-01",
+  "publishedUrl": "https://sjsebastian.example.org/p/the-borrowed-commons",
+  "retitle": {
+   "atLabel": "Writer-directed edit (not reviewed)",
+   "atVersion": "v3",
+   "from": "The Borrowed Commons",
+   "to": "The Borrowed Commons: a Grammar of Shared Decay"
+  },
+  "subtitle": "Shared infrastructure fails quietly, then all at once.",
+  "title": "The Borrowed Commons: a Grammar of Shared Decay",
+  "words": 54
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "",
+ "kind": "card-facts"
+}

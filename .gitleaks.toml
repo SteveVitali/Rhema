@@ -15,6 +15,10 @@ paths = [
   '''apps/api/src/auth\.test\.ts''',
   # the vendored Agent SDK bridge is upstream code, not secret-bearing source (P1.22 sweep)
   '''vendor/.*''',
+  # R7DEM.3b (2026-11-04): the generated demo snapshot tree — corpus-derived DATA (canonical-JSON
+  # `SnapshotFile` envelopes); `generic-api-key` false-fires on the `"key": "<word>"` envelope
+  # field (e.g. `figure_1_signal_map`, `v3-published`). check:demo-corpus is the corpus gate.
+  '''packages/demo-corpus/fixtures/synthetic/snapshots/.*''',
 ]
 
 # P1.22 sweep — the only committed-tree hits are these three pinned TEST fixtures (a Better-Auth test

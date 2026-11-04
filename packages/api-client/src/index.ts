@@ -68,7 +68,21 @@ import type {
   GateCardWire,
   GateStructuredEdits,
   VoiceUpdateScope,
+  ReplayedRunCardView,
+  ReplayedRunSummaryView,
+  ReplayedRunReportView,
+  ReplayedReportPhase,
+  ReplayedApprovalFact,
+  ReplayedNotRecorded,
 } from "@rhema/findings-core";
+export type {
+  ReplayedRunCardView,
+  ReplayedRunSummaryView,
+  ReplayedRunReportView,
+  ReplayedReportPhase,
+  ReplayedApprovalFact,
+  ReplayedNotRecorded,
+};
 
 export const PACKAGE_NAME = "@rhema/api-client" as const;
 
@@ -772,6 +786,111 @@ export interface DemoMarkersDto {
   readonly notPublishedRefs?: readonly { readonly line: number; readonly path: string }[];
   /** The Files tree's working-fragments note ("N working fragments not shown"). */
   readonly fragmentsNote?: string;
+  /** R7DEM.3b (S-9/spec §8.2) — field names the delivered record does not hold; the renderer
+   *  shows "not recorded" (never a fabricated zero, never "not fetched"). */
+  readonly notRecorded?: readonly string[];
+  /** R7DEM.3b (REQ-DWEB-17) — inline image references in this body resolved to the demo asset
+   *  route shape `/bff/demo/asset/:essay/:file` (`path` is the corpus-relative artifact path). */
+  readonly assetRefs?: readonly { readonly path: string; readonly uri: string }[];
+}
+
+// ---- R7DEM.3b — the demo snapshot DTO variants (REQ-DWEB-15 replayed runs, S-7 figure images,
+// REQ-TOUR-1 card facts; ADR-126). All additive: no existing field's type is narrowed or changed. ----
+
+/** A replayed run inside a demo Timeline round — `card`/`createdAt` are the replay variants. */
+export interface ReplayedTimelineRunDto extends Omit<TimelineRunDto, "card" | "createdAt"> {
+  readonly createdAt: string | null;
+  readonly card: ReplayedRunCardView;
+}
+
+/** A demo Timeline round whose runs are replayed (S-9). */
+export interface DemoTimelineRoundDto extends Omit<TimelineRoundDto, "runs"> {
+  readonly runs: readonly ReplayedTimelineRunDto[];
+}
+
+/** The demo Timeline snapshot payload — every run replayed from the delivered record. */
+export interface DemoTimelineDto extends Omit<TimelineDto, "rounds" | "ungrouped"> {
+  readonly rounds: readonly DemoTimelineRoundDto[];
+  readonly ungrouped: readonly ReplayedTimelineRunDto[];
+  readonly demo?: DemoMarkersDto;
+}
+
+/** The demo dossier snapshot payload — `runSummary` is the replayed variant; `rigor`,
+ *  `reviewedDraftId` and `accessReport` go absent when the record does not hold them (the demo
+ *  `notRecorded` marker names each omission — spec §8.2). */
+export interface DemoDossierDto
+  extends Omit<DossierDto, "runSummary" | "rigor" | "reviewedDraftId" | "accessReport"> {
+  readonly rigor?: string;
+  readonly reviewedDraftId?: string;
+  readonly accessReport?: AccessReportFacts;
+  readonly runSummary: ReplayedRunSummaryView;
+  readonly demo?: DemoMarkersDto;
+  readonly replayed: true;
+}
+
+/** The demo run-report snapshot payload — the report is the replay variant (no money/usage). */
+export interface DemoRunReportDto extends Omit<RunReportDto, "report"> {
+  readonly report: ReplayedRunReportView;
+  readonly demo?: DemoMarkersDto;
+}
+
+/** One version strip entry on an imported-image figure card (S-7: v1, and v2 when the record
+ *  shows a regeneration — no dates or request text the record does not carry). */
+export interface FigureImageVersionDto {
+  readonly n: number;
+  readonly label: string | null;
+}
+
+/** The imported-figure card variant (S-7, RV-8): `specKind:"image"`, provenance "imported", the
+ *  asset reference in the REQ-DWEB-17 route shape. No vega/mermaid spec, run provenance or
+ *  generated SVG is invented — the fields do not exist here. */
+export interface FigureImageCardDto {
+  readonly id: string;
+  /** REQ-DWEB-17 route shape `/bff/demo/asset/:essay/:file` (`:file` is corpus-relative). */
+  readonly assetUri: string;
+  readonly title: string;
+  readonly caption: string;
+  readonly alt: string;
+  readonly sourceLine: string;
+  readonly specKind: "image";
+  readonly provenance: "imported";
+  readonly versions: readonly FigureImageVersionDto[];
+  readonly demo?: DemoMarkersDto;
+}
+
+/** One step of the hub card's version arc (REQ-TOUR-1). */
+export type DemoArcStepDto =
+  | { readonly kind: "draft"; readonly draftId: string; readonly n: number; readonly label: string }
+  | { readonly kind: "review"; readonly runId: string; readonly subjectN: number };
+
+/** The hub card facts/counts snapshot (REQ-TOUR-1 data; 218a is the sole owner per P4-6):
+ *  structured numbers only — 221a renders and asserts equality, never recomputes. */
+export interface DemoCardFactsDto {
+  readonly essay: string;
+  readonly title: string;
+  readonly subtitle: string | null;
+  /** the retitle note from version metadata (RV-30) — first version whose title differs. */
+  readonly retitle: {
+    readonly from: string;
+    readonly to: string;
+    readonly atVersion: string;
+    readonly atLabel: string;
+  } | null;
+  /** the recorded publish stamp (`published.fetched`) + verbatim label + link. */
+  readonly publishedOn: string | null;
+  readonly publishedLabel: string | null;
+  readonly publishedUrl: string | null;
+  /** `statusMeters` on the Published markdown — identical to the Page's status bar (RV-29). */
+  readonly words: number;
+  readonly arc: readonly DemoArcStepDto[];
+  /** counts by the ONE rule (REQ-SYNC-2) + this ticket's demo-card bucket split. */
+  readonly counts: {
+    readonly major: number;
+    readonly minor: number;
+    readonly strengths: number;
+    readonly claimsChecked: number;
+  };
+  readonly demo?: DemoMarkersDto;
 }
 
 /** The summary strip counts + the move/hunk tallies ("7 obligations addressed · 1 rebutted · 2 still open"). */

@@ -14,6 +14,21 @@ import { projectVersions, type DemoVersion } from "./versions.js";
 import { editorDoc, artifactPage, type ArtifactMeta } from "./dtos.js";
 import { versionRail, resolveTable, pairSnapshots } from "./views.js";
 import { filesTree, artifactKindFor } from "./files-tree.js";
+import {
+  claimsAt,
+  demoAssetUri,
+  demoTimeline,
+  demoCardFacts,
+  figureImages,
+  findingsAt,
+  inferRuns,
+  labelsAt,
+  markdownImageRefs,
+  replayedDossier,
+  replayedRunReport,
+  env,
+  type DemoSlugFacts,
+} from "./replay.js";
 
 export interface ProjectEssayInput {
   /** The corpus essay key (never a `demo~` slug — 220 owns the registry). */
@@ -26,6 +41,8 @@ export interface ProjectEssayInput {
   readonly exportDate: string;
   /** The corpus PROVENANCE.md text (the excluded/fragments source for the Files note). */
   readonly provenance: string;
+  /** The essay's `_rules/facts.json` entry — the only facts S-9 may cite (218a). */
+  readonly facts?: DemoSlugFacts;
 }
 
 export interface ProjectEssayResult {
@@ -53,6 +70,11 @@ interface IndexJson {
     readonly sha256: string;
     readonly kind: string;
   }[];
+}
+
+/** The image artifact set in index.json — every inline `figures/` link must resolve here. */
+function imagePaths(idx: IndexJson): ReadonlySet<string> {
+  return new Set((idx.artifacts ?? []).filter((a) => a.kind === "image").map((a) => a.path));
 }
 
 /** PROVENANCE.md's `### Excluded` bullet reasons containing "fragment" → the Files note. */
@@ -115,12 +137,38 @@ export function projectEssay(input: ProjectEssayInput): ProjectEssayResult {
     "artifact-page": {},
     versions: { "": "versions.json" },
     files: { "": "files.json" },
+    dossier: {},
+    "run-report": {},
+    timeline: { "": "timeline.json" },
+    "card-facts": { "": "card-facts.json" },
+    "figure-image": {},
+  };
+
+  // Every inline image ref in a version body must resolve to an image artifact — REQ-DWEB-17's
+  // route serves only allowlisted files, so an unresolvable link is a projector error (S-7).
+  const images = imagePaths(idx);
+  const bodyOf = (v: DemoVersion): string => {
+    const raw = files.get(v.file);
+    if (raw === undefined) throw new Error(`projector: draft file missing: ${v.file}`);
+    return v.origin === "imported" ? parsePublished(raw).body : raw;
+  };
+  const assetRefsFor = (v: DemoVersion): DemoMarkersDto["assetRefs"] => {
+    const refs = markdownImageRefs(v.file, bodyOf(v));
+    for (const r of refs)
+      if (!images.has(r)) throw new Error(`projector: image ref ${r} not an artifact`);
+    return refs.length === 0 ? undefined : refs.map((p) => ({ path: p, uri: demoAssetUri(input.essay, p) }));
+  };
+  const draftMarkers = (v: DemoVersion): DemoMarkersDto | undefined => {
+    const base = markersFor(refs, v.file);
+    const assetRefs = assetRefsFor(v);
+    if (base === undefined && assetRefs === undefined) return undefined;
+    return { ...(base ?? {}), ...(assetRefs !== undefined ? { assetRefs } : {}) };
   };
 
   // Draft chunks — one EditorDocDto per version, Published included (the head).
   const words = new Map<string, number>();
   for (const v of versions) {
-    const doc = editorDoc(v, { files, meta, outputs, markers: markersFor(refs, v.file) });
+    const doc = editorDoc(v, { files, meta, outputs, markers: draftMarkers(v) });
     const rel = `drafts/${v.draftId}.json`;
     chunks["editor-doc"]![v.draftId] = rel;
     words.set(v.draftId, doc.meters?.words ?? 0);
@@ -201,6 +249,79 @@ export function projectEssay(input: ProjectEssayInput): ProjectEssayResult {
       fragments: fragmentCount(input.provenance, input.essay),
     }),
   });
+
+  // ---- 218a: the run/record side — replayed runs (S-9), dossier, run report, timeline,
+  // figure images (S-7) and the card facts/counts (REQ-TOUR-1, sole owner P4-6). ----
+  const headTitle =
+    versions[versions.length - 1]!.title ??
+    [...versions].reverse().find((v) => v.title !== null)?.title ??
+    input.essay;
+  const runCtx = {
+    essay: input.essay,
+    versions,
+    files,
+    outputs,
+    facts: input.facts,
+    projectTitle: headTitle,
+  };
+  const runs = inferRuns({ versions, files });
+  for (const run of runs) {
+    const dRel = `dossier/${run.runId}.json`;
+    chunks["dossier"]![run.runId] = dRel;
+    put(out, dRel, env("dossier", input.essay, run.runId, replayedDossier(run, runCtx)));
+    const rRel = `run-report/${run.runId}.json`;
+    chunks["run-report"]![run.runId] = rRel;
+    put(out, rRel, env("run-report", input.essay, run.runId, replayedRunReport(run, runCtx)));
+  }
+  put(out, "timeline.json", {
+    format: 1,
+    kind: "timeline",
+    essay: input.essay,
+    key: "",
+    dto: demoTimeline(
+      {
+        id: input.essay,
+        slug: input.essay,
+        title: headTitle,
+        state: { key: "accepted", pill: "Accepted", overlay: null, suggested: { action: "open", label: null } },
+      },
+      runCtx,
+    ),
+  });
+  const publishedBody =
+    versionsJson.published !== null && files.has(versionsJson.published.file)
+      ? parsePublished(files.get(versionsJson.published.file)!).body
+      : bodyOf(versions[versions.length - 1]!);
+  const allFindings = runs.flatMap((r) => {
+    const labels = labelsAt(outputs, r.dir);
+    return findingsAt(outputs, r.dir, labels, r.v.draftId).map((f) => ({
+      letterSection: f.letterSection,
+      severity: f.severity,
+    }));
+  });
+  const allClaims = runs.reduce(
+    (n, r) => n + claimsAt(outputs, r.dir, labelsAt(outputs, r.dir), r.v.draftId).length,
+    0,
+  );
+  put(out, "card-facts.json", {
+    format: 1,
+    kind: "card-facts",
+    essay: input.essay,
+    key: "",
+    dto: demoCardFacts({
+      essay: input.essay,
+      versions,
+      published: versionsJson.published,
+      publishedMarkdown: publishedBody,
+      findings: allFindings,
+      claimsChecked: allClaims,
+    }),
+  });
+  for (const fig of figureImages({ ...runCtx, index: idx })) {
+    const fRel = `figures/${fig.id}.json`;
+    chunks["figure-image"]![fig.id] = fRel;
+    put(out, fRel, env("figure-image", input.essay, fig.id, fig.dto));
+  }
 
   const head = versions[versions.length - 1]!;
   const index: EssayIndex = {

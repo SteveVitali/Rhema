@@ -69,6 +69,12 @@
    }
   },
   "demo": {
+   "assetRefs": [
+    {
+     "path": "drafts/figures/figure_1_signal_map.png",
+     "uri": "/bff/demo/asset/the-borrowed-commons/drafts/figures/figure_1_signal_map.png"
+    }
+   ],
    "importRule": {
     "claims[].accessedAt": "assigned by import rule",
     "claims[].sources[].accessedAt": "assigned by import rule",

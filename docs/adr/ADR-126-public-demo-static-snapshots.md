@@ -77,3 +77,35 @@ owned decisions this ticket records under this ADR:
   `snapshotEnvelopes` are the drift legs 218a reuses without forking.
 - **Envelope.** `ENVELOPE_BYTES` per kind declares the AC3 bound — a chunk carries its one
   artifact plus that envelope.
+
+### Dated note — 218a_R7DEM.3b (2026-11-04): the run/record side + owned DTO variants
+
+218a extends the same seams — additive only, no existing field narrowed or changed:
+
+- **Replayed runs (S-9; REQ-DWEB-15).** One replayed run per reviewed round (`<draftId>-review`).
+  The phase set is inferred from the delivered files only (piece brief→intake, claim
+  ledger→verification, discourse report→discourse, argument notes→argument, craft notes→craft,
+  second read→second_read, letter→letter) and rides `phaseSource:"inferred_from_delivered_files"`.
+  Approvals/gates carry only verbatim `_rules/facts.json` `approvals` facts, else
+  `"not_recorded"`. Spec §8.2 is structural: the `ReplayedRunCardView`/`ReplayedRunReportView`
+  variants in `findings-core/replayed.ts` omit every numeric the record does not hold and name
+  them in `notRecorded` — a zero is unrepresentable, and the kind validators reject a forged one.
+- **DTO variants (additive to `@rhema/api-client`).** `DemoDossierDto`, `DemoTimelineDto`
+  (`ReplayedTimelineRunDto`/`DemoTimelineRoundDto`), `DemoRunReportDto`,
+  `FigureImageCardDto`/`FigureImageVersionDto` (`specKind:"image"`, provenance `"imported"`, the
+  REQ-DWEB-17 `/bff/demo/asset/:essay/:file` route shape, corpus-relative `:file`),
+  `DemoCardFactsDto`/`DemoArcStepDto`, plus `DemoMarkersDto.notRecorded`/`assetRefs`. The dossier
+  leaves `rigor`/`reviewedDraftId`/`accessReport` absent when unrecorded (its `demo.notRecorded`
+  names each) and is checked against `DossierViewData` by a colocated `apps/web` test.
+- **`demoCardFacts` is the sole card-count owner (P4-6).** `statusMeters` on Published markdown
+  (status-bar parity); findings/claims via 213's `deliveredRecordCounts` — called, never
+  re-implemented; `composeDeliveredSummary` supplies "What it delivered". The demo-card buckets
+  (this ticket's one owned selection): `major`+`one_thing` letter slots → majors (the one thing
+  counted once); `roadmap`/`considered_rejected` → minors; unfiled falls back to severity
+  (blocking/major → major, else minor); strengths/claims ride the shared rule verbatim.
+- **Round produced link.** A replayed round's `producedN` is the next version iff its origin is
+  `response_to_review` and the round is answered — a writer-directed next version produced none.
+- **Registration.** `registerRunKinds()` plugs `dossier`/`run-report`/`timeline`/`card-facts`/
+  `figure-image` into 218's `registerSnapshotKind` seam with per-kind structural validators that
+  assert the omitted-numerics rule; `KindDtoMap`/`ENVELOPE_BYTES`/`EssayIndex.chunks` extend
+  additively.

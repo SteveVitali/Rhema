@@ -17,6 +17,7 @@ export * from "./run-card.js";
 export * from "./delivered-summary.js";
 export * from "./timeline.js";
 export * from "./run-report.js";
+export * from "./replayed.js";
 export * from "./feed.js";
 export * from "./deadline.js";
 export * from "./trust-chip.js";
