@@ -5,6 +5,7 @@
 // beats under 4 s; `sendBeacon` first, keepalive `fetch` as the fallback.
 
 import { useEffect } from "react";
+import { isDemo } from "./demo.js";
 
 /**
  * Mount the heartbeat for the named surface. The caller is the surface component itself, so the
@@ -14,6 +15,10 @@ import { useEffect } from "react";
  */
 export function useDwell(surface: string): void {
   useEffect(() => {
+    // R7DEM.5 (REQ-DWEB-7; R3 §4 row 8) — no dwell heartbeats in the demo: the beacon would
+    // attribute `surface.dwell` to a signed-in visitor's account (and REQ-DOPS-5's cohort
+    // suppression means demo reads are never organic events anyway).
+    if (isDemo()) return;
     let t0 = Date.now();
     const beat = () => {
       const ms = Date.now() - t0;

@@ -43,6 +43,7 @@ import {
   type PaperTheme,
 } from "@rhema/ide";
 import { COPY } from "../../copy.js";
+import { isDemo } from "../demo.js";
 
 const FONT_KEY = "rhema:font:v1";
 const STEP_KEY = "rhema:reader-step:v1";
@@ -635,6 +636,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
 
   const post = useCallback((url: string | undefined, body: Record<string, string>): void => {
     if (!url) return;
+    // R7DEM.5 (REQ-DWEB-7; R3 §4 row 3) — theme/paper POSTs never fire in the demo: the
+    // localStorage apply still runs (the visitor's view preference is local state), but the
+    // same-origin write is skipped outright rather than round-tripping the server's 405.
+    if (isDemo()) return;
     void fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1111,11 +1116,14 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         }
         case "sheet":
           e.preventDefault();
+          // R7DEM.5 (R3 §4 row 4) — the run sheet is outside the demo allowlist; the chord is
+          // inert rather than navigating to the terminal 404.
+          if (isDemo()) break;
           nav.push(`/p/${slug}/run?workflow=${action.workflow}`);
           break;
         case "run-next": {
           const href = ide.dataset["runNext"];
-          if (href) {
+          if (href && !isDemo()) {
             e.preventDefault();
             nav.push(href);
           }

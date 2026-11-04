@@ -1014,6 +1014,11 @@ export interface FileRowDto {
     readonly phase?: string;
   };
   readonly draftRef?: { readonly n: number; readonly state: string };
+  /**
+   * R7DEM.5 — a figure artifact's FIGURE-CARD id (demo only): a binary asset has no artifact
+   *  page, so its row links the figure card (`/p/:slug/figures/:figureId`), never `/a/`.
+   */
+  readonly figureId?: string;
   readonly freshness?: { readonly subjectDraftN: number; readonly stale: boolean };
 }
 

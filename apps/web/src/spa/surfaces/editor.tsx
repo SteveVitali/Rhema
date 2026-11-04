@@ -32,6 +32,7 @@ import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
 import { ApprovalRow, CompareView, WhatChangedView } from "@rhema/ui";
 import { COPY } from "../../copy.js";
+import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
 import { chatPanel } from "../../chat-pane.js";
 import { runCardLabels, timelineHrefs, timelineLabels, type TriageSurfaceState } from "../../dossier-view.js";
@@ -58,6 +59,7 @@ import type {
   BffRevisionTwin,
   BffVersionPageTwin,
 } from "../queries.js";
+import { isDemo } from "../demo.js";
 import { PageMount } from "../page-mount.js";
 import { useReadOnlyProject, ReadOnlyNotice, readOnlyReasonText } from "../read-only.js";
 import { TimelineGateCard } from "./dossier.js";
@@ -243,7 +245,15 @@ function usePageBag(
   merge?: { readonly noteSaved?: boolean; readonly restoredN?: number | null },
 ): PageChromeBag | undefined {
   const markdown = bag?.doc.markdown;
-  const docJson = useMemo(() => (markdown == null ? undefined : markdownToDoc(markdown).toJSON()), [markdown]);
+  const docJson = useMemo(
+    // R7DEM.5 (REQ-TOUR-6 + REQ-DWEB-17) — the leaf-side docJson derivation rewrites corpus
+    // refs: excluded artifacts lose their link mark ("not published" non-links) and published
+    // `assetRefs` resolve to the demo asset route (never a relative-path 404).
+    () => (markdown == null
+      ? undefined
+      : rewriteDemoDocLinks(markdownToDoc(markdown).toJSON(), bag?.doc.demo, isDemo())),
+    [markdown, bag?.doc.demo],
+  );
   const restoredN = merge?.restoredN;
   const noteSaved = merge?.noteSaved;
   return useMemo<PageChromeBag | undefined>(() => {

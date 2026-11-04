@@ -1615,6 +1615,20 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-demo-banner", "conditional", "spa/demo-banner.tsx", "the demo banner strip + read-only notice on every demo surface"),
     a("data-demo-exit", "conditional", "spa/demo-banner.tsx", "a demo exit link — document navigation, carries data-spa-native"),
     a("data-figure-image", "conditional", "spa/surfaces/figures.tsx", "an imported-image figure row/card (S-7's specKind=image variant)"),
+    // 221 (R7DEM.5; REQ-DWEB-7/12/15, REQ-TOUR-6/7) — the side-effect write backstop's inline
+    // notice (the SAME hook the terminal 405 document emits: a demo write only ever lands there),
+    // the replayed-record labels, and the record-marker blocks.
+    a("data-demo-markers", "conditional", "demo-markers.tsx", "the doc's demo marker block (import-rule labels / not-published refs / fragments note)"),
+    a("data-import-rule", "conditional", "demo-markers.tsx", "one REQ-CONV-14 import-rule labelled field, value = the field path"),
+    a("data-not-published", "conditional", "demo-markers.tsx", "one REQ-TOUR-6 excluded-artifact ref rendered as a non-link, value = the corpus path"),
+    a("data-fragments-note", "conditional", "demo-markers.tsx", "the Files tree's working-fragments note"),
+    a("data-demo-decisions", "conditional", "demo-markers.tsx", "the response-ledger artifact's escalations rendered as Decisions (REQ-TOUR-7)"),
+    a("data-demo-escalation", "conditional", "demo-markers.tsx", "one escalated ledger row rendered as a Decision, value = the row id"),
+    a("data-replayed-badge", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "the 'Replayed from the agent-discourse record' badge (S-9)"),
+    a("data-replayed-approval", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "one verbatim PROVENANCE approval fact on a replayed run"),
+    a("data-approvals-not-recorded", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "the approvals slot's honest empty: 'approvals not recorded'"),
+    a("data-not-recorded", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "the 'not recorded' field list on a replayed run (S-9)"),
+    a("data-phase-inferred", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "a phase row's 'inferred from the delivered files' tag"),
   ],
 };
 

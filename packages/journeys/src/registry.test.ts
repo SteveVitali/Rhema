@@ -123,9 +123,9 @@ describe("the journey step registry", () => {
     // red (the 224 phase deploy is the sanctioned flipper) but their impls are no longer the owed
     // stub: invoking them must NOT throw the stub message. Every other round-7 leg still throws
     // owed-loudly.
-    // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies — same arm (red until 224, but the
+    // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies; R7DEM.5 landed `D3.readonly` — same arm (red until 224, but the
     // impl is a real body whose offline throw is its own error, never the stub message).
-    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo"]);
+    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap", "R11.demo", "P1.demo", "D3.readonly"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

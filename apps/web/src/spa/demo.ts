@@ -16,6 +16,22 @@ export function demoBootNow(): { essay: string; slug: string; signedIn: boolean;
   return getSpaBoot()?.demo ?? null;
 }
 
+/**
+ * R7DEM.5 (REQ-DWEB-7; R3 §4) — THE single demo-mode read every side-effect gate keys off:
+ * the boot fact, never `?demo=` and never an env var (`check:spa-env`). Non-React code (mount
+ * effects, the controller, the beacon hooks) reads `isDemo()`; React consumers may read the
+ * same fact through `useDemoMode()` — the value is document-stable, so a plain read is the
+ * hook's whole contract.
+ */
+export function isDemo(): boolean {
+  return demoBootNow() != null;
+}
+
+/** The React accessor over the same fact (R3 §4 mechanism — one read, not a per-caller flag). */
+export function useDemoMode(): boolean {
+  return isDemo();
+}
+
 /** The `_authenticated` gate predicate: a demo boot on a demo-namespace path skips the session
  *  read entirely — the PATH is checked, not just the boot, so an in-SPA hop to `/app` still
  *  hits the real gate (R3 P1). */

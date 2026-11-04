@@ -85,6 +85,16 @@ export interface RunCardLabels {
    *  were refunded"). Absent ⇒ the slot hides.
    */
   readonly deliveryLabel?: (label: string) => string;
+  // ---- R7DEM.5 (REQ-DWEB-15 render; S-9) — the replayed-run labels. All optional; absent ⇒ the
+  // demo label arm hides and the card renders the live-run chrome only. ----
+  /** the replayed-run badge, e.g. "Replayed from the agent-discourse record". */
+  readonly replayedBadge?: string;
+  /** the per-phase provenance label, e.g. "inferred from the delivered files". */
+  readonly phaseInferredLabel?: string;
+  /** the approvals slot's honest empty, e.g. "approvals not recorded". */
+  readonly approvalsNotRecordedLabel?: string;
+  /** one "not recorded" field label, e.g. (field) => "time not recorded". */
+  readonly notRecordedLabel?: (field: string) => string;
 }
 
 /** The POST/GET targets a card's actions submit to (web-supplied; absent ⇒ that affordance hides). */
@@ -101,7 +111,16 @@ export interface RunCardHrefs {
   readonly gate?: string;
 }
 
-function PhaseRow({ phase, labels }: { phase: PhaseProgress; labels: RunCardLabels }): ReactNode {
+function PhaseRow({
+  phase,
+  labels,
+  inferredLabel,
+}: {
+  phase: PhaseProgress;
+  labels: RunCardLabels;
+  /** R7DEM.5 — set on a replayed card: the row's "inferred from the delivered files" tag. */
+  inferredLabel?: string;
+}): ReactNode {
   const off = phase.status === "off";
   return (
     <li
@@ -133,6 +152,14 @@ function PhaseRow({ phase, labels }: { phase: PhaseProgress; labels: RunCardLabe
       <span>{labels.phaseLabel(phase.key)}</span>
       {off ? (
         <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{labels.offLabel}</span>
+      ) : null}
+      {inferredLabel != null ? (
+        <span
+          data-phase-inferred
+          style={{ color: "var(--shell-fg-faint)", fontSize: "11px", fontStyle: "italic" }}
+        >
+          {inferredLabel}
+        </span>
       ) : null}
       {phase.counters?.map((c) => (
         <span
@@ -263,6 +290,51 @@ export function RunCard({
           {labels.deliveryLabel(view.deliveryLabel)}
         </p>
       ) : null}
+      {/* R7DEM.5 (REQ-DWEB-15 render; S-9) — the replayed-run arms. A `ReplayedRunCardView`
+          arrives structurally inside `view` (additive fields): the badge names the record, each
+          phase row carries the "inferred" label, the approvals slot shows PROVENANCE facts or
+          "approvals not recorded", and the fields the record never held read "not recorded". */}
+      {"replayed" in view && view.replayed === true && labels.replayedBadge ? (
+        <p
+          data-replayed-badge
+          style={{
+            margin: "0 0 10px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--shell-fg-muted)",
+          }}
+        >
+          {labels.replayedBadge}
+        </p>
+      ) : null}
+      {"approvals" in view && view.approvals === "not_recorded" && labels.approvalsNotRecordedLabel ? (
+        <p
+          data-approvals-not-recorded
+          style={{ margin: "0 0 10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+        >
+          {labels.approvalsNotRecordedLabel}
+        </p>
+      ) : null}
+      {"approvals" in view && Array.isArray(view.approvals)
+        ? view.approvals.map((a, i) => (
+            <p
+              key={`approval-${i}`}
+              data-replayed-approval
+              style={{ margin: "0 0 6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+            >
+              {a.round}: {a.decision}
+              {a.note != null ? ` — ${a.note}` : ""}
+            </p>
+          ))
+        : null}
+      {"notRecorded" in view && Array.isArray(view.notRecorded) && labels.notRecordedLabel ? (
+        <p
+          data-not-recorded
+          style={{ margin: "0 0 10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
+        >
+          {(view.notRecorded as readonly string[]).map((f) => labels.notRecordedLabel!(f)).join(" · ")}
+        </p>
+      ) : null}
       <div
         style={{
           display: "flex",
@@ -352,7 +424,14 @@ export function RunCard({
       </div>
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {view.phases.map((p) => (
-          <PhaseRow key={p.key} phase={p} labels={labels} />
+          <PhaseRow
+            key={p.key}
+            phase={p}
+            labels={labels}
+            {...("phaseSource" in view && view.phaseSource != null && labels.phaseInferredLabel != null
+              ? { inferredLabel: labels.phaseInferredLabel }
+              : {})}
+          />
         ))}
       </ul>
       {view.estimateCredits != null && view.spentCredits != null && labels.estimateLabel ? (

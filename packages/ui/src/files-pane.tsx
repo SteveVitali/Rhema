@@ -27,6 +27,8 @@ export interface FileRowView {
     readonly phase?: string;
   };
   readonly draftRef?: { readonly n: number; readonly state: string };
+  /** R7DEM.5 — a figure row's figure-card id (demo: a binary asset has no artifact page). */
+  readonly figureId?: string;
   readonly freshness?: { readonly subjectDraftN: number; readonly stale: boolean };
 }
 
@@ -58,6 +60,8 @@ export interface FilesPaneProps {
     readonly artifact: (artifactId: string) => string;
     readonly draft: (n: number) => string;
     readonly run: (runId: string) => string;
+    /** R7DEM.5 — a figure row's card link (absent ⇒ figure rows fall back to `artifact`). */
+    readonly figure?: (figureId: string) => string;
   };
   readonly labels: FilesPaneLabels;
 }
@@ -65,7 +69,11 @@ export interface FilesPaneProps {
 const muted: CSSProperties = { color: "var(--shell-fg-muted, #9aa3ad)" };
 
 function Row({ row, hrefs, labels }: { row: FileRowView; hrefs: FilesPaneProps["hrefs"]; labels: FilesPaneLabels }): ReactNode {
-  const href = row.draftRef ? hrefs.draft(row.draftRef.n) : hrefs.artifact(row.artifactId);
+  const href = row.draftRef
+    ? hrefs.draft(row.draftRef.n)
+    : row.figureId != null && hrefs.figure != null
+      ? hrefs.figure(row.figureId)
+      : hrefs.artifact(row.artifactId);
   return (
     <li
       data-file-row={row.artifactId}

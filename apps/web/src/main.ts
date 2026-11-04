@@ -1,3 +1,4 @@
+import { appendFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
 import { createInternalTokenMinter } from "./internal-token.js";
 import { createWebApp } from "./server.js";
@@ -116,6 +117,20 @@ export function startWebServer(): void {
     ...(process.env.GCS_UPLOAD_ORIGIN ? { gcsUploadOrigin: process.env.GCS_UPLOAD_ORIGIN } : {}),
     // JOURNEY.1 — the image-baked deploy SHA for /healthz provenance.
     ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
+    // R7DEM.5 — the recording-proxy harness pins the corpus root (the committed synthetic
+    // fixture locally; the production root is `defaultDemoCorpusRoot()` when unset).
+    ...(process.env.RHEMA_DEMO_CORPUS_ROOT ? { demoCorpusRoot: process.env.RHEMA_DEMO_CORPUS_ROOT } : {}),
+    // R7DEM.5 (REQ-DWEB-7/DWEB-3) — the recording-proxy's DataSource reach: set only by the
+    // demo side-effect harness (never in a deployed env) — every nested-app call appends the
+    // method name, one per line, so the regenerated table proves the implemented set is
+    // exactly the set the walk reaches.
+    ...(process.env.RHEMA_DEMO_DS_TRACE
+      ? {
+          demoDataSourceTrace: (method: string) => {
+            appendFileSync(process.env.RHEMA_DEMO_DS_TRACE!, `${method}\n`);
+          },
+        }
+      : {}),
     // OBS.1 — the Cloud Logging trace join field (app error lines join the LB's trace-sampled log).
     ...(process.env.GOOGLE_CLOUD_PROJECT ? { gcpProject: process.env.GOOGLE_CLOUD_PROJECT } : {}),
     session(c) {

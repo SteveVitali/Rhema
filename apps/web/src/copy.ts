@@ -2249,6 +2249,15 @@ export const COPY = {
     exitSignUp: "Create your account",
     exitSignIn: "Sign in",
     exitBackToProjects: "Back to your projects",
+    // 221 R7DEM.5 (REQ-DWEB-7/15, REQ-TOUR-6/7; S-9/S-10) — the write backstop's notice (the
+    // capture-phase submit listener's answer) and the replayed-record labels.
+    submitReadonlyNotice: "This is a read-only demo — that control is disabled here.",
+    replayedBadge: "Replayed from the agent-discourse record",
+    phaseInferredLabel: "inferred from the delivered files",
+    approvalsNotRecorded: "approvals not recorded",
+    notPublishedLabel: "not published",
+    importRuleNote: "assigned by import rule",
+    decisionsHeading: "Decisions",
   },
   landing: {
     nav: {

@@ -207,3 +207,28 @@ carries `data-spa-native` (S-14 / REQ-DWEB-11/16).
 `ready-to-flip` on the local server (`docs/build/reports/2026-11-04_r7dem-4b-legs/`) and
 stay `expected:"red"` — the nightly must not redden while prod serves pre-R7a code. The
 deployed verification rides D-R7DEM.4b-1 to 224.
+
+### Addendum — 2026-11-04 (R7DEM.5): the walk finalizes the DataSource set; corpus-path URL shapes
+
+**Decision (DWEB-3's amended contract, exercised):** `demoDataSource`'s implemented `Pick` is
+EXACTLY the set the recording-proxy walk successfully invokes. The trace seam
+(`RHEMA_DEMO_DS_TRACE` → `demoDataSourceTrace` dep) counts an invocation only when the method
+sits in the Pick (`prop in t`) — a call hitting the throwing `DemoUnsupported` seam is a
+surface degrading, not a served read. At this head `checkSession` and `postAcquisitionEvent`
+were implemented-but-never-invoked and left the Pick; the five optional seams the nested app
+probes (`getApprovalSettings`, `getChat`, `getInboxBadge`, `listRestorePoints`,
+`markInboxRunRead`) stay unimplemented and degrade exactly like a live missing seam.
+
+**Decision (URL shape):** `FileRowDto.artifactId` carries the corpus-relative path; `/a/` is
+a single-segment route, so the demo flattens `/`→`--` on emit and decodes in
+`getArtifactPage`. A binary asset (a `kind:"figure"` row's `.png`) has no artifact page — the
+additive `FileRowDto.figureId` + the FilesPane `hrefs.figure` arm link the figure card
+(`/p/<slug>/figures/<id>`) instead.
+
+**Decision (third-party discipline, REQ-DWEB-7):** a read-only public demo page issues no
+third-party request. `rewriteDemoDocLinks` sweeps every `image` node `src` / link `href` in a
+demo doc: excluded corpus paths lose their link mark ("not published" non-link); `assetRefs`
+paths resolve to `/bff/demo/asset/...`; any remaining `https?://` image src rewrites to a
+corpus copy by basename or becomes a " (not published)" text node. The real corpus' published
+essays carry Substack-hosted URLs — the recording proxy caught 25 such fetches on the first
+green walk.

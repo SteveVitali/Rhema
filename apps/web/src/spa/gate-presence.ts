@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { isDemo } from "./demo.js";
 
 /**
  * SPA.11 — the React twin of GateCard's inline presence script (REQ-SPEC-18). The SSR card emits a
@@ -18,6 +19,10 @@ export function useGatePresence<T extends HTMLElement = HTMLElement>(
   const ref = useRef<T | null>(null);
   useEffect(() => {
     if (!activityUrl) return;
+    // R7DEM.5 (REQ-DWEB-7; R3 §4 row 10) — inert today (the demo serves no gates, so no
+    // activityUrl exists) but gated explicitly: presence pings are a session act the demo
+    // never performs.
+    if (isDemo()) return;
     const send = (kind: "present" | "blur" | "reading"): void => {
       const body = new FormData();
       body.set("activity", kind);

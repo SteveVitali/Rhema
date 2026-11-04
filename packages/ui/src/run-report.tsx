@@ -49,6 +49,16 @@ export interface RunReportLabels {
   readonly guidanceHeading: string;
   /** resolve a "guidance.<flag>" key to the suggested-guidance sentence for the next round. */
   readonly guidanceLabel: (key: string) => string;
+  // ---- R7DEM.5 (REQ-DWEB-15 render; S-9) — the replayed-run labels. All optional; absent ⇒ the
+  // replayed arm hides its label lines (the badge/phases/approvals still render). ----
+  /** the replayed-run badge, e.g. "Replayed from the agent-discourse record". */
+  readonly replayedBadge?: string;
+  /** the per-phase provenance label, e.g. "inferred from the delivered files". */
+  readonly phaseInferredLabel?: string;
+  /** the approvals slot's honest empty, e.g. "approvals not recorded". */
+  readonly approvalsNotRecordedLabel?: string;
+  /** one "not recorded" field label, e.g. (field) => "time not recorded". */
+  readonly notRecordedLabel?: (field: string) => string;
   // ---- Level 4 (Advanced) ----
   readonly advancedHeading: string;
   readonly advancedColumns: {
@@ -93,6 +103,66 @@ export function RunReport({
   advancedHref?: string;
 }): ReactNode {
   const L = labels;
+  // R7DEM.5 (REQ-DWEB-15 render; S-9) — a `ReplayedRunReportView` arrives structurally inside
+  // `view`: every money/usage block the live report renders is OMITTED from the DTO (the record
+  // never held it), so the replayed arm renders its own honest body — badge, "not recorded"
+  // fields, inferred phase rows, PROVENANCE approvals — instead of crashing on absent fields.
+  const replayed = "replayed" in view && view.replayed === true;
+  if (replayed) {
+    const rv = view as unknown as {
+      phases: readonly { key: string; ordinal: number; status: PhaseStatus; seat: string | null; source?: string }[];
+      approvals: readonly { round: string; decision: string; note?: string }[] | "not_recorded";
+      notRecorded?: readonly string[];
+      claims?: { readonly checked: number; readonly verified: number } | null;
+    };
+    return (
+      <article id="report" data-run-report={view.runId} data-replayed style={{ fontSize: "14px" }}>
+        <h2 style={{ fontSize: "18px" }}>{L.heading}</h2>
+        {L.replayedBadge ? (
+          <p data-replayed-badge style={{ fontSize: "13px", color: "var(--shell-fg-muted)", fontWeight: 600 }}>
+            {L.replayedBadge}
+          </p>
+        ) : null}
+        {Array.isArray(rv.notRecorded) && rv.notRecorded.length > 0 && L.notRecordedLabel ? (
+          <p data-not-recorded style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            {rv.notRecorded.map((f) => L.notRecordedLabel!(f)).join(" · ")}
+          </p>
+        ) : null}
+        {rv.claims ? (
+          <p data-claims style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            {L.claimsLine(rv.claims.checked, rv.claims.verified, null)}
+          </p>
+        ) : null}
+        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.phaseHeading}</h3>
+        <ul data-phase-bars style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {rv.phases.map((p) => (
+            <li key={p.key} data-report-phase={p.key} data-phase-status={p.status} style={{ display: "flex", gap: "8px", padding: "4px 0", fontSize: "13px", color: p.status === "off" ? "var(--shell-fg-faint)" : "var(--shell-fg)" }}>
+              <span aria-hidden="true" style={{ width: "14px" }}>{STATUS_GLYPH[p.status]}</span>
+              <span>{L.phaseLabel(p.key)}</span>
+              {p.source != null && L.phaseInferredLabel ? (
+                <span data-phase-inferred style={{ marginLeft: "auto", color: "var(--shell-fg-faint)", fontSize: "12px", fontStyle: "italic" }}>
+                  {L.phaseInferredLabel}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {rv.approvals === "not_recorded" && L.approvalsNotRecordedLabel ? (
+          <p data-approvals-not-recorded style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            {L.approvalsNotRecordedLabel}
+          </p>
+        ) : null}
+        {Array.isArray(rv.approvals)
+          ? rv.approvals.map((a, i) => (
+              <p key={`approval-${i}`} data-replayed-approval style={{ margin: "0 0 6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                {a.round}: {a.decision}
+                {a.note != null ? ` — ${a.note}` : ""}
+              </p>
+            ))
+          : null}
+      </article>
+    );
+  }
   return (
     <article id="report" data-run-report={view.runId} style={{ fontSize: "14px" }}>
       <h2 style={{ fontSize: "18px" }}>{L.heading}</h2>

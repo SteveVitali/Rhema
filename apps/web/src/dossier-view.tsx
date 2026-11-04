@@ -67,6 +67,7 @@ import {
 } from "@rhema/findings-core";
 import {
   CHECKABLE_CLAIM_KINDS,
+  isDemoSlug,
   type Claim,
   type ClaimKind,
   type FindingView,
@@ -214,6 +215,11 @@ export const runCardLabels: RunCardLabels = {
   notePlaceholder: COPY.steer.notePlaceholder,
   // R7COPY.0 (REQ-COPY-4) — the record-composed delivered block's labels.
   deliveredHeading: COPY.steer.deliveredHeading,
+  // R7DEM.5 (REQ-DWEB-15 render; S-9) — the replayed-run labels on demo cards.
+  replayedBadge: COPY.demo.replayedBadge,
+  phaseInferredLabel: COPY.demo.phaseInferredLabel,
+  approvalsNotRecordedLabel: COPY.demo.approvalsNotRecorded,
+  notRecordedLabel: (field) => `${field} not recorded`,
   deliveredCountsLabel: (c) =>
     fmt(COPY.steer.deliveredCountsFmt, {
       findings: c.findings,
@@ -253,8 +259,13 @@ export const timelineLabels: TimelineLabels = {
 
 /** The card action targets inside a project's pages — steering POSTs + the dossier/report links. */
 export function timelineHrefs(slug: string): TimelineHrefs {
+  // R7DEM.5 — the run sheet is outside the demo allowlist: for a `demo~` slug the next-step
+  // card and verb chips omit their `/run` hrefs (R3 §4 row 4 — an out-of-scope navigation
+  // is dropped, never a terminal 404). Steering POST forms stay: DemoEffects captures their
+  // submit into the read-only notice.
+  const demo = isDemoSlug(slug);
   return {
-    nextStep: `/p/${slug}/run`,
+    ...(demo ? {} : { nextStep: `/p/${slug}/run` }),
     reportHref: (runId) => `/p/${slug}/r/${runId}#report`,
     deliverableHref: (runId) => `/p/${slug}/review/${runId}`,
     steeringHref: (runId, action) => `/p/${slug}/r/${runId}/${action}`,
@@ -268,7 +279,7 @@ export function timelineHrefs(slug: string): TimelineHrefs {
           : `/p/${slug}/review/${runId}`,
     gateHref: () => `/p/${slug}`,
     versionHref: (n) => `/p/${slug}/v/${n}`,
-    verbHref: (verb) => `/p/${slug}/run?workflow=${verb}`,
+    ...(demo ? {} : { verbHref: (verb) => `/p/${slug}/run?workflow=${verb}` }),
   };
 }
 
@@ -279,6 +290,11 @@ export const feedLabels: LiveFeedLabels = {
 
 export const reportLabels: RunReportLabels = {
   heading: RP.heading,
+  // R7DEM.5 (REQ-DWEB-15 render; S-9) — the replayed-run labels on demo reports.
+  replayedBadge: COPY.demo.replayedBadge,
+  phaseInferredLabel: COPY.demo.phaseInferredLabel,
+  approvalsNotRecordedLabel: COPY.demo.approvalsNotRecorded,
+  notRecordedLabel: (field) => `${field} not recorded`,
   estimateLine: (actual, estimate, ratio) =>
     estimate != null
       ? fmt(RP.estimateFmt, { spent: actual.toLocaleString("en-US"), est: estimate.toLocaleString("en-US") }) +
