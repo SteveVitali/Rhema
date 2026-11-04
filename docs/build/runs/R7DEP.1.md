@@ -242,3 +242,7 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
   RESOLVED via insert `223b`), D-R7DEP.1-1 (`U3.stopgap` occlusion),
   D-R7DEP.1-2 (`R8.showcase.spa` client-nav mechanism).
 - **PAUSE:** HUMAN-H15 — Part B does not proceed without the operator's sign-off on 223a.
+- **CI:** first boundary read FAILED on the journeys census pins (`registry.test.ts` +
+  `runner.test.ts` assert every R7 leg `expected:"red"` / reports `owed`) — the five
+  sanctioned flips changed the census; the tests were updated in place (the pinned green
+  set gained the five; the owed census dropped them), 28/28 local. Re-read on the fix head.
