@@ -11,8 +11,8 @@
   the withheld path only, never wired into build/test/runtime). Every other act is repo-local.
   No real corpus byte is committed (REQ-CORPUS-14; 214c_HUMAN-H14 → 219_R7DATA.1). Size budget
   ~300 changed lines excl. withheld data.
-- **Closed:** pending
-- **ci:** pending
+- **Closed:** 2026-11-04T00:36Z
+- **ci:** pending #246@`99f66a3` (fast-path pass; typecheck/lint/unit pending at bounded read, run 41747225729; `logs/ci-R7DEM.1b.json`). Closeout-commit head `f6e240c` re-runs CI; the next boundary read decides.
 
 ## Deferrals read
 
