@@ -126,6 +126,10 @@ describe("step mechanics — counter, controls, keys, Esc", () => {
     expect(aside).not.toBeNull();
     expect(aside!.getAttribute("href")).toBe(byId("claims").aside!.href);
     expect(aside!.hasAttribute("data-spa-native")).toBe(true);
+    // fresh mount for the cta section — the first overlay is disposed (the idempotence guard
+    // would otherwise keep it, and replaceState is not an observer event).
+    dispose?.();
+    dispose = undefined;
     window.history.replaceState(null, "", "/demo/structure-of-political-difference?tour=cta");
     document.body.innerHTML += '<div data-page-root></div>';
     dispose = mountDemoTour();
