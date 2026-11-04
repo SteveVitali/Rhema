@@ -103,4 +103,11 @@ D-row and PAUSE" — the additive variant route exists, so no pause).
 
 ## Evidence report
 
-CI read at pushed head recorded in `logs/ci-R7DEM.3b.json` + PHASE LOG tail.
+CI at head `152ddb0` read **fail** on `public-safe`: gitleaks `generic-api-key` false-positive on
+`SnapshotFile` `key` fields (`figure_1_signal_map`, `v3-published`) in the generated snapshots
+dir. Fix `ee79bae`: dated path allowlist in `.gitleaks.toml` (same class as `docs/` — generated
+corpus-derived data; the corpus gate is `check:demo-corpus`). Local re-verify: `gitleaks dir`
+on the snapshots tree clean; `check:no-cookies`/`check:protocol-markers`/`check:licenses` all OK.
+Head read on `ee79bae`: **pass #251** (run 41775621123 — fast-path 39 s, typecheck/lint/unit
+22 m 8 s, contracts 20 s, public-safe 30 s, integration 2 m 28 s, images, all legs + `ci-pass`
+anchor; `logs/ci-R7DEM.3b.json`). Deferrals: none opened, none closed. Unmerged (OPERATOR).
