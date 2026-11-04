@@ -9,8 +9,12 @@
 - **Config:** Stage A only ($0). No preview (GD-PREVIEW.R7), no network, never reads the real
   corpus (REQ-CORPUS-14 — real export is 214b's LOCAL job; corpus sign-off is 214c HUMAN-H14;
   committed-corpus is 219). Size budget ~750 changed lines excl. fixture/licence/generated.
-- **Closed:** (pending)
-- **ci:** (pending)
+- **Closed:** 2026-11-04T00:09Z
+- **ci:** pass #245@`ad1906d` (run 41740742054 — all legs + `ci-pass` anchor; `logs/ci-R7DEM.1.json`).
+  Two earlier heads read red (`709e7e7`, `b228456`): the fixture golden was `.gitignore`-swallowed —
+  `corpus/` matched `fixtures/*/corpus/` — fixed by root-anchoring the withheld patterns
+  (`/corpus/` `/snapshots/` `/goldens/`) and renaming the dotfile decoy to `.ds-store` (the root
+  `.gitignore` swallows `.DS_Store` itself).
 
 ## Deferrals read
 
