@@ -10,7 +10,9 @@
   (HUMAN-H14 SIGNED 2026-11-03, digest `19861a06…`) is never an input here (REQ-CORPUS-14; S-12).
   Size budget ~600 changed lines excl. fixtures and goldens.
 - **Closed:** 2026-11-04T01:30Z
-- **ci:** pending #247@`aa3cca4` (bounded read follows; `logs/ci-R7DEM.2a.json`)
+- **ci:** pending #247@`fa9c91e` (bounded read at the closeout head: `fast-path` pass 41 s,
+  `typecheck / lint / unit` still running at ~13 min on run 41754376664; the next boundary read
+  decides — same posture as R7RO.1/R7DEM.1b)
 
 ## Deferrals read
 
