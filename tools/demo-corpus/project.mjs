@@ -11,7 +11,7 @@
  * <snapshots>/<slug>/ chunks + index.json and <snapshots>/projects.json. All projection logic is
  * in `@rhema/demo-corpus`; this script only does file I/O.
  */
-import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { convert, project } from "@rhema/demo-corpus";
@@ -50,6 +50,11 @@ function* walk(dir) {
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const exportDate = manifest.exportDate;
 const provenance = readFileSync(join(corpus, "PROVENANCE.md"), "utf8");
+// 218a — the PROVENANCE facts S-9 may cite live in `_rules/facts.json` (214's schema).
+const factsPath = join(corpus, "_rules", "facts.json");
+const factsAll = existsSync(factsPath)
+  ? project.readFacts(readFileSync(factsPath, "utf8")).slugs ?? {}
+  : {};
 
 const rows = [];
 for (const slug of slugs) {
@@ -82,6 +87,7 @@ for (const slug of slugs) {
     convert: conv,
     exportDate,
     provenance,
+    facts: factsAll[slug],
   });
 
   const essayRoot = join(snapshots, slug);

@@ -1,0 +1,94 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ]
+  },
+  "kind": "ok",
+  "projectSlug": "the-borrowed-commons",
+  "report": {
+   "approvals": [
+    {
+     "decision": "revision plan approved",
+     "note": "recorded in the round log",
+     "round": "v1 review"
+    }
+   ],
+   "claims": {
+    "checked": 7,
+    "verified": 2
+   },
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ],
+   "phases": [
+    {
+     "key": "intake",
+     "ordinal": 1,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "verification",
+     "ordinal": 2,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "discourse",
+     "ordinal": 3,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "argument",
+     "ordinal": 4,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "craft",
+     "ordinal": 5,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "second_read",
+     "ordinal": 6,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "letter",
+     "ordinal": 7,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    }
+   ],
+   "replayed": true,
+   "runId": "v1-review",
+   "state": "completed",
+   "workflow": "review"
+  }
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v1-review",
+ "kind": "run-report"
+}

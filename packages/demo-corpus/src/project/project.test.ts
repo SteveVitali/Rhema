@@ -27,6 +27,7 @@ import {
   resolveViolations,
   envelopeViolations,
 } from "./harness.js";
+import { registerRunKinds, readFacts } from "./replay.js";
 import { ENVELOPE_BYTES, type EssayIndex, type SnapshotFile, type KindDtoMap } from "./model.js";
 
 // REQ-CORPUS-9/12/13, REQ-CONV-13/14 — the projector + contract/drift harness on the synthetic
@@ -66,6 +67,7 @@ const manifest = JSON.parse(readFileSync(join(CORPUS, "export-manifest.json"), "
   exportDate: string;
 };
 const provenance = readFileSync(join(CORPUS, "PROVENANCE.md"), "utf8");
+const facts = readFacts(readFileSync(join(CORPUS, "_rules/facts.json"), "utf8")).slugs?.[SLUG];
 
 const result = projectEssay({
   essay: SLUG,
@@ -73,6 +75,7 @@ const result = projectEssay({
   convert,
   exportDate: manifest.exportDate,
   provenance,
+  facts,
 });
 const outputs = result.outputs;
 const index = JSON.parse(outputs.get("index.json")!) as EssayIndex;
@@ -86,6 +89,7 @@ const dto = <K extends keyof KindDtoMap>(rel: string, _kind: K): KindDtoMap[K] =
   env(rel).dto as KindDtoMap[K];
 
 registerDocumentKinds();
+registerRunKinds();
 
 describe("every document-side method has a snapshot per key (AC1)", () => {
   it("emits the expected chunk set and the index names exactly the emitted files", () => {
@@ -94,6 +98,8 @@ describe("every document-side method has a snapshot per key (AC1)", () => {
         "index.json",
         "versions.json",
         "files.json",
+        "timeline.json",
+        "card-facts.json",
         "drafts/v1.json",
         "drafts/v2.json",
         "drafts/v3.json",
@@ -104,7 +110,10 @@ describe("every document-side method has a snapshot per key (AC1)", () => {
         "what-changed/v1-v2.json",
         "what-changed/v2-v3.json",
         "what-changed/v3-published.json",
-        ...(index.chunks["artifact-page"] ? Object.values(index.chunks["artifact-page"]) : []),
+        ...Object.values(index.chunks["artifact-page"] ?? {}),
+        ...Object.values(index.chunks["dossier"] ?? {}),
+        ...Object.values(index.chunks["run-report"] ?? {}),
+        ...Object.values(index.chunks["figure-image"] ?? {}),
       ].sort(),
     );
     // every corpus markdown artifact that isn't a draft has a page
@@ -264,15 +273,22 @@ describe("the contract/drift harness (AC2)", () => {
       expect(envelopeViolations(e)).toEqual([]);
       expect(validateSnapshot(e), `${e.kind} ${e.key}`).toEqual([]);
     }
-    expect(registeredKinds()).toEqual([
-      "artifact-page",
-      "editor-doc",
-      "files",
-      "projects",
-      "version-diff",
-      "versions",
-      "what-changed",
-    ]);
+    expect(registeredKinds()).toEqual(
+      [
+        "artifact-page",
+        "card-facts",
+        "dossier",
+        "editor-doc",
+        "files",
+        "figure-image",
+        "projects",
+        "run-report",
+        "timeline",
+        "version-diff",
+        "versions",
+        "what-changed",
+      ].sort(),
+    );
   });
 
   it("a malformed payload fails its kind's validator", () => {
@@ -322,6 +338,23 @@ describe("the size bound (AC3)", () => {
         );
       case "artifact-page":
         return body(e.key);
+      // 218a — the run/record side carries its whole correspondence round plus the sidecars.
+      case "dossier": {
+        const dir = `correspondence/${e.key}`;
+        return (
+          [...files.keys()].filter((p) => p.startsWith(`${dir}/`)).reduce((n, p) => n + body(p), 0) +
+          [...convert.outputs.keys()]
+            .filter((k) => k.startsWith(`${dir}/`) || k.endsWith(`${e.key.split("-")[0]}-response-ledger.json`))
+            .reduce((n, k) => n + (convert.outputs.get(k)?.length ?? 0), 0)
+        );
+      }
+      case "run-report":
+        return convert.outputs.get(`correspondence/${e.key}/01-claim-ledger.json`)?.length ?? 0;
+      case "timeline":
+      case "card-facts":
+        return body("index.json") + body("versions.json");
+      case "figure-image":
+        return 0; // the card references the PNG by route URI — it carries no bytes
       case "version-diff": {
         const [n, m] = e.key.split(":").map(Number);
         const before = n === 4 ? "published.md" : `drafts/v${n}.md`;
@@ -368,6 +401,9 @@ describe("the size bound (AC3)", () => {
     const spa = join(ROOT, "apps/web/src");
     for (const p of walk(spa)) {
       if (!/\.(ts|tsx)$/.test(p)) continue;
+      // test files never enter client bundles — the dossier-snapshot test reads the committed
+      // snapshots by path (218a's colocated DossierViewData check); shipped code still may not.
+      if (/\.test\.(ts|tsx)$/.test(p)) continue;
       const src = readFileSync(p, "utf8");
       expect(src, p).not.toMatch(/demo-corpus|fixtures\/synthetic|snapshots\//);
     }
@@ -384,7 +420,7 @@ describe("labels + copy (AC5)", () => {
       for (const [k, v] of Object.entries(demo?.roles ?? {})) entries.push([`roles.${k}`, v]);
       if (demo?.fragmentsNote) entries.push(["fragmentsNote", demo.fragmentsNote]);
       for (const f of (e.dto as EditorDocDto).findings ?? [])
-        entries.push([`finding ${f.findingId}`, f.sourceLabel]);
+        if (typeof f.sourceLabel === "string") entries.push([`finding ${f.findingId}`, f.sourceLabel]);
       if ((e.dto as VersionRailDto).drafts)
         for (const d of (e.dto as VersionRailDto).drafts)
           if (d.label) entries.push([`draft ${d.draftId} label`, d.label]);
@@ -433,6 +469,7 @@ describe("the project row + drift (AC1/AC6)", () => {
       convert,
       exportDate: manifest.exportDate,
       provenance,
+      facts,
     });
     for (const [rel, bytes] of outputs) expect(again.outputs.get(rel)).toBe(bytes);
   });

@@ -109,6 +109,7 @@ export function editorDoc(
     ...(ctx.markers?.notPublishedRefs !== undefined
       ? { notPublishedRefs: ctx.markers.notPublishedRefs }
       : {}),
+    ...(ctx.markers?.assetRefs !== undefined ? { assetRefs: ctx.markers.assetRefs } : {}),
   };
   return {
     draftId: v.draftId,

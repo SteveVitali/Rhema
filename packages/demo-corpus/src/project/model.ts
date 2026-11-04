@@ -12,6 +12,11 @@ import type {
   FilesDto,
   WhatChangedDto,
   ProjectRow,
+  DemoDossierDto,
+  DemoRunReportDto,
+  DemoTimelineDto,
+  DemoCardFactsDto,
+  FigureImageCardDto,
 } from "@rhema/api-client";
 
 /** The document-side snapshot kinds this ticket emits (218a registers its own). */
@@ -26,6 +31,16 @@ export const SNAPSHOT_KINDS = [
 ] as const;
 export type SnapshotKind = (typeof SNAPSHOT_KINDS)[number];
 
+/** The run/record-side kinds 218a_R7DEM.3b emits (registered through the same seam). */
+export const RUN_SNAPSHOT_KINDS = [
+  "dossier",
+  "run-report",
+  "timeline",
+  "card-facts",
+  "figure-image",
+] as const;
+export type RunSnapshotKind = (typeof RUN_SNAPSHOT_KINDS)[number];
+
 /** The DTO each kind carries — the compile-time half of the contract harness. */
 export interface KindDtoMap {
   readonly "projects": readonly ProjectRow[];
@@ -35,6 +50,11 @@ export interface KindDtoMap {
   readonly "what-changed": WhatChangedDto;
   readonly "files": FilesDto;
   readonly "artifact-page": EditorDocDto;
+  readonly "dossier": DemoDossierDto;
+  readonly "run-report": DemoRunReportDto;
+  readonly "timeline": DemoTimelineDto;
+  readonly "card-facts": DemoCardFactsDto;
+  readonly "figure-image": FigureImageCardDto;
 }
 
 export interface SnapshotFile<K extends string = string> {
@@ -64,7 +84,7 @@ export interface EssayIndex {
 /** Declared envelope bytes per kind — the AC3 size bound: a snapshot file may not exceed the
  *  bytes of the one artifact it carries plus this envelope (the envelope covers the
  *  `SnapshotFile` wrapper + DTO meta; the carried-artifact definition is the test's `CARRIED`). */
-export const ENVELOPE_BYTES: Readonly<Record<SnapshotKind, number>> = {
+export const ENVELOPE_BYTES: Readonly<Record<SnapshotKind | RunSnapshotKind, number>> = {
   "projects": 4096,
   "editor-doc": 96 * 1024, // blockIdMap + the findings rail + meters/markers on top of markdown
   "versions": 16 * 1024,
@@ -72,4 +92,9 @@ export const ENVELOPE_BYTES: Readonly<Record<SnapshotKind, number>> = {
   "what-changed": 16 * 1024,
   "files": 256 * 1024, // one FileRowDto per corpus artifact (~300 B each)
   "artifact-page": 8 * 1024,
+  "dossier": 16 * 1024, // letter sections + findings/claims/rubric sidecars on top of the letter
+  "run-report": 8 * 1024,
+  "timeline": 16 * 1024,
+  "card-facts": 8 * 1024,
+  "figure-image": 4 * 1024,
 };

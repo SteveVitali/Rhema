@@ -107,3 +107,12 @@ byte-pinned by the drift leg of `src/project/project.test.ts`; regenerate with
 command 218a extends and 219 reuses). `snapshots/_rules/line-allowlist.json` covers the
 published-mirror line embedded verbatim (source row `la-published-mirror`); positions are
 regenerated-file positions — a moved hit or stale entry fails `check:demo-corpus` by design.
+
+**218a_R7DEM.3b (added 2026-11-04):** additive only — `snapshots/<slug>/` gained the run/record
+side: `dossier/<round>.json` + `run-report/<round>.json` per reviewed round, `timeline.json`,
+`card-facts.json`, and `figures/<figure>.json` per index.json image artifact (the S-7 imported
+`specKind:"image"` variant). `dossier`/`run-report` carry the replayed-run DTO variant (S-9:
+phases inferred iff the artifact exists; approvals only verbatim from `_rules/facts.json`
+`approvals`, else `"not_recorded"`; no numeric time/credits/model is ever serialized). Draft
+editor docs gained `demo.assetRefs` (inline `figures/` links → the REQ-DWEB-17 route shape).
+Same regen commands as 218; the drift legs pin bytes.

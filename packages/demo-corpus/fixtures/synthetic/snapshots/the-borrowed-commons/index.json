@@ -30,14 +30,32 @@
    "correspondence/v2-review/editors-letter.md": "artifacts/correspondence/v2-review/editors-letter.md.json",
    "drafts/taxonomy_reference_sheet.md": "artifacts/drafts/taxonomy_reference_sheet.md.json"
   },
+  "card-facts": {
+   "": "card-facts.json"
+  },
+  "dossier": {
+   "v1-review": "dossier/v1-review.json",
+   "v2-review": "dossier/v2-review.json"
+  },
   "editor-doc": {
    "published": "drafts/published.json",
    "v1": "drafts/v1.json",
    "v2": "drafts/v2.json",
    "v3": "drafts/v3.json"
   },
+  "figure-image": {
+   "figure_1_signal_map": "figures/figure_1_signal_map.json",
+   "figure_2_load_curve": "figures/figure_2_load_curve.json"
+  },
   "files": {
    "": "files.json"
+  },
+  "run-report": {
+   "v1-review": "run-report/v1-review.json",
+   "v2-review": "run-report/v2-review.json"
+  },
+  "timeline": {
+   "": "timeline.json"
   },
   "version-diff": {
    "1:2": "diffs/1-2.json",

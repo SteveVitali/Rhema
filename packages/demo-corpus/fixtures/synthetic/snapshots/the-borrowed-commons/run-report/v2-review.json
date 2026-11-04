@@ -1,0 +1,58 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ]
+  },
+  "kind": "ok",
+  "projectSlug": "the-borrowed-commons",
+  "report": {
+   "approvals": [
+    {
+     "decision": "approved to publish",
+     "round": "v2 review"
+    }
+   ],
+   "claims": {
+    "checked": 2,
+    "verified": 1
+   },
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "usage"
+   ],
+   "phases": [
+    {
+     "key": "verification",
+     "ordinal": 1,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    },
+    {
+     "key": "letter",
+     "ordinal": 2,
+     "seat": null,
+     "source": "inferred_from_delivered_files",
+     "status": "done"
+    }
+   ],
+   "replayed": true,
+   "runId": "v2-review",
+   "state": "completed",
+   "workflow": "review"
+  }
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v2-review",
+ "kind": "run-report"
+}

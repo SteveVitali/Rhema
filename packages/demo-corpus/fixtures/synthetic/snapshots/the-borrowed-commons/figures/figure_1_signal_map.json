@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "alt": "figure_1_signal_map",
+  "assetUri": "/bff/demo/asset/the-borrowed-commons/drafts/figures/figure_1_signal_map.png",
+  "caption": "",
+  "demo": {
+   "notRecorded": [
+    "spec",
+    "svg",
+    "run_provenance",
+    "caption",
+    "source_line"
+   ]
+  },
+  "id": "figure_1_signal_map",
+  "provenance": "imported",
+  "sourceLine": "",
+  "specKind": "image",
+  "title": "figure_1_signal_map",
+  "versions": [
+   {
+    "label": "imported",
+    "n": 1
+   }
+  ]
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "figure_1_signal_map",
+ "kind": "figure-image"
+}

@@ -1,0 +1,283 @@
+{
+ "dto": {
+  "addressedObligations": 1,
+  "claims": [
+   {
+    "accessedAt": "2026-08-20T00:00:00Z",
+    "anchor": {
+     "blockId": "b13",
+     "confidence": 1,
+     "endOffset": 242,
+     "quote": "The parish was funded; the roster was unwritten; the seal failed.",
+     "startOffset": 177
+    },
+    "correspondenceId": "correspondence/v2-review",
+    "draftId": "v2",
+    "humanAdded": false,
+    "id": "II6",
+    "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+    "ordinal": 0,
+    "sources": [
+     {
+      "accessedAt": "2026-08-20T00:00:00Z",
+      "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+      "stance": "supports",
+      "url": "https://records.example.org/averly/accounts-2001"
+     }
+    ],
+    "text": "\"The parish was funded; the roster was unwritten; the seal failed.\"",
+    "tier": 1,
+    "url": "https://records.example.org/averly/accounts-2001",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-08-20T00:00:00Z",
+    "anchor": {
+     "blockId": "b16",
+     "confidence": 1,
+     "endOffset": 191,
+     "quote": "the grammar fails at the smallest unit first",
+     "startOffset": 147
+    },
+    "correspondenceId": "correspondence/v2-review",
+    "draftId": "v2",
+    "humanAdded": false,
+    "id": "VII3-scope",
+    "normalizedUrl": "https://records.example.org/county/board-comparison",
+    "ordinal": 1,
+    "sources": [
+     {
+      "accessedAt": "2026-08-20T00:00:00Z",
+      "normalizedUrl": "https://records.example.org/county/board-comparison",
+      "stance": "contextualizes",
+      "url": "https://records.example.org/county/board-comparison"
+     }
+    ],
+    "text": "\"the grammar fails at the smallest unit first\"",
+    "tier": 2,
+    "url": "https://records.example.org/county/board-comparison",
+    "verdict": "misleading_in_context"
+   }
+  ],
+  "demo": {
+   "importRule": {
+    "claims[].accessedAt": "assigned by import rule",
+    "claims[].sources[].accessedAt": "assigned by import rule",
+    "claims[].sources[].stance": "assigned by import rule",
+    "findings[].evidence.urls[].accessed": "assigned by import rule",
+    "findings[].kind": "assigned by import rule",
+    "findings[].origin": "assigned by import rule",
+    "findings[].reconciliation": "assigned by import rule",
+    "findings[].severity": "assigned by import rule"
+   },
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "rigor",
+    "fetch_log",
+    "access_report"
+   ],
+   "roles": {
+    "drafting": "the drafting agent",
+    "editor": "the editor (agent)",
+    "revising": "the revising agent",
+    "writer": "the writer"
+   }
+  },
+  "fetchLog": [],
+  "findingObligations": {
+   "The one thing": "addressed"
+  },
+  "findings": [
+   {
+    "anchor": null,
+    "body": "the scope sentence promises more than the record shows — limit it to water\nboards and the piece is done.",
+    "correspondenceId": "correspondence/v2-review",
+    "draftId": "v2",
+    "id": "The one thing",
+    "kind": "argument",
+    "letterSection": "one_thing",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "major",
+    "title": "The one thing"
+   }
+  ],
+  "letterSections": [
+   {
+    "id": "scorecard",
+    "paragraphs": [
+     "| Dimension | Score | Basis |\n|---|---|---|\n| Thesis & contribution | 5 | hinge now earned |\n| Rigor & reasoning | 4 | one scope flag |\n| Evidence & accuracy | 4 | ledger clean |\n| Originality | 4 | — |\n| Structure | 4 | — |\n| Prose & style | 4 | — |\n| Voice & audience fit | 4 | — |\n| Intellectual honesty | 4 | — |"
+    ],
+    "title": "Scorecard"
+   }
+  ],
+  "letterTitle": "The Borrowed Commons: a Grammar of Shared Decay",
+  "openObligations": 0,
+  "priorRubric": [
+   {
+    "dimension": "thesis_contribution",
+    "score": 4
+   },
+   {
+    "dimension": "argument_rigor",
+    "score": 3
+   },
+   {
+    "cap": {
+     "at": 3,
+     "reason": "two ledger flags cap it (Minor 1–2)"
+    },
+    "dimension": "evidence_accuracy",
+    "score": 3
+   },
+   {
+    "dimension": "originality_situatedness",
+    "score": 4
+   },
+   {
+    "dimension": "structure",
+    "score": 3
+   },
+   {
+    "dimension": "prose",
+    "score": 4
+   },
+   {
+    "dimension": "voice_audience_fit",
+    "score": 4
+   },
+   {
+    "dimension": "intellectual_honesty",
+    "score": 4
+   }
+  ],
+  "projectTitle": "The Borrowed Commons: a Grammar of Shared Decay",
+  "replayed": true,
+  "reviewedDraftId": "v2",
+  "rubric": [
+   {
+    "dimension": "thesis_contribution",
+    "score": 5
+   },
+   {
+    "dimension": "argument_rigor",
+    "score": 4
+   },
+   {
+    "dimension": "evidence_accuracy",
+    "score": 4
+   },
+   {
+    "dimension": "originality_situatedness",
+    "score": 4
+   },
+   {
+    "dimension": "structure",
+    "score": 4
+   },
+   {
+    "dimension": "prose",
+    "score": 4
+   },
+   {
+    "dimension": "voice_audience_fit",
+    "score": 4
+   },
+   {
+    "dimension": "intellectual_honesty",
+    "score": 4
+   }
+  ],
+  "runId": "v2-review",
+  "runSummary": {
+   "card": {
+    "actions": [
+     "open_deliverable",
+     "report"
+    ],
+    "approvals": [
+     {
+      "decision": "approved to publish",
+      "round": "v2 review"
+     }
+    ],
+    "artifacts": [
+     "correspondence/v2-review/01-claim-ledger.md",
+     "correspondence/v2-review/editors-letter.md"
+    ],
+    "decisions": [],
+    "deliverables": [
+     {
+      "key": "letter"
+     },
+     {
+      "count": 1,
+      "key": "findings"
+     },
+     {
+      "count": 2,
+      "key": "claims"
+     },
+     {
+      "key": "claim_ledger"
+     }
+    ],
+    "delivered": {
+     "counts": {
+      "claims": 2,
+      "findings": 1,
+      "strengths": 0
+     },
+     "links": [
+      "dossier",
+      "letter",
+      "ledger"
+     ],
+     "verdict": null
+    },
+    "deliveryLabel": null,
+    "done": 2,
+    "failureCode": null,
+    "notRecorded": [
+     "time",
+     "credits",
+     "model",
+     "estimate"
+    ],
+    "phases": [
+     {
+      "key": "verification",
+      "ordinal": 1,
+      "status": "done"
+     },
+     {
+      "key": "letter",
+      "ordinal": 2,
+      "status": "done"
+     }
+    ],
+    "phaseSource": "inferred_from_delivered_files",
+    "recordSource": "agent-discourse",
+    "replayed": true,
+    "runId": "v2-review",
+    "running": 0,
+    "state": "completed",
+    "total": 2
+   },
+   "createdAt": null,
+   "runId": "v2-review",
+   "state": "completed",
+   "workflow": "review"
+  },
+  "slug": "the-borrowed-commons",
+  "versionLabel": "Review of v2"
+ },
+ "essay": "the-borrowed-commons",
+ "format": 1,
+ "key": "v2-review",
+ "kind": "dossier"
+}
