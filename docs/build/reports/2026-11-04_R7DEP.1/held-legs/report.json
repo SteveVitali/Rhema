@@ -1,0 +1,89 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "f1f651c5647b",
+  "startedAt": "2026-11-04T21:06:24.967Z",
+  "finishedAt": "2026-11-04T21:07:04.559Z",
+  "webBaseUrl": "https://rhema-pr-259-web-4043971-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-259-api-e2d977b-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "4f66cebc39bf7f1d0b996cadf860a68f355df914",
+    "observed": {
+      "web": "4f66cebc39bf7f1d0b996cadf860a68f355df914",
+      "api": "4f66cebc39bf7f1d0b996cadf860a68f355df914"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 752,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2201,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1138,
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "U3.stopgap",
+      "journey": "returning",
+      "owner": "R7FIX.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2777,
+      "error": "Desk tab chat @1440×900: occluded at its center point by <span class=\"\">",
+      "screenshot": "U3.stopgap.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 32252,
+      "error": "settleClientNav lapsed on https://rhema-pr-259-web-4043971-tkbl73n3tq-uc.a.run.app/p/showcase/review/01M6M5V2RR3YFQYN6D5QV8HA1A: data-nav-count never exceeded 0 (observed 0) — the action did not commit an in-document transition (a document nav lands a fresh \"0\", so a mechanism flip fails here, never silently passes)",
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": true
+}

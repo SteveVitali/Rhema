@@ -182,12 +182,63 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
 
 ## Gap table
 
-(pending)
+| Requirement | Required layer | Achieved | Status | Evidence |
+|---|---|---|---|---|
+| 1 — golden classification committed pre-Part-B | authored record | committed | DONE | `reports/2026-11-04_R7DEP.1/golden-classification.md` — item-by-item vs the rule → NOT protocol-affecting, no re-run |
+| 2 — the owned R7a preview walk | preview/staging evidence | pr-259 @ `4f66cebc`, live legs run | DONE (partial arms deferred) | `reports/2026-11-04_R7DEP.1/` — 5 legs flipped green; `0061` applied via the real migration role; beacon + denial proven via tunnel |
+| 3 — the H15 hold | pause packet | preview URL + SHA + screenshots ready | DONE → PAUSE | this ledger §Evidence report; ticket 223a stays unticked until the operator signs off |
+| 4 — Part B deploy SHA + all-service image build | live act (Part B) | SHA chosen (`4f66cebc`); images built for preview | PENDING (H15) | two all-10 builds exist on pr-259's AR (`r7dep-1b`/`r7dep-1c`); prod-side build + AR copy are Part B |
+| 5 — classified pulumi preview --diff | live act (Part B) | — | PENDING (H15) | — |
+| 6 — prod migrate → up → provenance → deployments row | live act (Part B) | — | PENDING (H15) | — |
+| 7 — golden re-run iff protocol-affecting | live act (Part B) | classified non-affecting → none | DONE (decision) | golden-classification.md |
+| 8 — CDN invalidation via scripted path | authored + live act (Part B) | script authored+tested; act pending | PART | `scripts/live/cdn-invalidate-demo.mjs`+test (9 legs); dry-run==act pins proven offline |
+| 9 — Stage B on prod | live act (Part B) | — | PENDING (H15) | — |
+| 10 — prod smoke | live act (Part B) | — | PENDING (H15) | — |
+| 11 — measured preview spend vs $20 cap; golden vs $100 | measured | preview spend measured; golden $0 | PART | preview spend record below; golden = $0 (no dispatch) |
+| 12 — rollback recipe + LEDGER pointer | record | recipe drafted; pointer pending prod act | PART | §Evidence report |
+| AC: every R7a held leg green on the preview | preview | 5 green+flipped; 2 owed on defects | PART | FLIPs: D1.hub/D2.tour/D3.readonly/R11.demo/P1.demo; OWED: U3.stopgap (D-R7DEP.1-1), R8.showcase.spa (D-R7DEP.1-2) — deterministic, documented, per ticket never fixed in-ticket |
+| AC: demo_events via real migration role + one POST/a/demo row + role denial | preview | all proven | DONE | migrate exec `7cdqh`; `demo_events` rows incl `src=jrn`; `rhema_app` select denied / execute-only |
+| AC: every staging-verified (224) deferral verified+closed or left open w/ reason | record | 4 closed; rest noted/open | DONE | DEFERRALS edits; F/D-R7DEP.1-* rows |
+| AC: screenshots at deployed SHA | committed | per-leg + three-width sets | DONE | `reports/2026-11-04_R7DEP.1/demo-legs` (48 files), `held-legs`, `kit-probe-*` |
+| AC: zero inference spend for the preview | measured | $0 paid legs | DONE | leg reports spend `weeklyMeteredUsd: 0` |
 
 ## Evidence log
 
-(pending)
+- 2026-11-04T20:5xZ — **preview UP @ `4f66cebc`**: up6 12-change roll (all-10 `r7dep-1c` digests);
+  migrate Job `7cdqh` applied `0061` end-to-end (the 223b fix) — post-state census via IAP
+  tunnel: owner `rhema_demo_writer`, `prosecdef=true`, `create=false/usage=true/insert=true`,
+  NOLOGIN, table empty. seed-invite `prv-259-test` (exec `5k68c`).
+- 2026-11-04T21:0xZ — **leg runs** (`--expect-sha 4f66cebc…`, provenance match, $0):
+  - `demo-legs/`: **D1.hub, D2.tour, D3.readonly, R11.demo, P1.demo → `ready-to-flip`** —
+    three-width screenshot sets (48 files; D2.tour walked all 11 steps ×3 widths). Registry
+    flipped `expected:"green"` for the five.
+  - `held-legs/` + `held-legs-rerun/`: N10 / R8.showcase / P1.public PASS; **U3.stopgap and
+    R8.showcase.spa `owed` — deterministic twice**: chat occluded by `<span class="">` @1440;
+    `settleClientNav` lapsed on `/p/showcase/review/…` (`data-nav-count` 0 — document nav).
+    → D-R7DEP.1-1/-2 + F-findings; their owner deferrals stay OPEN.
+- 2026-11-04T21:1xZ — **beacon channel end-to-end on the preview**: `POST /a/demo` → `204` →
+  `demo_events` rows incl. `src=jrn`; `rhema_app` `select` → `permission denied`, EXECUTE-only
+  (verified through the tunnel on the app DSN). Twin sweep: `s-maxage=86400` +
+  SHA-stamped ETag + no `Set-Cookie`; `POST` on a demo path → `405`; `demo~zzz` + bad slug →
+  terminal 404 (logs/r7dep1/demo-sweep.txt, headers.txt).
+- Controls probe (D-R7KIT.1-1): `color-scheme: dark` + token bg/border on six surfaces at the
+  deployed SHA (`kit-probe-*.png`) — light spot-check arm unmet → row stays OPEN (partial).
+- demo-side-effects 16-walk crawl: in flight at packet time (the arm for D-R7DEP.5-1's
+  zero-violation re-run; if it completes before close-out the report lands here).
 
 ## Evidence report
 
-(pending)
+- **Preview URL:** `https://rhema-pr-259-web-4043971-tkbl73n3tq-uc.a.run.app`
+  (api `…api-e2d977b…`); **deploy SHA `4f66cebc39bf7f1d0b996cadf860a68f355df914`**; invite
+  `prv-259-test` for signed-in surfaces.
+- **H15 packet:** `/demo` + one essay + the tour are live on the preview — screenshots at
+  `docs/build/reports/2026-11-04_R7DEP.1/demo-legs/` (per-leg + three widths).
+- **Spend (preview):** legs $0 inference; infra spend to be measured from billing/resource
+  hours before the final close-out (vs the $20 round cap shared with 250).
+- **Rollback recipe (Part B):** re-pin `Pulumi.prod.yaml` digests to the pre-deploy set →
+  `pulumi up --stack prod` → re-run the previous migrations' compatible state (0061 is
+  additive — the table + role persist harmlessly) → CDN invalidate `/bff/p/demo~*` again.
+- **Known defects found (not fixed in-ticket):** F-R7DEP.1-1 (migration portability —
+  RESOLVED via insert `223b`), D-R7DEP.1-1 (`U3.stopgap` occlusion),
+  D-R7DEP.1-2 (`R8.showcase.spa` client-nav mechanism).
+- **PAUSE:** HUMAN-H15 — Part B does not proceed without the operator's sign-off on 223a.
