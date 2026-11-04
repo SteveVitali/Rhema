@@ -25,3 +25,9 @@ Prepared under the the S. J. Sebastian corpus corpus conventions by the revising
 ## Invariants
 
 Nothing in the letter's strengths list was weakened by the moves.
+
+## Discharge evidence
+
+- **F1:** "is this a funding story wearing a grammar's clothes"
+- **F2:** "The pump has no edge"
+- **F5:** "eleven times in two years"

@@ -2,7 +2,7 @@
   "exportDate": "2026-11-03",
   "files": {
     "PROVENANCE.md": {
-      "sha256": "1fe152735f5bf5ae7e50c726f5c0cfabe9f1c612d769bfa443341c14e3c34090",
+      "sha256": "aeda726e19681d1df463389e301adc974e16b4f3fb649168ca79ae124ee6d0d0",
       "bytes": 4615
     },
     "_rules/facts.json": {
@@ -42,8 +42,8 @@
       "bytes": 238
     },
     "the-borrowed-commons/agents/author/ledgers/v1-response-ledger.md": {
-      "sha256": "0f8ebad21019c9333e0eb40b9b65fed5765350589647b5068efd3ffadfeb0cc5",
-      "bytes": 1462
+      "sha256": "3a5a71eb3e81885cc335062fbf0a667e0141843de144274b22871c6bcd735504",
+      "bytes": 1621
     },
     "the-borrowed-commons/agents/author/ledgers/v2-response-ledger.md": {
       "sha256": "1cbc03dccab0fa75572998683ec9f20767d2ac2c92edfbeff63a8675587817af",
@@ -154,7 +154,7 @@
       "bytes": 367
     },
     "the-borrowed-commons/index.json": {
-      "sha256": "a354f4784d69cf352a192bf4dc6cb52eef2d3ba082b800c5f5f938a3f1a4eee0",
+      "sha256": "7252b0156f013d1c2b7a39235649f912b8f12e227fd9f134ef9a307d5d2ad54b",
       "bytes": 6825
     },
     "the-borrowed-commons/published.md": {
@@ -166,5 +166,5 @@
       "bytes": 1295
     }
   },
-  "digest": "5747d7e7d285a1d33f6e6c59a74ada0f4592676c9b73134825715bad751211ac"
+  "digest": "ba7531abd20dfae3b169578630ec582320623700512c82cc8214243fa56b663d"
 }

@@ -1,0 +1,90 @@
+{
+ "rows": [
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 1,
+   "id": "F1",
+   "moveOrdinal": 1,
+   "note": "New §IV argues the funded-but-unwritten case.",
+   "source": "L Major 1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 2,
+   "id": "F2",
+   "moveOrdinal": 3,
+   "note": "The figure's missing edge now carries the mechanism.",
+   "source": "L Major 2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": 1,
+   "id": "F3",
+   "moveOrdinal": 1,
+   "note": "Counterfactual argued, not gestured.",
+   "source": "SR 1",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut with evidence",
+   "entry": true,
+   "findingOrdinal": 8,
+   "id": "F4",
+   "note": "The warden row is ceremonial; named in the fix.",
+   "source": "L Minor 1",
+   "status": "done"
+  },
+  {
+   "disposition": "decline",
+   "entry": true,
+   "findingOrdinal": 9,
+   "id": "F5",
+   "moveOrdinal": 2,
+   "note": "Reversible if the editor disagrees; count kept, quote dropped.",
+   "source": "L Minor 2",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate",
+   "entry": true,
+   "findingOrdinal": 13,
+   "id": "F6",
+   "note": "County board record quotability — awaiting the writer.",
+   "source": "OQ 1",
+   "status": "escalated"
+  },
+  {
+   "disposition": "§3.B accept; the volume point **rebut**",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F7",
+   "note": "Mixed cell: clause fixed, volume point rebutted.",
+   "source": "CL C7b",
+   "status": "done"
+  },
+  {
+   "disposition": "operational",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F8",
+   "note": "Process row; no letter finding.",
+   "source": "DR §2",
+   "status": "open"
+  },
+  {
+   "disposition": "(causes are F1, F3)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F9",
+   "note": "Mapping only.",
+   "source": "self",
+   "status": "done"
+  }
+ ],
+ "version": 1
+}

@@ -1,0 +1,188 @@
+{
+ "from": "v1",
+ "hunks": [
+  {
+   "after": [
+    {
+     "blockId": "b2",
+     "text": "Shared infrastructure fails quietly, then all at once — and the failure is recorded before it is visible."
+    },
+    {
+     "blockId": "b3",
+     "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material, and that the record shows the failure before the field does."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b2",
+     "text": "Shared infrastructure fails quietly, then all at once."
+    },
+    {
+     "blockId": "b3",
+     "text": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The argument of this essay is that the failure of shared infrastructure is grammatical before it is material. We misread the commons because the sentence we reach for — \"someone should fix this\" — has no subject the record can name."
+    }
+   ],
+   "charsChanged": 951,
+   "id": "h1",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b8",
+     "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost."
+    },
+    {
+     "blockId": "b9",
+     "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times in two years."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b8",
+     "text": "What fails first is never the iron. It is the *roster*: the shared understanding of whose week it is. The roster is cheap to keep and expensive to rebuild, because rebuilding it requires admitting it was lost. A council that cannot say who maintains the pump cannot say why the seal went unmended for six months, and so it says the weather was unusual."
+    },
+    {
+     "blockId": "b9",
+     "text": "This is the first grammatical failure: the passive replaces the roster. \"Maintenance was performed\" is the municipal equivalent of a shrug, and it is the phrase the Averly minutes use eleven times."
+    }
+   ],
+   "charsChanged": 968,
+   "id": "h2",
+   "kind": "mixed",
+   "moveId": null
+  },
+  {
+   "after": [
+    {
+     "blockId": "b11",
+     "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge."
+    },
+    {
+     "blockId": "b12",
+     "text": "## Why the roster, and not the budget"
+    },
+    {
+     "blockId": "b13",
+     "text": "The review round asked the question directly: is this a funding story wearing a grammar's clothes? The answer the record gives is that the two travel together until they don't. The parish was funded; the roster was unwritten; the seal failed. Funding is a stock that can be restored in a meeting. A roster is a habit, and habits are not restored by resolution."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b11",
+     "text": "The figure shows every parish asset as a node and every named maintainer as an edge. The pump has no edge. The map was drawn from the council's own inventory, which the outline for this essay (`agents/author/outline/01-outline.md`) treats as the spine of the argument."
+    }
+   ],
+   "charsChanged": 771,
+   "id": "h3",
+   "kind": "mixed",
+   "moveId": "M3"
+  },
+  {
+   "after": [
+    {
+     "blockId": "b16",
+     "text": "The second is that the problem is scale: a pump is small, a network is large. The county water board's own minutes suggest the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b14",
+     "text": "The second is that the problem is scale: a pump is small, a network is large. The record of the county water board, described in the round log (`manifest.md`), suggests the opposite ordering — the grammar fails at the smallest unit first, because small units have the least redundant supervision."
+    }
+   ],
+   "charsChanged": 546,
+   "id": "h4",
+   "kind": "edited",
+   "moveId": null
+  }
+ ],
+ "moves": [
+  {
+   "entries": [
+    {
+     "findingOrdinal": 1,
+     "kind": "accept",
+     "status": "done"
+    }
+   ],
+   "hunks": [
+    "h3"
+   ],
+   "moveId": "M1",
+   "ordinal": 1,
+   "title": "New §IV \"Why the roster, and not the budget\"",
+   "type": "insert"
+  },
+  {
+   "entries": [
+    {
+     "findingOrdinal": 2,
+     "kind": "adapt",
+     "status": "done"
+    }
+   ],
+   "hunks": [
+    "h3"
+   ],
+   "moveId": "M3",
+   "ordinal": 3,
+   "title": "Let the figure's missing edge carry §II",
+   "type": "reorder"
+  }
+ ],
+ "rebutted": [
+  {
+   "findingOrdinal": 8,
+   "rationale": "rebut with evidence"
+  },
+  {
+   "findingOrdinal": 9,
+   "rationale": "decline"
+  }
+ ],
+ "summary": {
+  "addressed": 2,
+  "hunks": 4,
+  "linkedHunks": 1,
+  "moves": 2,
+  "rebutted": 2,
+  "stillOpen": 1,
+  "unchanged": 10,
+  "unlinkedHunks": 3
+ },
+ "to": "v2",
+ "trace": [
+  {
+   "charsChanged": 771,
+   "hunkCount": 1,
+   "moveId": "M1"
+  },
+  {
+   "charsChanged": 771,
+   "hunkCount": 1,
+   "moveId": "M3"
+  },
+  {
+   "charsChanged": 2465,
+   "hunkCount": 3
+  }
+ ],
+ "unlinked": {
+  "entries": [
+   {
+    "findingOrdinal": 13,
+    "kind": "escalate",
+    "rationale": "escalate",
+    "status": "escalated"
+   }
+  ],
+  "hunks": [
+   "h1",
+   "h2",
+   "h4"
+  ]
+ },
+ "version": 1
+}

@@ -1,0 +1,33 @@
+{
+ "entries": [
+  {
+   "disposition": {
+    "kind": "accept",
+    "status": "done"
+   },
+   "findingOrdinal": 0
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "done",
+   "title": "Scope \"smallest unit first\" to water boards",
+   "type": "edit"
+  },
+  {
+   "ordinal": 2,
+   "status": "done",
+   "title": "§V closing cadence tightened",
+   "type": "edit"
+  },
+  {
+   "ordinal": 3,
+   "status": "done",
+   "title": "roster table retitled",
+   "type": "structure"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

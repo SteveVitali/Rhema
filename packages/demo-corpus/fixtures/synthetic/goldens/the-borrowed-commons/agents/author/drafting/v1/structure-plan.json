@@ -1,0 +1,37 @@
+{
+ "sections": [
+  {
+   "purpose": "establish",
+   "ref": "I",
+   "targetWords": 400,
+   "title": "A pump, a bridge, a ledger"
+  },
+  {
+   "purpose": "name the mechanism",
+   "ref": "II",
+   "targetWords": 350,
+   "title": "The shape of the failure"
+  },
+  {
+   "purpose": "steelman",
+   "ref": "III",
+   "targetWords": 250,
+   "title": "Two objections"
+  },
+  {
+   "purpose": "the hinge",
+   "ref": "IV",
+   "targetWords": 250,
+   "title": "What would have to be true"
+  }
+ ],
+ "sidecar": "structure_plan",
+ "spine": [
+  "The commons is an agreement, not a meadow.",
+  "The Averly pump: the ledger with no subject.",
+  "The footbridge: three hands, one ironwork.",
+  "The roster fails before the seal.",
+  "The grammar precedes the budget."
+ ],
+ "version": 1
+}

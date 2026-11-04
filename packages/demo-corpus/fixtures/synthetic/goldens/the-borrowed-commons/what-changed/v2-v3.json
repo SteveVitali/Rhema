@@ -1,0 +1,55 @@
+{
+ "from": "v2",
+ "hunks": [
+  {
+   "after": [
+    {
+     "blockId": "b1",
+     "text": "# The Borrowed Commons: a Grammar of Shared Decay"
+    }
+   ],
+   "before": [
+    {
+     "blockId": "b1",
+     "text": "# The Borrowed Commons"
+    }
+   ],
+   "charsChanged": 71,
+   "id": "h1",
+   "kind": "edited",
+   "moveId": null
+  }
+ ],
+ "moves": [],
+ "rebutted": [],
+ "summary": {
+  "addressed": 1,
+  "hunks": 1,
+  "linkedHunks": 0,
+  "moves": 0,
+  "rebutted": 0,
+  "stillOpen": 0,
+  "unchanged": 17,
+  "unlinkedHunks": 1
+ },
+ "to": "v3",
+ "trace": [
+  {
+   "charsChanged": 71,
+   "hunkCount": 1
+  }
+ ],
+ "unlinked": {
+  "entries": [
+   {
+    "findingOrdinal": 0,
+    "kind": "accept",
+    "status": "done"
+   }
+  ],
+  "hunks": [
+   "h1"
+  ]
+ },
+ "version": 1
+}

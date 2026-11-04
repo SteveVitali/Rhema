@@ -8,10 +8,15 @@
 // convention for 219's real-corpus authoring — the synthetic fixture reconciles without overrides,
 // so the mechanism is exercised by synthesized rows in tests.
 
-import { CLAIM_VERDICTS, type ClaimVerdict } from "@rhema/contracts";
+import { CLAIM_VERDICTS, DISPOSITION_KINDS, type ClaimVerdict, type DispositionKind } from "@rhema/contracts";
 
 /** Row kinds implemented by the converter so far (217 extends this union additively). */
-export type OverrideKind = "verdict-rescore" | "reconciliation";
+export type OverrideKind =
+  | "verdict-rescore"
+  | "reconciliation"
+  | "minor-finding"
+  | "disposition"
+  | "move-link";
 
 /** A summary-level verdict re-score: the heading parse says X, the ledger's own summary re-scored
  *  it to Y (R2 §1 "Summary overrides a heading"). `claim` is the SOURCE id (the labels.json id —
@@ -47,14 +52,73 @@ export interface ReconciliationOverride {
   readonly note?: string;
 }
 
-export type ConvertOverride = VerdictRescoreOverride | ReconciliationOverride;
+/** A minor-row → finding map (217; REQ-CONV-6 extension): a response-ledger row whose `Source`
+ *  cell names a letter minor but whose finding no positional/rule resolution can reach (GM v2's
+ *  merged "Minor issues, line notes, and the claim ledger" table is the real-corpus case).
+ *  `row` is the ledger row id (`G1`); `finding` is the finding's corpus id or alias in
+ *  `labels.json` (`Minor 2`, `The one thing`) — never the emitted ordinal. */
+export interface MinorFindingOverride {
+  readonly kind: "minor-finding";
+  /** The response-ledger row id this mapping is for. */
+  readonly row: string;
+  /** The labels.json finding id (or alias) the row answers. */
+  readonly finding: string;
+  /** The line that justifies the row — `<file>:<line>` (each row cites its source line). */
+  readonly cite: string;
+  /** Optional verbatim note kept for the record. */
+  readonly note?: string;
+}
+
+/** A mixed/unspecified disposition cell resolution (217; REQ-CONV-6 extension): a cell like
+ *  `§3.B accept; the volume point **rebut**` carries more than one disposition keyword, so no
+ *  first-keyword rule may pick — only an explicit, cited ruling decides the canonical kind. */
+export interface DispositionOverride {
+  readonly kind: "disposition";
+  /** The response-ledger row id this ruling is for. */
+  readonly row: string;
+  /** The canonical disposition kind the cell resolves to. */
+  readonly disposition: DispositionKind;
+  /** The line that justifies the row — `<file>:<line>` (each row cites its source line). */
+  readonly cite: string;
+  /** Optional verbatim note kept for the record. */
+  readonly note?: string;
+}
+
+/** An explicit row → move linkage (217; REQ-CONV-6/15). Sanctioned ONLY where a source table
+ *  already states the linkage (a `Discharges`/`Moots` cell, or a plan-table correction the cite
+ *  documents) — it is never a hand-authored move map: rounds without source-stated linkage stay
+ *  Unlinked (ticket 217 item 2; R2 §4 option (b)). */
+export interface MoveLinkOverride {
+  readonly kind: "move-link";
+  /** The response-ledger row id this linkage is for. */
+  readonly row: string;
+  /** The move ordinal (positive int) the row joins. */
+  readonly move: number;
+  /** The line that justifies the row — `<file>:<line>` (each row cites its source line). */
+  readonly cite: string;
+  /** Optional verbatim note kept for the record. */
+  readonly note?: string;
+}
+
+export type ConvertOverride =
+  | VerdictRescoreOverride
+  | ReconciliationOverride
+  | MinorFindingOverride
+  | DispositionOverride
+  | MoveLinkOverride;
 
 export interface ConvertOverridesFile {
   readonly version: 1;
   readonly overrides: readonly ConvertOverride[];
 }
 
-const KNOWN_KINDS = new Set<string>(["verdict-rescore", "reconciliation"]);
+const KNOWN_KINDS = new Set<string>([
+  "verdict-rescore",
+  "reconciliation",
+  "minor-finding",
+  "disposition",
+  "move-link",
+]);
 const CITE_RE = /:\d+$/;
 
 export type OverridesParse =
@@ -123,6 +187,62 @@ export function readConvertOverrides(json: unknown): OverridesParse {
           objection: r.objection as string,
           outcome: outcome as ReconciliationOverride["outcome"],
           ...(typeof r.major === "number" ? { major: r.major } : {}),
+          cite: r.cite as string,
+          ...(typeof r.note === "string" ? { note: r.note } : {}),
+        });
+      }
+    }
+    if (kind === "minor-finding") {
+      if (typeof r.row !== "string" || r.row === "")
+        errors.push(`${at}: minor-finding requires a non-empty "row" (ledger row id)`);
+      if (typeof r.finding !== "string" || r.finding === "")
+        errors.push(`${at}: minor-finding requires a non-empty "finding" (labels.json id/alias)`);
+      if (typeof r.cite !== "string" || !CITE_RE.test(r.cite))
+        errors.push(`${at}: "cite" must name its source line as <file>:<line>`);
+      if (errors.every((e) => !e.startsWith(at))) {
+        out.push({
+          kind: "minor-finding",
+          row: r.row as string,
+          finding: r.finding as string,
+          cite: r.cite as string,
+          ...(typeof r.note === "string" ? { note: r.note } : {}),
+        });
+      }
+    }
+    if (kind === "disposition") {
+      if (typeof r.row !== "string" || r.row === "")
+        errors.push(`${at}: disposition requires a non-empty "row" (ledger row id)`);
+      if (
+        typeof r.disposition !== "string" ||
+        !(DISPOSITION_KINDS as readonly string[]).includes(r.disposition)
+      )
+        errors.push(
+          `${at}: disposition ${JSON.stringify(r.disposition)} is not a canonical disposition kind`,
+        );
+      if (typeof r.cite !== "string" || !CITE_RE.test(r.cite))
+        errors.push(`${at}: "cite" must name its source line as <file>:<line>`);
+      if (errors.every((e) => !e.startsWith(at))) {
+        out.push({
+          kind: "disposition",
+          row: r.row as string,
+          disposition: r.disposition as DispositionKind,
+          cite: r.cite as string,
+          ...(typeof r.note === "string" ? { note: r.note } : {}),
+        });
+      }
+    }
+    if (kind === "move-link") {
+      if (typeof r.row !== "string" || r.row === "")
+        errors.push(`${at}: move-link requires a non-empty "row" (ledger row id)`);
+      if (typeof r.move !== "number" || !Number.isInteger(r.move) || r.move <= 0)
+        errors.push(`${at}: move-link requires "move" (positive int move ordinal)`);
+      if (typeof r.cite !== "string" || !CITE_RE.test(r.cite))
+        errors.push(`${at}: "cite" must name its source line as <file>:<line>`);
+      if (errors.every((e) => !e.startsWith(at))) {
+        out.push({
+          kind: "move-link",
+          row: r.row as string,
+          move: r.move as number,
           cite: r.cite as string,
           ...(typeof r.note === "string" ? { note: r.note } : {}),
         });

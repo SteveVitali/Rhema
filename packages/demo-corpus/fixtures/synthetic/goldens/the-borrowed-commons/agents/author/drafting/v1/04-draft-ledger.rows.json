@@ -1,0 +1,37 @@
+{
+ "rows": [
+  {
+   "actual": 430,
+   "budget": 400,
+   "hash": "I",
+   "note": "over by an anecdote; kept",
+   "ordinal": 0,
+   "title": "pump/bridge/ledger"
+  },
+  {
+   "actual": 310,
+   "budget": 350,
+   "hash": "II",
+   "note": "—",
+   "ordinal": 1,
+   "title": "failure shape"
+  },
+  {
+   "actual": 260,
+   "budget": 250,
+   "hash": "III",
+   "note": "—",
+   "ordinal": 2,
+   "title": "objections"
+  },
+  {
+   "actual": 240,
+   "budget": 250,
+   "hash": "IV",
+   "note": "—",
+   "ordinal": 3,
+   "title": "hinge"
+  }
+ ],
+ "version": 1
+}

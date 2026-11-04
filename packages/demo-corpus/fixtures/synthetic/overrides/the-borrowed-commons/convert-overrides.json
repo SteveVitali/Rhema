@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "overrides": [
+    {
+      "kind": "minor-finding",
+      "row": "G1",
+      "finding": "The one thing",
+      "cite": "agents/author/ledgers/v2-response-ledger.md:5",
+      "note": "v2's letter emits one finding (the one thing — the scope sentence); the ledger's `L Minor 1` source has no `Minor 1` to positionally reach, so the row maps by ruling, never by heuristic."
+    }
+  ]
+}
