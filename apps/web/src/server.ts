@@ -3943,13 +3943,18 @@ export function createWebApp(deps: WebDeps): Hono {
         return c.redirect(finishedRow.href);
       }
     }
-    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): a phone request or a
-    // read-only `showcase` row keeps the server-rendered Page — the only SSR arm the deletion wave
-    // left standing and the ONLY request-path renderer decision remaining (SPA.28: the `?ssr=1` /
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5, ADR-128): a phone
+    // request keeps the server-rendered Page — the only SSR arm the deletion wave left standing
+    // and the ONLY request-path renderer decision remaining (SPA.28: the `?ssr=1` /
     // `x-rhema-renderer` escape is gone; those params are inert text here like everywhere else).
-    const forcedSsr = isPhoneRequest(c) || row.showcase === true;
+    // R7RO.1 — the showcase arm is gone: a `showcase` row gets the shell and renders read-only
+    // through `ReadOnlyProject{reason:"showcase"}` (the twin + boot carry the fact).
+    const forcedSsr = isPhoneRequest(c);
     if (!forcedSsr) {
-      return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
+      return spaShellDocument(c, deps, session, {
+        paperTheme: row.paperTheme,
+        ...(row.showcase === true ? { readOnlyProject: { reason: "showcase" as const } } : {}),
+      });
     }
     const comp = await projectOverviewComposition(c, session, row);
     const { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad } = comp;
@@ -3997,8 +4002,8 @@ export function createWebApp(deps: WebDeps): Hono {
                 doc: pageLoad.doc,
                 docJson: pageLoad.docJson,
                 // P1.19 — §10.1: the overview's Page is reader-only on phone width.
-                // EDIT.1 — the Showcase overview Page is read-only too (§15.4; matches /v/:v).
-                // SPA.28 — `forcedSsr` is phone/showcase only now (the `?ssr=1` leg is gone).
+                // R7RO.1 — `forcedSsr` is phone-only now (ADR-128): a showcase overview reaches
+                // the SPA, whose twin carries `readOnly:true` + `ReadOnlyProject{showcase}`.
                 ...(forcedSsr ? { readOnly: true } : {}),
                 ...(deps.collabWsUrl && !forcedSsr
                   ? { collabWsUrl: deps.collabWsUrl }
@@ -4014,7 +4019,7 @@ export function createWebApp(deps: WebDeps): Hono {
         explainersDismissed,
         ...(projectVoice ? { projectVoice } : {}),
         compact: isPhoneRequest(c),
-        ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
+        ssrCause: "phone",
         ...(derror
           ? {
               triage: {
@@ -4759,7 +4764,13 @@ export function createWebApp(deps: WebDeps): Hono {
       dossier: comp.dossier,
       dossierView: comp.dossierView,
       ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
-      project: { title: comp.dossier.projectTitle, pill: "", slug },
+      project: {
+        title: comp.dossier.projectTitle,
+        pill: "",
+        slug,
+        // R7RO.1 — the read-only carrier (the dossier surfaces withhold their write controls).
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,
@@ -4842,7 +4853,12 @@ export function createWebApp(deps: WebDeps): Hono {
     });
     return c.json({
       runReport: { slug, runId, report: comp.report },
-      project: { title: row.title, pill: row.state.pill, slug },
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,
@@ -5122,7 +5138,15 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.json({ error: "not_found" }, 404);
     // design/22 `p.obligationNew`: `?back` keeps the `safeBack` `/p/…` confinement.
     const back = safeBack(c.req.query("back") ?? "", `/p/${slug}`);
-    return c.json({ obligationNew: { slug, projectTitle: row.title, back } });
+    return c.json({
+      obligationNew: {
+        slug,
+        projectTitle: row.title,
+        back,
+        // R7RO.1 — a read-only project withholds the create form (hidden before any request).
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
+      },
+    });
   }));
   app.post("/p/:project/obligations", async (c) => {
     const session = deps.session(c);
@@ -5269,10 +5293,16 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         headDraftN: row.headDraftN ?? null,
-        // SPACAP.3 (G2) — the row leg of the forced-SSR truth the boot map cannot carry
-        // (`isPhoneRequest(c) || row.showcase === true` on the document): the leaf hands a
-        // showcase navigation back to a document load, which lands the forced-SSR arm.
+        // R7RO.1 (REQ-DWEB-14) — the row facts the request-scoped boot cannot see: `showcase`
+        // stays as a project fact, and the ReadOnlyProject carrier names the reason. A run lock
+        // on the working head reads as `run_lock` (DS §5.4 — a frozen version is NOT a reason).
         ...(row.showcase === true ? { showcase: true } : {}),
+        readOnlyProject:
+          row.showcase === true
+            ? { reason: "showcase" as const }
+            : pageLoad?.doc.lock != null
+              ? { reason: "run_lock" as const }
+              : null,
       },
       gates: comp.gates,
       decisions: comp.decisions,
@@ -5339,6 +5369,13 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         ...(row.showcase === true ? { showcase: true } : {}),
+        // R7RO.1 — showcase rows read as read-only; a held run lock reads as `run_lock`.
+        readOnlyProject:
+          row.showcase === true
+            ? { reason: "showcase" as const }
+            : doc.lock != null
+              ? { reason: "run_lock" as const }
+              : null,
       },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5368,6 +5405,7 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         ...(row.showcase === true ? { showcase: true } : {}),
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
       },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5402,6 +5440,7 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         ...(row.showcase === true ? { showcase: true } : {}),
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
       },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5428,6 +5467,7 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         ...(row.showcase === true ? { showcase: true } : {}),
+        readOnlyProject: row.showcase === true ? { reason: "showcase" as const } : null,
       },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
@@ -5442,10 +5482,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const cid = c.req.param("cid");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
-    // showcase keeps the server-rendered revision document — the only renderer decision left
-    // (SPA.28: the `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5, ADR-128): a phone
+    // request keeps the server-rendered revision document — the only renderer decision left
+    // (SPA.28: the `?ssr=1`/`x-rhema-renderer` escape is gone); everything else, showcase rows
+    // included (R7RO.1 — they render read-only in the SPA), gets the shell.
+    if (isPhoneRequest(c)) {
       const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
         if (e instanceof ApiError && e.status === 404) return null;
         throw e;
@@ -5458,11 +5499,14 @@ export function createWebApp(deps: WebDeps): Hono {
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
           compact: isPhoneRequest(c),
-          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
+          ssrCause: "phone",
         }),
       );
     }
-    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
+    return spaShellDocument(c, deps, session, {
+      paperTheme: row.paperTheme,
+      ...(row.showcase === true ? { readOnlyProject: { reason: "showcase" as const } } : {}),
+    });
   });
 
   app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
@@ -5521,10 +5565,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
-    // showcase keeps the server-rendered Page — the only renderer decision left (SPA.28: the
-    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5, ADR-128): a phone
+    // request keeps the server-rendered Page — the only renderer decision left (SPA.28: the
+    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else, showcase rows included
+    // (R7RO.1 — they render read-only in the SPA), gets the shell.
+    if (isPhoneRequest(c)) {
       const v = c.req.param("v") ?? "working";
       const vcomp = await versionPageComposition(c, session, row, v);
       // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
@@ -5562,7 +5607,7 @@ export function createWebApp(deps: WebDeps): Hono {
             ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
           },
           compact: phone,
-          ssrCause: phone ? "phone" : "showcase",
+          ssrCause: "phone",
           page: {
             slug,
             projectId: row.id,
@@ -5586,7 +5631,10 @@ export function createWebApp(deps: WebDeps): Hono {
         }),
       );
     }
-    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
+    return spaShellDocument(c, deps, session, {
+      paperTheme: row.paperTheme,
+      ...(row.showcase === true ? { readOnlyProject: { reason: "showcase" as const } } : {}),
+    });
   });
 
   // P1.08 — the undoable restore-point apply (§5.8; REQ-IDE-34): the preview card's POST lands here;
@@ -5633,10 +5681,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
-    // showcase keeps the SSR compare — the only renderer decision left (SPA.28: the `?ssr=1` /
-    // `x-rhema-renderer` escape is gone); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5, ADR-128): a phone
+    // request keeps the SSR compare — the only renderer decision left (SPA.28: the `?ssr=1` /
+    // `x-rhema-renderer` escape is gone); everything else, showcase rows included (R7RO.1), gets
+    // the shell.
+    if (isPhoneRequest(c)) {
       const n = c.req.param("n") ?? "";
       const m = c.req.param("m") ?? "";
       const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
@@ -5653,12 +5702,15 @@ export function createWebApp(deps: WebDeps): Hono {
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
           compact: isPhoneRequest(c),
-          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
+          ssrCause: "phone",
           dwellSurface: "page",
         }),
       );
     }
-    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
+    return spaShellDocument(c, deps, session, {
+      paperTheme: row.paperTheme,
+      ...(row.showcase === true ? { readOnlyProject: { reason: "showcase" as const } } : {}),
+    });
   });
 
   // The compare page's hunk-comment POST — a Guidance row for the next Revise (`source:'inline_comment'`,
@@ -5696,10 +5748,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5): phone / read-only
-    // showcase keeps the SSR artifact Page — the only renderer decision left (SPA.28: the
-    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else gets the shell.
-    if (isPhoneRequest(c) || row.showcase === true) {
+    // The Page family's forced-SSR capability check (REQ-ED-12 + REQ-VFY-5, ADR-128): a phone
+    // request keeps the SSR artifact Page — the only renderer decision left (SPA.28: the
+    // `?ssr=1`/`x-rhema-renderer` escape is gone); everything else, showcase rows included
+    // (R7RO.1), gets the shell.
+    if (isPhoneRequest(c)) {
       const doc = await deps.dataSource
         .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
         .catch((e) => {
@@ -5725,12 +5778,15 @@ export function createWebApp(deps: WebDeps): Hono {
             docJson: docJsonFor(doc),
             readOnly: true,
           },
-          ssrCause: isPhoneRequest(c) ? "phone" : "showcase",
+          ssrCause: "phone",
           dwellSurface: "page",
         }),
       );
     }
-    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
+    return spaShellDocument(c, deps, session, {
+      paperTheme: row.paperTheme,
+      ...(row.showcase === true ? { readOnlyProject: { reason: "showcase" as const } } : {}),
+    });
   });
 
   // The superseded CodeMirror page redirects to the Page (the route's JSON/form endpoints below stay —

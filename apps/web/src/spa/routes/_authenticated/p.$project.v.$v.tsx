@@ -10,7 +10,7 @@ import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { BffError } from "../../bff.js";
 import { versionPageQuery, type VersionPageTwinSearch } from "../../queries.js";
 import { flagParam, strParam, validateSearchParams } from "../../search.js";
-import { PendingShell, SsrHandoff, SurfaceShell, twinForcesSsr } from "../../states.js";
+import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
 import { VersionPageSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
@@ -59,9 +59,8 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
       // a stale cache re-read landed the redirect arm — the document's 302 verbatim.
       throw redirect({ href: q.data.redirect, reloadDocument: true });
     }
-    // SPACAP.3 (G2) — the showcase leg of the forced-SSR truth: document-nav back so the server
-    // lands the read-only SSR Page (the boot map owns the phone leg; the twin owns this one).
-    if (twinForcesSsr(q.data)) return <SsrHandoff />;
+    // R7RO.1 — a showcase row mounts the SAME SPA Page read-only (the twin's `readOnlyProject`
+    // names the reason); only a phone request still lands the server-rendered Page.
     return <VersionPageSurface data={q.data} compact={boot?.deviceClass === "phone"} search={search} />;
   },
 });

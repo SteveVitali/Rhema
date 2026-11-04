@@ -225,8 +225,8 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
   it("the page surface's [data-sync-pill] renders in flow — no position:fixed", async () => {
     const app = createWebApp(
       makeDeps({
-        // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm (`?ssr=1` is gone):
-        // the plain GET leg below is the showcase arm, the MOBILE leg the phone arm.
+        // R7RO.1 — `showcase: true` no longer forces SSR (ADR-128: the desktop leg below now
+        // answers the SHELL; the MOBILE leg is the surviving forced-SSR phone arm).
         listProjects: async () => [{ ...PROJECTS[0]!, showcase: true }],
         resolveEditorDraft: async (_s: unknown, _p: unknown, v: string) =>
           v === "working" || v === "1"
@@ -251,6 +251,13 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
       const res = await app.request(path, init);
       expect(res.status).toBe(200);
       const html = await res.text();
+      if (init === undefined) {
+        // R7RO.1 — the desktop leg serves the shell (the showcase arm is deleted; the SPA leaf
+        // owns the desktop render): no SSR pill, and the renderer stamp stays truthful.
+        expect(html).toContain('data-renderer="spa"');
+        expect(html.match(/data-sync-pill/g) ?? []).toHaveLength(0);
+        continue;
+      }
       const pills = html.match(/data-sync-pill/g) ?? [];
       expect(pills).toHaveLength(1);
       // the pill element is in-flow: no fixed positioning on it or its containing row.

@@ -290,6 +290,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("alertdialog", "ui gate cards", "confirm-destructive dialogs"),
     r("alert", "pages.tsx/ui"),
     r("region", "pages.tsx/ui"),
+    r("note", "spa/read-only.tsx", "the ReadOnlyProject reason notice (R7RO.1)"),
     r("heading", "every document", "asserted via getByRole + implicit <h*>"),
     r("button", "every document", "asserted via getByRole + implicit <button>"),
     u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
@@ -1492,6 +1493,11 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-restore-group", "conditional", "ui/version-rail.tsx"),
     a("data-restore-menu", "conditional", "ui/version-rail.tsx"),
     a("data-restore-apply", "conditional", "ui/version-rail.tsx"),
+    // R7RO.1 (REQ-DWEB-14) — the read-only mechanism's hooks: the per-reason notice, the
+    // showcase notice's styled Duplicate button, and the withheld-control markers.
+    a("data-readonly-notice", "conditional", "spa/read-only + dossier-view", "ReadOnlyProject notice"),
+    a("data-readonly-duplicate", "conditional", "read-only notice + dossier banner"),
+    a("data-readonly-controls", "conditional", "dossier-view finding/bulk withhold"),
     a("data-restored-notice", "conditional", "pages.tsx"),
     a("data-compare", "conditional", "ui/compare.tsx"),
     a("data-compare-layout", "conditional", "ui/compare.tsx"),

@@ -27,8 +27,13 @@ export function chatPanel(
     };
   },
   compact: boolean,
+  /** R7RO.1 (REQ-DWEB-14) — the read-only reason text; set ⇒ every chat write (turns, plan
+   *  decisions, pins, corrections, suggestions, notes) withholds inside a disabled fieldset
+   *  with the tooltip before any request is made. `run_lock` is never fed here — the chat is
+   *  run-lifecycle and stays live. */
+  readOnlyTitle?: string | null,
 ): ReactNode {
-  return (
+  const body = (
     <ChatDesk compact={compact}
       model={{
         threads: chat.threads.map((t) => ({
@@ -67,5 +72,12 @@ export function chatPanel(
       }}
       labels={chatDeskLabels}
     />
+  );
+  return readOnlyTitle != null ? (
+    <fieldset disabled title={readOnlyTitle} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+      {body}
+    </fieldset>
+  ) : (
+    body
   );
 }

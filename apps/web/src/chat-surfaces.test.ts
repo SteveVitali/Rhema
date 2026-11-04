@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { ApiError, type ProjectRow, type ChatPanelDto } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
+import { chatPanel } from "./chat-pane.js";
 
 // P1.11 — the Desk Chat surface's web half (§7.1/§7.4): the SSR project page mounts the ChatDesk
 // (threads, composer, tier notches, the empty-state chips) from the api's chat DTO, and the
@@ -9,12 +11,16 @@ import type { DataSource } from "./data.js";
 // add/remove, correction, suggestion, notes). The web layer never interprets budgets or anchors —
 // it forwards and redirects.
 
+// R7RO.1 — the only forced-SSR arm left is PHONE (ADR-128: the `showcase` arm is deleted; a
+// showcase row on desktop serves the shell). The chat-panel render pins below hit that arm.
+const PHONE = { headers: { "sec-ch-ua-mobile": "?1" } };
+
 const ROW: ProjectRow = {
   id: "proj_1",
   slug: "demo",
   title: "Demo",
-  // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
-  // the `` escape is gone). The chat-panel render pins below hit THAT arm.
+  // R7RO.1 — `showcase: true` is a read-only row fact now; it no longer forces SSR — the
+  // PHONE request does.
   showcase: true,
   state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "revise", label: "Revise" } },
 };
@@ -78,19 +84,27 @@ const json = (body: unknown) => ({
 
 describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
   // SPA.28 — the default desktop document is the shell now (the chat pane mounts in the leaf);
-  // the chat panel's SSR survives ONLY on the Page family's forced-SSR arm — phone/showcase
-  // (REQ-ED-12/REQ-VFY-5), which ROW's `showcase: true` forces here. `?ssr=1` is inert text.
-  it("the forced-SSR arm still mounts the chat pane — composer, tier notches, empty-state chips", async () => {
+  // the chat panel's SSR survives ONLY on the Page family's forced-SSR arm — phone (R7RO.1 —
+  // the showcase arm is deleted; REQ-ED-12/REQ-VFY-5). `?ssr=1` is inert text. The phone arm
+  // mounts the §10.1-compact desk: composer + chips stay; the tier pick is the ✗ column — its
+  // render is pinned on the shared `chatPanel` the leaf mounts.
+  it("the forced-SSR arm still mounts the chat pane — composer, empty-state chips; the tier pick rides the desktop desk", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/demo");
+    const res = await app.request("/p/demo", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-desk-panel="chat"');
     expect(html).toContain("data-chat-composer");
     expect(html).toContain('action="/p/demo/chat/turns"');
-    for (const t of ["base", "balanced", "frontier"]) expect(html).toContain(`data-chat-tier="${t}"`);
+    // §10.1 — the compact desk drops the tier notches (they're the desktop column).
+    expect(html).not.toContain("data-chat-tier");
     for (const id of ["research", "thesis", "interview", "notes"])
       expect(html).toContain(`data-chat-chip="${id}"`);
+
+    // the desktop desk (the shared component's non-compact render — what the leaf mounts):
+    const desk = renderToStaticMarkup(chatPanel(CHAT, "demo", {}, false));
+    for (const t of ["base", "balanced", "frontier"]) expect(desk).toContain(`data-chat-tier="${t}"`);
+    expect(desk).toContain("data-chat-composer");
   });
 
   it("degrades to the tab placeholder when the chat read is absent", async () => {

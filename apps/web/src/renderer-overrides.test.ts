@@ -64,23 +64,23 @@ describe("SPA.28 — the override machinery is gone (REQ-SEQ-4 removal)", () => 
   });
 });
 
-// SPACAP.3 (G2) — the forced-SSR parity pin. The server's Page-family document arms force SSR on
-// `isPhoneRequest(c) || row.showcase === true`; the client's effective predicate must mirror it:
-// the boot map owns the phone leg (`deviceClass === "phone" && doc.pageMount`), the Page-family
-// twins own the showcase leg (`project.showcase`, a row fact the request-scoped boot map cannot
-// see), and each of the five leaf routes consults `twinForcesSsr` and hands the navigation back
-// through `SsrHandoff`. Delete a leg — drop the twin's flag, a leaf's consult, or the shared
-// predicate — and a count below fails.
-describe("SPACAP.3 — the forced-SSR truth mirrors the server across both legs (G2 parity)", () => {
+// SPACAP.3 → R7RO.1 — the forced-SSR parity pin, re-honested (REQ-RELOAD-5; ADR-128's REQ-ED-12
+// item). The server's Page-family document arms now force SSR on `isPhoneRequest(c)` ALONE — the
+// `row.showcase` arm is gone: a showcase row's Page renders INSIDE the SPA through the
+// ReadOnlyProject carrier (`project.readOnlyProject` on the twins, `readOnlyProject` on the boot
+// payload). The phone leg is unchanged (`deviceClass === "phone" && doc.pageMount` in the boot
+// map), and no leaf consults a twin predicate for a renderer verdict any more.
+describe("SPACAP.3 → R7RO.1 — phone-only forced SSR + the SPA read-only carrier", () => {
   const serverText = codeText(join(root, "src", "server.ts"));
   const shellText = codeText(join(root, "src", "spa-shell.ts"));
   const statesText = codeText(join(root, "src", "spa", "states.tsx"));
   const count = (text: string, pattern: RegExp) => (text.match(pattern) ?? []).length;
 
-  it("the server's five Page-family document arms keep the verbatim two-leg predicate", () => {
-    expect(
-      count(serverText, /isPhoneRequest\(c\) \|\| row\.showcase === true/g),
-    ).toBe(5);
+  it("the server's five Page-family document arms keep the verbatim phone-only predicate", () => {
+    expect(count(serverText, /isPhoneRequest\(c\) \|\| row\.showcase === true/g)).toBe(0);
+    expect(count(serverText, /const forcedSsr = isPhoneRequest\(c\);/g)).toBe(1);
+    // The other four arms test `isPhoneRequest(c)` inline in the route predicate.
+    expect(count(serverText, /if \(isPhoneRequest\(c\)\) \{/g)).toBe(4);
   });
 
   it("the boot map keeps the phone leg — the request-scoped half it CAN see", () => {
@@ -89,25 +89,20 @@ describe("SPACAP.3 — the forced-SSR truth mirrors the server across both legs 
     ).toBe(1);
   });
 
-  it("all five Page-family twins ship the showcase row fact — the leg the boot map cannot see", () => {
-    expect(
-      count(serverText, /row\.showcase === true \? \{ showcase: true \}/g),
-    ).toBe(5);
-  });
-
-  it("the shared leaf predicate exists and all five Page-family leaf routes consult it", () => {
-    expect(count(statesText, /export function twinForcesSsr\(/g)).toBe(1);
+  it("the client has no twin-driven renderer verdict — twinForcesSsr is deleted", () => {
+    expect(count(statesText, /twinForcesSsr/)).toBe(0);
     const leafDir = join(root, "src", "spa", "routes", "_authenticated");
     const consulting = readdirSync(leafDir)
-      .filter((name) => /^p\.\$project/.test(name) && name.endsWith(".tsx"))
-      .filter((name) => codeText(join(leafDir, name)).includes("twinForcesSsr("))
-      .sort();
-    expect(consulting).toEqual([
-      "p.$project.a.$artifactId.tsx",
-      "p.$project.index.tsx",
-      "p.$project.revisions.$cid.tsx",
-      "p.$project.v.$n.diff.$m.tsx",
-      "p.$project.v.$v.tsx",
-    ]);
+      .filter((name) => name.endsWith(".tsx"))
+      .filter((name) => codeText(join(leafDir, name)).includes("twinForcesSsr("));
+    expect(consulting).toEqual([]);
+  });
+
+  it("the twins + shell stamps carry the ReadOnlyProject carrier — the mechanism's row facts", () => {
+    // 8 twin emits (5 Page-family + dossier + run-report + obligation-new) + 5 shell boot stamps;
+    // the two doc twins add the `run_lock` arm. Delete a carrier and a count fails.
+    expect(count(serverText, /readOnlyProject:/g)).toBe(13);
+    expect(count(serverText, /reason: "showcase" as const/g)).toBe(13);
+    expect(count(serverText, /reason: "run_lock" as const/g)).toBe(2);
   });
 });

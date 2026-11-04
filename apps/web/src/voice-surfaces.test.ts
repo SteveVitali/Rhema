@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import type { ProjectRow, VoiceDetailDto, VoiceListRowDto, VoiceStatusDto } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
+import { ProjectOverviewBody } from "./page-chrome.js";
 
 // PRB.10 — the SSR voice surfaces (§9.2–§9.6): the library, the creation sheet, the detail page, the
 // project picker, and the run sheet's voice line. Driven via Hono's app.request (no network) with an
@@ -145,13 +148,18 @@ const DETAIL: VoiceDetailDto = {
   tier: "quick",
 };
 
+// R7RO.1 — the only forced-SSR arm left is PHONE (ADR-128: the `showcase` arm is deleted; a
+// showcase row on desktop serves the shell). The voice-notice render asserts below pin that
+// arm — GETs expecting SSR markup send PHONE.
+const PHONE = { headers: { "sec-ch-ua-mobile": "?1" } };
+
 const PROJECTS: ProjectRow[] = [
   {
     id: "proj_1",
     slug: "the-essay",
     title: "The Essay",
-    // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
-    // the `` escape is gone). The voice-notice render asserts below pin THAT arm.
+    // R7RO.1 — `showcase: true` is a read-only row fact now; it no longer forces SSR — the
+    // PHONE request does.
     showcase: true,
     state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "review", label: "Review" } },
     voice: { personaId: "per_ada", name: "Ada", status: STATUS("seed_changed", "Description changed", "update_voice", "attention") },
@@ -338,14 +346,33 @@ describe("the voice detail page (§9.5)", () => {
 describe("the project picker + the run sheet's voice line (§9.6)", () => {
   it("GET /p/:slug renders the picker with the linked voice's pill", async () => {
     const app = createWebApp(makeDeps());
-    // SPA.27 — the desktop document is the shell; the picker render survives on the Page family's
-    // forced-SSR arm.
-    const res = await app.request("/p/the-essay");
+    // R7RO.1 — the only forced-SSR arm left is phone, where voice configuration is the §10.1 ✗
+    // column: the picker is withheld there. The desktop render is pinned on the shared
+    // `ProjectOverviewBody` the leaf mounts (non-compact).
+    const res = await app.request("/p/the-essay", PHONE);
     const html = await res.text();
-    expect(html).toContain('name="personaId"');
-    expect(html).toContain("Ada");
-    expect(html).toContain("Description changed");
-    expect(html).toContain("No voice (ad-hoc)");
+    expect(html).not.toContain('data-voice-picker="true"');
+    expect(html).not.toContain('name="personaId"');
+
+    const body = renderToStaticMarkup(
+      createElement(ProjectOverviewBody, {
+        project: { slug: "the-essay" },
+        projectVoice: {
+          current: {
+            voiceMode: "linked",
+            personaId: "per_ada",
+            name: "Ada",
+            status: STATUS("seed_changed", "Description changed", "update_voice", "attention"),
+            snapshot: { builtAt: "2026-08-20T00:00:00Z" },
+          } as never,
+          options: [PERSONA_ROW],
+        },
+      }),
+    );
+    expect(body).toContain('name="personaId"');
+    expect(body).toContain("Ada");
+    expect(body).toContain("Description changed");
+    expect(body).toContain("No voice (ad-hoc)");
   });
 
   it("POST /p/:slug/voice pins the persona server-side (REQ-DATA-32)", async () => {
@@ -404,20 +431,56 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
         }),
       } as Partial<DataSource>),
     );
-    const res = await app.request("/p/the-essay");
+    const res = await app.request("/p/the-essay", PHONE);
     const html = await res.text();
-    expect(html).toContain('data-pinned-stale="true"');
-    expect(html).toContain("Adopt the refreshed profile");
-    expect(html).toContain("/p/the-essay/voice/reseed");
-    expect(html).toContain('data-fork-project="true"');
+    // R7RO.1 — the hatches ride the picker: withheld with it on the phone arm (§10.1 ✗); the
+    // desktop render is pinned on the shared `ProjectOverviewBody`.
+    expect(html).not.toContain('data-pinned-stale="true"');
+    const body = renderToStaticMarkup(
+      createElement(ProjectOverviewBody, {
+        project: { slug: "the-essay" },
+        projectVoice: {
+          current: {
+            voiceMode: "linked",
+            personaId: "per_ada",
+            name: "Ada",
+            status: STATUS("current", "Voice is current", "none"),
+            snapshot: { builtAt: "2026-09-01T00:00:00Z" },
+            pinnedStale: true,
+          } as never,
+          options: [PERSONA_ROW],
+        },
+      }),
+    );
+    expect(body).toContain('data-pinned-stale="true"');
+    expect(body).toContain("Adopt the refreshed profile");
+    expect(body).toContain("/p/the-essay/voice/reseed");
+    expect(body).toContain('data-fork-project="true"');
   });
 
   it("GET /p/:slug?voice_locked=1 — the soft lock names the two hatches", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-essay?voice_locked=1");
+    const res = await app.request("/p/the-essay?voice_locked=1", PHONE);
     const html = await res.text();
-    expect(html).toContain('data-voice-locked="true"');
-    expect(html).toContain("adopt the refreshed profile or fork");
+    // the notice rides the picker — withheld on the phone arm; the desktop render carries it.
+    expect(html).not.toContain('data-voice-locked="true"');
+    const body = renderToStaticMarkup(
+      createElement(ProjectOverviewBody, {
+        project: { slug: "the-essay" },
+        projectVoice: {
+          current: {
+            voiceMode: "linked",
+            personaId: "per_ada",
+            name: "Ada",
+            status: STATUS("current", "Voice is current", "none"),
+          } as never,
+          options: [PERSONA_ROW],
+          locked: true,
+        },
+      }),
+    );
+    expect(body).toContain('data-voice-locked="true"');
+    expect(body).toContain("adopt the refreshed profile or fork");
   });
 
   it("POST /p/:slug/voice — a direct change that 409s lands on the locked notice", async () => {

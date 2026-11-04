@@ -4,6 +4,7 @@
 // the refetchable `["session"]` query (spec §3.2).
 
 import type { PrincipalDto } from "@rhema/api-client";
+import { readOnlyProjectOf } from "@rhema/contracts";
 import type { SpaBoot } from "../spa-boot.js";
 
 export type { SpaBoot } from "../spa-boot.js";
@@ -36,6 +37,10 @@ export function readSpaBoot(doc: Document = document): SpaBoot | null {
     surfaces,
     ...(o.project != null && typeof o.project === "object"
       ? { project: o.project as { readonly slug: string } }
+      : {}),
+    // R7RO.1 (REQ-DWEB-14) — the read-only fact rides the boot verbatim; unknown shapes decode null.
+    ...(readOnlyProjectOf(o.readOnlyProject) != null
+      ? { readOnlyProject: readOnlyProjectOf(o.readOnlyProject)! }
       : {}),
   };
 }

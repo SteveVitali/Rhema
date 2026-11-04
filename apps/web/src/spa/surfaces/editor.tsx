@@ -59,6 +59,7 @@ import type {
   BffVersionPageTwin,
 } from "../queries.js";
 import { PageMount } from "../page-mount.js";
+import { useReadOnlyProject, ReadOnlyNotice, readOnlyReasonText } from "../read-only.js";
 import { TimelineGateCard } from "./dossier.js";
 
 /** The mutation success envelope (`{ok:true, redirect?, url?}` — the document's 302 twin). */
@@ -356,6 +357,7 @@ function useEditorChrome(
   shell: IdeTwinShell,
   slug: string,
   compact: boolean,
+  readOnlyTitle?: string | null,
 ): void {
   const extras = useMemo<IdeChromeData>(
     () => ({
@@ -365,13 +367,13 @@ function useEditorChrome(
             timelineCardLabels: runCardLabels,
             timelineHrefs: timelineHrefs(slug),
             renderGateCard: (run: Parameters<NonNullable<IdeChromeData["renderGateCard"]>>[0]) => (
-              <TimelineGateCard run={run} slug={slug} compact={compact} />
+              <TimelineGateCard run={run} slug={slug} compact={compact} readOnlyTitle={readOnlyTitle} />
             ),
           }
         : {}),
-      ...(shell.ide.chat != null ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact) } : {}),
+      ...(shell.ide.chat != null ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact, readOnlyTitle) } : {}),
     }),
-    [shell.ide, slug, compact],
+    [shell.ide, slug, compact, readOnlyTitle],
   );
   useShellChrome(shell, extras);
 }
@@ -413,10 +415,13 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
   const viewRef = useRef<EditorView | null>(null);
   const seams = useProposalSeams(viewRef);
   const slug = data.project.slug;
+  // R7RO.1 — the read-only fact (twin carrier, else boot slot); `run_lock` keeps the run's own
+  // lifecycle controls (a waiting gate would deadlock otherwise) — see ProjectOverviewBody.
+  const ro = useReadOnlyProject(data);
 
   // REQ-BETA-10 — the SSR document's `dwellSurface:"project"` heartbeat (the hook twin).
   useDwell("project");
-  useEditorChrome(data, slug, compact);
+  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const page = usePageBag(data.page);
   const pageView = useFilteredPage(page, seams.filter);
@@ -466,9 +471,11 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <ProjectOverviewBody
         project={project}
         spa
+        {...(ro != null ? { readOnly: ro.reason } : {})}
         renderApprovalRow={(spec) => <SpaApprovalRow slug={slug} spec={spec} />}
         gates={data.gates}
         decisions={data.decisions}
@@ -507,9 +514,10 @@ export function VersionPageSurface({
   const viewRef = useRef<EditorView | null>(null);
   const seams = useProposalSeams(viewRef);
   const slug = data.page.slug;
+  const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact);
+  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const restoredQ = search["restored"];
   const restoredN = restoredQ != null ? Number(restoredQ) : null;
@@ -524,9 +532,11 @@ export function VersionPageSurface({
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={pageView}
         compact={compact}
+        {...(ro != null ? { readOnlyReason: ro.reason } : {})}
         host={<PageHost page={pageView} compact={compact} viewRef={viewRef} />}
         embeds={false}
         onProposalAccept={seams.accept}
@@ -549,9 +559,10 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
   const { mutation, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
   const slug = data.page.slug;
+  const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact);
+  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const page = usePageBag(data.page);
   const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
@@ -559,9 +570,11 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
   if (!page) return null;
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={page}
         compact={compact}
+        {...(ro != null ? { readOnlyReason: ro.reason } : {})}
         host={<PageHost page={page} compact={compact} viewRef={viewRef} />}
         embeds={false}
       />
@@ -582,9 +595,10 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
   const { mutation, mutError, write } = useEditorWrite();
   const { compare } = data;
   const slug = compare.slug;
+  const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact);
+  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const layoutQ = search["layout"];
   const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
@@ -593,6 +607,7 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
 
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <CompareView
         beforeN={compare.data.before.n}
         afterN={compare.data.after.n}
@@ -602,7 +617,14 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
         view={compare.data.view as unknown as Parameters<typeof CompareView>[0]["view"]}
         linked={compare.data.responseId != null}
         layoutHref={(l) => `/p/${slug}/v/${compare.n}/diff/${compare.m}?layout=${l}`}
-        commentFormAction={(hunkId) => `/p/${slug}/v/${compare.n}/diff/${compare.m}/hunks/${hunkId}/comments`}
+        {...(ro == null || ro.reason === "run_lock"
+          ? {
+              // DS §5.4 — comments stay live during a run lock (they become Guidance); demo/showcase
+              // withhold the hunk-comment form before any request.
+              commentFormAction: (hunkId: string) =>
+                `/p/${slug}/v/${compare.n}/diff/${compare.m}/hunks/${hunkId}/comments`,
+            }
+          : {})}
         labels={compareLabels}
       />
       {commented ? (
@@ -627,21 +649,28 @@ export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<Bf
   const { mutation, mutError, write } = useEditorWrite();
   const { revision } = data;
   const slug = revision.slug;
+  const ro = useReadOnlyProject(data);
 
   // the SSR document carries no dwellSurface on this page — no useDwell here (verbatim).
-  useEditorChrome(data, slug, compact);
+  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const commented = search["commented"] || undefined;
   const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
 
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <WhatChangedView
         // the wire shape is the findings-core view model modulo `unlinked.entries` being unknown[].
         view={revision.data.view as unknown as Parameters<typeof WhatChangedView>[0]["view"]}
         beforeN={revision.data.beforeN}
         afterN={revision.data.afterN}
-        commentFormAction={(hunkId) => `/p/${slug}/revisions/${revision.data.responseId}/hunks/${hunkId}/comments`}
+        {...(ro == null || ro.reason === "run_lock"
+          ? {
+              commentFormAction: (hunkId: string) =>
+                `/p/${slug}/revisions/${revision.data.responseId}/hunks/${hunkId}/comments`,
+            }
+          : {})}
         labels={whatChangedLabels}
       />
       {commented ? (

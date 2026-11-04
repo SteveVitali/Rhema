@@ -491,9 +491,22 @@ export function findingControlsFor(
   runId: string,
   compact: boolean,
   error: { findingId: string; message: string } | undefined,
-  opts: { readonly hasObligation: boolean },
+  opts: { readonly hasObligation: boolean; readonly readOnly?: string | null },
 ): ReactNode {
   const gate = applyGate(view);
+  // R7RO.1 — under a read-only reason every finding write withholds with the reason tooltip
+  // (Apply, the dispositions, Add-to-obligations); the visualize link is a navigation and stays.
+  if (opts.readOnly != null) {
+    return (
+      <span
+        data-readonly-controls={view.id}
+        title={opts.readOnly}
+        style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}
+      >
+        {opts.readOnly}
+      </span>
+    );
+  }
   return (
     <>
       {/* VERIF.2 (F-VERIF.2-3) — the per-finding Apply verb rides the SAME §10.1/Q-1 desktop
@@ -582,6 +595,8 @@ export function dossierSurfaces(data: {
   readonly dossierView?: DossierViewState;
   readonly triage?: TriageSurfaceState;
   readonly compact?: boolean;
+  /** R7RO.1 — the read-only reason text; set ⇒ every finding/bulk write withholds. */
+  readonly readOnly?: string | null;
 }): { marginBody: ReactNode; deskFindingsBody: ReactNode } | Record<string, never> {
   const dossier = data.dossier;
   if (!dossier) return {};
@@ -589,6 +604,7 @@ export function dossierSurfaces(data: {
   const visible = visibleDossierFindings(dossier, dv?.filters);
   const err = data.triage?.dispositionError;
   const compact = data.compact ?? false;
+  const readOnly = data.readOnly ?? null;
   const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
   const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
   const obligationFor = (view: FindingView) => {
@@ -609,6 +625,7 @@ export function dossierSurfaces(data: {
   const controlsFor = (view: FindingView) =>
     findingControlsFor(view, dossier.slug, dossier.runId, compact, err, {
       hasObligation: dossier.findingObligations?.[view.id] != null,
+      readOnly,
     });
   const filterAction = `/p/${dossier.slug}/review/${dossier.runId}`;
   return {
@@ -642,7 +659,17 @@ export function dossierSurfaces(data: {
         obligationFor={obligationFor}
         actionsFor={controlsFor}
         {...(dv?.triage === true ? { triage: sectionedTriageQueue(visible, { wholePiece: R.wholePieceLabel }) } : {})}
-        {...(compact ? {} : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
+        {...(compact || readOnly != null
+          ? readOnly != null
+            ? {
+                bulkActions: (
+                  <span data-readonly-controls="bulk" title={readOnly} style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                    {readOnly}
+                  </span>
+                ),
+              }
+            : {}
+          : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
       />
     ),
   };
@@ -714,9 +741,13 @@ export function DossierArticle({
       {/* P1.17 (§15.4) — the Showcase banner: the workspace's read-only worked example names itself
           and offers the ONE write affordance it has (Duplicate → a normal project). */}
       {dossier.showcase ? (
+        // R7RO.1 — the showcase notice IS the read-only mechanism's notice slot (the existing
+        // banner copy verbatim); C10 — the Duplicate CTA is the styled primary button, the ONE
+        // write a showcase keeps.
         <div
           role="note"
           data-showcase-banner
+          data-readonly-notice="showcase"
           style={{
             border: "1px solid var(--shell-border)",
             borderRadius: "10px",
@@ -729,7 +760,20 @@ export function DossierArticle({
           <strong>{COPY.showcase.bannerTitle}</strong>
           <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
           <form method="post" action={`/p/${dossier.slug}/duplicate`} data-duplicate-form="true" style={{ display: "inline" }}>
-            <button type="submit" style={{ fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+            <button
+              type="submit"
+              data-readonly-duplicate="true"
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                padding: "4px 12px",
+                borderRadius: "6px",
+                border: "1px solid var(--accent)",
+                background: "var(--accent)",
+                color: "var(--shell-bg)",
+                cursor: "pointer",
+              }}
+            >
               {COPY.showcase.duplicateCta}
             </button>
           </form>

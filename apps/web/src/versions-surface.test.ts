@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   ApiError,
   type ProjectRow,
@@ -9,8 +11,12 @@ import {
   type RestorePreviewDto,
   type FilesDto,
 } from "@rhema/api-client";
+import { VersionRail, type RestorePreviewData } from "@rhema/ui";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
+import { PageDataContext } from "./page-data.js";
+import { ComparePage } from "./pages.js";
+import { railLabels } from "./page-chrome.js";
 
 // P1.08 — the version story's web wiring (§5.8, §5.13): the version rail over the Page (chips +
 // compare-previous + the grouped restore-points dropdown + the ?restore preview / ?restored notice),
@@ -19,14 +25,19 @@ import type { DataSource } from "./data.js";
 
 const SLUG = "the-piece";
 
+// R7RO.1 — the only forced-SSR arm left is PHONE (ADR-128: the `showcase` arm is deleted; a
+// showcase row on desktop serves the shell). The rail/diff/artifact render asserts below pin
+// that arm — requests expecting SSR markup send PHONE.
+const PHONE = { headers: { "sec-ch-ua-mobile": "?1" } };
+
 const PROJECTS: ProjectRow[] = [
   {
     id: "proj_v",
     slug: SLUG,
     title: "The Piece",
     headDraftId: "d_2",
-    // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
-    // the `` escape is gone). The rail/diff/artifact render asserts below pin THAT arm.
+    // R7RO.1 — `showcase: true` is a read-only row fact now (the twins carry
+    // `project.readOnlyProject{showcase}`); it no longer forces SSR — the PHONE request does.
     showcase: true,
     state: { key: "edited_by_you", pill: "Edited by you", overlay: null, suggested: { action: "revise_using_edits", label: "Revise using your edits" } },
   },
@@ -184,50 +195,116 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
   return { body: new URLSearchParams(fields).toString(), headers: { "content-type": "application/x-www-form-urlencoded" } };
 }
 
+/** R7RO.1 — the desktop-shaped rail render has NO served arm left (the showcase arm is deleted
+ *  and every surviving SSR document is the §10.1-compact phone variant, which withholds the rail
+ *  wholesale). The rail's markup is pinned at the shared component the SSR `PageChrome` and the
+ *  SPA leaf both mount — same props the server feeds it. */
+function railMarkup(props: { preview?: RestorePreviewData; restoredN?: number } = {}): string {
+  return renderToStaticMarkup(
+    createElement(VersionRail, {
+      versions: RAIL.drafts,
+      outline: RAIL.outline,
+      chip: RAIL.chip,
+      currentN: 2,
+      hrefs: {
+        version: (n: number) => `/p/${SLUG}/v/${n}`,
+        artifact: (id: string) => `/p/${SLUG}/a/${id}`,
+        diff: (b: number, a: number | "working") => `/p/${SLUG}/v/${b}/diff/${a}`,
+        restorePreview: (pid: string) => `/p/${SLUG}/v/2?restore=${pid}`,
+      },
+      restore: {
+        points: POINTS,
+        restoreAction: (pid: string) => `/p/${SLUG}/v/2/restore/${pid}`,
+        ...(props.preview ? { preview: props.preview } : {}),
+      },
+      ...(props.restoredN != null ? { restoredN: props.restoredN } : {}),
+      labels: railLabels,
+    }),
+  );
+}
+
+/** The shared `ComparePage` element rendered with a non-compact PageData bag — the identical
+ *  desktop markup the SSR route emitted before R7RO.1 (the phone arm's compact variant is
+ *  asserted on the request legs). */
+function compareMarkup(bag: { layout: "side" | "inline" | "moves"; commentedHunkId?: string }): string {
+  return renderToStaticMarkup(
+    createElement(
+      PageDataContext.Provider,
+      { value: { compare: { slug: SLUG, n: "1", m: "2", layout: bag.layout, data: DIFF, ...(bag.commentedHunkId ? { commentedHunkId: bag.commentedHunkId } : {}) }, compact: false } },
+      createElement(ComparePage),
+    ),
+  );
+}
+
 describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
-  it("renders the chips, the ⚑ obligations chip, compare-previous, and the grouped restore dropdown", async () => {
+  it("the phone arm withholds the rail wholesale (§10.1 ✗); the desktop rail renders at the shared component", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/2`);
+    // R7RO.1 — the only forced-SSR arm left is phone: `railData && !phone` withholds the rail;
+    // the SPA leaf mounts it off the twin (editor.dom.test.tsx pins that mount).
+    const res = await app.request(`/p/${SLUG}/v/2`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("data-version-rail");
-    expect(html).toContain('data-version-chip="outline"');
-    expect(html).toContain('data-version-chip="1"');
-    expect(html).toContain('data-version-chip="2"');
+    expect(html).toContain('data-page-root="1"');
+    expect(html).toContain('data-ssr-cause="phone"');
+    expect(html).not.toContain("data-version-rail");
+    expect(html).not.toContain("data-compare-previous");
+    expect(html).not.toContain("data-restore-menu");
+
+    // the desktop rail (the shared component's non-compact render — what the leaf mounts):
+    const rail = railMarkup();
+    expect(rail).toContain("data-version-rail");
+    expect(rail).toContain('data-version-chip="outline"');
+    expect(rail).toContain('data-version-chip="1"');
+    expect(rail).toContain('data-version-chip="2"');
     // 🔒 on the frozen v1, the working dot + claims-pending flag on the human_revision head.
-    expect(html).toContain("data-lock");
-    expect(html).toContain("data-working-dot");
-    expect(html).toContain("data-claims-pending");
-    expect(html).toContain("data-reviewed");
-    expect(html).toContain("data-answered");
+    expect(rail).toContain("data-lock");
+    expect(rail).toContain("data-working-dot");
+    expect(rail).toContain("data-claims-pending");
+    expect(rail).toContain("data-reviewed");
+    expect(rail).toContain("data-answered");
     // the ⚑ project chip + the compare-previous deep link (v1 → v2).
-    expect(html).toContain('data-obligations-chip="true" data-open="2"');
-    expect(html).toContain(`href="/p/${SLUG}/v/1/diff/2"`);
-    expect(html).toContain("data-compare-previous");
+    expect(rail).toContain("data-obligations-chip");
+    expect(rail).toContain('data-open="2"');
+    expect(rail).toContain(`href="/p/${SLUG}/v/1/diff/2"`);
+    expect(rail).toContain("data-compare-previous");
     // the grouped restore-points dropdown — named always listed, older points ride Advanced.
-    expect(html).toContain("data-restore-menu");
-    expect(html).toContain('data-restore-group="earlier_today"');
-    expect(html).toContain('data-restore-group="named"');
-    expect(html).toContain('data-restore-group="earlier" data-tier="advanced"');
-    expect(html).toContain('data-restore-point="rp_named"');
-    expect(html).toContain(`?restore=rp_named`);
+    expect(rail).toContain("data-restore-menu");
+    expect(rail).toContain('data-restore-group="earlier_today"');
+    expect(rail).toContain('data-restore-group="named"');
+    expect(rail).toContain('data-restore-group="earlier" data-tier="advanced"');
+    expect(rail).toContain('data-restore-point="rp_named"');
+    expect(rail).toContain(`?restore=rp_named`);
   });
 
   it("?restore=<id> renders the preview card with the undoable apply form", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/2?restore=rp_named`);
+    // the phone arm withholds the preview card (it rides the rail — §10.1 ✗).
+    const res = await app.request(`/p/${SLUG}/v/2?restore=rp_named`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("data-restore-preview");
-    expect(html).toContain("before the rewrite");
-    expect(html).toContain("data-restore-apply");
-    expect(html).toContain(`action="/p/${SLUG}/v/2/restore/rp_named"`);
+    expect(html).toContain('data-page-root="1"');
+    expect(html).not.toContain("data-restore-preview");
+
+    // the desktop render (the shared component — same preview bag `pageRailBag` assembles):
+    const rail = railMarkup({
+      preview: {
+        point: POINTS.find((p) => p.id === PREVIEW.point.id)!,
+        view: PREVIEW.view,
+      },
+    });
+    expect(rail).toContain("data-restore-preview");
+    expect(rail).toContain("before the rewrite");
+    expect(rail).toContain("data-restore-apply");
+    expect(rail).toContain(`action="/p/${SLUG}/v/2/restore/rp_named"`);
   });
 
   it("?restored=<n> renders the undoable-apply notice", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}/v/2?restored=2`)).text();
-    expect(html).toContain("data-restored-notice");
+    // the phone arm withholds the notice (it rides the rail).
+    const html = await (await app.request(`/p/${SLUG}/v/2?restored=2`, PHONE)).text();
+    expect(html).not.toContain("data-restored-notice");
+    // the desktop render:
+    expect(railMarkup({ restoredN: 2 })).toContain("data-restored-notice");
   });
 
   it("the restore apply POSTs through and redirects with ?restored=<n>", async () => {
@@ -254,33 +331,41 @@ describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
 });
 
 describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
-  it("renders the side-by-side layout by default, inside the IDE shell, read-only", async () => {
+  it("the phone arm renders the §10.1 blocked note; the desktop layouts render at the shared element", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/1/diff/2`);
+    // R7RO.1 — the only forced-SSR arm left is phone, where diffs are the §10.1 ✗ column
+    // (PhoneBlockedNote); the SPA leaf mounts the compare off the twin (editor.dom.test.tsx
+    // pins `data-compare` + the hook parity). The desktop markup is pinned on the same
+    // `ComparePage` element with a non-compact PageData bag — what the route emitted before.
+    const res = await app.request(`/p/${SLUG}/v/1/diff/2`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-ide="1"');
-    expect(html).toContain('data-compare="true" data-layout="side"');
-    expect(html).toContain('data-compare-layout="side"');
-    expect(html).toContain('data-hunk="h1"');
-    expect(html).toContain('data-diff-side="before"');
-    expect(html).toContain('data-diff-side="after"');
+    expect(html).toContain('data-ssr-cause="phone"');
+    expect(html).toContain('data-phone-blocked="true"');
+    expect(html).not.toContain("data-compare=");
+
+    const side = compareMarkup({ layout: "side" });
+    expect(side).toContain('data-ide="1"');
+    expect(side).toContain('data-compare="true" data-layout="side"');
+    expect(side).toContain('data-compare-layout="side"');
+    expect(side).toContain('data-hunk="h1"');
+    expect(side).toContain('data-diff-side="before"');
+    expect(side).toContain('data-diff-side="after"');
     // the three layout links + the version line.
-    expect(html).toContain('data-layout-link="side"');
-    expect(html).toContain('data-layout-link="inline"');
-    expect(html).toContain('data-layout-link="moves"');
-    expect(html).toContain(`href="/p/${SLUG}/v/1/diff/2?layout=inline"`);
+    expect(side).toContain('data-layout-link="side"');
+    expect(side).toContain('data-layout-link="inline"');
+    expect(side).toContain('data-layout-link="moves"');
+    expect(side).toContain(`href="/p/${SLUG}/v/1/diff/2?layout=inline"`);
     // read-only: no edit affordances — but the hunk comment form renders on ANY layout.
-    expect(html).toContain('data-hunk-comment="h1"');
-    expect(html).not.toContain("contenteditable");
+    expect(side).toContain('data-hunk-comment="h1"');
+    expect(side).not.toContain("contenteditable");
   });
 
   it("?layout=inline renders the sequential hunk list; ?layout=moves renders What-changed", async () => {
-    const app = createWebApp(makeDeps());
-    const inline = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=inline`)).text();
+    const inline = compareMarkup({ layout: "inline" });
     expect(inline).toContain('data-compare-layout="inline"');
     expect(inline).toContain('data-hunk-comment="h1"');
-    const moves = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=moves`)).text();
+    const moves = compareMarkup({ layout: "moves" });
     // the unledgered pair shows the "coherence read" caption + the unlinked hunks.
     expect(moves).toContain("data-unlinked-note");
     expect(moves).toContain('data-hunk="h1"');
@@ -288,7 +373,7 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
 
   it("404s on an unknown version", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/1/diff/9`);
+    const res = await app.request(`/p/${SLUG}/v/1/diff/9`, PHONE);
     expect(res.status).toBe(404);
   });
 
@@ -315,15 +400,18 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
     });
     expect(res.status).toBe(302);
     expect(commentOnCompareHunk).not.toHaveBeenCalled();
-    const html = await (await app.request(`/p/${SLUG}/v/1/diff/2?commented=h1`)).text();
-    expect(html).toContain('data-comment-saved="true"');
+    // the `?commented=` marker rides the compare render — withheld with it on the phone arm
+    // (§10.1), and pinned on the shared element's desktop render.
+    const html = await (await app.request(`/p/${SLUG}/v/1/diff/2?commented=h1`, PHONE)).text();
+    expect(html).toContain('data-phone-blocked="true"');
+    expect(compareMarkup({ layout: "side", commentedHunkId: "h1" })).toContain('data-comment-saved="true"');
   });
 });
 
 describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () => {
   it("renders typed sections: SE/SR rows, I behind Advanced, H as a sealed count — never a row", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}/v/2`)).text();
+    const html = await (await app.request(`/p/${SLUG}/v/2`, PHONE)).text();
     expect(html).toContain("data-files-pane");
     expect(html).toContain('data-files-section="drafts"');
     expect(html).toContain('data-file-row="art_d2"');
@@ -347,7 +435,7 @@ describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () =>
 
   it("the artifact deep link renders the read-only Page inside the IDE shell", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/a/art_outline`);
+    const res = await app.request(`/p/${SLUG}/a/art_outline`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-ide="1"');
@@ -358,7 +446,7 @@ describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () =>
 
   it("an H-kind (or unknown) artifact 404s — there is no route for it", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/a/art_hidden`);
+    const res = await app.request(`/p/${SLUG}/a/art_hidden`, PHONE);
     expect(res.status).toBe(404);
   });
 });

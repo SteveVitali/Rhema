@@ -17,10 +17,13 @@ export interface DecisionsListProps {
   /** the form action for a row's answer (`/p/:slug/decisions/:id`). */
   readonly formActionFor: (id: string) => string;
   readonly labels: DecisionsListLabels;
+  /** R7RO.1 — read-only projects withhold the answers: the option buttons render disabled
+   *  with this reason tooltip (never a POST). */
+  readonly disabledTitle?: string;
 }
 
 /** The minimal Decisions surface — open rows, oldest first, each answerable inline. */
-export function DecisionsList({ items, formActionFor, labels }: DecisionsListProps): ReactNode {
+export function DecisionsList({ items, formActionFor, labels, disabledTitle }: DecisionsListProps): ReactNode {
   return (
     <section data-decisions-list="true">
       <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 8px" }}>
@@ -54,10 +57,11 @@ export function DecisionsList({ items, formActionFor, labels }: DecisionsListPro
                 {item.options.map((option) => (
                   <button
                     key={option}
-                    type="submit"
+                    type={disabledTitle != null ? "button" : "submit"}
                     name="answer"
                     value={option}
                     data-decision-option={option}
+                    {...(disabledTitle != null ? { disabled: true, title: disabledTitle } : {})}
                     style={{
                       padding: "6px 12px",
                       borderRadius: "7px",

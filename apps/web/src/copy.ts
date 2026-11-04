@@ -2329,6 +2329,19 @@ export const COPY = {
     heldFileReady: "Your held file is here — upload it to start.",
   },
 
+  // R7RO.1 (REQ-DWEB-14; spec §3.3 S-3) — the ONE client read-only mechanism's copy: one notice
+  // per reason (the `run_lock` notice is the Page's existing lock banner — DS §5.4 verbatim — so
+  // it has no leaf here) + the per-reason tooltip the withheld write controls carry.
+  readOnly: {
+    demoNotice:
+      "A read-only demo of a real essay's editorial record. Start your own project to use these tools.",
+    reason: {
+      demo: "Read-only demo — controls are disabled",
+      showcase: "Read-only sample — controls are disabled",
+      run_lock: "A run has locked this draft — controls are disabled",
+    },
+  },
+
   // SPA.3 — the shell's no-JS floor (REQ-BND-12): names the surface honestly instead of leaving a
   // dead document. SPA.28: the "Open the server-rendered version" escape string is retired — no
   // SSR document exists to link (the `?ssr=1` machinery is gone with the flag it escaped).

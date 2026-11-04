@@ -482,6 +482,18 @@ twins, absent otherwise). Live re-verify owed: `D-SPACAP.3-1` (three legs on the
 tip). REQ-ED-12 stays MET — the divergence was renderer label, never capability; the fix
 closes the label seam.
 
+**Amended (R7RO.1 — ADR-128, REQ-RELOAD-5, 2026-11-03):** the `row.showcase === true` arm of
+the forced-SSR predicate is removed on all five Page-family document GETs — the verdict is
+`isPhoneRequest(c)` alone. A showcase row's document serves the SPA shell and its in-app hops
+are client navigations; read-only posture now rides the `ReadOnlyProject{reason}` carrier
+(`project.readOnlyProject` on the Page-family, dossier, run-report, and obligation-new twins;
+`readOnlyProject` in the boot payload on those document routes), with `run_lock` naming a run's
+held lock — a frozen VERSION is never a reason (REQ-WRITE-7). `twinForcesSsr` and the leaf
+handoff are deleted; `project.showcase` remains an informational row fact. Removal-detecting
+pins updated honestly: `renderer-overrides.test.ts` (phone-only arms + carrier counts),
+`read-only.dom.test.tsx` (the census + notices), `server.test.ts` (the carrier on every twin).
+The `page`/`ide` island set is unchanged — phone-UA forced SSR still mounts them forever.
+
 ### 14.9 The forever-SSR island set — ADR-107; SPA.26 retired `outline` only (amends §3.7, §6's "other islands port" clause, REQ-ISL-1's retirement leg, REQ-TL-12)
 
 **v1.0 said:** auth'd islands "retire per-surface as flags flip and are deleted in the

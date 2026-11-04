@@ -42,6 +42,7 @@ import type {
   VoiceListRowDto,
 } from "@rhema/api-client";
 import { COPY } from "./copy.js";
+import type { ReadOnlyReason } from "@rhema/contracts";
 import {
   approvalRowLabels,
   decisionsLabels,
@@ -208,6 +209,13 @@ export type PageChromeBag = NonNullable<PageData["page"]>;
 export interface PageChromeProps {
   readonly page: PageChromeBag;
   readonly compact?: boolean;
+  /**
+   * R7RO.1 (REQ-DWEB-14) — the read-only reason (demo/showcase/run_lock) when the project is
+   * read-only: the rail's restore-apply and the proposal cards' accept/reject withhold with a
+   * reason tooltip. `run_lock` keeps comments (DS §5.4 — they become Guidance); a frozen
+   * version is never a reason (typing forks v(N+1), REQ-WRITE-7).
+   */
+  readonly readOnlyReason?: ReadOnlyReason | null;
   /** SPA.23 — replaces the `data-page-host` block (the SPA's `PageMount` owns it). */
   readonly host?: ReactNode;
   /** SPA.23 — `false` omits the `script[type=json]` embeds + the `/assets/page.js` island tag. */
@@ -224,7 +232,7 @@ export interface PageChromeProps {
  * `markdownToDoc` call before render.
  */
 export function PageChrome(props: PageChromeProps): ReactNode {
-  const { page, compact } = props;
+  const { page, compact, readOnlyReason } = props;
   const { slug, doc } = page;
   const base = `/p/${slug}/edit/${doc.draftId}`;
   const rail = page.rail;
@@ -248,7 +256,11 @@ export function PageChrome(props: PageChromeProps): ReactNode {
           }}
           restore={{
             points: rail.points,
-            restoreAction: (pid) => `/p/${slug}/v/${rail.currentN}/restore/${pid}`,
+            // R7RO.1 — the restore apply is a write control: withheld under every reason with
+            // its tooltip (a run lock would 409 it anyway — hidden before any request).
+            ...(readOnlyReason == null
+              ? { restoreAction: (pid: string) => `/p/${slug}/v/${rail.currentN}/restore/${pid}` }
+              : { disabledTitle: COPY.readOnly.reason[readOnlyReason] }),
             ...(rail.preview
               ? {
                   preview: {
@@ -310,6 +322,9 @@ export function PageChrome(props: PageChromeProps): ReactNode {
         {...(props.embeds != null ? { embeds: props.embeds } : {})}
         {...(props.onProposalAccept ? { onProposalAccept: props.onProposalAccept } : {})}
         {...(props.onProposalReject ? { onProposalReject: props.onProposalReject } : {})}
+        {...(readOnlyReason != null
+          ? { readOnlyReason, readOnlyTooltip: COPY.readOnly.reason[readOnlyReason] }
+          : {})}
       />
     </>
   );
@@ -327,6 +342,15 @@ export interface ProjectOverviewProps {
   readonly approvalSettings?: ApprovalSettingsDto;
   readonly explainersDismissed?: readonly string[];
   readonly compact?: boolean;
+  /**
+   * R7RO.1 (REQ-DWEB-14) — the read-only reason when the project is read-only: every write
+   * affordance on the overview withholds with a reason tooltip (rename, the import/run/export
+   * action row, approval settings + gate decide forms, the voice picker, the decision answers,
+   * the working-head Page's proposals/restore). `run_lock` keeps the run-lifecycle controls
+   * (gate answers, decisions, comments — DS §5.4: a waiting gate still holds its lock, so
+   * withholding them would deadlock the run) and the Cancel-run exit.
+   */
+  readonly readOnly?: ReadOnlyReason | null;
   readonly triage?: PageData["triage"];
   readonly projectVoice?: {
     readonly current: NonNullable<PageData["projectVoice"]>["current"];
@@ -383,6 +407,11 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
     timelineView,
   } = props;
   const slug = project?.slug ?? "";
+  // R7RO.1 — `demo`/`showcase` withhold EVERY write affordance (the `run_lock` arm is doc-level:
+  // its doc-write controls live on the Page/rail, while the run-lifecycle controls below —
+  // gates, decisions, voice — must stay live or a waiting gate deadlocks; Cancel-run stays too).
+  const withhold = props.readOnly === "demo" || props.readOnly === "showcase";
+  const tip = props.readOnly != null ? COPY.readOnly.reason[props.readOnly] : undefined;
   const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
   // P1.09 — the §5.11 ordering: blocked-on-you first by soonest deadline, waiting next, informational last.
   const orderedGates = needsYouOrder(gates);
@@ -419,7 +448,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
         )
       ) : null}
       <PageTitle>{project?.title ?? ""}</PageTitle>
-      {project?.rename && compact !== true ? (
+      {project?.rename && compact !== true && !withhold ? (
         // P1.04 — the row action's Rename: an inline title form posting to /p/:slug/rename.
         // P1.19 — §10.1 ✗: a configuration control — suppressed on phone width.
         <form method="post" action={`/p/${slug}/rename`} data-rename-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", margin: "8px 0" }}>
@@ -469,8 +498,10 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
         // navigations, so `<a>` stays the correct element).
         <p className="ide-actions" style={{ display: "flex", gap: "16px" }}>
           {/* P1.19 — §10.1 ✗: import / run start / export are never offered on phone width; the
-              reader link stays (the Page mounts read-only at that width). */}
-          {compact === true ? null : (
+              reader link stays (the Page mounts read-only at that width).
+              R7RO.1 — under a read-only reason the WHOLE row withholds (C2: the affordances only
+              ever 409'd — the Page itself already mounts read-only inline). */}
+          {compact === true || withhold ? null : (
             <>
               <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
               <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
@@ -489,6 +520,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           <PageChrome
             page={page}
             compact={compact}
+            {...(props.readOnly != null ? { readOnlyReason: props.readOnly } : {})}
             {...(props.pageHost != null ? { host: props.pageHost } : {})}
             {...(props.pageEmbeds != null ? { embeds: props.pageEmbeds } : {})}
             {...(props.onProposalAccept ? { onProposalAccept: props.onProposalAccept } : {})}
@@ -509,6 +541,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
               ...(decisionsByRun.has(g.runId) ? { decisions: decisionsByRun.get(g.runId) } : {}),
               explainer: i === 0 && showExplainer,
               ...(props.spa ? { presenceScript: false } : {}),
+              ...(withhold && tip != null ? { readOnlyTitle: tip } : {}),
             });
             const artifact =
               g.artifactTitle != null
@@ -540,7 +573,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           the standing-guidance manager (§6.5; REQ-GATE-10). Falls back to the PRB.05 opt-in when the
           settings read is absent. */}
       {/* P1.19 — §10.1 ✗: approval policy is a configuration control — suppressed on phone width. */}
-      {project && compact !== true ? (
+      {project && compact !== true && !withhold ? (
         approvalSettings ? (
         <ApprovalSettingsSection slug={slug} settings={approvalSettings} />
         ) : (
@@ -566,7 +599,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           (the ad-hoc default, REQ-PERSONA-20). Selecting a persona pins its current profile snapshot
           server-side; the shared pill renders beside the name.
           P1.19 — §10.1 ✗: voice configuration is suppressed on phone width. */}
-      {project && projectVoice && compact !== true ? (
+      {project && projectVoice && compact !== true && !withhold ? (
         <div
           data-voice-picker="true"
           style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
@@ -651,6 +684,7 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           }))}
           formActionFor={(id) => `/p/${slug}/decisions/${id}`}
           labels={decisionsLabels}
+          {...(withhold && tip != null ? { disabledTitle: tip } : {})}
         />
       </div>
     </>

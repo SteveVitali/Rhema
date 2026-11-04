@@ -57,6 +57,9 @@ import { gateCardFor, gateCardModel } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
 import { useGatePresence } from "../gate-presence.js";
+import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
+// R7RO.1 — the showcase notice is the dossier's OWN banner (DossierArticle, verbatim copy); the
+// generic notice mounts only for `demo` — a showcase dossier never sees two notices.
 import type { IdeChromeData } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
 import { useShowcaseAnchorBeacon } from "../showcase-beacon.js";
@@ -267,10 +270,13 @@ export function TimelineGateCard({
   run,
   slug,
   compact,
+  readOnlyTitle,
 }: {
   readonly run: TimelineRun;
   readonly slug: string;
   readonly compact: boolean;
+  /** R7RO.1 — read-only projects wrap the card's decide controls (disabled + tooltip). */
+  readonly readOnlyTitle?: string | null;
 }): ReactNode {
   const gate = run.gate as GateCardDto | undefined;
   const autoProceed = gate != null ? gateCardModel(gate, compact).autoProceed : false;
@@ -282,6 +288,7 @@ export function TimelineGateCard({
     <div ref={ref}>
       {gateCardFor(gate, slug, compact, undefined, {
         presenceScript: false,
+        ...(readOnlyTitle != null ? { readOnlyTitle } : {}),
         ...((run.card as { decisions?: readonly GateDecisionView[] } | undefined)?.decisions != null
           ? { decisions: (run.card as { decisions?: readonly GateDecisionView[] }).decisions }
           : {}),
@@ -305,6 +312,10 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
   const { mutation, mutError, write, router } = useDossierWrite();
   const dossier = data.dossier;
   const slug = dossier.slug;
+  // R7RO.1 — the read-only fact (the twin's carrier, else the boot slot); `run_lock` never arms
+  // the dossier's write census (those are run-lifecycle writes, kept live on purpose).
+  const ro = useReadOnlyProject(data);
+  const roTip = ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null;
 
   // The leaf-owned filter/triage arms — the route's validated search, verbatim the GET grammar.
   const filters = useMemo<Record<string, string | undefined>>(
@@ -375,8 +386,9 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
           ...(dispositionError != null ? { dispositionError } : {}),
         },
         compact,
+        readOnly: roTip,
       }),
-    [dossier, view, data.triage?.dispositionError, data.triage?.savedFindingId, dispositionError, compact],
+    [dossier, view, data.triage?.dispositionError, data.triage?.savedFindingId, dispositionError, compact, roTip],
   );
 
   const busy = mutation.isPending;
@@ -399,7 +411,9 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
             timelineCardLabels: runCardLabels,
             timelineHrefs: timelineHrefs(slug),
             // P1.09 — the waiting run mounts the IDENTICAL §6.4 card (presence via the hook twin).
-            renderGateCard: (run: TimelineRun) => <TimelineGateCard run={run} slug={slug} compact={compact} />,
+            renderGateCard: (run: TimelineRun) => (
+              <TimelineGateCard run={run} slug={slug} compact={compact} readOnlyTitle={roTip} />
+            ),
           }
         : {}),
     }),
@@ -409,6 +423,7 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
 
   return (
     <div data-spa-surface ref={presenceRef} onSubmit={onSubmit} aria-busy={busy || undefined}>
+      {ro != null && ro.reason === "demo" ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <DossierArticle
         dossier={dossier}
         compact={compact}
@@ -470,6 +485,10 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
   const [error, setError] = useState<string | null>(null);
   const sheet = data.obligationNew;
   const slug = sheet.slug;
+  // R7RO.1 — the twin carries the read-only fact on its own bag; under a reason the create form
+  // withholds (disabled fieldset + the reason tooltip) before any request.
+  const ro = useReadOnlyProject({ project: sheet });
+  const roTip = ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null;
   const create = useMutation<MutationReply, unknown, { form: HTMLFormElement; json: Record<string, string | string[]> }>({
     mutationFn: async ({ json }) => {
       return bffFetch<MutationReply>(`/p/${slug}/obligations`, { method: "POST", json });
@@ -499,13 +518,20 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
   };
   return (
     <div data-spa-surface>
+      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{sheet.projectTitle}</a>} footer={obligationFooter()}>
         <PageTitle>{COPY.obligation.heading}</PageTitle>
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>{COPY.obligation.lede}</p>
         {error != null ? (
           <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{error}</p>
         ) : null}
-        <form method="post" action={`/p/${slug}/obligations`} data-obligation-form="true" style={{ maxWidth: "68ch" }} onSubmit={onSubmit}>
+        {roTip != null ? (
+          // R7RO.1 — the withheld create form (disabled + reason tooltip, before any request).
+          <fieldset disabled title={roTip} style={{ maxWidth: "68ch", border: 0, margin: 0, padding: 0 }}>
+            <p data-readonly-controls="obligation" style={{ fontSize: "13px", color: "var(--shell-fg-faint)" }}>{roTip}</p>
+          </fieldset>
+        ) : null}
+        <form method="post" action={`/p/${slug}/obligations`} data-obligation-form="true" style={{ maxWidth: "68ch" }} onSubmit={onSubmit} hidden={roTip != null}>
           <input type="hidden" name="next" value={sheet.back || `/p/${slug}`} />
           <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
             {COPY.obligation.titleLabel}
