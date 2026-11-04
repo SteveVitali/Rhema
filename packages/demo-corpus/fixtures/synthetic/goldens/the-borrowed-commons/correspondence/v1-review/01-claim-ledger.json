@@ -1,0 +1,177 @@
+{
+ "claims": [
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b5",
+    "confidence": 1,
+    "endOffset": 250,
+    "quote": "the repair log showed eleven entries over nine years and none that named a party",
+    "startOffset": 170
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/averly/parish-book-1994",
+   "note": "escalated to Tier 1\nFix: name the ceremonial row in the sentence.",
+   "ordinal": 0,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/averly/parish-book-1994",
+     "stance": "contradicts",
+     "url": "https://records.example.org/averly/parish-book-1994"
+    }
+   ],
+   "text": "\"the repair log showed eleven entries over nine years and none that named a party\"",
+   "tier": 1,
+   "url": "https://records.example.org/averly/parish-book-1994",
+   "verdict": "contradicted"
+  },
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b13",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "The first objection is that commons failure is a funding story: parishes lose revenue, seals go unreplaced. It is not wrong, but it is incomplete — the Averly parish was funded through the failure yea",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+   "ordinal": 1,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+     "stance": "supports",
+     "url": "https://records.example.org/averly/accounts-2001"
+    }
+   ],
+   "text": "\"the parish was funded through the failure year\"",
+   "tier": 1,
+   "url": "https://records.example.org/averly/accounts-2001",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b5",
+    "confidence": 0.48,
+    "endOffset": 200,
+    "quote": "Consider the lifting pump at Averly Quay, maintained by a parish council that had stopped writing down who last serviced it. When the seal failed in March of a wet year, the repair log showed eleven e",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/averly/minutes-index",
+   "note": "(escalated: reputationally protective) on substance; the quotation is unverifiable and must be de-quoted",
+   "ordinal": 2,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/averly/minutes-index",
+     "stance": "supports",
+     "url": "https://records.example.org/averly/minutes-index"
+    }
+   ],
+   "text": "\"eleven times in two years\"",
+   "tier": 2,
+   "url": "https://records.example.org/averly/minutes-index",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b6",
+    "confidence": 1,
+    "endOffset": 190,
+    "quote": "toll ledgers kept in three hands over forty years",
+    "startOffset": 141
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://books.example.org/marsh/averly-footbridge",
+   "note": "(reuse C2, fix checked) (reuse confirmation)",
+   "ordinal": 3,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://books.example.org/marsh/averly-footbridge",
+     "stance": "supports",
+     "url": "https://books.example.org/marsh/averly-footbridge"
+    }
+   ],
+   "text": "\"toll ledgers kept in three hands over forty years\"",
+   "tier": 1,
+   "url": "https://books.example.org/marsh/averly-footbridge",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b3",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "The commons of a town is not a meadow. It is an agreement that wears out at the edges: a footbridge everyone uses and no one owns, a pump that runs until the seal gives way on a holiday weekend. The a",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://press.example.org/ondatje/fenland-boards",
+   "note": "(epigraph)",
+   "ordinal": 4,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://press.example.org/ondatje/fenland-boards",
+     "stance": "contextualizes",
+     "url": "https://press.example.org/ondatje/fenland-boards"
+    }
+   ],
+   "text": "\"the commons of a town is not a meadow\"",
+   "tier": 2,
+   "url": "https://press.example.org/ondatje/fenland-boards",
+   "verdict": "misleading_in_context"
+  },
+  {
+   "accessedAt": "2026-08-02T00:00:00Z",
+   "anchor": {
+    "blockId": "b13",
+    "confidence": 1,
+    "endOffset": 271,
+    "quote": "money sat in a reserve line while the roster stayed unwritten",
+    "startOffset": 210
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+   "note": "in one clause (major escalation); the rest Substantially accurate",
+   "ordinal": 5,
+   "sources": [
+    {
+     "accessedAt": "2026-08-02T00:00:00Z",
+     "normalizedUrl": "https://records.example.org/averly/accounts-2001",
+     "stance": "contradicts",
+     "url": "https://records.example.org/averly/accounts-2001"
+    }
+   ],
+   "text": "\"money sat in a reserve line while the roster stayed unwritten\"",
+   "tier": 1,
+   "url": "https://records.example.org/averly/accounts-2001",
+   "verdict": "contradicted"
+  },
+  {
+   "anchor": {
+    "blockId": "b16",
+    "confidence": 1,
+    "endOffset": 367,
+    "quote": "the seal has already failed; the water just has not arrived yet",
+    "startOffset": 304
+   },
+   "humanAdded": false,
+   "note": "(not scored — evaluative)",
+   "ordinal": 6,
+   "text": "\"the seal has already failed; the water just has not arrived yet\"",
+   "tier": 3,
+   "verdict": "unverifiable"
+  }
+ ],
+ "inventoryCount": 24,
+ "sidecar": "claim_ledger",
+ "version": 1
+}

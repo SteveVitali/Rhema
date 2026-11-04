@@ -701,7 +701,17 @@ importers:
         specifier: ^0.31.4
         version: 0.31.10
 
-  packages/demo-corpus: {}
+  packages/demo-corpus:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../findings-core
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../protocols
 
   packages/editor:
     dependencies:

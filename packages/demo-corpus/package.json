@@ -18,5 +18,10 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/findings-core": "workspace:*",
+    "@rhema/protocols": "workspace:*"
   }
 }
