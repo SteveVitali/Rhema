@@ -117,6 +117,11 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
   `190a_HUMAN-H11` session 2 (post-deploy browser/money legs + content/legal approvals);
   `196a_HUMAN-H12` merge sweep 1 (pre-launch); `198a_HUMAN-H13` merge the launch-flip PR.
 
+- **H14–H16 — Round-7 operator rows** (round 7, 2026-11-03): `214c_HUMAN-H14` corpus sign-off
+  (`packages/demo-corpus/PROVENANCE.md` — allowlist, redactions, exclusions; blocks the one real-corpus
+  data commit 219); `223a_HUMAN-H15` demo/tour copy sign-off on the R7a preview (blocks 224);
+  `247a_HUMAN-H16` optional UX review session in 250's R7b preview window, before prod (GD-PREVIEW.R7).
+
 ## The chain
 
 | # | Ticket file | Phase | Scope (one line) |
@@ -394,6 +399,71 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 207 | `207_R6DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs (launched state) | — |
 | 208 | `208_R6DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs + the closing ledger write | — |
 
+### Round 7 — public demo + UX overhaul (spec: `docs/round-7-draft-spec.md` v0.2, ratified 2026-11-03)
+
+Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 2026-11-11) and the R6 tail 201–208 resume on their own clock. Two deploy phases (`GD-ORDER-SPLIT.R7`): **R7a** rows 209–224 (demo + must-fix) deploy at 224; **R7b** rows 225–250 (UX overhaul + tour re-pin) deploy at 250; tail 251–254. **Previews (`GD-PREVIEW.R7`): no per-ticket previews — one owned preview per phase, stood up only by 224 and 250; round cap $20.** Every R7b row merges after 224 (spec §5.1).
+
+| # | file | phase | scope | gate |
+|---|---|---|---|---|
+| 209 | `209_R7OPEN.1__open-round-7.md` | R7a open | open round 7: ADR-126…130 shells, DEFERRALS sections + D-OBS.1-3/D-SPA.28-1 flips, D*/U* legs registered red, finding-map + BACKLOG seeds (REQ-CLOSE-5, REQ-DACC-8, REQ-DOPS-7) | — |
+| 210 | `210_R7KIT.1__control-base-layer.md` | R7a must-fix | control base layer + tokens + focus rings (REQ-KIT-1, REQ-COPY-7) | — |
+| 211 | `211_R7RO.1__read-only-project-mode.md` | R7a must-fix | ReadOnlyProject (demo/showcase/run_lock) + Showcase in the SPA (REQ-DWEB-14, REQ-RELOAD-5) | — |
+| 212 | `212_R7FIX.1__pane-stopgap-focus-exit.md` | R7a must-fix | pane overlay/occlusion stopgap + Desk head + Focus-mode exit (REQ-PANE-0, REQ-WRITE-4) | — |
+| 213 | `213_R7COPY.0__record-composed-run-card.md` | R7a must-fix | retire the generated walkthrough; record-composed run card; one run state/count (REQ-COPY-4, REQ-SYNC-1/2; ADR-130) | — |
+| 214 | `214_R7DEM.1__corpus-export-sanitize.md` | R7a demo | `packages/demo-corpus`: package, allowlist exporter, sanitizer, denylist gate, image sanitization, PROVENANCE writer, synthetic fixture, licence carve-out (REQ-CORPUS-1…11/13/15, REQ-DOPS-1/3) | — |
+| 214b | `214b_R7DEM.1b__published-fetch-real-export.md` | R7a demo | one-time Substack fetch (pre-authorized), redaction data, LOCAL real export + gates, H14 packet + export digest (REQ-CORPUS-12, REQ-DOPS-4) | pre-auth (spec §6 fetch) |
+| 214c | `214c_HUMAN-H14__corpus-sign-off.md` | R7a marker | **human** — corpus sign-off (PROVENANCE.md + export digest) | — |
+| 215 | `215_R7DEM.2a__convert-claim-ledgers.md` | R7a demo | converter: claim ledgers + anchors on the synthetic fixture (REQ-CONV-1…6/11) | — |
+| 216 | `216_R7DEM.2b__convert-letters-findings.md` | R7a demo | converter: letters/findings/rubric/second read (REQ-CONV-7…9/13/14/16) | — |
+| 217 | `217_R7DEM.2c__convert-ledgers-diffs.md` | R7a demo | converter: response ledgers/structure plan/overrides/what-changed (REQ-CONV-10/12/15/17) | — |
+| 218 | `218_R7DEM.3__snapshot-projector.md` | R7a demo | projector core: editor docs, versions/diffs, what-changed, files tree, artifact pages, chunking, DTO contract/drift harness (REQ-CORPUS-9) | — |
+| 218a | `218a_R7DEM.3b__projector-runs-figures-counts.md` | R7a demo | projector: dossier, run report, timeline, replayed runs (S-9), figure image DTO, card facts/counts — sole count owner (REQ-DWEB-15, REQ-TOUR-1 data, REQ-SYNC-2 demo half) | — |
+| 219 | `219_R7DATA.1__real-corpus-data-commit.md` | R7a demo | the ONE real-corpus data commit: corpus + goldens + snapshots (REQ-CORPUS-14) | H14 |
+| 220 | `220_R7DEM.4__demo-serving.md` | R7a demo | server half: demo~ registry, guard, demoDataSource, nested JSON app, boot payload, SHA-keyed twins, asset route, image assertion, `/demo` SSR frame, demo DOM bucket (REQ-DWEB-1…5/8/10/17, REQ-DOPS-2) | — |
+| 220a | `220a_R7DEM.4b__demo-spa-boot-url.md` | R7a demo | SPA half: URL rewrite spike (S-1), SPA boot fixes, document-nav entry/exit, figure-card render, legs R*.demo + P1.demo (REQ-DWEB-6/9/11/16) | — |
+| 221 | `221_R7DEM.5__demo-mode-hub.md` | R7a demo | demo-mode side-effect gating (regenerated table + recording proxy), label rendering, excluded refs, escalations, lazy tour seam, D3.readonly (REQ-DWEB-7/12/13, REQ-TOUR-6/7) | — |
+| 221a | `221a_R7DEM.5b__demo-hub-cards.md` | R7a demo | `/demo` hub + essay cards + 'what to look at' cards + deep links, D1.hub (REQ-TOUR-1/3/8) | — |
+| 222 | `222_R7DEM.6a__guided-tour.md` | R7a demo | guided tour on SPD + entry points + honesty copy (REQ-TOUR-2/4/5) | — |
+| 223 | `223_R7DEM.6b__demo-metrics-carve-out.md` | R7a demo | anonymous metrics carve-out + reused-surface analytics suppression (REQ-TOUR-9, REQ-DOPS-5) | — |
+| 223a | `223a_HUMAN-H15__demo-copy-sign-off.md` | R7a marker | **human** — demo/tour copy sign-off on the R7a preview | — |
+| 224 | `224_R7DEP.1__r7a-deploy.md` | R7a deploy | the ONE R7a preview (walk all R7a legs; H15 sign-off) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → provenance → teardown (REQ-DOPS-6, REQ-DACC-1…6) | pre-auth (GD-DEPLOY.R7, GD-GOLDEN.R7, GD-PREVIEW.R7); H15 |
+| 225 | `225_R7KIT.2__ui-primitives.md` | R7b foundations | baseline/budget, deps, `uiCss()`, entry guard, ADR-129, shell-critical primitives (REQ-KIT-2 part, REQ-KIT-5, REQ-DOPS-8) | — |
+| 225a | `225a_R7KIT.2b__primitives-forms-guard-rule.md` | R7b foundations | form/menu primitives (Popover, ContextMenu, Select, Tabs, Checkbox, RadioGroup, Switch, cmdk Combobox, TextField/Area, RadioCards, Chip, EmptyState, Accordion) + `no-raw-controls` rule off (REQ-KIT-2 rest, REQ-GUARD-1 authoring) | — |
+| 226 | `226_R7SHELL.1a__app-shell-sidebar.md` | R7b foundations | AppShell + sidebar + in-shell states + `/billing` alias + sidebar/panel chords (REQ-SHELL-1/2/6) | — |
+| 227 | `227_R7SHELL.1b__header-removal-framing.md` | R7b foundations | remove the 14 leaf headers; frame outline/figures/run report/settings/voices/usage (REQ-SHELL-3/5) | — |
+| 228 | `228_R7SHELL.1c__global-palette-search.md` | R7b foundations | global ⌘K palette + tenant-scoped `GET /search` (REQ-SHELL-7) | — |
+| 229 | `229_R7PANE.1__split-pane-engine.md` | R7b foundations | SplitPane engine + breakpoints + right panel (Desk bodies moved unchanged) (REQ-PANE-1/2/3) | — |
+| 230 | `230_R7SHELL.2__project-scope-sidebar.md` | R7b | project scope in the sidebar + Files tree (REQ-SHELL-4) | — |
+| 231 | `231_R7RELOAD.1__no-reload-forms.md` | R7b | delegated submit, redirect targets, mutationOutcome + no-reload guard (REQ-RELOAD-2/3/4/6) | — |
+| 232 | `232_R7TALK.1a__chat-panel-thread.md` | R7b | chat thread + composer + JSON send + progress streaming (REQ-TALK-1/2/3, REQ-RELOAD-1) | — |
+| 233 | `233_R7TALK.1b__chat-tabs-burn-investigation.md` | R7b | version-aware Findings/Claims + chat burn-vs-cap investigation (REQ-TALK-4, REQ-SYNC-6) | — |
+| 234 | `234_R7HOME.1__projects-list.md` | R7b | flat projects list + KIT-3 batch c1 (REQ-HOME-1) | — |
+| 235 | `235_R7HOME.2a__editable-imports.md` | R7b | editable imports (API/DB) + import fidelity (REQ-HOME-4/5) | — |
+| 236 | `236_R7HOME.2b__project-opens-to-page.md` | R7b | project opens to Page, blank new project, Project settings page, outline coherence (REQ-HOME-2/3/6) | — |
+| 237 | `237_R7WRITE.1a__format-bubble-header-strip.md` | R7b | format bubble + page header strip (REQ-WRITE-1/6) | — |
+| 238 | `238_R7WRITE.1b__comments-fork-undo.md` | R7b | comment → Guidance + fork toast + discard-fork API (REQ-WRITE-2/7) | — |
+| 239 | `239_R7WRITE.2__source-theme-keymap.md` | R7b | source wrap, paper theme, full browser-safe keymap + `?` sheet (REQ-WRITE-5/8, REQ-KEYS-1/2) | — |
+| 240 | `240_R7KIT.3a__migrate-settings-billing.md` | R7b | migrate settings/billing/usage/voices + copy fidelity (REQ-KIT-3a, REQ-KIT-4) | — |
+| 240a | `240a_R7KIT.3a2__migrate-voices.md` | R7b | migrate voices (REQ-KIT-3a part) | — |
+| 241 | `241_R7KIT.3b__migrate-run-sheet-export.md` | R7b | migrate run sheet/export/import/new project + number formatter (REQ-KIT-3b, REQ-COPY-5) | — |
+| 242 | `242_R7KIT.3c2__migrate-outline-figures.md` | R7b | migrate outline + figures (REQ-KIT-3 batch c2) | — |
+| 243 | `243_R7KIT.3d__migrate-ide-dossier-layout.md` | R7b | migrate IDE surfaces incl. `packages/ui/src` worst raw-control files (REQ-KIT-3d) | — |
+| 243a | `243a_R7KIT.3e__dossier-layout-claims.md` | R7b | dossier layout + claim-ledger display + dossier files migration; owns U4 (REQ-PANE-5, REQ-COPY-8) | — |
+| 244 | `244_R7COPY.1a__labels-jargon-guard.md` | R7b | label table + jargon pass + vocabulary guard (REQ-COPY-1/6, REQ-GUARD-2) | — |
+| 245 | `245_R7COPY.1b__error-copy-markdown.md` | R7b | one sanitized markdown renderer + chat seam closure (REQ-COPY-3) — slug kept (never rename) | — |
+| 245a | `245a_R7COPY.1c__error-copy.md` | R7b | `errorCopy(code)` + code inventory (REQ-COPY-2) | — |
+| 246 | `246_R7SYNC.1__state-coherence-speed.md` | R7b | timeline/versions/estimator coherence + speed levers (REQ-SYNC-3/4/5, REQ-SPEED-1…5) | — |
+| 247 | `247_R7RO.2__phone-reader-island.md` | R7b | phone-UA reader island shrink + REQ-MOBILE-3 entry points + Android tablets (REQ-RELOAD-7) | — |
+| 247a | `247a_HUMAN-H16__ux-review-session.md` | R7b marker | **human** — optional UX review, held in 250's preview window before prod (GD-PREVIEW.R7) | — |
+| 248 | `248_R7TOUR.2__tour-re-pin.md` | R7b | tour re-pin on final surfaces + sidebar Demo entry + DWEB-7 re-run (REQ-TOUR-2/4) | — |
+| 249 | `249_R7GUARD.1__recurrence-guards.md` | R7b | no-raw-controls global + occlusion check in CI (REQ-GUARD-1/4, REQ-PANE-4) | — |
+| 249a | `249a_R7PUB.1__landing-pricing-refresh.md` | R7b | signed-in pricing + landing refresh code + recording slot (recording captured in 250's preview) (REQ-PUB-1/2) | — |
+| 250 | `250_R7DEP.2__r7b-deploy.md` | R7b deploy | the ONE R7b preview (walk D*+U*; H16; recording) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → U6 paid run (< $10) → provenance → teardown (REQ-DACC-7, REQ-DOPS-6, REQ-SPEED-5) | pre-auth (GD-DEPLOY.R7, GD-UX-PAIDLEG.R7, GD-GOLDEN.R7, GD-PREVIEW.R7) |
+| 251 | `251_R7CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-7 REQ coverage + finding accounting (REQ-CLOSE-1) | — |
+| 252 | `252_GATE-ACCEPT.R7__accepted-deviations.md` | tail | **gate** — operator signs the R7 deviations list; GD-DEPLOY.R7 expires (REQ-CLOSE-2) | operator |
+| 253 | `253_R7REC.1__backlog-and-reconciliation.md` | tail | **reconcile** — backlog + spec fold-back, ADR-126…130 banners (REQ-CLOSE-3) | — |
+| 254 | `254_R7DOC.1__docs-refresh.md` | tail | **docs** — refresh-repo-docs + agent-docs + closing ledger write (REQ-CLOSE-4) | — |
+
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
 **G1 — Phase-0 exit (spec §17 Phase-0 row, exit criterion):** "a Review of each of the three real
@@ -450,6 +520,11 @@ permits the launch; this gate decides it.
 **GATE-ACCEPT.R6 — Round-6 accepted deviations:** the operator signs R6CAP.3's list (expected:
 launch without G2, the external pen test post-launch, first-finding as a post-launch target, the
 minimal golden cohort, the cost floor vs the ~$50 target).
+
+**GATE-ACCEPT.R7 — Round-7 accepted deviations:** the operator signs R7CAP.1's list (expected:
+R5 G1 word-level diff marks and the UXC-13 marketing remainder WONTFIX this round
+(`GD-UX-P1-BACKLOG.R7`); token-level chat streaming deferred (`GD-UX-STREAM.R7`); any P2 left as a
+dated BACKLOG row). `GD-DEPLOY.R7` and `GD-UX-PAIDLEG.R7` expire here.
 
 ## Phase gates & special points
 
@@ -518,6 +593,16 @@ minimal golden cohort, the cost floor vs the ~$50 target).
 17. **Context budget + preview hygiene** (round 6): each ticket fits one fresh SWE-2 (256k,
     non-compacting) run — a worker that finds its ticket overflowing stops and requests a split; every
     `pr-<n>` stack a ticket creates is destroyed and its teardown verified in the same ticket.
+18. **Demo isolation** (round 7): the demo path makes no API/DB read and no session/tenant access; the
+    only sanctioned demo non-GET is the anonymous metrics insert (ADR-126, REQ-TOUR-9). Essay content is
+    data (never TS literals or `COPY`); no real-corpus byte merges before HUMAN-H14 (REQ-CORPUS-14).
+19. **Truthful demo** (round 7): replayed runs show no invented time/money/model; converter-assigned
+    fields are labelled as import rules; nothing is paraphrased; role vocabulary per spec S-10 ("author"
+    = the human only); no efficacy claims (REQ-EVAL-19).
+20. **UX recurrence guards** (round 7): once a surface is migrated, no raw `<button|input|select|textarea>`
+    or inline style literals (REQ-GUARD-1), no internal vocabulary in UI copy (REQ-GUARD-2), no document
+    reload on in-app navigation (REQ-GUARD-3), no un-scrimmed occlusion at the reference sizes
+    (REQ-GUARD-4); each Stream-U ticket declares an entry-bundle delta ≤ 15 kB gz (REQ-KIT-5).
 
 ## Operating rules
 
@@ -567,6 +652,11 @@ triage (post-launch, ADR-112 — R6REC.1 records the ≤ 60-day obligation); new
 pages and the notice surfacing; BL-73 1.x roadmap + standing watches (roadmap per `GD-ROADMAP.R6`);
 Redis HA (declined); cost levers (c)/(e) (rejected) and (b)/(d) (parked → post-launch roadmap); the
 public announcement itself (the operator's act); merging (operator).
+
+**Round 7 (2026-11-03) — additionally out of scope:** live inference or per-visitor generation in the
+demo; voice/persona surfaces; token-level chat streaming (BACKLOG); the full marketing redesign and
+word-level diff marks (BACKLOG by ruling); pricing/plan/credit-model changes (BL-13); replacing Wells as
+the in-workspace Showcase; the `parseDraftLedgerSections` Roman-numeral fix (DEFERRALS); merging (operator).
 
 ## Requirement-ID → ticket index (authoritative for coverage)
 
@@ -720,6 +810,31 @@ has exactly one owner.
 | REQ-CLK-1..6 | R6CLK.1 · REQ-WATCH-1 → R6WATCH.1 |
 | REQ-TAIL-1 | R6CAP.1/R6CAP.3 · REQ-TAIL-2 → R6REC.1 · REQ-TAIL-3 → R6REC.2 · REQ-TAIL-4 → R6REC.3 · REQ-TAIL-5 → R6DOC.1/R6DOC.2 |
 
+**Round-7 families** (`docs/round-7-draft-spec.md` v0.2 — `REQ-[A-Z]+-[0-9]+`; one primary owner each):
+
+| REQ family | ticket(s) |
+|---|---|
+| REQ-CORPUS-1…11/13/15 | R7DEM.1 · REQ-CORPUS-12 → R7DEM.1b (fetch; data shape R7DEM.1) · REQ-CORPUS-9 snapshot half → R7DEM.3 · REQ-CORPUS-14 → R7DATA.1 (gated by HUMAN-H14) |
+| REQ-CONV-1…6/11 | R7DEM.2a · REQ-CONV-7…9/13/14/16 → R7DEM.2b · REQ-CONV-10/12/15/17 → R7DEM.2c (real goldens: R7DATA.1) |
+| REQ-DWEB-1…5/8/10/17 | R7DEM.4 · REQ-DWEB-6/9/11/16 → R7DEM.4b · REQ-DWEB-7/12/13 → R7DEM.5 (re-run: R7TOUR.2) · REQ-DWEB-14 → R7RO.1 · REQ-DWEB-15 → R7DEM.3b |
+| REQ-TOUR-1/3/8 | R7DEM.5b (card data/counts: R7DEM.3b) · REQ-TOUR-6/7 → R7DEM.5 · REQ-TOUR-2/4/5 → R7DEM.6a (re-pin + sidebar entry: R7TOUR.2) · REQ-TOUR-9 → R7DEM.6b |
+| REQ-SHELL-1/2/6 | R7SHELL.1a · REQ-SHELL-3/5 → R7SHELL.1b · REQ-SHELL-7 → R7SHELL.1c · REQ-SHELL-4 → R7SHELL.2 |
+| REQ-KIT-1 | R7KIT.1 · REQ-KIT-2 → R7KIT.2 (shell-critical) + R7KIT.2b (forms/menus) · REQ-KIT-5 → R7KIT.2 · REQ-KIT-3 → R7HOME.1 (c1) / R7KIT.3a / R7KIT.3a2 (voices) / R7KIT.3b / R7KIT.3c2 / R7KIT.3d · REQ-KIT-4 → R7KIT.3a |
+| REQ-PANE-0 | R7FIX.1 · REQ-PANE-1/2/3 → R7PANE.1 · REQ-PANE-4 → R7GUARD.1 · REQ-PANE-5 → R7KIT.3e |
+| REQ-RELOAD-5 | R7RO.1 · REQ-RELOAD-1 → R7TALK.1a · REQ-RELOAD-2/3/4/6 → R7RELOAD.1 · REQ-RELOAD-7 → R7RO.2 |
+| REQ-HOME-1 | R7HOME.1 · REQ-HOME-4/5 → R7HOME.2a · REQ-HOME-2/3/6 → R7HOME.2b |
+| REQ-WRITE-4 | R7FIX.1 · REQ-WRITE-1/6 → R7WRITE.1a · REQ-WRITE-2/7 → R7WRITE.1b · REQ-WRITE-5/8 → R7WRITE.2 · REQ-WRITE-3 → BACKLOG |
+| REQ-TALK-1/2/3 | R7TALK.1a · REQ-TALK-4 → R7TALK.1b |
+| REQ-KEYS-1/2 | R7WRITE.2 (sidebar/panel chord rules land first in R7SHELL.1a) |
+| REQ-COPY-4 | R7COPY.0 · REQ-COPY-7 → R7KIT.1 · REQ-COPY-1/6 → R7COPY.1a · REQ-COPY-3 → R7COPY.1b · REQ-COPY-2 → R7COPY.1c · REQ-COPY-5 → R7KIT.3b · REQ-COPY-8 → R7KIT.3e |
+| REQ-SYNC-1/2 | R7COPY.0 · REQ-SYNC-3/4/5 → R7SYNC.1 · REQ-SYNC-6 → R7TALK.1b |
+| REQ-SPEED-1…4 | R7SYNC.1 · REQ-SPEED-5 → R7DEP.2 (R7SYNC.1 records a local read) |
+| REQ-PUB-1/2 | R7PUB.1 (recording captured in R7DEP.2's preview window) |
+| REQ-GUARD-1/4 | R7GUARD.1 (GUARD-1 rule authored in R7KIT.2b, enabled per batch) · REQ-GUARD-2 → R7COPY.1a · REQ-GUARD-3 → R7RELOAD.1 |
+| REQ-DACC-1…6 | R7DEP.1 (legs owned per spec §10 map) · REQ-DACC-7 → R7DEP.2 · REQ-DACC-8 → R7OPEN.1 |
+| REQ-DOPS-1/3 | R7DEM.1 · REQ-DOPS-4 → R7DEM.1b · REQ-DOPS-2 → R7DEM.4 · REQ-DOPS-5 → R7DEM.6b · REQ-DOPS-6 → R7DEP.1 + R7DEP.2 · REQ-DOPS-7 → R7OPEN.1 · REQ-DOPS-8 → R7KIT.2 |
+| REQ-CLOSE-1 | R7CAP.1 · REQ-CLOSE-2 → GATE-ACCEPT.R7 · REQ-CLOSE-3 → R7REC.1 · REQ-CLOSE-4 → R7DOC.1 · REQ-CLOSE-5 → R7OPEN.1 |
+
 ## Spec amendments applied
 
 - **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
@@ -833,6 +948,23 @@ has exactly one owner.
   full-history audit + the flip runbook (`docs/ops/open-source-readiness.md`). **(ADR-002
   amendment; ADR-125)**
 
+- **2026-11-03 — round 7 (`docs/round-7-draft-spec.md` v0.2, ratified `GD-RATIFY.R7`):** amendments land
+  as ADRs + dated banners by their owning tickets — **ADR-126** public demo architecture (static snapshots,
+  `demo~` namespace, no DB reads, one metrics carve-out; REQ-ED-12/ADR-108 for demo Pages) · **ADR-127**
+  corpus CC BY-NC-ND 4.0 carve-out (GD-SHOWCASE.R6 untouched) · **ADR-128** IA v2 (REQ-IDE-2/-4/-5/-6/-8/-48,
+  REQ-GROWTH-12, REQ-UX-8/IDE-49 kept, REQ-NAVM-7, REQ-ED-12 Showcase; REQ-IDE-41 kept) · **ADR-129**
+  component stack (Radix/Lucide/cmdk) · **ADR-130** retire the generated run walkthrough (REQ-IDE-19). Spec
+  §5.4 line 524 editing rule enforced for imports (S-4 — a conformance fix, not an amendment).
+  **(GD-RATIFY.R7; brief §7a/§7b)**
+
+- **2026-11-03 — round 7 post-ratification notes (Phase-4 rulings; no REQ id change):** `GD-PUBDELTA.R7` adds the
+  `/pricing` plan-value round-down (R7KIT.3a) and the public jargon fixes (R7COPY.1a) to REQ-DACC-6's enumerated
+  deltas; `GD-PREVIEW.R7` replaces per-ticket Stage-B previews with one owned preview per phase (224, 250; round cap
+  $20) — per-ticket Stage-B ACs become `staging-verified at the phase preview` DEFERRALS rows; HUMAN-H16 moves into
+  250's preview window; the landing recording (REQ-PUB-2) is captured in 250's preview; `GD-GOLDEN.R7` pre-authorizes
+  ≤ 1 golden rerun per deploy when classified protocol-affecting. **(spec §0 banner note; GD-PUBDELTA.R7 /
+  GD-PREVIEW.R7 / GD-GOLDEN.R7)**
+
 ## Decomposition decisions (operator may veto; see the session report)
 
 1. Phase-0 port scope = Review/Revise/Fact-check/persona-Quick; Draft/Outline/Research ports
@@ -892,6 +1024,25 @@ has exactly one owner.
     default (R6FND.1), the golden minimal-cohort mode (R6GLD.1). **The plan is revisable at run
     time** — orchestrate-build may split an overflowing ticket or merge trivial ones and writes the
     change back here.
+
+11. **Round 7 (2026-11-03; `decompose-spec mode=extend`; ADR-126…130).** Inputs: `docs/round-7-draft-spec.md` v0.2
+    (ratified `GD-RATIFY.R7`), `docs/decomposition-prompt-r7.md`, research notes R1–R6 + REVIEW under
+    `docs/build/planning/2026-11-03_r7-demo/`. **58 rows** under `### Round 7` (209–254 + suffix rows): 53 implement-spec
+    tickets, 3 HUMAN (H14 corpus · H15 demo copy · H16 optional UX review), 1 gate (GATE-ACCEPT.R7), tail narrowed by
+    spec §4.18 to R7CAP.1 + GATE-ACCEPT.R7 + R7REC.1 + R7DOC.1 (no CAP.2/CAP.3/REC.2/REC.3 — `main` protected, per-PR
+    operator merges). Authored by six parallel subagents on disjoint files against fixed filenames + an ownership
+    table; **Phase-4 fresh-context review** (`PHASE4-REVIEW-decomposition.md`: 1 blocking / 12 major / 15 minor) fully
+    applied: nine split-now rows (214b, 218a, 220a, 221a, 225a, 240a, 243a, 245a, 249a — authors' cut lines), runtime
+    split clauses on 229/232/235/236/246, the R7b stack forks after 213, leg owners single (R*.demo + P1.demo →
+    R7DEM.4b; U4 → R7KIT.3e; D2.tour R7DEM.6a with R7TOUR.2 a sanctioned re-flipper), all leg flips held `ready-to-flip`
+    until the phase deploy (nightly hazard), demo-boot behaviour of the R7b chrome owned by R7SHELL.1a (+ clauses in
+    228/229/232), the metrics carve-out re-designed lint-clean (SECURITY DEFINER + `GRANT EXECUTE ON FUNCTION`), card
+    counts single-owned by R7DEM.3b, the chat markdown seam closed by R7COPY.1b, figure image card rendered by
+    R7DEM.4b, R7DEM.6a hard-depends on R7DATA.1. Operator rulings at Phase 4 (LEDGER `### Round 7`): **GD-GOLDEN.R7**
+    (classify each deploy; ≤ 1 pre-authorized golden rerun each), **GD-PREVIEW.R7** (no per-ticket previews; one per
+    phase in 224/250; round cap $20), **GD-PUBDELTA.R7**, **GD-TOURSIGN.R7**. The uncommitted H14 marker was renamed
+    `214a`→`214c` before first commit so lexical order follows its dependency on 214b. The plan stays revisable at run
+    time (orchestrate-build may split/merge and writes the change back here).
 
 ## Plan extensions (append-only: inserts, splits, rounds)
 
@@ -1039,3 +1190,7 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   Trigger: `/Users/stevenvitali/rhema-ci-handoff/handoff-prompt.md` + the 2026-10-20 CI spend
   measurement (18,023 billed min/month pace; 44 % docs-only heads). Operator rulings D1–D9 verbatim
   in LEDGER § GATE DECISIONS; ADR-115. Ledger notes ride this ticket's branch (rule 9).
+- **2026-11-03 — ROUND 7 opened** (`decompose-spec mode=extend`): `### Round 7` rows 209–254 + suffix rows (58 rows;
+  spec `docs/round-7-draft-spec.md` v0.2, ratified `GD-RATIFY.R7`). Dispatched **out of order** (`GD-ORDER.R7`):
+  `nextTicket` → `209_R7OPEN.1`; `200_R6WATCH.1` (clock ≥ 2026-11-11) and the R6 tail 201–208 resume on their own
+  clock. Phase-4 splits (§ Decomposition decisions #11) applied before the first commit.

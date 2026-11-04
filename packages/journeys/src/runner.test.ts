@@ -7,6 +7,8 @@ import type { Browser } from "playwright";
 import { runJourneys } from "./runner.js";
 import { CapOverrunError } from "./spend-guard.js";
 import type { JourneyStep } from "./registry.js";
+import { STEP_REGISTRY } from "./registry.js";
+import { ALL_IMPLS } from "./impls.js";
 import type { MailboxClient } from "./mailbox.js";
 
 // JOURNEY.1 — the runner's expected-flag semantics (AC: "green step fails ⇒ the run fails; a red
@@ -72,6 +74,24 @@ describe("runJourneys — the expected-flag semantics", () => {
     expect(r.results.find((x) => x.id === "R-1")?.outcome).toBe("owed");
     expect(r.results.find((x) => x.id === "R-2")?.outcome).toBe("ready-to-flip");
     expect(r.passed).toBe(true);
+  });
+  // R7OPEN.1 (REQ-DACC-8) — the offline dry path over the real registry: every round-7 leg's
+  // wired owed-stub classifies `owed` through the runner (never a run failure), so the nightly
+  // cannot re-redden. Removing a leg's stub (or flipping its row green) fails this test.
+  it("every round-7 registry leg reports owed on the offline path", async () => {
+    const R7_IDS = [
+      "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
+      "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
+      "U3.stopgap", "R8.showcase.spa",
+    ];
+    const steps = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id));
+    expect(steps.map((s) => s.id).sort()).toEqual(R7_IDS.slice().sort());
+    const r = await run(steps, ALL_IMPLS);
+    for (const res of r.results) {
+      expect(res.outcome, res.id).toBe("owed");
+      expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
+    }
+    expect(r.passed).toBe(true); // owed is a debt report, never a run failure
   });
   it("paid steps skip without --paid; a missing impl on a green step fails the run", async () => {
     const r = await run([step("P1x", "red", true), step("G3", "green")], {});

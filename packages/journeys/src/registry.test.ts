@@ -41,6 +41,13 @@ describe("the journey step registry", () => {
         // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
         // (all `red` until a leg lands its live asserts; B19C is the pre-registered cap drop).
         "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",
+        // R7OPEN.1 (REQ-DACC-8) registered every round-7 leg `expected:"red"` with a wired owed
+        // stub (r7legs.ts): the five D* demo legs, the seven U* UX legs, and the two
+        // sub-assertions (U3.stopgap for the R7a PANE-0 probe, R8.showcase.spa for the REQ-DACC-6
+        // renderer re-expectation). All `paid:false` — U6 is never a paid row (P4-25).
+        "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
+        "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
+        "U3.stopgap", "R8.showcase.spa",
       ].sort(),
     );
   });
@@ -94,6 +101,38 @@ describe("the journey step registry", () => {
     for (const s of STEP_REGISTRY) {
       expect(ALL_IMPLS[s.id], s.id).toBeTypeOf("function");
     }
+  });
+  // R7OPEN.1 (REQ-DACC-8; RV-13): every round-7 leg is `expected:"red"` + `paid:false` with
+  // exactly one owner — the nightly reports `owed`, never a run failure, and no leg can flip
+  // before its owner lands the body (the phase deploys 224/250 plus 248 for D2.tour are the
+  // only sanctioned flippers under GD-PREVIEW.R7). U6 is never a paid row (P4-25).
+  it("every round-7 leg is red, free, single-owned, and its stub fails owed-loudly", async () => {
+    const R7_IDS = [
+      "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
+      "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
+      "U3.stopgap", "R8.showcase.spa",
+    ];
+    const OWNERS: Record<string, string> = {
+      "D1.hub": "R7DEM.5b", "D2.tour": "R7DEM.6a", "D3.readonly": "R7DEM.5",
+      "P1.demo": "R7DEM.4b", "R11.demo": "R7DEM.4b",
+      "U1.shell": "R7SHELL.1a", "U2.noreload": "R7RELOAD.1", "U3.occlusion": "R7PANE.1",
+      "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
+      "U7.import": "R7HOME.2a", "U3.stopgap": "R7FIX.1", "R8.showcase.spa": "R7RO.1",
+    };
+    for (const id of R7_IDS) {
+      const s = stepById(id);
+      expect(s, id).toBeDefined();
+      expect(s!.expected, id).toBe("red");
+      expect(s!.paid, id).toBe(false);
+      expect(s!.capUsd, id).toBeUndefined();
+      expect(s!.owner, id).toBe(OWNERS[id]);
+      await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
+        `${id} owed — owner ${OWNERS[id]}`,
+      );
+    }
+    // no round-7 leg silently became a paid row (the weekly cron would sweep it in).
+    const r7paid = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id) && s.paid);
+    expect(r7paid).toEqual([]);
   });
   it("paid steps are exactly the paid legs (run/chat spend)", () => {
     const paid = STEP_REGISTRY.filter((s) => s.paid).map((s) => s.id).sort();
@@ -174,10 +213,12 @@ describe("the journey step registry", () => {
     for (const [, id, ownerCell] of rows) {
       const owner = ownerCell.match(/[A-Z0-9]+\.\d+/)?.[0];
       // SPA.6 — a split ledger id (P1→P1.*, X1→X1.*) resolves as the family; every leg must carry
-      // the ledger's owner (the split never re-assigns ownership).
+      // the ledger's owner (the split never re-assigns ownership). R7OPEN.1: `P1.demo` is NOT a
+      // P1 split — it is a round-7 leg from spec §4.17 (REQ-DACC-4), owned by R7DEM.4b per §10 as
+      // amended (P4-5); it shares the prefix but carries its own family.
       const family = stepById(id)
         ? [stepById(id)!]
-        : STEP_REGISTRY.filter((s) => s.id.startsWith(`${id}.`));
+        : STEP_REGISTRY.filter((s) => s.id.startsWith(`${id}.`) && s.id !== "P1.demo");
       expect(family.length, `ledger step ${id} missing from the registry`).toBeGreaterThan(0);
       for (const step of family) {
         expect(step.owner, `ledger owner for ${step.id}`).toBe(owner);

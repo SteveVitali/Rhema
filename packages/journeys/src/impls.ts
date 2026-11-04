@@ -5,10 +5,12 @@
 import { STEP_IMPLS } from "./steps.js";
 import { STB5A_IMPLS } from "./stb5a.js";
 import { STB5B_IMPLS } from "./stb5b.js";
+import { R7_LEGS_IMPLS } from "./r7legs.js";
 import type { StepFn } from "./runner.js";
 
 export const ALL_IMPLS: Readonly<Record<string, StepFn>> = {
   ...STEP_IMPLS,
   ...STB5A_IMPLS,
   ...STB5B_IMPLS,
+  ...R7_LEGS_IMPLS,
 };
