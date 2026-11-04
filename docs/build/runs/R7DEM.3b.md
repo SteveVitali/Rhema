@@ -64,6 +64,43 @@ D-row and PAUSE" — the additive variant route exists, so no pause).
 - labels pass `lintCopy`; no "author" for an agent.
 - dossier snapshot satisfies `DossierViewData` shared-field projection (apps/web test).
 
-## Progress · ## Gap table · ## Evidence log · ## Evidence report
+## Progress
 
-_(filled at phase transitions)_
+- Phase 0–2: ticket/Load docs/DEFERRALS read; AC–test matrix above; branch forked at chain tip.
+- Phase 3 (implementation): `findings-core/replayed.ts`, api-client additive DTOs,
+  `project/replay.ts` + `project.ts`/`model.ts`/`dtos.ts`/`index.ts` wiring, `project.mjs`
+  facts feed, `replay.test.ts` + `project.test.ts` extensions, `apps/web` dossier test,
+  committed snapshots regenerated, COVERAGE.md + ADR-126 dated note.
+- Phase 4 (verify): turbo build/lint/typecheck 138/138 · `pnpm test` 6,515 pass/6 skip/0 fail
+  · pkg vitest 236/236 · web dossier test 3/3 · `check:demo-corpus` 0 viol · append-only OK.
+- Phase 5 (records): run ledger, PR body, ADR-126 note; commit `2d00c83`; PR #251 created
+  (base `stevevitali/r7dem-3-snapshot`); push; BUILD_INDEX row 252 + LEDGER (closeout commit).
+- Phase 6 (close): CI read at pushed head via `ci-boundary` → `logs/ci-R7DEM.3b.json`.
+
+## Gap table
+
+| Requirement | Where met | Proof |
+|---|---|---|
+| Projectors per R3 §1 key, pure, one file per artifact | `replay.ts` + `project.ts` | `replay.test.ts` emitted-set leg |
+| Replayed run per reviewed round, badge data | `replayedRunCard` (`replayed:true`,`recordSource`) | replay.test replayed-run legs |
+| Phases iff artifact exists + inferred label | `inferRun` S-9 map, `phaseSource` | phase-set legs (v1 7, v2 2) |
+| Approvals only from PROVENANCE else not recorded | `approvalsFor` | no-fact leg |
+| No numeric time/credits/model | variant omits fields; validator rejects forgery | forged-field leg |
+| Delivered == composer output | `composeDeliveredSummary` call | equality leg |
+| Figure image DTO S-7 + asset route + draft links | `figureImages`, `demo.assetRefs` | figure legs + closed-world leg |
+| `demoCardFacts` sole owner; words==statusMeters; counts==count rule | `demoCardFacts` | parity/equality/grep legs |
+| Registration seam | `registerRunKinds` | harness leg + unregistered-kind pin |
+| Dossier ↔ `DossierViewData` | colocated apps/web test | `demo-dossier-snapshot.test.ts` |
+| Committed snapshots + drift | regenerated tree | byte-identical legs (both test files) |
+| lintCopy / no "author" | labels leg | `lintCopy` assertion |
+
+## Evidence log
+
+- Commit `2d00c83` — 28 files: replay.ts/test, findings-core/replayed.ts, api-client DTOs,
+  project wiring, snapshots (dossier/run-report/timeline/card-facts/figures + drafts/index),
+  apps/web dossier test, ADR-126 note, COVERAGE.md, run ledger, PR body.
+- Local verify numbers above; zero production mutations; $0.
+
+## Evidence report
+
+CI read at pushed head recorded in `logs/ci-R7DEM.3b.json` + PHASE LOG tail.
