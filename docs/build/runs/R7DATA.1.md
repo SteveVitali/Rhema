@@ -157,3 +157,6 @@ source (R1's Tier-2→Tier-1 escalation).
 `rows.json` keeps every ledger row verbatim (REQ-CONV-10/16); join surface: joined findings carry
 `findingOrdinal`; `noentry` lists recorded (one-thing/strengths/minor-10-GM-v2/no-answer rows
 stay raw — honest absence, not a gap).
+- 2026-11-04 — **CI boundary read: pass #252@`571ae09`** (run 41788375105 — all seven legs +
+  `ci-pass` anchor incl. public-safe gitleaks/markers/licences on the real corpus tree;
+  `docs/build/logs/ci-R7DATA.1.json`). PR #252 open, unmerged (mergePolicy OPERATOR).
