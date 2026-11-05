@@ -45,7 +45,7 @@ export async function u3ProbePage(page: Page, w: number, h: number, opts: U3Prob
     ) => a != null && b != null && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
     const paper = box(document.querySelector(".ide-page .paper"));
     const letter = box(document.querySelector("article .paper"));
-    for (const sel of [".ide-panel", ".ide-files"]) {
+    for (const sel of [".ide-panel"]) {
       const el = document.querySelector<HTMLElement>(sel);
       if (!el) continue;
       const pos = getComputedStyle(el).position;

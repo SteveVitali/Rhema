@@ -148,9 +148,7 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           paperTheme={data.paperTheme ?? boot?.theme?.paperTheme ?? "light"}
           appTheme={data.appTheme ?? boot?.theme?.appTheme ?? "dark"}
           {...(data.initialView != null ? { initialView: data.initialView } : {})}
-          {...(data.sourceHref != null ? { sourceHref: data.sourceHref } : {})}
           {...(data.findings != null ? { findings: data.findings, hasFindings: true } : {})}
-          {...(data.filesBody != null ? { filesBody: data.filesBody } : {})}
           {...(data.marginBody != null ? { marginBody: data.marginBody } : {})}
           {...(data.deskFindingsBody != null ? { deskFindingsBody: data.deskFindingsBody } : {})}
           {...(data.chatBody != null ? { chatBody: data.chatBody } : {})}

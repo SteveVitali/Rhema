@@ -99,10 +99,11 @@ describe("SPACAP.3 → R7RO.1 — phone-only forced SSR + the SPA read-only carr
   });
 
   it("the twins + shell stamps carry the ReadOnlyProject carrier — the mechanism's row facts", () => {
-    // 8 twin emits (5 Page-family + dossier + run-report + obligation-new) + 5 shell boot stamps;
-    // the two doc twins add the `run_lock` arm. Delete a carrier and a count fails.
-    expect(count(serverText, /readOnlyProject:/g)).toBe(13);
-    expect(count(serverText, /reason: "showcase" as const/g)).toBe(13);
+    // 9 twin emits (5 Page-family + dossier + run-report + obligation-new + R7SHELL.2's
+    // `?view=tree` sidebar twin) + 5 shell boot stamps; the two doc twins add the `run_lock`
+    // arm. Delete a carrier and a count fails.
+    expect(count(serverText, /readOnlyProject:/g)).toBe(14);
+    expect(count(serverText, /reason: "showcase" as const/g)).toBe(14);
     expect(count(serverText, /reason: "run_lock" as const/g)).toBe(2);
   });
 });

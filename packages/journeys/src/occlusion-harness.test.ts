@@ -20,14 +20,6 @@ import { paneLayout, DEFAULT_PANE_STATE } from "@rhema/ide";
 
 const LABELS = {
   rail: { home: "Home", inbox: "Inbox", settings: "Settings", project: "Project navigation" },
-  files: {
-    heading: "Files",
-    empty: "empty",
-    close: "Close Files",
-    open: "Files",
-    sourceFile: "Source",
-    resize: "Resize files",
-  },
   margin: { heading: "Findings", ticksLabel: "Finding markers" },
   timeline: { heading: "Timeline", empty: "No runs yet", close: "Close Timeline" },
   panel: {
@@ -82,10 +74,8 @@ const LABELS = {
 };
 
 interface FixtureOpts {
-  files?: "strip" | "open";
   panel?: "open" | "closed";
   panelMode?: string;
-  filesMode?: string;
   view?: "write" | "read" | "focus";
 }
 
@@ -111,9 +101,8 @@ function fixture(opts: FixtureOpts = {}): string {
   // aside rides its effective open state.
   const stamped = markup
     .replace('data-panel="closed"', `data-panel="${opts.panel ?? "closed"}"`)
-    .replace('data-files="strip"', `data-files="${opts.files ?? "strip"}"`)
     .replace('data-view="write"', `data-view="${opts.view ?? "write"}"`);
-  const modes = `data-pane-mode="wide" ${opts.panelMode ? `data-panel-mode="${opts.panelMode}"` : ""} ${opts.filesMode ? `data-files-mode="${opts.filesMode}"` : ""}`;
+  const modes = `data-pane-mode="wide" ${opts.panelMode ? `data-panel-mode="${opts.panelMode}"` : ""}`;
   const final = stamped.replace(
     '<aside class="ide-panel"',
     `<aside class="ide-panel"${opts.panel === "open" ? " data-open" : ""}`,
@@ -168,7 +157,6 @@ async function probe(opts: FixtureOpts, w: number, hgt: number): Promise<Probe |
         boxes: {
           paper: box(".ide-page .paper"),
           panel: box(".ide-panel"),
-          files: box(".ide-files"),
           margin: box(".ide-margin"),
           panelHead: box(".ide-panel-head"),
           statusbar: box(".ide-statusbar"),
@@ -178,7 +166,6 @@ async function probe(opts: FixtureOpts, w: number, hgt: number): Promise<Probe |
           panel: document.querySelector(".ide-panel")
             ? getComputedStyle(document.querySelector(".ide-panel") as Element).position
             : "(none)",
-          files: getComputedStyle(document.querySelector(".ide-files") as Element).position,
         },
         scrimShown: scrim != null && getComputedStyle(scrim).display !== "none",
         covers: {
@@ -204,9 +191,9 @@ const intersects = (
   b.y < a.y + a.h;
 
 describe("REQ-PANE-1/2/4 — offline occlusion harness (the U3.occlusion Stage-A evidence)", () => {
-  it("1440×900 + Files open: the panel DOCKS (no overlay arm) and the Page column reflows under it", async () => {
+  it("1440×900 + panel open: the panel DOCKS (no overlay arm) and the Page column reflows under it", async () => {
     const p = await probe(
-      { files: "open", panel: "open", filesMode: "open", panelMode: "docked" },
+      { panel: "open", panelMode: "docked" },
       1440,
       900,
     );
@@ -217,7 +204,7 @@ describe("REQ-PANE-1/2/4 — offline occlusion harness (the U3.occlusion Stage-A
     }
     // paneLayout() says: docked at ≥1280 — the <1600 arm carries no overlay.
     expect(
-      paneLayout(1440, { ...DEFAULT_PANE_STATE, filesOpen: true, hasFindings: true }).panel,
+      paneLayout(1440, { ...DEFAULT_PANE_STATE, panelOpen: true, hasFindings: true }).panel,
     ).toBe("docked");
     expect(p.positions.panel).not.toBe("absolute");
     // the Page column reflows: its box never intersects the docked panel's.

@@ -4,7 +4,6 @@
 // the yield order at the §5.1 breakpoints with zero JS, so SSR markup is correct at any viewport.
 //
 // Region attrs on .ide:
-//   data-files="strip|open"      (strip default — the 36-px icon column; 230 removes the pane)
 //   data-panel="open|closed"     (the `]` chord; presentation mode — docked|overlay|sheet — is
 //                                  viewport-derived and stamped as data-panel-mode)
 //   data-view="write|read|focus" (⌘⇧M / ⌘⇧F — Focus hides everything but the Page and finding ticks)
@@ -19,29 +18,10 @@ const B = LAYOUT;
 
 export function ideCss(): string {
   return [
-    // ---- frame: rail + files + (page+margin) + timeline over a desk drawer + status bar ----
+    // ---- frame: (page+margin) + right panel + status bar — the rail and Files strip are
+    // deleted (R7SHELL.2, REQ-SHELL-4; the project tree lives in the AppShell sidebar) ----
     ".ide { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; background: var(--shell-bg); color: var(--shell-fg); font-family: var(--font-shell); }",
     ".ide-main { flex: 1; display: flex; min-height: 0; position: relative; }",
-    `.ide-rail { flex: 0 0 ${B.railPx}px; width: ${B.railPx}px; display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s2) 0; background: var(--shell-surface); border-right: 1px solid var(--shell-border); z-index: 30; }`,
-    ".ide-rail a, .ide-rail button { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-2); color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; text-decoration: none; font-size: 13px; }",
-    ".ide-rail a:hover, .ide-rail button:hover { background: var(--shell-raised); color: var(--shell-fg); }",
-    ".ide-rail .ide-badge { position: relative; }",
-    ".ide-rail .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -2px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }",
-    ".ide-rail .ide-rail-spacer { flex: 1; }",
-
-    // ---- Files (the Browser region — labelled "Files" in copy; §4.3) ----
-    `.ide-files { flex: 0 0 ${B.filesStripPx}px; width: ${B.filesStripPx}px; background: var(--shell-surface); border-right: 1px solid var(--shell-border); overflow: hidden; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease; display: flex; flex-direction: column; }`,
-    `.ide[data-files="open"] .ide-files { flex-basis: var(--files-w, ${B.filesOpenPx}px); width: var(--files-w, ${B.filesOpenPx}px); }`,
-    ".ide-files .ide-pane-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s2); font-size: 12px; font-weight: 600; color: var(--shell-fg-muted); text-transform: none; letter-spacing: 0; }",
-    // strip ⇄ body swap is attribute-driven (SSR correct at either state, zero script)
-    ".ide[data-files='strip'] .ide-files .ide-pane-head, .ide[data-files='strip'] .ide-files .ide-files-body { display: none; }",
-    ".ide[data-files='open'] .ide-files .ide-files-strip { display: none; }",
-    ".ide-files .ide-files-strip { display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding-top: var(--s2); }",
-    ".ide-files .ide-files-body { padding: 0 var(--s2) var(--s2); font-size: 13px; color: var(--shell-fg-muted); }",
-    ".ide-files .ide-files-body ul { list-style: none; margin: 0; padding: 0; }",
-    ".ide-files .ide-files-body li { padding: 3px 6px; border-radius: var(--radius-1); }",
-    ".ide-files .ide-files-body li[data-current] { color: var(--shell-fg); background: var(--shell-raised); }",
-    ".ide-files button, .ide-files a { color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; font-size: 12px; text-decoration: none; }",
 
     // ---- Page + Margin ----
     ".ide-center { flex: 1; display: flex; min-width: 0; }",
@@ -104,7 +84,7 @@ export function ideCss(): string {
     ".ide-handle:hover, .ide-handle:focus-visible { background: var(--accent); opacity: 0.4; }",
 
     // ---- Focus view (⌘⇧F / ?focus=1): everything but the Page and finding ticks hides ----
-    ".ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-panel, .ide[data-view='focus'] .ide-statusbar { display: none; }",
+    ".ide[data-view='focus'] .ide-panel, .ide[data-view='focus'] .ide-statusbar { display: none; }",
     ".ide[data-view='focus'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
     // R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed. It is a
     // fixed button top-centre; outside focus view it never mounts an affordance (display:none).
@@ -123,11 +103,7 @@ export function ideCss(): string {
     ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
 
     // ---- yield order (ADR-128; the same breakpoints paneLayout() implements) ----
-    // Below 1600 with Files open: Margin → ticks.
-    `@media (max-width: ${B.bpFilesTicksMarginPx - 1}px) {`,
-    "  .ide[data-files='open'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
-    "}",
-    // Below 1280: Margin → ticks regardless of Files (the same floor the base laid at <1280 —
+    // Below 1280: Margin → ticks (the same floor the base laid at <1280 —
     // the hosted narrow-desktop keeps the tick strip; the SSR phone hides the region outright).
     `@media (max-width: ${B.bpNarrowPx - 1}px) {`,
     "  .ide .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
@@ -136,21 +112,19 @@ export function ideCss(): string {
     `@media (min-width: ${B.bpSingleColumnPx}px) and (max-width: ${B.bpNarrowPx - 1}px) {`,
     `  .ide .ide-panel[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     "}",
-    // Below 1024: Files opens as an overlay drawer and the panel is a full-height sheet on
-    // demand — one rule covers 768–1023 AND the hosted narrow-desktop floor (<768); the SSR
+    // Below 1024: the panel is a full-height sheet on
+    // demand — the rule covers 768–1023 AND the hosted narrow-desktop floor (<768); the SSR
     // phone reader hides the regions outright in the block below.
     `@media (max-width: ${B.bpSingleColumnPx - 1}px) {`,
-    `  .ide[data-files='open'] .ide-files { position: absolute; left: ${B.railPx}px; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
-    `  .ide[data-ide-hosted][data-files='open'] .ide-files { left: 0; }`,
     `  .ide .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     "}",
     // R7FIX.1 (REQ-PANE-0) — the scrim under every open overlay/sheet: the controller derives
-    // `data-timeline-mode`/`data-files-mode` from paneLayout() (overlay|sheet only where the mode
+    // `data-panel-mode` from paneLayout() (overlay|sheet only where the mode
     // really applies), so a scrim can never be claimed under a docked pane. `.ide-scrim` covers
-    // `.ide-main`; the rail (z 30) and the open pane (z 20) stay above it — outside clicks land
+    // `.ide-main`; the open pane (z 20) stays above it — outside clicks land
     // on it and dismiss.
     ".ide-scrim { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(0,0,0,0.45); }",
-    ".ide[data-panel='open'][data-panel-mode='overlay'] .ide-scrim, .ide[data-panel='open'][data-panel-mode='sheet'] .ide-scrim, .ide[data-files='open'][data-files-mode='overlay'] .ide-scrim { display: block; }",
+    ".ide[data-panel='open'][data-panel-mode='overlay'] .ide-scrim, .ide[data-panel='open'][data-panel-mode='sheet'] .ide-scrim { display: block; }",
     // Below ~768: the phone layout — reader-only Page; the other regions hide. P1.19 (§10.1): the
     // §10.1 input set the regions carried re-mounts INSIDE the Page — elements stamped
     // `ide-phone-only` render only at this width (the compact chat surface is the one today).
@@ -160,7 +134,7 @@ export function ideCss(): string {
     // open as sheets from the top bar instead of being hidden — the hosted rules live in the
     // AppShell block below.
     `@media (max-width: ${B.bpPhonePx - 1}px) {`,
-    "  .ide:not([data-ide-hosted]) .ide-rail, .ide:not([data-ide-hosted]) .ide-files, .ide:not([data-ide-hosted]) .ide-panel, .ide:not([data-ide-hosted]) .ide-margin, .ide:not([data-ide-hosted]) .ide-statusbar { display: none !important; }",
+    "  .ide:not([data-ide-hosted]) .ide-panel, .ide:not([data-ide-hosted]) .ide-margin, .ide:not([data-ide-hosted]) .ide-statusbar { display: none !important; }",
     "  .ide .ide-page { padding: 0; }",
     "  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }",
     "  .ide-phonebar { display: flex !important; }",
@@ -372,10 +346,10 @@ export function ideCss(): string {
     ".app-shell-topbar { display: none; }",
     ".app-shell-scrim { display: none; }",
     ".app-shell-demo-bar { flex: 0 0 auto; }",
-    // The hosted IDE: the global rail is the sidebar's job (REQ-IDE-2 amended — UXC-10); the
-    // phonebar is the shell top bar's. Suppression is DOM-level (the elements are never mounted
-    // when hosted), so no capability hiding remains.
-    ".ide[data-ide-hosted] .ide-rail, .ide[data-ide-hosted] .ide-phonebar { display: none !important; }",
+    // The hosted IDE: the global rail is the sidebar's job (REQ-IDE-2 amended — UXC-10) and it is
+    // DELETED outright (R7SHELL.2 — never mounted); the phonebar is the shell top bar's.
+    // Suppression is DOM-level (the elements are never mounted when hosted).
+    ".ide[data-ide-hosted] .ide-phonebar { display: none !important; }",
     // R7PANE.1 (REQ-PANE-2) — the IDE controller stamps `data-ide-sidebar` on `.app-shell` from
     // paneLayout()'s sidebar ceiling: "rail" forces the icon column (1024–1279 always,
     // 1280–1439 while the panel is open); "drawer" arms the off-canvas mechanism at 768–1023
@@ -401,7 +375,6 @@ export function ideCss(): string {
     "  .app-shell[data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "  .app-shell-content { padding-top: 0; }",
     `  .ide[data-ide-hosted] .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
-    `  .ide[data-ide-hosted][data-files='open'] .ide-files { position: absolute; left: 0; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
     "  .ide[data-ide-hosted] .ide-page { padding: 0; }",
     "}",
   ].join("\n");

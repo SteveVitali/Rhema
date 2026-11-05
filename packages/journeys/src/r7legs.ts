@@ -359,7 +359,7 @@ const U3_STOPGAP: StepFn = async (ctx) => {
       const paper = box(document.querySelector(".ide-page .paper"));
       const ticks = box(document.querySelector(".ide-margin"));
       const letter = box(document.querySelector("article .paper"));
-      for (const sel of [".ide-timeline", ".ide-files"]) {
+      for (const sel of [".ide-timeline"]) {
         const el = document.querySelector<HTMLElement>(sel);
         if (!el) continue;
         const pos = getComputedStyle(el).position;
@@ -942,6 +942,43 @@ const U1_SHELL: StepFn = async (ctx) => {
   if ((await shell.count()) !== 1 || (await sidebar.count()) !== 1) {
     throw new Error("the shell/sidebar is not singular inside the project leaf");
   }
+  // R7SHELL.2 (REQ-SHELL-4) — the project-scope walk: the Files strip is gone from the DOM, the
+  // current project expands into its seven items + tree, it is not repeated in the recents, and
+  // each item is reached from the Page by SPA navigation with the correct active state.
+  if ((await page.locator(".ide-files").count()) > 0 || (await page.locator(".ide-rail").count()) > 0) {
+    throw new Error("the Files strip or icon rail is still in the DOM");
+  }
+  await page.locator("[data-shell-project]").first().waitFor({ timeout: 30_000 });
+  const scopeSlug = (await page.locator("[data-shell-project]").first().getAttribute("data-shell-project")) ?? slug;
+  if ((await page.locator(`[data-shell-recent="${scopeSlug}"]`).count()) > 0) {
+    throw new Error("the current project is repeated in Recent projects");
+  }
+  if ((await page.locator("[data-project-tree]").count()) === 0) {
+    throw new Error("the Files tree did not render under the project entry");
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u1-shell-project-1440.png"), fullPage: true });
+  for (const item of ["outline", "figures", "versions", "export", "settings", "reviews", "page"] as const) {
+    const link = page.locator(`[data-project-item="${item}"]`).first();
+    if ((await link.count()) === 0) throw new Error(`the project item ${item} is missing`);
+    if ((await link.getAttribute("aria-disabled")) === "true") {
+      // a disabled item (write-only under ReadOnlyProject) carries its reason — a title is the
+      // contract (the walk's showcase/fixture project is writable, so this arm is informational).
+      continue;
+    }
+    await settleClientNav(page, ctx, async () => {
+      await link.click();
+    });
+    if ((await link.getAttribute("aria-current")) !== "page") {
+      throw new Error(`the ${item} item did not become aria-current after its SPA nav`);
+    }
+  }
+  // collapsed: the items stay as icon+tooltip rows.
+  await page.locator("[data-shell-toggle]").click();
+  if ((await shell.getAttribute("data-sidebar")) !== "collapsed") {
+    throw new Error("the collapse toggle did not flip data-sidebar (project scope)");
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u1-shell-collapsed-1440.png"), fullPage: true });
+  await page.locator("[data-shell-toggle]").click();
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.screenshot({ path: join(ctx.outDir, "u1-shell-1024.png"), fullPage: true });
   // narrow desktop (700 px): the top bar + drawer replace the hidden panes.

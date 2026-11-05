@@ -24,23 +24,32 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useM
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ClipboardCheck,
+  Download,
   FilePlus2,
+  FileText,
+  History,
+  Image as ImageIcon,
   Inbox as InboxIcon,
+  ListTree,
   Menu,
   Mic,
   Gauge,
   Search,
   Settings,
+  Settings2,
 } from "lucide-react";
 import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
 import { dispatchIdeKey, parseAppTheme, shortcutFor, THEME_STORAGE_KEY } from "@rhema/ide";
-import { DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, Tooltip, TooltipProvider } from "@rhema/ui";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, FilesPane, Tooltip, TooltipProvider } from "@rhema/ui";
 import { COPY } from "../copy.js";
+import { filesLabels } from "../files-labels.js";
 import { getSpaBoot, isSpaEnabled } from "./boot.js";
 import { demoBootNow, useDemoMode } from "./demo.js";
 import { DemoBanner } from "./demo-banner.js";
 import { navigateDocument } from "./dom.js";
-import { inboxQuery, projectHomeQuery, sessionQuery } from "./queries.js";
+import { readOnlyReasonText } from "./read-only.js";
+import { inboxQuery, projectHomeQuery, projectTreeQuery, sessionQuery } from "./queries.js";
 
 const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
 
@@ -104,8 +113,31 @@ function shellZone(): "input" | "none" {
  * Never rendered/fetched: New project, recents, Inbox, Voices, Usage, Settings, the account menu
  * — no session, workspace, credits or account read issues in a demo boot.
  */
+/**
+ * The ARIA-treeview keyboard walk over the Files tree (REQ-SHELL-4): roving tabindex is in the
+ * markup; Up/Down move, Home/End jump, Left/Right collapse/expand the row's details group.
+ */
+function onProjectTreeKeyDown(e: React.KeyboardEvent<HTMLElement>): void {
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("[role='treeitem']"));
+  if (items.length === 0) return;
+  const active = document.activeElement as HTMLElement | null;
+  const ix = items.findIndex((el) => el === active || el.contains(active));
+  if (ix < 0) return;
+  e.preventDefault();
+  if (e.key === "ArrowDown") items[Math.min(items.length - 1, ix + 1)]?.focus();
+  else if (e.key === "ArrowUp") items[Math.max(0, ix - 1)]?.focus();
+  else if (e.key === "Home") items[0]?.focus();
+  else if (e.key === "End") items[items.length - 1]?.focus();
+  else {
+    const det = items[ix]?.closest("details");
+    if (det instanceof HTMLDetailsElement) det.open = e.key === "ArrowRight";
+  }
+}
+
 function DemoAppShell({ children }: { children?: ReactNode }): ReactNode {
   const demo = demoBootNow();
+  const pathname = useLocation({ select: (l) => l.pathname });
   if (demo == null) return <>{children}</>;
   return (
     <div className="app-shell" data-app-shell data-demo="1" data-sidebar="static">
@@ -114,6 +146,9 @@ function DemoAppShell({ children }: { children?: ReactNode }): ReactNode {
         <a className="app-shell-wordmark" href="/" data-spa-native data-demo-exit="wordmark" data-shell-wordmark>
           {COPY.brand}
         </a>
+        {/* R7SHELL.2 — the demo project section renders ONLY from the demo twins
+            (`/bff/p/demo~<essay>?view=tree`): no workspace read ever issues (P4-3). */}
+        <ProjectSection slug={demo.slug} collapsed={false} pathname={pathname} demo />
       </aside>
       <div className="app-shell-main">
         {/* The demo top bar — hosts the R7a banner with its H15-signed copy unchanged ("Back to
@@ -127,9 +162,188 @@ function DemoAppShell({ children }: { children?: ReactNode }): ReactNode {
   );
 }
 
+/**
+ * R7SHELL.2 (REQ-SHELL-4; ADR-128) — the sidebar's project scope. The current project's entry
+ * expands into the seven item links (Page · Outline · Figures · Versions · Reviews · Export ·
+ * Project settings), each an SPA link with an `aria-current` state; the Files pane's content
+ * (the `getFiles` sections) renders as the expanded tree under it. Write-only items (Export,
+ * Project settings) honour ReadOnlyProject: disabled with the reason as their tooltip.
+ * The `/bff/p/:slug?view=tree` twin feeds it — in a demo boot the demo-namespaced twin serves
+ * (no workspace read). Collapsed ⇒ icons + tooltips only (the tree needs the expanded column).
+ */
+function ProjectSection(props: {
+  readonly slug: string;
+  readonly collapsed: boolean;
+  readonly pathname: string;
+  /** the twin read: demo ⇒ always (demo twins only); workspace ⇒ only on an SPA-verdict leaf —
+   *  an unflipped leaf's SsrHandoff must not issue a BFF read from the sidebar. */
+  readonly enabled?: boolean;
+  readonly demo?: boolean;
+}): ReactNode {
+  const { slug, collapsed, pathname } = props;
+  const demo = props.demo === true;
+  const enabled = props.enabled !== false;
+  const tree = useQuery({ ...projectTreeQuery(slug), enabled });
+  const data = tree.data ?? null;
+  // `data?.project?.title` — a degraded/erroneous body must never throw in the sidebar.
+  const title = data?.project?.title ?? slug;
+  const readOnly = data?.project?.readOnlyProject ?? (demo ? { reason: "demo" as const } : null);
+  // The latest review's run id (the rounds rows carry provenance.runId + workflow); the
+  // Reviews item targets its dossier, else the project overview (the dossier cards' home).
+  const latestReviewRunId = useMemo(() => {
+    for (const s of data?.files?.sections ?? []) {
+      for (const r of s.rows ?? []) {
+        if (r.provenance.runId != null && /review/i.test(r.provenance.workflow ?? "")) {
+          return r.provenance.runId;
+        }
+      }
+    }
+    for (const s of data?.files?.sections ?? []) {
+      const hit = (s.rows ?? []).find((r) => r.provenance.runId != null);
+      if (hit?.provenance.runId != null) return hit.provenance.runId;
+    }
+    return null;
+  }, [data]);
+  const items: readonly {
+    key: string;
+    label: string;
+    href: string;
+    icon: ReactNode;
+    active: boolean;
+    writeOnly?: boolean;
+    demoAllowed?: boolean;
+  }[] = [
+    {
+      key: "page",
+      label: COPY.appShell.project.page,
+      href: `/p/${slug}`,
+      icon: <FileText size={16} aria-hidden />,
+      active: pathname === `/p/${slug}` || pathname.startsWith(`/p/${slug}/a/`) || pathname.startsWith(`/p/${slug}/edit/`),
+      demoAllowed: true,
+    },
+    {
+      key: "outline",
+      label: COPY.appShell.project.outline,
+      href: `/p/${slug}/outline`,
+      icon: <ListTree size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/outline`),
+    },
+    {
+      key: "figures",
+      label: COPY.appShell.project.figures,
+      href: `/p/${slug}/figures`,
+      icon: <ImageIcon size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/figures`) || pathname.startsWith(`/p/${slug}/f/`) || pathname.startsWith(`/p/${slug}/visualize`),
+      demoAllowed: true,
+    },
+    {
+      key: "versions",
+      label: COPY.appShell.project.versions,
+      href: `/p/${slug}/v/working`,
+      icon: <History size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/v/`) || pathname.startsWith(`/p/${slug}/revisions/`),
+      demoAllowed: true,
+    },
+    {
+      key: "reviews",
+      label: COPY.appShell.project.reviews,
+      href: latestReviewRunId != null ? `/p/${slug}/review/${latestReviewRunId}` : `/p/${slug}`,
+      icon: <ClipboardCheck size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/review/`) || pathname.startsWith(`/p/${slug}/r/`),
+      demoAllowed: true,
+    },
+    {
+      key: "export",
+      label: COPY.appShell.project.export,
+      href: `/p/${slug}/export`,
+      icon: <Download size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/export`),
+      writeOnly: true,
+    },
+    {
+      key: "settings",
+      label: COPY.appShell.project.settings,
+      href: `/p/${slug}/settings`,
+      icon: <Settings2 size={16} aria-hidden />,
+      active: pathname.startsWith(`/p/${slug}/settings`) || pathname.startsWith(`/p/${slug}/voice/`),
+      writeOnly: true,
+    },
+  ];
+  const files = data?.files ?? null;
+  return (
+    <div className="app-shell-project" data-shell-project={slug}>
+      <ShellItem
+        hook="data-shell-current-project"
+        href={`/p/${slug}`}
+        icon={<FileText size={18} aria-hidden />}
+        label={title}
+        collapsed={collapsed}
+        current={pathname === `/p/${slug}`}
+      />
+      <div className="app-shell-project-items" role="group" aria-label={title}>
+        {items.map((it) => {
+          const blocked =
+            readOnly != null && (it.writeOnly === true || (demo && it.demoAllowed !== true));
+          if (blocked) {
+            const reason = readOnlyReasonText(readOnly!.reason);
+            return (
+              <span key={it.key} className="app-shell-item" data-project-item={it.key} data-disabled="1" aria-disabled="true">
+                {collapsed ? (
+                  <Tooltip content={`${it.label} — ${reason}`} side="right">
+                    <span>{it.icon}</span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    {it.icon}
+                    <span className="app-shell-label">
+                      {it.label}
+                      <span className="app-shell-label" style={{ marginLeft: "6px", color: "var(--shell-fg-faint)", fontSize: 11 }}>
+                        {reason}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </span>
+            );
+          }
+          return (
+            <ShellItem
+              key={it.key}
+              hook="data-project-item"
+              hookValue={it.key}
+              href={it.href}
+              icon={it.icon}
+              label={it.label}
+              tip={it.label}
+              collapsed={collapsed}
+              current={it.active}
+            />
+          );
+        })}
+      </div>
+      {!collapsed && files != null ? (
+        <div className="app-shell-project-tree" onKeyDown={onProjectTreeKeyDown}>
+          <FilesPane
+            sections={files.sections}
+            hrefs={{
+              artifact: (id) => `/p/${slug}/a/${id}`,
+              draft: (n) => `/p/${slug}/v/${n}`,
+              run: (id) => `/p/${slug}/r/${id}`,
+              figure: (id) => `/p/${slug}/figures/${id}`,
+            }}
+            labels={filesLabels}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** One sidebar row — anchor or button, icon, label, optional badge/tooltip/chord hint. */
 function ShellItem(props: {
   readonly hook: string;
+  /** emits `[hook]="<value>"` instead of the bare flag (R7SHELL.2 — per-project-item keys). */
+  readonly hookValue?: string;
   readonly href?: string;
   readonly onClick?: () => void;
   readonly icon: ReactNode;
@@ -160,14 +374,14 @@ function ShellItem(props: {
     <a
       href={props.href}
       className={cls}
-      {...{ [props.hook]: true }}
+      {...{ [props.hook]: props.hookValue ?? true }}
       {...(props.docNav ? { "data-spa-native": true } : {})}
       {...(props.current ? { "aria-current": "page" } : {})}
     >
       {body}
     </a>
   ) : (
-    <button type="button" className={cls} onClick={props.onClick} {...{ [props.hook]: true }}>
+    <button type="button" className={cls} onClick={props.onClick} {...{ [props.hook]: props.hookValue ?? true }}>
       {body}
     </button>
   );
@@ -286,9 +500,16 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
   }, []);
   setThemeRef.current = setTheme;
 
+  // R7SHELL.2 (REQ-SHELL-4) — the sidebar's project scope: inside `/p/:slug` the current
+  // project's entry expands into its items + the Files tree, and it is NOT repeated in the
+  // recents list.
+  const projectSlug = useMemo(() => {
+    const m = /^\/p\/([^/]+)/.exec(loc.pathname);
+    return m ? decodeURIComponent(m[1]!) : null;
+  }, [loc.pathname]);
   const recents = useMemo(
-    () => (home.data?.rows ?? []).filter((r) => r.archivedAt == null).slice(0, 8),
-    [home.data],
+    () => (home.data?.rows ?? []).filter((r) => r.archivedAt == null && r.slug !== projectSlug).slice(0, 8),
+    [home.data, projectSlug],
   );
   // R7SHELL.1c — the global palette is available on every signed-in page; Search always shows
   // (project scope is decided inside the palette from the location). `paletteHere` now only
@@ -333,6 +554,14 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             <ShellItem hook="data-shell-usage" href="/usage" icon={<Gauge size={18} aria-hidden />} label={COPY.appShell.usage} collapsed={collapsed} current={loc.pathname === "/usage"} />
             <ShellItem hook="data-shell-settings" href="/app/settings/account" icon={<Settings size={18} aria-hidden />} label={COPY.appShell.settings} collapsed={collapsed} current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"} />
           </div>
+          {projectSlug != null ? (
+            <ProjectSection
+              slug={projectSlug}
+              collapsed={collapsed}
+              pathname={loc.pathname}
+              enabled={isSpaEnabled(boot, routeId)}
+            />
+          ) : null}
           <div className="app-shell-section app-shell-recents">{COPY.appShell.recents}</div>
           <div className="app-shell-nav app-shell-recents" role="group" aria-label={COPY.appShell.recents}>
             {recents.map((r) => (

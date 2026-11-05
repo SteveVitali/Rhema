@@ -348,7 +348,7 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
     const boot = bootFor();
     const { router } = await mountAt(`/p/${SLUG_A}`, boot, f.impl);
 
-    const pageGets = () => f.gets.filter((u) => u.startsWith(`/bff/p/${SLUG_A}`));
+    const pageGets = () => f.gets.filter((u) => u.startsWith(`/bff/p/${SLUG_A}`) && !u.includes("view=tree"));
     const rootEl = await settled<HTMLElement>("[data-page-root]");
     expect(rootEl).not.toBeNull();
     const stamp = rootEl.getAttribute("data-page-session");

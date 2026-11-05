@@ -14,7 +14,6 @@ import type { TimelineRun } from "@rhema/findings-core";
 
 export interface IdeLabels {
   rail: { home: string; inbox: string; settings: string; project: string };
-  files: { heading: string; empty: string; close: string; open: string; sourceFile: string; resize: string };
   margin: { heading: string; ticksLabel: string };
   timeline: { heading: string; empty: string; close: string };
   panel: {
@@ -70,13 +69,6 @@ export interface IdeShellProps {
   readonly appTheme?: "dark" | "light" | "auto";
   /** ?focus=1 (the ONLY shareable pane URL flag — the island applies then strips it). */
   readonly initialView?: ViewMode;
-  /** the source editor's file link (the Advanced-tier Files row — §5.1 progressive disclosure). */
-  readonly sourceHref?: string;
-  /**
-   * P1.08 — the §5.13 Files pane (typed sections, provenance badges, lock icons, freshness notes,
-   * sealed counts). Supersedes the strip list when set; absent ⇒ the strip renders exactly as before.
-   */
-  readonly filesBody?: ReactNode;
   readonly hasFindings?: boolean;
   /** margin content (the finding rows the cards/ticks summarize) — absent ⇒ Margin hides. */
   readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
@@ -192,7 +184,6 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.projectId ? { "data-project-id": props.projectId } : {})}
       {...(props.userId ? { "data-user": props.userId } : {})}
       data-view={view}
-      data-files="strip"
       // R7PANE.1 (REQ-PANE-1/2) — SSR emits the right panel CLOSED: the controller derives the
       // effective open state from paneLayout(viewport) at bind, so a document can never paint an
       // un-scrimmed overlay (or a sheet) over the draft before script runs. The `data-desk`/
@@ -231,53 +222,8 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         </div>
       ) : null}
       <div className="ide-main">
-        {/* Rail — the only persistent global chrome (§5.1). R7SHELL.1a (REQ-IDE-2 amended):
-            suppressed while the AppShell hosts this shell — the sidebar carries its items and
-            the View menu moved to the status bar. 230 removes the rail code entirely. */}
-        {!props.hosted ? (
-          <nav className="ide-rail" aria-label={L.rail.project}>
-            <a href="/app" title={L.rail.home} aria-label={L.rail.home}>⌂</a>
-            {/* P1.19 — the badge opens the global /app/inbox (REQ-IDE-2 amended); the count is the
-                api's approvals+decisions number. */}
-            <a href="/app/inbox" className="ide-badge" data-count={props.inboxCount ?? 0}
-               title={L.rail.inbox} aria-label={L.rail.inbox}>◎</a>
-            <span className="ide-rail-spacer" />
-            <button type="button" data-ide-view-menu title={L.statusBar.view} aria-haspopup="menu" aria-expanded="false">▤</button>
-            <a href="/app/settings" title={L.rail.settings} aria-label={L.rail.settings}>⚙</a>
-          </nav>
-        ) : null}
-
-        {/* Files — 36-px strip default; ⌘1 opens the pane (§5.1). Strip/body swap is CSS on
-            data-files so SSR is correct at either state with zero script. */}
-        <aside className="ide-files" data-pane="files" aria-label={L.files.heading}>
-          <div className="ide-files-strip">
-            <button type="button" data-ide-files-toggle title={L.files.open} aria-label={L.files.open}>▤</button>
-          </div>
-          <div className="ide-pane-head">
-            <span>{L.files.heading}</span>
-            <button type="button" data-ide-files-toggle aria-label={L.files.close} style={{ marginLeft: "auto" }}>×</button>
-          </div>
-          <div className="ide-files-body">
-            {props.filesBody ?? (
-              <>
-                <ul>
-                  <li data-current>{project.title}</li>
-                  {/* the Source file row is an Advanced-tier control (§5.1 progressive disclosure —
-                      "view.source" is not in the View menu; CSS hides it until data-advanced="1"). */}
-                  {props.sourceHref ? (
-                    <li data-tier="advanced">
-                      <a href={props.sourceHref}>{L.files.sourceFile}</a>
-                    </li>
-                  ) : null}
-                </ul>
-                <p style={{ fontSize: 12 }}>{L.files.empty}</p>
-              </>
-            )}
-          </div>
-        </aside>
-        <button type="button" className="ide-handle" data-ide-handle="files" role="separator"
-                aria-label={L.files.resize} aria-orientation="vertical"
-                aria-valuenow={240} aria-valuemin={160} aria-valuemax={480} />
+        {/* R7SHELL.2 (REQ-SHELL-4) — the icon rail AND the 36-px Files strip are DELETED, not
+            hidden: the AppShell sidebar owns workspace nav and the expanded project tree. */}
 
         {/* Page + Margin */}
         <div className="ide-center">

@@ -11,12 +11,9 @@
 // `data-palette` stays emitted (REQ-TST-2 attr parity).
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { FilesPane, type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
+import { type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
 import type { PaletteData } from "@rhema/ide";
 import type { BffIdeBag } from "../queries.js";
-// The FilesPane label bag is the ONE pages.tsx renders — the SSR↔SPA parity seam lives outside
-// the spa/ tree (the REQ-SAFE-10 leaf scan keys on `COPY.<leaf>` refs inside it).
-import { filesLabels } from "../../files-labels.js";
 
 /** The Desk feed slice — `labelMaps`/`labels` are chrome-owned (COPY + `["feed-labels"]` query). */
 export interface IdeChromeFeed {
@@ -41,8 +38,6 @@ export interface IdeChromeData {
   readonly appTheme?: IdeShellProps["appTheme"];
   /** ?focus=1's seeded view — the leaf passes `"focus"`; the chrome applies then strips. */
   readonly initialView?: IdeShellProps["initialView"];
-  readonly sourceHref?: string;
-  readonly filesBody?: ReactNode;
   readonly findings?: NonNullable<IdeShellProps["findings"]>;
   readonly marginBody?: ReactNode;
   readonly deskFindingsBody?: ReactNode;
@@ -152,8 +147,10 @@ export interface IdeTwinShell {
  * Publishes a twin's shell onto the React chrome for as long as the leaf is mounted — the SSR
  * `ideContext` fields verbatim: identity (`projectId`), theming, the palette JSON parsed back
  * to the typed `PaletteData`, the panes that are data (findings/timeline/feed/inbox/status),
- * and `filesBody` built through the SAME `FilesPane` the SSR renders. `chat` is the pane's own
+ * `chat` is the pane's own
  * degrade state when absent (the seam is best-effort server-side too).
+ * R7SHELL.2 — `filesBody` is gone with the Files pane: the tree lives in the AppShell sidebar's
+ * expanded project entry, fed by the `?view=tree` twin.
  *
  * `extras` is the leaf's own slice — SPA.21's dossier overlays the client-filtered `findings`,
  * the Margin/Desk pane bodies, the chat panel, the timeline label/href maps, and `renderGateCard`
@@ -176,7 +173,6 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
       paperTheme: shell.paperTheme as IdeShellProps["paperTheme"],
       ...(shell.appTheme ? { appTheme: shell.appTheme as IdeShellProps["appTheme"] } : {}),
       ...(shell.ide.initialView ? { initialView: shell.ide.initialView } : {}),
-      ...(shell.ide.sourceHref ? { sourceHref: shell.ide.sourceHref } : {}),
       ...(shell.ide.activeRun ? { activeRun: shell.ide.activeRun } : {}),
       ...(shell.ide.inboxCount != null ? { inboxCount: shell.ide.inboxCount } : {}),
       ...(shell.ide.findings ? { findings: shell.ide.findings } : {}),
@@ -188,22 +184,6 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
       ...(shell.ide.runNextHref ? { runNextHref: shell.ide.runNextHref } : {}),
       ...(palette ? { palette } : {}),
       ...(shell.ide.status ? { status: shell.ide.status } : {}),
-      ...(shell.ide.files
-        ? {
-            filesBody: (
-              <FilesPane
-                sections={shell.ide.files.sections}
-                hrefs={{
-                  artifact: (id) => `/p/${slug}/a/${id}`,
-                  draft: (n) => `/p/${slug}/v/${n}`,
-                  run: (id) => `/p/${slug}/r/${id}`,
-                  figure: (id) => `/p/${slug}/figures/${id}`,
-                }}
-                labels={filesLabels}
-              />
-            ),
-          }
-        : {}),
       ...extras,
     };
   }, [shell, extras]);

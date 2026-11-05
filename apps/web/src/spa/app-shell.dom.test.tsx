@@ -62,6 +62,66 @@ const HOME_TWIN = {
   deletedRows: [],
 };
 const INBOX_TWIN = { items: [], badge: 3, gateCards: {} };
+// R7SHELL.2 — a minimal `?view=tree` twin: the current project's facts + a two-section tree.
+const TREE_TWIN = {
+  project: { title: "Alpha", pill: "Ready", slug: "alpha", headDraftId: "d1", headDraftN: 2, readOnlyProject: null },
+  files: {
+    sections: [
+      {
+        key: "drafts",
+        sealedCount: 0,
+        rows: [
+          {
+            artifactId: "drafts/v2.md",
+            kind: "draft",
+            label: "v2",
+            level: "SE",
+            editMode: "read",
+            lock: "editable",
+            readOnly: false,
+            words: 1200,
+            createdAt: "2026-11-01T00:00:00Z",
+            provenance: { actor: "you" },
+            draftRef: { n: 2, state: "working" },
+          },
+        ],
+        advancedRows: [],
+      },
+      {
+        key: "rounds",
+        sealedCount: 0,
+        rows: [
+          {
+            artifactId: "rounds/r1",
+            kind: "round",
+            label: "Draft review",
+            level: "SR",
+            editMode: "read",
+            lock: "immutable",
+            readOnly: false,
+            words: null,
+            createdAt: "2026-11-01T00:00:00Z",
+            provenance: { actor: "agent", runId: "r1", workflow: "Review" },
+          },
+        ],
+        advancedRows: [
+          {
+            artifactId: "advanced/source.md",
+            kind: "source",
+            label: "Source",
+            level: "I",
+            editMode: "read",
+            lock: "inspect",
+            readOnly: true,
+            words: null,
+            createdAt: "2026-11-01T00:00:00Z",
+            provenance: { actor: "you" },
+          },
+        ],
+      },
+    ],
+  },
+};
 
 function boot(demo?: SpaBoot["demo"], deviceClass: "desktop" | "phone" = "desktop"): SpaBoot {
   return {
@@ -85,6 +145,8 @@ function makeFetch() {
     if (url.startsWith("/bff/app/inbox")) return json(INBOX_TWIN);
     if (url.startsWith("/bff/app")) return json(HOME_TWIN);
     if (url.startsWith("/bff/feed-labels") || url.startsWith("/bff/demo/feed-labels")) return json({});
+    // R7SHELL.2 — the sidebar project section's `?view=tree` twin (any project slug).
+    if (url.startsWith("/bff/p/") && url.includes("view=tree")) return json(TREE_TWIN);
     return new Response(JSON.stringify({ error: "unstubbed" }), { status: 500 });
   };
   return { calls, fetchFn };
@@ -216,6 +278,35 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     expect(document.querySelector("[data-shell-search]")).not.toBeNull();
   });
 
+  it("R7SHELL.2 — the project scope: current entry expands to the seven items + tree; recents exclude it; no rail/Files strip", async () => {
+    await mountAt("/p/alpha", boot());
+    await settled("[data-shell-project]");
+    // no IDE rail or Files strip anywhere (the removal-catching half of the AC).
+    expect(document.querySelector(".ide-rail")).toBeNull();
+    expect(document.querySelector(".ide-files")).toBeNull();
+    expect(document.querySelector("[data-files]")).toBeNull();
+    // the seven items exist as SPA links with the Page item current on /p/alpha.
+    for (const key of ["page", "outline", "figures", "versions", "reviews", "export", "settings"]) {
+      const item = document.querySelector(`[data-project-item="${key}"]`);
+      expect(item, key).not.toBeNull();
+      expect(item!.getAttribute("href"), key).toMatch(/^\/p\/alpha/);
+    }
+    expect(document.querySelector('[data-project-item="page"]')!.getAttribute("aria-current")).toBe("page");
+    // the Files tree under the entry — tree roles, no lock glyph.
+    expect(document.querySelector("[data-shell-current-project]")).not.toBeNull();
+    const tree = await settled('[data-project-tree] [role="tree"]');
+    expect(tree).not.toBeNull();
+    expect(document.querySelector('[data-project-tree] [role="treeitem"]')).not.toBeNull();
+    expect(document.querySelector('[data-files-section="drafts"]')).not.toBeNull();
+    expect(document.querySelector('[data-file-row="drafts/v2.md"]')).not.toBeNull();
+    expect(document.querySelector("[data-files-advanced]")).not.toBeNull();
+    expect(document.querySelectorAll("[data-lock-badge]").length).toBeGreaterThan(0);
+    expect(document.querySelector("[data-lock-icon]")).toBeNull();
+    // the current project is not repeated in Recent projects.
+    expect(document.querySelector('[data-shell-recent="alpha"]')).toBeNull();
+    expect(document.querySelector('[data-shell-recent="beta"]')).not.toBeNull();
+  });
+
   it("the in-shell 404 renders inside the shell with the sidebar present", async () => {
     await mountAt("/app/definitely-not-a-route", boot());
     await shell();
@@ -286,9 +377,11 @@ describe("R7SHELL.1a — /billing, collapse, narrow desktop", () => {
     // drawer/sheet rules replace it — a regression to `display:none` on hosted panes fails here.
     const css = ideCss();
     expect(css).toContain("[data-ide-hosted]");
-    expect(css).toContain(".ide:not([data-ide-hosted]) .ide-rail");
+    expect(css).toContain(".ide:not([data-ide-hosted]) .ide-panel");
     expect(css).toContain("data-drawer='open'");
-    expect(css).not.toContain(".ide .ide-files, .ide .ide-timeline, .ide .ide-desk");
+    // R7SHELL.2 — no rail/Files rule may exist at any breakpoint.
+    expect(css).not.toContain(".ide-rail");
+    expect(css).not.toContain(".ide-files");
   });
 });
 

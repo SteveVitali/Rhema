@@ -451,7 +451,6 @@ export interface BffIdeBag {
   readonly userId?: string;
   readonly projectId?: string;
   readonly initialView?: "write" | "read" | "focus";
-  readonly sourceHref?: string;
   readonly activeRun?: { readonly runId: string; readonly state: string } | null;
   readonly inboxCount?: number;
   readonly findings?: readonly { readonly id: string; readonly severity: string; readonly kind: string; readonly excerpt: string }[];
@@ -1162,6 +1161,32 @@ export interface BffPageBag {
  * slices included). URL echoes stay leaf-owned: `?rename`, `?created`/`cn`/`cu`, `?hc`, `?derror`,
  * `?voice_locked` all merge from the leaf's search — they are never payload.
  */
+/**
+ * R7SHELL.2 (REQ-SHELL-4) — `GET /bff/p/:slug?view=tree` — the sidebar project section's light
+ * twin: the current project's facts + the `getFiles` tree (the expanded project entry's rows).
+ * The `view` param keeps the `/p/$project` route mapping (demo-safe — the allowlist rides the
+ * route id, never the query).
+ */
+export interface BffProjectTreeTwin {
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    readonly headDraftId?: string | null;
+    readonly headDraftN?: number | null;
+    readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
+  };
+  readonly files: FilesDto | null;
+}
+export const projectTreeQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "tree"] as const,
+    queryFn: () =>
+      bffFetch<BffProjectTreeTwin>(`/bff/p/${encodeURIComponent(slug)}?view=tree`),
+    retry: retryPolicy,
+  });
+
 export interface BffProjectTwin {
   readonly project: {
     readonly title: string;

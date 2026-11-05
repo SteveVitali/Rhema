@@ -102,9 +102,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   // SESSION-scoped: it lives here only, never in pane storage, so a persisted docked-mode
   // `panelOpen:true` can never auto-open an overlay (or the <1024 sheet/drawer) at a narrow
   // width.
-  const overlayOpenRef = useRef<{ files: boolean; panel: boolean }>({ files: false, panel: false });
+  const overlayOpenRef = useRef<{ panel: boolean }>({ panel: false });
   // REQ-UX-7 — the control that opened an overlay gets focus back on dismiss.
-  const overlayTriggerRef = useRef<{ files: HTMLElement | null; panel: HTMLElement | null }>({ files: null, panel: null });
+  const overlayTriggerRef = useRef<{ panel: HTMLElement | null }>({ panel: null });
   const authorshipRef = useRef(false);
   const readerStepRef = useRef(0);
   const suggestionNodesRef = useRef<HTMLElement[]>([]);
@@ -140,8 +140,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   }, [ideEl]);
 
   // ---------- paneLayout() is the runtime geometry source (REQ-PANE-0) ----------
-  // The presentation modes are computed with both panes treated as open, so `files:"strip"` vs
-  // `"overlay"` and `timeline:"pane"|"overlay"|"sheet"` describe the MODE, not the open state;
+  // The presentation mode is computed with the panel treated as open, so `panel:"overlay"` vs
+  // `"docked"` describes the MODE, not the open state;
   // the effective open state then picks session intent (overlay/sheet) or persisted intent.
   const presentationNow = useCallback((): PaneLayout => {
     const w = typeof window !== "undefined" ? window.innerWidth : 1600;
@@ -152,11 +152,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       hosted: shell != null || ideEl()?.hasAttribute("data-ide-hosted") === true,
       sidebarOpen: shell?.dataset["sidebar"] !== "collapsed",
     };
-    // Two cheap pure passes: the first resolves the MODES, the second feeds the session-scoped
-    // overlay intents back in so paneLayout()'s effective open verdicts are the real ones.
+    // Two cheap pure passes: the first resolves the MODE, the second feeds the session-scoped
+    // overlay intent back in so paneLayout()'s effective open verdict is the real one.
     const pre = paneLayout(w, base);
     const intents = {
-      filesOpen: overlayMode(pre.files) ? overlayOpenRef.current.files : stateRef.current.filesOpen,
       panelOpen: overlayMode(pre.panel) ? overlayOpenRef.current.panel : stateRef.current.panelOpen,
     };
     return paneLayout(w, { ...base, ...intents });
@@ -171,10 +170,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const ssrMargin = latest.current.hasFindings ? "auto" : "hidden";
     ide.dataset.paneMode = presentation.mode;
     ide.dataset.panelMode = presentation.panel;
-    ide.dataset.filesMode = presentation.files;
     const panelOpen = presentation.panelOpen;
-    const filesOpen = presentation.filesOpen;
-    ide.dataset.files = filesOpen ? "open" : "strip";
     ide.dataset.panel = panelOpen ? "open" : "closed";
     ide.dataset.panelTab = state.panelTab;
     // R7a hook aliases (the dom-contract migration ships them in this change): the R7a legs
@@ -186,7 +182,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     ide.dataset.view = state.view;
     if (ssrMargin !== "hidden") ide.dataset.margin = state.findingCards ? "auto" : "ticks";
     ide.toggleAttribute("data-advanced", state.advanced);
-    ide.style.setProperty("--files-w", `${state.filesWidth}px`);
     ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
     ide.querySelector(".ide-panel")?.toggleAttribute("data-open", panelOpen);
     // REQ-PANE-2 — the sidebar advisory goes on the shell frame (its CSS enforces rail/drawer).
@@ -195,10 +190,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-toggle], [data-ide-timeline-toggle]")) {
       if (b.getAttribute("role") === "menuitemcheckbox") b.setAttribute("aria-checked", String(panelOpen));
     }
-    // UXC-26 — the separators' ARIA values track the committed widths.
+    // UXC-26 — the separator's ARIA value tracks the committed width.
     for (const h of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
-      const w = h.dataset["ideHandle"] === "files" ? state.filesWidth : state.panelWidth;
-      h.setAttribute("aria-valuenow", String(Math.round(w)));
+      h.setAttribute("aria-valuenow", String(Math.round(state.panelWidth)));
     }
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-view]")) {
       b.setAttribute("aria-checked", String(b.dataset["ideView"] === state.view));
@@ -229,9 +223,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   // A pane toggle in an overlay/sheet mode flips SESSION state only (apply(), never commit()):
   // nothing written to `rhema:panes` can resurrect an overlay at a narrow width.
   const togglePane = useCallback(
-    (pane: "files" | "panel"): void => {
+    (pane: "panel"): void => {
       const presentation = presentationNow();
-      const mode = pane === "files" ? presentation.files : presentation.panel;
+      const mode = presentation.panel;
       if (overlayMode(mode)) {
         const opening = !overlayOpenRef.current[pane];
         overlayOpenRef.current = { ...overlayOpenRef.current, [pane]: opening };
@@ -240,11 +234,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         return;
       }
       // Docked: the explicit toggle writes the intent (no more derived default).
-      commit(
-        pane === "files"
-          ? { filesOpen: !stateRef.current.filesOpen }
-          : { panelOpen: !presentation.panelOpen },
-      );
+      commit({ panelOpen: !presentation.panelOpen });
     },
     [apply, commit, presentationNow],
   );
@@ -252,15 +242,15 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   /** Close any open overlay/sheet; returns whether anything closed (the Esc layer check). */
   const dismissOverlays = useCallback((): boolean => {
     const o = overlayOpenRef.current;
-    if (!o.panel && !o.files) return false;
+    if (!o.panel) return false;
     const focusInside = (document.activeElement as HTMLElement | null)?.closest?.(
-      ".ide-panel, .ide-files",
+      ".ide-panel",
     );
-    overlayOpenRef.current = { files: false, panel: false };
+    overlayOpenRef.current = { panel: false };
     apply();
     // REQ-UX-7 — focus returns to the opener only when it was inside the dismissed pane.
     if (focusInside) {
-      const trig = overlayTriggerRef.current.panel ?? overlayTriggerRef.current.files;
+      const trig = overlayTriggerRef.current.panel;
       if (trig?.isConnected) trig.focus();
     }
     return true;
@@ -530,11 +520,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const onIdeClick = (e: MouseEvent): void => {
       const t = e.target as HTMLElement | null;
       if (!t) return;
-      if (t.closest("[data-ide-files-toggle]")) {
-        e.preventDefault();
-        togglePane("files");
-        return;
-      }
       if (t.closest("[data-ide-timeline-toggle]")) {
         e.preventDefault();
         togglePane("panel");
@@ -664,29 +649,29 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const handle = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-ide-handle]");
       if (!handle) return;
       e.preventDefault();
-      const pane = handle.dataset["ideHandle"] as "files" | "panel";
+      const pane = "panel" as const;
       handle.setPointerCapture(e.pointerId);
       const onMove = (ev: PointerEvent) => {
         const rect = ide.getBoundingClientRect();
-        const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
-        ide.style.setProperty(pane === "files" ? "--files-w" : "--panel-w", `${Math.max(0, px)}px`);
+        const px = rect.right - ev.clientX;
+        ide.style.setProperty("--panel-w", `${Math.max(0, px)}px`);
       };
       const onUp = (ev: PointerEvent) => {
         handle.removeEventListener("pointermove", onMove);
         handle.removeEventListener("pointerup", onUp);
         const rect = ide.getBoundingClientRect();
-        const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
+        const px = rect.right - ev.clientX;
         const next = paneDrag(stateRef.current, pane, px, window.innerWidth);
-        const mode = pane === "files" ? presentationNow().files : presentationNow().panel;
+        const mode = presentationNow().panel;
         if (overlayMode(mode)) {
           // REQ-PANE-2 — an overlay resize/close stays session-scoped (never persisted).
           overlayOpenRef.current = {
             ...overlayOpenRef.current,
-            [pane]: pane === "files" ? next.filesOpen : next.panelOpen === true,
+            panel: next.panelOpen === true,
           };
           stateRef.current = {
             ...stateRef.current,
-            ...(pane === "files" ? { filesWidth: next.filesWidth } : { panelWidth: next.panelWidth }),
+            panelWidth: next.panelWidth,
           };
           apply();
           return;
@@ -703,12 +688,11 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const handle = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-ide-handle]");
       if (!handle) return;
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const pane = handle.dataset["ideHandle"] as "files" | "panel";
+      const pane = "panel" as const;
       const st = stateRef.current;
-      // both panes' positive direction is "wider" — left shrinks the left pane, right widens
-      // the right pane (mirroring the drag math's clientX axes).
-      const dir = (pane === "files" ? 1 : -1) * (e.key === "ArrowRight" ? 1 : -1);
-      const cur = pane === "files" ? st.filesWidth : st.panelWidth;
+      // the panel's positive direction is "wider" — left shrinks it (mirroring the drag math).
+      const dir = -1 * (e.key === "ArrowRight" ? 1 : -1);
+      const cur = st.panelWidth;
       const px = Math.min(480, Math.max(160, cur + dir * 16));
       if (px === cur) return;
       e.preventDefault();
@@ -830,14 +814,12 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const t = e.target as HTMLElement | null;
       if (t && ide.contains(t) && (t.closest("[data-ide-menu]") || t.closest("[aria-haspopup='menu']"))) return;
       closeMenus();
-      if (!overlayOpenRef.current.panel && !overlayOpenRef.current.files) return;
+      if (!overlayOpenRef.current.panel) return;
       if (
         t &&
         (t.closest(".ide-panel") ||
-          t.closest(".ide-files") ||
           t.closest("[data-ide-panel-toggle]") ||
-          t.closest("[data-ide-timeline-toggle]") ||
-          t.closest("[data-ide-files-toggle]"))
+          t.closest("[data-ide-timeline-toggle]"))
       )
         return;
       dismissOverlays();
@@ -891,8 +873,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           break;
         case "pane":
           e.preventDefault();
-          if (action.pane === "files") togglePane("files");
-          else togglePane("panel");
+          togglePane("panel");
           break;
         case "sidebar":
           // R7SHELL.1a (REQ-KEYS-1) — `[` toggles the AppShell sidebar; the shell listens for

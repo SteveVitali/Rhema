@@ -131,7 +131,9 @@ describe("the journey step registry", () => {
     // ticket's held `ready-to-flip` disposition — 250 flips it). An authored body is no longer
     // an owed stub, so it rejects with its own offline failure rather than the stub signature;
     // the remaining R7 legs still carry the wired stub and must fail owed-loudly verbatim.
-    const AUTHORED_HELD = new Set(["U1.shell"]);
+    // R7PANE.1 authored `U3.occlusion` the same way (held ready-to-flip — D-R7PANE.1-1, owner
+    // 250): its real body rejects on the stub ctx, never with the owed signature.
+    const AUTHORED_HELD = new Set(["U1.shell", "U3.occlusion"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

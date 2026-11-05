@@ -66,7 +66,6 @@ function main(): void {
 
   function apply(): void {
     if (!ide) return;
-    ide.dataset["files"] = state.filesOpen ? "open" : "strip";
     ide.dataset["panel"] = state.panelOpen === true ? "open" : "closed";
     // R7a hook aliases — the legs resolve on this markup AND prod's R7a markup.
     ide.dataset["timeline"] = ide.dataset["panel"];
@@ -79,7 +78,6 @@ function main(): void {
     }
     if (state.advanced) ide.dataset["advanced"] = "1";
     else delete ide.dataset["advanced"];
-    ide.style.setProperty("--files-w", `${state.filesWidth}px`);
     ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
     // the panel element mirrors the open intent for the overlay/sheet selectors
     ide.querySelector(".ide-panel")?.toggleAttribute("data-open", state.panelOpen === true);
@@ -138,7 +136,6 @@ function main(): void {
       }),
     );
   };
-  on("[data-ide-files-toggle]", () => setState({ filesOpen: !state.filesOpen }));
   on("[data-ide-timeline-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
   on("[data-ide-panel-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
   on("[data-ide-desk-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
@@ -334,20 +331,20 @@ function main(): void {
 
   // ---- drag handles: live width preview + the collapse-on-violate commit (REQ-IDE-9) ----
   for (const handle of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
-    const pane = handle.dataset["ideHandle"] as "files" | "panel";
+    const pane = "panel" as const;
     handle.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
       const onMove = (ev: PointerEvent) => {
         const rect = ide.getBoundingClientRect();
-        const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
-        ide.style.setProperty(pane === "files" ? "--files-w" : "--panel-w", `${Math.max(0, px)}px`);
+        const px = rect.right - ev.clientX;
+        ide.style.setProperty("--panel-w", `${Math.max(0, px)}px`);
       };
       const onUp = (ev: PointerEvent) => {
         handle.removeEventListener("pointermove", onMove);
         handle.removeEventListener("pointerup", onUp);
         const rect = ide.getBoundingClientRect();
-        const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
+        const px = rect.right - ev.clientX;
         setState(paneDrag(state, pane, px, window.innerWidth));
       };
       handle.addEventListener("pointermove", onMove);
@@ -489,8 +486,7 @@ function main(): void {
         break;
       case "pane":
         e.preventDefault();
-        if (action.pane === "files") setState({ filesOpen: !state.filesOpen });
-        else setState({ panelOpen: state.panelOpen !== true });
+        setState({ panelOpen: state.panelOpen !== true });
         break;
       case "focus-mode":
         e.preventDefault();

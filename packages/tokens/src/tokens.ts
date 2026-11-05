@@ -252,10 +252,8 @@ export const TYPOGRAPHY = {
  * At 1440 px the full open sum is 1,556 px — it fits only because Files defaults collapsed (→ 1,352 px).
  */
 export const LAYOUT = {
-  railPx: 56,
-  filesOpenPx: 240,
-  filesStripPx: 36,
-  filesSnapPx: [240, 320, 400] as const,
+  // R7SHELL.2 (REQ-SHELL-4) — the IDE icon rail and the 36-px Files strip are DELETED, so the
+  // `rail`/`files` widths are gone: the AppShell sidebar is the only left column.
   pageTargetCh: 68,
   pageMinCh: 45,
   pageMaxCh: 80,
@@ -271,7 +269,6 @@ export const LAYOUT = {
   sidebarCollapsedPx: 56,
   topBarPx: 48,
   /** Yield-order breakpoints (§5.1 + R7PANE.1's REQ-PANE-2 table). */
-  bpFilesTicksMarginPx: 1600, // Files open below this ⇒ Margin collapses to ticks
   bpWidePx: 1440, // ≥1440 — the panel docks open-by-default-when-findings; 1280–1439 an open panel rails the sidebar
   bpNarrowPx: 1280, // below: Margin → ticks, the panel → scrimmed overlay (never persisted)
   bpSingleColumnPx: 1024, // below: sidebar drawer, Files overlay, the panel → sheet

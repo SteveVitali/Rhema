@@ -189,7 +189,7 @@ export function themeCss(): string {
     // Print/export (REQ-IDE-39): 11 pt / 1.4 over a 6.5-in measure; the shell chrome drops out.
     "@media print {",
     `  .paper { font-size: ${TYPOGRAPHY.printPt}pt; line-height: ${TYPOGRAPHY.printLineHeight}; max-width: ${TYPOGRAPHY.printMeasureIn}in; color: #1d1c1a; background: #fffdf8; }`,
-    "  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }",
+    "  .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }",
     "}",
   ].join("\n");
 }

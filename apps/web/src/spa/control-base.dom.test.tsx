@@ -111,10 +111,10 @@ describe("the native-control base layer (REQ-KIT-1)", () => {
     const shell = document.createElement("div");
     shell.className = "ide";
     shell.innerHTML =
-      `<nav class="ide-rail"><button id="rb" type="button">R</button></nav>` +
+      `<aside class="ide-panel"><button id="rb" type="button">R</button></aside>` +
       `<footer class="ide-statusbar"><button id="sb" type="button">S</button></footer>`;
     document.body.appendChild(shell);
-    // .ide-rail button / .ide-statusbar button carry `background: none; border: none` — the base
+    // .ide-panel button / .ide-statusbar button carry `background: none; border: none` — the base
     // layer's raised-bg + border must NOT reach them.
     for (const id of ["rb", "sb"] as const) {
       const cs = getComputedStyle(document.getElementById(id)!);
