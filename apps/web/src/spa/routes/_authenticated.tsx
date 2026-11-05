@@ -7,10 +7,16 @@
 
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { BffError } from "../bff.js";
+import { isDemoGateSkip } from "../demo.js";
 import { sessionQuery } from "../queries.js";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, location }) => {
+    // R7DEM.4b (R3 P1; REQ-DWEB-6) — a demo boot on a demo-namespace path never reads the
+    // session: `/session` would 401 logged-out (one of the three /login breakers). The
+    // predicate is the PATHNAME, not just the boot — an in-SPA hop to `/app` inside a demo
+    // boot still hits the real gate.
+    if (isDemoGateSkip(location.pathname)) return;
     try {
       await context.queryClient.ensureQueryData(sessionQuery);
     } catch (e) {

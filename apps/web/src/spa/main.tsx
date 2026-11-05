@@ -13,6 +13,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import type { RouterHistory } from "@tanstack/react-router";
 import { createRoot } from "react-dom/client";
+import { demoInternalPath, demoPublicPath } from "@rhema/contracts";
 import { routeTree } from "./routeTree.gen.js";
 import { readSpaBoot, setSpaBoot, type SpaBoot } from "./boot.js";
 import { setSessionExpiredHandler } from "./bff.js";
@@ -33,8 +34,8 @@ export function createSpaRouter(opts?: {
   /** Test seam — a memory history; production uses the default browser history. */
   history?: RouterHistory;
 }) {
-  const queryClient = opts?.queryClient ?? makeSpaQueryClient();
   const boot = opts?.boot === undefined ? readSpaBoot() : opts.boot;
+  const queryClient = opts?.queryClient ?? makeSpaQueryClient({ demo: boot?.demo != null });
   setSpaBoot(boot);
   // The boot principal seeds (never grants) the session query — `/session` stays the oracle and the
   // query stays refetchable.
@@ -43,7 +44,11 @@ export function createSpaRouter(opts?: {
   // tree ⇒ a real document navigation). `setQueryData(undefined)` + `invalidateQueries` — NOT
   // `removeQueries`: destroying the query mid-flight cancels the pending `ensureQueryData`, which
   // would surface a CancelledError instead of the BffError the auth gate keys its redirect on.
+  // R7DEM.4b — the leg NEVER fires inside a demo boot: `/login` is a workspace exit the demo
+  // surface must never take (a demo twin can only answer public data anyway — no 401 exists).
+  const demoBoot = boot?.demo != null;
   setSessionExpiredHandler(() => {
+    if (demoBoot) return;
     queryClient.setQueryData(sessionQuery.queryKey, undefined);
     void queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey, refetchType: "none" });
     navigateDocument("/login");
@@ -67,6 +72,26 @@ export function createSpaRouter(opts?: {
     // still re-applies its last observed position on pop — document-nav parity for the real
     // scroller, not just window.
     scrollToTopSelectors: [".ide-page"],
+    // R7DEM.4b (REQ-DWEB-9; S-1; ADR-126) — the public↔internal demo URL rewrite, the spike's
+    // chosen arm: input maps the PUBLIC `/demo/<essay>/…` document URL onto the internal
+    // `/p/demo~<essay>/…` route shape (registered essays only — `/demo` itself is the SSR hub,
+    // an unregistered essay falls through to the server's terminal 404); output maps every
+    // hand-built `/p/demo~*` href back to `/demo/<essay>/…` for the address bar. Nothing in the
+    // ~120 `/p/${slug}` emitters changes — the rewrite is router-level only.
+    rewrite: {
+      input: ({ url }) => {
+        const internal = demoInternalPath(url.pathname);
+        if (internal == null) return;
+        url.pathname = internal;
+        return url;
+      },
+      output: ({ url }) => {
+        const pub = demoPublicPath(url.pathname);
+        if (pub == null) return;
+        url.pathname = pub;
+        return url;
+      },
+    },
     // design/25 F9: nearest-scope not-found — `p.$project` and per-surface notFoundComponents can
     // override later; `SpaNotFound` is the root default and also hands server-owned redirect paths
     // back to the server.

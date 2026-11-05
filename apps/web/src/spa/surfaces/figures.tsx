@@ -143,6 +143,17 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
                   {f.pendingProposal ? <Chip label={F.proposalChip} /> : null}
                   {!f.hasRender && f.specKind !== "table" ? <Chip label={F.renderingChip} /> : null}
                 </div>
+                {/* R7DEM.4b (S-7) — the imported-image variant renders the image itself through
+                    the REQ-DWEB-17 asset route; `assetUri` is the corpus-relative route shape.
+                    No spec/SVG is invented — the variant carries none. */}
+                {(f.specKind as unknown as string) === "image" ? (
+                  <img
+                    src={f.assetUri}
+                    alt={f.caption || f.title || f.id}
+                    data-figure-image={f.id}
+                    style={{ display: "block", marginTop: "8px", maxWidth: "100%", maxHeight: "220px", borderRadius: "6px", border: "1px solid var(--shell-border)" }}
+                  />
+                ) : null}
                 {f.caption ? <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{f.caption}</p> : null}
               </li>
             ))}
@@ -228,6 +239,46 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
   }
   const { card, slug } = data;
   const cardBase = `/p/${slug}/figures/${card.id}`;
+  // R7DEM.4b (S-7; REQ-DWEB-17) — the imported-image card arm: the image renders through the
+  // demo asset route with its caption/alt/source line and the version arc labels. The variant
+  // carries no spec/SVG/run provenance, so none of the write surfaces mount (an imported
+  // figure is not the visualize sheet's business).
+  if (card.specKind === "image") {
+    const img = card;
+    return (
+      <div data-spa-surface>
+        <Shell brand={COPY.brand} footer={footer()}>
+          <PageTitle>{img.title || FC.untitled}</PageTitle>
+          <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+            <a href={`/p/${slug}/figures`} style={{ color: "var(--accent)" }}>{FC.backToFigures}</a>
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
+            <Chip label={FC.imageKindChip} />
+            <Chip label={FC.importedChip} />
+          </div>
+          <img
+            src={img.assetUri}
+            alt={img.alt || img.title || img.id}
+            data-figure-image={img.id}
+            style={{ display: "block", maxWidth: "100%", borderRadius: "8px", border: "1px solid var(--shell-border)" }}
+          />
+          {img.caption ? <p style={{ margin: "8px 0 0", fontSize: "13px", color: "var(--shell-fg-muted)" }}>{img.caption}</p> : null}
+          {img.sourceLine ? <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--shell-fg-faint)" }}>{img.sourceLine}</p> : null}
+          <details data-figure-versions="true" style={{ marginTop: "10px" }} open={img.versions.length > 1}>
+            <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.versionsHeading}</summary>
+            <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+              {img.versions.map((v) => (
+                <li key={v.n} data-version={v.n} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
+                  <Chip label={`v${v.n}`} />
+                  <span>{v.label ?? FC.emptyField}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </Shell>
+      </div>
+    );
+  }
   const missing = card.readiness.missing.map((m) => (m === "alt" ? FC.missingAlt : FC.missingSource));
   const declined = card.versions.find((v) => v.renderStatus === "declined");
   const shownNotice = postError ?? notice;

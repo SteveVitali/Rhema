@@ -10,7 +10,10 @@ import {
   DEMO_SLUG_PREFIX,
   demoEssayFor,
   demoEssayForSlug,
+  demoInternalPath,
+  demoPublicPath,
   demoSlugFor,
+  isDemoNamespacePath,
   isDemoSlug,
   isDemoSlugPrefix,
 } from "./demo.js";
@@ -71,5 +74,41 @@ describe("the demo registry (REQ-DWEB-1)", () => {
     for (const e of DEMO_ESSAYS) {
       expect(e.slug.includes("~"), e.slug).toBe(true);
     }
+  });
+});
+
+describe("the 220a path map (REQ-DWEB-9; S-1)", () => {
+  it("public ↔ internal round-trips for every registered essay", () => {
+    for (const e of DEMO_ESSAYS) {
+      for (const tail of ["", "/v/1", "/figures", "/review/r1"]) {
+        const pub = `/demo/${e.essay}${tail}`;
+        const internal = `/p/${e.slug}${tail}`;
+        expect(demoInternalPath(pub), pub).toBe(internal);
+        expect(demoPublicPath(internal), internal).toBe(pub);
+        expect(demoPublicPath(demoInternalPath(pub)!)).toBe(pub);
+      }
+    }
+  });
+
+  it("never maps the hub, unregistered essays, or non-demo paths", () => {
+    expect(demoInternalPath("/demo")).toBeNull();
+    expect(demoInternalPath("/demo/zzz")).toBeNull();
+    expect(demoInternalPath("/demo")).toBeNull();
+    expect(demoInternalPath("/p/demo~the-governable-mind")).toBeNull();
+    expect(demoPublicPath("/demo/the-governable-mind")).toBeNull();
+    expect(demoPublicPath("/p/demo~zzz")).toBeNull();
+    expect(demoPublicPath("/p/real-slug")).toBeNull();
+  });
+
+  it("isDemoNamespacePath covers the boundary by prefix (unregistered still demo-space)", () => {
+    expect(isDemoNamespacePath("/demo")).toBe(true);
+    expect(isDemoNamespacePath("/demo/the-governable-mind/v/2")).toBe(true);
+    expect(isDemoNamespacePath("/p/demo~zzz")).toBe(true);
+    expect(isDemoNamespacePath("/p/demo~the-governable-mind/figures")).toBe(true);
+    expect(isDemoNamespacePath("/app")).toBe(false);
+    expect(isDemoNamespacePath("/p/real-slug")).toBe(false);
+    expect(isDemoNamespacePath("/bff/p/demo~x")).toBe(false); // fetch path, never a document
+    expect(isDemoNamespacePath(null)).toBe(false);
+    expect(isDemoNamespacePath(undefined)).toBe(false);
   });
 });

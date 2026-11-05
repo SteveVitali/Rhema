@@ -1753,6 +1753,9 @@ export const COPY = {
     // the "Edit figure" affordance an inserted figure block renders on the Page (§7.5's fourth
     // entry point) — opens this card at the current version.
     editFigureLabel: "Edit figure",
+    // R7DEM.4b (S-7) — the imported-image card's provenance chip + its kind chip.
+    importedChip: "Imported image",
+    imageKindChip: "image",
     declinedFmt: "This figure type isn't supported — {suggestion}",
     requestLabel: "request",
     emptyField: "—",
@@ -2240,6 +2243,12 @@ export const COPY = {
     hubLede: "A read-only walk through a real essay's editorial record — its drafts, the dossiers each review delivered, and what changed between rounds.",
     readOnlyTitle: "Read-only demo",
     readOnlyBody: "This is a read-only demo of a real essay's editorial record. Start your own project to use these tools.",
+    // 220a (REQ-DWEB-11/14; S-3/S-14) — the demo surface banner + its exits (document
+    // navigations, never client navs — every exit rebuilds a real boot).
+    bannerText: "A read-only demo of a real essay's editorial record.",
+    exitSignUp: "Create your account",
+    exitSignIn: "Sign in",
+    exitBackToProjects: "Back to your projects",
   },
   landing: {
     nav: {

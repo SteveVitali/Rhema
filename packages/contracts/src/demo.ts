@@ -111,3 +111,43 @@ export const DEMO_ROUTE_IDS = [
 export const DEMO_DOCUMENT_ROUTE_IDS: readonly string[] = DEMO_ROUTE_IDS.filter(
   (id) => id !== "/p/$project/palette-search",
 );
+
+// ---- 220a (REQ-DWEB-9/11/16; S-1, S-14) — the public↔internal path mapping + the boundary
+// predicate. The SPA's TanStack `rewrite` and the click interceptor share these: the public
+// form `/demo/<essay>/…` is what documents + address bars carry; the internal form
+// `/p/demo~<essay>/…` is what the route tree + every hand-built `/p/${slug}` href carries.
+
+/** `/demo/<essay>/rest` → `/p/demo~<essay>/rest` for a REGISTERED essay; null otherwise
+ *  (`/demo` alone is the SSR hub — no client route — and an unregistered essay must reach the
+ *  server's terminal 404, never a fuzzy SPA match). */
+export function demoInternalPath(pathname: string): string | null {
+  const m = /^\/demo\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (m == null) return null;
+  const slug = `${DEMO_SLUG_PREFIX}${m[1]}`;
+  if (!isDemoSlug(slug)) return null;
+  return `/p/${slug}${m[2] ?? ""}`;
+}
+
+/** `/p/demo~<essay>/rest` → `/demo/<essay>/rest` for a REGISTERED essay; null otherwise. */
+export function demoPublicPath(pathname: string): string | null {
+  const m = /^\/p\/demo~([^/]+)(\/.*)?$/.exec(pathname);
+  if (m == null) return null;
+  const slug = `${DEMO_SLUG_PREFIX}${m[1]}`;
+  if (!isDemoSlug(slug)) return null;
+  return `/demo/${m[1]}${m[2] ?? ""}`;
+}
+
+/**
+ * The S-14 boundary predicate: is `pathname` inside the demo namespace — the `/demo` hub, a
+ * `/demo/<essay>/…` document, or a `/p/demo~…` internal-form path? PREFIX-scoped on purpose:
+ * an unregistered `demo~zzz` still counts as demo-space so a non-demo boot document-navigates
+ * it to the server's terminal 404 instead of fuzzy-matching `/p/$project` client-side.
+ */
+export function isDemoNamespacePath(pathname: string | null | undefined): boolean {
+  if (pathname == null) return false;
+  return (
+    pathname === "/demo" ||
+    pathname.startsWith("/demo/") ||
+    /^\/p\/demo~/.test(pathname)
+  );
+}

@@ -19,6 +19,8 @@
 // REQ-NAVM-6 — a device pre-check would skip the `postProjectHandoff` beforeLoad POST).
 
 import type { AnyRouter } from "@tanstack/react-router";
+import { demoInternalPath, isDemoNamespacePath } from "@rhema/contracts";
+import { getSpaBoot } from "./boot.js";
 import { navigateDocument } from "./dom.js";
 
 /**
@@ -92,6 +94,17 @@ export function handleSpaClick(e: MouseEvent, router: AnyRouter): void {
     return;
   }
 
+  // 8b. the S-14 demo boundary (R7DEM.4b; REQ-DWEB-11/16) — crossing the demo namespace is a
+  //     DOCUMENT navigation BY PREDICATE, whichever side it originates on: an href into
+  //     `/demo*` or `/p/demo~*` from a non-demo boot must load a fresh document (the demo
+  //     never shares the workspace QueryClient), and a non-demo href inside a demo boot is
+  //     an exit (the demo QueryClient never carries into the workspace). Prefix-scoped —
+  //     an unregistered `demo~zzz` still counts as demo-space so the server's terminal 404
+  //     answers it. Entry links may additionally carry `data-spa-native` (step 6), but the
+  //     predicate stands alone so NO entry link can slip the boundary.
+  const demoHref = isDemoNamespacePath(url.pathname);
+  if ((getSpaBoot()?.demo != null) !== demoHref) return;
+
   // 9. in-tree test — the router's own matcher ONLY (`spaRouteFor` is never consulted:
   //    REQ-NAVC-7, its prefix fallback misclaims non-document GETs). The `**` predicate
   //    mirrors router-core's own not-found rule (`matchRoutesInternal`): a fuzzy match
@@ -99,7 +112,13 @@ export function handleSpaClick(e: MouseEvent, router: AnyRouter): void {
   //    fuzzy-matches `/p/$project/export` with `**="ai-use/md"` — NOT in-tree → the
   //    download survives). The `foundRoute.path === "/"` exception is the index-route
   //    case (e.g. `/p/$project/`); a `null` foundRoute never intercepts.
-  const [, rawParams, foundRoute] = router.getMatchedRoutes(url.pathname);
+  // R7DEM.4b — `getMatchedRoutes` is rewrite-agnostic (R3 P7's open question, answered): it
+  // matches the RAW pathname, so a public-form `/demo/<essay>/…` href is in-tree-tested in its
+  // input-rewritten internal form (`/p/demo~<essay>/…`). `router.navigate({href})` below still
+  // receives the original href — `buildLocation` applies the input rewrite itself.
+  const [, rawParams, foundRoute] = router.getMatchedRoutes(
+    demoInternalPath(url.pathname) ?? url.pathname,
+  );
   if (foundRoute == null || (foundRoute.path !== "/" && rawParams["**"] != null)) return;
 
   // 10. the three server-owned redirect stubs short-circuit to a document navigation —

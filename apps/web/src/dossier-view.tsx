@@ -241,8 +241,12 @@ export const timelineLabels: TimelineLabels = {
     (TL.workflowLabel[workflow] ?? workflow) + (count != null ? ` ${fmt(TL.countFmt, { n: count })}` : ""),
   arrow: TL.arrow,
   originChipLabel: (kind) => TL.originChip[kind],
+  // R7DEM.4b — the demo twin's replayed runs carry `createdAt: null` ("not recorded" — S-9);
+  // a null timestamp renders the workflow label alone, never a crash.
   runLineLabel: (workflow, createdAt) =>
-    `${TL.workflowLabel[workflow] ?? workflow} · ${createdAt.slice(0, 10)}`,
+    createdAt == null
+      ? (TL.workflowLabel[workflow] ?? workflow)
+      : `${TL.workflowLabel[workflow] ?? workflow} · ${createdAt.slice(0, 10)}`,
   emptyText: COPY.ide.timeline.empty,
   verbLabel: (verb) => TL.verbs[verb] ?? verb,
 };

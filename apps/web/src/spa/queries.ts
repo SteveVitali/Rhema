@@ -19,6 +19,7 @@ import type {
   ExportDialogDto,
   ChatPanelDto,
   FigureCardDto,
+  FigureImageCardDto,
   FigureListItemDto,
   FilesDto,
   GateCardDto,
@@ -69,10 +70,18 @@ function retryPolicy(failureCount: number, error: unknown): boolean {
 }
 
 /** The per-boot client — a fresh instance per `mountSpa`, never a module singleton. */
-export function makeSpaQueryClient(): QueryClient {
+export function makeSpaQueryClient(opts?: { demo?: boolean }): QueryClient {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: retryPolicy },
+      queries: {
+        retry: retryPolicy,
+        // R7DEM.4b (R3 P4) — the demo's twins are immutable snapshots, so nothing in the demo
+        // boot refetches on focus and nothing goes stale (the "GET is the read-receipt"
+        // rationale does not apply — there is no session to attribute a read to).
+        ...(opts?.demo === true
+          ? { staleTime: Infinity, refetchOnWindowFocus: false }
+          : {}),
+      },
       // REQ-BFF-30 — mutations (the POST legs) never auto-retry; a refused write is data.
       mutations: { retry: false },
     },
@@ -98,6 +107,20 @@ export const sessionQuery = queryOptions({
 export const feedLabelsQuery = queryOptions({
   queryKey: ["feed-labels"],
   queryFn: () => bffFetch<FeedLabelMaps>("/bff/feed-labels"),
+  staleTime: Infinity,
+  retry: retryPolicy,
+});
+
+/**
+ * R7DEM.4b (R3 P2) — the demo's feed-labels arm: the SAME `["feed-labels"]` key (the
+ * `p.$project` loader warms it so `useQuery(feedLabelsQuery)` inside the chrome reads the
+ * warmed data and never issues the sessioned `/bff/feed-labels` GET — a 401 → `/login` is
+ * exactly the breaker this variant exists to prevent). The endpoint is the guard's public
+ * copy (`feedLabelMaps()` is COPY, never tenant data).
+ */
+export const demoFeedLabelsQuery = queryOptions({
+  queryKey: ["feed-labels"],
+  queryFn: () => bffFetch<FeedLabelMaps>("/bff/demo/feed-labels"),
   staleTime: Infinity,
   retry: retryPolicy,
 });
@@ -761,7 +784,9 @@ export const projectFiguresQuery = (slug: string) =>
 export interface BffFigureCardTwin {
   readonly figure: {
     readonly slug: string;
-    readonly card: FigureCardDto;
+    /** R7DEM.4b (S-7) — the demo's imported-image variant rides the same twin; the leaf
+     *  branches on `specKind === "image"` (the variant carries no spec/SVG/provenance). */
+    readonly card: FigureCardDto | FigureImageCardDto;
     /** the project's head draft — the insert proposal's target (null ⇒ insert disabled). */
     readonly headDraftId: string | null;
   } | null;

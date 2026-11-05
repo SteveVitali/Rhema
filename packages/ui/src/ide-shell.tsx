@@ -148,6 +148,12 @@ export interface IdeShellProps {
   readonly themeUrl?: string;
   readonly paperThemeUrl?: string;
   readonly labels: IdeLabels;
+  /**
+   * R7DEM.4b — an optional top strip inside the `.ide` column (the demo banner). It sits in
+   * the flex column BEFORE `.ide-main` so the shell still fills 100dvh — a sibling of `.ide`
+   * would push the status bar off-screen.
+   */
+  readonly banner?: ReactNode;
   /** the Page region's content — the surface this route owns. */
   readonly children?: ReactNode;
 }
@@ -190,6 +196,9 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.activeRun ? { "data-run-state": props.activeRun.state } : {})}
       {...(props.runNextHref ? { "data-run-next": props.runNextHref } : {})}
     >
+      {/* R7DEM.4b — the demo banner strip: a column child so `.ide` keeps its 100dvh
+          contract (the main region yields the banner's height). */}
+      {props.banner}
       {/* the phone-width fallback bar (visible <768 only — the reader-only Page layout).
           P1.19 — the Inbox link + badge ride it: the Rail is display:none at this width, and the
           badge is how a phone reader reaches the approvals/decisions the input set centers on. */}

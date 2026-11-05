@@ -8,6 +8,7 @@
 // are forbidden (REQ-BFF-30) and GET retry policy lives in the QueryClient, not here.
 
 import { navigateDocument } from "./dom.js";
+import { demoTwinPath } from "./demo.js";
 
 /** `{error, detail?}` non-2xx responses, thrown with the upstream status preserved (REQ-DAT-2). */
 export class BffError extends Error {
@@ -59,7 +60,8 @@ export async function bffFetch<T>(
   if (init?.json !== undefined && init?.form !== undefined) {
     throw new BffError(0, "bff_body_ambiguous");
   }
-  const res = await fetch(path, {
+  // S-13 (R7DEM.4b) — demo twin reads carry `?b=<build>` so CDN caching is deploy-keyed.
+  const res = await fetch(demoTwinPath(path), {
     method: init?.method ?? "GET",
     credentials: "same-origin",
     headers: {
