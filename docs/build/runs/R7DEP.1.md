@@ -248,3 +248,72 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
   set gained the five; the owed census dropped them), 28/28 local.
 - **CI final: pass #259@`6bb1901`** (run 41925840062 — all seven legs + ci-pass anchor;
   `logs/ci-R7DEP.1.json`).
+
+---
+
+# PART B — prod deploy of the R7a chain (resumed 2026-11-05 after HUMAN-H14+H15 SIGNED)
+
+- **Branch:** `stevevitali/r7dep-1b-prod` (forked off `stevevitali/r7fix-2-demo-legs` @ `4bc8cf4a`)
+- **Deploy SHA:** `4bc8cf4a73402aed782546fe233235e9807cc990` — the R7a chain tip incl.
+  R7FIX.2's two leg fixes (web code changed → the SHA advances from Part A's `4f66cebc`).
+  The operator has NOT merged the R7a stack (PRs #240–#260 open, mergePolicy OPERATOR), so this
+  is the chain tip, not a post-merge `main` HEAD (deliverable 4's first arm). Later commits on
+  this branch are records/IaC pins — non-image (the R6DEP.4 pattern).
+- **Operator posture (verbatim, 2026-11-04):** "fix first and then deploy and continue" —
+  HUMAN-H14 + H15 SIGNED (readouts committed); the fix landed (223c, PR #260, both legs
+  live-green on pr-259 @ `18a0df79`).
+- **Golden classification:** re-derived on `a34eb51..4bc8cf4a` — still **NOT protocol-affecting
+  → no re-run, $0** (addendum in `reports/2026-11-04_R7DEP.1/golden-classification.md`,
+  committed before any pulumi act; the delta carries zero protocol/dispatch/harness/proxy paths).
+
+## Part B — pre-state (captured before any mutation, 2026-11-05T01:5xZ)
+
+- prod `/healthz`: web + api `build.gitSha = 4938b8e4024777417c5a8ed9f518f9afb4bebd08` (R6DEP.4).
+- prod `_migrations` max: `0060_stripe_event_redrive.sql` (60 applied; `0061_demo_events.sql` the
+  only newer file) — via IAP tunnel `rhema-prod-proxy-rwjl` → `127.0.0.1:15433→10.46.0.3:5432`.
+- prod stack export: `logs/r7dep1b-prod-stack-export-prestore.json` (182 resources).
+- prod digests: `Pulumi.prod.yaml` serviceImages/run-task/egress-proxy set at the `4938b8e`
+  build (c6d7dedb) — the rollback pin set.
+- prod engine: Cloud SQL **PostgreSQL 16.15** (the engine `0061`'s `createrole_self_grant`
+  comment was written for; the 223b `ROLE postgres` membership makes `OWNER TO` work here).
+
+## Part B — conditioned acts (GD-DEPLOY.R7, each evidenced before the act it guards)
+
+| # | Condition | Evidence | Status |
+|---|---|---|---|
+| 1 | preview first | Part A green + R7FIX.2 re-walk on pr-259 (all 7 R7a legs `expected:"green"`) | DONE |
+| 2 | all-service image build at the deploy SHA | Cloud Build `02a947ec` @ `4bc8cf4a`, all-10 `_TAG=r7dep-1` → `rhema-prod` AR | running |
+| 3 | classified `pulumi preview --diff` | pending | — |
+| 4 | provenance all-PASS web+api | pending | — |
+| 5 | `deployments` row | pending | — |
+| 6 | committed rollback recipe | this ledger § Part B rollback | DONE (recipe below; never executed without the operator) |
+| 7 | image-content assertion (corpus + snapshots in web image) | in-build `RUN test -s` (web Dockerfile L25–27) + post-build digest check | pending |
+| 8 | CDN invalidation `/bff/p/demo~*` | pending (dry-run == act, committed) | — |
+
+**Prod migration (Production mutation #1) — DONE 2026-11-05T01:5xZ:**
+`prod-migrate-seed.mjs` over the IAP tunnel (system `postgres` DSN; prod has NO migrate Job —
+`cfg.kind !== "prod"`, the operator-tunnel path IS the sanctioned one, PROD-BRINGUP §7). In-band
+additive lint vs prod max `0060` → **PASS** (`0061_demo_events.sql` only); `[migrate] applied
+0061_demo_events.sql` → 61 recorded (log `logs/r7dep1b-prod-migrate.log`). Post-state census via
+the tunnel (same checks as the preview): owner `rhema_demo_writer` (NOLOGIN, no
+super/createdb/createrole), `prosecdef=true`, `proconfig search_path=""`, table grants =
+`rhema_demo_writer:INSERT` only (`rhema_app`/`rhema_app_login`: select=false, insert=false),
+EXECUTE granted to `rhema_app` (`rhema_app_login` member), columns `id/at/event/essay/step/src`
+(no ip/user/cookie/UA), 0 rows.
+
+## Part B — rollback recipe (committed; NOT executed — the operator's go)
+
+1. Re-pin `Pulumi.prod.yaml` to the pre-deploy digests: serviceImages api `7fa61aa9…`, web
+   `ad5d5cd1…`, worker `aaefca88…`, fetcher `ff23f011…`, convert `3db54baa…`, export `f4e9fa77…`,
+   collab `34e9300a…`, turbo-cache `8bf03ad3…`; run-task `f8d4c6d8…`; egress-proxy `5237d8f9…`
+   (all `@sha256:` in `rhema-prod` AR — verbatim from the pre-state file).
+2. `pulumi up --stack prod` — rolls services back to the `4938b8e` images.
+3. The `0061` migration is additive and STAYS: the `demo_events` table + insert-only role +
+   definer function are inert — the `POST /a/demo` route in the old web image drops silently
+   (the route does not exist pre-R7a). No migration rollback.
+4. Re-run the CDN invalidation `/bff/p/demo~*` (evicts any post-deploy twin bodies).
+5. `check-deploy-provenance --expect 4938b8e… --healthz https://rhema.tools --healthz
+   https://api.rhema.tools` → all-PASS.
+6. Optionally `git revert` of the R7a range for the source rollback (operator's call).
+   Full code rollback = `git revert a34eb51..4bc8cf4a` + rebuild + redeploy (gotcha 7:
+   renderer rollback is a code rollback — never a flag flip).
