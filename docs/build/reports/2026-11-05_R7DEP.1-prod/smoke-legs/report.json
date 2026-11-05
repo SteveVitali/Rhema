@@ -1,0 +1,87 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "a61c5bbf065c",
+  "startedAt": "2026-11-05T02:14:53.662Z",
+  "finishedAt": "2026-11-05T02:15:06.628Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "4bc8cf4a73402aed782546fe233235e9807cc990",
+    "observed": {
+      "web": "4bc8cf4a73402aed782546fe233235e9807cc990",
+      "api": "4bc8cf4a73402aed782546fe233235e9807cc990"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 865,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2620,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1111,
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "U3.stopgap",
+      "journey": "returning",
+      "owner": "R7FIX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 5906,
+      "screenshot": "U3.stopgap.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2164,
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": true
+}
