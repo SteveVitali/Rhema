@@ -13,7 +13,7 @@
 - **Branch:** `stevevitali/r7kit-2-primitives` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
 - **Started:** 2026-11-05T02:55Z · **Closed:** 2026-11-05T05:24Z
-- **ci:** pass #262@d68f99d (ci-pass anchor 41970557259; integration; images; contracts; public-safe; typecheck/lint/unit; fast-path — all legs green; `logs/ci-R7KIT.2.json`)
+- **ci:** pass #262@d68f99d (ci-pass anchor 41970557259; integration; images; contracts; public-safe; typecheck/lint/unit; fast-path — all legs green); re-read on the docs-record head: **pass #262@73f3b93** (run 41973977720 — all seven legs + anchor; `logs/ci-R7KIT.2.json`)
 - **Production mutations:** none (repo-only; the external acts are read-only `npm view`/`gh`/`ci-boundary` reads).
 
 ## Deferrals read
