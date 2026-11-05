@@ -94,6 +94,10 @@ describe("the journey step registry", () => {
         // R7DEP.1 Part A on the owned pr-259 preview @4f66cebc (ready-to-flip + three-width
         // screenshots, provenance match; U3.stopgap + R8.showcase.spa stay owed on defects).
         "D1.hub", "D2.tour", "D3.readonly", "P1.demo", "R11.demo",
+        // U3.stopgap + R8.showcase.spa flipped red→green 2026-11-05 — R7FIX.2 on pr-259
+        // @18a0df79 (the desk-head/statusbar stacking fix + the same-location commit; PASS →
+        // ready-to-flip, screenshots reports/2026-11-05_R7FIX.2/, provenance match, $0).
+        "U3.stopgap", "R8.showcase.spa",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
         // D-P0.03-2 DONE.
@@ -113,25 +117,16 @@ describe("the journey step registry", () => {
   it("every round-7 leg is red, free, single-owned, and its stub fails owed-loudly", async () => {
     // 224 R7DEP.1 (the sanctioned flipper) flipped D1.hub/D2.tour/D3.readonly/P1.demo/R11.demo
     // green on pr-259 preview evidence @4f66cebc — they are out of the red census; U3.stopgap +
-    // R8.showcase.spa stay owed (D-R7DEP.1-1/-2).
+    // R8.showcase.spa followed on R7FIX.2's live proof at @18a0df79 (2026-11-05), leaving the
+    // seven R7b U* legs as the round-7 red census until 250.
     const R7_IDS = [
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
-      "U3.stopgap", "R8.showcase.spa",
     ];
     const OWNERS: Record<string, string> = {
       "U1.shell": "R7SHELL.1a", "U2.noreload": "R7RELOAD.1", "U3.occlusion": "R7PANE.1",
       "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
-      "U7.import": "R7HOME.2a", "U3.stopgap": "R7FIX.1", "R8.showcase.spa": "R7RO.1",
+      "U7.import": "R7HOME.2a",
     };
-    // R7RO.1 / R7FIX.1 landed the real `R8.showcase.spa` / `U3.stopgap` bodies — they still read
-    // red (the 224 phase deploy is the sanctioned flipper) but their impls are no longer the owed
-    // stub: invoking them must NOT throw the stub message. Every other round-7 leg still throws
-    // owed-loudly.
-    // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies; R7DEM.5 landed `D3.readonly` — same arm (red until 224, but the
-    // impl is a real body whose offline throw is its own error, never the stub message).
-    // R7DEM.5b landed the real `D1.hub` body — same arm.
-    // 222 R7DEM.6a landed the real `D2.tour` body — same arm (stays red until 224's preview evidence).
-    const REAL_BODIES = new Set(["R8.showcase.spa", "U3.stopgap"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();
@@ -139,13 +134,9 @@ describe("the journey step registry", () => {
       expect(s!.paid, id).toBe(false);
       expect(s!.capUsd, id).toBeUndefined();
       expect(s!.owner, id).toBe(OWNERS[id]);
-      if (REAL_BODIES.has(id)) {
-        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(/^(?!.*owed — owner)/);
-      } else {
-        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
-          `${id} owed — owner ${OWNERS[id]}`,
-        );
-      }
+      await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
+        `${id} owed — owner ${OWNERS[id]}`,
+      );
     }
     // no round-7 leg silently became a paid row (the weekly cron would sweep it in).
     const r7paid = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id) && s.paid);

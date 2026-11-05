@@ -5,7 +5,7 @@
 - **Branch:** `stevevitali/r7fix-2-demo-legs` — PR base `stevevitali/r7dep-1-r7a-deploy` (mergePolicy OPERATOR)
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills`
-- **Started:** 2026-11-05T00:26Z (`date -u`) · **Closed:** (open)
+- **Started:** 2026-11-05T00:26Z (`date -u`) · **Closed:** 2026-11-05T01:0xZ (PR #260 opened, unmerged; mergePolicy OPERATOR)
 - **Live stage:** Stage A + pr-259 preview re-walk ($0 legs; preview already up per operator
   context — spend counts to 224's $20 round cap measurement). No new preview, no prod mutations.
 
@@ -112,12 +112,26 @@ navigate, not die silently). Everything else is unchanged (`router.navigate` pus
 
 ## Gap table
 
-(pending — filled at Phase 4)
+| Requirement | Status | Evidence |
+|---|---|---|
+| 1. Root-cause both defects at source — no overlay hacks / recorder suppression | met | Live reproductions above; fixes in `ide-css.ts` (stacking) + `nav-intercept.ts` (same-location commit); recorder untouched, `elementFromPoint` contract intact |
+| 2. `U3.stopgap` green on pr-259 at 1440/1280/1024/820 | met — live-executed | `reports/2026-11-05_R7FIX.2/report.json` `ready-to-flip` + `u3-stopgap-{1440x900,1280x800,1024x768,820x1180}.png`; flipped `expected:"green"` |
+| 3. `R8.showcase.spa` green on pr-259 — dossier→review a client nav | met — live-executed | same report: `settleClientNav` tick (`data-nav-count` 0→1), zero document loads, `data-renderer="spa"`; `R8.showcase.spa.png`; flipped green |
+| 4. Recording proxy / other demo legs unregressed | met — fixture-verified | `pnpm test` full suite + `apps/web/src/spa` 36-file sweep green; the interceptor change touches only the identical-href arm (all other paths go through `router.navigate` unchanged — the dom.test pipeline guards hold) |
+| 5. D-R7DEP.1-1/-2 closed with preview evidence | met | DEFERRALS dated DONE entries appended 2026-11-05 |
+| 6. verification green; DEFERRALS; BUILD_INDEX; LEDGER | met | turbo 138/138; `pnpm test` full suite green; index row 261; LEDGER advanced; ci-boundary JSON |
+| Invariants: no `?ssr=1`/renderer overrides, no merge, no prod mutation, append-only records | met | diff review; preview-stack guarded path only; OPERATOR merge left to operator |
 
 ## Evidence log
 
-(pending — filled at Phase 5)
+- `2026-11-05T00:33–00:37Z` — `gcloud builds submit` image-set `_SERVICES=api` → `9de5fadc` SUCCESS → `api@sha256:0f8898f4…`; `_SERVICES=web` → `0e3948a3` SUCCESS → `web@sha256:16055b62…` (tag `r7fix-2`, `_GIT_SHA=18a0df79`).
+- `2026-11-05T00:39Z` — `preview-stack.mjs config pr-259` re-pinned `rhema:serviceImages` (api+web digests; other six unchanged) + `rhema:gitSha 18a0df79…`; `up` → 3 updated (web/api/migrate templates), 195 unchanged.
+- `2026-11-05T00:41Z` — `/healthz` web+api report `gitSha 18a0df79…`; `rhema-journeys --steps U3.stopgap,R8.showcase.spa --expect-sha 18a0df79…` → both `ready-to-flip`, provenance match, spend $0 — `docs/build/reports/2026-11-05_R7FIX.2/` (report.json + 6 screenshots).
 
 ## Evidence report
 
-(pending — filled at Phase 6)
+**Layer: live-executed** on the owned R7a preview (`pr-259`) at the PR head `18a0df79` — both defects
+root-caused at source with live reproductions of the failure mechanism, source fixes landed,
+re-proven by the same legs that owed, registry flipped, deferrals closed. Stage A: turbo
+138/138; `pnpm test` full suite green; focused dom/css pins added for both mechanisms. PR #260
+(base `stevevitali/r7dep-1-r7a-deploy`, unmerged — OPERATOR).
