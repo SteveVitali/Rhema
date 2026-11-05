@@ -109,6 +109,22 @@ navigate, not die silently). Everything else is unchanged (`router.navigate` pus
   DEFERRALS D-R7DEP.1-1/-2 → DONE → BUILD_INDEX row 261 → LEDGER advance →
   `docs/build/pr/R7FIX.2.md` → `gh pr create --base stevevitali/r7dep-1-r7a-deploy` →
   `ci-boundary.sh --ledger docs/build/LEDGER.md --ticket R7FIX.2 --json docs/build/logs/ci-R7FIX.2.json`.
+- 2026-11-05T00:33–00:41Z — api `9de5fadc` + web `0e3948a3` image builds SUCCESS (tag `r7fix-2`,
+  `_GIT_SHA=18a0df79`); stack re-pinned + `up` (3 updated); `/healthz` web+api `18a0df79`.
+- 2026-11-05T00:41Z — `rhema-journeys --steps U3.stopgap,R8.showcase.spa --expect-sha 18a0df79…`
+  → BOTH `ready-to-flip` (provenance match, spend $0) → registry flipped `expected:"green"`;
+  screenshots+report committed `docs/build/reports/2026-11-05_R7FIX.2/`.
+- 2026-11-05T00:50Z — DEFERRALS: D-R7DEP.1-1/-2 dated DONE; progress notes on
+  D-R7OPEN.1-1 / D-R7RO.1-1 / D-R7FIX.1-1. LEDGER advanced (`lastCompleted: R7FIX.2`,
+  `nextTicket: 224_R7DEP.1` Part B, `chainTip` → this branch) + Round-7 phase entry.
+- 2026-11-05T01:0xZ — `pnpm turbo build lint typecheck` 138/138 · `pnpm test` 6,720 pass /
+  3 fail → the 3 = journeys census pins for the flips (registry.test.ts green baseline + red
+  census, runner.test.ts owed census) — pinned, re-verified 2/2 files green.
+- 2026-11-05T01:1xZ — PR #260 opened (base `stevevitali/r7dep-1-r7a-deploy`, unmerged —
+  mergePolicy OPERATOR); BUILD_INDEX row 261; append-only OK vs base; build-memory 0 viol /
+  16 legacy warnings. CI: first read fail at `698ee436` (the census pins — fixed at `a643a84e`) →
+  **pass #260@`a643a84`** (run 41946672901 — all seven legs + `ci-pass` anchor;
+  `logs/ci-R7FIX.2.json`, read 2026-11-05T01:42Z).
 
 ## Gap table
 
