@@ -157,6 +157,6 @@ Budget: ~650 changed lines excl. generated/fixtures; entry delta ≤ 15 kB gz (R
 
 ## Evidence report
 
-- **CI boundary read at exact head `12c69e98`: PASS** — run 42057250834, all seven legs + `ci-pass` anchor (`docs/build/logs/ci-R7SHELL.1c.json`, read_at 2026-11-05T16:09Z). The `626909b2`/`eaab25c2`/`7b3d4a6c` runs were superseded-cancelled by the closeout pushes; the boundary covers the final head.
+- **CI boundary read at exact head `12c69e98`: PASS** — run 42057250834, all seven legs + `ci-pass` anchor (`docs/build/logs/ci-R7SHELL.1c.json`, read_at 2026-11-05T16:09Z). The `626909b2`/`eaab25c2`/`7b3d4a6c` runs were superseded-cancelled by the closeout pushes; the boundary covers the final head; re-read at `113e9395` (docs-record head) → **pass** run 42061765176.
 - Layer achieved: **engineered** (Stage A only per GD-PREVIEW.R7; no preview, $0).
 - Deferrals: `D-R7SHELL.1c-1` OPEN (owner 250_R7DEP.2). Carries: 231 T5 discharged; 248 demo=hidden.
