@@ -103,7 +103,7 @@ describe("the native-control base layer (REQ-KIT-1)", () => {
     expect(getComputedStyle(pinned).getPropertyValue("color-scheme")).toBe("light");
   });
 
-  it("the IDE-region rules still win (specificity contract) — rail + statusbar buttons keep their look", () => {
+  it("the IDE-region rules still win (specificity contract) — panel-tabs + statusbar buttons keep their look", () => {
     mountControls();
     const ide = document.createElement("style");
     ide.textContent = ideCss();
@@ -111,11 +111,11 @@ describe("the native-control base layer (REQ-KIT-1)", () => {
     const shell = document.createElement("div");
     shell.className = "ide";
     shell.innerHTML =
-      `<aside class="ide-panel"><button id="rb" type="button">R</button></aside>` +
+      `<aside class="ide-panel"><div class="ide-panel-tabs"><button id="rb" type="button">R</button></div></aside>` +
       `<footer class="ide-statusbar"><button id="sb" type="button">S</button></footer>`;
     document.body.appendChild(shell);
-    // .ide-panel button / .ide-statusbar button carry `background: none; border: none` — the base
-    // layer's raised-bg + border must NOT reach them.
+    // .ide-panel .ide-panel-tabs button / .ide-statusbar button carry `background: none;
+    // border: none` — the base layer's raised-bg + border must NOT reach them.
     for (const id of ["rb", "sb"] as const) {
       const cs = getComputedStyle(document.getElementById(id)!);
       expect(cs.backgroundColor, `${id} background`).toBe("none");

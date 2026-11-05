@@ -1,10 +1,17 @@
-# ADR-133 — R7SHELL.2 project-scope sidebar decisions
+# ADR-133: R7SHELL.2 project-scope sidebar decisions
 
-- **Status:** Accepted (ticket-owned decisions, recorded 2026-11-05)
-- **Context:** 230_R7SHELL.2 moves project scope into the AppShell sidebar: the current
-  project entry expands into seven items; the Files pane's content becomes the entry's
-  expanded tree; the IDE icon rail and the 36-px Files strip are deleted from DOM and
-  geometry (REQ-SHELL-4, REQ-KIT-5).
+- **Status:** accepted
+- **Date:** 2026-11-05
+- **Ticket:** 230_R7SHELL.2 (REQ-SHELL-4, REQ-KIT-5)
+- **Spec:** `docs/tickets/230_R7SHELL.2__project-scope-sidebar.md`
+
+## Context
+
+230_R7SHELL.2 moves project scope into the AppShell sidebar: the current project entry
+expands into seven items; the Files pane's content becomes the entry's expanded tree; the
+IDE icon rail and the 36-px Files strip are deleted from DOM and geometry (REQ-SHELL-4,
+REQ-KIT-5). The ticket assigns the item order and icons, the tree hook names, and the files
+pane-state removal as ticket-owned decisions.
 
 ## Decisions
 
@@ -48,3 +55,14 @@
 - The SSR phone document keeps `.ide-phonebar` only (`!hosted`); its Files/rail markup is gone.
 - `U1.shell` extended to reach all seven items from the Page; still `expected:"red"` (held
   ready-to-flip → 250, D-R7SHELL.2-1).
+
+## Revisit trigger
+
+- 236_R7HOME.2b lands "outline exists" coherence or a real Project settings page — the
+  `settings` item's target and the tree's outline source then take the landed shape.
+- 243's Versions/compare surfaces gain an index route — the `versions` item re-points from
+  `/v/working`.
+- 248 re-enables rail/Files-strip hooks for any surface, or the tour targets the retired
+  `data-files*` hooks — the alias window in `dom-contract.ts` closes then.
+- 250_R7DEP.2's staged `U1.shell` walk fails a step — the failing item's target/active map
+  is the first suspect.

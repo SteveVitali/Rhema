@@ -227,8 +227,12 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     const crumb = main.querySelector("[data-page-breadcrumb]");
     expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe("/p/the-politics-of-visibility");
     expect(crumb?.textContent).toContain(COPY.outlinePage.heading);
+    // R7SHELL.2 — the sidebar's project-section Page item legitimately carries the same href
+    // under [data-app-sidebar]; the "no back-link in the body" contract scopes to the leaf's
+    // <main> (PageBody), where the crumb is the only allowed carrier.
+    const body = main.querySelector("main")!;
     expect(
-      [...main.querySelectorAll('a[href="/p/the-politics-of-visibility"]')].every(
+      [...body.querySelectorAll('a[href="/p/the-politics-of-visibility"]')].every(
         (a) => a.closest("[data-page-breadcrumb]") != null,
       ),
     ).toBe(true);
