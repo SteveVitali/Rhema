@@ -1629,6 +1629,15 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-approvals-not-recorded", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "the approvals slot's honest empty: 'approvals not recorded'"),
     a("data-not-recorded", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "the 'not recorded' field list on a replayed run (S-9)"),
     a("data-phase-inferred", "conditional", "ui/run-card.tsx + ui/run-report.tsx", "a phase row's 'inferred from the delivered files' tag"),
+    // 221a (R7DEM.5b; REQ-TOUR-1/3/8, REQ-DWEB-12) — the filled hub: the cards root, one card per
+    // registered essay (value = the corpus essay key), the arc chip row, the "What to look at"
+    // deep-link bullets, the provenance paragraph + byline, and the hero's tour-entry CTA.
+    a("data-demo-hub", "required", "demo-page.tsx", "the filled /demo hub — the cards + provenance root"),
+    a("data-demo-essay-card", "conditional", "demo-page.tsx", "one hub essay card, value = the corpus essay key"),
+    a("data-demo-card-arc", "conditional", "demo-page.tsx", "a card's draft → review arc chip row"),
+    a("data-demo-look-at", "conditional", "demo-page.tsx", "one 'What to look at' deep-link bullet on a card (REQ-TOUR-3)"),
+    a("data-demo-provenance", "conditional", "demo-page.tsx", "the hub's agent-discourse provenance paragraph + byline"),
+    a("data-demo-tour-entry", "conditional", "demo-page.tsx", "the hero card's tour CTA → DEMO_TOUR_ENTRY_HREF (222 consumes)"),
   ],
 };
 

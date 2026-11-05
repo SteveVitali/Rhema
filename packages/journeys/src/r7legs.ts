@@ -8,7 +8,7 @@
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
 import { join } from "node:path";
-import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS } from "@rhema/contracts";
+import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
 import { gotoOk, settleClientNav } from "./settle.js";
@@ -80,6 +80,12 @@ const R11_DEMO: StepFn = async (ctx) => {
     await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
     const h1 = await page.locator("h1").count();
     if (h1 !== 1) throw new Error(`signedIn=${want} /demo hub rendered ${h1} h1s (want 1)`);
+    // 221a — the filled hub: the four ordered essay cards render identically either side of
+    // the cookie boundary (the card facts are corpus data, never session data).
+    const cardCount = await page.locator("[data-demo-essay-card]").count();
+    if (cardCount !== DEMO_HUB_ESSAYS.length) {
+      throw new Error(`signedIn=${want} /demo rendered ${cardCount} essay cards (want ${DEMO_HUB_ESSAYS.length})`);
+    }
   }
   const [hubSignedIn, hubAnon] = await Promise.all([
     signedIn.page.locator("main").first().textContent(),
@@ -180,6 +186,14 @@ const P1_DEMO: StepFn = async (ctx) => {
         }
       }
       await assertNoOverflow(page, `demo Page @${w}`);
+      // 221a — the hub extension: the filled /demo SSR page at phone widths carries the four
+      // essay cards with no horizontal overflow (the provenance paragraph rides along).
+      await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+      if ((await page.locator("[data-demo-essay-card]").count()) !== DEMO_HUB_ESSAYS.length) {
+        throw new Error(`/demo @${w} rendered the wrong card set`);
+      }
+      await assertNoOverflow(page, `demo hub @${w}`);
+      await page.screenshot({ path: join(ctx.outDir, `p1-demo-hub-${w}.png`), fullPage: true });
       // axe clean — injected via Runtime.evaluate (CSP-safe), the P1-family pattern.
       await page.evaluate(AXE_SOURCE);
       const violations = await page.evaluate(async () => {
@@ -520,7 +534,72 @@ const D3_READONLY: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * 221a R7DEM.5b (REQ-DACC-1; REQ-TOUR-1/8) — `D1.hub`: the `/demo` SSR hub at desktop,
+ * narrow-desktop and phone widths: N10's public-document invariants (distinct branded title,
+ * exactly one h1, description/OG/Twitter meta, favicon link), the four essay cards in the
+ * `DEMO_HUB_ESSAYS` (SPD→GM→POV→CoR) order each visible with an actionable "Open in Rhēma"
+ * link, and the agent-discourse provenance paragraph + byline present. The tour-entry links on
+ * landing/showcase/footer are 222's (moved out of this leg per the ticket's note). Stays
+ * `expected:"red"` — 224 flips it on the R7a phase preview.
+ */
+const D1_HUB: StepFn = async (ctx) => {
+  const { page } = await ctx.anon();
+  for (const w of [1440, 1024, 390] as const) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+    // N10 invariants on /demo
+    const title = await page.title();
+    if (!title || !/Rhēma/.test(title)) throw new Error(`D1.hub @${w}: <title> "${title}" unbranded/empty`);
+    if ((await page.locator("h1").count()) !== 1) throw new Error(`D1.hub @${w}: not exactly one <h1>`);
+    for (const sel of [
+      'meta[name="description"]',
+      'meta[property="og:title"]',
+      'meta[property="og:description"]',
+      'meta[name="twitter:card"]',
+      'link[rel="icon"]',
+    ]) {
+      if ((await page.locator(sel).count()) === 0) throw new Error(`D1.hub @${w}: missing ${sel}`);
+    }
+    // four essay cards in the canonical order, each visible with an actionable open link
+    const cards = page.locator("[data-demo-essay-card]");
+    if ((await cards.count()) !== DEMO_HUB_ESSAYS.length) {
+      throw new Error(`D1.hub @${w}: ${await cards.count()} essay cards (want ${DEMO_HUB_ESSAYS.length})`);
+    }
+    const order = await cards.evaluateAll((els) =>
+      els.map((e) => e.getAttribute("data-demo-essay-card")),
+    );
+    if (JSON.stringify(order) !== JSON.stringify([...DEMO_HUB_ESSAYS])) {
+      throw new Error(`D1.hub @${w}: card order ${JSON.stringify(order)}`);
+    }
+    for (const essay of DEMO_HUB_ESSAYS) {
+      const card = page.locator(`[data-demo-essay-card='${essay}']`);
+      if (!(await card.isVisible())) throw new Error(`D1.hub @${w}: ${essay} card not visible`);
+      // a visitor scrolls the stacked cards into view — the actionable probe needs the
+      // center point on-screen (elementFromPoint is null off-viewport).
+      await card.scrollIntoViewIfNeeded();
+      await assertActionable(
+        card.locator(`a[href='/demo/${essay}']:not([data-demo-look-at])`).first(),
+        `D1.hub @${w} ${essay} open link`,
+      );
+    }
+    // the hero's tour CTA + the provenance paragraph (agent-discourse, roles, byline)
+    if ((await page.locator("[data-demo-tour-entry]").count()) === 0) {
+      throw new Error(`D1.hub @${w}: no tour-entry CTA on the hero card`);
+    }
+    const prov = page.locator("[data-demo-provenance]");
+    if (!(await prov.isVisible())) throw new Error(`D1.hub @${w}: no provenance paragraph`);
+    const provText = (await prov.textContent()) ?? "";
+    if (!/agent-discourse/.test(provText) || !/the writer/.test(provText) || !/S\. J\. Sebastian/.test(provText)) {
+      throw new Error(`D1.hub @${w}: provenance paragraph incomplete`);
+    }
+    await page.screenshot({ path: join(ctx.outDir, `d1-hub-${w}.png`), fullPage: true });
+  }
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
+  "D1.hub": D1_HUB,
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
   "R11.demo": R11_DEMO,

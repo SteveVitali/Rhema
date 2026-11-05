@@ -2258,6 +2258,55 @@ export const COPY = {
     notPublishedLabel: "not published",
     importRuleNote: "assigned by import rule",
     decisionsHeading: "Decisions",
+    // 221a R7DEM.5b (REQ-TOUR-1/3/8; S-10/S-11) — the hub's chrome copy. Essay facts, counts and
+    // titles arrive as snapshot DATA (218a's `demoCardFacts`); the {n}-slots below interpolate
+    // those structured numbers at render, never recomputing them (P4-6).
+    hub: {
+      heroTourCta: "Take the guided tour",
+      openInRhema: "Open in Rhēma",
+      readOnSubstack: "Read on Substack ↗",
+      lookAtHeading: "What to look at",
+      byline: "S. J. Sebastian",
+      countsFmt: "{major} major · {minor} minor · {strengths} strengths · {claimsChecked} claims checked",
+      wordsFmt: "{n} words",
+      retitleFmt: "Retitled from “{from}” ({atLabel})",
+      arcReview: "Review of v{n}",
+      arcPublished: "Published",
+      // provenanceLead + agentDiscourseLink + provenanceMid render as
+      // "{lead}<a>agent-discourse</a>{mid}" — the repo link IS the named mention (S-11).
+      provenanceLead: "These essays were drafted and reviewed with ",
+      provenanceMid:
+        " — open-source editorial protocols that Rhēma's own protocols port.",
+      provenanceRoles:
+        "The record's roles: the writer, the editor (agent), the revising agent and the drafting agent. Edits the writer made outside a review are marked writer-directed.",
+      agentDiscourseLink: "agent-discourse",
+    },
+    cards: {
+      // REQ-TOUR-3 — the "What to look at" bullets (R1 §5; POV's set from R1 §4's beat sheet).
+      // Each bullet pairs positionally with the LOOK_AT table's {route, hook} deep link; counts
+      // interpolate from the same card facts.
+      lookAt: {
+        "the-governable-mind": [
+          "Two complete review → response rounds — the deepest record on the hub.",
+          "The second round's claim ledger carries Contradicted marks the first did not: the revision introduced new errors and the next review caught them.",
+          "The v2 response re-checks the review's own claims — the record shows the revising agent disputing several by primary source.",
+          "One Decision stays open — the disclosure point the revising agent escalated to the writer (F61).",
+          "Length is unresolved: the response offers the writer costed options, including splitting the essay.",
+        ],
+        "the-politics-of-visibility": [
+          "The editor's one thing: put the essay into its conversation by name.",
+          "The second reader's sharpest objection — a falsification clause that reads as self-immunizing — became a major finding.",
+          "{claimsChecked} claims checked across the record; the letter's verdict records how clean the fact-check came back.",
+          "The response ledger shows the revising agent's answers verbatim — accepts, adapts, rebuts and escalations.",
+        ],
+        "constitution-of-reason": [
+          "Two Decisions the writer had to answer: which reader owns the piece (E1), and whether first-person texture is honest under this byline (E3).",
+          "The editor's one thing: confront the deflationary compute objection by name.",
+          "The craft notes name the style risk — the machine-cadence discount.",
+          "An older dossier shape: the record starts at v2 and keeps extra argument and craft files.",
+        ],
+      },
+    },
   },
   landing: {
     nav: {

@@ -6,8 +6,11 @@ import { describe, expect, it } from "vitest";
 import {
   DEMO_DOCUMENT_ROUTE_IDS,
   DEMO_ESSAYS,
+  DEMO_HUB_ESSAYS,
   DEMO_ROUTE_IDS,
   DEMO_SLUG_PREFIX,
+  DEMO_TOUR_ENTRY_HREF,
+  demoDeepLink,
   demoEssayFor,
   demoEssayForSlug,
   demoInternalPath,
@@ -110,5 +113,57 @@ describe("the 220a path map (REQ-DWEB-9; S-1)", () => {
     expect(isDemoNamespacePath("/bff/p/demo~x")).toBe(false); // fetch path, never a document
     expect(isDemoNamespacePath(null)).toBe(false);
     expect(isDemoNamespacePath(undefined)).toBe(false);
+  });
+});
+
+describe("221a R7DEM.5b — the hub order + stable deep links (REQ-TOUR-1/8)", () => {
+  it("DEMO_HUB_ESSAYS is SPD, GM, POV, CoR — the registered non-fixture set", () => {
+    expect([...DEMO_HUB_ESSAYS]).toEqual([
+      "structure-of-political-difference",
+      "the-governable-mind",
+      "the-politics-of-visibility",
+      "constitution-of-reason",
+    ]);
+    expect([...DEMO_HUB_ESSAYS].sort()).toEqual(
+      DEMO_ESSAYS.filter((e) => e.fixture !== true)
+        .map((e) => e.essay)
+        .sort(),
+    );
+  });
+
+  it("demoDeepLink emits the public form and validates against DEMO_ROUTE_IDS", () => {
+    expect(demoDeepLink("the-governable-mind")).toBe("/demo/the-governable-mind");
+    expect(demoDeepLink("the-governable-mind", "/review/v2-review", "data-letter-view")).toBe(
+      "/demo/the-governable-mind/review/v2-review#data-letter-view",
+    );
+    expect(demoDeepLink("constitution-of-reason", "a/x-y", "data-demo-escalation")).toBe(
+      "/demo/constitution-of-reason/a/x-y#data-demo-escalation",
+    );
+    // every produced link resolves back through the 220a map to an allowlisted routeId
+    for (const [essay, route] of [
+      ["structure-of-political-difference", ""],
+      ["the-governable-mind", "/review/v2-review"],
+      ["the-politics-of-visibility", "/v/1/diff/2"],
+      ["constitution-of-reason", "/a/x-y"],
+      ["the-governable-mind", "/figures/fig-1"],
+    ] as const) {
+      const link = demoDeepLink(essay, route);
+      const internal = demoInternalPath(link.split("#")[0]!);
+      expect(internal, link).not.toBeNull();
+      const routeId = spaRouteFor(internal!).routeId;
+      expect(DEMO_ROUTE_IDS, link).toContain(routeId);
+    }
+  });
+
+  it("demoDeepLink refuses unregistered essays and non-allowlisted routes", () => {
+    expect(() => demoDeepLink("not-an-essay")).toThrow(/unregistered essay/);
+    expect(() => demoDeepLink("the-borrowed-commons")).not.toThrow(); // the fixture is registered
+    for (const route of ["/run", "/export", "/settings", "/palette-search", "/edit/d/doc"]) {
+      expect(() => demoDeepLink("the-governable-mind", route), route).toThrow(/DEMO_ROUTE_IDS/);
+    }
+  });
+
+  it("DEMO_TOUR_ENTRY_HREF is the SPD essay root (the tour's opening surface)", () => {
+    expect(DEMO_TOUR_ENTRY_HREF).toBe("/demo/structure-of-political-difference");
   });
 });
