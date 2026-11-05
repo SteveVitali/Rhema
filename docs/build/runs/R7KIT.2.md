@@ -12,7 +12,8 @@
 - **Base:** `stevevitali/r7dep-1b-prod` @ `04a4e98b` (chainTip; PRs #240–#261 unmerged per OPERATOR).
 - **Branch:** `stevevitali/r7kit-2-primitives` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-11-05T02:55Z · **Closed:** TBD
+- **Started:** 2026-11-05T02:55Z · **Closed:** 2026-11-05T05:24Z
+- **ci:** pass #262@d68f99d (ci-pass anchor 41970557259; integration; images; contracts; public-safe; typecheck/lint/unit; fast-path — all legs green; `logs/ci-R7KIT.2.json`)
 - **Production mutations:** none (repo-only; the external acts are read-only `npm view`/`gh`/`ci-boundary` reads).
 
 ## Deferrals read
@@ -143,8 +144,24 @@ Tracked in the ticket file; the gap table below carries one row per AC + the ope
 - `pnpm check:spa-env` → `OK — 127 client sources, 158 artifacts`; `check:dom-contract` → OK
   (journey ⊆ manifest ⊆ emitted+asserted, `data-highlighted` declared); `check:protocol-markers` →
   OK; `pnpm check:licenses` → `OK — 873 package(s)`.
-- Self-review: 2 findings (ADR's `sideEffects:false` claim unbacked → flag added, entry −37.7 kB;
-  13 files needed prettier). Re-verified green after both.
+- Self-review: 3 findings (ADR's `sideEffects:false` claim unbacked → flag added, entry −37.7 kB;
+  13 files needed prettier; a `git ls-files`-keyed corpus test tripped ENOENT on the unstaged
+  deletion — staging-order artifact, resolved by the commit itself, re-verified green).
+- `pnpm test` (full suite): 6,763 pass / 6 skip / 1 fail — `corpus-location.test.ts` ENOENT on the
+  index-listed `primitives.tsx` (the file deletion was still unstaged); passes 4/4 after staging.
+  Long `demo-*.local.test` legs regenerated committed report artifacts under `docs/build/reports/`
+  + `docs/demo-side-effects.md` — test-side-effect churn, restored to HEAD (not this ticket's diff).
+- Inherited repair: `check-build-memory` flagged DEFERRALS `D-R7DEM.6b-1` status 'PART' — 224's
+  Part-B evidence cell led with a date, not a canonical token. Dated-format repair: cell now leads
+  `DONE —` (the row's actual disposition) with the repair noted inside the cell; every base cell
+  byte preserved → `check-append-only` OK and `check-build-memory` 0 violations.
+- CI read 1 (head `3584c260`, run 41967539199): **fail** on `typecheck / lint / unit` —
+  `check:dom-contract` died on `unparseable manifest line 124` → 987 cascade violations. Root
+  cause: my `prettier --write` across the changed set converted an escaped double-quoted string to
+  single quotes in `dom-contract.ts` (the checker accepts only `"…"` args) AND reformatted files the
+  repo keeps unformatted. Fixed in `d68f99d6`: every churned file restored to base + the intended
+  edits re-applied minimally (diff shrank by ~1,650 lines); `check:dom-contract` green locally;
+  the radix-import-policy + dom legs re-verified.
 - No Stage-B leg (GD-PREVIEW.R7; $0; Stage A only per ticket header) — nothing deferred by it.
 
 ## Evidence report
