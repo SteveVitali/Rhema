@@ -171,7 +171,7 @@ describe("editor endpoints — autosave / doc poll / forms (PRB.07)", () => {
       redirect: "manual",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/p/the-piece/edit/d_2?noted=1");
+    expect(res.headers.get("location")).toBe("/p/the-piece/v/2?noted=1"); // R7RELOAD.1 — /v/:n directly, never /edit/
     expect(note).toHaveBeenCalledWith(expect.anything(), "proj_1", "d_2", "keep the ending ambiguous");
   });
 
@@ -180,7 +180,7 @@ describe("editor endpoints — autosave / doc poll / forms (PRB.07)", () => {
     const app = createWebApp(makeDeps({ cancelEditorRun: cancel }));
     const res = await app.request("/p/the-piece/edit/d_2/cancel-run", { method: "POST", redirect: "manual" });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/p/the-piece/edit/d_2");
+    expect(res.headers.get("location")).toBe("/p/the-piece/v/2"); // R7RELOAD.1 — never /edit/
     expect(cancel).toHaveBeenCalledWith(expect.anything(), "proj_1", "d_2");
   });
 

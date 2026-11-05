@@ -20,6 +20,7 @@ import { feedLabelsQuery, sessionQuery } from "../queries.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
 import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
 import { useIdeFeed } from "./feed.js";
+import { delegatedSubmitHandler, usePaneWrite } from "../write-paths.js";
 
 const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
 
@@ -105,6 +106,19 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
     };
   }, [router, loc]);
 
+  // R7RELOAD.1 (REQ-RELOAD-2; UXC-2) — ONE delegated submit for every pane body. Forms inside
+  // the Timeline/panel/margin (the gate card's decide POST, the explainer dismiss, the run
+  // card's steering posts) render under the chrome's containers — never inside a leaf's React
+  // `onSubmit` subtree — so the host div carries the handler and the shared SPA_WRITE grammar
+  // decides which posts become JSON mutations (scroll + focus preserved — REQ-UX-4). A leaf's
+  // own `onSubmit` claims its forms first (`defaultPrevented` skips here); the chat forms are
+  // outside the grammar and keep their native leg until 232.
+  const paneWrite = usePaneWrite();
+  const onSubmit = useMemo(
+    () => delegatedSubmitHandler({ router, write: paneWrite.write }),
+    [router, paneWrite.write],
+  );
+
   useIdeChromeController({
     hostRef,
     slug,
@@ -135,7 +149,12 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
       >
         {COPY.ide.skipToPage}
       </a>
-      <div ref={hostRef} style={{ display: "contents" }}>
+      <div
+        ref={hostRef}
+        style={{ display: "contents" }}
+        onSubmit={onSubmit}
+        aria-busy={paneWrite.pending || undefined}
+      >
         <IdeShell
           hosted
           project={{

@@ -3162,7 +3162,7 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     expect(note.status).toBe(200);
     const noteBody = await note.json();
     expect(noteBody.ok).toBe(true);
-    expect(noteBody.redirect).toBe("/p/the-politics-of-visibility/edit/d_7?noted=1");
+    expect(noteBody.redirect).toBe("/p/the-politics-of-visibility/v/7?noted=1"); // R7RELOAD.1 — /v/:n, never /edit/
   });
 
   it("a JSON caller on the editor write paths is never handed a /login redirect — 401 envelope", async () => {

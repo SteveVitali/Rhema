@@ -36,14 +36,15 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
     if (context.boot?.demo != null) return;
     // REQ-BFF-22 — the hand-off is a side effect, so it is POST-only and server-decided: the twin
     // answers `{handoff:{href}}` only when an unread run_finished row exists (the same find the
-    // document ran inline); `?focus=1` suppresses it verbatim. The href is already workflow-shaped
-    // — a document navigation lands the target under its own flag verdict.
+    // document ran inline); `?focus=1` suppresses it verbatim. R7RELOAD.1 (REQ-RELOAD-3, UXC-5):
+    // the href is an in-tree target — the redirect commits IN-ROUTER (no document load; the
+    // flag-safety comment pre-dated SPA.28's static verdict map).
     // R7RO.1 — a read-only project never issues the POST before any request: the boot slot (the
     // document-level stamp for THIS slug) says so up front; a stale stamp for another slug can't.
     if (readOnlyProjectFor(context.boot, null, params.project) != null) return;
     const out = await postProjectHandoff(params.project, { focus: (search as Record<string, string | undefined>).focus });
     if (out.data.handoff != null) {
-      throw redirect({ href: out.data.handoff.href, reloadDocument: true });
+      throw redirect({ href: out.data.handoff.href });
     }
   },
   pendingComponent: PendingShell,

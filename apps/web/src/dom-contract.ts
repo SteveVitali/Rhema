@@ -1206,6 +1206,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-row-do-nothing", "conditional", "pages.tsx"),
     a("data-do-nothing", "conditional", "ui/gate-card.tsx"),
     a("data-actor", "conditional", "ui/gate-card.tsx"),
+    a("data-gate-form", "conditional", "ui/gate-card", "the decide POST — U2.noreload's approve selector"),
     a("data-action", "conditional", "ui/gate-card + run-card"),
     a("data-counter", "conditional", "ui/run-card.tsx"),
     a("data-compact", "conditional", "ui/gate-card + tokens CSS"),

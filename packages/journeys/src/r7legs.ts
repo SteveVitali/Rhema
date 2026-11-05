@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
+import { guard3Segment, plantGuard3Marker } from "./noreload.js";
 import { gotoOk, settleClientNav, settleDocumentNav } from "./settle.js";
 import {
   assertBundleParity,
@@ -997,9 +998,113 @@ const U1_SHELL: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * R7RELOAD.1 (REQ-RELOAD-6 / REQ-GUARD-3, REQ-DACC-7) — the real `U2.noreload` body: the walk
+ * list → project → dossier → compare → export → settings → inbox → Timeline gate approve →
+ * Showcase → back stays inside ONE document — after every segment the GUARD-3 helper asserts
+ * `performance.getEntriesByType("navigation").length === 1` and the persisted window marker.
+ * Every hop is driven through `settleClientNav` (the mechanism pin), and `documentLoads` is
+ * cross-checked per segment. Sanctioned document navigations (S-14 demo entry/exit, /logout,
+ * Stripe/OAuth handoffs, binary exports, `/p/:p/f/:fid` — R6 T10–T13) are excluded BY NAME in
+ * `noreload.ts`; this walk declares none. Held `ready-to-flip` — the registry keeps
+ * `expected:"red"`; 250_R7DEP.2 flips it at the phase preview (D-R7RELOAD.1-1). The chat-send
+ * segment is appended by 232 (REQ-RELOAD-1).
+ */
+const U2_NORELOAD: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  const marker = `u2-${ctx.nonce}`;
+  const leg = (label: string, act: () => Promise<unknown>) =>
+    guard3Segment(page, marker, label, act);
+
+  // list — the entry document at /app.
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  await page.locator("[data-app-shell]").first().waitFor({ timeout: 30_000 });
+  await plantGuard3Marker(page, marker);
+  const loadsAtEntry = ctx.documentLoads;
+
+  // list → project: the sidebar's project entry is an SPA link.
+  const projectLink = page.locator("[data-shell-project] a, [data-shell-recent]").first();
+  if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
+  const href = (await projectLink.getAttribute("href")) ?? "";
+  const slug = /\/p\/([^/]+)/.exec(href)?.[1] ?? "";
+  if (slug === "") throw new Error(`the project entry's href ${href} is not a /p/<slug> link`);
+  await leg("list→project", () => settleClientNav(page, ctx, () => projectLink.click()));
+
+  // project → dossier: the project's review link.
+  const dossierLink = page.locator(`a[href^="/p/${slug}/review/"]`).first();
+  await leg("project→dossier", () => settleClientNav(page, ctx, () => dossierLink.click()));
+
+  // dossier → compare: a version compare link (the rail's diff affordance).
+  const compareLink = page
+    .locator(`a[href^="/p/${slug}/v/"][href*="/diff/"], a[href^="/p/${slug}/compare"]`)
+    .first();
+  if ((await compareLink.count()) > 0) {
+    await leg("dossier→compare", () => settleClientNav(page, ctx, () => compareLink.click()));
+    // compare → project page (the walk continues inside the one document).
+    const backToPage = page.locator(`a[href="/p/${slug}"]`).first();
+    await leg("compare→project", () => settleClientNav(page, ctx, () => backToPage.click()));
+  }
+
+  // project → export → settings → inbox — the sidebar's project-scoped items are SPA links.
+  const exportLink = page.locator(`a[href="/p/${slug}/export"]`).first();
+  await leg("project→export", () => settleClientNav(page, ctx, () => exportLink.click()));
+  const settingsLink = page.locator(`a[href="/p/${slug}/settings"]`).first();
+  await leg("export→settings", () => settleClientNav(page, ctx, () => settingsLink.click()));
+  const inboxLink = page.locator("[data-shell-inbox]").first();
+  await leg("settings→inbox", () => settleClientNav(page, ctx, () => inboxLink.click()));
+
+  // inbox → project: back through the sidebar's project entry.
+  const projectAgain = page.locator(`a[href="/p/${slug}"]`).first();
+  await leg("inbox→project", () => settleClientNav(page, ctx, () => projectAgain.click()));
+
+  // Timeline gate approve: the waiting card's Approve is a pane-body form POST — a JSON
+  // mutation through the chrome-host delegated submit, never a document load. Absent a
+  // waiting gate the segment skips honestly (the seeded fixture arms it at the preview).
+  const approve = page.locator('[data-gate-form] button[data-action="approve"]').first();
+  if ((await approve.count()) > 0) {
+    const loadsBefore = ctx.documentLoads;
+    await approve.click();
+    await page
+      .waitForFunction(() => document.documentElement.hasAttribute("data-mounted"), {
+        timeout: 30_000,
+      })
+      .catch(() => undefined);
+    if (ctx.documentLoads !== loadsBefore) {
+      throw new Error("the gate approve document-navigated (want the JSON mutation)");
+    }
+    await leg("gate-approve", async () => undefined);
+  }
+
+  // project → Showcase → back: the Showcase is in-SPA (ReadOnlyProject), so both hops are
+  // client navigations — never the REQ-ED-12 document swap.
+  const showcaseLink = page
+    .locator('[data-shell-recent="showcase"], a[href*="/showcase"], a[href^="/p/showcase"]')
+    .first();
+  if ((await showcaseLink.count()) > 0) {
+    await leg("project→showcase", () => settleClientNav(page, ctx, () => showcaseLink.click()));
+    const back = page.locator("[data-shell-wordmark]").first();
+    await leg("showcase→back", () => settleClientNav(page, ctx, () => back.click()));
+  } else {
+    const allProjects = page.locator("[data-shell-all-projects]").first();
+    await leg("project→back-to-list", () =>
+      settleClientNav(page, ctx, () => allProjects.click()));
+  }
+
+  // the whole walk loaded exactly the entry document.
+  if (ctx.documentLoads !== loadsAtEntry) {
+    throw new Error(
+      `the U2 walk document-loaded ${ctx.documentLoads - loadsAtEntry} time(s) after entry — ` +
+        `GUARD-3's one-document invariant broke outside the per-segment checks`,
+    );
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u2-noreload.png"), fullPage: true });
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
   "U1.shell": U1_SHELL,
+  "U2.noreload": U2_NORELOAD,
   "D2.tour": D2_TOUR,
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,

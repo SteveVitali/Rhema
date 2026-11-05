@@ -443,7 +443,7 @@ describe("REQ-NAVM-6 — interception never pre-judges the renderer", () => {
     await expectIntercepted(router, navSpy, "/app/inbox", "/app/inbox");
   });
 
-  it("OQ1 — the handoff arm fires under interception: the push commits, then the reloadDocument redirect eats the slot via location.replace", async () => {
+  it("OQ1 — the handoff arm fires under interception: the push commits, then the IN-ROUTER redirect lands (R7RELOAD.1 — never a document load)", async () => {
     const fetchMock = stubFetch("/p/acme/r/run9");
     const router = await mountInterceptor(
       "/usage",
@@ -454,15 +454,13 @@ describe("REQ-NAVM-6 — interception never pre-judges the renderer", () => {
     const navSpy = vi.spyOn(router, "navigate");
     click(anchor("/p/acme"));
     expect(sawPost).toBe(true);
-    await vi.waitFor(() => expect(replaceSpy).toHaveBeenCalledWith("/p/acme/r/run9"));
+    // R7RELOAD.1 (REQ-RELOAD-3, UXC-5) — the handoff target is in-tree, so the beforeLoad
+    // redirect commits IN-ROUTER (router-core's own commitLocation — no document load, no
+    // location.replace); the landed pathname is the server-decided href.
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/acme/r/run9"));
+    expect(replaceSpy).not.toHaveBeenCalled();
     // 1. the click pushed (never replace) — the committed slot exists to be eaten.
     expect(navSpy).toHaveBeenNthCalledWith(1, { href: "/p/acme" });
-    // 2. router-core 1.171.33 resolves the beforeLoad reloadDocument redirect as a
-    //    replace-mode document navigation — the just-committed entry is eaten.
-    expect(navSpy).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ href: "/p/acme/r/run9", reloadDocument: true, replace: true }),
-    );
     // 3. the leaf pipeline ran: the handoff POST fired exactly as on document entry —
     //    the interceptor never short-circuited the renderer verdict.
     expect(fetchMock).toHaveBeenCalledWith(
