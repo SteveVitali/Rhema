@@ -177,14 +177,19 @@ describe("REQ-PANE-2 — the emitted CSS stays in parity with paneLayout() at ev
   });
   it("1024–1279: Margin → ticks and the panel → scrimmed overlay", () => {
     expect(paneLayout(1280 - 1, input()).panel).toBe("overlay");
+    // margin→ticks rides the single <1280 arm (it also covers the hosted <768 narrow-desktop);
+    // the panel overlay arm is the ranged block.
+    const ticks = mediaBlock(1280 - 1);
+    expect(ticks).toContain(".ide-margin");
     const block = mediaBlock(1280 - 1, 1024);
-    expect(block).toContain(".ide-margin");
     expect(block).toContain(".ide-panel[data-open] { position: absolute");
   });
   it("768–1023: Files → overlay drawer and the panel → sheet", () => {
     expect(paneLayout(1024 - 1, input({ filesOpen: true })).files).toBe("overlay");
     expect(paneLayout(1024 - 1, input({ filesOpen: true })).panel).toBe("sheet");
-    const block = mediaBlock(1024 - 1, 768);
+    // one <1024 arm covers the drawer+sheet pair (it also serves the hosted <768 surface; the
+    // SSR phone hides the regions outright in the <768 block).
+    const block = mediaBlock(1024 - 1);
     expect(block).toContain(".ide-files { position: absolute");
     expect(block).toContain(".ide-panel[data-open] { position: absolute");
   });
