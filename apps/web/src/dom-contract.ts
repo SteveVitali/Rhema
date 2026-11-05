@@ -1076,6 +1076,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "dossier mount marker (N7 fallback probe)",
     ),
     a("data-letter-view", "conditional", "ui/letter.tsx"),
+    a("data-letter-section", "conditional", "ui/letter.tsx", "one letter section, value = the section id (verdict, major-issues…)"),
     a("data-verdict", "conditional", "ui/claims.tsx + dossier", "per-claim verdict"),
     a("data-tier", "conditional", "ui/claims/dossier/pages", "claim tier chip"),
     a("data-fetched", "conditional", "ui/primitives.tsx"),
@@ -1638,6 +1639,18 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-demo-look-at", "conditional", "demo-page.tsx", "one 'What to look at' deep-link bullet on a card (REQ-TOUR-3)"),
     a("data-demo-provenance", "conditional", "demo-page.tsx", "the hub's agent-discourse provenance paragraph + byline"),
     a("data-demo-tour-entry", "conditional", "demo-page.tsx", "the hero card's tour CTA → DEMO_TOUR_ENTRY_HREF (222 consumes)"),
+    // 222 (R7DEM.6a; REQ-TOUR-2/4) — the guided tour's overlay hooks, the `?tour=` state param,
+    // and the entry links (`data-demo-entry` value = the public surface carrying it: landing /
+    // showcase / footer — each a document navigation with data-spa-native, S-14).
+    a("data-demo-tour", "conditional", "spa/demo-tour.ts", "the tour coach-mark overlay root — mounts only while ?tour= is present"),
+    a("data-demo-tour-step", "conditional", "spa/demo-tour.ts", "the active coach mark, value = the step id"),
+    a("data-demo-tour-next", "conditional", "spa/demo-tour.ts", "the Next control — an <a> hop to the next step's ?tour= URL"),
+    a("data-demo-tour-prev", "conditional", "spa/demo-tour.ts", "the Back control — an <a> hop to the previous step's ?tour= URL"),
+    a("data-demo-tour-close", "conditional", "spa/demo-tour.ts", "the Exit control — drops ?tour= → free roam"),
+    a("data-demo-tour-cta", "conditional", "spa/demo-tour.ts", "the final 'Bring your draft' CTA → /signup?src=demo (doc nav)"),
+    a("data-demo-tour-aside", "conditional", "spa/demo-tour.ts", "a coach mark's secondary hop link (the S-6 side card / response letter)"),
+    a("data-demo-entry", "conditional", "marketing.tsx + legal.tsx", "a public entry link into /demo (landing CTA / /showcase / footer), value = the surface"),
+    u("tour", "conditional", "spa/demo-tour.ts + server.ts demo documents", "the tour step state param — never a cookie"),
   ],
 };
 

@@ -188,6 +188,13 @@ export function demoDeepLink(essay: string, route = "", hook?: string): string {
   return `/demo/${essay}${inner}${hook ? `#${hook}` : ""}`;
 }
 
+/** 222 R7DEM.6a (REQ-TOUR-2) — the tour's URL state param + first step id. The tour's whole
+ *  state rides `?tour=<stepId>` on the public demo URL (never a cookie — R4 §6); the overlay
+ *  renders only while the param is present, so the entry href is the only "start" that exists
+ *  (REQ-GROWTH-12: it never auto-starts — reaching it is the user's explicit act). */
+export const DEMO_TOUR_PARAM = "tour";
+export const DEMO_TOUR_FIRST_STEP = "published";
+
 /** The tour-entry href the hub's hero CTA carries and 222_R7DEM.6a consumes (REQ-TOUR-2's
  *  tour opens on SPD's essay root — the Published card). */
-export const DEMO_TOUR_ENTRY_HREF = demoDeepLink("structure-of-political-difference");
+export const DEMO_TOUR_ENTRY_HREF = `${demoDeepLink("structure-of-political-difference")}?${DEMO_TOUR_PARAM}=${DEMO_TOUR_FIRST_STEP}`;

@@ -30,8 +30,15 @@ export interface GrowthCopyViolation {
   readonly detail: string;
 }
 
-/** keys that may never promise generation/drafting-on-behalf (hero + proof zones). */
-const PROMISE_SCOPE = [/^landing\.hero\./, /^landing\.proof\./, /^landing\.cta\./];
+/** keys that may never promise generation/drafting-on-behalf (hero + proof zones).
+ *  222 R7DEM.6a (REQ-DOPS-1) — the demo hero + CTA keys join the scope (R4 §3). */
+const PROMISE_SCOPE = [
+  /^landing\.hero\./,
+  /^landing\.proof\./,
+  /^landing\.cta\./,
+  /^demo\.hub\./,
+  /^demo\.tour\./,
+];
 
 /** patterns that read as "the product writes your text for you" (REQ-POS-5/11). */
 const GENERATION_PATTERNS: readonly RegExp[] = [
@@ -92,7 +99,8 @@ const COMPARATIVE_PATTERNS: readonly RegExp[] = [
   /\bin\s+a\s+class\s+of\s+its\s+own\b/i,
 ];
 
-const FUNNEL_SCOPE = [/^landing\./, /^pricing\./, /^signup\./, /^showcase\./];
+// 222 R7DEM.6a (REQ-DOPS-1 FUNNEL_SCOPE half; REQ-TOUR-5) — demo copy joins the funnel lints.
+const FUNNEL_SCOPE = [/^landing\./, /^pricing\./, /^signup\./, /^showcase\./, /^demo\./];
 
 function inScope(key: string, scopes: readonly RegExp[]): boolean {
   return scopes.some((s) => s.test(key));

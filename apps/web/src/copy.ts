@@ -2307,6 +2307,47 @@ export const COPY = {
         ],
       },
     },
+    // 222 R7DEM.6a (REQ-TOUR-2/5; S-9/S-10) — the guided tour's coach-mark copy. ≤ 2 sentences
+    // per step; quoted fragments are verbatim from the committed corpus at the file:line pins
+    // recorded in the step table (demo-tour-steps.test.ts asserts every “…” span verbatim).
+    // Honesty: "replayed, not recorded" — the record was produced with agent-discourse; roles
+    // stay the writer / the editor (agent) / the revising agent / the drafting agent.
+    tour: {
+      heading: "Guided tour",
+      counterFmt: "{n} of {total}",
+      next: "Next",
+      back: "Back",
+      exit: "Exit tour",
+      replayedNote:
+        "This record is replayed, not recorded — the essay, dossiers and revisions are the committed agent-discourse record, read-only here.",
+      steps: {
+        published:
+          "This is The Structure of Political Difference as published — the end of the record this tour walks back through.",
+        v1: "The draft the writer submitted was titled “Politics Has Five Questions”. Everything after this page is what the record did to it.",
+        verdict:
+          "The editor's verdict was Major revisions: “the fact-check came back cleaner than any draft of this ambition I have seen (zero contradicted claims; your own statistical exercise reproduces from the raw data)”.",
+        oneThing:
+          "The letter names one thing above the rest: “Claim the ground the piece actually occupies” — the grammar, not the five axes.",
+        twoReaders:
+          "Two independent readers reached the same first finding — the letter's Major issue 1 and the second read's Objection 1 both ask why five. The record marks this finding's origin as both.",
+        claims:
+          "The claim ledger checked “24 of 24 (27 ledger entries)” and marked C23a — “Trump is a populist natcon: market-leaning” — Misleading in context, escalated to Tier 1, with its source.",
+        claimsAside: "What a contradicted claim looks like → The Governable Mind, III16",
+        figure:
+          "Figure 2's CHES correlations reproduce from the dataset — the v2 figure is regenerated from the declared composites the review asked for.",
+        responses:
+          "The revising agent answered every finding in this ledger — F1 “adapt”, F31 “escalate→resolved”, F42 “defer (flagged)”, F23 “constraint” → “honored” — and the writer approved the round.",
+        responsesAside: "Then the response letter →",
+        whatChanged:
+          "Move M2 shows the new section “Why Five, and Not Fifty” discharging finding F1 — the unargued central number gets its genealogy.",
+        writerEdit:
+          "After the round the writer edited directly — v3 and v4 are writer-directed edits, not reviewed — then published.",
+        cta: "That is the whole record — replayed, not staged.",
+      },
+      ctaSignUp: "Bring your draft",
+      ctaNewProject: "New project",
+      stepCountNoteFmt: "Step {n} of {total} — ←/→ moves, Esc exits",
+    },
   },
   landing: {
     nav: {
@@ -2326,6 +2367,9 @@ export const COPY = {
       ctaPrimary: "Start with a draft",
       ctaScratch: "Start from scratch",
       ctaOutline: "Upload an outline",
+      // 222 R7DEM.6a (REQ-TOUR-4) — the hero's secondary CTA into the demo (a document
+      // navigation, S-14).
+      demoCta: "See it on four real essays →",
     },
     dropzone: {
       label: "Drop your draft here",
@@ -2528,6 +2572,9 @@ export const COPY = {
     duplicateCta: "Duplicate it",
     openDossierCta: "Open the dossier",
     heldFileReady: "Your held file is here — upload it to start.",
+    // 222 R7DEM.6a (REQ-TOUR-4) — the /showcase → /demo entry (a document navigation, S-14).
+    demoLead: "For the full record — drafts, dossiers and each round's changes — walk the demo:",
+    demoLink: "Open the demo →",
   },
 
   // R7RO.1 (REQ-DWEB-14; spec §3.3 S-3) — the ONE client read-only mechanism's copy: one notice
@@ -2754,6 +2801,8 @@ export const COPY = {
   },
 
   footer: "Rhēma",
+  // 222 R7DEM.6a (REQ-TOUR-4) — the shared public footer's demo entry (document navigation).
+  footerDemo: "Demo",
 } as const;
 
 /**

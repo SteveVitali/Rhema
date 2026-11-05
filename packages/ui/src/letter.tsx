@@ -30,7 +30,9 @@ export interface LetterViewLabels {
 export interface LetterViewProps {
   readonly title: string;
   readonly sections: readonly LetterSection[];
-  readonly trustChip: TrustChipModel;
+  /** `null` = the record carries no access report (the demo's replayed dossier — "not
+   *  recorded"); the attestation heading stays and the chip simply does not render. */
+  readonly trustChip: TrustChipModel | null;
   readonly labels: LetterViewLabels;
 }
 
@@ -66,7 +68,7 @@ export function LetterView({ title, sections, trustChip, labels }: LetterViewPro
 
         <section id="letter-attestation" data-letter-section="attestation" style={{ marginTop: "16px" }}>
           <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{labels.attestationHeading}</h3>
-          <TrustChip chip={trustChip} />
+          {trustChip != null ? <TrustChip chip={trustChip} /> : null}
         </section>
       </div>
 
