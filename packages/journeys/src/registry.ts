@@ -833,25 +833,27 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   },
   {
     // Sub-assertion: the R7a stopgap probe — REQ-PANE-0 needs R7a browser evidence while U3's
-    // owner is R7b. 224_R7DEP.1 flips it at the R7a phase preview.
+    // owner is R7b. GREEN 2026-11-05 on pr-259 @ 18a0df79 (R7FIX.2 — the desk-head/statusbar
+    // stacking fix); proof docs/build/reports/2026-11-05_R7FIX.2/ (all four widths).
     id: "U3.stopgap",
     journey: "returning",
     asserts:
       "the stopgap geometry: the 1024–1279 overlay and the <1024 sheet carry a scrim + Esc/outside-click dismiss, are closed by default and never persisted from overlay mode, the page column reflows at ≥1280 with Files open, and the Desk head is never occluded by the status bar (REQ-PANE-0)",
     owner: "R7FIX.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
     // Sub-assertion: the SPA renderer re-expectation for the signed-in Showcase (REQ-DACC-6) —
-    // enters red so the nightly can't re-redden before R7DEP.1 deploys; the existing green
-    // R8.showcase row is untouched.
+    // GREEN 2026-11-05 on pr-259 @ 18a0df79 (R7FIX.2 — the same-location commit fix; the dossier
+    // self-link now commits a real in-document transition); the existing green R8.showcase row
+    // is untouched.
     id: "R8.showcase.spa",
     journey: "returning",
     asserts:
       "the signed-in Showcase resolves to the workspace Showcase rendered data-renderer=\"spa\" (REQ-DACC-6, REQ-RELOAD-5 — the ReadOnlyProject SPA arm)",
     owner: "R7RO.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
 ];
