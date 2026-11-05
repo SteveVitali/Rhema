@@ -7,7 +7,6 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SRC = fileURLToPath(new URL(".", import.meta.url)); // apps/web/src/spa
 const WEB_SRC = fileURLToPath(new URL("..", import.meta.url)); // apps/web/src
 const SERVER = readFileSync(join(WEB_SRC, "server.ts"), "utf8");
 
