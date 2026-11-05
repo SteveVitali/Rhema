@@ -226,6 +226,13 @@ export interface WebDeps {
    */
   readonly demoCorpusRoot?: string;
   /**
+   * R7DEM.5 (REQ-DWEB-7/DWEB-3) — the recording-proxy's DataSource reach: an optional sink the
+   * demo harness supplies; every `demoDataSource` method the nested app invokes reports its
+   * name, so the regenerated side-effect table proves the implemented set is exactly the set
+   * the walk reaches (an unreached method leaves the Pick — DWEB-3's amended contract).
+   */
+  readonly demoDataSourceTrace?: (method: string) => void;
+  /**
    * R7DEM.4 — set on the NESTED demo app only (demo.ts builds it): twins carry `readOnly:true`
    * + `ReadOnlyProject{demo}`, `ideContext` drops its out-of-demo palette rows and write URLs.
    */

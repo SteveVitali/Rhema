@@ -42,6 +42,7 @@ import type {
   VoiceListRowDto,
 } from "@rhema/api-client";
 import { COPY } from "./copy.js";
+import { DemoDocMarkers, DemoLedgerDecisions } from "./demo-markers.js";
 import type { ReadOnlyReason } from "@rhema/contracts";
 import {
   approvalRowLabels,
@@ -326,6 +327,16 @@ export function PageChrome(props: PageChromeProps): ReactNode {
           ? { readOnlyReason, readOnlyTooltip: COPY.readOnly.reason[readOnlyReason] }
           : {})}
       />
+      {/* R7DEM.5 — the demo record markers (REQ-CONV-14 import-rule labels, REQ-TOUR-6 "not
+          published" refs, the fragments note) mount only when the twin carried a `demo` marker
+          block — a live workspace doc never has one, so this block is demo-only by data. */}
+      {doc.demo != null ? <DemoDocMarkers demo={doc.demo} /> : null}
+      {/* REQ-TOUR-7 — a response-ledger artifact in the demo renders its escalation rows as
+          Decisions (verbatim cells). The demo gate is the read-only reason (the ledger DTO
+          itself carries no `demo` markers — artifact pages only mark `notPublishedRefs`). */}
+      {readOnlyReason === "demo" && doc.artifactKind === "response_ledger" ? (
+        <DemoLedgerDecisions markdown={doc.markdown} />
+      ) : null}
     </>
   );
 }
@@ -479,8 +490,10 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
                 ? fmt(COPY.newProject.nextStepOutlineFmt, { v: "v1" })
                 : fmt(COPY.newProject.nextStepDraftFmt, { v: `v${project.created.draftN ?? 1}` })}
           </p>
-          {project.created.entry === "draft" && compact !== true ? (
-            // P1.19 — §10.1 ✗: run start is never offered on phone width.
+          {project.created.entry === "draft" && compact !== true && !withhold ? (
+            // P1.19 — §10.1 ✗: run start is never offered on phone width. R7DEM.5 — the run
+            // sheet is outside the demo allowlist; the link withholds (an out-of-scope
+            // navigation, R3 §4 row 4 — never a terminal 404).
             <p style={{ margin: "8px 0 0" }}>
               <a href={`/p/${slug}/run`} style={{ fontSize: "13px" }}>{COPY.runSheet.runReview}</a>
             </p>

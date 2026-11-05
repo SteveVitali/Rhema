@@ -8,8 +8,9 @@
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
 import { join } from "node:path";
-import { DEMO_ESSAYS } from "@rhema/contracts";
+import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
+import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
 import { gotoOk, settleClientNav } from "./settle.js";
 import {
   assertBundleParity,
@@ -405,11 +406,126 @@ const U3_STOPGAP: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/** Twin-derived seed URLs — the leg asks the essay's own JSON reads which concrete routes
+ *  exist (a corpus that holds no v2 has no diff page to walk). Node-side fetches: the seeds
+ *  are harness-side discovery, not page emissions. */
+async function demoSeedsFor(webBaseUrl: string, slug: string): Promise<string[]> {
+  const essay = slug.replace(/^demo~/, "");
+  const get = async (path: string): Promise<unknown | null> => {
+    try {
+      const r = await fetch(`${webBaseUrl}${path}`);
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  };
+  const seeds = new Set<string>();
+  const push = (inner: string) => seeds.add(`/demo/${essay}${inner}`);
+  const versions = (await get(`/bff/p/${slug}/versions`)) as
+    | { drafts?: { n?: number }[] }
+    | null;
+  const ns = (versions?.drafts ?? [])
+    .map((d) => d.n)
+    .filter((n): n is number => typeof n === "number")
+    .sort((a, b) => a - b);
+  for (const n of ns) push(`/v/${n}`);
+  for (let i = 0; i + 1 < ns.length; i++) push(`/v/${ns[i]}/diff/${ns[i + 1]}`);
+  const figures = (await get(`/bff/p/${slug}/figures`)) as
+    | { items?: { id?: string }[] }
+    | null;
+  if ((figures?.items?.length ?? 0) > 0) {
+    push(`/figures`);
+    for (const f of figures!.items ?? []) if (f.id) push(`/figures/${f.id}`);
+  }
+  const timeline = (await get(`/bff/p/${slug}/timeline`)) as
+    | { rounds?: { runs?: { runId?: string }[] }[]; ungrouped?: { runId?: string }[] }
+    | null;
+  const runIds = [
+    ...(timeline?.rounds ?? []).flatMap((r) => r.runs ?? []),
+    ...(timeline?.ungrouped ?? []),
+  ]
+    .map((r) => r.runId)
+    .filter((x): x is string => typeof x === "string");
+  for (const runId of runIds) {
+    push(`/review/${runId}`);
+    push(`/r/${runId}`);
+  }
+  // the response-ledger artifacts + revisions the Files/WhatChanged twins name.
+  const files = (await get(`/bff/p/${slug}/files`)) as
+    | { sections?: { rows?: { artifactId?: string }[]; advancedRows?: { artifactId?: string }[] }[] }
+    | null;
+  for (const s of files?.sections ?? []) {
+    for (const r of [...(s.rows ?? []), ...(s.advancedRows ?? [])]) {
+      if (r.artifactId) push(`/a/${r.artifactId}`);
+    }
+  }
+  return [...seeds];
+}
+
+/**
+ * R7DEM.5 (REQ-DACC-1/3/5) — `D3.readonly`: the recording proxy's asserts over BOTH session
+ * arms — anon() AND returningUser("a") — walking `/demo` and every registered essay's public
+ * routes: zero same-origin non-GET requests except the REQ-TOUR-9 `POST /a/demo` carve-out,
+ * zero EventSource/WebSocket opens, zero same-origin 4xx/5xx, no `method="post"` forms and no
+ * `contenteditable` anywhere on the walk. Stage A: local server + bundled Chromium;
+ * 224 flips it on the R7a preview.
+ */
+const D3_READONLY: StepFn = async (ctx) => {
+  const origin = new URL(ctx.webBaseUrl).origin;
+  const essays = DEMO_ESSAYS.filter((e) => e.fixture !== true);
+  for (const [tag, arm] of [
+    ["anon", await ctx.anon()],
+    ["returning", await ctx.returningUser("a")],
+  ] as const) {
+    const collect = attachDemoRecord(arm.page, origin);
+    // the hub — a public document, still inside the allowlist.
+    await gotoOk(arm.page, `${ctx.webBaseUrl}/demo`, ctx);
+    for (const essay of essays) {
+      // Seeds derived from the essay's OWN twins (versions → /v/n + diffs, figures → cards,
+      // the timeline's runIds → dossier/report): every route shape the corpus actually holds
+      // is walked; a shape the essay doesn't hold is absent, never a false miss.
+      const seeds = await demoSeedsFor(ctx.webBaseUrl, essay.slug);
+      const visited = await crawlDemo(arm.page, { essay: essay.essay, seeds, interactions: false });
+      // every route shape the corpus HOLDS must have been reached — a missing one is a
+      // contract miss; a shape absent from the twins is simply not this essay's surface.
+      for (const id of DEMO_DOCUMENT_ROUTE_IDS) {
+        const shapeSeeded = seeds.some((s) => routeIdMatches(id, s, essay.essay));
+        if (shapeSeeded && !visited.some((v) => routeIdMatches(id, v, essay.essay))) {
+          throw new Error(`D3.readonly ${tag}: route coverage miss ${id} on ${essay.essay}`);
+        }
+      }
+      // the read-only DOM contract: no mutation affordance survives the walk — no post form,
+      // no editable surface.
+      const posts = await arm.page.locator('form[method="post"]:visible, form[method="POST"]:visible').count();
+      if (posts > 0) throw new Error(`D3.readonly ${tag}: ${posts} mutation form(s) on ${essay.essay}`);
+      const editable = await arm.page
+        .locator('[contenteditable="true"], [contenteditable=""]')
+        .count();
+      if (editable > 0) {
+        throw new Error(`D3.readonly ${tag}: ${editable} contenteditable node(s) on ${essay.essay}`);
+      }
+    }
+    await arm.page.screenshot({ path: join(ctx.outDir, `d3-readonly-${tag}.png`), fullPage: true });
+    const violations = [
+      ...collect.violations,
+      ...collect.badResponses.map((b) => `${b.status} on ${b.url}`),
+    ];
+    if (violations.length > 0) {
+      throw new Error(`D3.readonly ${tag}: ${violations.length} side-effect/fault(s):\n  ${violations.slice(0, 20).join("\n  ")}`);
+    }
+    if (collect.websockets.length > 0) {
+      throw new Error(`D3.readonly ${tag}: ${collect.websockets.length} WebSocket(s) opened`);
+    }
+  }
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
   "R11.demo": R11_DEMO,
   "P1.demo": P1_DEMO,
+  "D3.readonly": D3_READONLY,
 };
 
 export const R7_LEGS_IMPLS: Readonly<Record<string, StepFn>> = Object.fromEntries(

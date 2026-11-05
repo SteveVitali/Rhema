@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — all 148 manifest rows landed; open rows remain ledgered on BACKLOG.csv (OPERATIONAL_READINESS step 10: DONE only when every open row has a landed disposition)
-nextTicket:      221_R7DEM.5        # row 221 — demo surfaces (walk/tour half)
-lastCompleted:   R7DEM.4b           # 2026-11-04 — demo serving (SPA half): router rewrite, boot fixes, doc-nav boundary, image figures, R*.demo legs (PR #254, unmerged; mergePolicy OPERATOR)
+nextTicket:      221a_R7DEM.5b      # row 221a — demo hub + cards (walk's proven-clean surface)
+lastCompleted:   R7DEM.5            # 2026-11-04 — demo side effects: recording proxy + committed table, effect gates, labels/markers, lazy tour seam, D3.readonly body (PR #255, unmerged; mergePolicy OPERATOR)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (cleared 2026-10-15 — pass read on #174 @ 708ed10, run 38685500128; see PHASE LOG)
 pauseRequested:  false
@@ -34,7 +34,7 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/r7-demo-spec  # round 7 forks from main HEAD (a34eb51) via the planning/decompose branch (spec §2)
 pinnedBaseSha:   a34eb51           # round-7 fork point (main HEAD 2026-11-03); round-4 stack fork: fab08ed; round-1..3: bbb5d81
-chainTip:        stevevitali/r7dem-4b-demo-spa # R7DEM.4b PR #254 (row 220a). Prior: stevevitali/r7dem-4-demo-serving # R7DEM.4 PR #253 (row 220). Prior: stevevitali/r7data-1-real-corpus # R7DATA.1 PR #252 (row 219, the H14-signed data commit). Prior: stevevitali/r7dem-3b-runs # R7DEM.3b PR #251. Prior: stevevitali/r7dem-3-snapshot (R7DEM.3 PR #250). Prior: stevevitali/r7dem-2c-ledgers (R7DEM.2c PR #249). Prior: stevevitali/r7dem-2b-letters (R7DEM.2b PR #248); stevevitali/r7dem-2a-claim-ledgers # R7DEM.2a PR #247. Prior: stevevitali/r7dem-1b-local-export (R7DEM.1b PR #246) Prior: stevevitali/r7dem-1-corpus-export (R7DEM.1 PR #245); stevevitali/r7copy-0-run-card (R7COPY.0 PR #244); stevevitali/r7fix-1-pane-stopgap (R7FIX.1 PR #243); stevevitali/r7ro-1-read-only (R7RO.1 PR #242); stevevitali/r7kit-1-control-base (R7KIT.1 PR #241); stevevitali/r7open-1-open-round (R7OPEN.1 PR #240); stevevitali/r7-demo-spec (planning/decompose); stevevitali/r6dep-4-limiter-deploy (prod last recorded 4938b8e)
+chainTip:        stevevitali/r7dem-5-side-effects # R7DEM.5 PR #255 (row 221). Prior: stevevitali/r7dem-4b-demo-spa # R7DEM.4b PR #254 (row 220a). Prior: stevevitali/r7dem-4-demo-serving # R7DEM.4 PR #253 (row 220). Prior: stevevitali/r7data-1-real-corpus # R7DATA.1 PR #252 (row 219, the H14-signed data commit). Prior: stevevitali/r7dem-3b-runs # R7DEM.3b PR #251. Prior: stevevitali/r7dem-3-snapshot (R7DEM.3 PR #250). Prior: stevevitali/r7dem-2c-ledgers (R7DEM.2c PR #249). Prior: stevevitali/r7dem-2b-letters (R7DEM.2b PR #248); stevevitali/r7dem-2a-claim-ledgers # R7DEM.2a PR #247. Prior: stevevitali/r7dem-1b-local-export (R7DEM.1b PR #246) Prior: stevevitali/r7dem-1-corpus-export (R7DEM.1 PR #245); stevevitali/r7copy-0-run-card (R7COPY.0 PR #244); stevevitali/r7fix-1-pane-stopgap (R7FIX.1 PR #243); stevevitali/r7ro-1-read-only (R7RO.1 PR #242); stevevitali/r7kit-1-control-base (R7KIT.1 PR #241); stevevitali/r7open-1-open-round (R7OPEN.1 PR #240); stevevitali/r7-demo-spec (planning/decompose); stevevitali/r6dep-4-limiter-deploy (prod last recorded 4938b8e)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)

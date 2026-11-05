@@ -17,6 +17,7 @@ import {
   type FeedDensityTab,
   type FeedLabelMaps,
 } from "@rhema/ide";
+import { isDemo } from "../demo.js";
 import type { IdeChromeFeed } from "./chrome-data.js";
 
 export interface IdeFeedOpts {
@@ -173,6 +174,10 @@ export function useIdeFeed(opts: IdeFeedOpts): void {
     };
 
     if (typeof EventSource === "undefined") return;
+    // R7DEM.5 (REQ-DWEB-7; R3 §4 row 1) — belt-and-braces: a demo twin never carries `feed`
+    // (activeRun is always null), so this arm is unreachable today — but if a future demo
+    // shape ever supplies one, the read-only demo still opens NO EventSource, ever.
+    if (isDemo()) return;
     const src = new EventSource(
       `${feedEventsUrl}${feedEventsUrl.includes("?") ? "&" : "?"}after=${lastSeq}`,
     );

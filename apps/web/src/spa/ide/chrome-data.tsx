@@ -199,6 +199,7 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
                   artifact: (id) => `/p/${slug}/a/${id}`,
                   draft: (n) => `/p/${slug}/v/${n}`,
                   run: (id) => `/p/${slug}/r/${id}`,
+                  figure: (id) => `/p/${slug}/figures/${id}`,
                 }}
                 labels={filesLabels}
               />

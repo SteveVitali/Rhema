@@ -16,6 +16,7 @@ import { IdeShell } from "@rhema/ui";
 import { COPY, IDE_CHROME_LABELS, IDE_FEED_LABELS } from "../../copy.js";
 import { getSpaBoot, isSpaEnabled } from "../boot.js";
 import { DemoBanner } from "../demo-banner.js";
+import { DemoEffects } from "../demo-effects.js";
 import { feedLabelsQuery, sessionQuery } from "../queries.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
 import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
@@ -39,6 +40,8 @@ export function IdeProjectLayout({ project }: { project: string }): ReactNode {
     <IdeChromeDataProvider>
       {framed ? (
         <IdeChrome slug={project} banner={demo != null ? <DemoBanner demo={demo} /> : undefined}>
+          {/* R7DEM.5 — the write backstop + lazy tour seam mount once per demo document. */}
+          {demo != null ? <DemoEffects /> : null}
           <Outlet />
         </IdeChrome>
       ) : (
@@ -46,6 +49,7 @@ export function IdeProjectLayout({ project }: { project: string }): ReactNode {
           {/* R7DEM.4b — the unframed demo leaves (figures) carry the banner in flow; framed
               leaves receive it through IdeShell's `banner` slot inside `.ide`. */}
           {demo != null ? <DemoBanner demo={demo} /> : null}
+          {demo != null ? <DemoEffects /> : null}
           <Outlet />
         </>
       )}

@@ -166,6 +166,12 @@ export function mountDemo(app: Hono, deps: WebDeps): void {
           if (typeof v !== "function") return v;
           return (...args: unknown[]) => {
             try {
+              // R7DEM.5 (REQ-DWEB-7/DWEB-3) — the recording proxy's DataSource reach: only
+              // IMPLEMENTED methods count as "reached" (a call that hits the throwing seam is
+              // the surface degrading gracefully, not a read the demo serves). The walk's
+              // reach report is then exactly `demoDataSource`'s working set — an implemented
+              // method it never invokes leaves the Pick (DWEB-3's amended contract).
+              if (prop in t) deps.demoDataSourceTrace?.(String(prop));
               const out = (v as (...a: unknown[]) => unknown)(...args);
               if (out instanceof Promise) {
                 return out.catch((e) => {

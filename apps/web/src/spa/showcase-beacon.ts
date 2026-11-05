@@ -2,6 +2,7 @@
 // (`DossierArticle` emits the verbatim `<script>` under SSR; innerHTML scripts never execute under
 // a React mount, so the leaf calls this hook instead — the gate-presence.ts precedent).
 import { useEffect } from "react";
+import { isDemo } from "./demo.js";
 
 /**
  * P1.17 (§3.5) — `showcase.finding_anchor_viewed`: only the client observes the scroll onto the
@@ -11,6 +12,10 @@ import { useEffect } from "react";
 export function useShowcaseAnchorBeacon(findingId: string | undefined): void {
   useEffect(() => {
     if (findingId == null) return;
+    // R7DEM.5 (REQ-DWEB-7; R3 §4 row 9) — inert today (demo rows are showcase:false, so
+    // `findingId` is always undefined here) but gated explicitly: the `/a/acq` funnel beacon
+    // must never fire on a demo surface.
+    if (isDemo()) return;
     const el = document.querySelector(`[data-finding="${findingId}"]`);
     if (!(el instanceof Element)) return;
     let sent = false;

@@ -168,7 +168,6 @@ export function demoDataSource(root: string): DataSource {
   };
 
   const impl = {
-    checkSession: async () => false,
     listProjects: () => rows(),
     getEditorDoc: (_s: SessionHeaders, projectId: string, draftId: string) =>
       chunk<EditorDocDto>(essayFor(projectId), "editor-doc", draftId),
@@ -183,7 +182,12 @@ export function demoDataSource(root: string): DataSource {
     getVersionDiff: (_s: SessionHeaders, projectId: string, n: string, m: string) =>
       chunk<VersionDiffDto>(essayFor(projectId), "version-diff", `${n}:${m}`),
     getArtifactPage: (_s: SessionHeaders, projectId: string, artifactId: string) =>
-      chunk<EditorDocDto>(essayFor(projectId), "artifact-page", artifactId),
+      // R7DEM.5 — decode the `--`-flattened route id back to the corpus path (see `getFiles`).
+      chunk<EditorDocDto>(
+        essayFor(projectId),
+        "artifact-page",
+        artifactId.split("--").join("/"),
+      ),
     getWhatChanged: (_s: SessionHeaders, projectId: string, cid: string) =>
       chunk<WhatChangedDto>(essayFor(projectId), "what-changed", cid),
     getDossier: (_s: SessionHeaders, args: { projectSlug: string; runId: string }) =>
@@ -214,8 +218,36 @@ export function demoDataSource(root: string): DataSource {
         Awaited<ReturnType<DataSource["getRunReport"]>>
       >;
     },
-    getFiles: (_s: SessionHeaders, projectId: string) =>
-      chunk<FilesDto>(essayFor(projectId), "files", ""),
+    getFiles: async (_s: SessionHeaders, projectId: string) => {
+      const dto = await chunk<FilesDto>(essayFor(projectId), "files", "");
+      // R7DEM.5 — the `/a/$artifactId` route is single-segment; corpus-relative artifact ids
+      // carry `/`. The demo flattens them to a `--`-joined form everywhere a link is built
+      // (`files()` here; `getArtifactPage` decodes on the way back in).
+      const flat = (id: string) => (id.includes("/") ? id.split("/").join("--") : id);
+      // R7DEM.5 — a `kind:"figure"` row's binary asset has no artifact page (it rides the
+      // figure card + the asset route): emit `figureId` (basename minus extension) so the
+      // row links the card, never a `/a/…png` 404.
+      const figureId = (r: { kind: string; artifactId: string }): string | undefined =>
+        r.kind === "figure"
+          ? (r.artifactId.split("/").pop() ?? r.artifactId).replace(/\.[a-z]+$/i, "")
+          : undefined;
+      return {
+        ...dto,
+        sections: dto.sections.map((s) => ({
+          ...s,
+          rows: s.rows.map((r) => ({
+            ...r,
+            artifactId: flat(r.artifactId),
+            ...(figureId(r) != null ? { figureId: figureId(r) } : {}),
+          })),
+          advancedRows: s.advancedRows.map((r) => ({
+            ...r,
+            artifactId: flat(r.artifactId),
+            ...(figureId(r) != null ? { figureId: figureId(r) } : {}),
+          })),
+        })),
+      };
+    },
     listFigures: async (_s: SessionHeaders, projectId: string) => {
       const essay = essayFor(projectId);
       const ix = await index(essay);
@@ -266,13 +298,14 @@ export function demoDataSource(root: string): DataSource {
     // The demo's palette search endpoint answers an empty result set (R3 §2 — server-side).
     searchPalette: async () => [],
     postAnalyticsEvent: async () => ({ ok: true, recorded: false }),
-    postAcquisitionEvent: async () => ({ ok: true, recorded: false }),
+    // R7DEM.5 — the walk's reach report names `checkSession` + `postAcquisitionEvent` as
+    // implemented-but-never-invoked: they leave the Pick (DWEB-3's amended contract — the
+    // implemented set is EXACTLY the set the walk records) and become DemoUnsupported.
   };
 
   // `Pick` over the enumerated set — every other key is a throwing DemoUnsupported proxy.
   const target = impl as Pick<
     DataSource,
-    | "checkSession"
     | "listProjects"
     | "getEditorDoc"
     | "resolveEditorDraft"
@@ -296,7 +329,6 @@ export function demoDataSource(root: string): DataSource {
     | "listVoices"
     | "searchPalette"
     | "postAnalyticsEvent"
-    | "postAcquisitionEvent"
   >;
   return new Proxy(target, {
     get(t, prop, receiver) {

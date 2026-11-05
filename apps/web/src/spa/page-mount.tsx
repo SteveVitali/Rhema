@@ -51,6 +51,7 @@ import {
 } from "./page-collab.js";
 import { pageSessionRegistry, type PageSessionRegistry } from "./page-sessions.js";
 import type { SourceModeHandle } from "./page-source-mode.js";
+import { isDemo } from "./demo.js";
 import { COPY } from "../copy.js";
 
 const PROV_FLUSH_MS = 600; // the provenance capture's piggyback cadence (island verbatim)
@@ -451,7 +452,13 @@ export function PageMount(props: PageMountProps): ReactNode {
       // §6.3 lock poll — a run grabbing/releasing the draft while the page sits open. Visible-only,
       // same-origin, unchanged route (REQ-ED-11): the poll's answer can rebase the draft (a frozen
       // head's working child), flip the lock, resync the rail, and refresh the venue meter.
+      // R7DEM.5 (REQ-DWEB-7; R3 §4 row 5) — the demo mounts this whole chrome block collab-less,
+      // and `/p/demo~*/edit/:d/doc` is NOT on the demo allowlist: the poll would 404-poll a
+      // read-only record forever. `isDemo()` skips the interval, the visibility re-poll and
+      // the fetch itself — a demo draft's lock state can never change mid-visit anyway.
+      const demoMount = isDemo();
       const poll = async () => {
+        if (demoMount) return;
         if (document.visibilityState !== "visible") return;
         try {
           const res = await fetch(docUrl, { credentials: "same-origin", headers: { accept: "application/json" } });
@@ -501,6 +508,10 @@ export function PageMount(props: PageMountProps): ReactNode {
         lastMintAt = now;
         // R7RO.1 — a read-only mount has NO collab wire: minting would paint the syncing lie
         // with no transport beneath it. The chord is a no-op before any request is made.
+        // R7DEM.5 (R3 §4 row 6) — in the demo the chord is a no-op PLUS the honest read-only
+        // pill (`data-label-readonly` — never the "syncing" lie the unwired setPill would paint).
+        // A demo mount is collab-less, so `wire` is always null beneath this pill.
+        if (demoMount) setPill({ state: "readonly", queued: 0 });
         if (wire == null) return;
         // SPA.25 — a restore point must cover the pending source buffer (design/30).
         sourceRef.current?.commitNow();
@@ -526,7 +537,7 @@ export function PageMount(props: PageMountProps): ReactNode {
       window.addEventListener("keydown", onKeydown);
       window.addEventListener("rhema:restore-point", mintRestorePoint);
 
-      const pollTimer = window.setInterval(() => void poll(), LOCK_POLL_MS);
+      const pollTimer = demoMount ? -1 : window.setInterval(() => void poll(), LOCK_POLL_MS);
       const onVisibility = () => {
         if (document.visibilityState === "hidden") {
           // REQ-ED-5 — the pending provenance flush lands with the `blur` trigger + provider flush.
