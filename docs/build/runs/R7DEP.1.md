@@ -403,3 +403,10 @@ subnetwork is the only pulumi resource left. **Carry:** re-run
 orphan sweep + `rm pr-259`. Recorded; not claimed complete.
 - checks: `check-build-memory.sh` warnings-only (legacy classes, 0 violations);
   `check-append-only.mjs --base stevevitali/r7fix-2-demo-legs` OK.
+
+## Part B — close
+
+- **Closed:** 2026-11-05T02:5xZ (`date -u`).
+- **PR:** #261 (`stevevitali/r7dep-1b-prod` → base `stevevitali/r7fix-2-demo-legs`; unmerged — mergePolicy OPERATOR).
+- **ci:** `pending #261` at report time — `fast-path` PASS 48s; `typecheck / lint / unit` running (run 41956703273; JSON `logs/ci-R7DEP.1-partb.json` written by the bounded boundary poll).
+- **Carry (honest, $0):** `rhema-pr-259-private-app` subnetwork remains — GCP's auto-created `serverless-ipv4-cloudrun-1793821352011819136` address reservation holds it; every other resource (147) destroyed. Re-run `preview-stack.mjs destroy pr-259` then `rm pr-259` once the reservation drains (~hour).
