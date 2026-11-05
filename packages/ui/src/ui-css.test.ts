@@ -45,9 +45,27 @@ describe("uiCss() (REQ-KIT-2/5)", () => {
       ".ui-sheet",
       ".ui-toast",
       ".ui-visually-hidden",
+      // 225a_R7KIT.2b — the form/menu primitives.
+      ".ui-icon",
+      ".ui-popover",
+      ".ui-select-",
+      ".ui-tabs-",
+      ".ui-checkbox",
+      ".ui-radio-",
+      ".ui-switch",
+      ".ui-command-",
+      ".ui-field",
+      ".ui-empty",
+      ".ui-accordion-",
     ]) {
       expect(css, cls).toContain(cls);
     }
+  });
+
+  it("keeps the static chip pointer-free (C6) — only the button variant gets cursor", () => {
+    const chipRule = css.split("\n").find((r) => r.startsWith(".ui-chip {"))!;
+    expect(chipRule).not.toContain("cursor");
+    expect(css).toContain("button.ui-chip { cursor: pointer;");
   });
 
   it("moved-export rules keep the former inline declarations (rendered behaviour unchanged)", () => {

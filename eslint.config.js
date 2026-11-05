@@ -26,6 +26,20 @@ const nodeGlobals = {
   fetch: "readonly",
 };
 
+// REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — the `rhema/no-raw-controls` per-file enablement list.
+// The rule bans raw `<button|input|select|textarea>` and inline spacing/type/colour/radius
+// literals across `packages/ui/src/**` (except `primitives/**` — the kit itself) and
+// `apps/web/src/**/*.tsx`. It is authored OFF: EMPTY here; each KIT-3 batch appends the files it
+// migrated (232 → chat-panel; 234 → batch c1; 240/240a → batch a; 241 → batch b; 242 → batch c2;
+// 243/243a → batch d), and 249_R7GUARD.1 collapses the list into one global `error` block over
+// the scope. The no-JS/SSR exemption list is committed data at
+// `tools/eslint-plugin-rhema/rules/no-raw-controls-exemptions.js` (exposed as
+// `rhema.noRawControlsExemptions`); each entry names a file or component and its KIT-1-fallback
+// reason (RV-36).
+const NO_RAW_CONTROLS_ENABLED = [
+  // empty at authoring — 249's sweep + the batches' appends prove the mechanism works.
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -293,6 +307,26 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — `rhema/no-raw-controls` registered OFF over its whole
+    // scope: `packages/ui/src/**` except `primitives/**`, plus `apps/web/src/**/*.tsx`. The
+    // per-file enablement block below turns it `error` for each migrated file; the rule reads
+    // the committed no-JS/SSR exemption list by default (`options.exemptions` overrides).
+    files: ["packages/ui/src/**", "apps/web/src/**/*.tsx"],
+    ignores: ["packages/ui/src/primitives/**"],
+    rules: { "rhema/no-raw-controls": "off" },
+  },
+  // The per-file enablement list (empty at authoring — the block appears once the first batch
+  // lands; 249 collapses it into one global `error` block over the scope above).
+  ...(NO_RAW_CONTROLS_ENABLED.length === 0
+    ? []
+    : [
+        {
+          files: NO_RAW_CONTROLS_ENABLED,
+          ignores: ["packages/ui/src/primitives/**"],
+          rules: { "rhema/no-raw-controls": "error" },
+        },
+      ]),
   {
     // `src/spa/env.ts` is the single sanctioned import.meta.env reader (REQ-SAFE-8); process.env
     // stays banned there too.
