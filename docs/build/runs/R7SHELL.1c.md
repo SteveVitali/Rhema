@@ -126,12 +126,37 @@ Budget: ~650 changed lines excl. generated/fixtures; entry delta ≤ 15 kB gz (R
 
 ## Gap table
 
-(filled at Phase 4)
+| Req/AC | Required layer | Achieved layer | Status | Evidence |
+|---|---|---|---|---|
+| `GET /search` RLS-bound tenant read | engineered | engineered | met | `search.ts` shared `queryProjectSearchDocs` on `deps.db` (`withTenant`); mutation leg in `search.test.ts` proves the predicate; rls-catalog 6/6 |
+| Probe query-bearing legs | engineered | engineered | met | `two-tenant-probe.ts` MARKER_T_SEARCHDOC + foreign-q/foreign-project/own-sanity legs; `two-tenant-probe.test.ts` 1/1 |
+| `/search` probed not exempted | engineered | engineered | met | census walks `app.routes` — `/search` enters `GET` legs automatically |
+| BFF deep links, no `/edit/` | engineered | engineered | met | `bff.test.ts` mapping + not-contain assertion; `/p/:project/palette-search` retired |
+| ⌘K on every signed-in page + scopes | engineered | engineered | met | `palette.dom.test.tsx` (workspace + project scope + Search-all widen) |
+| Zero non-GET + snippet escaping | engineered | engineered | met | `palette.dom.test.tsx` fetch-recorder + planted-`<b>` test |
+| Lazy chunk + entry delta ≤ 15 kB | engineered | engineered | met | `check-spa-entry-graph` cmdk/palette denial + test; `check:spa-budget` +11.0 kB |
+| DOM-contract same change | engineered | engineered | met | `check:dom-contract` OK |
+| Demo-boot read-free | engineered | engineered | met | `palette.dom.test.tsx` demo test — ⌘K inert, zero search calls |
+| Stage-B deployed walk | staging-verified | met-engineered → deferred | open | `D-R7SHELL.1c-1` (owner 250) |
+| Universal gate (verify/tests/REQ-ids/ADRs/records) | agentic | agentic | met | this ledger + PR #266 + ADR-132 + BUILD_INDEX 267 + LEDGER |
 
 ## Evidence log
 
-(filled at Phase 5)
+- `pnpm turbo build lint typecheck` (touched closure: contracts/api-client/api/ui/web/integration-tests) — green.
+- `pnpm test` — 6,853 pass / 4 skip / 0 fail (one flaky `demo-tour-legs.local` @390 occlusion — passes on re-run, unchanged file on base).
+- `apps/api/src/search.test.ts` — 10/10 incl. the workspace-predicate mutation leg.
+- `integration/src/two-tenant-probe.test.ts` — 1/1 (query-bearing legs zero findings).
+- `apps/web/src/bff.test.ts` — 225/225; `apps/web/src/spa/palette.dom.test.tsx` — 10/10;
+  `ide-chrome.dom.test.tsx` 41/41; `app-shell.dom.test.tsx` 11/11; web suite green.
+- `packages/security-checks/src/rls-catalog.test.ts` — 6/6; `check:dom-contract` OK;
+  `check:spa-budget` OK (entry **+11.0 kB**, palette 7.7 kB async); `check-spa-entry-graph` OK (9/9 incl. cmdk planted-map case).
+- `node docs/build/tools/check-append-only.mjs --base stevevitali/r7shell-1b-headers` — OK.
+- `check-build-memory.sh` — 0 violations (16 legacy warnings, same count as base).
+- Commits: `626909b2` impl+records · `eaab25c2` BUILD_INDEX 267 + LEDGER · `7b3d4a6c` ADR revisit + adr-index.
+- PR #266 open vs `stevevitali/r7shell-1b-headers` — unmerged (OPERATOR). CI read at exact head: pending → see Evidence report.
 
 ## Evidence report
 
-(filled at Phase 6)
+- Head `7b3d4a6c` — CI run 42057029695 pending at close; first head `626909b2` run 42056600661 cancelled by supersede; `eaab25c2` run 42056670386 covered the BUILD_INDEX/LEDGER head (in progress at close). Boundary re-read owed on the operator/CI side or next ticket's first read (D8 ledger-note rule).
+- Layer achieved: **engineered** (Stage A only per GD-PREVIEW.R7; no preview, $0).
+- Deferrals: `D-R7SHELL.1c-1` OPEN (owner 250_R7DEP.2). Carries: 231 T5 discharged; 248 demo=hidden.
