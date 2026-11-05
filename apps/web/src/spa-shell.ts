@@ -59,6 +59,7 @@ export interface SpaShellDeps {
   readonly warn?: (msg: string) => void;
 }
 
+
 /** The `<dir>/.vite/manifest.json` the Vite build emits next to `assets/` (vite.config.ts). */
 export const DEFAULT_SPA_ASSET_ROOT = fileURLToPath(new URL("../public/spa/", import.meta.url));
 
@@ -143,9 +144,7 @@ export async function loadSpaManifest(
     }
   }
   if (entry == null) {
-    warn(
-      `[rhema] SPA manifest missing or corrupt at ${manifestPath} — shell served without entry tags`,
-    );
+    warn(`[rhema] SPA manifest missing or corrupt at ${manifestPath} — shell served without entry tags`);
     return EMPTY_ENTRY;
   }
   return entry;

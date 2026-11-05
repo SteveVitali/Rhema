@@ -121,11 +121,7 @@ const disabledItemStyle: CSSProperties = {
 function RowMenuItem({ item }: { item: RowActionView }): ReactNode {
   if (item.disabledReason) {
     return (
-      <span
-        style={disabledItemStyle}
-        title={item.disabledReason}
-        data-disabled-reason={item.disabledReason}
-      >
+      <span style={disabledItemStyle} title={item.disabledReason} data-disabled-reason={item.disabledReason}>
         {item.label}
       </span>
     );
@@ -220,24 +216,12 @@ export function ProjectRow({ row }: { row: ProjectRowView }): ReactNode {
           {row.title}
         </a>
         {row.versionLabel ? (
-          <span
-            style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }}
-            className="tnum"
-          >
+          <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }} className="tnum">
             {row.versionLabel}
           </span>
         ) : null}
         {row.statusLine ? (
-          <div
-            style={{
-              color: "var(--shell-fg-muted)",
-              fontSize: "12px",
-              marginTop: "2px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <div style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {row.statusLine}
           </div>
         ) : null}
@@ -284,11 +268,7 @@ export function ProjectRow({ row }: { row: ProjectRowView }): ReactNode {
             <RowMenuItem key={item.key} item={item} />
           ))}
           {row.voiceFormAction && row.voiceOptions ? (
-            <form
-              method="post"
-              action={row.voiceFormAction}
-              style={{ margin: 0, padding: "5px 10px" }}
-            >
+            <form method="post" action={row.voiceFormAction} style={{ margin: 0, padding: "5px 10px" }}>
               <select
                 name="personaId"
                 defaultValue={row.currentPersonaId ?? ""}
@@ -397,11 +377,7 @@ export function ProjectGroupList({
                 <span
                   aria-hidden="true"
                   data-collapsed-marker="true"
-                  style={{
-                    display: "inline-block",
-                    marginRight: "6px",
-                    transition: "transform 0.15s",
-                  }}
+                  style={{ display: "inline-block", marginRight: "6px", transition: "transform 0.15s" }}
                 >
                   ▸
                 </span>

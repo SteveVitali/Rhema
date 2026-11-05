@@ -54,66 +54,29 @@ const preStyle = {
 export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
   return (
     <div>
-      <p
-        style={{
-          color: "var(--shell-fg-muted)",
-          fontSize: "13px",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
         {props.countLine}
       </p>
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
         <section style={paneStyle} aria-label={props.labels.sourceHeading}>
-          <h2
-            style={{
-              fontSize: "12px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--shell-fg-muted)",
-              marginTop: 0,
-            }}
-          >
+          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
             {props.labels.sourceHeading} · {props.sourceLabel}
           </h2>
           <pre style={preStyle}>{props.sourceText}</pre>
         </section>
         <section style={paneStyle} aria-label={props.labels.convertedHeading}>
-          <h2
-            style={{
-              fontSize: "12px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--shell-fg-muted)",
-              marginTop: 0,
-            }}
-          >
+          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
             {props.labels.convertedHeading}
           </h2>
           <pre style={preStyle}>{props.convertedMarkdown}</pre>
         </section>
       </div>
 
-      <ConversionNotesCard
-        warnings={props.warnings}
-        heading={props.labels.warningsHeading}
-        empty={props.labels.noWarnings}
-      />
+      <ConversionNotesCard warnings={props.warnings} heading={props.labels.warningsHeading} empty={props.labels.noWarnings} />
 
       {/* SPA.6 — renderer-agnostic hooks (REQ-VFY-4): journeys locate the create surface by
           `data-conversion-form`/`data-conversion-action`, never the POST action string. */}
-      <form
-        method="post"
-        action={props.actions.formAction}
-        data-conversion-form="true"
-        style={{
-          marginTop: "16px",
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+      <form method="post" action={props.actions.formAction} data-conversion-form="true" style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
         {Object.entries(props.actions.hiddenFields ?? {}).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
@@ -122,16 +85,7 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           name="action"
           value="create"
           data-conversion-action="create"
-          style={{
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "none",
-            background: "var(--accent)",
-            color: "var(--shell-bg)",
-            fontSize: "14px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+          style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
         >
           {props.actions.createLabel}
         </button>
@@ -140,21 +94,11 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           name="action"
           value="fix_now"
           data-conversion-action="fix_now"
-          style={{
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "1px solid var(--shell-border)",
-            background: "var(--shell-raised)",
-            color: "var(--shell-fg)",
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
+          style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}
         >
           {props.actions.fixNowLabel}
         </button>
-        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
-          {props.labels.fixNowNote}
-        </span>
+        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{props.labels.fixNowNote}</span>
       </form>
     </div>
   );
@@ -173,13 +117,7 @@ export function ConversionNotesCard({
   return (
     <section
       aria-label={heading}
-      style={{
-        marginTop: "16px",
-        border: "1px solid var(--shell-border)",
-        borderRadius: "8px",
-        padding: "12px",
-        background: "var(--shell-surface)",
-      }}
+      style={{ marginTop: "16px", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px", background: "var(--shell-surface)" }}
     >
       <h3 style={{ fontSize: "13px", margin: "0 0 8px", color: "var(--shell-fg)" }}>{heading}</h3>
       {warnings.length === 0 ? (
@@ -187,20 +125,12 @@ export function ConversionNotesCard({
       ) : (
         <ul style={{ margin: 0, paddingLeft: "18px" }}>
           {warnings.map((w, i) => (
-            <li
-              key={i}
-              style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginBottom: "4px" }}
-            >
-              <span
-                aria-hidden="true"
-                style={{ color: severityColor("minor"), marginRight: "6px" }}
-              >
+            <li key={i} style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginBottom: "4px" }}>
+              <span aria-hidden="true" style={{ color: severityColor("minor"), marginRight: "6px" }}>
                 •
               </span>
               {w.message}
-              {w.blockId ? (
-                <span style={{ color: "var(--shell-fg-faint)" }}> ({w.blockId})</span>
-              ) : null}
+              {w.blockId ? <span style={{ color: "var(--shell-fg-faint)" }}> ({w.blockId})</span> : null}
             </li>
           ))}
         </ul>

@@ -50,28 +50,16 @@ export interface FindingCardProps {
 }
 
 /** A single read-only finding card (§5.7). */
-export function FindingCard({
-  view,
-  labels,
-  obligation,
-  controls,
-  evidence,
-}: FindingCardProps): ReactNode {
+export function FindingCard({ view, labels, obligation, controls, evidence }: FindingCardProps): ReactNode {
   const provisional = view.provisional;
-  const showControls =
-    controls != null &&
-    canDispose({ provisional: view.provisional, disposition: view.disposition ?? null });
+  const showControls = controls != null && canDispose({ provisional: view.provisional, disposition: view.disposition ?? null });
   return (
     <article
       data-finding={view.id}
       data-severity={view.severity}
       data-kind={view.kind}
       data-provisional={provisional ? "true" : "false"}
-      data-can-dispose={
-        canDispose({ provisional: view.provisional, disposition: view.disposition ?? null })
-          ? "true"
-          : "false"
-      }
+      data-can-dispose={canDispose({ provisional: view.provisional, disposition: view.disposition ?? null }) ? "true" : "false"}
       style={{
         borderLeft: `3px solid ${severityColor(view.severity)}`,
         border: "1px solid var(--paper-rule)",
@@ -84,86 +72,40 @@ export function FindingCard({
         opacity: provisional ? 0.85 : 1,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          marginBottom: "4px",
-        }}
-      >
-        <span style={{ fontSize: "11px", fontWeight: 600, color: severityColor(view.severity) }}>
-          {labels.severityLabel(view.severity)}
-        </span>
-        <span style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>
-          · {labels.kindLabel(view.kind)}
-        </span>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
+        <span style={{ fontSize: "11px", fontWeight: 600, color: severityColor(view.severity) }}>{labels.severityLabel(view.severity)}</span>
+        <span style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>· {labels.kindLabel(view.kind)}</span>
         {view.origin === "both" ? (
-          <span
-            data-corroborated="true"
-            title="corroborated by the second read"
-            style={{ fontSize: "11px", color: "var(--state-ready)" }}
-          >
+          <span data-corroborated="true" title="corroborated by the second read" style={{ fontSize: "11px", color: "var(--state-ready)" }}>
             ✓✓
           </span>
         ) : null}
         {provisional ? (
-          <span
-            data-provisional-label
-            style={{ fontSize: "11px", color: "var(--shell-fg-muted)", fontStyle: "italic" }}
-          >
+          <span data-provisional-label style={{ fontSize: "11px", color: "var(--shell-fg-muted)", fontStyle: "italic" }}>
             {labels.provisionalLabel}
           </span>
         ) : null}
         {obligation ? <ObligationChip state={obligation.state} label={obligation.label} /> : null}
       </div>
-      <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--paper-fg)" }}>
-        {view.title}
-      </div>
-      <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>
-        {view.body}
-      </div>
+      <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--paper-fg)" }}>{view.title}</div>
+      <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>{view.body}</div>
       {evidence ? (
         <div data-finding-evidence="true" style={{ marginTop: "6px", fontSize: "12px" }}>
           {evidence.verdictLabel != null ? (
-            <span
-              data-evidence-verdict="true"
-              style={{ fontWeight: 600, color: "var(--paper-fg)", marginRight: "6px" }}
-            >
+            <span data-evidence-verdict="true" style={{ fontWeight: 600, color: "var(--paper-fg)", marginRight: "6px" }}>
               {evidence.verdictLabel}
             </span>
           ) : null}
           <ul style={{ listStyle: "none", padding: 0, margin: "4px 0 0" }}>
             {evidence.urls.map((u) => (
               <li key={u.url} style={{ color: "var(--paper-fg-muted)", padding: "1px 0" }}>
-                <a href={u.url} style={{ color: "var(--accent)" }}>
-                  {u.url}
-                </a>
-                {u.accessedAt != null && labels.accessedLabel ? (
-                  <> · {labels.accessedLabel(u.accessedAt)}</>
-                ) : null}
+                <a href={u.url} style={{ color: "var(--accent)" }}>{u.url}</a>
+                {u.accessedAt != null && labels.accessedLabel ? <> · {labels.accessedLabel(u.accessedAt)}</> : null}
                 {u.fetched && labels.fetchedLabel ? (
                   u.retrievedBy === "search" ? (
-                    <>
-                      {" "}
-                      <span
-                        data-fetched-chip="search"
-                        style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}
-                      >
-                        {labels.searchResultLabel ?? labels.fetchedLabel}
-                      </span>
-                    </>
+                    <> <span data-fetched-chip="search" style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>{labels.searchResultLabel ?? labels.fetchedLabel}</span></>
                   ) : (
-                    <>
-                      {" "}
-                      <span
-                        data-fetched-chip="true"
-                        style={{ fontSize: "11px", color: "var(--state-ready)" }}
-                      >
-                        {labels.fetchedLabel} ✓
-                      </span>
-                    </>
+                    <> <span data-fetched-chip="true" style={{ fontSize: "11px", color: "var(--state-ready)" }}>{labels.fetchedLabel} ✓</span></>
                   )
                 ) : null}
               </li>
@@ -172,18 +114,11 @@ export function FindingCard({
         </div>
       ) : null}
       {view.disposition && labels.dispositionLabel ? (
-        <div
-          data-disposition={view.disposition.kind}
-          style={{ marginTop: "6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}
-        >
+        <div data-disposition={view.disposition.kind} style={{ marginTop: "6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
           {labels.dispositionLabel(view.disposition.kind, view.disposition.applied)}
         </div>
       ) : null}
-      {showControls ? (
-        <div data-disposition-controls="true" style={{ marginTop: "8px" }}>
-          {controls}
-        </div>
-      ) : null}
+      {showControls ? <div data-disposition-controls="true" style={{ marginTop: "8px" }}>{controls}</div> : null}
     </article>
   );
 }
@@ -194,13 +129,7 @@ export interface ConflictRowLabels {
 }
 
 /** A reconciliation conflict row (REQ-IDE-15 amended): pre-triaged then reconciliation-rejected. */
-export function ConflictRow({
-  conflict,
-  labels,
-}: {
-  conflict: ReconciliationConflict;
-  labels: ConflictRowLabels;
-}): ReactNode {
+export function ConflictRow({ conflict, labels }: { conflict: ReconciliationConflict; labels: ConflictRowLabels }): ReactNode {
   return (
     <div
       data-conflict-row={conflict.findingId}
@@ -217,9 +146,7 @@ export function ConflictRow({
       }}
     >
       <div style={{ fontWeight: 600 }}>{conflict.title}</div>
-      <div style={{ color: "var(--shell-fg-muted)", marginTop: "2px" }}>
-        {labels.conflictLine(conflict.userDisposition)}
-      </div>
+      <div style={{ color: "var(--shell-fg-muted)", marginTop: "2px" }}>{labels.conflictLine(conflict.userDisposition)}</div>
     </div>
   );
 }
@@ -237,9 +164,7 @@ export interface FindingsListProps {
   /** rejected findings with no user disposition (collapsed, promotable — §5.7). */
   readonly collapsedRejected?: readonly FindingView[];
   readonly labels: FindingsListLabels;
-  readonly obligationFor?: (
-    view: FindingView,
-  ) => { state: ObligationStateKind; label: string } | undefined;
+  readonly obligationFor?: (view: FindingView) => { state: ObligationStateKind; label: string } | undefined;
   /**
    * PRB.05 — the disposition verb controls for a finding (Accept/Adapt/Rebut/Defer/Escalate + note +
    * reason chips). Rendered only when `canDispose` permits (never on provisional or frozen cards).
@@ -255,31 +180,13 @@ export interface FindingsListProps {
 }
 
 /** The list-first findings surface: grouped cards (Whole piece heads the list), conflict rows, rejected group. */
-export function FindingsList({
-  groups,
-  conflicts,
-  collapsedRejected,
-  labels,
-  obligationFor,
-  controlsFor,
-  promoteActionFor,
-  evidenceFor,
-}: FindingsListProps): ReactNode {
+export function FindingsList({ groups, conflicts, collapsedRejected, labels, obligationFor, controlsFor, promoteActionFor, evidenceFor }: FindingsListProps): ReactNode {
   return (
     <div data-findings-list="true">
       {conflicts && conflicts.length > 0 ? (
         <section data-conflicts="true" style={{ marginBottom: "16px" }}>
           {labels.conflictsHeading ? (
-            <h3
-              style={{
-                fontSize: "13px",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                color: "var(--sev-major)",
-              }}
-            >
-              {labels.conflictsHeading}
-            </h3>
+            <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--sev-major)" }}>{labels.conflictsHeading}</h3>
           ) : null}
           {conflicts.map((c) => (
             <ConflictRow key={c.findingId} conflict={c} labels={labels} />
@@ -289,25 +196,9 @@ export function FindingsList({
 
       {groups.map((g) => (
         <section key={g.key} data-group={g.key} style={{ marginBottom: "16px" }}>
-          <h3
-            style={{
-              fontSize: "13px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--paper-fg-muted)",
-            }}
-          >
-            {g.label}
-          </h3>
+          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{g.label}</h3>
           {g.findings.map((v) => (
-            <FindingCard
-              key={v.id}
-              view={v}
-              labels={labels}
-              obligation={obligationFor?.(v)}
-              controls={controlsFor?.(v)}
-              {...(evidenceFor ? { evidence: evidenceFor(v) } : {})}
-            />
+            <FindingCard key={v.id} view={v} labels={labels} obligation={obligationFor?.(v)} controls={controlsFor?.(v)} {...(evidenceFor ? { evidence: evidenceFor(v) } : {})} />
           ))}
         </section>
       ))}
@@ -315,52 +206,23 @@ export function FindingsList({
       {collapsedRejected && collapsedRejected.length > 0 ? (
         <section data-rejected-group="true" style={{ marginBottom: "16px" }}>
           {labels.rejectedHeading ? (
-            <h3
-              style={{
-                fontSize: "13px",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                color: "var(--shell-fg-muted)",
-              }}
-            >
-              {labels.rejectedHeading}
-            </h3>
+            <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{labels.rejectedHeading}</h3>
           ) : null}
           {collapsedRejected.map((v) => (
-            <div
-              key={v.id}
-              data-rejected={v.id}
-              style={{ padding: "8px 0", borderBottom: "1px solid var(--paper-rule)" }}
-            >
+            <div key={v.id} data-rejected={v.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--paper-rule)" }}>
               <div style={{ fontSize: "13px", color: "var(--paper-fg)" }}>{v.title}</div>
               {v.reconciliation === "rejected" ? (
-                <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "2px" }}>
-                  {v.body}
-                </div>
+                <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "2px" }}>{v.body}</div>
               ) : null}
               {labels.promoteLabel ? (
                 promoteActionFor ? (
                   <form method="post" action={promoteActionFor(v)} style={{ display: "inline" }}>
-                    <button
-                      type="submit"
-                      data-promotable="true"
-                      style={{
-                        fontSize: "12px",
-                        color: "var(--accent)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                        textDecoration: "underline",
-                      }}
-                    >
+                    <button type="submit" data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
                       {labels.promoteLabel}
                     </button>
                   </form>
                 ) : (
-                  <span data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)" }}>
-                    {labels.promoteLabel}
-                  </span>
+                  <span data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)" }}>{labels.promoteLabel}</span>
                 )
               ) : null}
             </div>

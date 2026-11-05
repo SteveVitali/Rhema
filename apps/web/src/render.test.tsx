@@ -2,13 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderDocument } from "./render.js";
 // SPA.27 — the app-surface elements are deleted; `pageElement`/`notFoundElement` stand in for the
 // app-path legs (the title/head contract is path-driven — the element is incidental).
-import {
-  landingElement,
-  loginElement,
-  showcaseElement,
-  pageElement,
-  notFoundElement,
-} from "./routes.js";
+import { landingElement, loginElement, showcaseElement, pageElement, notFoundElement } from "./routes.js";
 import { COPY } from "./copy.js";
 
 // UX.1 — the document head: a distinct route-aware `<title>` on every route; meta description +
@@ -27,9 +21,7 @@ describe("route-aware document meta (UX.1)", () => {
     expect(title(renderDocument("/showcase", showcaseElement, {}))).toBe("Showcase · Rhēma");
     expect(title(renderDocument("/app", pageElement, {}))).toBe("Projects · Rhēma");
     expect(title(renderDocument("/app/inbox", notFoundElement, {}))).toBe("Inbox · Rhēma");
-    expect(title(renderDocument("/app/settings/preferences", landingElement, {}))).toBe(
-      "Preferences · Rhēma",
-    );
+    expect(title(renderDocument("/app/settings/preferences", landingElement, {}))).toBe("Preferences · Rhēma");
     expect(title(renderDocument("/app/settings", landingElement, {}))).toBe("Settings · Rhēma");
     expect(title(renderDocument("/billing/return", landingElement, {}))).toBe("Billing · Rhēma");
     expect(title(renderDocument("/nope", landingElement, {}))).toBe("Not found · Rhēma");
@@ -63,12 +55,7 @@ describe("route-aware document meta (UX.1)", () => {
   });
 
   it("canonical + og:url emit only when the origin is passed — and strip the query", () => {
-    const withOrigin = renderDocument(
-      "/pricing?x=1",
-      landingElement,
-      {},
-      { origin: "https://rhema.tools/" },
-    );
+    const withOrigin = renderDocument("/pricing?x=1", landingElement, {}, { origin: "https://rhema.tools/" });
     expect(withOrigin).toContain('<link rel="canonical" href="https://rhema.tools/pricing">');
     expect(withOrigin).toContain('<meta property="og:url" content="https://rhema.tools/pricing">');
     const without = renderDocument("/pricing", landingElement, {});
@@ -99,7 +86,7 @@ describe("route-aware document meta (UX.1)", () => {
 });
 
 describe("the all-documents nav counter (REQ-NAVT-1, O2-F18)", () => {
-  it('every SSR document stamps data-nav-count="0" — the reset IS the mechanism detector', () => {
+  it("every SSR document stamps data-nav-count=\"0\" — the reset IS the mechanism detector", () => {
     for (const html of [
       renderDocument("/", landingElement, {}),
       renderDocument("/login", loginElement, {}),

@@ -119,9 +119,7 @@ export function renderDocument(
         `<meta name="twitter:card" content="summary">` +
         `<meta name="twitter:title" content="${escapeHtml(doc.title)}">` +
         `<meta name="twitter:description" content="${escapeHtml(doc.description)}">` +
-        (canonical
-          ? `<link rel="canonical" href="${escapeHtml(canonical)}"><meta property="og:url" content="${escapeHtml(canonical)}">`
-          : "")
+        (canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}"><meta property="og:url" content="${escapeHtml(canonical)}">` : "")
       : "";
   return (
     `<!doctype html><html ${htmlAttrs}>` +
@@ -140,9 +138,5 @@ export function renderDocument(
  * SPA.3's shell, which shares the interpolation discipline).
  */
 export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
