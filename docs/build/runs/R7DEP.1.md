@@ -337,3 +337,56 @@ live view `…/previews/73f7e6bb-…`):
   the program; `0061` applied via the operator path, additive lint PASS in-band.
 
 **Classification: PASS — every GD-DEPLOY.R7 condition-3 criterion holds → `pulumi up` proceeds.**
+
+## Part B — the deploy (2026-11-05T02:0xZ)
+
+- **`pulumi up --stack prod` update 173 — SUCCEEDED in 1m43s** (log
+  `logs/r7dep1b-pulumi-up.log`): ~10 updated (all-service image rolls + worker env) + +-1
+  replaced (`rhema-prod-proxy-tmpl` — stateless template, MIG rolled `rwjl`/`bvpb` →
+  `5bv1`/`09s4`; the IAP tunnel dropped mid-deploy with the MIG roll, re-established on
+  `5bv1`). Zero deletes, zero stateful changes — exactly the classified diff.
+- **Provenance all-PASS (condition 4):** `check-deploy-provenance --expect 4bc8cf4a…` →
+  web `https://rhema.tools` + api `https://api.rhema.tools` both serve
+  `4bc8cf4a73402aed782546fe233235e9807cc990`.
+- **`deployments` row (condition 5):** `record-deployment` wrote
+  `prod:4bc8cf4a…` `protocols_version=0.4.0+9c2b880dbee74bd8` + all 10 digests.
+- **Worker env verified live:** `gcloud run services describe` — `WALKTHROUGH_MODEL_KEY_SECRET`
+  absent, `INGEST_MODEL_KEY_SECRET` present (D-R7COPY.0-2 discharged).
+- **CDN invalidation (condition 8):** dry-run output == act output verbatim —
+  `gcloud compute url-maps invalidate-cdn-cache rhema-prod-urlmap-6f2b86e --path
+  /bff/p/demo~* --project rhema-507501 --host rhema.tools` (logs
+  `r7dep1b-cdn-dryrun.txt` / `r7dep1b-cdn-act.txt`).
+- **Golden re-run:** none — classified non-affecting, $0 (GD-GOLDEN.R7 discharged).
+
+## Part B — prod Stage B (2026-11-05T02:1xZ)
+
+- **All seven R7a legs PASS on prod at `--expect-sha 4bc8cf4a…`**
+  (`reports/2026-11-05_R7DEP.1-prod/`): D1.hub, D2.tour (all 11 steps ×3 widths — 40+
+  screenshots), D3.readonly, P1.demo, R11.demo (returningUser session, `jrn-a` cached),
+  plus the two R7FIX.2 legs re-proven on prod: U3.stopgap, R8.showcase.spa.
+- **Smoke legs PASS:** N10, P1.public, R8.showcase — provenance match, $0 spend.
+- **Beacon end-to-end on prod:** the leg walk's `src=jrn` visits produced `demo_events`
+  rows read through the system DSN — 14 `src='jrn'` rows (incl. `demo.hub_viewed`),
+  plus organic `src=null` hub_viewed rows from the raw curl checks.
+- **Public routes all 200:** `/ /demo /pricing /signup /login /showcase /invite`.
+- **Twin cache + CDN hit proven:** `GET /bff/p/demo~<essay>/v/dossier` →
+  `cache-control: public,max-age=300,s-maxage=86400` + SHA-stamped ETag + no Set-Cookie;
+  repeated GET shows `age: 3` → `age: 6` (an actual Cloud CDN HIT post-invalidation).
+  Note: the project twin `/bff/p/demo~<essay>` serves `s-maxage=3600` — TTLs differ per
+  twin class (both `public` + ETag); recorded honestly, not claimed uniform.
+- **Worker consuming:** pgboss census on the prod DB (system tunnel) — healthy
+  completed-job volumes across queues.
+- **Worker env:** verified above (walkthrough binding gone).
+
+## Part B — preview teardown + spend (2026-11-05T02:4xZ)
+
+- `preview-stack.mjs destroy pr-259` — 198 resources deleting (three-act teardown:
+  destroy → orphan sweep → `rm`). pr-259 lifetime ≈ 7.2 h (19:5xZ→02:4xZ).
+- **Preview spend (list-price inventory, honestly labelled — no billing export exists,
+  D-OPS.2-1):** components × ~7.2h uptime — AlloyDB 2vCPU/16GiB ≈ $0.60/h → ~$4.3;
+  2× e2-standard-2 GKE ≈ $0.13/h → ~$1.0; 2× e2-small proxy ≈ $0.03/h → ~$0.24;
+  Redis BASIC 1GB ≈ $0.05/h → ~$0.35; worker Cloud Run instance-billed ≈ $0.06/h →
+  ~$0.45; NAT+LB ≈ $0.10/h → ~$0.7; 3 Cloud Builds (~36 min E2_HIGHCPU_8) ≈ $1.0;
+  **≈ $8 total list-price estimate** (bound: even at ×2 SKU error, < $20).
+  **Round-7 preview spend ≈ $8 of the $20 cap** — legs $0 inference throughout.
+  250's R7b preview headroom: ~$12 remaining.
