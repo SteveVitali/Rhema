@@ -5,8 +5,9 @@
 - **Branch:** `stevevitali/r7reload-1-forms`
 - **Config:** implement-spec full · Stage A only ($0; GD-PREVIEW.R7 — no per-ticket preview)
 - **Harness:** devin-desktop/swe-2-high/subagent
+- **PR:** #269 (base `stevevitali/r7shell-2-project-scope`)
 - **Skills:** agent-skills @ unknown (loaded 2026-11-05)
-- **Started:** 2026-11-05T21:15Z · **Closed:** pending
+- **Started:** 2026-11-05T21:15Z · **Closed:** 2026-11-05T21:35Z
 
 ## Deferrals read
 `docs/tickets/DEFERRALS.md` read first (2026-11-05). No OPEN row is unblocked by this ticket —
@@ -89,11 +90,33 @@ all belong to 250_R7DEP.2's preview walk. This run opens `D-R7RELOAD.1-1` (owner
   chat-surfaces/editor/server/intercept tests; ADR; DEFERRALS D-R7RELOAD.1-1; BUILD_INDEX 270;
   LEDGER; PR; ci-boundary.
 
-## Gap table
-(pending Phase 4)
+## Gap table (Phase 4 — full re-read)
+| Requirement/AC | Disposition |
+| --- | --- |
+| REQ-RELOAD-2 (pane forms → delegated submit, one shared allowlist) | DONE — host `onSubmit` at `IdeChrome`; `SPA_WRITE` in `write-paths.tsx`; surface `*_WRITE` regexes retired (census-pinned); field collection before busy-disable; submitter name/value rides the post |
+| Gate Approve/Decline + explainer dismiss → JSON mutation | DONE — `gates/<gid>` + `explainers/<name>/dismiss` are in `SPA_WRITE`; the explainer handler now answers `mutationOutcome` |
+| Scroll/focus preserved (REQ-UX-4) | DONE by construction — the JSON fetch never tears the document down |
+| REQ-RELOAD-3 (no `/edit/:id` write targets; in-tree `reloadDocument` removed; home targets `/app`) | DONE — note/cancel-run resolve `/v/:n` via `getEditorDoc`; census asserts zero `/edit/` redirect literals + the named-stub `reloadDocument` list; `states.tsx`/AppShell already `/app` (prior tickets) |
+| REQ-RELOAD-4 (mutationOutcome everywhere; chat stable codes; no-JS empty send → flash) | DONE — 9 chat routes + explainers/settings/logout/import-preview routed; `chat_*_required` codes; census = conform-or-named-exempt (ADR-134 §3) |
+| REQ-RELOAD-6 / REQ-GUARD-3 (one document per walk; sanctioned excluded by name) | DONE Stage-A — `noreload.ts` + `U2.noreload` walk; fixture walk passes clean, fails on planted reload, sanctioned-name arm expects its doc nav |
+| U2 held `ready-to-flip` (`expected:"red"` until 250) | DONE — REAL_BODIES entry; registry/runner tests re-pinned; D-R7RELOAD.1-1 opened |
+| REQ-KIT-5 entry delta ≤15 kB | PASS — +13.8 kB gz vs baseline `04a4e98b` |
+| Out of scope (chat send mutation → 232; per-form copy → 245; Stage B → 250) | HONORED — chat forms stay native (outside `SPA_WRITE`); no preview/live run; no money-mode/copy/tenancy changes |
+| Deviations | ACCEPTED — REQ-DACC-8 owner flip deferred to 250 (GD-PREVIEW.R7 hazard); chat JSON arm unified on envelope 200 `{ok,redirect,data}` replacing verbatim-DTO 201 (ADR-134) |
 
-## Evidence log
-(pending Phase 5)
+## Evidence log (Phase 5 — all local, $0)
+- `pnpm turbo build --filter=@rhema/web --filter=@rhema/journeys` — 15/15 (write-paths.tsx rename after .ts JSX error)
+- `pnpm --filter @rhema/web typecheck` / `lint` — clean; `@rhema/journeys` typecheck/lint clean
+- `pnpm exec vitest run apps/web/src` — **1,518 pass / 85 files**
+- `pnpm exec vitest run packages/journeys/src` — green incl. `noreload.local.test.ts` (local demoDataSource server + bundled Chromium): clean walk holds one document; planted `location.reload()` FAILS the assert (lost marker + second nav entry); sanctioned `demo-exit` arm expects-not-permits
+- `pnpm check:dom-contract` — OK (`data-gate-form` declared for U2's approve selector)
+- `pnpm check:spa-budget` — entry graph 224.8/250 kB; **entry delta +13.8 kB vs baseline `04a4e98b`** (≤15)
+- `check-build-memory.sh` — 0 violations (18 pre-existing warnings)
+- `check-append-only.mjs --base stevevitali/r7shell-2-project-scope` — OK
+- NOT RUN: preview/live journeys, `scripts/live`, deploy, paid legs — Stage A only per GD-PREVIEW.R7
 
-## Evidence report
-(pending Phase 6)
+## Evidence report (Phase 6)
+- Commits: implementation+records commit on `stevevitali/r7reload-1-forms`; PR #269 (base `stevevitali/r7shell-2-project-scope`), unmerged (OPERATOR)
+- Records: DEFERRALS `D-R7RELOAD.1-1` OPEN (→250); ADR-134 accepted; BUILD_INDEX row 270; LEDGER CURRENT STATE + PHASE LOG advanced (`lastCompleted: R7RELOAD.1`, `nextTicket: 232_R7TALK.1a`, chainTip `stevevitali/r7reload-1-forms`)
+- Carries to 232: chat forms remain native (outside `SPA_WRITE`) — 232 replaces them with fetch mutations and appends the chat-send segment to `U2.noreload`'s walk
+- CI: pending at PR-open; ci-boundary read recorded at head
