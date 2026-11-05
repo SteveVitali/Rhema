@@ -119,4 +119,4 @@ all belong to 250_R7DEP.2's preview walk. This run opens `D-R7RELOAD.1-1` (owner
 - Commits: implementation+records commit on `stevevitali/r7reload-1-forms`; PR #269 (base `stevevitali/r7shell-2-project-scope`), unmerged (OPERATOR)
 - Records: DEFERRALS `D-R7RELOAD.1-1` OPEN (→250); ADR-134 accepted; BUILD_INDEX row 270; LEDGER CURRENT STATE + PHASE LOG advanced (`lastCompleted: R7RELOAD.1`, `nextTicket: 232_R7TALK.1a`, chainTip `stevevitali/r7reload-1-forms`)
 - Carries to 232: chat forms remain native (outside `SPA_WRITE`) — 232 replaces them with fetch mutations and appends the chat-send segment to `U2.noreload`'s walk
-- CI: pending at PR-open; ci-boundary read recorded at head
+- CI: **pass #269@`730f78f`** — run 42113736030, all seven legs + `ci-pass` anchor (`logs/ci-R7RELOAD.1.json`); first read failed on a stale `SRC` const (scoped fix `730f78f1`), re-read green
