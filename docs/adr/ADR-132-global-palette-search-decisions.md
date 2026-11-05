@@ -66,3 +66,12 @@ proxy whose draft hits deep-linked `/edit/:id` — a `reloadDocument` stub under
   (workspace list + embed) cover the ticket; a registry abstraction lands with a third source.
 - **Keep `data-palette-sections`.** Rejected: the labels live in `COPY.ide.palette.sectionLabels`
   — the palette bundle reads them directly, so a duplicate JSON embed is dead weight.
+
+## Revisit trigger
+
+- A third command source (beyond workspace + `data-palette` embed) wants a real registry —
+  revisit decision 3's flat-source shape then.
+- If `project_search_docs` gains a voice/persona doc kind, the `ilike` name match and the
+  linked-Voice scoping subquery both move into the shared index query — revisit decision 1.
+- If a palette row ever needs a write, REQ-ISL-10's zero-non-GET posture is re-litigated as a
+  new ADR, not bent inside this one.
