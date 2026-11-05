@@ -9,6 +9,7 @@ import {
   classifyAsyncChunk,
   entryGraphFiles,
   evaluateSpaBudget,
+  spaDeltaReport,
 } from "./check-spa-budget.mjs";
 
 // SPA.1 / REQ-SAFE-7 — the bundle-budget gate is a hard fail, so its own behavior is pinned: an
@@ -163,5 +164,54 @@ describe("entryGraphFiles / classifyAsyncChunk", () => {
     expect(classifyAsyncChunk("src/spa/editor.tsx?tsr-split=component", BUDGET)).toBe("editor");
     expect(classifyAsyncChunk("assets/settings-1.js", BUDGET)).toBe("other");
     expect(classifyAsyncChunk("codemirror editor yjs", BUDGET)).toBe("codemirror");
+  });
+});
+
+// REQ-KIT-5 (225_R7KIT.2) — the entry-delta report every Stream-U ticket cites: it prints the
+// measured delta against the committed tip baseline keyed to the ≤ 15 kB allowance, and it flags
+// an over-allowance delta loudly without weakening the hard ceiling gate.
+describe("spaDeltaReport (REQ-KIT-5)", () => {
+  const BASELINE = {
+    sha: "04a4e98bf14d0ef8aa080f5a1a7e1a9019f32ef7",
+    measuredAt: "2026-11-05T02:56Z",
+    entryGzipBytes: 216153,
+    totalJsGzipBytes: 566807,
+    totalCssGzipBytes: 0,
+    entryDeltaAllowanceGzipBytes: 15360,
+  };
+
+  it("prints the entry/total-JS/CSS delta against the named baseline SHA", () => {
+    const lines = spaDeltaReport(
+      { entryGz: 216153 + 2048, totalJs: 566807 + 10000, totalCss: 512 },
+      BASELINE,
+    );
+    expect(lines[0]).toMatch(/entry delta vs baseline 04a4e98b/);
+    expect(lines[0]).toMatch(/\+2\.0 kB of the ≤ 15\.0 kB per-ticket allowance/);
+    expect(lines[1]).toMatch(/total JS delta: \+9\.8 kB/);
+    expect(lines[1]).toMatch(/total CSS delta: \+0\.5 kB/);
+    expect(lines.join("\n")).not.toMatch(/WARN/);
+  });
+
+  it("flags an over-allowance entry delta (report-only — never a gate violation)", () => {
+    const lines = spaDeltaReport(
+      { entryGz: 216153 + 20480, totalJs: 566807, totalCss: 0 },
+      BASELINE,
+    );
+    expect(lines[0]).toMatch(/\+20\.0 kB/);
+    expect(lines.join("\n")).toMatch(/WARN: entry delta exceeds/);
+  });
+
+  it("checkSpaBudget carries the delta lines when a baseline file is present, [] when absent", () => {
+    const dir = writeFixture({ "assets/main-abc.js": 95_000, "assets/routes-def.js": 60 });
+    writeManifest(dir, baseManifest);
+    const baselinePath = join(dir, "baseline.json");
+    writeFileSync(
+      baselinePath,
+      JSON.stringify({ sha: "0".repeat(40), measuredAt: "t", entryGzipBytes: 90_000, totalJsGzipBytes: 90_000, totalCssGzipBytes: 0 }),
+    );
+    const withBaseline = checkSpaBudget(dir, BUDGET_PATH, baselinePath);
+    expect(withBaseline.delta[0]).toMatch(/entry delta vs baseline/);
+    const without = checkSpaBudget(dir, BUDGET_PATH, join(dir, "nope.json"));
+    expect(without.delta).toEqual([]);
   });
 });

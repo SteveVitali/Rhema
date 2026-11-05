@@ -1,0 +1,10 @@
+{
+  "$comment": "REQ-KIT-5 (225_R7KIT.2) — the tip measurement every Stream-U ticket reports its entry-graph delta against. Measured at the named SHA BEFORE the ADR-129 dependency stack landed (`pnpm turbo build --filter=@rhema/web...` then `pnpm check:spa-budget`); gzip bytes are exact, computed by the same walk the budget gate uses. This is a report baseline, not a ceiling — the hard ceilings stay in spa-budget.json and are unchanged. Re-measure only under a ticket that owns a new baseline.",
+  "sha": "04a4e98bf14d0ef8aa080f5a1a7e1a9019f32ef7",
+  "branch": "stevevitali/r7dep-1b-prod",
+  "measuredAt": "2026-11-05T02:56Z",
+  "entryGzipBytes": 216153,
+  "totalJsGzipBytes": 566807,
+  "totalCssGzipBytes": 0,
+  "entryDeltaAllowanceGzipBytes": 15360
+}
