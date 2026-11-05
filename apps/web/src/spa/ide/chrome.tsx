@@ -113,7 +113,6 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
     hasFindings,
     ready: published,
     ...(data.palette != null ? { palette: data.palette } : {}),
-    ...(data.paletteSearchUrl != null ? { paletteSearchUrl: data.paletteSearchUrl } : {}),
     nav,
   });
   useIdeFeed({ hostRef, ...(data.feed != null ? { feed: data.feed } : {}), ...(maps.data != null ? { maps: maps.data } : {}), queryClient });
@@ -169,7 +168,6 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           {...(feed != null ? { feed } : {})}
           {...(data.runNextHref != null ? { runNextHref: data.runNextHref } : {})}
           {...(data.palette != null ? { palette: JSON.stringify(data.palette) } : {})}
-          paletteSearchUrl={data.paletteSearchUrl ?? `/p/${slug}/palette-search`}
           themeUrl="/ide/theme"
           paperThemeUrl={`/p/${slug}/paper-theme`}
           {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}

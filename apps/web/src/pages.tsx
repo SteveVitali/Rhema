@@ -137,7 +137,6 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
         : {})}
       {...(ide.runNextHref ? { runNextHref: ide.runNextHref } : {})}
       {...(ide.palette ? { palette: ide.palette } : {})}
-      {...(ide.paletteSearchUrl ? { paletteSearchUrl: ide.paletteSearchUrl } : {})}
       {...(ide.activeRun ? { activeRun: ide.activeRun } : {})}
       {...(ide.inboxCount != null ? { inboxCount: ide.inboxCount } : {})}
       {...(ide.status ? { status: ide.status } : {})}

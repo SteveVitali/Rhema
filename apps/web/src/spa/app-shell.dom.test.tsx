@@ -182,8 +182,9 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     // sidebar's Demo entry is withheld (248's data-spa-native link)
     expect(document.querySelector('[data-app-sidebar] a[href="/"]')).toBeNull();
     expect(document.querySelector("[data-app-sidebar]")!.innerHTML).not.toContain("/demo");
-    // Search renders only in palette scope — /app is not framed ⇒ absent
-    expect(document.querySelector("[data-shell-search]")).toBeNull();
+    // R7SHELL.1c — Search renders on every signed-in page (the global palette's reach is the
+    // whole workspace shell, not only IDE-framed leaves).
+    expect(document.querySelector("[data-shell-search]")).not.toBeNull();
   });
 
   it("one AppShell instance survives workspace → project → workspace navigation", async () => {
@@ -205,7 +206,7 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     expect(document.querySelector("[data-app-shell]")).toBe(first);
   });
 
-  it("Search renders in palette scope (an IDE-framed leaf)", async () => {
+  it("Search renders inside an IDE-framed leaf too (R7SHELL.1c)", async () => {
     const router = await mountAt("/app", boot());
     await shell();
     await act(async () => {

@@ -139,7 +139,7 @@ import type {
   UserPrefs,
   NotificationPrefsDto,
 } from "@rhema/api-client";
-import type { ConversionResult } from "@rhema/contracts";
+import type { ConversionResult, WorkspaceSearchGroups } from "@rhema/contracts";
 // SPA.21 — the dossier's view contract lives in the shared SSR↔SPA module (see DossierData below).
 import type { DossierViewData } from "./dossier-view.js";
 import { noteDegradedUpstream } from "./observability.js";
@@ -282,6 +282,14 @@ export interface DataSource {
     q: string,
     projectId?: string,
   ): Promise<ProjectSearchHitDto[]>;
+  /** R7SHELL.1c — `GET /search?q=&project=` — the tenant-scoped workspace read behind
+   *  `GET /bff/search` (grouped hits: projects/drafts/letters/Voices). Optional like the other
+   *  read seams: a fixture without it answers the twin's empty groups. */
+  workspaceSearch?(
+    session: SessionHeaders,
+    q: string,
+    projectId?: string,
+  ): Promise<WorkspaceSearchGroups>;
   /** PRB.05 — write the user's disposition on a finding (§5.7; reversible until freeze). */
   recordDisposition(
     session: SessionHeaders,
@@ -1321,6 +1329,10 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f, headers: session }).estimate(projectId, req),
     searchPalette: (session, q, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).searchProjects(q, undefined, {
+        ...(projectId ? { projectId } : {}),
+      }),
+    workspaceSearch: (session, q, projectId) =>
+      createApiClient({ baseUrl, fetch: f, headers: session }).workspaceSearch(q, undefined, {
         ...(projectId ? { projectId } : {}),
       }),
     recordDisposition: (session, projectId, findingId, req) =>

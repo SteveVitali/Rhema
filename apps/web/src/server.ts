@@ -58,6 +58,7 @@ import {
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
+import type { WorkspaceSearchHit, WorkspaceSearchResult, WorkspaceSearchTwinResponse } from "@rhema/contracts";
 import {
   bffFail,
   bffRoute,
@@ -1537,7 +1538,6 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(opts.runNextHref && deps.demo !== true ? { runNextHref: opts.runNextHref } : {}),
         ...(opts.status ? { status: opts.status } : {}),
         palette: JSON.stringify(paletteData),
-        paletteSearchUrl: `/p/${row.slug}/palette-search`,
         ...(deps.demo === true
           ? {}
           : { themeUrl: "/ide/theme", paperThemeUrl: `/p/${row.slug}/paper-theme` }),
@@ -1726,34 +1726,54 @@ export function createWebApp(deps: WebDeps): Hono {
     }),
   );
 
-  // P1.06 — the ⌘K palette's free-text search proxy (§5.12): same-origin, session-forwarded to the
-  // api's project search narrowed to THIS project; hits map to deep links (drafts → the editor,
-  // letters → the revision page). Navigation only — this route never creates anything.
-  app.get("/p/:project/palette-search", async (c) => {
-    const session = deps.session(c);
-    if (!session) return c.json({ results: [] }, 401);
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.json({ results: [] }, 404);
-    const q = (c.req.query("q") ?? "").trim();
-    if (!q) return c.json({ results: [] });
-    const hits =
-      (await Promise.resolve()
-        .then(() => deps.dataSource.searchPalette?.(session, q, row.id))
-        .catch(() => undefined)) ?? [];
-    const results = hits.map((h) => ({
-      label: h.title,
-      path:
-        h.kind === "draft" && h.refId
-          ? `/p/${slug}/edit/${h.refId}`
-          : h.kind === "letter" && h.refId
-            ? `/p/${slug}/revisions/${h.refId}`
-            : `/p/${h.slug}`,
-      keywords: [h.kind],
-      snippet: h.snippet,
-    }));
-    return c.json({ results });
-  });
+  // R7SHELL.1c (REQ-SHELL-7; REQ-RELOAD-3) — the global palette's search twin: session-forwarded
+  // `GET /search` on the api, grouped hits mapped to their SPA deep links (drafts → `/v/:n`,
+  // letters → `/revisions/:cid`, voices → `/v/:persona`, projects → `/p/:slug` — never `/edit/:id`;
+  // T5 discharged, the `/p/:project/palette-search` route it replaces is retired here). `?project=`
+  // takes the SLUG the palette carries — it resolves through the same `bffProjectRow` tenant check
+  // every /bff twin uses. GET only; this twin never creates anything.
+  app.get(
+    "/bff/search",
+    bffRoute(deps, async (c, session) => {
+      const empty: WorkspaceSearchTwinResponse = {
+        results: { projects: [], drafts: [], letters: [], voices: [] },
+      };
+      const q = (c.req.query("q") ?? "").trim();
+      if (q === "") return c.json(empty);
+      const slug = c.req.query("project") ?? null;
+      let projectId: string | undefined;
+      if (slug != null) {
+        const row = await bffProjectRow(c, deps.dataSource, session, slug);
+        if (!row) return c.json(empty);
+        projectId = row.id;
+      }
+      const groups =
+        (await Promise.resolve()
+          .then(() => deps.dataSource.workspaceSearch?.(session, q, projectId))
+          .catch(() => undefined)) ?? empty.results;
+      const link = (h: WorkspaceSearchHit): WorkspaceSearchResult => {
+        const p = h.projectSlug ?? "";
+        const path =
+          h.kind === "draft" && h.draftN != null
+            ? `/p/${p}/v/${h.draftN}`
+            : h.kind === "letter" && h.refId != null && h.refId !== ""
+              ? `/p/${p}/revisions/${h.refId}`
+              : h.kind === "voice" && h.personaId != null
+                ? `/v/${h.personaId}`
+                : `/p/${p}`;
+        return { ...h, path };
+      };
+      const out: WorkspaceSearchTwinResponse = {
+        results: {
+          projects: groups.projects.map(link),
+          drafts: groups.drafts.map(link),
+          letters: groups.letters.map(link),
+          voices: groups.voices.map(link),
+        },
+      };
+      return c.json(out);
+    }),
+  );
 
   // The island's same-origin theme writes — the web server forwards the session to the api (the bundle
   // never holds a credential; REQ-ARCH-33). Fire-and-forget from the client; the localStorage mirror is

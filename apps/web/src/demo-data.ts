@@ -296,8 +296,6 @@ export function demoDataSource(root: string): DataSource {
       ReturnType<NonNullable<DataSource["getProjectVoice"]>>
     >,
     listVoices: async () => [],
-    // The demo's palette search endpoint answers an empty result set (R3 §2 — server-side).
-    searchPalette: async () => [],
     postAnalyticsEvent: async () => ({ ok: true, recorded: false }),
     // R7DEM.5 — the walk's reach report names `checkSession` + `postAcquisitionEvent` as
     // implemented-but-never-invoked: they leave the Pick (DWEB-3's amended contract — the
@@ -328,7 +326,6 @@ export function demoDataSource(root: string): DataSource {
     | "getExplainers"
     | "getProjectVoice"
     | "listVoices"
-    | "searchPalette"
     | "postAnalyticsEvent"
   >;
   return new Proxy(target, {

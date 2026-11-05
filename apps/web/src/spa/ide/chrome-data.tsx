@@ -58,7 +58,6 @@ export interface IdeChromeData {
   readonly runNextHref?: string;
   /** the typed PaletteData — `data-palette` carries its JSON for attr parity. */
   readonly palette?: PaletteData;
-  readonly paletteSearchUrl?: string;
   readonly inboxCount?: number;
   readonly status?: IdeShellProps["status"];
 }
@@ -188,7 +187,6 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
       ...(shell.ide.feed ? { feed: shell.ide.feed } : {}),
       ...(shell.ide.runNextHref ? { runNextHref: shell.ide.runNextHref } : {}),
       ...(palette ? { palette } : {}),
-      ...(shell.ide.paletteSearchUrl ? { paletteSearchUrl: shell.ide.paletteSearchUrl } : {}),
       ...(shell.ide.status ? { status: shell.ide.status } : {}),
       ...(shell.ide.files
         ? {

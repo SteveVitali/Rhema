@@ -79,8 +79,11 @@ const TWIN_PATHS = [
   `/bff/p/${SLUG}/r/v1-review`,
   `/bff/p/${SLUG}/figures`,
   `/bff/p/${SLUG}/figures/figure_1_signal_map`,
-  `/p/${SLUG}/palette-search`,
 ];
+// R7SHELL.1c — the project palette-search endpoint retired (the global palette reads
+// GET /bff/search); a demo-namespaced hit must still never reach a DataSource — the guard
+// now 404s it outright.
+const RETIRED_PATHS = [`/p/${SLUG}/palette-search`];
 
 const DOC_PATHS = [
   `/demo/${ESSAY}`,
@@ -110,6 +113,16 @@ describe("R3 §7 test 2 — zero outer DataSource calls, cookie-invariant, no Se
       expect(await anon.text()).toBe(await authed.text());
       expect(anon.headers.get("set-cookie")).toBeNull();
       expect(authed.headers.get("set-cookie")).toBeNull();
+      expect(calls).toEqual([]);
+    });
+  }
+
+  for (const path of RETIRED_PATHS) {
+    it(`GET ${path} — retired: 404, zero calls, no Set-Cookie`, async () => {
+      const calls: string[] = [];
+      const app = makeApp(calls);
+      const anon = await get(app, path);
+      expect(anon.status, `anon ${path}`).toBe(404);
       expect(calls).toEqual([]);
     });
   }

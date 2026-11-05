@@ -48,6 +48,28 @@ export const DENIED_IN_ENTRY = new Set([
   "react-switch",
 ]);
 
+/**
+ * R7SHELL.1c — non-Radx sources denied in the entry graph: `cmdk` (the ⌘K palette is a lazy
+ * chunk — REQ-KIT-5/REQ-SHELL-7) and the palette module itself (`spa/palette`). A source path
+ * containing `node_modules/cmdk/` (or `.pnpm/cmdk@…/node_modules/cmdk/`) or `spa/palette.` in an
+ * entry chunk's map means the palette leaked into the entry graph.
+ */
+export const DENIED_SOURCE_PATTERNS = [
+  { re: /node_modules\/cmdk\//i, name: "cmdk" },
+  { re: /spa\/palette\.[jt]sx?/i, name: "spa/palette (the lazy ⌘K palette chunk)" },
+];
+
+/** Every denied non-Radx source package/module in a map's `sources[]`. */
+export function deniedSourcesInMap(map) {
+  const found = new Set();
+  for (const src of Array.isArray(map?.sources) ? map.sources : []) {
+    for (const { re, name } of DENIED_SOURCE_PATTERNS) {
+      if (re.test(String(src))) found.add(name);
+    }
+  }
+  return found;
+}
+
 /** Extract the `@radix-ui/react-<name>` package a source path belongs to, or null. */
 export function radixPackageOf(source) {
   const m = /@radix-ui\/(react-[a-z0-9-]+)\//i.exec(source);
@@ -92,10 +114,16 @@ export function evaluateEntryGraph(manifest, readMap) {
         disallowed.get(pkg).push(file);
       }
     }
+    for (const name of deniedSourcesInMap(map)) {
+      if (!disallowed.has(name)) disallowed.set(name, []);
+      disallowed.get(name).push(file);
+    }
   }
   for (const [pkg, files] of [...disallowed.entries()].sort()) {
     violations.push(
-      `@radix-ui/${pkg} reaches the SPA entry graph via ${files.join(", ")} — leaf-chunk it (the shell may carry exactly Tooltip and DropdownMenu; REQ-KIT-5)`,
+      pkg.startsWith("react-")
+        ? `@radix-ui/${pkg} reaches the SPA entry graph via ${files.join(", ")} — leaf-chunk it (the shell may carry exactly Tooltip and DropdownMenu; REQ-KIT-5)`
+        : `${pkg} reaches the SPA entry graph via ${files.join(", ")} — the ⌘K palette is a lazy chunk on first ⌘K (REQ-SHELL-7/REQ-KIT-5)`,
     );
   }
   report.push(`  entry-graph chunks scanned: ${scanned.length}`);

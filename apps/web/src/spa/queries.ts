@@ -466,7 +466,6 @@ export interface BffIdeBag {
   };
   readonly runNextHref?: string;
   readonly palette?: string;
-  readonly paletteSearchUrl?: string;
   readonly status?: {
     readonly version?: string;
     readonly words?: number;

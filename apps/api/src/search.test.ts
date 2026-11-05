@@ -115,3 +115,107 @@ describe("projectDocBody", () => {
     expect(projectDocBody({ title: "T", venue: "V", voiceName: "W" })).toBe("T\nV\nW");
   });
 });
+
+// ---------------------------------------------------------------------------
+// R7SHELL.1c — `GET /search` (REQ-SHELL-7): the tenant-scoped workspace read.
+// ---------------------------------------------------------------------------
+
+describe("GET /search — R7SHELL.1c workspace read (REQ-SHELL-7)", () => {
+  const seedDocs = async () => {
+    await db.pg.query(`update projects set title='Visibility Politics' where id=$1`, [seed.projectId]);
+    await db.pg.query(
+      `insert into personas (id, workspace_id, display_name, mode, kind, provenance)
+         values ('per_v','ws_seed','Vladimir Propp','self','leaf','user')`,
+    );
+    await db.pg.query(`update projects set persona_id='per_v' where id=$1`, [seed.projectId]);
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state) values ('dft_v1',$1,1,'agent','working')`,
+      [seed.projectId],
+    );
+    await upsertProjectSearchDoc(sql, {
+      projectId: seed.projectId, workspaceId: seed.workspaceId, kind: "draft", refId: "dft_v1",
+      body: "The morphology of the folktale reframes narrative structure.", id: ids,
+    });
+    await upsertProjectSearchDoc(sql, {
+      projectId: seed.projectId, workspaceId: seed.workspaceId, kind: "letter", refId: "corr_1",
+      body: "The folktale letter verdict arrives.", id: ids,
+    });
+    // a second tenant with a marker doc + voice — the workspace predicate must hide both.
+    for (const q of [
+      `insert into billing_accounts (id) values ('ba_other')`,
+      `insert into workspaces (id, kind, name, billing_account_id) values ('ws_other','personal','Other','ba_other')`,
+      `insert into "user" (id, email) values ('usr_other','o@x.test')`,
+      `insert into projects (id, workspace_id, owner_id, title, slug)
+         values ('prj_other','ws_other','usr_other','MARKER_B_TITLE','slug-other')`,
+      `insert into personas (id, workspace_id, display_name, mode, kind, provenance)
+         values ('per_other','ws_other','MARKER_B_VOICE','self','leaf','user')`,
+      `insert into project_search_docs (id, project_id, workspace_id, kind, ref_id, body)
+         values ('psd_other','prj_other','ws_other','draft','d_other','MARKER_B_SEARCHDOC body')`,
+    ]) {
+      await db.pg.query(q);
+    }
+  };
+
+  it("returns grouped hits: project/draft/letter + voices by name", async () => {
+    await seedDocs();
+    const res = await app().request(`/search?q=${encodeURIComponent("folktale")}`);
+    expect(res.status).toBe(200);
+    const { results } = (await res.json()) as {
+      results: { projects: unknown[]; drafts: { draftN?: number; refId?: string }[]; letters: { refId?: string }[]; voices: unknown[] };
+    };
+    expect(results.drafts.length).toBeGreaterThan(0);
+    expect(results.drafts[0]!.draftN).toBe(1); // the /v/:n deep-link ordinal joins
+    expect(results.letters.length).toBeGreaterThan(0);
+    const vres = await app().request(`/search?q=${encodeURIComponent("Propp")}`);
+    const v = (await vres.json()) as { results: { voices: { personaId?: string }[] } };
+    expect(v.results.voices.some((x) => x.personaId === "per_v")).toBe(true);
+  });
+
+  it("scopes every group to ?project=<id> (linked Voice only)", async () => {
+    await seedDocs();
+    const res = await app().request(
+      `/search?q=${encodeURIComponent("Propp")}&project=${seed.projectId}`,
+    );
+    const { results } = (await res.json()) as { results: { voices: { personaId?: string }[] } };
+    expect(results.voices.map((v) => v.personaId)).toEqual(["per_v"]);
+    const res2 = await app().request(
+      `/search?q=${encodeURIComponent("folktale")}&project=prj_other`,
+    );
+    const { results: r2 } = (await res2.json()) as { results: { drafts: unknown[]; letters: unknown[] } };
+    expect(r2.drafts).toEqual([]);
+    expect(r2.letters).toEqual([]);
+  });
+
+  it("returns empty groups for empty q; 401 unauthenticated", async () => {
+    const res = await app().request(`/search?q=`);
+    expect(await res.json()).toEqual({
+      results: { projects: [], drafts: [], letters: [], voices: [] },
+    });
+    expect((await app(false).request(`/search?q=x`)).status).toBe(401);
+  });
+
+  it("mutation: removing the workspace predicate leaks the foreign tenant's rows", async () => {
+    // The isolation proof is only as good as the predicate: strip `d.workspace_id = $1` from the
+    // emitted SQL and the foreign tenant's marker doc surfaces — the two-tenant probe's
+    // query-bearing leg fails iff this mutation lands (REQ-SPEC-30).
+    await seedDocs();
+    const mutating: SqlClient = {
+      query: (q, p) =>
+        sql.query(
+          // `$1` must stay REFERENCED (PGlite binds by position) — neutralize the predicate
+          // semantically instead of removing the parameter.
+          q.includes("from project_search_docs")
+            ? q.replaceAll("d.workspace_id = $1 and ", "($1::text = $1::text or true) and ")
+            : q,
+          p,
+        ),
+    };
+    const mutated = createSearchRoutes({ principal: () => principal(), db: mutating, ids });
+    const res = await mutated.request(`/search?q=${encodeURIComponent("MARKER_B_SEARCHDOC")}`);
+    const { results } = (await res.json()) as { results: { drafts: { title: string }[] } };
+    expect(results.drafts.length).toBeGreaterThan(0); // the mutation DOES leak
+    const clean = await app().request(`/search?q=${encodeURIComponent("MARKER_B_SEARCHDOC")}`);
+    const { results: c } = (await clean.json()) as { results: { drafts: unknown[] } };
+    expect(c.drafts).toEqual([]); // the shipped predicate does not
+  });
+});

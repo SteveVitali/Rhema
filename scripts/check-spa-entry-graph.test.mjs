@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   checkSpaEntryGraph,
+  deniedSourcesInMap,
   evaluateEntryGraph,
   radixPackageOf,
   radixPackagesInMap,
@@ -17,6 +18,9 @@ const DIALOG_SRC =
   "../../node_modules/.pnpm/@radix-ui+react-dialog@1.3.1/node_modules/@radix-ui/react-dialog/dist/index.mjs";
 const TOOLTIP_SRC =
   "../../node_modules/.pnpm/@radix-ui+react-tooltip@1.4.1/node_modules/@radix-ui/react-tooltip/dist/index.js";
+const CMDK_SRC =
+  "../../node_modules/.pnpm/cmdk@1.1.1/node_modules/cmdk/dist/index.mjs";
+const PALETTE_SRC = "../../apps/web/src/spa/palette.tsx";
 const POPPER_SRC =
   "../../node_modules/.pnpm/@radix-ui+react-popper@1.4.0/node_modules/@radix-ui/react-popper/dist/index.mjs";
 
@@ -107,6 +111,23 @@ describe("evaluateEntryGraph (REQ-KIT-5)", () => {
       readMap({ "assets/main.js": { sources: [POPPER_SRC] }, "assets/shared.js": { sources: [] } }),
     );
     expect(r.ok).toBe(true);
+  });
+
+  it("R7SHELL.1c — cmdk + the palette module in an entry chunk's map FAILS (the lazy-chunk AC)", () => {
+    const r = evaluateEntryGraph(
+      manifest,
+      readMap({
+        "assets/main.js": { sources: ["../../src/spa/main.tsx"] },
+        "assets/shared.js": { sources: [CMDK_SRC, "../../src/lib.ts"] },
+      }),
+    );
+    expect(r.ok).toBe(false);
+    expect(r.violations.join("\n")).toMatch(/cmdk/);
+    expect(deniedSourcesInMap({ sources: [CMDK_SRC, PALETTE_SRC] })).toEqual(
+      new Set(["cmdk", "spa/palette (the lazy ⌘K palette chunk)"]),
+    );
+    // denied-sources detection is map-level only — the guard itself walks entry chunks,
+    // so the identical sources inside a lazy chunk stay unflagged (the fixture test proves it).
   });
 
   it("fails closed when an entry chunk's sourcemap is missing", () => {

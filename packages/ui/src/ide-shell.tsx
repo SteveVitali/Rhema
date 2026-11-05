@@ -132,10 +132,9 @@ export interface IdeShellProps {
   /**
    * P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded `PaletteData` JSON (next-step pin, Go-to
    * targets, recent runs, threads, settings) + the same-origin search URL the island calls for
-   * free-text hits. The palette NEVER launches a run — every cost-bearing row is a sheet GET.
+   * hits; R7SHELL.1c moved the embed to `.ide` for the AppShell palette. No POST ever rides it.
    */
   readonly palette?: string;
-  readonly paletteSearchUrl?: string;
   readonly inboxCount?: number;
   readonly status?: {
     readonly version?: string;
@@ -201,6 +200,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.themeUrl ? { "data-theme-url": props.themeUrl } : {})}
       {...(props.paperThemeUrl ? { "data-paper-url": props.paperThemeUrl } : {})}
       {...(props.activeRun ? { "data-run-state": props.activeRun.state } : {})}
+      {...(props.palette ? { "data-palette": props.palette } : {})}
       {...(props.runNextHref ? { "data-run-next": props.runNextHref } : {})}
       {...(props.hosted ? { "data-ide-hosted": "1" } : {})}
     >
@@ -474,33 +474,6 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       <button type="button" className="ide-focus-exit" data-ide-focus-exit>
         {L.focusExit}
       </button>
-
-      {/* P1.06 (§5.12) — the ⌘K command palette. SSR renders the skeleton + the embedded PaletteData
-          JSON; the ide.js island drives open/close, filtering, the /-command structured row, and
-          keyboard navigation. Every row NAVIGATES or opens the run sheet's GET — the palette never
-          launches a run (no POST ever leaves this element). */}
-      <div
-        className="ide-palette"
-        data-ide-palette
-        role="dialog"
-        aria-label={L.palette.dialogLabel}
-        aria-modal="true"
-        hidden
-        data-palette-sections={JSON.stringify(L.palette.sectionLabels)}
-        {...(props.palette ? { "data-palette": props.palette } : {})}
-        {...(props.paletteSearchUrl ? { "data-palette-search": props.paletteSearchUrl } : {})}
-      >
-        <input
-          type="text"
-          data-palette-input
-          placeholder={L.palette.placeholder}
-          aria-label={L.palette.placeholder}
-          autoComplete="off"
-          spellCheck={false}
-        />
-        <div data-palette-results role="listbox" aria-label={L.palette.emptyLabel} />
-        <div data-palette-empty hidden>{L.palette.emptyLabel}</div>
-      </div>
 
       {/* P1.06 (§5.12) — the `?` cheat sheet: the full keymap rendered from the shared CHEAT_SHEET
           table (@rhema/ide) so the card can never drift from the dispatcher. */}

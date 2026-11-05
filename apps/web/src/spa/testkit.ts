@@ -25,7 +25,7 @@ import { spaRuntime } from "./dom.js";
 export const AXE_INTERACTIVE = [
   "data-gate-card",
   "data-chat-composer",
-  "data-ide-palette",
+  "data-app-palette",
   "data-ide-menu",
   "data-ide-view-menu",
   "data-ide-theme-menu",

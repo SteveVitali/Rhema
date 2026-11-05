@@ -23,14 +23,11 @@ import {
   serializePaneState,
   THEME_STORAGE_KEY,
   dispatchIdeKey,
-  paletteModel,
   type CommandMenuItem,
   type FeedDensityTab,
   type FeedLabelMaps,
   type FocusZone,
   type PaneState,
-  type PaletteData,
-  type PaletteRow,
   type PaperTheme,
 } from "@rhema/ide";
 
@@ -355,227 +352,9 @@ function main(): void {
     });
   }
 
-  // ---- P1.06 — the ⌘K palette + the `?` cheat sheet (§5.12; REQ-IDE-49, REQ-CHAT-24/28) ----
-  // SSR emitted the skeleton + the embedded PaletteData JSON; the island owns open/close, filtering,
-  // the /-command structured row, keyboard navigation, and the search-hit section. EVERY activation
-  // is a navigation (a sheet GET or a path) — the palette never launches a run.
-  const paletteEl = ide.querySelector<HTMLElement>("[data-ide-palette]");
-  const paletteInput = paletteEl?.querySelector<HTMLInputElement>("[data-palette-input]");
-  const paletteResults = paletteEl?.querySelector<HTMLElement>("[data-palette-results]");
-  const paletteEmpty = paletteEl?.querySelector<HTMLElement>("[data-palette-empty]");
+  // the `?` cheat sheet survives the palette retirement (R7SHELL.1c — ⌘K is the AppShell's;
+  // SSR documents keep their `?` sheet).
   const cheatEl = ide.querySelector<HTMLElement>("[data-ide-cheatsheet]");
-  let paletteData: PaletteData = { projectSlug: slug };
-  try {
-    if (paletteEl?.dataset["palette"]) {
-      paletteData = { ...paletteData, ...(JSON.parse(paletteEl.dataset["palette"]) as PaletteData) };
-    }
-  } catch {
-    /* malformed embedded JSON → the bare palette still works */
-  }
-  let sectionLabels: Record<string, string> = {};
-  try {
-    sectionLabels = JSON.parse(paletteEl?.dataset["paletteSections"] ?? "{}") as Record<string, string>;
-  } catch {
-    /* fall back to the model's own labels */
-  }
-  const paletteSearchUrl = paletteEl?.dataset["paletteSearch"] ?? "";
-  let paletteQ = "";
-  let paletteActive = 0;
-  let searchHits: { label: string; path: string }[] = [];
-  let searchTimer: ReturnType<typeof setTimeout> | undefined;
-
-  /** The flat row order ↑/↓ and Enter walk — model sections, then the fetched doc hits. */
-  function flatPaletteRows(): PaletteRow[] {
-    const model = paletteModel(paletteData, paletteQ);
-    const rows = model.sections.flatMap((s) => s.rows);
-    return [
-      ...rows,
-      ...searchHits.map((h, i) => ({
-        id: `hit:${i}`,
-        label: h.label,
-        action: { kind: "navigate", path: h.path } as const,
-      })),
-    ];
-  }
-
-  function renderPalette(): void {
-    if (!paletteResults) return;
-    const model = paletteModel(paletteData, paletteQ);
-    paletteResults.textContent = "";
-    if (model.commandRow) {
-      const c = model.commandRow;
-      const box = document.createElement("div");
-      box.className = `ide-pal-command${c.ok ? "" : " err"}`;
-      const chips = document.createElement("div");
-      chips.className = "ide-pal-chips";
-      for (const text of c.chips) {
-        const chip = document.createElement("span");
-        chip.className = "ide-pal-chip";
-        chip.textContent = text;
-        chips.appendChild(chip);
-      }
-      if (c.ok && chips.childElementCount === 0) {
-        const chip = document.createElement("span");
-        chip.className = "ide-pal-chip";
-        chip.textContent = c.raw;
-        chips.appendChild(chip);
-      }
-      box.appendChild(chips);
-      if (!c.ok) {
-        const err = document.createElement("p");
-        err.className = "ide-pal-error";
-        err.textContent = c.suggestions?.length
-          ? `${c.error ?? ""} Try: ${c.suggestions.join(", ")}`
-          : (c.error ?? "");
-        box.appendChild(err);
-      } else if (c.resolution?.kind === "disabled") {
-        const err = document.createElement("p");
-        err.className = "ide-pal-error";
-        err.textContent = c.resolution.reason;
-        box.appendChild(err);
-      }
-      paletteResults.appendChild(box);
-      paletteEmpty?.setAttribute("hidden", "");
-      return;
-    }
-    let i = 0;
-    const renderRow = (row: PaletteRow, host: HTMLElement): void => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "ide-pal-row";
-      if (i === paletteActive) b.dataset["active"] = "";
-      b.dataset["paletteIndex"] = String(i);
-      b.setAttribute("role", "option");
-      const label = document.createElement("span");
-      label.textContent = row.label;
-      b.appendChild(label);
-      if (row.pinned) {
-        const pin = document.createElement("span");
-        pin.className = "ide-pal-pinned";
-        pin.textContent = "next step";
-        b.appendChild(pin);
-      }
-      if (row.action.kind === "disabled") {
-        b.dataset["disabled"] = "";
-        b.setAttribute("aria-disabled", "true");
-        const hint = document.createElement("span");
-        hint.className = "ide-pal-hint";
-        hint.textContent = row.action.reason;
-        b.appendChild(hint);
-      } else if (row.hint) {
-        const hint = document.createElement("span");
-        hint.className = "ide-pal-hint";
-        hint.textContent = row.hint;
-        b.appendChild(hint);
-      }
-      const index = i;
-      b.addEventListener("click", () => activatePaletteRow(index));
-      host.appendChild(b);
-      i += 1;
-    };
-    for (const section of model.sections) {
-      const sec = document.createElement("div");
-      const cap = document.createElement("p");
-      cap.className = "ide-pal-section";
-      cap.textContent = sectionLabels[section.key] ?? section.label;
-      sec.appendChild(cap);
-      for (const row of section.rows) renderRow(row, sec);
-      paletteResults.appendChild(sec);
-    }
-    if (searchHits.length > 0) {
-      const sec = document.createElement("div");
-      const cap = document.createElement("p");
-      cap.className = "ide-pal-section";
-      cap.textContent = sectionLabels["goto"] ?? "Go to";
-      sec.appendChild(cap);
-      for (const h of searchHits) renderRow({ id: "", label: h.label, action: { kind: "navigate", path: h.path } }, sec);
-      paletteResults.appendChild(sec);
-    }
-    const total = flatPaletteRows().length;
-    if (paletteActive >= total) paletteActive = Math.max(0, total - 1);
-    if (paletteEmpty) paletteEmpty.hidden = total > 0;
-    paletteResults.querySelector<HTMLElement>(".ide-pal-row[data-active]")?.scrollIntoView({ block: "nearest" });
-  }
-
-  function activatePaletteRow(index: number): void {
-    const row = flatPaletteRows()[index];
-    if (!row) return;
-    if (row.action.kind === "sheet" || row.action.kind === "navigate") {
-      window.location.assign(row.action.path); // GET only — the sheet owns the launch POST
-    }
-    // disabled rows sit inert — their reason is the row's hint
-  }
-
-  function openPalette(initial = ""): void {
-    if (!paletteEl) return;
-    closeCmdMenu();
-    paletteQ = initial;
-    paletteActive = 0;
-    searchHits = [];
-    paletteEl.hidden = false;
-    if (paletteInput) {
-      paletteInput.value = initial;
-      paletteInput.focus();
-      paletteInput.setSelectionRange(initial.length, initial.length);
-    }
-    renderPalette();
-  }
-  function closePalette(): void {
-    if (paletteEl) paletteEl.hidden = true;
-    paletteInput?.blur();
-  }
-  const paletteOpen = (): boolean => paletteEl != null && !paletteEl.hidden;
-
-  paletteEl?.addEventListener("click", (e) => {
-    if (e.target === paletteEl) closePalette(); // backdrop click closes
-  });
-  paletteInput?.addEventListener("input", () => {
-    paletteQ = paletteInput.value;
-    paletteActive = 0;
-    renderPalette();
-    // free-text (non-command) queries also hit the doc search — debounced, same-origin.
-    if (searchTimer) clearTimeout(searchTimer);
-    const q = paletteQ.trim();
-    if (q && !q.startsWith("/") && paletteSearchUrl) {
-      searchTimer = setTimeout(() => {
-        fetch(`${paletteSearchUrl}?q=${encodeURIComponent(q)}`, { credentials: "same-origin" })
-          .then((r) => (r.ok ? r.json() : { results: [] }))
-          .then((body: { results?: { label: string; path: string }[] }) => {
-            searchHits = body.results ?? [];
-            renderPalette();
-          })
-          .catch(() => undefined);
-      }, 180);
-    } else if (searchHits.length > 0) {
-      searchHits = [];
-      renderPalette();
-    }
-  });
-  paletteInput?.addEventListener("keydown", (e) => {
-    const rows = flatPaletteRows();
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      paletteActive = Math.min(rows.length - 1, paletteActive + 1);
-      renderPalette();
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      paletteActive = Math.max(0, paletteActive - 1);
-      renderPalette();
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const model = paletteModel(paletteData, paletteQ);
-      if (model.mode === "command") {
-        const r = model.commandRow?.resolution;
-        if (r && (r.kind === "sheet" || r.kind === "navigate")) window.location.assign(r.path);
-      } else {
-        activatePaletteRow(paletteActive);
-      }
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      closePalette();
-    }
-  });
   ide.querySelector<HTMLElement>("[data-ide-cheatsheet-close]")?.addEventListener("click", () => {
     if (cheatEl) cheatEl.hidden = true;
   });
@@ -661,7 +440,7 @@ function main(): void {
   function focusZone(): FocusZone {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return "none";
-    if (el.closest("[data-ide-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
+    if (el.closest("[data-app-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
     if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
     if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
     if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
@@ -682,17 +461,6 @@ function main(): void {
   // ---- the §5.12 keymap dispatcher (⌘K palette · ⌘1/⌘2/⌘J panes · ⌘⇧F/M/L · ⌘⇧R next step ·
   //      ⌘G approval · ⌥[/⌥] versions · j/k + P A D R F E findings · ? cheat sheet · ⌘S restore) ----
   window.addEventListener("keydown", (e) => {
-    if (paletteOpen()) {
-      // While the palette owns focus, only ⌘K/Escape outside the input close it.
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        closePalette();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        closePalette();
-      }
-      return;
-    }
     const action = dispatchIdeKey(
       {
         key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
@@ -713,9 +481,8 @@ function main(): void {
     }
     switch (action.kind) {
       case "palette":
-        e.preventDefault();
-        // bare "/" opens straight into command mode (the §7.2 grammar); ⌘K opens browse.
-        openPalette(e.key === "/" ? "/" : "");
+        // R7SHELL.1c — ⌘K is inert on SSR documents: the one palette lives in the AppShell
+        // (SPA); an SSR Page has no shell palette and issues no search request.
         break;
       case "pane":
         e.preventDefault();
@@ -782,7 +549,7 @@ function main(): void {
         // (the /v/:prev/diff/:n route). Elsewhere the palette's /compare verb stays the fallback.
         const link = document.querySelector<HTMLAnchorElement>("[data-compare-previous]");
         if (link?.href) window.location.assign(link.href);
-        else openPalette("/compare ");
+        /* the /compare fallback now lives in the AppShell palette (R7SHELL.1c) */
         break;
       }
       case "triage": {

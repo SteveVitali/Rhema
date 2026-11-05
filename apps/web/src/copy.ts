@@ -2636,6 +2636,21 @@ export const COPY = {
     light: "Light",
     auto: "Auto",
   },
+  // R7SHELL.1c (REQ-SHELL-7) — the global ⌘K palette's copy (the IDE palette's own labels stay
+  // under `ide.palette`; these are the shell-level palette's).
+  palette: {
+    dialogLabel: "Command palette",
+    inputLabel: "Search projects, drafts, letters, Voices, and commands",
+    placeholder: "Search or type a command…",
+    placeholderScoped: "Search this project — or type / for a command…",
+    emptyLabel: "Nothing matches.",
+    searchAllProjects: "Search all projects",
+    groupProjects: "Projects",
+    groupDrafts: "Drafts",
+    groupLetters: "Letters",
+    groupVoices: "Voices",
+    groupWorkspace: "Workspace",
+  },
 
   // SPA.4 — the client route-error boundary's generic strings (the §5.9 "a banner, never a stack
   // trace" posture; per-surface error copy lands with the surface tickets).

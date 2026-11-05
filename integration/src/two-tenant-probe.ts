@@ -148,6 +148,10 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
     insert into checkout_sessions (id, workspace_id, billing_account_id, user_id, kind, plan, cycle)
       values ('${checkoutSessionId}','${workspaceId}','${billingAccountId}','${userId}','subscribe','studio','monthly');
     insert into guidance (id, project_id, body) values ('${guidanceId}','${projectId}','${marker("GUIDANCE")}');
+    -- R7SHELL.1c — an indexed search doc carrying the tenant's marker token: the query-bearing
+    -- /search leg searches the OTHER tenant's token and must see nothing back.
+    insert into project_search_docs (id, project_id, workspace_id, kind, ref_id, body)
+      values ('psd_probe_${t}','${projectId}','${workspaceId}','draft','${draftId}','${marker("SEARCHDOC")} probe marker body');
     insert into inbox_items (id, user_id, project_id, kind, payload)
       values ('${inboxItemId}','${userId}','${projectId}','run.delivered','{}'::jsonb);
     insert into notification_prefs (user_id, prefs) values ('${userId}','{}'::jsonb)
@@ -171,7 +175,7 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
     findingId, figureId, liveDocId, restorePointId, decisionRequestId, checkoutSessionId,
     guidanceId, inboxItemId, actionTokenId, refundableRunId,
   ];
-  const textMarkers = ["VOICE", "ITEM", "THREAD", "PATH", "FINDING", "FIGURE", "RP", "DCR", "GUIDANCE"].map(
+  const textMarkers = ["VOICE", "ITEM", "THREAD", "PATH", "FINDING", "FIGURE", "RP", "DCR", "GUIDANCE", "SEARCHDOC"].map(
     (n) => marker(n),
   );
   return {
@@ -280,6 +284,8 @@ export interface ProbeReport {
 function scanForMarkers(text: string, markers: readonly string[]): string[] {
   return markers.filter((m) => text.includes(m));
 }
+
+const self_all = (t: TenantMarkers): readonly string[] => t.all;
 
 // ------------------------------------------------------ deterministic mode ----
 
@@ -410,6 +416,42 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
         const hits = scanForMarkers(body, foreign.all).filter((m) => !suppliedMarkers.has(m));
         if (hits.length) {
           findings.push({ route, asTenant: tag, status: res.status, leaked: hits });
+        }
+      }
+    }
+
+    // ---- R7SHELL.1c (REQ-SPEC-30) — the query-bearing GET /search legs. A bare census call to
+    // `?q=` returns empty groups and proves nothing, so each tenant searches the OTHER's marker
+    // token: `d.workspace_id = $1` inside the `withTenant`-scoped db must hide every foreign doc,
+    // persona, and hit. Own-token searches are the sanity (fail-closed ≠ empty). ----
+    for (const [as, foreign, tag] of [
+      [a, b, "a"],
+      [b, a, "b"],
+    ] as const) {
+      for (const q of [`MARKER_${tag === "a" ? "B" : "A"}_SEARCHDOC`, `MARKER_${tag === "a" ? "B" : "A"}_VOICE`]) {
+        const res = await requestAs(as, `/search?q=${encodeURIComponent(q)}`);
+        const body = await res.text().catch(() => "");
+        const hits = scanForMarkers(body, foreign.all);
+        if (hits.length) {
+          findings.push({ route: "GET /search", asTenant: tag, status: res.status, leaked: hits });
+        }
+      }
+      // a foreign project id as the scope filter must also resolve to nothing for this tenant.
+      const scoped = await requestAs(
+        as,
+        `/search?q=${encodeURIComponent(`MARKER_${tag.toUpperCase()}_SEARCHDOC`)}&project=${foreign.projectId}`,
+      );
+      const sbody = await scoped.text().catch(() => "");
+      const shits = scanForMarkers(sbody, foreign.all).filter((m) => m !== foreign.projectId);
+      if (shits.length) {
+        findings.push({ route: "GET /search?project=<foreign>", asTenant: tag, status: scoped.status, leaked: shits });
+      }
+      // own-token sanity: own search-doc + own Voice-name hits must come back.
+      for (const q of [`MARKER_${tag.toUpperCase()}_SEARCHDOC`, `MARKER_${tag.toUpperCase()}_VOICE`]) {
+        const own = await requestAs(as, `/search?q=${encodeURIComponent(q)}`);
+        const obody = await own.text().catch(() => "");
+        if (!scanForMarkers(obody, self_all(as)).length) {
+          ownDataSanity.push(`${tag}: /search?q=${q} returned none of its own markers`);
         }
       }
     }
