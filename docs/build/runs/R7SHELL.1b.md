@@ -9,10 +9,11 @@
 - **Branch:** `stevevitali/r7shell-1b-headers` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
 - **Started:** 2026-11-05T08:53Z · **Closed:** 2026-11-05T14:04:15Z
-- **ci:** pass #265@04343de (ci-pass anchor 42001171390; integration 42001171390; images (build +
-  scan, pin digests) 42001171390; public-safe (gitleaks / markers / licence policy) 42001171390;
-  contracts 42001171390; typecheck / lint / unit 42001171390; fast-path 42001171390 —
-  `logs/ci-R7SHELL.1b.json`)
+- **ci:** pass #265@e98667e (ci-pass anchor 42049516644; integration 42049516644; images (build +
+  scan, pin digests) 42049516644; public-safe (gitleaks / markers / licence policy) 42049516644;
+  contracts 42049516644; typecheck / lint / unit 42049516644; fast-path 42049516644 —
+  `logs/ci-R7SHELL.1b.json`); first read also pass at implementation head `04343de`
+  (run 42001171390)
 - **Production mutations:** none.
 
 ## Deferrals read
