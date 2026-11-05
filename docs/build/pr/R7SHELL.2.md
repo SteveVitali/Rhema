@@ -2,7 +2,7 @@
 
 - **Ticket:** `docs/tickets/230_R7SHELL.2__project-scope-sidebar.md` (manifest row 230)
 - **Requirement IDs:** REQ-SHELL-4, REQ-KIT-5 (entry-delta allowance)
-- **Base:** `stevevitali/r7pane-1-split-pane` (chain tip; PR #268)
+- **Base:** `stevevitali/r7pane-1-split-pane` (chain tip; R7PANE.1 PR #267)
 - **Stage A only** ($0) — GD-PREVIEW.R7; Stage B deferred to 250 via `D-R7SHELL.2-1`.
 - **mergePolicy: OPERATOR** — do not merge.
 

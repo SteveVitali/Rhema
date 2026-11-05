@@ -1,14 +1,14 @@
 # Run ledger — R7SHELL.2 (row 230)
 
 - **Spec:** `docs/tickets/230_R7SHELL.2__project-scope-sidebar.md`
-- **Base:** `stevevitali/r7pane-1-split-pane` @ `429749dd` (chainTip; R7PANE.1 PR #268)
+- **Base:** `stevevitali/r7pane-1-split-pane` @ `429749dd` (chainTip; R7PANE.1 PR #267)
 - **Branch:** `stevevitali/r7shell-2-project-scope`
 - **Harness:** `devin-desktop/swe-2-high/subagent`
 - **Skills:** `unknown` (loaded from `~/agent-skills/skills`)
 - **Started:** 2026-11-05T17:40:24Z
-- **Closed:** —
+- **Closed:** 2026-11-05T20:32Z
 - **Config:** autonomous, ledger, self-review, gap-analysis, tests, Stage-A-only verification (Live stage: Stage A only, $0; `GD-PREVIEW.R7`), evidence report. Stage B deferred to 250 via `D-R7SHELL.2-1`.
-- **ci:** —
+- **ci:** pending — first read failed at `1277313e` (run 42082775909, two dom tests pinning the pre-rail DOM); fixed at `fb3e07d2`; boundary read running on the pushed head
 
 ## Deferrals read
 
@@ -63,15 +63,43 @@ Read `docs/tickets/DEFERRALS.md` first per AGENTS. R7 OPEN rows: `D-R7OPEN.1-1` 
 - IN PROGRESS NOW: app-shell.tsx ProjectSection (imports added, DemoAppShell mounts it; WorkspaceAppShell mount + component body next).
 - 13:15Z — Phase 2 implementation COMPLETE: all source edits done (layout/state/keymap/tokens/ui/web/server/queries/app-shell/copy/dom-contract/r7legs/u3-probe). Verification: build+lint+typecheck green (138); check:dom-contract green; spa-budget **entry delta +13.7 kB / ≤15.0 allowance**. Unit tests: ide/tokens/ide-shell/app-shell/ide-chrome/versions-surface/occlusion-harness GREEN. DEFERRALS row D-R7SHELL.2-1 appended.
 - TEST FALLOUT being fixed: figures.dom (sidebar /p/:slug link exemption — DONE), transitions.dom (pageGets excludes view=tree — DONE), SsrHandoff BFF-spend (projectTreeQuery gated on isSpaEnabled leaf verdict — DONE), copy-containment (COPY.appShell.project object ref — fix to leaf refs NEXT), registry.test U3.occlusion (check if pre-existing), demo.dom/palette.dom/dom-contract.test details pending, privsep.docker + demo-corpus = environmental (docker absent; corpus denylist — check pre-existing).
+- 20:32Z — RESUMED run: commit `1277313e` + PR #268 + records were landed but the run paused before the CI boundary read and the ledger close. Boundary read at `1277313e` = **fail** (run 42082775909): `control-base.dom` (probe named `.ide-panel` — only `.ide-panel-tabs button` carries `background:none`) + `outline.dom` (back-link census over `[data-spa-root]` now includes the sidebar's Page item). Fixed scoped at `fb3e07d2`; all touched suites green locally; ADR-133 canonical header + Revisit trigger + index regen (check-build-memory 0 viol); ledger/index/phase-log close + boundary re-read next.
 
 ## Gap table
 
-_(filled Phase 4)_
+| item (spec §) | required layer | achieved layer | status | evidence |
+|---|---|---|---|---|
+| D1 project section — 7 items, SPA links + active, collapsed icon+tooltip, ReadOnlyProject write-only, recents exclusion (In scope 1, REQ-SHELL-4) | engineered | engineered | met | `app-shell.tsx:174-322` `ProjectSection` (items `:215-271`, disabled+reason `:285-306`, collapsed Tooltip `:291-294`); `ShellItem` `aria-current` `:379`; recents filter `:511` (`r.slug !== projectSlug`); `app-shell.dom.test.tsx` census |
+| D2 Files tree — tree roles + keyboard nav, Lucide, Badge not glyphs, COPY label (In scope 2) | engineered | engineered | met | `files-pane.tsx` `role="tree"` `:176`, `treeitem` `:128`, `group` `:181`, roving tabindex `:105/:172`, `data-lock-badge` Badge `:132-139`; walk `onProjectTreeKeyDown` `app-shell.tsx:325`; `COPY.files.heading` `files-labels.ts` |
+| D3 removal — rail + Files strip deleted, LAYOUT widths, pane state, keymap, paneLayout inputs (In scope 3) | engineered | engineered | met | `ide-shell.tsx` (no `.ide-rail`/`.ide-files` markup); `ide-css.ts` rail/files rules + arms dropped; `tokens.ts` LAYOUT `railPx`/`files*`/`bpFilesTicksMarginPx` gone; `layout.ts` files verdict gone, collapse panel→margin; `keymap.ts` `pane:"panel"`; `controller.ts`/`client/ide.ts` files paths removed |
+| D4 DOM contract + U1.shell extension, R7a targets resolvable (In scope 4) | engineered | engineered | met | `dom-contract.ts:309-312` new hooks, `:1589-1590` retire note, `:1645-1649` files-pane family + `data-lock-badge`; `r7legs.ts` U1_SHELL project walk (rails/Files absent, recents exclusion, 7-item SPA walk, collapsed screenshot) held `expected:"red"` |
+| AC1 no rail/Files DOM; test fails if reintroduced | engineered | engineered | met | `ide-shell.test.tsx`, `ide-chrome.dom.test.tsx`, `app-shell.dom.test.tsx`, `tokens.test.ts` absence asserts |
+| AC2 7 items SPA-nav + active; ReadOnlyProject disables write-only w/ reason | engineered | engineered | met | `app-shell.dom.test.tsx` — item census, hrefs, `aria-current`, `data-disabled`+reason |
+| AC3 tree keyboard-navigable, Badges not glyphs | engineered | engineered | met | tree roles + roving tabindex above; `data-lock-badge` every row, no lock glyph |
+| AC4 pre-change blob tolerates; chords green | engineered | engineered | met | `ide.test.ts` codec stale-keys test; `keymap.test.ts` + `intercept.dom.test.tsx` green |
+| AC5 dom-contract green; tour targets resolve; entry delta ≤15 kB | engineered | engineered | met | `check:dom-contract` OK; `check:spa-budget` **+13.7 kB** vs `04a4e98b` |
+| AC6 Stage B at 250 | staging-verified | engineered | met-engineered(D-R7SHELL.2-1) | `DEFERRALS.md` `D-R7SHELL.2-1` OPEN → owner 250 |
+| AC7 universal gate | engineered | engineered | met | this ledger; ADR-133; BUILD_INDEX 269; LEDGER advance; append-only OK; check-build-memory 0 viol |
+| Out of scope (236 coherence/settings page · 243 versions · 241 export · 248 demo entry · 239 keymap) | — | — | confirmed not implemented | no outline-source rewrite, no Versions/Export surface work, no Demo item, no keymap expansion in the diff |
 
 ## Evidence log
 
-_(filled Phase 5)_
+- `pnpm turbo build lint typecheck` — green 138/138 at `1277313e` (recorded); `@rhema/web` typecheck+lint re-run clean at `fb3e07d2`.
+- `pnpm exec vitest run` touched files: 8 dom files 137/137 + `server/versions-surface/renderer-overrides/palette/ide/tokens/ide-shell/occlusion/registry` 233/233 + `keymap/intercept` 87/87 — all green at `fb3e07d2`.
+- `pnpm check:dom-contract` — OK (journeys ⊆ manifest ⊆ emitted+asserted).
+- `pnpm check:spa-budget` — **entry +13.7 kB** of the ≤15.0 kB allowance vs baseline `04a4e98b`; total JS +48.5 kB; ceilings held.
+- `node docs/build/tools/check-append-only.mjs --base stevevitali/r7pane-1-split-pane` — OK.
+- `check-build-memory.sh .` — 0 violations after ADR-133 canonical header + `## Revisit trigger` + `adr-index` regen (18 warnings, all legacy/pre-existing).
+- CI: first boundary read **fail** at `1277313e` (run 42082775909 — `control-base.dom` panel-button probe + `outline.dom` back-link census both pinned the pre-rail DOM) → scoped to the surviving rules at `fb3e07d2`; boundary re-read pending on the pushed head.
 
 ## Evidence report
 
-_(filled Phase 6)_
+Phase-4 gap walk found no unimplemented deliverable; the only drift was two Stage-A test
+assertions still pinning the pre-removal DOM (found by CI, not the gap walk — the run paused
+before the boundary read): `control-base.dom`'s specificity probe named `.ide-panel` where only
+`.ide-panel-tabs button` carries `background:none`, and `outline.dom`'s "no back-link in the
+body" census ran over `[data-spa-root]` which now legitimately contains the sidebar's Page item
+linking `/p/:slug`. Both were scoped, not relaxed (the census moved to the leaf `<main>`; the
+probe moved inside `.ide-panel-tabs`). Stage-B evidence is gate-pending per GD-PREVIEW.R7 —
+`D-R7SHELL.2-1` names the extended `U1.shell` walk + 1440×900 screenshots at 250. Entry delta
++13.7 kB gz vs `spa-budget-baseline.json` (`04a4e98b`).
