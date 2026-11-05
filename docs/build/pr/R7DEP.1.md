@@ -60,3 +60,30 @@ The R7a phase deploy, in two parts with an internal operator pause:
 `GD-PREVIEW.R7` (one owned preview per phase; voids at $20) · `GD-GOLDEN.R7` (≤1 re-run only
 if protocol-affecting) · `GD-PUBDELTA.R7` · **HUMAN-H15 unticked → PAUSE before Part B.**
 mergePolicy = OPERATOR — never merged by the run.
+
+---
+
+## Part B — prod deploy of the R7a chain (2026-11-05; this PR's head carries the records)
+
+**Deploy SHA `4bc8cf4a73402aed782546fe233235e9807cc990`** (R7a chain tip incl. R7FIX.2). All eight
+GD-DEPLOY.R7 conditions evidenced before the act each guards:
+
+| # | Condition | Evidence |
+|---|---|---|
+| 1 | preview first | Part A green + R7FIX.2 re-walk on pr-259 (all 7 R7a legs green) |
+| 2 | all-service image build | Cloud Build `02a947ec` @ `4bc8cf4a`, `_TAG=r7dep-1` → `rhema-prod` AR |
+| 3 | classified preview --diff | ~10 updates + 1 stateless template replace, 0 deletes/stateful, Δ≈$0 |
+| 4 | provenance all-PASS | web+api serve `4bc8cf4a` |
+| 5 | deployments row | `prod:4bc8cf4a` + protocols `0.4.0+9c2b880dbee74bd8` |
+| 6 | rollback recipe | committed in `runs/R7DEP.1.md` (pre-state `4938b8e` digests) |
+| 7 | image-content assertion | pulled web digest: corpus + 4 essay snapshots present |
+| 8 | CDN invalidation | `/bff/p/demo~*` on `rhema-prod-urlmap-6f2b86e` (dry-run == act) |
+
+- `0061_demo_events` applied on prod PG16 via `prod-migrate-seed` (in-band additive lint vs `0060` PASS); census clean (owner `rhema_demo_writer` NOLOGIN/prosecdef; `rhema_app` select+insert denied, EXECUTE-only).
+- `WALKTHROUGH_MODEL_KEY_SECRET` env binding removed (D-R7COPY.0-2) — verified absent live.
+- **Prod Stage-B: all 10 legs PASS** at `--expect-sha 4bc8cf4a`: D1.hub, D2.tour (11 steps ×3 widths), D3.readonly, P1.demo, R11.demo, U3.stopgap, R8.showcase.spa, N10, P1.public, R8.showcase — $0 spend, screenshots in `reports/2026-11-05_R7DEP.1-prod/`.
+- Beacon end-to-end on prod (14 `src=jrn` `demo_events` rows); twin `s-maxage`+ETag+CDN `age:` HIT; 405/404 refusals clean; public routes 200.
+- Golden: classified **non-protocol-affecting** (re-derived on `a34eb51..4bc8cf4a`) → no re-run, $0.
+- Preview spend ≈ **$8 list-price** of the $20 round cap; pr-259 destroyed → `rm` (orphan serverless address drained + removed).
+- **Deferrals:** closed D-R7COPY.0-2, D-R7FIX.1-1, D-R7RO.1-1, D-R7DEM.4-1; progress D-R7OPEN.1-1, D-R7DEM.6b-1; open w/ reason D-R7KIT.1-1, D-R7COPY.0-1, D-R7DEM.5-1.
+- Verify: turbo 138/138 · `pnpm test` 6,722 pass (1 flake re-verified) · compute.test 26/26 · REQ-DOPS-6 (R7a half), REQ-DACC-1…6, REQ-DWEB-6/9/10/11/14/16, REQ-TOUR-1/2/4 (B halves).
