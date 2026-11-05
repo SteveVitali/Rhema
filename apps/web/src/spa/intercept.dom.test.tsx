@@ -245,6 +245,25 @@ describe("REQ-NAVM-1/2 — the §2.1 ordered guard pipeline (pass-through rows)"
     expectSkipped(router, navSpy);
   });
 
+  it("R7FIX.2 — an in-tree anchor to the current location still commits a transition", async () => {
+    // `router.navigate` dedupes an identical href into a silent load() — the click would die
+    // after preventDefault (the dead self-link 224's R8.showcase.spa owed on). The interceptor
+    // commits it through history.push instead: a real transition (new location key), zero
+    // document loads — the native reload's in-document twin.
+    const router = await mountInterceptor("/app/inbox");
+    const navSpy = vi.spyOn(router, "navigate");
+    const pushSpy = vi.spyOn(router.history, "push");
+    click(anchor("/app/inbox"));
+    expect(sawPre).toBe(false);
+    expect(sawPost).toBe(true); // the interceptor claimed it
+    expect(pushSpy).toHaveBeenCalledWith("/app/inbox");
+    expect(navSpy).not.toHaveBeenCalled(); // the dedupe arm never fires
+    expect(docNavSpy).not.toHaveBeenCalled();
+    // The committed transition itself (new location key, zero document loads) is proven live
+    // on the R7FIX.2 preview re-walk — the memory-history test env does not mint keys the way
+    // the browser history seam does.
+  });
+
   it.each(["https://else.example/x", "//else.example/x", "mailto:a@b.c", "javascript:void(0)"])(
     "fails closed on foreign/opaque-origin hrefs (%s)",
     async (href) => {

@@ -78,7 +78,13 @@ export function ideCss(): string {
     ".ide[data-desk='closed'] .ide-desk { height: 0; border-top: none; overflow: hidden; }",
     // UX.2 — the desk head wraps the tablist + the (non-tab) close control; the row's padding and
     // hairline moved here so the tablist stays a pure role=tablist container (aria-required-children).
-    ".ide-desk .ide-desk-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }",
+    // R7FIX.2 (REQ-PANE-0, B2 — "the Desk head stays actionable; the status bar may never cover
+    // it"): the drawer's height transition passes through a window where the box is shorter than
+    // this row — the head overflows downward over `.ide-statusbar`, and DOM order alone lets the
+    // bar's spans win hit-testing at the tabs' centers (the ⌘J-open dead zone 224's walk caught:
+    // `<span>` occluded the chat tab on pr-259). Positioned + z-indexed, the head rides its
+    // drawer ABOVE the bar while it slides — paint and clicks stay on the chrome.
+    ".ide-desk .ide-desk-head { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }",
     ".ide-desk .ide-desk-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; }",
     ".ide-desk .ide-desk-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; }",
     ".ide-desk .ide-desk-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }",
