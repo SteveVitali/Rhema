@@ -25,7 +25,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "hono";
 import { themeBootScript, resolveAppTheme, type PaperTheme } from "@rhema/ide";
-import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES, type ReadOnlyProject } from "@rhema/contracts";
+import {
+  DEMO_DOCUMENT_ROUTE_IDS,
+  SPA_DOCUMENT_ROUTES,
+  SPA_PUBLIC_ROUTES,
+  type ReadOnlyProject,
+} from "@rhema/contracts";
 import { themeCss, ideCss } from "@rhema/tokens";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
@@ -141,10 +146,14 @@ export async function loadSpaManifest(
   return entry;
 }
 
-/** `/p/<slug>/…` → `slug` for the boot's `project` key; anything else ⇒ absent. */
+/** `/p/<slug>/…` or `/demo/<essay>/…` → `slug` for the boot's `project` key; anything else ⇒
+ *  absent. R7DEM.4: the public demo alias maps `/demo/<essay>` → `demo~<essay>` so `data-project`
+ *  and the paper resolve before paint on the alias URL too. */
 function projectSlugFor(pathname: string): string | null {
   const segs = pathname.split("/").filter((s) => s !== "");
-  return segs[0] === "p" && segs[1] != null ? segs[1] : null;
+  if (segs[0] === "p" && segs[1] != null) return segs[1];
+  if (segs[0] === "demo" && segs[1] != null) return `demo~${segs[1]}`;
+  return null;
 }
 
 /**
@@ -156,16 +165,26 @@ export async function spaBootPayload(
   c: Context,
   deps: SpaShellDeps,
   session: SessionHeaders,
-  opts?: { paperTheme?: PaperTheme; readOnlyProject?: ReadOnlyProject },
+  opts?: {
+    paperTheme?: PaperTheme;
+    readOnlyProject?: ReadOnlyProject;
+    /** R7DEM.4 (REQ-DWEB-6; ADR-126) — the demo boot: no principal/theme read (zero DataSource
+     *  calls on the demo path), `theme:{}`, and every in-scope demo routeId "spa" on every
+     *  device class (the ADR-126 REQ-ED-12 amendment — a phone UA gets the read-only SPA Page,
+     *  never an SsrHandoff loop). */
+    demo?: { essay: string; slug: string; signedIn: boolean; build: string | null };
+  },
 ): Promise<SpaBootPayload> {
-  const [principal, theme] = await Promise.all([
-    Promise.resolve()
-      .then(() => deps.dataSource.getSessionPrincipal?.(session))
-      .catch(() => null),
-    Promise.resolve()
-      .then(() => deps.dataSource.getTheme?.(session))
-      .catch(() => null),
-  ]);
+  const [principal, theme] = opts?.demo
+    ? [null, null]
+    : await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getSessionPrincipal?.(session))
+          .catch(() => null),
+        Promise.resolve()
+          .then(() => deps.dataSource.getTheme?.(session))
+          .catch(() => null),
+      ]);
   const deviceClass = deviceClassFor(c);
   // SPA.28 — the renderer map is STATIC truth: every surface-keyed document route serves the
   // shell unconditionally (the SSR documents + the flag consult are gone), so the map is a
@@ -176,7 +195,11 @@ export async function spaBootPayload(
   // forever (REQ-BND-5).
   const surfaces: Record<string, "spa" | "ssr"> = {};
   for (const doc of SPA_DOCUMENT_ROUTES) {
-    const forcedSsr = deviceClass === "phone" && doc.pageMount === true;
+    // R7DEM.4 — an in-scope demo routeId serves "spa" on EVERY device class (ADR-126's REQ-ED-12
+    // amendment): the phone forced-SSR arm would SsrHandoff into a document that does not exist.
+    // Outside a demo boot the arm is unchanged — a tenant Page on a phone still serves SSR.
+    const demoInScope = opts?.demo != null && DEMO_DOCUMENT_ROUTE_IDS.includes(doc.routeId);
+    const forcedSsr = deviceClass === "phone" && doc.pageMount === true && !demoInScope;
     surfaces[doc.routeId] = doc.surfaces != null && !forcedSsr ? "spa" : "ssr";
   }
   for (const routeId of SPA_PUBLIC_ROUTES) surfaces[routeId] = "ssr";
@@ -193,6 +216,7 @@ export async function spaBootPayload(
     // R7RO.1 (REQ-DWEB-14) — the document-level read-only fact the Page routes stamp for a
     // showcase row (the `demo` slot is 220's payload); a `run_lock` lives on the twin instead.
     ...(opts?.readOnlyProject != null ? { readOnlyProject: opts.readOnlyProject } : {}),
+    ...(opts?.demo != null ? { demo: opts.demo } : {}),
   };
 }
 
@@ -260,7 +284,12 @@ export async function spaShellDocument(
   c: Context,
   deps: SpaShellDeps,
   session: SessionHeaders,
-  opts?: { paperTheme?: PaperTheme; readOnlyProject?: ReadOnlyProject },
+  opts?: {
+    paperTheme?: PaperTheme;
+    readOnlyProject?: ReadOnlyProject;
+    /** R7DEM.4 (REQ-DWEB-6; ADR-126) — the demo shell's boot fact; see `spaBootPayload`. */
+    demo?: { essay: string; slug: string; signedIn: boolean; build: string | null };
+  },
 ): Promise<Response> {
   const root = deps.spaAssetRoot ?? DEFAULT_SPA_ASSET_ROOT;
   const [boot, entry] = await Promise.all([

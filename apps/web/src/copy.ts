@@ -10,6 +10,7 @@ export const COPY = {
   // UX.1 — the public routes' meta descriptions (render.tsx emits them as description/OG/Twitter).
   // Factual, no claims beyond what the pages themselves show; figures stay on /pricing (config-derived).
   meta: {
+    demo: "A read-only tour of a real essay's editorial record — drafts, review dossiers, and the changes each round made.",
     landing:
       "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on.",
     pricing: "Rhēma pricing — plans, credits, and the per-workflow cost cards.",
@@ -2234,6 +2235,12 @@ export const COPY = {
   //      in a hero/proof zone, detection-evasion language, a placeholder logo, an unbuilt-asset claim,
   //      or a comparative claim without the wave flag fails the copy test (REQ-POS-4/5/11/12/13,
   //      REQ-GROWTH-5 amended, REQ-EVAL-19). ----
+  demo: {
+    hubTitle: "The demo",
+    hubLede: "A read-only walk through a real essay's editorial record — its drafts, the dossiers each review delivered, and what changed between rounds.",
+    readOnlyTitle: "Read-only demo",
+    readOnlyBody: "This is a read-only demo of a real essay's editorial record. Start your own project to use these tools.",
+  },
   landing: {
     nav: {
       pricing: "Pricing",

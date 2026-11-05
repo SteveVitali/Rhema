@@ -36,6 +36,7 @@
     "@rhema/api-client": "workspace:*",
     "@rhema/commands": "workspace:*",
     "@rhema/contracts": "workspace:*",
+    "@rhema/demo-corpus": "workspace:*",
     "@rhema/editor": "workspace:*",
     "@rhema/findings-core": "workspace:*",
     "@rhema/ide": "workspace:*",

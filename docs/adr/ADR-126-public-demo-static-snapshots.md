@@ -109,3 +109,73 @@ owned decisions this ticket records under this ADR:
   `figure-image` into 218's `registerSnapshotKind` seam with per-kind structural validators that
   assert the omitted-numerics rule; `KindDtoMap`/`ENVELOPE_BYTES`/`EssayIndex.chunks` extend
   additively.
+
+### Dated note — 220_R7DEM.4 (2026-11-04): the serving architecture + the REQ-ED-12 banner
+
+Fills the **Decision** shell for the server half (220a records the S-1 outcome). Decisions this
+ticket owns:
+
+- **Registry and namespace (`@rhema/contracts/src/demo.ts`).** `DEMO_SLUG_PREFIX = "demo~"`, the
+  `DEMO_ESSAYS` registry (corpus key ↔ slug ↔ title; the committed synthetic fixture rides it
+  flagged `fixture: true`), `isDemoSlug`/`isDemoSlugPrefix`, and `DEMO_ROUTE_IDS` — the shared
+  allowlist the server's guard and 220a's SPA both consult: the nine document routeIds
+  (`/p/$project`, `/v/$v`, `/v/$n/diff/$m`, `/a/$artifactId`, `/revisions/$cid`,
+  `/review/$runId`, `/r/$runId`, `/figures`, `/figures/$figureId`) plus the one JSON endpoint
+  that rides the `/p/` namespace (`/p/$project/palette-search`, answered `{results:[]}`). The
+  `~` is outside the api slug grammar forever, so the namespace can never collide with a tenant
+  slug — a property test pins `slugify`'s output and `isDemoSlug`/`spaRouteFor` agreement.
+- **Guard placement and arms.** One `app.use("*")` inside `createWebApp`, registered after the
+  middleware block and before `/session` and every `/p`/`/bff` handler. It claims `/demo`,
+  `/demo/<essay>/…`, `/p/demo~*`, and `/bff/p/demo~*`. Non-GET/HEAD ⇒ 405
+  `{error:"demo_read_only"}` (JSON, or the terminal SSR notice for a form poster). An
+  unregistered `demo~` slug or a GET outside `DEMO_ROUTE_IDS` ⇒ terminal 404 (JSON on `/bff`,
+  the not-found document otherwise), never the shell. Zero DataSource calls of either kind in
+  every arm — the §7 suite proves it with a throwing, recording outer source.
+- **Nested JSON app (S-2).** A second `createWebApp({demo: true, collabWsUrl: undefined,
+  session: request-scoped DEMO_SESSION})` serves twins only; the outer app forwards the request
+  with `cookie`/`authorization` stripped and deletes `set-cookie` on the way back, so twin
+  bodies are byte-identical across cookie states. It never emits HTML — documents stay on the
+  outer app, so the CSP nonce stays single per `<script>` (REQ-DWEB-8). The `demo` flag drives
+  the twin stamps (`readOnly:true`, `ReadOnlyProject{reason:"demo"}` on the 211 carrier) and
+  `ideContext`'s out-of-demo drops (settings rows, the New-obligation goto row, runNextHref,
+  theme/paperTheme write URLs; `paletteSearchUrl` stays because the demo answers it).
+- **`demoDataSource` (REQ-DWEB-3).** `apps/web/src/demo-data.ts` reads 218/218a's snapshot
+  envelopes lazily per chunk, resolving `demo~` slugs back to corpus keys at serve time. It
+  implements the provisional 25-method set of R3 §1 (the DWEB-3 amendment: 221's regenerated
+  composition walk finalizes it); every other key is a throwing `DemoUnsupported` proxy — a
+  rejected promise, so degrade-catches behave as an absent seam. Its module graph carries no
+  `fetch`, no `process.env`, no runtime `@rhema/api-client`/`@rhema/db`/`@rhema/live-clients`/
+  `@rhema/demo-corpus` import — the eslint boundary plus a module-graph scan test enforce it;
+  snapshot misses are `DemoError{status:404}` and the nested-app seam adapts them to `ApiError`
+  so the shared compositions' `instanceof ApiError` arms work verbatim. The one slug-less seam
+  (`getRunReport`) resolves through a per-request essay hint the nested session resolver stamps.
+- **Boot + documents (REQ-DWEB-6/9).** `/demo` is a public SSR document with the N10 head
+  contract and `data-demo-root` (221a fills it). `/demo/<essay>/…` and `/p/demo~<essay>/…` GETs
+  serve the outer app's `spaShellDocument` with `demo:{essay, slug, signedIn, build}` on the
+  boot — `signedIn` is cookie PRESENCE only (cosmetic; it authorizes nothing), `build` is the
+  deploy SHA the client appends as `?b=<sha>` to demo twins (S-13). No `principal`, `theme:{}`,
+  and every in-scope routeId `"spa"` on every device class — **the dated REQ-ED-12/ADR-108
+  amendment for the demo leg (2026-11-04): demo Pages render SPA read-only on every device
+  class — a phone UA never gets an SsrHandoff into a non-existent document.**
+- **Caching (S-13; REQ-DWEB-10).** Twins answer `cache-control: public, max-age=300,
+  s-maxage=86400` plus a strong `ETag` of snapshot hash + deploy SHA — the explicit header wins
+  over the authed `no-store` floor; the demo shell sends `no-cache` (a per-request nonce must
+  never freeze at the edge). `/bff/demo/feed-labels` serves the shared maps publicly at the same
+  cache posture — the demo needs the SPA's feed-labels read without the session gate.
+- **Asset route (REQ-DWEB-17).** `GET /bff/demo/asset/:essay/:file` serves only entries whose
+  `kind:"image"` the essay's own `corpus/<essay>/index.json` admits (the PROVENANCE-allowlisted
+  set), a small extension→content-type allowlist, `immutable` caching, and traversal rejection —
+  never markdown, `_rules`, or unlisted media.
+- **Image + corpus discipline (REQ-DOPS-2).** `@rhema/demo-corpus` is a production dependency of
+  `@rhema/web` so `pnpm deploy` ships `corpus/` + `snapshots/`; the Dockerfile asserts their
+  presence (`test -s`), failing the image build when they drop. The runtime root resolves from
+  the installed package; tests pin it to `fixtures/synthetic` (S-12 — no real-corpus byte rides
+  a test). The `demo` DOM-contract bucket is declared (`data-demo-root`,
+  `data-demo-readonly-notice`), emitted, and asserted; `check:no-cookies`' scan never sees the
+  guard's header literals because they live in `demo.ts`, outside its TARGETS (RV-35).
+
+**Consequences recorded:** the provisional method set is explicit — if 221's walk adds or drops a
+seam, `demo-data.ts` and its Pick change together; a wrong answer is impossible where
+`DemoUnsupported` throws. Public anonymous JSON answers identical bytes under a session cookie
+because the strip happens before the nested app runs. The Stage-B surface (deployed `/demo`
+plus twin/asset behavior, and 220a's URL spike) is deferred to 224 as `D-R7DEM.4-1`.

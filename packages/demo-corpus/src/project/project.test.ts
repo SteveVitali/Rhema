@@ -399,13 +399,21 @@ describe("the size bound (AC3)", () => {
 
   it("no snapshot JSON is imported by any SPA module", () => {
     const spa = join(ROOT, "apps/web/src");
+    // An import specifier is the only way corpus/snapshot bytes can ride a bundle (static,
+    // dynamic or side-effect). R7DEM.4's server-only `demo-data.ts` reads the same files off
+    // disk at request time — that is the intended serve path, never a bundle edge, so the scan
+    // keys on import statements, not the corpus/snapshot words elsewhere in source.
+    const importSpec =
+      /(?:from|import|require)\s*\(?\s*['"]([^'"]*(demo-corpus|fixtures\/synthetic|snapshots\/)[^'"]*)['"]/g;
     for (const p of walk(spa)) {
       if (!/\.(ts|tsx)$/.test(p)) continue;
       // test files never enter client bundles — the dossier-snapshot test reads the committed
       // snapshots by path (218a's colocated DossierViewData check); shipped code still may not.
       if (/\.test\.(ts|tsx)$/.test(p)) continue;
       const src = readFileSync(p, "utf8");
-      expect(src, p).not.toMatch(/demo-corpus|fixtures\/synthetic|snapshots\//);
+      for (const m of src.matchAll(importSpec)) {
+        expect.unreachable(`${p}: snapshot/corpus import specifier ${m[1]}`);
+      }
     }
   });
 });

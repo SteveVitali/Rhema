@@ -7,7 +7,12 @@
 // caller passes the full PageData, the SPA passes its boot/loader fields.
 
 import { COPY } from "./copy.js";
-import { legalPageFor, type LegalRouteId } from "@rhema/contracts";
+import {
+  DEMO_SLUG_PREFIX,
+  demoEssayForSlug,
+  legalPageFor,
+  type LegalRouteId,
+} from "@rhema/contracts";
 
 /** R6LGL.1 — the legal documents' meta descriptions, keyed by census routeId. */
 const LEGAL_META: Record<LegalRouteId, string> = {
@@ -59,6 +64,24 @@ export function docMetaFor(pathname: string, data: DocMetaData = {}): {
   if (p === "/signup") return { title: pageTitle("Create your account"), description: COPY.meta.signup };
   if (p === "/login") return { title: pageTitle("Sign in"), description: COPY.meta.signIn };
   if (p === "/showcase") return { title: pageTitle("Showcase"), description: COPY.meta.showcase };
+  // R7DEM.4 (REQ-DWEB-9) — the public demo hub carries the N10 head contract (description + OG);
+  // `/demo/<essay>/…` titles come from the registry row, classified like the /p/ shapes below.
+  if (p === "/demo") return { title: pageTitle("Demo"), description: COPY.meta.demo };
+  const dm = /^\/demo\/([^/]+)(?:\/(.*))?$/.exec(p);
+  if (dm) {
+    const essayTitle = demoEssayForSlug(`${DEMO_SLUG_PREFIX}${dm[1]}`)?.title ?? "Demo";
+    const sub = dm[2] ?? "";
+    const inEssay = (page: string) => `${page} — ${essayTitle} · ${SITE}`;
+    if (sub === "") return { title: `${essayTitle} · ${SITE}` };
+    if (/^review\//.test(sub)) return { title: inEssay("Dossier") };
+    if (/^r\//.test(sub)) return { title: inEssay("Run report") };
+    if (/^revisions\//.test(sub)) return { title: inEssay("Revision") };
+    if (sub === "figures") return { title: inEssay("Figures") };
+    if (/^figures\//.test(sub)) return { title: inEssay("Figure") };
+    if (/^v\/[^/]+\/diff\//.test(sub)) return { title: inEssay("Compare") };
+    if (/^[va]\//.test(sub)) return { title: inEssay("Page") };
+    return { title: `${essayTitle} · ${SITE}` };
+  }
   // R6LGL.1 (REQ-LCH-1) — the legal/trust documents (public SSR; the title is the census row's
   // verbatim so `<title>`, the footer label, and the page <h1> can never drift).
   const legal = legalPageFor(p);

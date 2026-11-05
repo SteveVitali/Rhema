@@ -21,6 +21,7 @@ describe("route manifest (§4.2 / REQ-BETA-19)", () => {
       "/",
       "/acceptable-use",
       "/contact",
+      "/demo",
       "/invite",
       "/login",
       "/pricing",

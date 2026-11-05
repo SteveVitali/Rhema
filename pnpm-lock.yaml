@@ -354,6 +354,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@rhema/demo-corpus':
+        specifier: workspace:*
+        version: link:../../packages/demo-corpus
       '@rhema/editor':
         specifier: workspace:*
         version: link:../../packages/editor
