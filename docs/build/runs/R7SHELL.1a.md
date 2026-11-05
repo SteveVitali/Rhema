@@ -125,7 +125,7 @@ the ticket's own ready-to-flip disposition for `U1.shell`.
 - `pnpm check:spa-budget` — **entry +9.6 kB gz vs `04a4e98b` baseline** (≤15 kB/ticket allowance; the AppShell chunk + lucide icons are the entry delta). NOTE: an earlier mid-run reading showed −37.4 kB — that predated the `app-shell` chunk's inclusion in the manifest scan; the committed figure is +9.6 kB.
 - `node docs/build/tools/check-append-only.mjs --base stevevitali/r7kit-2b-forms-guard` — append-only OK.
 - `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — 0 violations (warnings only, all legacy).
-- Commits: `5f2947b4` (implementation + tests + records) · `1a399076` (closeout: BUILD_INDEX 265, LEDGER advance). PR **#264** on `stevevitali/r7kit-2b-forms-guard`.
+- Commits: `5f2947b4` (implementation + tests + records) · `1a399076` (closeout: BUILD_INDEX 265, LEDGER advance) · `73929889` (self-review fix — Sign out rides the native POST `/logout` form, never a GET). PR **#264** on `stevevitali/r7kit-2b-forms-guard`.
 - ci: boundary read at `docs/build/logs/ci-R7SHELL.1a.json` (see PHASE LOG).
 
 ## Evidence report
