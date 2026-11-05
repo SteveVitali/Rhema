@@ -34,10 +34,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ConversionPreview,
   PageTitle,
-  Shell,
 } from "@rhema/ui";
 import type { PresignedImportDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
+import { PageBody, PageHeader } from "../page-header.js";
 import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -380,31 +380,23 @@ export function NewProjectSurface({
     { key: "draft" as const, title: COPY.newProject.entryDraft, body: COPY.newProject.entryDraftNote },
   ];
 
-  const sheetShell = (children: ReactNode): ReactNode => (
-    <Shell
-      brand={COPY.brand}
-      tagline={COPY.tagline}
-      nav={<a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>}
-      footer={<span>{COPY.footer}</span>}
-    >
-      {children}
-    </Shell>
-  );
+  // R7SHELL.1b — the sheet's only chrome is the sidebar; the title is a content row.
+  const sheetShell = (children: ReactNode): ReactNode => <PageBody>{children}</PageBody>;
 
   if (compact) {
     return sheetShell(
-      <>
-        <PageTitle>{COPY.newProject.heading}</PageTitle>
+      <div data-spa-surface>
+        <PageHeader title={COPY.newProject.heading} />
         <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
           {COPY.phoneBlocked.note}
         </p>
-      </>,
+      </div>,
     );
   }
 
   return sheetShell(
     <div data-spa-surface onSubmit={onSubmit}>
-      <PageTitle>{COPY.newProject.heading}</PageTitle>
+      <PageHeader title={COPY.newProject.heading} />
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.newProject.lede}</p>
       {/* the consumed handshake marker — transient, rendered on the echo leg (ONB.1). */}
       {consumed ? <span data-held-consumed={consumed} hidden /> : null}
@@ -683,20 +675,22 @@ export function NewProjectPreviewSurface({
 
   if (compact) {
     return (
-      <Shell brand={COPY.brand} tagline={COPY.tagline} nav={<a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>} footer={<span>{COPY.footer}</span>}>
-        <PageTitle>{COPY.import.previewHeading}</PageTitle>
+      <PageBody>
+        <div data-spa-surface>
+          <PageHeader title={COPY.import.previewHeading} />
         <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
           {COPY.phoneBlocked.note}
         </p>
-      </Shell>
+        </div>
+      </PageBody>
     );
   }
 
   const pv = twin.newProjectPreview;
   return (
-    <Shell brand={COPY.brand} tagline={COPY.tagline} nav={<a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>} footer={<span>{COPY.footer}</span>}>
+    <PageBody>
       <div data-spa-surface onSubmit={onSubmit}>
-        <PageTitle>{COPY.import.previewHeading}</PageTitle>
+        <PageHeader title={COPY.import.previewHeading} />
         {pv?.status === "pending" ? <ConvertingSection sourceLabel={pv.sourceLabel} /> : null}
         {pv?.status === "ready" ? (
           <ConversionPreview
@@ -730,7 +724,7 @@ export function NewProjectPreviewSurface({
           />
         ) : null}
       </div>
-    </Shell>
+    </PageBody>
   );
 }
 
@@ -817,7 +811,7 @@ export function ImportPreviewSurface({
 
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <PageTitle>{COPY.import.previewHeading}</PageTitle>
+      <PageHeader title={COPY.import.previewHeading} />
       {compact ? (
         <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
           {COPY.phoneBlocked.note}

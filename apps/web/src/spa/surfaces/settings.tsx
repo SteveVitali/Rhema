@@ -31,7 +31,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import type { FormEvent, ReactNode } from "react";
-import { PageTitle, Shell } from "@rhema/ui";
 import type {
   AccountExportDto,
   AccountSettingsDto,
@@ -57,19 +56,16 @@ import { COPY } from "../../copy.js";
 import { ApprovalSettingsSection } from "../../approval-settings.js";
 import { bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
+import { PageBody, PageHeader } from "../page-header.js";
 import type { BffProjectSettingsTwin, BffSettingsNotificationsTwin } from "../queries.js";
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals;
 // the branch handles keep the same leaves without re-walking the table in JSX.
-const { settings: S, billing: B, accountExport: AX, project: PRJ } = COPY;
+const { settings: S, billing: B, accountExport: AX } = COPY;
 
 /** `{key}`-template substitution — the local twin of pages.tsx's `fmt` (one helper, both renderers). */
 function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
-}
-
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
 }
 
 // ---- The SSR's shared settings micro-styles, verbatim (pages.tsx 4026-4043) -------------------
@@ -279,8 +275,9 @@ export function SettingsFrame({
   const onSubmit = useSettingsFormSubmit();
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href="/app">{PRJ.backToList}</a>} footer={footer()}>
-        <PageTitle>{S.heading}</PageTitle>
+      <PageBody>
+        <PageHeader title={S.heading} />
+        {/* R7SHELL.1b — the section strip stays an in-content row (its styling is 240's). */}
         <SettingsNav active={section} />
         <div key={contentKey} style={{ maxWidth: "640px" }}>
           {saved ? (
@@ -288,7 +285,7 @@ export function SettingsFrame({
           ) : null}
           {children}
         </div>
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -960,10 +957,11 @@ export function ProjectSettingsSurface({
   if (!projectSettings) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} nav={<a href="/app">{PRJ.backToList}</a>} footer={footer()}>
-          <PageTitle>{PS.heading}</PageTitle>
-          <p style={settingsNoteStyle}>{B.stripeDownNote}</p>
-        </Shell>
+        <PageBody>
+          <PageHeader title={PS.heading} />
+          {/* UXC-12 — the outage note is this page's own key, never billing's stripeDownNote. */}
+          <p style={settingsNoteStyle} data-settings-unavailable="project">{PS.unavailable}</p>
+        </PageBody>
       </div>
     );
   }
@@ -973,17 +971,14 @@ export function ProjectSettingsSurface({
   const ov = p.protocolOverrides ?? {};
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell
-        brand={COPY.brand}
-        nav={
-          <>
-            <a href={`/p/${slug}`}>{PRJ.backToProject}</a>
-            <a href="/app/settings/account" style={{ fontSize: "13px", marginLeft: "12px" }}>{S.nav}</a>
-          </>
-        }
-        footer={footer()}
-      >
-        <PageTitle>{p.title} — {PS.heading}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={PS.heading}
+          crumbs={[
+            { label: p.title ?? slug, href: `/p/${slug}` },
+            { label: PS.heading },
+          ]}
+        />
         {p.protocolChangedAt ? (
           <p data-protocol-changed="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
             {PS.changedNote}
@@ -1102,7 +1097,7 @@ export function ProjectSettingsSurface({
             )}
           </section>
         </div>
-      </Shell>
+      </PageBody>
     </div>
   );
 }

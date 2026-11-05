@@ -233,8 +233,15 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
     await mountAt(`/p/${SLUG}/figures`, BOOT, f.impl);
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.figuresPage.heading);
-    expect(main.querySelector(`a[href="/p/${SLUG}"]`)?.textContent).toBe(COPY.figuresPage.backToProject);
+    // R7SHELL.1b — the title row + Project › Surface crumb replace the back-link header.
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.textContent).toContain(SLUG);
+    expect(crumb?.textContent).toContain(COPY.figuresPage.heading);
+    expect(main.querySelector('[data-page-header] [data-page-breadcrumb]')).not.toBeNull();
     expect(main.querySelector(`a[href="/p/${SLUG}/visualize"][data-new-figure]`)).not.toBeNull();
+    // No body-level back link remains (REQ-SHELL-3).
+    expect([...main.querySelectorAll(`a[href="/p/${SLUG}"]`)].every((a) => a.closest("[data-page-breadcrumb]") != null)).toBe(true);
     const row = await settled(`[data-figure-row="fig01"]`);
     expect(row).not.toBeNull();
     expect(row.querySelector(`a[href="/p/${SLUG}/figures/fig01"]`)?.textContent).toBe("Visibility scores");
@@ -294,7 +301,10 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     await mountAt(CARD_URL, BOOT, makeFetch().impl);
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe("Visibility scores");
-    expect(main.querySelector(`a[href="/p/${SLUG}/figures"]`)?.textContent).toBe(COPY.figureCard.backToFigures);
+    // The retired "Back to figures" affordance survives as the crumb's middle link.
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector(`a[href="/p/${SLUG}/figures"][data-breadcrumb-link]`)?.textContent).toBe(COPY.figuresPage.heading);
+    expect(crumb?.querySelector(`a[href="/p/${SLUG}"][data-breadcrumb-link]`)).not.toBeNull();
     // the persisted server-side render — inlined SVG, never browser-produced.
     expect(main.querySelector("[data-figure-preview]")?.innerHTML).toContain('data-fig="light"');
     expect(main.textContent).toContain("[unverified data]");
@@ -581,7 +591,9 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     await mountAt(VIZ_URL, BOOT, makeFetch().impl);
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.visualize.heading);
-    expect(main.querySelector(`a[href="/p/${SLUG}"]`)?.textContent).toBe(COPY.visualize.backToProject);
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.textContent).toContain(COPY.visualize.heading);
     const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/visualize`);
     expect(form.querySelector<HTMLTextAreaElement>('textarea[name="request"]')!.value).toBe("a chart of the visibility scores");

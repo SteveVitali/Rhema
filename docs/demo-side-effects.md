@@ -4,7 +4,7 @@
 
 # Demo side-effect table (regenerated)
 
-- Generated: 2026-11-05T07:28:23.047Z against http://127.0.0.1:43614
+- Generated: 2026-11-05T09:12:29.495Z against http://127.0.0.1:43937
 - Walks: 4 (essay × {logged out, cookie} × {desktop, phone})
 - Violations: 0
 
@@ -17,45 +17,45 @@
 | `GET /assets/fonts/literata-latin-standard-italic.woff2` | font | 52 | GET/HEAD — allowed |
 | `GET /assets/fonts/literata-latin-standard-normal.woff2` | font | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/ClientOnly-CcbOzC0Z.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/_authenticated-DziFBNpl.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/app-shell-CXdQtSz7.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/approval-settings-2FYHjnVO.js` | script | 160 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/chips-BvZf5KWa.js` | script | 176 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/_authenticated-DjytYN0x.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/app-shell-DeTeXjhf.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/approval-settings-CqO0KKZE.js` | script | 160 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/chips-D_jrQ4QX.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/chrome-data-DvaU2ns2.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/copy-LyGloSsC.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/chrome-data-jafBQZgA.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/copy-D_PoWbqy.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/decisions-DTDIdd4X.js` | script | 160 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-DeInBf3K.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-beacon-D0VHJIUv.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/demo-tour-h9B3TrDc.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/demo-tour-BwCmftSk.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-BEEz5Spy.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-BtKfvNX0.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/dossier-BO1QjVJL.js` | script | 176 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/dossier-LhnbKsK2.js` | script | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dwell-Besq-z-j.js` | script | 168 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/editor-Bzq6w_WE.js` | script | 160 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/figures-BuGjDxOh.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/gate-card-DDFN98DI.js` | script | 176 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/editor-DRq-Vi6O.js` | script | 160 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/figures-BVELH2Nb.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/gate-card-MM69tnrk.js` | script | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/gate-presence-uvSvnlOw.js` | script | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/hold-store-C3LEXoIG.js` | script | 160 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/ide-states-GeIIxdFK.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/main-CLcuflDG.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/main-BTMQaw8r.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/not-found-i5RsCZif.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project-Dav6zdzR.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.a._artifactId-C00c5mjw.js` | script | 104 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures-BGhDgzid.js` | script | 4 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures_._figureId-C8MZw4dg.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.index-CCJB6N4-.js` | script | 4 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.r._runId-XNkE3QFv.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.review._runId-BQkE3GCG.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.revisions._cid-WnAPMUls.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._n.diff._m-DReNr7UD.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._v-DD6iXf0h.js` | script | 28 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project-Cr5pbQ5L.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.a._artifactId-C4f6Wl-C.js` | script | 104 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures-T7sU8Iqv.js` | script | 4 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures_._figureId-eZUaXlbP.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.index-Bvw2TiD0.js` | script | 4 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.r._runId-CRZZUIk5.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.review._runId-CK5FqZDL.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.revisions._cid--xZNwqKf.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._n.diff._m-By_HFJUc.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._v-DXWgNjl5.js` | script | 28 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/page-header-B0jKnhhY.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/preload-helper-3PosZGeD.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/read-only-CvWVjYAj.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/read-only-D6EVl8ru.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/run-card-B5YT-PBz.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/search-DL4SZJ_y.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/shell-BAvHSKHj.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/states-CBnLLgEH.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/shell-B0g6xz6C.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/states-Ci-c8feA.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/useMutation-DKHHV353.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/useSelector-CP4_woLD.js` | script | 188 | GET/HEAD — allowed |
 | `GET /bff/demo/asset/the-borrowed-commons/drafts/figures/figure_1_signal_map.png` | image | 32 | GET/HEAD — allowed |

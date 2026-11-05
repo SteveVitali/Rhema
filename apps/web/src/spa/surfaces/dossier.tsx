@@ -39,7 +39,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
-import { PageTitle, Shell } from "@rhema/ui";
 import type { GateCardDto } from "@rhema/api-client";
 import type { GateDecisionView, TimelineRun } from "@rhema/findings-core";
 import { COPY } from "../../copy.js";
@@ -58,6 +57,7 @@ import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
 import { useGatePresence } from "../gate-presence.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
+import { PageBody, PageHeader } from "../page-header.js";
 // R7RO.1 — the showcase notice is the dossier's OWN banner (DossierArticle, verbatim copy); the
 // generic notice mounts only for `demo` — a showcase dossier never sees two notices.
 import type { IdeChromeData } from "../ide/chrome-data.js";
@@ -465,10 +465,6 @@ const obligationFieldStyle = {
   boxSizing: "border-box" as const,
 };
 
-function obligationFooter(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
-
 /** The obligation sheet's severity options — `ObligationNewPage`'s literal `>blocking<`…`>note<`
  *  verbatim (the value IS the label; rendered as expressions for the copy-containment sweep). */
 const OBLIGATION_SEVERITIES = ["blocking", "major", "minor", "note"] as const;
@@ -519,8 +515,12 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
   return (
     <div data-spa-surface>
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
-      <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{sheet.projectTitle}</a>} footer={obligationFooter()}>
-        <PageTitle>{COPY.obligation.heading}</PageTitle>
+      <PageBody>
+        {/* R7SHELL.1b — the project-title nav idiom becomes the Project › Surface crumb. */}
+        <PageHeader
+          title={COPY.obligation.heading}
+          crumbs={[{ label: sheet.projectTitle, href: `/p/${slug}` }, { label: COPY.obligation.heading }]}
+        />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>{COPY.obligation.lede}</p>
         {error != null ? (
           <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{error}</p>
@@ -557,7 +557,7 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
             </a>
           </div>
         </form>
-      </Shell>
+      </PageBody>
     </div>
   );
 }

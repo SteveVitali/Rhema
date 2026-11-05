@@ -308,6 +308,11 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-drawer", "conditional", "spa/app-shell.tsx", "the <768 off-canvas drawer state (open|closed)"),
     a("data-tone", "conditional", "spa/app-shell.tsx", "recent-project status dot tone (attention group|error|running|quiet)"),
     a("data-demo", "conditional", "spa/app-shell.tsx", "the demo-boot shell variant marker"),
+    // R7SHELL.1b (REQ-SHELL-3) — the page-header content row replacing the per-leaf <Shell>
+    // headers: the row itself, the `Project › Surface` trail (project scope), and its links.
+    a("data-page-header", "conditional", "spa/page-header.tsx", "the leaf's title row (REQ-COPY-7 h1 focus target)"),
+    a("data-page-breadcrumb", "conditional", "spa/page-header.tsx", "the Project › Surface trail — project scope only"),
+    a("data-breadcrumb-link", "conditional", "spa/page-header.tsx", "a non-terminal crumb's SPA link"),
     nf(
       "ed.",
       "conditional",

@@ -223,7 +223,15 @@ describe("GET /p/:slug/outline mounted (SPA.18)", () => {
     await mountAt("/p/the-politics-of-visibility/outline", BOOT, f.impl);
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.outlinePage.heading);
-    expect(main.querySelector('a[href="/p/the-politics-of-visibility"]')).not.toBeNull();
+    // R7SHELL.1b — the back link is the Project › Surface crumb; none remains in the body.
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe("/p/the-politics-of-visibility");
+    expect(crumb?.textContent).toContain(COPY.outlinePage.heading);
+    expect(
+      [...main.querySelectorAll('a[href="/p/the-politics-of-visibility"]')].every(
+        (a) => a.closest("[data-page-breadcrumb]") != null,
+      ),
+    ).toBe(true);
     expect(main.querySelector("[data-draft-estimate]")?.textContent).toContain("12");
     expect(main.querySelector("form[data-outline-editor][data-autosave]")).not.toBeNull();
     const form = await settled("form[data-outline-editor]");

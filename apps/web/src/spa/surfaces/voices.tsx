@@ -39,7 +39,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { PageTitle, Shell } from "@rhema/ui";
+import { PageBody, PageHeader } from "../page-header.js";
 import type {
   PresignedImportDto,
   VoiceConnectionDto,
@@ -63,9 +63,6 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
 
 /** P1.19 — the §10.1 ✗ column's phone-width note (pages.tsx `PhoneBlockedNote` verbatim). */
 function PhoneBlockedNote(): ReactNode {
@@ -355,8 +352,8 @@ export function VoicesSurface({
   const total = (voices?.voices ?? []).length;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-        <PageTitle>{VC.listHeading}</PageTitle>
+      <PageBody>
+        <PageHeader title={VC.listHeading} />
         {/* P1.19 — §10.1 ✗: new voice is a building surface — never offered on phone width. */}
         {compact === true ? null : (
           <p>
@@ -386,7 +383,7 @@ export function VoicesSurface({
             );
           })
         )}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -401,17 +398,17 @@ export function VoiceNewSurface({ compact }: { readonly compact: boolean }): Rea
   if (compact === true) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-          <PageTitle>{VC.new.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={VC.new.heading} />
           <PhoneBlockedNote />
-        </Shell>
+        </PageBody>
       </div>
     );
   }
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-        <PageTitle>{VC.new.heading}</PageTitle>
+      <PageBody>
+        <PageHeader title={VC.new.heading} />
         {refusal != null ? (
           <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{refusal}</p>
         ) : null}
@@ -483,7 +480,7 @@ export function VoiceNewSurface({ compact }: { readonly compact: boolean }): Rea
             </button>
           </div>
         </form>
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -902,8 +899,8 @@ export function VoiceDetailSurface({
   const holdout = d?.holdout;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-        <PageTitle>{d?.persona.display_name ?? ""}</PageTitle>
+      <PageBody>
+        <PageHeader title={d?.persona.display_name ?? ""} />
         {d?.persona.byline ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "-6px" }}>{d.persona.byline}</p> : null}
         {d && d.members && d.members.length > 0 ? (
           <p data-composed-from="true" style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px" }}>
@@ -1293,7 +1290,7 @@ export function VoiceDetailSurface({
             ) : null}
           </>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -1315,8 +1312,11 @@ export function VoiceReseedSurface({
   const preview = voiceReseed?.preview;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{VC.detail.backToList}</a>} footer={footer()}>
-        <PageTitle>{VC.detail.reseedPreviewCta}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={VC.detail.reseedPreviewCta}
+          crumbs={[{ label: slug, href: `/p/${slug}` }, { label: VC.detail.reseedPreviewCta }]}
+        />
         {/* P1.19 — §10.1 ✗: diffs + voice-building actions never render on phone width. */}
         {compact === true ? <PhoneBlockedNote /> : null}
         {preview && compact !== true ? (
@@ -1346,7 +1346,7 @@ export function VoiceReseedSurface({
             </form>
           </>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
