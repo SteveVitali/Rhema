@@ -390,3 +390,16 @@ live view `…/previews/73f7e6bb-…`):
   **≈ $8 total list-price estimate** (bound: even at ×2 SKU error, < $20).
   **Round-7 preview spend ≈ $8 of the $20 cap** — legs $0 inference throughout.
   250's R7b preview headroom: ~$12 remaining.
+
+## Part B — teardown tail (2026-11-05T02:5xZ, honest residual)
+
+`preview-stack.mjs destroy pr-259`: 132 deleted on pass 1 + 15 on pass 2 — **all resources
+destroyed except `rhema-pr-259-private-app`**, blocked by GCP-internal serverless-VPC-access
+address reservation `serverless-ipv4-cloudrun-1793821352011819136` (auto-created by Cloud Run
+VPC egress; NOT a pulumi resource; releases on its own clock after the services die — delete
+attempts refused `resourceInUseByAnotherResource` at ~02:5xZ). The reservation is $0; the
+subnetwork is the only pulumi resource left. **Carry:** re-run
+`node scripts/live/preview-stack.mjs destroy pr-259` once the reservation drains, then the
+orphan sweep + `rm pr-259`. Recorded; not claimed complete.
+- checks: `check-build-memory.sh` warnings-only (legacy classes, 0 violations);
+  `check-append-only.mjs --base stevevitali/r7fix-2-demo-legs` OK.

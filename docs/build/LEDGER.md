@@ -40,7 +40,7 @@ autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 opera
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           7                  # public demo + UX overhaul — spec docs/round-7-draft-spec.md v0.2 (ratified 2026-11-03); phases R7a (demo + must-fix) → R7b (UX overhaul)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — round-7 planning/decomposition ran in claude-code/claude-opus-5.5; the drive resumes on devin-desktop/swe-2-high at the pre-209 boundary (the legal switch point)
-updatedAt:       2026-11-05T03:05Z            # R7DEP.1 Part B done — prod @ 4bc8cf4a, all GD-DEPLOY.R7 conditions evidenced, 10 legs green, rollback recipe committed
+updatedAt:       2026-11-05T02:40:06Z            # R7DEP.1 Part B done — prod @ 4bc8cf4a, all GD-DEPLOY.R7 conditions evidenced, 10 legs green, rollback recipe committed
 ```
 
 ## OPEN FINDINGS
