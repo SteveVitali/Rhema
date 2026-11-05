@@ -90,6 +90,7 @@ Read `docs/tickets/DEFERRALS.md` first per AGENTS. R7 OPEN rows: `D-R7OPEN.1-1` 
 - `pnpm check:spa-budget` — **entry +13.7 kB** of the ≤15.0 kB allowance vs baseline `04a4e98b`; total JS +48.5 kB; ceilings held.
 - `node docs/build/tools/check-append-only.mjs --base stevevitali/r7pane-1-split-pane` — OK.
 - `check-build-memory.sh .` — 0 violations after ADR-133 canonical header + `## Revisit trigger` + `adr-index` regen (18 warnings, all legacy/pre-existing).
+- CI boundary re-read 2026-11-05T21:08Z: **pass #268@`059b1e1`** (run 42104491910 — all seven legs + `ci-pass` anchor: fast-path, typecheck/lint/unit, contracts, public-safe, integration, images; `logs/ci-R7SHELL.2.json`). Correction (BM-HIST-01): the `ci:` header line above reads its first-read pending state — the resolved value is `ci: pass #268@059b1e1`.
 - CI: first boundary read **fail** at `1277313e` (run 42082775909 — `control-base.dom` panel-button probe + `outline.dom` back-link census both pinned the pre-rail DOM) → scoped to the surviving rules at `fb3e07d2`; boundary re-read pending on the pushed head.
 
 ## Evidence report
