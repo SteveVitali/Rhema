@@ -259,6 +259,7 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
   }, []);
   const push = useCallback((href: string) => router.history.push(href), [router]);
+  const signOutForm = useRef<HTMLFormElement>(null);
 
   const balance = home.data?.balance ?? null;
   const sidebarChord = shortcutFor("sidebar");
@@ -339,8 +340,14 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
               {COPY.appShell.themeLabel} · {COPY.appShellThemes.auto}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigateDocument("/logout")} data-shell-signout>
-              {COPY.appShell.signOut}
+            {/* `/logout` is a native POST (design/22 §1 — never a fetch/GET): the item wraps the
+                same no-JS form seam the workspace home uses; keyboard selection requestSubmits it. */}
+            <DropdownMenuItem onSelect={() => signOutForm.current?.requestSubmit()} data-shell-signout>
+              <form ref={signOutForm} method="post" action="/logout" style={{ margin: 0, width: "100%" }}>
+                <button type="submit" className="app-shell-item" style={{ width: "100%" }}>
+                  {COPY.appShell.signOut}
+                </button>
+              </form>
             </DropdownMenuItem>
           </DropdownMenu>
         </aside>

@@ -116,8 +116,24 @@ the ticket's own ready-to-flip disposition for `U1.shell`.
 
 ## Evidence log
 
-(Phase 5 — pending the full-suite re-run)
+- `pnpm turbo build lint typecheck` — green over the 49-package workspace (log `/tmp/r7shell-gates.log`).
+- `pnpm test` — full suite: 6826 pass / 6 skip / 0 fail after the census re-pins (`/tmp/r7shell-gates2.log`; the only reds were the two journey-census pins asserting "stub fails owed-loudly" — updated for the authored-but-held `U1.shell`, matching the R8.showcase.spa precedent).
+- New/changed tests: `app-shell.dom.test.tsx` 11 pass; `keymap.test.ts` 7+checker pass (planted ⌘1, planted second ⌘⇧T action, and non-capturable chords fail; the whole table dispatches its declared actions; CHEAT_SHEET generated); `ide-chrome.dom.test.tsx` updated (hosted-vs-hosted parity, pointer-path Files persistence, `]`, `⌥[`/`⌥]`); `transitions.dom.test.tsx` listener census names the shell's per-boot arm; `dom-contract.dom.test.tsx` mounts the error state under QueryClientProvider; `usage.dom.test.tsx` back-link unaffected (sidebar groups are `role="group"` divs, never `<nav>`).
+- `pnpm check:dom-contract` — green after declaring the whole `shell` hook set (emitted + asserted).
+- `pnpm check:spa-env` — green (130 client sources scanned).
+- `node scripts/check-spa-entry-graph.mjs` — green (14 chunks scanned; no denied Radix in entry — allowance Tooltip+DropdownMenu only).
+- `pnpm check:spa-budget` — **entry +9.6 kB gz vs `04a4e98b` baseline** (≤15 kB/ticket allowance; the AppShell chunk + lucide icons are the entry delta). NOTE: an earlier mid-run reading showed −37.4 kB — that predated the `app-shell` chunk's inclusion in the manifest scan; the committed figure is +9.6 kB.
+- `node docs/build/tools/check-append-only.mjs --base stevevitali/r7kit-2b-forms-guard` — append-only OK.
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — 0 violations (warnings only, all legacy).
+- Commits: `5f2947b4` (implementation + tests + records) · `1a399076` (closeout: BUILD_INDEX 265, LEDGER advance). PR **#264** on `stevevitali/r7kit-2b-forms-guard`.
+- ci: boundary read at `docs/build/logs/ci-R7SHELL.1a.json` (see PHASE LOG).
 
 ## Evidence report
 
-(Phase 6)
+| Layer | Claim |
+|---|---|
+| engineered | AppShell + sidebar + in-shell states + `/billing` + narrow-desktop CSS + keymap/checker + demo variant authored; all repo gates green. |
+| fixture-verified | 11 AppShell DOM tests, keymap/checker tests, hosted-parity + chord-retirement updates in ide-chrome, dom-contract emission, journey census re-pins — all green locally. |
+| staging-verified | none — GD-PREVIEW.R7 ($0); `D-R7SHELL.1a-1` carries the deployed walk to 250. |
+| live-executed | none. |
+| public | none. |
