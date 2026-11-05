@@ -317,3 +317,23 @@ EXECUTE granted to `rhema_app` (`rhema_app_login` member), columns `id/at/event/
 6. Optionally `git revert` of the R7a range for the source rollback (operator's call).
    Full code rollback = `git revert a34eb51..4bc8cf4a` + rebuild + redeploy (gotcha 7:
    renderer rollback is a code rollback — never a flag flip).
+
+## Part B — the classified `pulumi preview --diff` (condition 3) — 2026-11-05T02:0xZ
+
+`pulumi preview --diff --stack prod` (full log `logs/r7dep1b-pulumi-preview.log`,
+live view `…/previews/73f7e6bb-…`):
+
+- **~10 updates** — image rolls only: convert Job + convert-svc, collab, fetcher, export,
+  web, api, worker, turbo-cache, proxy MIG `versions[0].instanceTemplate` pointer.
+- **+-1 replace** — `gcp:compute/instanceTemplate rhema-prod-proxy-tmpl` ONLY: instance
+  templates are immutable, so the egress-proxy image bump forces a new template (the same
+  class of stateless replace R6DEP.4 classified). The MIG rolls instances onto it.
+- **0 deletes; zero stateful resources touched** — no Cloud SQL, Memorystore, GCS, secrets,
+  IAM, or network object appears in the diff.
+- **Worker env diff** — `WALKTHROUGH_MODEL_KEY_SECRET` removal (deployed template env[34]
+  confirmed via `gcloud run services describe` — D-R7COPY.0-2's deploy-plan half lands here);
+  `INGEST_MODEL_KEY_SECRET` stays bound.
+- **Cost Δ ≈ $0/month** (image rolls + one template replace) — ≤ $15. **Migrations:** none in
+  the program; `0061` applied via the operator path, additive lint PASS in-band.
+
+**Classification: PASS — every GD-DEPLOY.R7 condition-3 criterion holds → `pulumi up` proceeds.**

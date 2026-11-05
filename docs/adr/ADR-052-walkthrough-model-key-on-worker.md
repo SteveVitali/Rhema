@@ -63,3 +63,13 @@ delivered facts, not user prompt material.
 Reopen if provider-key governance is restructured (e.g. a dedicated worker-key secret per
 service, or egress-proxy grows a bookkeeping lane), or if the walkthrough model moves off the
 same provider as ingestion.
+
+## Addendum 2026-11-05 (R7DEP.1 / D-R7COPY.0-2)
+
+The walkthrough generator was retired by R7COPY.0 under ADR-130 (the generated walkthrough was a
+lazy post-delivery call outside the Review output). The `WALKTHROUGH_MODEL_KEY_SECRET` env binding
+on the worker template was therefore dead config; R7DEP.1's deploy plan removes it from
+`infra/pulumi/compute.ts`. This decision's worker-side exception **narrows to
+`ingest.reconstruct` alone** — the `worker-reads-anthropic` grant stays (reconstruction still
+spends through it), and `apps/worker/src/env.ts` keeps the old name as a read-side legacy
+fallback so a stage provisioned only with the old name cannot lose resolution.

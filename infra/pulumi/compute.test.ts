@@ -265,29 +265,33 @@ describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends 
   });
 });
 
-describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052)", () => {
-  it("injects WALKTHROUGH_MODEL_KEY_SECRET as the anthropic-api-key secret VERSION on the worker", () => {
-    // The deployed regression (2026-09-30: every prod run.walkthrough failed `walkthrough
-    // unconfigured`) was an env var that existed only in env.ts/main.ts — the Pulumi program never
-    // named it. The assertion binds the env to `secretVersion(secrets.anthropicApiKey)` (the secret
-    // NAME's `/versions/latest` — never the value; REQ-ARCH-30) and inside the worker container's
-    // `isWorker` envs block, so `loadWalkthroughGenerator` can never stub on a deployed stage.
+describe("RUN.1 → R7DEP.1 — the worker's model-key env is ingest-only (ADR-052 amended)", () => {
+  it("emits INGEST_MODEL_KEY_SECRET and NOT the retired WALKTHROUGH_MODEL_KEY_SECRET", () => {
+    // D-R7COPY.0-2: the walkthrough generator was retired with R7COPY.0/ADR-130, so its env
+    // binding was dead config — this deploy plan drops it. The pin now asserts the ABSENCE
+    // (a re-added emission would silently re-bind an unread name) and the presence of the
+    // ingest key, which `ingest.reconstruct` still resolves at boot (same anthropic-api-key
+    // secret VERSION — the secret NAME's `/versions/latest`, never the value; REQ-ARCH-30).
     const workerBlock = SRC.slice(
       SRC.indexOf("...(isWorker"),
       SRC.indexOf('...(svc === "api"'),
     );
     expect(workerBlock).toContain(
-      '{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }',
+      '{ name: "INGEST_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }',
     );
-    expect(workerBlock).toMatch(
-      /requires\("anthropic-api-key"\)[^]*WALKTHROUGH_MODEL_KEY_SECRET/,
-    );
+    // Scan the CODE only — retirement-note comments may name the dropped env honestly.
+    const workerCode = workerBlock
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("//"))
+      .join("\n");
+    expect(workerCode).not.toContain("WALKTHROUGH_MODEL_KEY_SECRET");
+    expect(SRC).not.toContain('name: "WALKTHROUGH_MODEL_KEY_SECRET"');
   });
 
   it("the worker SA holds secretAccessor on anthropic-api-key — the operator-side exception", () => {
-    // iam.ts documents egress-proxy as the sole reader FOR MODEL TRAFFIC; the worker grant is the
-    // ADR-052 exception (ingest.reconstruct + walkthrough). If either side of that pair is deleted,
-    // both legs silently fail at boot — keep them asserted together.
+    // iam.ts documents egress-proxy as the sole reader FOR MODEL TRAFFIC; the worker grant is
+    // the ADR-052 exception — narrowed to `ingest.reconstruct` alone now that the walkthrough
+    // reader is gone (the grant itself stays: reconstruction still spends through it).
     expect(IAM_SRC).toContain('grantSecret("worker-reads-anthropic", secrets.anthropicApiKey');
     expect(IAM_SRC).toContain('grantSecret("proxy-reads-anthropic", secrets.anthropicApiKey');
     // and no other service ever reads the provider key (REQ-ARCH-31).

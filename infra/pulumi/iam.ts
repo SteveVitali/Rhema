@@ -98,9 +98,10 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("worker-reads-resend", secrets.resendApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-anthropic-admin", secrets.anthropicAdminKey, serviceAccounts["worker"]);
   // P1.15 — `ingest.reconstruct` resolves the provider key from Secret Manager at boot (metered per
-  // job, §9.5). RUN.1/ADR-052 — the walkthrough generator reads the SAME version (the worker's
-  // `WALKTHROUGH_MODEL_KEY_SECRET` env names it — compute.ts): a bounded operator-side call outside
-  // the run-pod egress path. REQ-ARCH-31's sole-reader rule still holds for model traffic.
+  // job, §9.5; the worker's `INGEST_MODEL_KEY_SECRET` env names the same version — compute.ts):
+  // a bounded operator-side call outside the run-pod egress path. ADR-052's exception narrows to
+  // this one use — R7DEP.1 removed the retired walkthrough binding (D-R7COPY.0-2).
+  // REQ-ARCH-31's sole-reader rule still holds for model traffic.
   grantSecret("worker-reads-anthropic", secrets.anthropicApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-ops-webhook", secrets.opsAlertWebhookUrl, serviceAccounts["worker"]);
   // SEC.1 — api + worker mount the `rhema_app_login` DATABASE_URL via Cloud Run secretKeyRef
