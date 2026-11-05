@@ -302,7 +302,7 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
 
   const balance = home.data?.balance ?? null;
   const sidebarChord = shortcutFor("sidebar");
-  const paneChord = shortcutFor("pane:timeline");
+  const paneChord = shortcutFor("pane:panel");
   const creditsFmt = COPY.appShell.creditsFmt;
   const creditsLabel =
     balance != null ? creditsFmt.replace("{n}", balance.spendableCredits.toLocaleString()) : null;

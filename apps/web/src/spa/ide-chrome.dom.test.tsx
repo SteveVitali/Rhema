@@ -349,18 +349,18 @@ describe("panes + the verbatim pane codec (REQ-ISL-9, REQ-SEQ-11)", () => {
   it("a stored arrangement wins — the same codec the island wrote restores verbatim", async () => {
     localStorage.setItem(
       paneStorageKey("u1", "p-alpha"),
-      serializePaneState({ ...DEFAULT_PANE_STATE, filesOpen: true, deskOpen: true, deskTab: "findings" }),
+      serializePaneState({ ...DEFAULT_PANE_STATE, filesOpen: true, panelOpen: true, panelTab: "findings" }),
     );
     await mount();
     expect(ide()?.dataset["files"]).toBe("open");
-    expect(ide()?.dataset["desk"]).toBe("open");
-    expect(ide()?.dataset["deskTab"]).toBe("findings");
+    expect(ide()?.dataset["panel"]).toBe("open");
+    expect(ide()?.dataset["panelTab"]).toBe("findings");
   });
 
-  it("the rail toggles write the same token set the SSR island stamped", async () => {
+  it("the pane toggles write the same token set the SSR island stamped", async () => {
     await mount();
-    click(document.querySelector("[data-ide-timeline-toggle]"));
-    expect(ide()?.dataset["timeline"]).toBe("closed");
+    click(document.querySelector("[data-ide-panel-toggle]"));
+    expect(ide()?.dataset["panel"]).toBe("closed");
     click(document.querySelector("[data-ide-files-toggle]"));
     expect(ide()?.dataset["files"]).toBe("open");
   });
@@ -378,33 +378,36 @@ describe("?focus=1 — applied once, then stripped (REQ-SEQ-11)", () => {
 });
 
 describe("R7FIX.1 — the pane stopgap (REQ-PANE-0)", () => {
-  it("paneLayout() is the runtime geometry source: data-pane-mode/timeline-mode track the width", async () => {
+  it("paneLayout() is the runtime geometry source: data-pane-mode/panel-mode track the width", async () => {
     setWidth(1440);
     await mount();
     expect(ide()?.dataset["paneMode"]).toBe("wide");
-    expect(ide()?.dataset["timelineMode"]).toBe("pane");
-    expect(ide()?.dataset["timeline"]).toBe("open"); // the wide default still docks
+    expect(ide()?.dataset["panelMode"]).toBe("docked");
+    // the R7a alias stays emitted (legs resolve on both shapes) — docked maps to "pane".
+    expect(ide()?.getAttribute("data-timeline-mode")).toBe("pane");
+    expect(ide()?.dataset["panel"]).toBe("open"); // ≥1440 default-open-when-findings
     setWidth(1100);
     act(() => {
       window.dispatchEvent(new Event("resize"));
     });
     expect(ide()?.dataset["paneMode"]).toBe("narrow");
-    expect(ide()?.dataset["timelineMode"]).toBe("overlay");
-    // REQ-PANE-0 — the persisted wide-mode open intent does NOT auto-open the overlay.
-    expect(ide()?.dataset["timeline"]).toBe("closed");
+    expect(ide()?.dataset["panelMode"]).toBe("overlay");
+    expect(ide()?.getAttribute("data-timeline-mode")).toBe("overlay");
+    // REQ-PANE-2 — the persisted docked-mode open intent does NOT auto-open the overlay.
+    expect(ide()?.dataset["panel"]).toBe("closed");
   });
 
-  it("the Timeline is closed by default at 1024–1279 and <1024 — on mount, even with stored open intent", async () => {
+  it("the panel is closed by default at 1024–1279 and <1024 — on mount, even with stored open intent", async () => {
     localStorage.setItem(
       paneStorageKey("u1", "p-alpha"),
-      serializePaneState({ ...DEFAULT_PANE_STATE, timelineOpen: true }),
+      serializePaneState({ ...DEFAULT_PANE_STATE, panelOpen: true }),
     );
     for (const w of [1100, 900]) {
       document.body.innerHTML = "";
       setWidth(w);
       await mount();
-      expect(ide()?.dataset["timeline"], `timeline at ${w}`).toBe("closed");
-      expect(ide()?.dataset["timelineMode"], `mode at ${w}`).toBe(w < 1024 ? "sheet" : "overlay");
+      expect(ide()?.dataset["panel"], `panel at ${w}`).toBe("closed");
+      expect(ide()?.dataset["panelMode"], `mode at ${w}`).toBe(w < 1024 ? "sheet" : "overlay");
       for (const r of mounted.splice(0)) act(() => r.unmount());
     }
   });
@@ -414,24 +417,24 @@ describe("R7FIX.1 — the pane stopgap (REQ-PANE-0)", () => {
     await mount();
     // open on demand — the View-menu row is the pointer path at this width.
     click(document.querySelector("[data-ide-view-menu]"));
-    click(document.querySelector("[data-ide-menu='view'] [data-ide-timeline-toggle]"));
-    expect(ide()?.dataset["timeline"]).toBe("open");
-    expect(ide()?.dataset["timelineMode"]).toBe("overlay");
+    click(document.querySelector("[data-ide-menu='view'] [data-ide-panel-toggle]"));
+    expect(ide()?.dataset["panel"]).toBe("open");
+    expect(ide()?.dataset["panelMode"]).toBe("overlay");
     expect(document.querySelector("[data-ide-scrim]")).not.toBeNull();
-    expect(document.querySelector("[data-ide-menu='view'] [data-ide-timeline-toggle]")?.getAttribute("aria-checked")).toBe("true");
-    // REQ-PANE-0 — nothing about the overlay's open state reaches pane storage.
+    expect(document.querySelector("[data-ide-menu='view'] [data-ide-panel-toggle]")?.getAttribute("aria-checked")).toBe("true");
+    // REQ-PANE-2 — nothing about the overlay's open state reaches pane storage.
     const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
-    expect(raw == null || !raw.includes('"timelineOpen":true')).toBe(true);
+    expect(raw == null || !raw.includes('"panelOpen":true')).toBe(true);
     // Esc closes it.
     key({ key: "Escape" });
-    expect(ide()?.dataset["timeline"]).toBe("closed");
+    expect(ide()?.dataset["panel"]).toBe("closed");
     // reopen, then an outside click (the scrim) closes it too.
     key({ key: "]" });
-    expect(ide()?.dataset["timeline"]).toBe("open");
+    expect(ide()?.dataset["panel"]).toBe("open");
     act(() => {
       document.querySelector<HTMLElement>("[data-ide-scrim]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(ide()?.dataset["timeline"]).toBe("closed");
+    expect(ide()?.dataset["panel"]).toBe("closed");
   });
 
   it("the <1024 drawer: Files opens as a session overlay (scrimmed) and never persists", async () => {
@@ -713,15 +716,15 @@ describe("the menu/cmdmenu legs + manifest assertion coverage (REQ-ISL-11/12, RE
     };
     await mount("/p/alpha", { leaf: publishLeaf(bag) });
     click(document.querySelector("[data-ide-open-feed]"));
-    expect(ide()?.dataset["desk"]).toBe("open");
-    expect(ide()?.dataset["deskTab"]).toBe("feed");
+    expect(ide()?.dataset["panel"]).toBe("open");
+    expect(ide()?.dataset["panelTab"]).toBe("feed");
   });
 
   it("a timeline [data-round] contextmenu opens the round-scoped cmdmenu", async () => {
     await mount("/p/alpha", { leaf: publishLeaf({ ...PUBLISH, timeline: [{ id: "r1", label: "Draft 1", state: "done" }] }) });
     // the TimelinePane owns the real [data-round] rows; the contract leg drives the delegated
     // handler with a node in the pane's scope.
-    const pane = document.querySelector<HTMLElement>("[data-pane='timeline']")!;
+    const pane = document.querySelector<HTMLElement>("[data-panel-body='timeline']")!;
     const round = document.createElement("div");
     round.setAttribute("data-round", "2");
     pane.querySelector(".ide-tl-body")?.appendChild(round);
@@ -905,3 +908,34 @@ describe("NAVC.4 — native hash hops + the scroll-preserving navs (REQ-NAVM-10,
   });
 });
 
+
+describe("R7PANE.1 — the demo-boot panel clause (REQ-DWEB-7)", () => {
+  it("a demo boot hides the Chat trigger, opens no EventSource, and issues no workspace request", async () => {
+    const demoBoot: SpaBoot = {
+      ...BOOT,
+      demo: { essay: "the-borrowed-commons", slug: "demo~the-borrowed-commons", signedIn: false, build: "t1" },
+    };
+    const { fetchSpy } = await mount("/p/demo~the-borrowed-commons", { boot: demoBoot });
+    // the gate facts are stamped on the shell…
+    expect(ide()?.hasAttribute("data-demo")).toBe(true);
+    const chat = document.querySelector<HTMLElement>("[data-ide-panel-tab='chat']");
+    expect(chat?.hidden).toBe(true);
+    expect(chat?.hasAttribute("data-demo-gated")).toBe(true);
+    // …and the feed tail can never construct — no EventSource, ever (R7DEM.5's second wall).
+    expect(FakeEventSource.instances).toHaveLength(0);
+    // no request outside the demo allowlist — the panel issues zero workspace reads.
+    for (const call of fetchSpy.mock.calls) {
+      const url = typeof call[0] === "string" ? call[0] : (call[0] as Request).url;
+      expect(url).not.toMatch(/^\/p\/(?!demo~)/);
+      expect(url).not.toContain("/bff/search");
+      expect(url).not.toMatch(/\/chat\//);
+      expect(url).not.toContain("/events");
+    }
+    // the other four tabs remain reachable — Findings/Claims/Timeline/Live feed from the twins.
+    for (const tab of ["findings", "claims", "timeline", "feed"]) {
+      const t = document.querySelector<HTMLElement>(`[data-ide-panel-tab='${tab}']`);
+      expect(t, tab).not.toBeNull();
+      expect(t?.hidden ?? false).toBe(false);
+    }
+  });
+});

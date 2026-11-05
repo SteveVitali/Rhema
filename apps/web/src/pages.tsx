@@ -175,14 +175,15 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
           <script src="/assets/landing.js" defer />
         </>
       ) : null}
-      {/* P1.19 — §10.1: below ~768 px the Desk is display:none, so the chat surface mounts INSIDE
-          the Page — text only (the compact ChatDesk drops the plan card's run-start/edit actions,
-          the anchored suggestion, and the tier pick; the estimate line still shows). */}
+      {/* P1.19 — §10.1: below ~768 px the panel is display:none on the SSR reader, so the chat
+          surface mounts INSIDE the Page — text only (the compact ChatDesk drops the plan card's
+          run-start/edit actions, the anchored suggestion, and the tier pick; the estimate line
+          still shows). */}
       {data.compact === true && ide.chat ? (
         <section
           className="ide-phone-only"
           data-phone-chat="true"
-          aria-label={COPY.ide.desk.heading}
+          aria-label={COPY.ide.panel.tabs.chat}
           style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
         >
           {chatPanel(ide.chat, slug, ide, true)}

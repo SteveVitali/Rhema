@@ -4,10 +4,18 @@
 // The codec is versioned and total: a malformed/partial stored blob falls back per-key to DEFAULTS.
 // R7FIX.1 (REQ-WRITE-4): `view:"focus"` is SESSION-scoped — it is never restored from storage and
 // never written back (a stored blob's `focus` coerces to `write`; serialize emits `write` for it).
+//
+// R7PANE.1 (REQ-PANE-3) — codec v2. The v1 fields `deskOpen`/`deskTab`/`deskHeight` and
+// `timelineOpen`/`timelineWidth` collapse into the right panel's `panelOpen`/`panelTab`/
+// `panelWidth`. The v1→v2 migration is TOTAL: an open Desk wins the tab (its tab was the
+// visible surface); a closed Desk + open Timeline maps to the Timeline tab; a closed Desk +
+// closed Timeline maps to a closed panel on the Desk's last tab; `panelWidth` inherits the
+// Timeline width. Malformed input falls back per key, exactly like v1.
 
-import type { DeskTab, PaneState, ViewMode } from "./layout.js";
+import type { PanelTab, PaneState, ViewMode } from "./layout.js";
+import { PANEL_TABS } from "./layout.js";
 
-export const PANE_STORAGE_VERSION = 1;
+export const PANE_STORAGE_VERSION = 2;
 /** localStorage key — per user AND project (§5.1 "persists per user/project"). */
 export function paneStorageKey(userId: string, projectId: string): string {
   return `rhema:panes:v${PANE_STORAGE_VERSION}:${userId}:${projectId}`;
@@ -17,11 +25,10 @@ export const DEFAULT_PANE_STATE: PaneState = {
   view: "write",
   filesOpen: false, // the 36-px strip is the default (§5.1)
   filesWidth: 240,
-  timelineOpen: true,
-  timelineWidth: 320,
-  deskOpen: false,
-  deskHeight: 280,
-  deskTab: "chat",
+  // panelOpen deliberately ABSENT — the ≥1440-when-findings default lives in paneLayout()
+  // (REQ-PANE-2), so the codec must preserve "never touched" as "undefined".
+  panelWidth: 320,
+  panelTab: "chat",
   findingCards: true,
   suggestionsInline: true,
   advanced: false,
@@ -29,7 +36,7 @@ export const DEFAULT_PANE_STATE: PaneState = {
 };
 
 const VIEWS: readonly ViewMode[] = ["write", "read", "focus"];
-const DESK_TABS: readonly DeskTab[] = ["chat", "feed", "findings", "claims"];
+const V1_DESK_TABS: readonly string[] = ["chat", "feed", "findings", "claims"];
 
 function bool(v: unknown, d: boolean): boolean {
   return typeof v === "boolean" ? v : d;
@@ -41,6 +48,53 @@ function oneOf<T extends string>(v: unknown, allowed: readonly T[], d: T): T {
   return typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : d;
 }
 
+interface ParsedBase {
+  view: ViewMode;
+  filesOpen: boolean;
+  filesWidth: number;
+  findingCards: boolean;
+  suggestionsInline: boolean;
+  advanced: boolean;
+  readerStep: number;
+}
+
+function parseBase(o: Record<string, unknown>, d: PaneState): ParsedBase {
+  const view = oneOf(o["view"], VIEWS, d.view);
+  return {
+    // REQ-WRITE-4 — focus never survives a reload (legacy blobs may carry it; coerce, don't drop
+    // the rest of the arrangement).
+    view: view === "focus" ? "write" : view,
+    filesOpen: bool(o["filesOpen"], d.filesOpen),
+    filesWidth: num(o["filesWidth"], d.filesWidth, 160, 480),
+    findingCards: bool(o["findingCards"], d.findingCards),
+    suggestionsInline: bool(o["suggestionsInline"], d.suggestionsInline),
+    advanced: bool(o["advanced"], d.advanced),
+    readerStep: num(o["readerStep"], d.readerStep, 0, 3),
+  };
+}
+
+/** The total v1→v2 migration: every key of the result is derived — an unmapped v1 key never
+ *  leaks through, and a missing/garbage v1 key takes its v2 default. */
+function migrateV1(o: Record<string, unknown>): PaneState {
+  const d = DEFAULT_PANE_STATE;
+  const base = parseBase(o, d);
+  const deskOpen = o["deskOpen"] === true;
+  const timelineOpen = o["timelineOpen"] === true;
+  // An open Desk was the visible surface — its tab wins. Otherwise an open Timeline maps to
+  // the Timeline tab; both closed keeps the Desk's last tab (a sensible reopen position).
+  const panelTab: PanelTab = deskOpen
+    ? oneOf(o["deskTab"], V1_DESK_TABS, "chat") as PanelTab
+    : timelineOpen
+      ? "timeline"
+      : oneOf(o["deskTab"], V1_DESK_TABS, "chat") as PanelTab;
+  return {
+    ...base,
+    panelOpen: deskOpen || timelineOpen ? true : false,
+    panelWidth: num(o["timelineWidth"], d.panelWidth, 160, 480),
+    panelTab,
+  };
+}
+
 /** Parse a stored blob — never throws; wrong-version/unshaped payloads yield the defaults. */
 export function parsePaneState(raw: string | null | undefined): PaneState {
   if (!raw) return { ...DEFAULT_PANE_STATE };
@@ -50,32 +104,27 @@ export function parsePaneState(raw: string | null | undefined): PaneState {
   } catch {
     return { ...DEFAULT_PANE_STATE };
   }
-  if (!o || typeof o !== "object" || o["v"] !== PANE_STORAGE_VERSION) return { ...DEFAULT_PANE_STATE };
+  if (!o || typeof o !== "object") return { ...DEFAULT_PANE_STATE };
+  if (o["v"] === 1) return migrateV1(o);
+  if (o["v"] !== PANE_STORAGE_VERSION) return { ...DEFAULT_PANE_STATE };
   const d = DEFAULT_PANE_STATE;
-  const view = oneOf(o["view"], VIEWS, d.view);
   return {
-    // REQ-WRITE-4 — focus never survives a reload (legacy blobs may carry it; coerce, don't drop
-    // the rest of the arrangement).
-    view: view === "focus" ? "write" : view,
-    filesOpen: bool(o["filesOpen"], d.filesOpen),
-    filesWidth: num(o["filesWidth"], d.filesWidth, 160, 480),
-    timelineOpen: bool(o["timelineOpen"], d.timelineOpen),
-    timelineWidth: num(o["timelineWidth"], d.timelineWidth, 200, 480),
-    deskOpen: bool(o["deskOpen"], d.deskOpen),
-    deskHeight: num(o["deskHeight"], d.deskHeight, 120, 480),
-    deskTab: oneOf(o["deskTab"], DESK_TABS, d.deskTab),
-    findingCards: bool(o["findingCards"], d.findingCards),
-    suggestionsInline: bool(o["suggestionsInline"], d.suggestionsInline),
-    advanced: bool(o["advanced"], d.advanced),
-    readerStep: num(o["readerStep"], d.readerStep, 0, 3),
+    ...parseBase(o, d),
+    // `panelOpen` keeps three states: absent ⇒ derive the REQ-PANE-2 default in paneLayout();
+    // a concrete boolean is the user's explicit intent.
+    ...(typeof o["panelOpen"] === "boolean" ? { panelOpen: o["panelOpen"] } : {}),
+    panelWidth: num(o["panelWidth"], d.panelWidth, 160, 480),
+    panelTab: oneOf(o["panelTab"], PANEL_TABS, d.panelTab),
   };
 }
 
 export function serializePaneState(state: PaneState): string {
-  // REQ-WRITE-4 — the session-scoped focus view is never written to pane storage.
+  // REQ-WRITE-4 — the session-scoped focus view is never written to pane storage; the absent
+  // `panelOpen` stays absent (the default rule, not a stored value).
   return JSON.stringify({
     v: PANE_STORAGE_VERSION,
     ...state,
+    ...(state.panelOpen === undefined ? {} : { panelOpen: state.panelOpen }),
     view: state.view === "focus" ? "write" : state.view,
   });
 }

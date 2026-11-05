@@ -1,10 +1,11 @@
-// R7FIX.1 (REQ-PANE-0 / REQ-WRITE-4) — the OFFLINE occlusion harness: the real `<IdeShell>`
-// markup + the real `ideCss()`/`themeCss()` loaded into bundled Chromium, measured at the four
-// Stage-B reference sizes (1440×900, 1280×800, 1024×768, 820×1180) plus the 1440×757 laptop
-// height and the 1279/1280 boundary. No network, no app — the fixture pins pane geometry, the
-// scrim, the Desk-head/status-bar gap, and the focus-exit pill against real layout. The
-// controller→attribute half is pinned by the happy-dom legs in
-// apps/web/src/spa/ide-chrome.dom.test.tsx; the two halves cover the full path.
+// R7PANE.1 (REQ-PANE-1/2/4, carried REQ-WRITE-4) — the OFFLINE occlusion harness: the real
+// `<IdeShell>` markup + the real `ideCss()`/`themeCss()` loaded into bundled Chromium, measured
+// at the REQ-PANE-4 sizes (1440×900, 1280×800, 1024×768, 820×1180) plus the 1279/1280 boundary.
+// No network, no app — the fixture pins the right-panel geometry (docked/overlay/sheet), the
+// scrim, and the focus-exit pill against real layout; the retired Desk's status-bar collision
+// is gone with the drawer. The controller→attribute half is pinned by the happy-dom legs in
+// apps/web/src/spa/ide-chrome.dom.test.tsx; the two halves cover the full path. The
+// `U3.occlusion` leg re-asserts these checks against a deployed surface (held `ready-to-flip`).
 //
 // Needs bundled Chromium (pnpm --filter @rhema/journeys exec playwright install chromium); on a
 // dev box without browsers this file skips — under CI a missing browser is a real failure.
@@ -25,18 +26,20 @@ const LABELS = {
     close: "Close Files",
     open: "Files",
     sourceFile: "Source",
+    resize: "Resize files",
   },
   margin: { heading: "Findings", ticksLabel: "Finding markers" },
   timeline: { heading: "Timeline", empty: "No runs yet", close: "Close Timeline" },
-  desk: {
-    heading: "Desk",
-    tabs: { chat: "Chat", feed: "Live feed", findings: "Findings", claims: "Claims" },
+  panel: {
+    heading: "Panel",
+    resize: "Resize the panel",
+    tabs: { chat: "Chat", findings: "Findings", claims: "Claims", timeline: "Timeline", feed: "Live feed" },
     emptyChat: "e",
     emptyFeed: "e",
     emptyFindings: "e",
     emptyClaims: "e",
     findingsTable: { finding: "Finding", severity: "Severity", kind: "Kind", status: "Status" },
-    close: "Close Desk",
+    close: "Close panel",
   },
   statusBar: {
     view: "View",
@@ -58,7 +61,7 @@ const LABELS = {
     fontSans: "Sans",
     readerBigger: "Bigger",
     readerSmaller: "Smaller",
-    timeline: "Timeline",
+    panel: "Right panel",
   },
   themes: {
     dark: "Dark",
@@ -80,10 +83,9 @@ const LABELS = {
 
 interface FixtureOpts {
   files?: "strip" | "open";
-  timeline?: "open" | "closed";
-  timelineMode?: string;
+  panel?: "open" | "closed";
+  panelMode?: string;
   filesMode?: string;
-  desk?: "open" | "closed";
   view?: "write" | "read" | "focus";
 }
 
@@ -92,6 +94,7 @@ function fixture(opts: FixtureOpts = {}): string {
     h(
       IdeShell,
       {
+        hosted: true,
         project: { slug: "alpha", title: "Alpha" },
         userId: "u1",
         projectId: "p1",
@@ -104,17 +107,16 @@ function fixture(opts: FixtureOpts = {}): string {
       h("div", null, "page text ".repeat(80)),
     ),
   );
-  // stamp the pane attrs the controller derives from paneLayout() — `data-open` on the timeline
+  // stamp the pane attrs the controller derives from paneLayout() — `data-open` on the panel
   // aside rides its effective open state.
   const stamped = markup
-    .replace('data-timeline="closed"', `data-timeline="${opts.timeline ?? "closed"}"`)
+    .replace('data-panel="closed"', `data-panel="${opts.panel ?? "closed"}"`)
     .replace('data-files="strip"', `data-files="${opts.files ?? "strip"}"`)
-    .replace('data-desk="closed"', `data-desk="${opts.desk ?? "closed"}"`)
     .replace('data-view="write"', `data-view="${opts.view ?? "write"}"`);
-  const modes = `data-pane-mode="wide" ${opts.timelineMode ? `data-timeline-mode="${opts.timelineMode}"` : ""} ${opts.filesMode ? `data-files-mode="${opts.filesMode}"` : ""}${opts.timeline === "open" ? " data-open-set" : ""}`;
+  const modes = `data-pane-mode="wide" ${opts.panelMode ? `data-panel-mode="${opts.panelMode}"` : ""} ${opts.filesMode ? `data-files-mode="${opts.filesMode}"` : ""}`;
   const final = stamped.replace(
-    '<aside class="ide-timeline"',
-    `<aside class="ide-timeline"${opts.timeline === "open" ? " data-open" : ""}`,
+    '<aside class="ide-panel"',
+    `<aside class="ide-panel"${opts.panel === "open" ? " data-open" : ""}`,
   );
   return `<!doctype html><html><head><style>${themeCss("dark")}${ideCss()}</style></head><body style="margin:0">${final.replace('data-ide="1"', `data-ide="1" ${modes}`)}</body></html>`;
 }
@@ -165,22 +167,22 @@ async function probe(opts: FixtureOpts, w: number, hgt: number): Promise<Probe |
       return {
         boxes: {
           paper: box(".ide-page .paper"),
-          timeline: box(".ide-timeline"),
+          panel: box(".ide-panel"),
           files: box(".ide-files"),
           margin: box(".ide-margin"),
-          deskHead: box(".ide-desk-head"),
+          panelHead: box(".ide-panel-head"),
           statusbar: box(".ide-statusbar"),
           page: box(".ide-page"),
         },
         positions: {
-          timeline: document.querySelector(".ide-timeline")
-            ? getComputedStyle(document.querySelector(".ide-timeline") as Element).position
+          panel: document.querySelector(".ide-panel")
+            ? getComputedStyle(document.querySelector(".ide-panel") as Element).position
             : "(none)",
           files: getComputedStyle(document.querySelector(".ide-files") as Element).position,
         },
         scrimShown: scrim != null && getComputedStyle(scrim).display !== "none",
         covers: {
-          deskTab: center("[data-ide-desk-tab='chat']"),
+          panelTab: center("[data-ide-panel-tab='chat']"),
           paperCenter: center(".ide-page .paper"),
         },
       };
@@ -201,10 +203,10 @@ const intersects = (
   a.y < b.y + b.h &&
   b.y < a.y + a.h;
 
-describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evidence)", () => {
-  it("1440×900 + Files open: the Timeline DOCKS (no overlay arm) and the Page column reflows under it", async () => {
+describe("REQ-PANE-1/2/4 — offline occlusion harness (the U3.occlusion Stage-A evidence)", () => {
+  it("1440×900 + Files open: the panel DOCKS (no overlay arm) and the Page column reflows under it", async () => {
     const p = await probe(
-      { files: "open", timeline: "open", filesMode: "open", timelineMode: "pane" },
+      { files: "open", panel: "open", filesMode: "open", panelMode: "docked" },
       1440,
       900,
     );
@@ -215,11 +217,11 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
     }
     // paneLayout() says: docked at ≥1280 — the <1600 arm carries no overlay.
     expect(
-      paneLayout(1440, { ...DEFAULT_PANE_STATE, filesOpen: true, hasFindings: true }).timeline,
-    ).toBe("pane");
-    expect(p.positions.timeline).not.toBe("absolute");
-    // B1 — the Page column reflows: its box never intersects the docked Timeline's.
-    expect(intersects(p.boxes.paper, p.boxes.timeline)).toBe(false);
+      paneLayout(1440, { ...DEFAULT_PANE_STATE, filesOpen: true, hasFindings: true }).panel,
+    ).toBe("docked");
+    expect(p.positions.panel).not.toBe("absolute");
+    // the Page column reflows: its box never intersects the docked panel's.
+    expect(intersects(p.boxes.paper, p.boxes.panel)).toBe(false);
     // …and nothing un-scrimmed sits over the paper's centre point.
     expect(p.covers.paperCenter).toBeNull();
   }, 60_000);
@@ -232,18 +234,18 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
       return;
     }
     for (const [w, expectedMode] of [
-      [1280, "pane"],
+      [1280, "docked"],
       [1279, "overlay"],
     ] as const) {
       const opts: FixtureOpts =
-        expectedMode === "pane"
-          ? { timeline: "open", timelineMode: "pane" }
-          : { timeline: "open", timelineMode: "overlay" };
+        expectedMode === "docked"
+          ? { panel: "open", panelMode: "docked" }
+          : { panel: "open", panelMode: "overlay" };
       const p = await probe(opts, w, 800);
-      expect(paneLayout(w, { ...DEFAULT_PANE_STATE, hasFindings: true }).timeline).toBe(
+      expect(paneLayout(w, { ...DEFAULT_PANE_STATE, panelOpen: true, hasFindings: true }).panel).toBe(
         expectedMode,
       );
-      expect(p?.positions.timeline, `timeline position at ${w}`).toBe(
+      expect(p?.positions.panel, `panel position at ${w}`).toBe(
         expectedMode === "overlay" ? "absolute" : "static",
       );
       expect(p?.scrimShown, `scrim at ${w}`).toBe(expectedMode === "overlay");
@@ -252,37 +254,37 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
         // between them.
         expect(p.scrimShown).toBe(true);
       } else {
-        expect(intersects(p?.boxes.paper ?? null, p?.boxes.timeline ?? null)).toBe(false);
+        expect(intersects(p?.boxes.paper ?? null, p?.boxes.panel ?? null)).toBe(false);
       }
     }
   }, 90_000);
 
   it("1024×768: the open overlay carries a scrim that covers the Page (never un-scrimmed)", async () => {
-    const p = await probe({ timeline: "open", timelineMode: "overlay" }, 1024, 768);
+    const p = await probe({ panel: "open", panelMode: "overlay" }, 1024, 768);
     if (!p) {
       if (process.env.CI) throw new Error("playwright chromium missing under CI");
       return;
     }
-    expect(p.positions.timeline).toBe("absolute");
+    expect(p.positions.panel).toBe("absolute");
     expect(p.scrimShown).toBe(true);
     // the scrim sits between the page and the overlay — the paper's centre hit-tests the scrim.
     expect(p.covers.paperCenter).toBe("DIV.ide-scrim");
   }, 60_000);
 
-  it("820×1180: the sheet is scrimmed too; a closed Timeline covers nothing", async () => {
-    const open = await probe({ timeline: "open", timelineMode: "sheet" }, 820, 1180);
+  it("820×1180: the sheet is scrimmed too; a closed panel covers nothing", async () => {
+    const open = await probe({ panel: "open", panelMode: "sheet" }, 820, 1180);
     if (!open) {
       if (process.env.CI) throw new Error("playwright chromium missing under CI");
       return;
     }
-    expect(open.positions.timeline).toBe("absolute");
+    expect(open.positions.panel).toBe("absolute");
     expect(open.scrimShown).toBe(true);
-    const closed = await probe({ timeline: "closed", timelineMode: "sheet" }, 820, 1180);
+    const closed = await probe({ panel: "closed", panelMode: "sheet" }, 820, 1180);
     expect(closed?.scrimShown).toBe(false);
-    expect(intersects(closed?.boxes.paper ?? null, closed?.boxes.timeline ?? null)).toBe(false);
+    expect(intersects(closed?.boxes.paper ?? null, closed?.boxes.panel ?? null)).toBe(false);
   }, 90_000);
 
-  it("the Desk head never intersects the status bar — 1440×757 laptop height and the four sizes", async () => {
+  it("the panel head never intersects the status bar — the B2 collision is gone with the drawer", async () => {
     const b = await getBrowser();
     if (!b) {
       if (process.env.CI) throw new Error("playwright chromium missing under CI");
@@ -295,13 +297,16 @@ describe("REQ-PANE-0 — offline occlusion harness (the U3.stopgap Stage-A evide
       [1024, 768],
       [820, 1180],
     ] as const) {
-      const p = await probe({ desk: "open" }, w, hgt);
-      // B2 — the head's box sits strictly above the status bar's and a tab is clickable.
-      expect(
-        intersects(p?.boxes.deskHead ?? null, p?.boxes.statusbar ?? null),
-        `desk head ∩ statusbar @${w}×${hgt}`,
-      ).toBe(false);
-      expect(p?.covers.deskTab, `desk tab covered @${w}×${hgt}`).toBeNull();
+      const p = await probe({ panel: "open", panelMode: w < 1280 ? (w < 1024 ? "sheet" : "overlay") : "docked" }, w, hgt);
+      // the in-flow panel head sits strictly inside the frame; a tab is clickable at every size.
+      expect(p?.covers.panelTab, `panel tab covered @${w}×${hgt}`).toBeNull();
+      // …and the docked panel never overlaps the status bar region vertically.
+      if (w >= 1280) {
+        expect(
+          intersects(p?.boxes.panelHead ?? null, p?.boxes.statusbar ?? null),
+          `panel head ∩ statusbar @${w}×${hgt}`,
+        ).toBe(false);
+      }
     }
   }, 120_000);
 

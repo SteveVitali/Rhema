@@ -139,3 +139,13 @@ controls, RV-36). Batches append hidden-input/no-JS-form entries with a reason e
 
 **No React-19 incompatibility surfaced** — every wrapper mounts on the repo's React 19.3 pin
 under happy-dom tests, so the DEFERRALS fallback path was not needed.
+
+---
+
+**2026-11-05 — R7PANE.1 fills the SplitPane choice (recorded, not amended):** the pane engine
+is **in-house** — the existing `paneLayout()`/`paneDrag()` math plus attribute-driven CSS, not
+`react-resizable-panels`. Rationale: the REQ-PANE-2 table needs modes the library doesn't model
+(docked/overlay/sheet breakpoints, session-vs-persisted open intent, the ≥1440 default-open
+rule, the ADR-128 collapse priority); the adapter would cost more than the engine it wraps,
+and the ticket's ≤15 kB gz entry allowance doesn't buy a dependency for geometry we already
+test. No new dependency was added — REQ-DOPS-8 is re-asserted with nothing to pin.

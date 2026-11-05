@@ -316,7 +316,7 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
         <section
           className="ide-phone-only"
           data-phone-chat="true"
-          aria-label={COPY.ide.desk.heading}
+          aria-label={COPY.ide.panel.tabs.chat}
           style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
         >
           {chatPanel(data.ide.chat, slug, data.ide, true)}

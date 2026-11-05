@@ -1797,6 +1797,7 @@ export const COPY = {
       close: "Close Files",
       empty: "Import a draft to add files to this project.",
       sourceFile: "Source",
+      resize: "Resize Files",
     },
     margin: {
       heading: "Findings",
@@ -1807,13 +1808,15 @@ export const COPY = {
       empty: "No runs yet — the round log appears here.",
       close: "Close Timeline",
     },
-    desk: {
-      heading: "Desk",
+    panel: {
+      heading: "Panel",
+      resize: "Resize the panel",
       tabs: {
         chat: "Chat",
-        feed: "Live feed",
         findings: "Findings",
         claims: "Claims",
+        timeline: "Timeline",
+        feed: "Live feed",
       },
       emptyChat: "No chat yet — ask the Assistant anything about this project.",
       emptyFeed: "No run activity yet.",
@@ -1825,7 +1828,7 @@ export const COPY = {
         kind: "Kind",
         status: "Status",
       },
-      close: "Close Desk",
+      close: "Close panel",
     },
     // P1.11 — the Desk Chat panel's chrome (§7.1). The assistant's copy lives in the project; the
     // shell's labels only.
@@ -1899,8 +1902,9 @@ export const COPY = {
       fontSans: "Sans paper",
       readerBigger: "Bigger text",
       readerSmaller: "Smaller text",
-      // R7FIX.1 (REQ-PANE-0) — the Timeline's on-demand row: below 1280 it is closed by default.
-      timeline: "Timeline",
+      // R7PANE.1 (REQ-PANE-1/2) — the right panel's on-demand row: below 1280 it is closed by
+      // default and rides the session-scoped overlay intent.
+      panel: "Right panel",
     },
     // R7FIX.1 (REQ-WRITE-4) — the focus-view exit pill (hover/keyboard revealed; Esc also exits).
     focusExit: "Exit focus · Esc",

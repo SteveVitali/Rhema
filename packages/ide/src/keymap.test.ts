@@ -59,7 +59,7 @@ describe("§5.12 — bare keys and focus scoping", () => {
   // (the Timeline today; 229 retargets); version stepping moved to the provisional ⌥-bracket pair.
   it("[ toggles the sidebar and ] the right-side pane (not while typing)", () => {
     expect(dispatchIdeKey(bare("["), "none")).toEqual({ kind: "sidebar" });
-    expect(dispatchIdeKey(bare("]"), "none")).toEqual({ kind: "pane", pane: "timeline" });
+    expect(dispatchIdeKey(bare("]"), "none")).toEqual({ kind: "pane", pane: "panel" });
     expect(dispatchIdeKey(bare("["), "page")).toBeNull();
     expect(dispatchIdeKey(bare("]"), "input")).toBeNull();
   });
@@ -150,7 +150,7 @@ describe("REQ-KEYS-1 — the reserved-chords checker (R7SHELL.1a)", () => {
     expect(CHEAT_SHEET.length).toBe(IDE_KEYMAP.length);
     expect(CHEAT_SHEET.map((r) => r.keys)).toEqual(IDE_KEYMAP.map((b) => b.keys));
     expect(shortcutFor("sidebar")).toBe("[");
-    expect(shortcutFor("pane:timeline")).toBe("]");
+    expect(shortcutFor("pane:panel")).toBe("]");
     expect(shortcutFor("palette")).toBe("⌘K");
   });
 });

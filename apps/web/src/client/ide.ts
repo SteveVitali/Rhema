@@ -67,9 +67,12 @@ function main(): void {
   function apply(): void {
     if (!ide) return;
     ide.dataset["files"] = state.filesOpen ? "open" : "strip";
-    ide.dataset["timeline"] = state.timelineOpen ? "open" : "closed";
-    ide.dataset["desk"] = state.deskOpen ? "open" : "closed";
-    ide.dataset["deskTab"] = state.deskTab;
+    ide.dataset["panel"] = state.panelOpen === true ? "open" : "closed";
+    // R7a hook aliases — the legs resolve on this markup AND prod's R7a markup.
+    ide.dataset["timeline"] = ide.dataset["panel"];
+    ide.dataset["desk"] = ide.dataset["panel"];
+    ide.dataset["deskTab"] = state.panelTab;
+    ide.dataset["panelTab"] = state.panelTab;
     ide.dataset["view"] = state.view;
     if (ssrMargin !== "hidden") {
       ide.dataset["margin"] = state.findingCards ? "auto" : "ticks";
@@ -77,10 +80,9 @@ function main(): void {
     if (state.advanced) ide.dataset["advanced"] = "1";
     else delete ide.dataset["advanced"];
     ide.style.setProperty("--files-w", `${state.filesWidth}px`);
-    ide.style.setProperty("--timeline-w", `${state.timelineWidth}px`);
-    ide.style.setProperty("--desk-h", `${state.deskHeight}px`);
-    // timeline element mirrors the open intent for the overlay/sheet selectors
-    ide.querySelector(".ide-timeline")?.toggleAttribute("data-open", state.timelineOpen);
+    ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
+    // the panel element mirrors the open intent for the overlay/sheet selectors
+    ide.querySelector(".ide-panel")?.toggleAttribute("data-open", state.panelOpen === true);
     // aria-checked mirrors on the menu radios/checkboxes
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-view]")) {
       b.setAttribute("aria-checked", String(b.dataset["ideView"] === state.view));
@@ -89,8 +91,8 @@ function main(): void {
       const id = b.dataset["ideToggle"] as keyof PaneState | undefined;
       if (id && typeof state[id] === "boolean") b.setAttribute("aria-checked", String(state[id]));
     }
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-desk-tab]")) {
-      b.setAttribute("aria-selected", String(b.dataset["ideDeskTab"] === state.deskTab));
+    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]")) {
+      b.setAttribute("aria-selected", String((b.dataset["idePanelTab"] ?? b.dataset["ideDeskTab"]) === state.panelTab));
     }
     applySuggestions(state.suggestionsInline === true);
   }
@@ -137,12 +139,13 @@ function main(): void {
     );
   };
   on("[data-ide-files-toggle]", () => setState({ filesOpen: !state.filesOpen }));
-  on("[data-ide-timeline-toggle]", () => setState({ timelineOpen: !state.timelineOpen }));
-  on("[data-ide-desk-toggle]", () => setState({ deskOpen: !state.deskOpen }));
-  ide.querySelectorAll<HTMLElement>("[data-ide-desk-tab]").forEach((el) =>
+  on("[data-ide-timeline-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
+  on("[data-ide-panel-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
+  on("[data-ide-desk-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
+  ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]").forEach((el) =>
     el.addEventListener("click", () => {
-      const tab = el.dataset["ideDeskTab"] as PaneState["deskTab"];
-      setState({ deskTab: tab, deskOpen: true });
+      const tab = (el.dataset["idePanelTab"] ?? el.dataset["ideDeskTab"]) as PaneState["panelTab"];
+      setState({ panelTab: tab, panelOpen: true });
     }),
   );
 
@@ -151,7 +154,7 @@ function main(): void {
   ide.querySelectorAll<HTMLElement>("[data-ide-open-feed]").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.preventDefault();
-      setState({ deskTab: "feed", deskOpen: true });
+      setState({ panelTab: "feed", panelOpen: true });
     }),
   );
 
@@ -331,14 +334,14 @@ function main(): void {
 
   // ---- drag handles: live width preview + the collapse-on-violate commit (REQ-IDE-9) ----
   for (const handle of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
-    const pane = handle.dataset["ideHandle"] as "files" | "timeline";
+    const pane = handle.dataset["ideHandle"] as "files" | "panel";
     handle.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
       const onMove = (ev: PointerEvent) => {
         const rect = ide.getBoundingClientRect();
         const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
-        ide.style.setProperty(pane === "files" ? "--files-w" : "--timeline-w", `${Math.max(0, px)}px`);
+        ide.style.setProperty(pane === "files" ? "--files-w" : "--panel-w", `${Math.max(0, px)}px`);
       };
       const onUp = (ev: PointerEvent) => {
         handle.removeEventListener("pointermove", onMove);
@@ -487,8 +490,7 @@ function main(): void {
       case "pane":
         e.preventDefault();
         if (action.pane === "files") setState({ filesOpen: !state.filesOpen });
-        else if (action.pane === "timeline") setState({ timelineOpen: !state.timelineOpen });
-        else setState({ deskOpen: !state.deskOpen });
+        else setState({ panelOpen: state.panelOpen !== true });
         break;
       case "focus-mode":
         e.preventDefault();
@@ -563,7 +565,7 @@ function main(): void {
           else url.searchParams.set("triage", "1");
           window.location.assign(url.toString());
         } else {
-          if (!state.deskOpen) setState({ deskOpen: true, deskTab: "findings" });
+          if (state.panelOpen !== true) setState({ panelOpen: true, panelTab: "findings" });
           focusFinding(0);
         }
         break;
@@ -693,7 +695,7 @@ function main(): void {
           if (item.action === "ask") {
             // §7.4 — Ask opens the composer (the Desk's chat tab; the anchored-composer prefill is
             // P1.11's seam — it consumes this same grammar).
-            setState({ deskOpen: true, deskTab: "chat" });
+            setState({ panelOpen: true, panelTab: "chat" });
           } else if (resolution && (resolution.kind === "sheet" || resolution.kind === "navigate")) {
             window.location.assign(resolution.path); // GET only — the sheet owns the launch POST
           }
@@ -744,7 +746,7 @@ function main(): void {
 
   // the artifact/Timeline context menu — a right-click on a round scopes the verbs to its subject
   // version (@vN off data-round); outside a round the bare verbs apply to the current head.
-  ide.querySelector<HTMLElement>('[data-pane="timeline"]')?.addEventListener("contextmenu", (e) => {
+  ide.querySelector<HTMLElement>('[data-panel-body="timeline"], [data-pane="timeline"]')?.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     const round = (e.target as HTMLElement).closest<HTMLElement>("[data-round]");
     const n = round?.dataset["round"];

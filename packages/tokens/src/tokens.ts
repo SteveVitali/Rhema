@@ -270,11 +270,12 @@ export const LAYOUT = {
   sidebarExpandedPx: 248,
   sidebarCollapsedPx: 56,
   topBarPx: 48,
-  /** Yield-order breakpoints (§5.1). */
-  bpFilesTicksMarginPx: 1600, // Files open below this ⇒ Margin collapses to ticks; Timeline → overlay
-  bpNarrowPx: 1280, // below: Margin → ticks, Timeline → overlay (regardless of Files)
-  bpSingleColumnPx: 1024, // below: single-column, Timeline → sheet
-  bpPhonePx: 768, // below: phone layout — reader-only Page + the §10.1 inputs (P1.19 owns inputs)
+  /** Yield-order breakpoints (§5.1 + R7PANE.1's REQ-PANE-2 table). */
+  bpFilesTicksMarginPx: 1600, // Files open below this ⇒ Margin collapses to ticks
+  bpWidePx: 1440, // ≥1440 — the panel docks open-by-default-when-findings; 1280–1439 an open panel rails the sidebar
+  bpNarrowPx: 1280, // below: Margin → ticks, the panel → scrimmed overlay (never persisted)
+  bpSingleColumnPx: 1024, // below: sidebar drawer, Files overlay, the panel → sheet
+  bpPhonePx: 768, // below: REQ-SHELL-6 — reader-only Page for the SSR phone mount; hosted panes are sheets
 } as const;
 
 /** §5.9 motion tokens (REQ-IDE-40) — named durations; `prefers-reduced-motion` collapses all to instant. */

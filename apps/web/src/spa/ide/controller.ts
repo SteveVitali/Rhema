@@ -98,12 +98,13 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   const host = opts.hostRef;
 
   const stateRef = useRef<PaneState>({ ...DEFAULT_PANE_STATE });
-  // R7FIX.1 (REQ-PANE-0) — the overlay/sheet open intent is SESSION-scoped: it lives here only,
-  // never in pane storage, so a persisted wide-mode `timelineOpen:true` can never auto-open an
-  // overlay (or the <1024 sheet/drawer) at a narrow width.
-  const overlayOpenRef = useRef<{ files: boolean; timeline: boolean }>({ files: false, timeline: false });
+  // R7PANE.1 (REQ-PANE-2, carried from REQ-PANE-0) — the overlay/sheet open intent is
+  // SESSION-scoped: it lives here only, never in pane storage, so a persisted docked-mode
+  // `panelOpen:true` can never auto-open an overlay (or the <1024 sheet/drawer) at a narrow
+  // width.
+  const overlayOpenRef = useRef<{ files: boolean; panel: boolean }>({ files: false, panel: false });
   // REQ-UX-7 — the control that opened an overlay gets focus back on dismiss.
-  const overlayTriggerRef = useRef<{ files: HTMLElement | null; timeline: HTMLElement | null }>({ files: null, timeline: null });
+  const overlayTriggerRef = useRef<{ files: HTMLElement | null; panel: HTMLElement | null }>({ files: null, panel: null });
   const authorshipRef = useRef(false);
   const readerStepRef = useRef(0);
   const suggestionNodesRef = useRef<HTMLElement[]>([]);
@@ -144,13 +145,22 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   // the effective open state then picks session intent (overlay/sheet) or persisted intent.
   const presentationNow = useCallback((): PaneLayout => {
     const w = typeof window !== "undefined" ? window.innerWidth : 1600;
-    return paneLayout(w, {
+    const shell = host.current?.closest<HTMLElement>(".app-shell") ?? null;
+    const base = {
       ...stateRef.current,
-      filesOpen: true,
-      timelineOpen: true,
       hasFindings: latest.current.hasFindings,
-    });
-  }, []);
+      hosted: shell != null || ideEl()?.hasAttribute("data-ide-hosted") === true,
+      sidebarOpen: shell?.dataset["sidebar"] !== "collapsed",
+    };
+    // Two cheap pure passes: the first resolves the MODES, the second feeds the session-scoped
+    // overlay intents back in so paneLayout()'s effective open verdicts are the real ones.
+    const pre = paneLayout(w, base);
+    const intents = {
+      filesOpen: overlayMode(pre.files) ? overlayOpenRef.current.files : stateRef.current.filesOpen,
+      panelOpen: overlayMode(pre.panel) ? overlayOpenRef.current.panel : stateRef.current.panelOpen,
+    };
+    return paneLayout(w, { ...base, ...intents });
+  }, [host, ideEl]);
   const overlayMode = (m: string): boolean => m === "overlay" || m === "sheet";
 
   const apply = useCallback((): void => {
@@ -160,27 +170,35 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const presentation = presentationNow();
     const ssrMargin = latest.current.hasFindings ? "auto" : "hidden";
     ide.dataset.paneMode = presentation.mode;
-    ide.dataset.timelineMode = presentation.timeline;
+    ide.dataset.panelMode = presentation.panel;
     ide.dataset.filesMode = presentation.files;
-    const timelineOpen = overlayMode(presentation.timeline)
-      ? overlayOpenRef.current.timeline
-      : state.timelineOpen;
-    const filesOpen = overlayMode(presentation.files)
-      ? overlayOpenRef.current.files
-      : state.filesOpen;
+    const panelOpen = presentation.panelOpen;
+    const filesOpen = presentation.filesOpen;
     ide.dataset.files = filesOpen ? "open" : "strip";
-    ide.dataset.timeline = timelineOpen ? "open" : "closed";
-    ide.dataset.desk = state.deskOpen ? "open" : "closed";
-    ide.dataset.deskTab = state.deskTab;
+    ide.dataset.panel = panelOpen ? "open" : "closed";
+    ide.dataset.panelTab = state.panelTab;
+    // R7a hook aliases (the dom-contract migration ships them in this change): the R7a legs
+    // resolve on this markup AND on prod's R7a markup.
+    ide.dataset.timeline = panelOpen ? "open" : "closed";
+    ide.dataset.timelineMode = presentation.panel === "docked" ? "pane" : presentation.panel;
+    ide.dataset.desk = panelOpen ? "open" : "closed";
+    ide.dataset.deskTab = state.panelTab;
     ide.dataset.view = state.view;
     if (ssrMargin !== "hidden") ide.dataset.margin = state.findingCards ? "auto" : "ticks";
     ide.toggleAttribute("data-advanced", state.advanced);
     ide.style.setProperty("--files-w", `${state.filesWidth}px`);
-    ide.style.setProperty("--timeline-w", `${state.timelineWidth}px`);
-    ide.style.setProperty("--desk-h", `${state.deskHeight}px`);
-    ide.querySelector(".ide-timeline")?.toggleAttribute("data-open", timelineOpen);
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-timeline-toggle]")) {
-      if (b.getAttribute("role") === "menuitemcheckbox") b.setAttribute("aria-checked", String(timelineOpen));
+    ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
+    ide.querySelector(".ide-panel")?.toggleAttribute("data-open", panelOpen);
+    // REQ-PANE-2 — the sidebar advisory goes on the shell frame (its CSS enforces rail/drawer).
+    const shell = ide.closest<HTMLElement>(".app-shell");
+    if (shell) shell.dataset["ideSidebar"] = presentation.sidebar;
+    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-toggle], [data-ide-timeline-toggle]")) {
+      if (b.getAttribute("role") === "menuitemcheckbox") b.setAttribute("aria-checked", String(panelOpen));
+    }
+    // UXC-26 — the separators' ARIA values track the committed widths.
+    for (const h of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
+      const w = h.dataset["ideHandle"] === "files" ? state.filesWidth : state.panelWidth;
+      h.setAttribute("aria-valuenow", String(Math.round(w)));
     }
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-view]")) {
       b.setAttribute("aria-checked", String(b.dataset["ideView"] === state.view));
@@ -189,8 +207,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const id = b.dataset["ideToggle"] as keyof PaneState | undefined;
       if (id && typeof state[id] === "boolean") b.setAttribute("aria-checked", String(state[id]));
     }
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-desk-tab]")) {
-      b.setAttribute("aria-selected", String(b.dataset["ideDeskTab"] === state.deskTab));
+    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]")) {
+      b.setAttribute("aria-selected", String((b.dataset["idePanelTab"] ?? b.dataset["ideDeskTab"]) === state.panelTab));
     }
     applySuggestions(state.suggestionsInline === true);
   }, [ideEl, applySuggestions, presentationNow]);
@@ -211,9 +229,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   // A pane toggle in an overlay/sheet mode flips SESSION state only (apply(), never commit()):
   // nothing written to `rhema:panes` can resurrect an overlay at a narrow width.
   const togglePane = useCallback(
-    (pane: "files" | "timeline"): void => {
+    (pane: "files" | "panel"): void => {
       const presentation = presentationNow();
-      const mode = pane === "files" ? presentation.files : presentation.timeline;
+      const mode = pane === "files" ? presentation.files : presentation.panel;
       if (overlayMode(mode)) {
         const opening = !overlayOpenRef.current[pane];
         overlayOpenRef.current = { ...overlayOpenRef.current, [pane]: opening };
@@ -221,10 +239,11 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         apply();
         return;
       }
+      // Docked: the explicit toggle writes the intent (no more derived default).
       commit(
         pane === "files"
           ? { filesOpen: !stateRef.current.filesOpen }
-          : { timelineOpen: !stateRef.current.timelineOpen },
+          : { panelOpen: !presentation.panelOpen },
       );
     },
     [apply, commit, presentationNow],
@@ -233,15 +252,15 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   /** Close any open overlay/sheet; returns whether anything closed (the Esc layer check). */
   const dismissOverlays = useCallback((): boolean => {
     const o = overlayOpenRef.current;
-    if (!o.timeline && !o.files) return false;
+    if (!o.panel && !o.files) return false;
     const focusInside = (document.activeElement as HTMLElement | null)?.closest?.(
-      ".ide-timeline, .ide-files",
+      ".ide-panel, .ide-files",
     );
-    overlayOpenRef.current = { files: false, timeline: false };
+    overlayOpenRef.current = { files: false, panel: false };
     apply();
     // REQ-UX-7 — focus returns to the opener only when it was inside the dismissed pane.
     if (focusInside) {
-      const trig = overlayTriggerRef.current.timeline ?? overlayTriggerRef.current.files;
+      const trig = overlayTriggerRef.current.panel ?? overlayTriggerRef.current.files;
       if (trig?.isConnected) trig.focus();
     }
     return true;
@@ -518,7 +537,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       }
       if (t.closest("[data-ide-timeline-toggle]")) {
         e.preventDefault();
-        togglePane("timeline");
+        togglePane("panel");
         closeMenus(); // the View-menu row acts like the other rows — one activation, menu done
         return;
       }
@@ -527,20 +546,37 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         commit({ view: "write" });
         return;
       }
-      if (t.closest("[data-ide-desk-toggle]")) {
+      if (t.closest("[data-ide-panel-toggle]") || t.closest("[data-ide-desk-toggle]")) {
         e.preventDefault();
-        commit({ deskOpen: !stateRef.current.deskOpen });
+        togglePane("panel");
         return;
       }
-      const deskTab = t.closest<HTMLElement>("[data-ide-desk-tab]");
-      if (deskTab) {
-        commit({ deskTab: deskTab.dataset["ideDeskTab"] as PaneState["deskTab"], deskOpen: true });
+      const panelTab = t.closest<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]");
+      if (panelTab) {
+        const tab = (panelTab.dataset["idePanelTab"] ?? panelTab.dataset["ideDeskTab"]) as PaneState["panelTab"];
+        // a demo boot hides the Chat trigger (its body would read workspace data).
+        if (panelTab.hasAttribute("hidden") || panelTab.hasAttribute("disabled")) return;
+        const presentation = presentationNow();
+        if (overlayMode(presentation.panel)) {
+          overlayOpenRef.current = { ...overlayOpenRef.current, panel: true };
+          stateRef.current = { ...stateRef.current, panelTab: tab };
+          apply();
+        } else {
+          commit({ panelTab: tab, panelOpen: true });
+        }
         return;
       }
-      // a run card's "Live feed" action opens the Desk on the feed tab.
+      // a run card's "Live feed" action opens the panel on the feed tab.
       if (t.closest("[data-ide-open-feed]")) {
         e.preventDefault();
-        commit({ deskTab: "feed", deskOpen: true });
+        const presentation = presentationNow();
+        if (overlayMode(presentation.panel)) {
+          overlayOpenRef.current = { ...overlayOpenRef.current, panel: true };
+          stateRef.current = { ...stateRef.current, panelTab: "feed" };
+          apply();
+        } else {
+          commit({ panelTab: "feed", panelOpen: true });
+        }
         return;
       }
       const viewMenuBtn = t.closest<HTMLElement>("[data-ide-view-menu]");
@@ -628,12 +664,12 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const handle = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-ide-handle]");
       if (!handle) return;
       e.preventDefault();
-      const pane = handle.dataset["ideHandle"] as "files" | "timeline";
+      const pane = handle.dataset["ideHandle"] as "files" | "panel";
       handle.setPointerCapture(e.pointerId);
       const onMove = (ev: PointerEvent) => {
         const rect = ide.getBoundingClientRect();
         const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
-        ide.style.setProperty(pane === "files" ? "--files-w" : "--timeline-w", `${Math.max(0, px)}px`);
+        ide.style.setProperty(pane === "files" ? "--files-w" : "--panel-w", `${Math.max(0, px)}px`);
       };
       const onUp = (ev: PointerEvent) => {
         handle.removeEventListener("pointermove", onMove);
@@ -641,16 +677,16 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         const rect = ide.getBoundingClientRect();
         const px = pane === "files" ? ev.clientX - rect.left - 56 : rect.right - ev.clientX;
         const next = paneDrag(stateRef.current, pane, px, window.innerWidth);
-        const mode = pane === "files" ? presentationNow().files : presentationNow().timeline;
+        const mode = pane === "files" ? presentationNow().files : presentationNow().panel;
         if (overlayMode(mode)) {
-          // REQ-PANE-0 — an overlay resize/close stays session-scoped (never persisted).
+          // REQ-PANE-2 — an overlay resize/close stays session-scoped (never persisted).
           overlayOpenRef.current = {
             ...overlayOpenRef.current,
-            [pane]: pane === "files" ? next.filesOpen : next.timelineOpen,
+            [pane]: pane === "files" ? next.filesOpen : next.panelOpen === true,
           };
           stateRef.current = {
             ...stateRef.current,
-            ...(pane === "files" ? { filesWidth: next.filesWidth } : { timelineWidth: next.timelineWidth }),
+            ...(pane === "files" ? { filesWidth: next.filesWidth } : { panelWidth: next.panelWidth }),
           };
           apply();
           return;
@@ -660,6 +696,25 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       handle.addEventListener("pointermove", onMove);
       handle.addEventListener("pointerup", onUp);
     };
+
+    // UXC-26 — arrow-key resize on the separators (role="separator"): ←/→ step the width,
+    // clamped to the ARIA min/max and guarded by the same 45-ch floor as the drag commit.
+    const onHandleKey = (e: KeyboardEvent): void => {
+      const handle = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-ide-handle]");
+      if (!handle) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const pane = handle.dataset["ideHandle"] as "files" | "panel";
+      const st = stateRef.current;
+      // both panes' positive direction is "wider" — left shrinks the left pane, right widens
+      // the right pane (mirroring the drag math's clientX axes).
+      const dir = (pane === "files" ? 1 : -1) * (e.key === "ArrowRight" ? 1 : -1);
+      const cur = pane === "files" ? st.filesWidth : st.panelWidth;
+      const px = Math.min(480, Math.max(160, cur + dir * 16));
+      if (px === cur) return;
+      e.preventDefault();
+      commit(paneDrag(st, pane, px, window.innerWidth));
+    };
+    ide.addEventListener("keydown", onHandleKey);
 
     // ---- the §7.2/§7.4 cmdmenu (selection popover + timeline context menu) ----
     let cmdMenu: HTMLElement | null = null;
@@ -712,7 +767,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           b.addEventListener("click", () => {
             closeCmdMenu();
             if (item.action === "ask") {
-              commit({ deskOpen: true, deskTab: "chat" });
+              commit({ panelOpen: true, panelTab: "chat" });
             } else if (resolution && (resolution.kind === "sheet" || resolution.kind === "navigate")) {
               latest.current.nav.push(resolution.path); // GET only — the sheet owns the launch POST
             }
@@ -757,7 +812,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       if (cmdMenu?.dataset["kind"] === "selection" && (!sel || sel.isCollapsed)) closeCmdMenu();
     };
     const onContextMenu = (e: MouseEvent): void => {
-      const pane = (e.target as HTMLElement | null)?.closest('[data-pane="timeline"]');
+      const pane = (e.target as HTMLElement | null)?.closest('[data-panel-body="timeline"], [data-pane="timeline"]');
       if (!pane) return;
       e.preventDefault();
       const round = (e.target as HTMLElement).closest<HTMLElement>("[data-round]");
@@ -775,11 +830,12 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const t = e.target as HTMLElement | null;
       if (t && ide.contains(t) && (t.closest("[data-ide-menu]") || t.closest("[aria-haspopup='menu']"))) return;
       closeMenus();
-      if (!overlayOpenRef.current.timeline && !overlayOpenRef.current.files) return;
+      if (!overlayOpenRef.current.panel && !overlayOpenRef.current.files) return;
       if (
         t &&
-        (t.closest(".ide-timeline") ||
+        (t.closest(".ide-panel") ||
           t.closest(".ide-files") ||
+          t.closest("[data-ide-panel-toggle]") ||
           t.closest("[data-ide-timeline-toggle]") ||
           t.closest("[data-ide-files-toggle]"))
       )
@@ -836,8 +892,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         case "pane":
           e.preventDefault();
           if (action.pane === "files") togglePane("files");
-          else if (action.pane === "timeline") togglePane("timeline");
-          else commit({ deskOpen: !stateRef.current.deskOpen });
+          else togglePane("panel");
           break;
         case "sidebar":
           // R7SHELL.1a (REQ-KEYS-1) — `[` toggles the AppShell sidebar; the shell listens for
@@ -925,7 +980,11 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
             // same-leaf search swap — the island never scrolled on a triage toggle (REQ-NAVC-16).
             nav.push(nav.pathname + (s ? `?${s}` : ""), { resetScroll: false });
           } else {
-            if (!stateRef.current.deskOpen) commit({ deskOpen: true, deskTab: "findings" });
+            const presentation = presentationNow();
+            if (overlayMode(presentation.panel)) {
+              overlayOpenRef.current = { ...overlayOpenRef.current, panel: true };
+            }
+            commit({ panelOpen: overlayMode(presentation.panel) ? stateRef.current.panelOpen : true, panelTab: "findings" });
             focusFinding(0);
           }
           break;
@@ -1029,6 +1088,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     window.addEventListener("keydown", onKeydown);
 
     return () => {
+      ide.removeEventListener("keydown", onHandleKey);
       ide.removeEventListener("click", onIdeClick);
       ide.removeEventListener("pointerdown", onPointerDown);
       ide.removeEventListener("contextmenu", onContextMenu);
@@ -1041,6 +1101,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       window.removeEventListener("keydown", onKeydown);
       window.removeEventListener("hashchange", onHashChange);
       window.removeEventListener("resize", onResize);
+      delete ide.closest<HTMLElement>(".app-shell")?.dataset["ideSidebar"];
       mq?.removeEventListener?.("change", onThemeChange);
       if (selTimer) clearTimeout(selTimer);
       closeCmdMenu();
