@@ -3,7 +3,7 @@
 Harness: devin-desktop/swe-2-high/subagent
 Skills: e981ec5
 Started: 2026-11-05T15:06:03Z
-Closed: (open)
+Closed: 2026-11-05T16:09Z
 Spec: docs/tickets/228_R7SHELL.1c__global-palette-search.md
 Base: `stevevitali/r7shell-1b-headers` @ `57426a77` (PR #265 head `e98667e4`, unmerged — OPERATOR)
 Branch: `stevevitali/r7shell-1c-palette`
@@ -157,6 +157,6 @@ Budget: ~650 changed lines excl. generated/fixtures; entry delta ≤ 15 kB gz (R
 
 ## Evidence report
 
-- Head `7b3d4a6c` — CI run 42057029695 pending at close; first head `626909b2` run 42056600661 cancelled by supersede; `eaab25c2` run 42056670386 covered the BUILD_INDEX/LEDGER head (in progress at close). Boundary re-read owed on the operator/CI side or next ticket's first read (D8 ledger-note rule).
+- **CI boundary read at exact head `12c69e98`: PASS** — run 42057250834, all seven legs + `ci-pass` anchor (`docs/build/logs/ci-R7SHELL.1c.json`, read_at 2026-11-05T16:09Z). The `626909b2`/`eaab25c2`/`7b3d4a6c` runs were superseded-cancelled by the closeout pushes; the boundary covers the final head.
 - Layer achieved: **engineered** (Stage A only per GD-PREVIEW.R7; no preview, $0).
 - Deferrals: `D-R7SHELL.1c-1` OPEN (owner 250_R7DEP.2). Carries: 231 T5 discharged; 248 demo=hidden.
