@@ -160,7 +160,10 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     }
     // recents ≤ 8 with status dots + the inbox badge
     expect(document.querySelectorAll("[data-shell-recent]").length).toBe(2);
-    expect(document.querySelectorAll(".app-shell-dot").length).toBe(2);
+    const dots = document.querySelectorAll<HTMLElement>(".app-shell-dot[data-tone]");
+    expect(dots.length).toBe(2);
+    expect(dots[0]!.getAttribute("data-tone")).toBe("ready_to_read");
+    expect(dots[1]!.getAttribute("data-tone")).toBe("running");
     const badge = await settled<HTMLElement>("[data-shell-inbox] .app-shell-badge");
     expect(badge.textContent).toBe("3");
     // the account menu's item hooks — open it and assert the manifest's set emits
