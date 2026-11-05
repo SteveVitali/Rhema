@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/blitz-2010-fn103-and-pinpoints.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b3757d30aa845fd7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/blitz-2010-fn103-and-pinpoints.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# blitz-2010-fn103-and-pinpoints\n- **URL:** https://scholarship.law.okcu.edu/downloads/d7kcg-2ck33/fulltext.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Page pinpoints in Blitz, 2010 Wis. L. Rev. 1049 (PDF text-extracted; HeinOnline running feet give the WLR pages). \"Functional equivalent of thought\" formulation at 1072; Part heading \"B. Functional Equivalents of Thought\" at 1073; Otto's journal → brain chip at 1067; \"journal or iPhone\" at 1073; chip \"left outside of one's skull (say, in a cap)\" at 1073–74; footnote 103 (Baumgartner) on 1069. No surveillance/observation/reading argument anywhere: \"surveil\" absent; \"Fourth Amendment\" only in citations and one forced-medication passage (~1097).\n- **Key passages:** \"freedom of thought cannot and should not protect all activity that arises from or influences thought, but rather activity that is either (1) the functional equivalent of thought, or (2) a reshaping of the self that does that thinking\" (1072) · fn. 103: \"See, e.g., Baumgartner v. United States, 322 U.S. 665, 673-74, 676-77 (1944) (rejecting an attempt to use a person's allegedly pro-Nazi private diary entries as a basis for revoking citizenship and emphasizing that one of the prerogatives of citizenship is 'the freedom to speak foolishly and without moderation')\" (1069) · \"the protagonist's opening rebellion against thought control begins with an entry in a diary\" (1069).\n- **Reliability:** Primary scholarly source (repository PDF of the published article); independent.\n- **Relevance to this project:** III9 (l.74); ref [29] pinpoints; supports \"a liberty to use\" and \"Blitz did not argue\" the observation liberty.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 239
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "26bf1d35e07415fdda9f6a10b852484a02524a0aaa69b08ae8db92eb2db91070",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/blitz-2010-fn103-and-pinpoints.md",
+ "kind": "artifact-page"
+}

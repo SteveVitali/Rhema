@@ -1,0 +1,7 @@
+# venue-sjsebastian-substack
+
+- **URL:** https://sjsebastian.substack.com/ and https://sjsebastian.substack.com/archive · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** The target venue is a small Substack (launched ~Oct 2025 in practice; "coming soon" stub May 2022) self-described as "Philosophy, cultural commentary, the history of ideas." All seven published essays are AI-and-philosophy pieces: "What the Model Cannot Give Itself" (Jul 17, 2026), "The Narcissistic Injury of Artificial Intelligence" (Jun 4, 2026), "Discourse, Dignity, and Decision" (Apr 9, 2026), "Distinction After the Human" (Feb 20, 2026), "After Bureaucracy" (Feb 14, 2026), "Against the Sentimental Critics of AI" (Feb 6, 2026), "Thinking Through the Machine" (Oct 31, 2025). Style: scholarly-continuous, Bourdieu-inflected, subtitle-heavy ("Toward a New Humility at the End of the Age of Reason").
+- **Key passages:** n/a (archive listing).
+- **Reliability:** Primary observation of the venue.
+- **Relevance to this project:** Two reception facts. (1) A political-taxonomy manifesto is the venue's first politics piece — no in-house audience priming, and the essay's apparatus-heavy format (tables, notation, bulleted lexicon) departs from the venue's continuous-prose norm. (2) Because the venue's entire identity is AI commentary, an apparatus-heavy taxonomy will be unusually vulnerable to the "AI-written taxonomy" pattern-match from hostile readers — a risk the author should mitigate in form (more continuous prose, fewer tables) as much as in content.

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/welfare-chauvinism-literature.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "23e0e0d33d7eb5f0",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "77ff2e7fdb933bdb",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/welfare-chauvinism-literature.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# welfare-chauvinism-literature\n\n- **URL:** https://www.populismstudies.org/Vocabulary/welfare-chauvinism/ and https://journals.sagepub.com/doi/10.1177/09589287211068796 (\"Thirty years of welfare chauvinism research,\" Careja & Harris 2022) — located via search; read at search-summary level · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** \"Welfare chauvinism,\" coined by Andersen & Bjørklund (1990) for Nordic radical-right voters: the preference that \"welfare services should be restricted to 'our own'\" — support for redistribution combined with exclusion of immigrants/non-members. Thirty-plus years of scholarship on exactly the equality-inside/exclusion-at-the-boundary combination; described as part of the radical right's \"winning formula.\"\n- **Key passages:** As quoted (second-hand).\n- **Reliability:** Search-summary level; the coinage and definition are standard and multiply corroborated across the results.\n- **Relevance to this project:** The draft's \"Welfare Nationalist\" family (\"economic protection and social provision bounded primarily by national membership… egalitarian within the community, exclusionary at its boundary\") is welfare chauvinism renamed, presented as a demonstration of \"why left and right fail.\" The demonstration itself is a staple of the radical-right literature (cf. Political Compass's National Rally example). Citing the term would cost one sentence and buy credibility with every comparativist reader; not citing it invites \"reinvented welfare chauvinism\" as a dismissive quote-tweet.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 187
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "96de90dd4ad2febc3778ca7d8888e1fced4513622867716491ce71a11add3f30",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/welfare-chauvinism-literature.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,12 @@
+# ienca-andorno-2017-lssp-pmc
+- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC5447561/ (publisher page https://lsspjournal.biomedcentral.com/articles/10.1186/s40504-017-0050-1 redirects to link.springer.com and then to a Springer identity gate for automated fetches; PMC copy is the open-access deposit) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C4
+- **What it establishes:** Marcello Ienca and Roberto Andorno, "Towards new human rights in the age of neuroscience and neurotechnology," *Life Sciences, Society and Policy* 13:5 (2017), published 26 April 2017, doi 10.1186/s40504-017-0050-1. The article's epigraph is the Milton line, and the Introduction glosses it as the mind being a "last refuge" and an "unassailable fortress" that neurotechnology may breach. It proposes four rights: cognitive liberty, mental privacy, mental integrity, psychological continuity.
+- **Key passages:**
+  - Epigraph: "Thou canst not touch the freedom of my mind — John Milton"
+  - Introduction: "The quotation in the epigraph is from the play Comus, written by John Milton in 1634." (They call it a play; it is a masque.)
+  - "The quoted sentence conveys the idea that the mind is a kind of last refuge of personal freedom and self-determination."
+  - "While the body can easily be subject to domination and control by others, our mind, along with our thoughts, beliefs and convictions, are to a large extent beyond external constraint."
+  - "Yet, with advances in neural engineering, brain imaging and pervasive neurotechnology, the mind might no longer be such unassailable fortress."
+  - Abstract: "we identify four new rights that may become of great relevance in the coming decades: the right to cognitive liberty, the right to mental privacy, the right to mental integrity, and the right to psychological continuity."
+- **Reliability:** Primary for what the authors say; peer-reviewed open-access article (CC BY). Widely cited origin of the "neurorights" framing.
+- **Relevance to this project:** C4 — confirms they invoke the Milton line and the idea that the mind was, until now, effectively beyond external reach. They do not use the words "inaccessible" or "protected by being inaccessible"; the essay should paraphrase with their own terms ("last refuge", "beyond external constraint", "unassailable fortress").

@@ -1,0 +1,48 @@
+{
+ "dimensions": [
+  {
+   "dimension": "thesis_contribution",
+   "score": 3
+  },
+  {
+   "dimension": "argument_rigor",
+   "score": 3
+  },
+  {
+   "cap": {
+    "at": 2,
+    "entailedByFindingOrdinal": 2,
+    "reason": "Three Tier 1 claims Contradicted and one Misleading, all in §§VII, XII, XIII (Major issues 2 and 3); the rubric caps the dimension at 2. Otherwise 41 verified, 19 substantially accurate, every round-1 fix applied, and the scholarly apparatus verbatim throughout."
+   },
+   "dimension": "evidence_accuracy",
+   "score": 2
+  },
+  {
+   "cap": {
+    "at": 3,
+    "entailedByFindingOrdinal": 2,
+    "reason": "The Blitz cap is lifted; permissioned cognition, the complex, the eight questions, and the layer-2 composition are novel or novel syntheses; but McCarthy-Jones, De Cock's priority, Richards 2015, Chan et al., and Kulp/flexHEG III are uncited where they bear directly, and \"first documented instance\" claims a priority the record refutes (Major issues 2, 4, 5)."
+   },
+   "dimension": "originality_situatedness",
+   "score": 3
+  },
+  {
+   "dimension": "structure",
+   "score": 3
+  },
+  {
+   "dimension": "prose",
+   "score": 3
+  },
+  {
+   "dimension": "voice_audience_fit",
+   "score": 4
+  },
+  {
+   "dimension": "intellectual_honesty",
+   "score": 3
+  }
+ ],
+ "sidecar": "rubric",
+ "version": 1
+}

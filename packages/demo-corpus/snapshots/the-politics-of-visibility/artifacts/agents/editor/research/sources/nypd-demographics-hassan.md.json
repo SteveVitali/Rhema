@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nypd-demographics-hassan.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "aeb14ae432199ff7",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "02a3c5c5428bbfee",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "9902256fcb3f1ed8",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/nypd-demographics-hassan.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# NYPD Demographics Unit / Galati / Hassan\n\n- ACLU factsheet: https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program\n- Galati deposition: https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent\n- Hassan v. City of NY, 3d Cir. opinion PDF (text-extracted): https://www2.ca3.uscourts.gov/opinarch/141688p.pdf\n- Pulitzer: https://www.pulitzer.org/winners/matt-apuzzo-adam-goldman-eileen-sullivan-and-chris-hawley (search-confirmed); disbanding: https://www.cnn.com/2014/04/15/us/nypd-muslims-spying-ends/index.html (search-confirmed)\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: 28 \"ancestries of interest\"; photos/video at places of worship; worshipper\nplate logging; mosque-crawler informants; Galati verbatim \"I never made a lead from\nrhetoric that came from a Demographics report, and I'm here since 2006\" (Handschu dep.,\nJune 28, 2012); unit disbanded Apr. 2014; Hassan reversed dismissal and invoked\nHirabayashi/Korematsu and the 120,000 interned.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 88
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5b853987ff30119789c5b8f980fed4a99560d0506536bf3c4b1b0e47efcf2ef2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/nypd-demographics-hassan.md",
+ "kind": "artifact-page"
+}

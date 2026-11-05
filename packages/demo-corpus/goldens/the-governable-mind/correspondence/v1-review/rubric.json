@@ -1,0 +1,48 @@
+{
+ "dimensions": [
+  {
+   "dimension": "thesis_contribution",
+   "score": 3
+  },
+  {
+   "cap": {
+    "at": 3,
+    "entailedByFindingOrdinal": 1,
+    "reason": "The strongest objection (irreversibility) is engaged in §X but never adjudicated by the test (Major issue 1); the field's scope objection (Bublitz, Ligthart) is unengaged (Major issue 3); exit is under-theorized at four joints (Major issue 4). Capped at 3 by the rubric's rule on an unadjudicated strongest counterargument."
+   },
+   "dimension": "argument_rigor",
+   "score": 3
+  },
+  {
+   "cap": {
+    "at": 2,
+    "entailedByFindingOrdinal": 2,
+    "reason": "57 of 77 claims verified, none contradicted, the substrate otherwise sound; but one Tier 1 claim (C15, l.20/l.266/l.294) is Misleading in context on the June 2026 record, and the rubric caps the dimension at 2 for that. The fix is a paragraph (Major issue 2)."
+   },
+   "dimension": "evidence_accuracy",
+   "score": 2
+  },
+  {
+   "dimension": "originality_situatedness",
+   "score": 2
+  },
+  {
+   "dimension": "structure",
+   "score": 3
+  },
+  {
+   "dimension": "prose",
+   "score": 3
+  },
+  {
+   "dimension": "voice_audience_fit",
+   "score": 4
+  },
+  {
+   "dimension": "intellectual_honesty",
+   "score": 4
+  }
+ ],
+ "sidecar": "rubric",
+ "version": 1
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "alt": "figure_3_system_axis",
+  "assetUri": "/bff/demo/asset/structure-of-political-difference/drafts/figures/figure_3_system_axis.png",
+  "caption": "",
+  "demo": {
+   "notRecorded": [
+    "spec",
+    "svg",
+    "run_provenance",
+    "caption",
+    "source_line"
+   ]
+  },
+  "id": "figure_3_system_axis",
+  "provenance": "imported",
+  "sourceLine": "",
+  "specKind": "image",
+  "title": "figure_3_system_axis",
+  "versions": [
+   {
+    "label": "imported",
+    "n": 1
+   }
+  ]
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "figure_3_system_axis",
+ "kind": "figure-image"
+}

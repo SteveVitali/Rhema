@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-supports-sb1119-via-unite-ai-2026-08.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8c8b5ea56440f873",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-supports-sb1119-via-unite-ai-2026-08.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-supports-sb1119-via-unite-ai-2026-08\n- **URL:** https://www.unite.ai/openai-backs-california-bill-on-youth-safety-rules-for-companion-chatbots/ (OpenAI's own post at https://openai.com/index/supporting-california-bill-advance-ai-youth-safety/ returned 403; its existence and title confirmed by search) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 3)\n- **What it establishes:** OpenAI, by letter to Governor Newsom dated August 28, 2026 (reported by Unite.AI; OpenAI's post dated Aug. 31 per search results), backed SB 1119, \"Adam's Law,\" including \"requirements to determine a user's age,\" independent audits, parental controls, crisis resources, and limits on targeted advertising, with protections applying automatically to users identified as 13-17. OpenAI: the bill \"appropriately recognizes that AI is not social media and establishes safeguards tailored to how young people use AI.\" Bill introduced Feb. 17, 2026, last amended in the Assembly Aug. 28, 2026; operative July 1, 2027. Search results report enrollment and filing with the Secretary of State on Sept. 10, 2026 (not verified against leginfo today).\n- **Key passages:** \"requirements to determine a user's age\"; \"AI is not social media.\"\n- **Reliability:** Secondary (trade press) relaying a primary letter; OpenAI is an interested party.\n- **Relevance to this project:** Agenda 3; the author's response letter recorded OpenAI's support and chose not to add it. It is the largest laboratory endorsing an age-determination duty at layer 3.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 199
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "105a198e7a3da37a286e5f9580b0564730a379572fb0955bf02d26871beab284",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-supports-sb1119-via-unite-ai-2026-08.md",
+ "kind": "artifact-page"
+}

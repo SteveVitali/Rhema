@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techtimes-claude-identity-verification-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0ab930d6af8cae68",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/techtimes-claude-identity-verification-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techtimes-claude-identity-verification-2026\n- **URL:** https://www.techtimes.com/articles/318778/20260621/claude-identity-verification-starts-july-8-what-facial-data-anthropic-collects.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Tech Times (Owens), June 21, 2026: Anthropic biometric ID verification via Persona (government ID, selfie, facial geometry) for consumer tiers from July 8; tied to nationality compliance after the June 12 directive; retention limits unpublished; BIPA/GDPR exposure.\n- **Key passages:** \"What those retention limits are has not been published.\"\n- **Reliability:** Secondary; trade press; single source, treat details as reported not confirmed.\n- **Relevance to this project:** Headline 1; §XIV l.286 ('Powerful inference requires an identity') has a real instance.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4b13e6eb4624431b66e777ebfae548aff3ea990c52a71a3706877cc8f1855cff",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/techtimes-claude-identity-verification-2026.md",
+ "kind": "artifact-page"
+}

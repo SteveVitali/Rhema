@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/thehackernews-google-anthropic-openai-cyber-2026-09-02.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b3b03e9eb0f5a03b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/thehackernews-google-anthropic-openai-cyber-2026-09-02.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thehackernews-google-anthropic-openai-cyber-2026-09-02\n- **URL:** https://thehackernews.com/2026/09/google-anthropic-and-openai-unveil.html · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D (identity-gated access programs)\n- **What it establishes:** Sept 2, 2026. Google: Gemini 3.8 Flash Cyber via the \"Fairwind Program\" (650+ partners incl. CrowdStrike, Palo Alto Networks). Anthropic: Claude Fable 5.1 and Claude Mythos 5.1 \"with different levels of safeguards, with the latter only available through its trusted access programs\"; also \"Enterprise Frontier Safeguards (EFS)\". OpenAI: Astra \"meets the Critical cybersecurity capability threshold,\" released \"through the Daybreak Blue program.\" The article does NOT mention government-ID requirements or an \"identity could not be verified\" failure mode.\n- **Key passages:**\n  - Mythos 5.1 is \"only available through its trusted access programs\"\n  - Mythos 5.1 restricted to \"trusted access programs and support work in cybersecurity and the life sciences\"\n- **Reliability:** Secondary, security trade press.\n- **Relevance to this project:** Supports \"Mythos 5.1 is available only through trusted-access programs\"; the ID requirement must be sourced elsewhere (OpenAI TAC pages, Biometric Update, TechCrunch Aug 19).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 157
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6bf9f98c7129d45698813419f14d56e6578c94ada5d56bbbde498dd39436599b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/thehackernews-google-anthropic-openai-cyber-2026-09-02.md",
+ "kind": "artifact-page"
+}

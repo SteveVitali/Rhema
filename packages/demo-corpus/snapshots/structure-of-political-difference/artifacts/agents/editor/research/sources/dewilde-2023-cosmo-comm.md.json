@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/dewilde-2023-cosmo-comm.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "283468e9f42d8b68",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/dewilde-2023-cosmo-comm.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# dewilde-2023-cosmo-comm\n- **URL:** https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** de Wilde, Langsæther & Özdemir, EPSR 15(2), 2023, 157–176 — exists as cited in fn 6; squarely in the cosmopolitanism–communitarianism literature.\n- **Key passages:** Examines the globalization cleavage via border permeability, international authority, collective identity, moral values (Norway, UK); \"the normative component of the globalization cleavage is not crystallized\" — \"considerable opportunities remain for ideological entrepreneurs.\"\n- **Reliability:** Primary (publisher's page).\n- **Relevance to this project:** Verifies C11 (belonging axis = cosmopolitan–communitarian divide in the academic literature). Mild nuance: the paper argues the divide is *not yet crystallized* — consistent with, not contrary to, the draft's use.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 109
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0384a5e9908deefb9ebbf46d54792de9b3d3ce64565f24d6a96a010879becd30",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/dewilde-2023-cosmo-comm.md",
+ "kind": "artifact-page"
+}

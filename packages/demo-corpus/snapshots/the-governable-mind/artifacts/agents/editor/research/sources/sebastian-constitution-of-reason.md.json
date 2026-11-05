@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sebastian-constitution-of-reason.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d8742ff290fd0135",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sebastian-constitution-of-reason.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sebastian-constitution-of-reason\n- **URL:** https://sjsebastian.substack.com/p/the-constitution-of-reason · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C64 ('The judge must remain judgeable.', §VIII) and C27 ('no finite mind can safely identify itself with reason as such').\n- **Key passages:** 'The highest-order capacity of reason is not agreement; it is the ability to reopen agreement without collapsing into paralysis. The judge must remain judgeable.'\n- **Reliability:** Primary (author's prior essay, Aug 21, 2026).\n- **Relevance to this project:** C64, C27\n",
+  "meters": {
+   "readMin": 1,
+   "words": 76
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f568112c5ff33fa7d419e556b753baf9de5724cd215e7d3ca684f4d377c219e0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sebastian-constitution-of-reason.md",
+ "kind": "artifact-page"
+}

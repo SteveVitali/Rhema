@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-spinoza-nadler.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8bf848edf9152b4c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-spinoza-nadler.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-spinoza-nadler\n- **URL:** https://plato.stanford.edu/entries/spinoza/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** TTP \"published anonymously and to great alarm in 1670.\" Does NOT mention the Hamburg imprint or the 1674 ban (those rest on Wikipedia/Nadler and James's THE review). Supports C20 in part.\n- **Key passages:** \"published anonymously and to great alarm in 1670\"; a critic called it \"a book forged in hell by the devil himself.\"\n- **Reliability:** Secondary, scholarly (SEP, Nadler, rev. Nov 8 2023).\n- **Relevance to this project:** C20; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 84
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "276aa54bb73470e1da32255e0f0eebfffeec38e53009c16ec54739d67ceaa1f7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-spinoza-nadler.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/spinoza-ttp-ch20-gutenberg.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3bd76c351f997d23",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/spinoza-ttp-ch20-gutenberg.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# spinoza-ttp-ch20-gutenberg\n- **URL:** https://www.gutenberg.org/cache/epub/992/pg992.txt · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** TTP ch. XX (Elwes): heading confirmed; state authority over actions not judgment; seditious opinions are those that by nature involve action against the compact. (Fetch tool returned paraphrase; verbatim wording left to Phase 1.)\n- **Key passages:** \"That in a Free State every man may Think what he Likes, and Say what he Thinks\"\n- **Reliability:** Primary text (public-domain translation).\n- **Relevance to this project:** Report §5 item 2; draft l.32 (C21–22).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 84
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce9305eea37a1e2f27b53ac55de513c01b57204e525ca7d95a44eaaca8cdc3c3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/spinoza-ttp-ch20-gutenberg.md",
+ "kind": "artifact-page"
+}

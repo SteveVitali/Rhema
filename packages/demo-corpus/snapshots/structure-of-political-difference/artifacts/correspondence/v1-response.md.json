@@ -1,0 +1,159 @@
+{
+ "dto": {
+  "artifactKind": "response_letter",
+  "artifactPath": "correspondence/v1-response.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9e6130722fbbdac6",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "957c90d32b7b03b0",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "62758cf010d3f987",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "4734d41d918d63ed",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "5d1491526403c9b1",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "6b215a33c4e7300c",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "e2659949f7bc9ed1",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "e96956bd39d0448d",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "267fbdbb9d13f96a",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "453224cad1532dfb",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "7c79d694087e92e1",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "b054eb05055c1613",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "c51ab89224ee8400",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "b7b3cbd5151ad6b3",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "397daca22b273db4",
+    "ordinal": 22
+   },
+   "b23": {
+    "contentHash": "f7559707f1c1ceec",
+    "ordinal": 23
+   },
+   "b24": {
+    "contentHash": "3125de978a70f19b",
+    "ordinal": 24
+   },
+   "b25": {
+    "contentHash": "0e1f21925b3d2da8",
+    "ordinal": 25
+   },
+   "b26": {
+    "contentHash": "0ea7cd6b28fd42d5",
+    "ordinal": 26
+   },
+   "b27": {
+    "contentHash": "6bbd9f15072df196",
+    "ordinal": 27
+   },
+   "b28": {
+    "contentHash": "80f9b18858ea631b",
+    "ordinal": 28
+   },
+   "b29": {
+    "contentHash": "c57f063b2d5937fd",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "c2d1a00e58750947",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "66bde5fbb52abb4e",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "e13c71645eb52dbe",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "853bfa04dd78951c",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "0747123a13ea0b4b",
+    "ordinal": 33
+   },
+   "b4": {
+    "contentHash": "c0e70bbebe8ae194",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "882dfa3a49689527",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "771ec12de69d107c",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "b75018dee4679c57",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "840ded2a6f71fd45",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "7d2378c24aba11f3",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v1-response.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Response to review — \"Politics Has Five Questions,\" v1 → v2\n\n- **Review answered:** correspondence/v1-review/ · **New draft:** drafts/v2.md\n- **Author guidance applied:** [n] bracket citations with a numbered reference list; match the S. J. Sebastian Substack register; deliver drafts/v2.md\n\n## Flags and escalations\n\nFour decisions of note, none awaiting the author unless stated:\n\n1. **Title (letter open question d).** Kept \"Politics Has Five Questions\" — conservative default, and the editor's stated lean. The advertising problem is fixed in text instead: §I now explicitly promotes the two-function separation to the stated contribution (\"it, rather than the axes, is what this essay is actually proposing\").\n2. **Modi (open question a).** Autonomous conservative default: the natcon entry keeps the \"not interchangeable\" hedge and adds one clause — \"Modi's Hindu-nationalist project has a religious specificity the label flattens, which is what the secondary tags are for\" (§VII). Reversible in one edit if the author prefers the shorter version.\n3. **Length (new flag).** v2 runs ~6,950 words — *above* v1 and the venue's ~4,500–5,500 sweet spot, despite the apparatus cuts, because the roadmap's mandated additions (≈1,900 words: Why Five, the CHES reframe, Bobbio, the addressee paragraph, the Trump expansion) exceed the mandated cuts. I chose depth over the word budget rather than shipping shallow versions of the sections the review demanded. Deferred to the next round: the editor is better positioned to say which new sections earn their words. This is the round's one openly unmet dossier obligation.\n4. **Reference sheet (open question c).** Accepted — §VII now names \"a companion reference sheet.\" **The writer must attach the public link at publication**; the essay currently names it without a URL.\n\nOne fact-check reconciliation the next round should note: the editor's C23a placed pharmaceuticals inside the 10–50% Section 232 band; re-verification (Tax Foundation tracker plus Ropes & Gray and Crowell & Moring client alerts) shows a tiered tariff on patented pharmaceuticals reaching **100%** (proclamation April 2, 2026, effective July 31, 2026, with onshoring and MFN-pricing exemptions). v2 says \"up to 100 percent on patented pharmaceuticals.\"\n\n## Summary\n\nThe revision made three big moves, all from the letter's core diagnosis. First, the piece now knows which conversation it is in: a new §III (\"Why Five, and Not Fifty\") credits 8values by name — verbatim pole overlap disclosed — argues why a *test* is the wrong form for a political vocabulary, names Caplan's pragmatic monism and the Lewises' eliminativism as the flanking positions, and states a three-part selection principle for core-vs-module, demonstrated on ecology and foreign policy. Second, the CHES exercise was rebuilt end-to-end: I re-ran the composites myself on the raw 2024 CSV with declared variables (published in reference [9]), reproduced the editor's re-derivation exactly (.84–.90 / .47–.56 / −.13), regenerated the figure from those numbers, named GAL/TAN and Kitschelt, inverted the framing to the unwelding argument, and added a falsifiability condition. Third, the essay/manual seam was closed: the lexicon is now continuous prose around the families that argue (with a reference-sheet handoff), the scale table and Q&A blocks are gone, §§X–XI of v1 are two sections of prose, and the four profiles are dated, framed as illustrations, and corrected — Trump as the worked rhetoric/program/practice demonstration, Orbán past-tense with his April 2026 fall turned into System-axis evidence.\n\nCounts, over 44 ledger rows: **27 accepted · 8 adapted · 1 no-change-needed · 1 deferred (length) · 2 escalations resolved by conservative default (title, Modi) · 3 guidance constraints honored · 0 rebutted · 0 mooted.** A fresh-context gap analysis (dossier + drafts + ledger only) found no blocking gaps; its bookkeeping findings were closed and logged.\n\n## Point by point\n\n### Major issues\n\n**MI1 — \"The central number is never argued, and the predecessors who make that fatal are never named.\"** Adapted (diagnosis accepted in full; construction my own). New §III does the three things the letter asked: genealogy with 8values credited and differentiated (\"three of them carry, verbatim, the pole names used here… The disclaimer is the tell. The naming layer is not noise to be apologized for; it is where political language actually lives\"); flanks named (\"Bryan Caplan's argument that the spectrum earns its keep… Hyrum and Verlan Lewis, whose *The Myth of Left and Right* is the strongest published version of this essay's own opening move—and also its standing refutation\"), with the granularity objection stated at full strength (\"A protectionist tax-cutter has no true Economy score, only a lossy 3\"); and a selection principle (recurrence across polities and centuries; coalition-forming power; irreducibility) applied visibly to Green and foreign policy, per open question (b). The section answers \"why five\" as a defended budget: \"compression is not the sin; compression is the price of speech.\"\n\n**MI2 — \"The CHES exercise rediscovers its own dataset's design dimension and is framed unfalsifiably.\"** Adapted, and taken further than prescribed. Rather than only citing GAL/TAN, I re-ran the analysis with declared composites so the published numbers are reproducible by anyone (variables in [9]); the re-run matches your C10 re-derivation in every figure, and figure 2 was regenerated to match (drafts/figures/figure_2_ches_correlations_v2.png; v1's figure left untouched with v1). §IV now concedes the architecture point in the text — \"an instrument built around GAL/TAN will find GAL/TAN\" — cites Hooghe–Marks–Wilson [10] and Kitschelt [11], runs the unwelding argument on Milei and the welfare nationalists, and states the falsifier: \"If no politically consequential actors occupied the off-diagonal cells… the extra questions would be idle machinery.\" \"This is exactly what the framework should predict\" is gone.\n\n**MI3 — \"Essay and manual in a trench coat.\"** Adapted per your direction. §VII discusses six families in continuous prose (socdem/demsoc as the minimal pair; welfare nationalist and natcon as the proof; libertarian via Milei; liberal and technocrat because the profiles need them) and hands the rest to figure 4 and the reference sheet. v1's §X is now two paragraphs (§XI); v1's §XI rules 1–4 and 6 are one prose paragraph, with Rule 5 and the poles table kept (§XII); the 1–5 scale table is one sentence; the §VII Q&A blocks are a prose paragraph; pull-quotes are down to five; figure captions added throughout.\n\n**MI4 — \"The showcase profiles violate the essay's own rules — including two Misleading findings.\"** Accepted; both verdicts independently re-verified before implementing (Tax Foundation tracker; Wikipedia + Al Jazeera on April 12). §VIII opens: \"The profiles that follow are illustrations of the grammar, not verdicts. Each is dated, each is disputable.\" Trump is the worked demonstration — \"*Market-rhetorical, protectionist-statist in practice* is not a complication the framework tolerates; it is what the framework is for\" — with the February 2026 IEEPA ruling, sectoral rates, the ~12% applied rate, and the ~$900 household figure cited [18]. Orbán is \"(in office 2010–2026) **was** a welfare nationalist… until April 2026\" [19], and the fall becomes the System-axis lesson you suggested. All four profiles kept as a set, per your considered-and-rejected note on the second read's stronger version, with which I agree.\n\n**MI5 — Attribution debts.** Accepted, all five. Müller is in the §V text proper (\"The sharpest development of this fourth claim belongs to Jan-Werner Müller… a moral monopoly of representation\" [13]); the facets are explicitly \"assembled,\" not discovered, with Akkerman–Mudde–Zaslove cited [15]; welfare chauvinism credited with the 1990 Andersen & Bjørklund citation [17]; radial categories credited to Collier & Mahon [16]; Kling credited at the poles table [22]. (POPPA is not cited: I did not read it this round and would not cite unread sources; the Akkerman citation carries the \"existing measurement practice\" point.)\n\n**MI6 — Only the beatable defense of left–right engaged.** Accepted. §IX now has the Bobbio paragraph: his thesis stated fairly [20], then answered with the cases you noted the draft was already holding — the welfare nationalist (\"not a point on an equality line but an answer to two different questions—how much equality, and among whom\") and Milei — ending on the decomposition argument: \"equality of what (economy), enforced how (coercion), against which inheritances (culture), among whom (belonging), decided by whom (system). Bobbio's one question was five questions all along.\" The Freeden-reflexivity concession is in §II's preamble: \"a framework that fixes them, including this one, is performing a decontestation of its own.\"\n\n### Minor issues\n\n- **\"democ\" typo** — fixed; the socdem/demsoc passage was rewritten as the minimal pair (§VII).\n- **Figure order** — fixed; figures now appear 1–5 in order (lexicon figure in §VII, profiles figure in §VIII).\n- **Notation** — interpuncts everywhere (\"2 · 3 · 1 · 2 · 4\").\n- **Mair & Mudde (C6)** — reworded to the four approaches: \"by origin, by transnational affiliation, by policy and ideology, or by name\" (§I).\n- **Reference [1] authors (C4)** — Lee, Santoso & Stevenson added with the full subtitle.\n- **Mudde 2004 (C14)** — canonical citation added to [12], Penn page retained as carrier.\n- **\"asked 609\" (C9)** — now \"completed by 609 political scientists\" (§IV).\n- **Hungary workfare clause (C18)** — added: \"workfare-flavored and flat-taxed: 'welfare' in this family means provision bounded by membership, not redistributive generosity\" (§VII).\n- **Uscinski caveat** — added in place: \"…carries conspiracist and antisocial freight that the charitable pole definition used here deliberately strips away; that normative reconstruction is this essay's, not theirs\" (§II.5).\n- **Forward reference at the System gloss** — added (\"a bundle Section V will take apart\"; \"Note, before going on, that being insurgent is not the same as being populist\").\n- **Figure captions** — added to all five, with the exploratory-not-official caveat inside figure 2's caption.\n- **[n] conversion** — done; 22 references renumbered by first appearance.\n\n### Fact-check ledger\n\nThe two Misleading rows (C23a, C23d) are handled under MI4 above. The three Substantially-accurate rows (C6, C10, C18) are handled in the minors and MI2. One reconciliation runs the other way: C23a's 10–50% band understates the pharmaceutical tariff (see Flags). No other ledger row required change, and I note with appreciation — concretely, not as boilerplate — that the clean substrate is what made this revision cheap where it could have been expensive.\n\n### Discourse report obligations\n\n8values, Lewis & Lewis, GAL/TAN, Kitschelt, Müller, welfare chauvinism, Collier & Mahon, Kling: all credited (locations above). The **addressee** is now stated (§IX final paragraph): the vocabulary is for discourse producers, with the Converse-flavored concession made via the draft's own [8] (\"mass publics show little stable ideological structure of any dimensionality\") and the trickle-down mechanism via [1]. The **graveyard question** (second read Objection 4) is answered in the same paragraph — the tests \"addressed the wrong user\" — plus §III's tests-score-people argument. The **de Wilde mild flag** (its article slightly undercuts the axis's crystallization): no change — v2 cites it solely for the terminology, which your report rates defensible, and I won't swap in *Struggle Over Borders* unread. The four **misreading preemptions**: natural-kinds reminder (§II preamble), strengthened poles-table disclaimer plus \"a taxonomy whose poles are compliments and insults is a weapon, not a vocabulary\" (§XII), \"what's my number?\" preempt (§VI), insurgent≠populist forward note (§II.5).\n\n### Line notes\n\n- **P1 inversion saturation** — rationed. Kept: the opening pair, §I's arrangement line, §VII's prototype line, §IX's concession (protected), the closing pair. The five exemplars you flagged are recast or relocated (e.g., \"Neither pole owns moral seriousness\"; \"These distinctions prevent category errors\"; the government-size sentence now trails its evidence instead of leading it).\n- **P2 apparatus intrusions** — see MI3.\n- **P3 slogan-lags-demonstration** — adapted: §I now carries a promissory profile (\"a single sentence can serve as a promissory note: *Obama is a liberal…*\"), redeemed in §VIII.\n- **Register drops** — §VII families and §XII rules rewritten as essay prose; no \"Record which.\"\n- **First person** — exactly once (\"I constructed exploratory composites,\" §IV). (\"what's my number?\" in §VI is the imagined quiz-taker, quoted.)\n- **Sequencing** — questions (§II) now precede the data (§IV); the v1-§II disclaimer became §II's preamble.\n- **Repetition** — coalition-names stated once in full (§IX) with one closing echo; the v1 §IX/§XIII duplicates cut. Two adjacent v1 sentences were cut in that compression and are logged in the ledger (F43) rather than left silent.\n- **\"directism\"** — flagged as coinage on first use.\n\n### Open questions\n\n(a) **Modi** — resolved by conservative default, clause added (see Flags). (b) **Green module** — your recommendation adopted; it is now the selection principle's worked example (§III). (c) **Reference sheet** — adopted; link needed from the writer (see Flags). (d) **Title** — kept (see Flags).\n\n## New claims introduced this round\n\nTwenty-three logged (ledger, \"New claims\"); all verified this round against sources I read — 8values' axes and disclaimer, the Caplan–Lewis exchange, Hooghe–Marks–Wilson, Kitschelt, Müller (via LSE review), Akkerman et al., Collier & Mahon, Andersen & Bjørklund (via ECPS + Sage record), Bobbio (encyclopedic), Orbánomics, the Tax Foundation tracker (with the 100%-pharma corroboration), the Hungary election record, Mongrain & Walgrave, Kling, and my own CHES re-computation. **Unverified: none.** Two claims are interpretive rather than factual and are logged as such (\"two decades of multi-axis tests…\"; ecology \"two generations old\" as mass politics).\n\n## Unresolved\n\nThe length target (~4,500–5,500) is deliberately unmet at ~6,950 words — deferred with rationale, not dropped (see Flags). Nothing else is open: the gap analysis's remaining findings were bookkeeping and are closed in the frozen ledger.\n\n## For the next review\n\nPress hardest on three places. First, §III's selection principle: it is stated and applied, but \"coalition-forming power\" is the softest of the three tests — does foreign policy really fail it, or did I define the test to get the answer I needed? Second, the Bobbio paragraph: the decomposition argument (\"equality of what, enforced how, among whom\") is mine, written this round, and has not survived contact with a hostile reader. Third, the length: if the venue's sweet spot is binding, tell me which of the new sections to shrink — my own candidate is §X (Pew), the round's least-changed and least load-bearing section, before any of the new argument comes out.\n",
+  "meters": {
+   "readMin": 10,
+   "words": 2274
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "493cb5cb0a28d9450ab2ef122dc135051414b621637a3112b00fd075cc9a1983",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "correspondence/v1-response.md",
+ "kind": "artifact-page"
+}

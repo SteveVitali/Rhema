@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/heim-governing-through-the-cloud-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "743b7342cb529358",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/heim-governing-through-the-cloud-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# heim-governing-through-the-cloud-2024\n- **URL:** https://arxiv.org/abs/2403.08501 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Heim, Fist, Egan et al., Mar 2024 (text captured; arXiv HTML read): KYC, record-keeping, workload classification for large-scale training and inference; aimed at frontier actors not individuals; relies on already-collected metadata; providers cannot by design inspect code/data; confidential computing for privacy-preserving verification.\n- **Key passages:** \"specifically aimed at key actors in frontier AI development, rather than being broadly applied to the entire customer base of compute providers, such as individuals.\" · \"Compute providers cannot typically retain or inspect this information (by design).\"\n- **Reliability:** Primary; policy research.\n- **Relevance to this project:** C16 verbatim; l.238 fair; §2 layers.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 110
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "37a3a7a042b40871a3f34a1debb3c3f84142f4fe1913bda298b07c0ab439c3bd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/heim-governing-through-the-cloud-2024.md",
+ "kind": "artifact-page"
+}

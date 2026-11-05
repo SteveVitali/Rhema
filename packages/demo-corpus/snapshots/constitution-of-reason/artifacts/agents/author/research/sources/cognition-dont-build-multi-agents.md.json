@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cognition-dont-build-multi-agents.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "666664916a3dfef0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cognition-dont-build-multi-agents.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cognition-dont-build-multi-agents\n- **URL:** https://cognition.com/blog/dont-build-multi-agents · **Accessed:** 2026-07-30 · **For:** v2→v3; the practitioner counter-default (Major issue 1)\n- **What it establishes:** Walden Yan (Cognition), \"Don't Build Multi-Agents\" (June 12, 2025). Principles: \"Share context, and share full agent traces, not just individual messages\"; \"Actions carry implicit decisions, and conflicting decisions carry bad results.\" Parallel subagents fail through context fragmentation and conflicting implicit assumptions; \"The simplest way to follow the principles is to just use a single-threaded linear agent\" — single-threaded is the production default.\n- **Reliability:** primary (practitioner blog post, read in full via fetch summary).\n- **Relevance:** The engineering camp that presses the essay's own \"coordination tax\" to the opposite default conclusion. v3 acknowledges it by name where the coordination tax is discussed (§VII): the essay's frame *agrees* that most differentiation is bought at integration cost and predicts exactly when single-threading wins (tasks needing unified state).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "34d628637de7fde100266eb2b2fc69e984870733fd09fd6117d7fc3e9a2b43b5",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/cognition-dont-build-multi-agents.md",
+ "kind": "artifact-page"
+}

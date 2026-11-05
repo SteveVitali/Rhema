@@ -1,0 +1,6 @@
+# freethinker-mccarthy-jones-interview-2024-03-29
+- **URL:** https://freethinker.co.uk/2024/03/interview-simon-mccarthy-jones/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical
+- **What it establishes:** Interview (March 29, 2024) in which McCarthy-Jones restates the external-thought position and names his joint work with philosopher Joel Walmsley (their Cambridge Handbook ch. 24, "What is thought and what makes it free? Or, how I learned to stop worrying and love the forum externum," per search results; chapter not opened).
+- **Key passages:** "thought extends out into the external world, while speech reaches into our internal world." · "if we recognise writing a diary as a kind of thought, we will want to give it the absolute protection of freedom of thought." · "nobody will be allowed to look in our diaries – and they will not be able to be used as evidence against us in court. The same would apply to Google searches, to the extent that they represented our thinking." · "I would be happy to give external kinds of thinking absolute protection."
+- **Reliability:** Secondary (interview); self-presentation by the proponent.
+- **Relevance to this project:** Agenda 4: the diary-and-search argument with the absolute conclusion the draft declines (l.76); shows the draft's "rationale, not scope" is the moderate position in the field.

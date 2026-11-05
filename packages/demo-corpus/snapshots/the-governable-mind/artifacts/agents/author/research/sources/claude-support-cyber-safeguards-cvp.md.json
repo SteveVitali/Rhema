@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/claude-support-cyber-safeguards-cvp.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "50490116730c9e77",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/claude-support-cyber-safeguards-cvp.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# claude-support-cyber-safeguards-cvp\n- **URL:** https://support.claude.com/en/articles/14604842-real-time-cyber-safeguards-on-claude-opus-and-sonnet · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D (Anthropic's counterpart)\n- **What it establishes:** Anthropic help center. The Cyber Verification Program is \"a free application-based program for Opus and Sonnet\" for \"legitimate dual use tasks\"; \"High Risk Dual use\" cyber activities (vulnerability exploitation, offensive tooling) \"are blocked by default, but defensive users can apply for adjustment ... through the Cyber Verification Program.\" \"To submit an application you will need to verify your identity\" (links to the identity-verification page). Zero-Data-Retention orgs \"are not currently eligible.\" Page does not mention Mythos.\n- **Key passages:**\n  - \"a free application-based program for Opus and Sonnet that is designed to enable professionals to continue working on legitimate dual use tasks safely\"\n  - \"These are blocked by default, but defensive users can apply for adjustment for legitimate use cases through the Cyber Verification Program\"\n  - \"To submit an application you will need to verify your identity\"\n- **Reliability:** Primary (company docs).\n- **Relevance to this project:** Confirms CVP as Anthropic's identity-gated counterpart to TAC.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Page re-read in full (shows \"Updated yesterday\", i.e. ~Sept 15, 2026). What CVP gates: NOT access to a model; it is an \"adjustment\" that lifts the default block on the \"High Risk Dual use\" category on Opus and Sonnet (\"CVP approval only lifts blocks on dual use activities. Prohibited use activities (e.g., mass data exfiltration, ransomware code development) remain blocked regardless of CVP status.\"). Ordinary use of the same models needs no CVP. Appeals section verbatim: \"We expect to occasionally decline eligible applications incorrectly, and approved users may still experience blocks on legitimate work. We’re actively working to reduce both.\" ... \"If you've checked both and still believe something is wrong, you can submit a report or appeal form.\" The single form covers BOTH declined applications and blocked work (form URL slug: cyber-block-false-positive-report-cvp-rejection-appeal). Decision target: \"we aim to send an email notification with our review decision within two business days.\" Retention is a precondition of the verified tier: \"Organizations on Zero Data Retention (ZDR) are not currently eligible to participate in the CVP\"; on Google Cloud \"you must consent to and configure data retention\" (data sharing with Anthropic for Opus 5). Approval is tied to an organization ID; \"Only authorized admins\" can apply; not available on Amazon Bedrock.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 382
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "976352343985f60eb9ad2f8fb5233f3cf018d17e4af798a83c9266a3a05b00df",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/claude-support-cyber-safeguards-cvp.md",
+ "kind": "artifact-page"
+}

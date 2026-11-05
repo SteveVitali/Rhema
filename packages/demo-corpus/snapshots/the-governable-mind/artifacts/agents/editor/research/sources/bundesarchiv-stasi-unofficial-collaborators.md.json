@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bundesarchiv-stasi-unofficial-collaborators.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2eadc6d2d3f5c3af",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bundesarchiv-stasi-unofficial-collaborators.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bundesarchiv-stasi-unofficial-collaborators\n- **URL:** https://www.bundesarchiv.de/en/stasi-records-archive/education/what-was-the-state-security/the-unofficial-collaborators-of-the-mfs/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C55/C77: about 189,000 IMs by 1989; the archive itself gives the 1:90 ratio.\n- **Key passages:** 'By 1989 the State Security had about 189,000 unofficial collaborators – one for about every 90 GDR citizens.'\n- **Reliability:** Primary-adjacent (official archive).\n- **Relevance to this project:** C55, C77\n",
+  "meters": {
+   "readMin": 1,
+   "words": 59
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1c08c957f4a55cb7e2ae40f4a58ea6b70905e5c8e0261a9dd0b408233d8105a2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bundesarchiv-stasi-unofficial-collaborators.md",
+ "kind": "artifact-page"
+}

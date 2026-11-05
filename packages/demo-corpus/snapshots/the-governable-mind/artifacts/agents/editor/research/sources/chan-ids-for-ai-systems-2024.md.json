@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/chan-ids-for-ai-systems-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ba9d28d4b8a38061",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/chan-ids-for-ai-systems-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# chan-ids-for-ai-systems-2024\n- **URL:** https://arxiv.org/abs/2406.12137 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Chan, Kolt, Wills, Anwar, Schroeder de Witt, Rajkumar, Hammond, Krueger, Heim, Anderljung, 'IDs for AI Systems' (RegML workshop, NeurIPS 2024; abstract read). IDs for instances of AI systems ('a particular chat session with Claude 3'); most warranted where systems 'could have a large impact upon the world'; abstract does not bind IDs to human identity.\n- **Key passages:** 'We propose a framework in which IDs are ascribed to instances of AI systems (e.g., a particular chat session with Claude 3).'\n- **Reliability:** Primary; abstract only.\n- **Relevance to this project:** Q3 successors; agent-ID literature.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d35204e1a289a36991e0cdaaf65ee8ad3d6cf5f997c89e985e649babfacbbd66",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/chan-ids-for-ai-systems-2024.md",
+ "kind": "artifact-page"
+}

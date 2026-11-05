@@ -1,0 +1,387 @@
+{
+ "entries": [
+  {
+   "anchor": {
+    "blockId": "b59",
+    "confidence": 1,
+    "endOffset": 185,
+    "quote": "The lineage runs from the Nolan chart through the Political Compass to the open-source 8values test",
+    "startOffset": 86
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 2,
+    "status": "done"
+   },
+   "findingOrdinal": 1
+  },
+  {
+   "anchor": {
+    "blockId": "b77",
+    "confidence": 1,
+    "endOffset": 97,
+    "quote": "If no politically consequential actors occupied the off-diagonal cells",
+    "startOffset": 27
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 3,
+    "status": "done"
+   },
+   "findingOrdinal": 2
+  },
+  {
+   "anchor": {
+    "blockId": "b118",
+    "confidence": 1,
+    "endOffset": 187,
+    "quote": "defined in a companion reference sheet",
+    "startOffset": 149
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 3
+  },
+  {
+   "anchor": {
+    "blockId": "b124",
+    "confidence": 1,
+    "endOffset": 86,
+    "quote": "The profiles that follow are illustrations of the grammar, not verdicts. Each is dated",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 4,
+    "status": "done"
+   },
+   "findingOrdinal": 4
+  },
+  {
+   "anchor": {
+    "blockId": "b91",
+    "confidence": 1,
+    "endOffset": 768,
+    "quote": "None of these facets is an invention—political science already measures populist, pluralist, and elitist attitudes as separate scales[15]—but assembling them under a public gloss, rather than a score, is the point of the architecture",
+    "startOffset": 535
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 6,
+    "status": "done"
+   },
+   "findingOrdinal": 5
+  },
+  {
+   "anchor": {
+    "blockId": "b25",
+    "confidence": 1,
+    "endOffset": 520,
+    "quote": "a framework that fixes them, including this one, is performing a decontestation of its own",
+    "startOffset": 430
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 5,
+    "status": "done"
+   },
+   "findingOrdinal": 6
+  },
+  {
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 0.4,
+    "endOffset": 25,
+    "quote": "## VII. The Names We Need",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 13
+  },
+  {
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 0.4,
+    "endOffset": 25,
+    "quote": "## VII. The Names We Need",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 14
+  },
+  {
+   "anchor": {
+    "blockId": "b109",
+    "confidence": 1,
+    "endOffset": 101,
+    "quote": "2 · 3 · 1 · 2 · 4",
+    "startOffset": 84
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 15
+  },
+  {
+   "anchor": {
+    "blockId": "b17",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "This also explains why ideological families have both reality and indeterminacy. Social democrats across countries share enough history and conceptual structure to constitute a recognizable family, bu",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 16
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 17
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 6,
+    "status": "done"
+   },
+   "findingOrdinal": 18
+  },
+  {
+   "anchor": {
+    "blockId": "b72",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "The empirical bundles remain important—and here precision matters, because the data below were built by the tradition this essay is trying to decompress. The 2024 Chapel Hill Expert Survey, completed ",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 19
+  },
+  {
+   "anchor": {
+    "blockId": "b114",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "The **welfare nationalist** demonstrates why left and right fail. Economic protection and social provision, bounded primarily by national membership: egalitarian within the community, exclusionary at ",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 4,
+    "status": "done"
+   },
+   "findingOrdinal": 20
+  },
+  {
+   "anchor": {
+    "blockId": "b54",
+    "confidence": 1,
+    "endOffset": 379,
+    "quote": "carries conspiracist and antisocial freight",
+    "startOffset": 336
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 21
+  },
+  {
+   "anchor": {
+    "blockId": "b49",
+    "confidence": 1,
+    "endOffset": 161,
+    "quote": "a bundle Section V will take apart",
+    "startOffset": 127
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 22
+  },
+  {
+   "anchor": {
+    "blockId": "b74",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "![CHES correlations](figures/figure_2_ches_correlations_v2.png)\n*Figure 2. Correlations among exploratory five-question composites, 2024 Chapel Hill Expert Survey. The composites are the author’s, not",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 23
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 9,
+    "status": "done"
+   },
+   "findingOrdinal": 24
+  },
+  {
+   "anchor": {
+    "blockId": "b46",
+    "confidence": 1,
+    "endOffset": 50,
+    "quote": "Universalism, for its part, is not simply kindness",
+    "startOffset": 0
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 25
+  },
+  {
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 26
+  },
+  {
+   "anchor": {
+    "blockId": "b22",
+    "confidence": 1,
+    "endOffset": 127,
+    "quote": "a single sentence can serve as a promissory note: *Obama is a liberal",
+    "startOffset": 58
+   },
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 8,
+    "status": "done"
+   },
+   "findingOrdinal": 27
+  },
+  {
+   "anchor": {
+    "blockId": "b153",
+    "confidence": 1,
+    "endOffset": 602,
+    "quote": "say which",
+    "startOffset": 593
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 1,
+    "status": "done"
+   },
+   "findingOrdinal": 28
+  },
+  {
+   "anchor": {
+    "blockId": "b140",
+    "confidence": 1,
+    "endOffset": 658,
+    "quote": "The vocabulary is for the people who produce political language—writers, analysts, editors, the arguing class",
+    "startOffset": 549
+   },
+   "disposition": {
+    "kind": "accept",
+    "moveOrdinal": 7,
+    "status": "done"
+   },
+   "findingOrdinal": 30
+  },
+  {
+   "disposition": {
+    "kind": "adapt",
+    "moveOrdinal": 4,
+    "status": "done"
+   },
+   "findingOrdinal": 29
+  }
+ ],
+ "moves": [
+  {
+   "ordinal": 1,
+   "status": "done",
+   "title": "Move 1",
+   "type": "structure"
+  },
+  {
+   "ordinal": 2,
+   "status": "done",
+   "title": "Move 2",
+   "type": "argument"
+  },
+  {
+   "ordinal": 3,
+   "status": "done",
+   "title": "Move 3",
+   "type": "argument"
+  },
+  {
+   "ordinal": 4,
+   "status": "done",
+   "title": "Move 4",
+   "type": "argument"
+  },
+  {
+   "ordinal": 5,
+   "status": "done",
+   "title": "Move 5",
+   "type": "argument"
+  },
+  {
+   "ordinal": 6,
+   "status": "done",
+   "title": "Move 6",
+   "type": "argument"
+  },
+  {
+   "ordinal": 7,
+   "status": "done",
+   "title": "Move 7",
+   "type": "argument"
+  },
+  {
+   "ordinal": 8,
+   "status": "done",
+   "title": "Move 8",
+   "type": "craft"
+  },
+  {
+   "ordinal": 9,
+   "status": "done",
+   "title": "Move 9",
+   "type": "mechanical"
+  }
+ ],
+ "sidecar": "response_ledger",
+ "version": 1
+}

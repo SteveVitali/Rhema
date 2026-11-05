@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/seger-2023-pdf-pinpoints.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cb9f4722aadf1355",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/seger-2023-pdf-pinpoints.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# seger-2023-pdf-pinpoints\n- **URL:** https://arxiv.org/pdf/2311.09227 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Seger et al., \"Open-Sourcing Highly Capable Foundation Models\" (Centre for the Governance of AI; arXiv v1 Sept. 29, 2023; 22 authors led by Elizabeth Seger). The \"should not be open-sourced, at least not initially\" sentence is on p. 1 (abstract); the conclusion restates it on p. 34 (dropping \"not\": \"at least initially\").\n- **Key passages:** p. 1: \"In such a case, highly capable foundation models should not be open-sourced, at least not initially.\" · p. 34: \"In such cases, developers and regulators should acknowledge that the model should not be open-sourced, at least initially. These models may become safe to open-source in the future as societal resilience to AI risk increases and improved safety mechanisms are developed.\"\n- **Reliability:** Primary preprint; GovAI, safety-aligned.\n- **Relevance to this project:** XI1 (l.220); ref [78] pinpoints 1, 34 confirmed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 150
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5e927f89f1c7d1c5bcf665afbfde2569425c89654b0e7d1ebd69cfafe26e44eb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/seger-2023-pdf-pinpoints.md",
+ "kind": "artifact-page"
+}

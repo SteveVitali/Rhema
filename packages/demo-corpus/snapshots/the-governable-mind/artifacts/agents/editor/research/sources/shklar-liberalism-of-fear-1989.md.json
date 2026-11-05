@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/shklar-liberalism-of-fear-1989.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f1653fefb0f58206",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/shklar-liberalism-of-fear-1989.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# shklar-liberalism-of-fear-1989\n- **URL:** https://speculativematerialism.wordpress.com/wp-content/uploads/2014/01/shklar-liberalism-of-fear.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Scan of Rosenblum ed., *Liberalism and the Moral Life* (Harvard UP, 1989), ch. 1, pp. 21–38. All three C43 quotations verbatim (pp. 27, 29). For C69: the state asymmetry (p. 21, 27) is hers, but she counts \"corporate business enterprises\" as \"basically public organizations\" and targets intimidation by \"official or unofficial\" agents including \"economic power\" (p. 31).\n- **Key passages:** \"none has the deadly effect of those who, as the agents of the modern state, have unique resources of physical might and persuasion at their disposal\" (21); \"the power of such basically public organizations as corporate business enterprises... they are not public in name only\" (31).\n- **Reliability:** Primary text; hosted on a third-party blog as a scan of the printed pages (page headers visible).\n- **Relevance to this project:** C43, C69; §V, §XIV, §XV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 147
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "32212086ee918cc743e93249333ce8372dd08ff350ead643b8da7b039b549f35",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/shklar-liberalism-of-fear-1989.md",
+ "kind": "artifact-page"
+}

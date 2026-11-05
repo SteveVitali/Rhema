@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bublitz-2025-hrr-state-obligations.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0fa2381f06c7c24a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bublitz-2025-hrr-state-obligations.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bublitz-2025-hrr-state-obligations\n- **URL:** https://link.springer.com/article/10.1007/s12142-025-00751-0 (reached via Springer cookie-fallback; article page read) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Bublitz, \"Freedom of Thought and Digital Technologies: Operationalizing State Obligations for Social Media, Virtual Reality, and Neurotechnology,\" Human Rights Review 26:4 (2025). Structures obligations as respect/protect/fulfil: states must not \"(i) alter a person's thought without consent; (ii) forcibly reveal a person's unexpressed thought without consent\"; must take \"appropriate legislative, administrative, budgetary, judicial and other measures,\" proposing \"freedom-of-thought impact assessment\" and \"freedom-of-thought-sensitive technology design.\" Thoughts may be revealed by \"inferences from biometric signals or digital surveillance.\" No treatment of chatbots, chat logs, or retained records.\n- **Key passages:** \"Freedom of thought is among the strongest human rights, yet it is largely devoid of practical legal application.\" · \"inferences from biometric signals or digital surveillance.\"\n- **Reliability:** Primary; peer-reviewed.\n- **Relevance to this project:** Ref [22], l.66. Confirms the dormancy quotation and supplies the respect/protect/fulfil structure the draft could use to name the state's negative duty over the record; the record itself is absent from his examples.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 175
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "116db21814ece251ae219804d6403f28b80c65ce3637ff7f9808ad8a17f56ccb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bublitz-2025-hrr-state-obligations.md",
+ "kind": "artifact-page"
+}

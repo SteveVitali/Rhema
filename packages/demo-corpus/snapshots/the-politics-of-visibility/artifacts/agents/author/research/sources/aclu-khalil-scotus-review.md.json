@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/aclu-khalil-scotus-review.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "47f87bf3f52b172a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/aclu-khalil-scotus-review.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aclu-khalil-scotus-review\n- **URL:** https://www.aclu.org/press-releases/mahmoud-khalils-legal-team-will-seek-supreme-court-review-of-appeals-court-decision · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C24\n- **What it establishes:** After the Third Circuit's 6-5 denial of rehearing en banc (announced May 22, 2026), Khalil's team (ACLU, CCR) announced it will seek Supreme Court review and sought a stay of the mandate; as of that date Khalil \"remains in the United States and cannot be lawfully detained or deported at this time.\"\n- **Key passages:** Dissenting-side Judge Krause: the Judiciary \"serves as an inseparable element of the constitutional system of checks and balances.\" ACLU's Brett Max Kaufman: \"Federal courts must have the power to step in when the government exploits our country's immigration system to punish people for their constitutionally protected speech.\"\n- **Reliability:** Party press release — advocacy source, accurate on procedural facts but adversarial framing; use for posture and quotes, not neutral characterization.\n- **Relevance to this project:** C24 appellate posture into Aug 2026.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 148
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a3f61b26c390984853584af4ed66d12795c6de4a1fb631e43375806f83f09f5c",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/aclu-khalil-scotus-review.md",
+ "kind": "artifact-page"
+}

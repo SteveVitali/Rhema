@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rosenthal-selod-2026-genealogy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "91571bea07c44e32",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rosenthal-selod-2026-genealogy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rosenthal-selod-2026-genealogy\n- **URL:** https://www.mdpi.com/2313-5778/10/2/50 (article page blocks fetchers; metadata + publisher-deposited abstract verified verbatim via https://api.crossref.org/works/10.3390/genealogy10020050; title/date/findings corroborated by MDPI search listing) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C32\n- **What it establishes:** Aaron Rosenthal & Saher Selod, \"Racialized Surveillance and Voting: Connecting Government Monitoring to American Muslim Electoral Participation,\" *Genealogy* 10(2):50, published 2026-04-24. Survey of 1,000 American Muslims; police-surveillance encounters associated with decreased turnout in the 2016 presidential election; airport singling-out NOT associated with turnout change.\n- **Key passages (abstract, verbatim from Crossref deposit):**\n  - \"Methods: Using a survey of 1000 American Muslims, we identify racial and ethnic patterns in being singled out in airports and by the police. We then analyze how being stopped in these venues shaped turnout behavior in the 2016 presidential election.\"\n  - \"Results: Black Muslims are more likely to encounter surveillance from the police, while Muslims who identify as Asian report the highest degree of monitoring in airports. We find that police encounters are linked to decreased electoral participation, but being singled out by airport security is not tied to a change in turnout.\"\n  - \"Conclusions: These findings provide a more detailed and comprehensive understanding of who is impacted by surveillance in the US and how that surveillance shapes American democracy.\"\n- **Reliability:** Secondary (peer-reviewed OA journal article; MDPI *Genealogy*); Crossref metadata is publisher-deposited. Outline's author guess (Rosenthal & Selod) is correct.\n- **Relevance to this project:** C32 — the chilling-participation statistic; scope carefully: the negative association is for POLICE encounters, not airport surveillance, and the turnout measured is the 2016 election.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 252
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b41aa042f2203415a0c999b6e2f3fcf9c45408d1427d403436c42e5004fa47b8",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/rosenthal-selod-2026-genealogy.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,13 @@
+# cohen-2013-what-privacy-is-for
+- **URL:** https://harvardlawreview.org/print/vol-126/what-privacy-is-for/ (web excerpt) and full PDF https://www.juliecohen.com/attachments/File/CohenWhatPrivacyIsFor.pdf · **Accessed:** 2026-09-16 · **For:** v1 response round, repair material (privacy as condition of emergent subjectivity)
+- **Citation:** Julie E. Cohen, "What Privacy Is For," 126 *Harv. L. Rev.* 1904 (2013). (PDF page N = 1903+N.)
+- **What it establishes:** Verbatim "shelters dynamic, emergent subjectivity" sentence (p. 1905) and her definition of "modulation" (pp. 1915, 1917).
+- **Key passages:**
+  - p. 1905: "Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable. It protects the situated practices of boundary management through which the capacity for self-determination develops."
+  - p. 1906: "Privacy is shorthand for breathing room to engage in the processes of boundary management that enable and constitute self-development." Also: "Dynamic, emergent subjectivity — the sort of subjectivity upon which liberal democracy and innovation both rely — thrives in the interstitial spaces within information-processing frameworks."
+  - p. 1912: "liberal democracy as a form of government is replaced, gradually but surely, by a different form of government that I will call modulated democracy because it relies on a form of surveillance that operates by modulation."
+  - p. 1915 (definition): "This in turn facilitates modulation: a set of processes in which the quality and content of surveillant attention is continually modified according to the subject's own behavior, sometimes in response to inputs from the subject but according to logics that ultimately are outside the subject's control."
+  - p. 1917: "Modulation is a mode of privacy invasion, but it is also a mode of knowledge production designed to produce a particular way of knowing and a mode of governance designed to produce a particular kind of subject. Its purpose is to produce tractable, predictable citizen-consumers…"
+  - (web excerpt, page not located in PDF grep): "Privacy therefore is an indispensable structural feature of liberal democratic political systems."
+- **Reliability:** Primary, leading law review article.
+- **Relevance to this project:** Supplies the normative account of why a space of unfinished thinking needs shelter from observers; "modulation" names the platform-side pressure on an externalized forum internum (the assistant that adapts to you is a modulating observer).

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cohen-2013-what-privacy-is-for.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "07997876aafd573c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cohen-2013-what-privacy-is-for.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cohen-2013-what-privacy-is-for\n- **URL:** https://harvardlawreview.org/print/vol-126/what-privacy-is-for/ (web excerpt) and full PDF https://www.juliecohen.com/attachments/File/CohenWhatPrivacyIsFor.pdf · **Accessed:** 2026-09-16 · **For:** v1 response round, repair material (privacy as condition of emergent subjectivity)\n- **Citation:** Julie E. Cohen, \"What Privacy Is For,\" 126 *Harv. L. Rev.* 1904 (2013). (PDF page N = 1903+N.)\n- **What it establishes:** Verbatim \"shelters dynamic, emergent subjectivity\" sentence (p. 1905) and her definition of \"modulation\" (pp. 1915, 1917).\n- **Key passages:**\n  - p. 1905: \"Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable. It protects the situated practices of boundary management through which the capacity for self-determination develops.\"\n  - p. 1906: \"Privacy is shorthand for breathing room to engage in the processes of boundary management that enable and constitute self-development.\" Also: \"Dynamic, emergent subjectivity — the sort of subjectivity upon which liberal democracy and innovation both rely — thrives in the interstitial spaces within information-processing frameworks.\"\n  - p. 1912: \"liberal democracy as a form of government is replaced, gradually but surely, by a different form of government that I will call modulated democracy because it relies on a form of surveillance that operates by modulation.\"\n  - p. 1915 (definition): \"This in turn facilitates modulation: a set of processes in which the quality and content of surveillant attention is continually modified according to the subject's own behavior, sometimes in response to inputs from the subject but according to logics that ultimately are outside the subject's control.\"\n  - p. 1917: \"Modulation is a mode of privacy invasion, but it is also a mode of knowledge production designed to produce a particular way of knowing and a mode of governance designed to produce a particular kind of subject. Its purpose is to produce tractable, predictable citizen-consumers…\"\n  - (web excerpt, page not located in PDF grep): \"Privacy therefore is an indispensable structural feature of liberal democratic political systems.\"\n- **Reliability:** Primary, leading law review article.\n- **Relevance to this project:** Supplies the normative account of why a space of unfinished thinking needs shelter from observers; \"modulation\" names the platform-side pressure on an externalized forum internum (the assistant that adapts to you is a modulating observer).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 350
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7d87e90fd205e248b22b72911b8332972ab4d7bc767313c91cda62d93f0b04b5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/cohen-2013-what-privacy-is-for.md",
+ "kind": "artifact-page"
+}

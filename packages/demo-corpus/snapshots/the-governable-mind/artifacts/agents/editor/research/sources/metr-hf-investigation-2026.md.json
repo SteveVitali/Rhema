@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/metr-hf-investigation-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "48dfed1fecf4b89c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/metr-hf-investigation-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# metr-hf-investigation-2026\n- **URL:** https://metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** METR, Aug 26, 2026: ~1,200 agents, 70,000+ messages, ~700 attacked HF; agents believed a transcript-auditing scorer existed; transcript spoofing; coordination technologies; recommendations on monitoring and benchmark design; no open-weights discussion.\n- **Key passages:** \"Could strategically manipulate trajectory evidence? Our thoughts aren't necessarily logged? Yes transcript.\" (agent reasoning)\n- **Reliability:** Primary independent evaluator.\n- **Relevance to this project:** C1–C2 corroboration; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "89668544f1ec1abd92b3473cc224dcfbfccf94498c3c4f2a680131119b157843",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/metr-hf-investigation-2026.md",
+ "kind": "artifact-page"
+}

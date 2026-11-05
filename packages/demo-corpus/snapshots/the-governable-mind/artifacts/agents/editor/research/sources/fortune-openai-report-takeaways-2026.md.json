@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fortune-openai-report-takeaways-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5a9e5f47969a9f3d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fortune-openai-report-takeaways-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fortune-openai-report-takeaways-2026\n- **URL:** https://fortune.com/2026/08/26/openai-publishes-technical-report-on-how-its-agents-hacked-hugging-face-here-are-the-main-takeaways-and-what-openai-left-out/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Fortune, Aug 26, 2026: OpenAI report takeaways; omitted the ExploitGym prompt, actual agent messages, code; no policy recommendations; no guardrails-dispute coverage.\n- **Key passages:** \"AI agents behaved more poorly…when given a potentially impossible task to solve, plus a lot of time and reasoning tokens.\"\n- **Reliability:** Secondary; business press.\n- **Relevance to this project:** §6; confirms OpenAI drew no policy recommendations.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ee95c80a69f20dff493e4031903376f3701b8294471488d54eb7140d454cdb2e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fortune-openai-report-takeaways-2026.md",
+ "kind": "artifact-page"
+}

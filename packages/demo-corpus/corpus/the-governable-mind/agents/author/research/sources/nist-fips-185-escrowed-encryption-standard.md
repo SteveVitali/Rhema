@@ -1,0 +1,6 @@
+# nist-fips-185-escrowed-encryption-standard
+- **URL:** https://csrc.nist.gov/pubs/fips/185/final (PDF: https://nvlpubs.nist.gov/nistpubs/Legacy/FIPS/fipspub185.pdf) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C31
+- **What it establishes:** FIPS PUB 185, Escrowed Encryption Standard (EES), issued February 9, 1994; withdrawn October 19, 2015. Specifies the LEAF creation method and references the classified SKIPJACK algorithm; does not name the escrow agents.
+- **Key passages:** "This standard specifies an encryption/decryption algorithm and a Law Enforcement Access Field (LEAF) creation method which may be implemented in electronic devices and used for protecting government telecommunications". "The LEAF is used in a key escrow system that provides for decryption of telecommunications when access to the telecommunications is lawfully authorized." The algorithm and LEAF method are "classified and are referenced, but not specified, in the standard."
+- **Reliability:** Primary, official (NIST).
+- **Relevance to this project:** C31: the official name and date of the standard, the LEAF, and the formal (2015) withdrawal date — useful to distinguish 'dead by 1996' from 'withdrawn in 2015'.

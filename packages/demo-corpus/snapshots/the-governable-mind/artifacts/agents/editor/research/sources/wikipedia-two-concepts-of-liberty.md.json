@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikipedia-two-concepts-of-liberty.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c57847b347de9192",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikipedia-two-concepts-of-liberty.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-two-concepts-of-liberty\n- **URL:** https://en.wikipedia.org/wiki/Two_Concepts_of_Liberty · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Quotes the later-edition wording of the negative-liberty question: \"is or should be left to do or be what he is able to do or be\" — evidence that the wording changed between 1958 and *Four Essays* (1969)/*Liberty* (2002). Publication history: lecture Oct 31 1958; Clarendon pamphlet; *Four Essays* 1969; *Liberty* 2002. Does not contain the \"bully, oppress, torture\" passage.\n- **Key passages:** \"'What is the area within which the subject—a person or group of persons—is or should be left to do or be what he is able to do or be, without interference by other persons?'\"\n- **Reliability:** Tertiary; used only to attest the existence of the variant wording.\n- **Relevance to this project:** C40, C44; §IV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 129
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d37172588706cdf5da4e0d3b945f4b69d50fd909338e64a3221f22450719428c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikipedia-two-concepts-of-liberty.md",
+ "kind": "artifact-page"
+}

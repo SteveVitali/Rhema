@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/montana-right-to-compute-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "59120809400157b3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/montana-right-to-compute-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# montana-right-to-compute-2025\n- **URL:** https://www.multistate.ai/updates/vol-59-montana-right-to-compute-law · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Montana SB 212 (signed Apr 17, 2025; multistate.ai summary read): fundamental right to own and use computational resources for lawful purposes; strict scrutiny for restrictions; critical-infrastructure shutdown clause dropped before enactment; Arizona HB 2342; NH CACR 6 proposed.\n- **Key passages:** \"a fundamental right to privately own and use computational resources for lawful purposes in Montana.\" · restrictions must be \"narrowly tailored to fulfill a compelling government interest.\"\n- **Reliability:** Secondary summary of primary law; policy-tracking firm.\n- **Relevance to this project:** Layer 4 as enacted law; §1A; §3 item 11; l.234, l.310.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 105
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a5552f2e86bb33719d44165fdff904db4164d9cfe7751ed2720292f265b66e86",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/montana-right-to-compute-2025.md",
+ "kind": "artifact-page"
+}

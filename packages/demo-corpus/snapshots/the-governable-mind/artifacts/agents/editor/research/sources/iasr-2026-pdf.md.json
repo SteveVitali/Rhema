@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/iasr-2026-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f929a4dd5e36b1a2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/iasr-2026-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iasr-2026-pdf\n- **URL:** https://internationalaisafetyreport.org/sites/default/files/2026-02/international-ai-safety-report-2026.pdf · **Accessed:** 2026-09-16 (PDF downloaded, 221 pp., text-extracted) · **For:** v1 review, Phase 1\n- **What it establishes:** Cover \"February 2026\" — precedes July (C10). All six C10 quotations verbatim at printed pp. 10, 12, 13, 134 (PDF 11, 13, 14, 135); draft's ref pages are PDF indices. Supports C73's catalogue as live categories. Against interest in the draft's favour: says fully autonomous end-to-end attacks had not been reported (p. 57).\n- **Key passages:** \"Current systems lack the capabilities to pose such risks, but they are improving in relevant areas such as autonomous operation\" (p. 12). / \"In the case of models that are not capable enough to be dangerous, these benefits may outweigh the additional risk of releasing weights openly, though this depends on relevant decision-makers' risk tolerance\" (p. 134). / \"Fully autonomous end-to-end attacks, however, have not been reported\" (p. 57). / \"Current models cannot reliably complete key steps required for self-replication\" (p. 80).\n- **Reliability:** Primary; multilateral expert report (Bengio, chair); consensus document.\n- **Relevance to this project:** C10, C73; §X; ref [43].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 175
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9fd94d8d393ba31691d4c8e417722d35f248dc51745659766f4aa4f11200a555",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/iasr-2026-pdf.md",
+ "kind": "artifact-page"
+}

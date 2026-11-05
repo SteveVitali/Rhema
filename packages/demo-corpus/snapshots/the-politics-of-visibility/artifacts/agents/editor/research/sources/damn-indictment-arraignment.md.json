@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/damn-indictment-arraignment.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "878a32d523041cb0",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "346ac42fcd784cbe",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "9f51a0d063f4b915",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/damn-indictment-arraignment.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Direct Action Minnesota indictment & arraignment (June–July 2026)\n\n- DOJ release (blocks fetching): https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties (June 16, 2026; title/content search-confirmed)\n- Arraignment: https://www.kaxe.org/minnesota-news/2026-07-02/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges (Reformer syndication)\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: 15 charged (DAMN); conspiracy to impede a federal officer; four defendants\nface added counts (interstate stalking, assault on a federal officer, destruction of\nfederal property); July 1, 2026: 14 pleaded not guilty, 15th (Wagner) in custody in\nMichigan; 94-page indictment describes blockading the Whipple Federal Building (flipped\ntrailer, human chains); 20 TB of discovery, ~16 TB Signal chats. Note: DOJ release cannot\nsource the plea count; use the arraignment coverage.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "98993bc498f5485afd91f571befc2d5b53b7ce901701daf3a945cb7a34816924",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/damn-indictment-arraignment.md",
+ "kind": "artifact-page"
+}

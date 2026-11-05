@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/boire-on-cognitive-liberty-2000-reproductions.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c21b2d9f48e73c00",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/boire-on-cognitive-liberty-2000-reproductions.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# boire-on-cognitive-liberty-2000-reproductions\n- **URL:** https://www.cognitiveliberty.org/on-cognitive-liberty-boire/ (also https://cognitive-liberty.online/on-cognitive-liberty/ and the MAPS PDF of Part I, https://bibliography.maps.org/resources/download/12520; all read via reader proxy; the original JCL page http://www.cognitiveliberty.org/ccle1/1jcl/1jcl7.htm is behind a bot challenge) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Boire, \"On Cognitive Liberty (Part I),\" Journal of Cognitive Liberties 1:1 (Winter 1999/2000), 7–13 (series continued through vol. 4, 2003). The coinage's object is mental self-determination against government control of consciousness: emerging technologies (biogenetic modification, human-computer interfacing, brain-scanning, nanotechnology, neural-networking, pharmaceuticals) and the criminalized entheogens (psilocybin, DMT, mescaline, LSD), forced medication and involuntary institutionalization. Consistent with Bublitz 2013's citation (\"Boire 2000, p. 8\") and Sententia 2004.\n- **Key passages:** \"the right to control one's own consciousness is the quintessence of freedom\" · \"each person is free to direct one's own consciousness; one's own underlying mental processes, and one's beliefs, opinions, and worldview\" · Mill: \"Over himself, over his own body and mind, the individual is sovereign\" (quoted by Boire).\n- **Reliability:** Reproductions of the primary text by the originating organization and a mirror; not the original journal page.\n- **Relevance to this project:** III8 (l.68); ref [28].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 186
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6f0ea05dbd688e6dd3b90cde6e4e53ffd28fe7920d3334fbfeeaa536cc4da1d6",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/boire-on-cognitive-liberty-2000-reproductions.md",
+ "kind": "artifact-page"
+}

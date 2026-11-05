@@ -1,0 +1,836 @@
+{
+ "rows": [
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "§XII ¶¶13–14 — “The override is this… They do not buy exit above the line… the payment is a deliberate leak”",
+   "findingOrdinal": 1,
+   "id": "F1",
+   "moveOrdinal": 4,
+   "source": "Letter Major 1 (\"the one thing\"); second read 2.2; policy report §1 judgment",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XII ¶14 — “the Ordinance of 1643 had a register, named licensers, and a published standard, and Milton wrote against it anyway”",
+   "findingOrdinal": 1,
+   "id": "F2",
+   "moveOrdinal": 4,
+   "source": "Second read 2.2 (adopted in Major 1)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XII ¶12 — “what a Senate draft is reported to contain… The text is unreleased”; §X ¶8 (the Aug. 4 disclaimer)",
+   "findingOrdinal": 1,
+   "id": "F3",
+   "moveOrdinal": 4,
+   "source": "Letter Major 1 (third point); ledger X11",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XII ¶13 — “None of the four is invented here… The European regulation already lets a provider contest its classification”",
+   "findingOrdinal": 1,
+   "id": "F4",
+   "moveOrdinal": 4,
+   "source": "Letter Major 1 direction; policy report §1(e), §7",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → conservative default",
+   "entry": false,
+   "evidence": "§XII ¶14 — “That is the concession, and it should be read as one” (conservative default: the verdict kept, the price printed)",
+   "findingOrdinal": null,
+   "id": "F5",
+   "source": "Letter open question 1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§III ¶14 — “sought the account behind two prompts… the government identified him by other means”",
+   "findingOrdinal": 2,
+   "id": "F6",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 part one; ledger III16/VII3 (Contradicted)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§VII ¶3 — “In January 2025 the Las Vegas police reconstructed… What was new in September 2025 was the direction of the search”",
+   "findingOrdinal": 2,
+   "id": "F7",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 part one; ledger VII3-scope (Contradicted); second read 2.4",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt, with three of the review's facts corrected",
+   "entry": false,
+   "evidence": "§XIII ¶7 — “separating three things that are not one thing”",
+   "findingOrdinal": 2,
+   "id": "F8",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 part two; legal report §1; second read 2.4",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → resolved \"both\" (preserves June; adds the channel)",
+   "entry": false,
+   "evidence": "§XIII ¶7 and §XIV ¶8 — both channels told (guidance absent; resolved as “both”)",
+   "findingOrdinal": null,
+   "id": "F9",
+   "source": "Letter open question 2",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (the bill as introduced and as narrowed)",
+   "entry": false,
+   "evidence": "§XII ¶10 and §XIII ¶7 — “S. 3062… reported… by a vote of 22 to 0”",
+   "findingOrdinal": 2,
+   "id": "F10",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 direction; legal report §1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XIV ¶8 — “Three things are already dated and checkable… the annual rulemaking by which the July bill would reset each year what it covers”",
+   "findingOrdinal": 2,
+   "id": "F11",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 direction; minor \"two dated data\"; policy report §7",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XII ¶10 — “An age gate built the first way can pass this question. What neither way passes is the fourth or the seventh”",
+   "findingOrdinal": null,
+   "id": "F12",
+   "source": "Letter reception forecast; legal report §6(a)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (Kulp yes; flexHEG III a footnote inside a recommendation to exempt)",
+   "entry": false,
+   "evidence": "§XIV ¶5 — “mostly, though not quite expressly, not for the devices people own” + Kulp and the flexHEG footnote",
+   "findingOrdinal": 2,
+   "id": "F13",
+   "moveOrdinal": 6,
+   "source": "Letter Major 2 part three; policy report §4; ledger XIV2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§XII ¶15 — “The shutdown order is not reviewable in court within days”",
+   "findingOrdinal": 3,
+   "id": "F14",
+   "moveOrdinal": 5,
+   "source": "Letter Major 3; ledger XII2 (Contradicted)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept, with the scope point that the order power still requires a covered incident",
+   "entry": false,
+   "evidence": "§XII ¶15 — “that the provider or the Secretary identifies… or of ‘a violation of law or the terms of service’”",
+   "findingOrdinal": 3,
+   "id": "F15",
+   "moveOrdinal": 5,
+   "source": "Letter Major 3; policy report §2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XII ¶15 — “rewritten by rule every year… That is an anti-sunset”",
+   "findingOrdinal": 3,
+   "id": "F16",
+   "moveOrdinal": 5,
+   "source": "Letter Major 3; policy report §2",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XII ¶15 — “It does not pass most cleanly… It sits at the first and fifth layers and… at the third as well”",
+   "findingOrdinal": 3,
+   "id": "F17",
+   "moveOrdinal": 5,
+   "source": "Letter Major 3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§VI ¶9 — “the largest operators of hosted models to maintain the standing ability to stop inference”",
+   "findingOrdinal": null,
+   "id": "F18",
+   "source": "Ledger VI5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XIII ¶8 — “contestable at one gate and not at the other”; §X ¶5 restores the attribution",
+   "findingOrdinal": 3,
+   "id": "F19",
+   "moveOrdinal": 6,
+   "source": "Letter Major 3; ledger XIII2 (Misleading)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "§III ¶9 — “That core descends, and it descends whole… What does not descend is immunity from process”",
+   "findingOrdinal": 4,
+   "id": "F20",
+   "moveOrdinal": 7,
+   "source": "Letter Major 4; legal report §2.3",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (engage his narrow-construction argument, which is the real one; see Phase 1 item 5)",
+   "entry": false,
+   "evidence": "§III ¶10 — “Precisely because the right admits no limitation clause… ‘the revelation of unexpressed thought’”",
+   "findingOrdinal": 4,
+   "id": "F21",
+   "moveOrdinal": 7,
+   "source": "Letter Major 4; legal report \"Strongest existing counterargument\"",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§III ¶11 — “the diagnosis this section began from… she published first”",
+   "findingOrdinal": 4,
+   "id": "F22",
+   "moveOrdinal": 7,
+   "source": "Letter Major 4; legal report §2.2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§XI ¶9 — “Activity logs, for Chan and colleagues, are ‘records of certain inputs and outputs of an agent’”",
+   "findingOrdinal": 5,
+   "id": "F23",
+   "moveOrdinal": 8,
+   "source": "Letter Major 5; policy report §3",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → resolved from the essay's own third question (pseudonymous; name released on a showing)",
+   "entry": false,
+   "evidence": "§XII ¶9 — “Whether that record carries her name is the whole of the difference between an incident log and a dossier”",
+   "findingOrdinal": 5,
+   "id": "F24",
+   "moveOrdinal": 8,
+   "source": "Letter Major 5; open question 3",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (and rescope l.286 per Phase 1 item 10)",
+   "entry": false,
+   "evidence": "§XIV ¶6 — “in a passage about its own research infrastructure… the mechanism the third question would have to discipline”",
+   "findingOrdinal": 5,
+   "id": "F25",
+   "moveOrdinal": 8,
+   "source": "Letter Major 5; ledger XIV1 scope note",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "§XIII ¶5 — “Run the eight questions on the record as it already stands”",
+   "findingOrdinal": 6,
+   "id": "F26",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6; second read 2.3",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XIII ¶5 and §V ¶11 — “not exit, which most people will never have”; “an exit priced in hardware is an exit the weak do not have”",
+   "findingOrdinal": 6,
+   "id": "F27",
+   "moveOrdinal": 9,
+   "source": "Second read 2.3 (adopted)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§V ¶9 — “the court gave three grounds… left the others standing”",
+   "findingOrdinal": 6,
+   "id": "F28",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6; ledger V3 (Misleading)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§III ¶16 — “Nobody in it was chilled… the chilling is the predicted effect of the awareness”",
+   "findingOrdinal": 6,
+   "id": "F29",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6; second read 2.3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§III ¶15 — Bedi quoted and distinguished; ref [42] carries Penney at 164",
+   "findingOrdinal": 6,
+   "id": "F30",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6; legal report §2.4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept, with the review's two attributions corrected",
+   "entry": false,
+   "evidence": "§III ¶12 — “Forty-eight states and the District of Columbia protect the confidentiality of library records”",
+   "findingOrdinal": 6,
+   "id": "F31",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6; legal report §2.5",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (the chaptered law has no such term; it has a memory-off default and a three-year preservation duty)",
+   "entry": false,
+   "evidence": "§XII ¶10 — “disables persistent conversational memory for a child by default and… preserve for three years”",
+   "findingOrdinal": 6,
+   "id": "F32",
+   "moveOrdinal": 9,
+   "source": "Letter Major 6",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "§III ¶5 — survey reduced to one positioning clause; the five scholars carried in refs [25]–[28]",
+   "findingOrdinal": 7,
+   "id": "F33",
+   "moveOrdinal": 1,
+   "source": "Letter Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§III ¶14 — four items; *Kim*, the tripled requests and Altman moved to refs [40][41]",
+   "findingOrdinal": 7,
+   "id": "F34",
+   "moveOrdinal": 1,
+   "source": "Letter Major 7",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§I ¶2 — the Bayle aside cut; Locke's exclusions to a clause (−47 words; less than the −250 asked)",
+   "findingOrdinal": 7,
+   "id": "F35",
+   "moveOrdinal": 2,
+   "source": "Letter Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§V ¶¶9–11 — three paragraphs",
+   "findingOrdinal": 7,
+   "id": "F36",
+   "moveOrdinal": 3,
+   "source": "Letter Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XII ¶¶12–15 — four paragraphs; the bill has its own",
+   "findingOrdinal": 7,
+   "id": "F37",
+   "moveOrdinal": 3,
+   "source": "Letter Major 7; craft notes; S1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XV ¶¶2–3 — split, and the fourth-layer assignment argued against Kant",
+   "findingOrdinal": 7,
+   "id": "F38",
+   "moveOrdinal": 3,
+   "source": "Letter Major 7; craft notes; \"considered\" list",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "Coda ¶2 — predecessor reference cut",
+   "findingOrdinal": 7,
+   "id": "F39",
+   "moveOrdinal": 3,
+   "source": "Letter Major 7; craft notes",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate → the editor's cuts made; remainder flagged with a cut list",
+   "entry": false,
+   "evidence": "Unresolved; escalated with a costed proposal in the response letter",
+   "findingOrdinal": 7,
+   "id": "F40",
+   "moveOrdinal": 12,
+   "source": "Letter Major 7; open question 4; second read 2.5",
+   "status": "unresolved"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "Prologue ¶6 — “Within one month of 2026 a liberal state gated two capable models by nationality”",
+   "findingOrdinal": 32,
+   "id": "F41",
+   "source": "Letter \"Considered and rejected\" residue; second read 2.1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§X ¶8 — “for thirteen days”",
+   "findingOrdinal": 17,
+   "id": "F42",
+   "source": "Letter minor (ledger fixes); ledger X10",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (WIRED now read; its own sentence cited)",
+   "entry": false,
+   "evidence": "§X ¶8 — de-quoted; ref [83] carries WIRED's own sentence",
+   "findingOrdinal": 17,
+   "id": "F43",
+   "source": "Letter minor; ledger X11",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (moved to a note with F34)",
+   "entry": false,
+   "evidence": "ref [40] — “ruling on the OpenAI warrant alone”",
+   "findingOrdinal": 17,
+   "id": "F44",
+   "moveOrdinal": 1,
+   "source": "Letter minor; ledger III20",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "Prologue ¶6; §XIII ¶4 — “ordered produced”",
+   "findingOrdinal": 17,
+   "id": "F45",
+   "source": "Letter minor; ledger P8, XIII1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§II ¶5 — “have traced out… call cognitive bloat”",
+   "findingOrdinal": 17,
+   "id": "F46",
+   "source": "Letter minor; ledger II4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept, scoped (an email to one researcher)",
+   "entry": false,
+   "evidence": "§X ¶5 — “which the company called an issue on its end”",
+   "findingOrdinal": 17,
+   "id": "F47",
+   "source": "Letter minor; ledger X2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§III ¶14 — “For four and a half months”",
+   "findingOrdinal": 17,
+   "id": "F48",
+   "source": "Letter minor; ledger III15",
+   "status": "done"
+  },
+  {
+   "disposition": "§3.B accept; the volume point **rebut**",
+   "entry": false,
+   "evidence": "Rebutted in the letter; ref [30] states the volume correctly",
+   "findingOrdinal": 17,
+   "id": "F49",
+   "source": "Letter minor; ledger refs",
+   "status": "rebutted"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "References — all listed corrections applied; list renumbered to 102 by order of first citation",
+   "findingOrdinal": 17,
+   "id": "F50",
+   "moveOrdinal": 10,
+   "source": "Letter minor; ledger refs",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§X ¶8 — “the directive stood for eighteen days, and access was restored on the nineteenth”; “seventeen thousand six hundred” in both places",
+   "findingOrdinal": 18,
+   "id": "F51",
+   "moveOrdinal": 10,
+   "source": "Letter minor; craft notes; second read 2.4; S2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§XI ¶7 — “not missing but inverted… their lever this essay's hazard”",
+   "findingOrdinal": 19,
+   "id": "F52",
+   "moveOrdinal": 10,
+   "source": "Letter minor; policy report §6",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "evidence": "§X ¶7 — “not capture but a cartel… a ban on Chinese open-weight models”",
+   "findingOrdinal": 20,
+   "id": "F53",
+   "moveOrdinal": 10,
+   "source": "Letter minor; policy report §6",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (cut; the p. 359 line is a misquotation in the review's source)",
+   "entry": true,
+   "evidence": "Cut; Zuboff no longer cited (the p. 359 line is misquoted in the review's source)",
+   "findingOrdinal": 21,
+   "id": "F54",
+   "moveOrdinal": 10,
+   "source": "Letter minor; legal report §5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§X ¶6 — “catalogues user vetting and Know-Your-Customer screening… ‘surveillance and social control’”",
+   "findingOrdinal": 22,
+   "id": "F55",
+   "moveOrdinal": 10,
+   "source": "Letter minor (F42 answered); legal report §3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§IX ¶5 — “the maxim is the records manager's before it is this essay's” + Pew, Wikimedia, Chen",
+   "findingOrdinal": 23,
+   "id": "F56",
+   "moveOrdinal": 10,
+   "source": "Letter minor; legal report §4",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§XII ¶8 — “Its addressees are the intermediaries themselves, the archives and libraries…”",
+   "findingOrdinal": 23,
+   "id": "F57",
+   "moveOrdinal": 10,
+   "source": "Letter minor; \"considered\" list",
+   "status": "done"
+  },
+  {
+   "disposition": "Alegre, Farahany: mooted in the body by F33, fixed in the notes; Radsch: accept",
+   "entry": true,
+   "evidence": "§V ¶11 (Radsch); Alegre and Farahany mooted in the body by F33, dated in refs [26][27]",
+   "findingOrdinal": 24,
+   "id": "F58",
+   "source": "Letter minor; legal report §5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§V ¶11 — “Ollama, LM Studio, and Open WebUI, signed the July letter”",
+   "findingOrdinal": 25,
+   "id": "F59",
+   "moveOrdinal": 10,
+   "source": "Letter minor; policy report §6",
+   "status": "done"
+  },
+  {
+   "disposition": "escalated in round 1; stands",
+   "entry": true,
+   "evidence": "Escalated; unchanged",
+   "findingOrdinal": 27,
+   "id": "F60",
+   "source": "Letter minor; open question 5",
+   "status": "escalated"
+  },
+  {
+   "disposition": "awaiting the author",
+   "entry": true,
+   "evidence": "Escalated; unchanged",
+   "findingOrdinal": 28,
+   "id": "F61",
+   "source": "Letter minor; open question 5",
+   "status": "escalated"
+  },
+  {
+   "disposition": "escalated in round 1; stands (F39 trims one)",
+   "entry": false,
+   "evidence": "Escalated; unchanged (one reference cut by F39)",
+   "findingOrdinal": null,
+   "id": "F62",
+   "source": "Open question 5; persona note",
+   "status": "escalated"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "§III ¶14, §V ¶9, §X ¶¶5 and 7 — split; 60+ word sentences 62 → 58",
+   "findingOrdinal": 29,
+   "id": "F63",
+   "moveOrdinal": 11,
+   "source": "Line note 1; craft notes prose 1",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "Throughout — “this essay / the essay” 41 → 18",
+   "findingOrdinal": null,
+   "id": "F64",
+   "source": "Line note 2; craft notes prose 2; second read 5(d)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§I ¶5, §XIII ¶2, §XIV ¶7, §XV ¶4 — the announcements cut or rewritten",
+   "findingOrdinal": null,
+   "id": "F65",
+   "source": "Line note 3; second read 5(c), 5(e)",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "§I ¶7, §III ¶13 — the asserted links made or broken out",
+   "findingOrdinal": null,
+   "id": "F66",
+   "source": "Line note 3; second read 5(f)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "evidence": "Prologue ¶¶1–2, §VIII ¶5 — cut; §XII ¶12 kept",
+   "findingOrdinal": 31,
+   "id": "F67",
+   "moveOrdinal": 11,
+   "source": "Line note 3; craft notes prose 4",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "evidence": "Prologue ¶6 — split; the control-plane gloss moved to its own sentence",
+   "findingOrdinal": null,
+   "id": "F68",
+   "source": "Craft notes structure",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XI ¶10 — the two-object distinction in its own paragraph",
+   "findingOrdinal": null,
+   "id": "F69",
+   "source": "Craft notes structure (§XI)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XIV ¶6 — markers distributed across three sentences",
+   "findingOrdinal": null,
+   "id": "F70",
+   "source": "Craft notes structure (§XIV)",
+   "status": "done"
+  },
+  {
+   "disposition": "mooted by F33",
+   "entry": false,
+   "evidence": "Mooted by F33",
+   "findingOrdinal": null,
+   "id": "F71",
+   "source": "Craft notes prose 5",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (Thomason and Cantwell; Delangue declined on source quality)",
+   "entry": false,
+   "evidence": "§XII ¶¶12 and 14 — Cantwell's national laboratories; Thomason named and quoted",
+   "findingOrdinal": null,
+   "id": "F72",
+   "source": "Policy report \"what the letter should say\" 8",
+   "status": "done"
+  },
+  {
+   "disposition": "defer / decline",
+   "entry": false,
+   "evidence": "Declined this round (length); recorded in the manifest's next-round agenda",
+   "findingOrdinal": null,
+   "id": "F73",
+   "source": "Legal report §2.1 table",
+   "status": "deferred"
+  },
+  {
+   "disposition": "decline (length; not raised in the letter)",
+   "entry": false,
+   "evidence": "Declined (not raised in the letter)",
+   "findingOrdinal": null,
+   "id": "F74",
+   "source": "Policy report §3",
+   "status": "deferred"
+  },
+  {
+   "disposition": "covered by F54, F56, F55, F22",
+   "entry": false,
+   "evidence": "Covered by F54, F55, F56, F22",
+   "findingOrdinal": null,
+   "id": "F75",
+   "source": "Legal report §6 misreadings (c)–(f)",
+   "status": "done"
+  },
+  {
+   "disposition": "per item in block",
+   "entry": false,
+   "evidence": "References — per item; III6, III7 and III21 mooted by F33 and F34",
+   "findingOrdinal": null,
+   "id": "F76",
+   "source": "Ledger optional fixes",
+   "status": "done"
+  },
+  {
+   "disposition": "pointer → F6, F7, F14, F19; F8, F17",
+   "entry": false,
+   "evidence": "Pointer row; discharged by F6, F7, F14, F19, F8, F17",
+   "findingOrdinal": null,
+   "id": "F77",
+   "source": "Scorecard",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut (length target, round-1 disposition stands, editor concurs); decline (XIII–XV); partial via F33",
+   "entry": true,
+   "evidence": "Rebutted (length target); §§XIII–XV kept; proportion moved by F33–F39",
+   "findingOrdinal": 33,
+   "id": "F78",
+   "source": "Second read 2.5",
+   "status": "rebutted in part"
+  },
+  {
+   "disposition": "the editor rejected both; concur; no change",
+   "entry": false,
+   "evidence": "No change, as the editor and this author agree",
+   "findingOrdinal": null,
+   "id": "F79",
+   "source": "Second read 5(a), 5(b); \"considered and rejected\"",
+   "status": "honored"
+  },
+  {
+   "disposition": "pointer → moves M1–M12",
+   "entry": false,
+   "evidence": "Pointer row; moves M1–M12",
+   "findingOrdinal": null,
+   "id": "F80",
+   "source": "Roadmap 1–4",
+   "status": "done"
+  },
+  {
+   "disposition": "= F37",
+   "entry": false,
+   "evidence": "= F37",
+   "findingOrdinal": null,
+   "id": "S1",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "= F51",
+   "entry": false,
+   "evidence": "= F51",
+   "findingOrdinal": null,
+   "id": "S2",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XII ¶12 — “In the terms of the first section”",
+   "findingOrdinal": null,
+   "id": "S3",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "= F8",
+   "findingOrdinal": null,
+   "id": "S4",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XIV ¶¶4 and 6 — “two of them exist”; the monitoring claim rescoped",
+   "findingOrdinal": null,
+   "id": "S5",
+   "source": "Self (Phase 1 item 10)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "evidence": "§XII ¶14 and ref [96] — Thomason named; the Stationers analogy credited to him as well",
+   "findingOrdinal": null,
+   "id": "S6",
+   "source": "Self (Phase 1 item 15)",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (one clause; new claim)",
+   "entry": false,
+   "evidence": "§X ¶5 — “closed to customers who have contracted for zero retention of their data”",
+   "findingOrdinal": null,
+   "id": "S7",
+   "source": "Self (slice L)",
+   "status": "done"
+  }
+ ],
+ "version": 1
+}

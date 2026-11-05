@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "55217a44b0b3d37c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# feldman-huddy-2014-not-so-simple\n- **URL:** https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462 · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** Feldman & Huddy, \"Not so simple: The multidimensional nature and diverse origins of political ideology,\" *Behavioral and Brain Sciences* 37(3), 2014, 312–313 — an open peer commentary (2 pages), not a research article.\n- **Key passages:** \"Political ideology is best explained by at least two dimensions linked to economic and social ideology\"; personality correlates differ by dimension.\n- **Reliability:** Primary (publisher's page); note genre — commentary on Hibbing et al.\n- **Relevance to this project:** Verifies half of C8 (economic vs cultural separability). Quality note for the author: a fuller cite (e.g., Feldman & Johnston 2014, *Political Psychology*) would carry the T1 load better than a 2-page commentary.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 120
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "649452a94d5fc2f220150fe2cc0a996240e34c9087b6de87129cde5d090a452a",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md",
+ "kind": "artifact-page"
+}

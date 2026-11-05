@@ -1,0 +1,75 @@
+{
+ "dto": {
+  "artifactKind": "craft_notes",
+  "artifactPath": "correspondence/v1-review/04-craft-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c61fbe4bbe194048",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "eda22b5d282300ef",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "eac217254bfcea3d",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "bc341232b525a7f8",
+    "ordinal": 12
+   },
+   "b2": {
+    "contentHash": "6ef2a9ed5dd0a0a0",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "899807471b278f7a",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "5156f478d562b8b6",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "c40fbbeeab9fad18",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "14870daf665669f8",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "c0e13ca09d54a1c5",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "f20071a70bbec757",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "cc6eeb853d99ffe8",
+    "ordinal": 9
+   }
+  },
+  "draftId": "correspondence/v1-review/04-craft-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Phase 4 — Structure, prose, voice (editor's working notes)\n\nDraft stage: near-final → full craft depth. Persona files consulted:\n`structure-repertoire.md`, `audience-and-venue.md` (not `voice-print.md`, per\nconvention — findings below are venue-bar findings, not conformity checks).\n\n## Structure\n\n### What works (protect in revision)\n\n- **The opening miniature.** The scare-quotes detail — \"The quotation marks\n  around *peaceful* are his.\" — is an elite-grade hook: one piece of punctuation\n  carrying the entire thesis in miniature. The pivot at ¶5 (\"The word that\n  arrives first is *totalitarian*. It is the wrong word, and the ways in which\n  it is wrong are the beginning of the analysis\") converts the anecdote into the\n  method. Stakes are clear well inside the reader's patience budget.\n- **§IX's placement** — the strongest objection (\"Has America not always done\n  this?\") is given its own section immediately after §VIII raises it in the\n  reader's mind. This is the corpus's own counterargument-gets-a-section norm\n  executed well, and the economics answer (scale/persistence/integration/\n  automation/retrospectivity/marginal cost) is the essay's best analytic\n  passage.\n- **§XII's threshold list.** A falsification list, \"in both directions,\" is\n  rare in this genre and will be the most-quoted part of the piece. \"This\n  threshold is categorical: a government that loses lawsuits is a government\n  under law…\" is exactly the kind of sentence the venue's readers circulate.\n- **The §III scoping paragraph** (gait recognition, what Flock does *not* do):\n  \"an essay that gets the cameras wrong forfeits the standing to be believed\n  about the databases\" — credibility engineering that distinguishes the piece\n  from the genre it will be pattern-matched to.\n- **The coda** returns to Minneapolis, completes the epigraph and the title,\n  and ends on a stated fact — the corpus's own ending grammar, executed at\n  full strength.\n\n### Issues\n\n1. **§XIV interrupts the theoretical ascent XIII → XV.** §XIII ends at the\n   constitutional altitude (\"almost all of the constitutional future\"); §XV\n   opens \"There remains the hard problem…\" — which is the natural continuation\n   of §XIII, not of §XIV's practice advice. Consider ordering …XIII → XV\n   (design) → XIV (practice) → coda: the theory arc completes, and the\n   practice section sits adjacent to the appendix it introduces. Cost: §XIV's\n   \"public legality is a weapon\" currently sets up §XV's institutional theme;\n   that sentence would need a new home or the transition rewritten. A genuine\n   fork — but as drafted the climb is broken once.\n2. **Section count is above the repertoire.** Unnumbered opening + I–XV + coda\n   = 17 units against the corpus long-form norm of 10–14\n   (`structure-repertoire.md` § Section grammar). Not a defect per se — but it\n   is evidence for the merge candidates below rather than against them.\n3. **§XI is the declared \"philosophical center\" and the essay's thinnest\n   argumentative section** (~800 words; §X ends by announcing it as the\n   center). It runs quote → gloss three times (Tocqueville, Arendt, Shklar)\n   and reserves only one paragraph (\"Assemble the three and the essay's\n   central formulation follows…\") for the essay's own move. The two-questions\n   formulation (\"may I speak?\" vs. \"what must I reasonably fear if I do?\") is\n   the piece's best original sentence-pair, and it currently gets four\n   sentences of development. See Phase 3 notes — this is argued there as a\n   major issue, not just a proportion problem.\n4. **§XIII's five-thinkers recap paragraph** (\"The essay's five thinkers\n   converge on this point from five directions: Scott, because… Foucault,\n   because…\") is the one place the essay summarizes itself. The venue norm is\n   no concession to skimming and the corpus almost never recapitulates (1 of\n   10 pieces). The convergence claim is legitimate; the roll-call form is a\n   wrap-up list. Candidate: compress to one sentence or cut the enumeration.\n5. **Final sentence overstates the essay's own bounded claim.** \"Legibility is\n   a condition of manipulation. Its absence is a condition of freedom…\" — but\n   §XIII took care to argue for *practical opacity*, bounded (\"no immunity\n   from lawful, particularized investigation\"), not the *absence* of\n   legibility. The last sentence is the pull-quote; as written it hands a\n   hostile reader the \"so you want the state blind?\" reading §XIII explicitly\n   foreclosed. Fix candidates: \"Its limits are a condition of freedom\" /\n   \"Freedom is a condition of its limits.\" Small edit, large exposure.\n\n## Prose (patterns with exemplars)\n\n1. **Aphorism-coda density.** The one-sentence paragraph that pays off a\n   section is the persona's signature; this draft runs ~11 of them (\"The\n   machinery can precede the regime.\" / \"The person carries the file.\" /\n   \"Inherited capacity does not leave. It waits.\" / \"Anticipation trips none\n   of them.\" / \"It has never before been this cheap.\" …). At this frequency\n   the drumbeat becomes audible and each aphorism discounts the next; the\n   fidelity audit's own figure (~13% single-sentence paragraphs, above the\n   model piece) points the same way. Keep the four or five that carry theses\n   (\"The machinery can precede the regime\"; \"The ideology is not the charge.\n   It is the query.\"); fold the others into their paragraphs. Example rewrite:\n   end §IV's spyware passage \"…the address book, the location history, and the\n   key ring at once — the person carries the file.\" One paragraph, same\n   payoff, one less drumbeat.\n2. **The \"not X. It is Y.\" template.** The negation-correction is the corpus's\n   characteristic sentence, but the draft runs the exact two-sentence template\n   at least six times: \"The danger is not the eye. It is the interoperability.\"\n   (§III); \"The mechanism is not observation. It is uncertainty about\n   observation…\" (§X); \"The ideology is not the charge. It is the query.\" (§V);\n   \"The right question about this document is not the indignant one.\" (§V);\n   \"Law is not absent from this story; it is behind, which is different.\"\n   (§IV); \"The instructive precedents… are not foreign. They are ours.\" (§VIII).\n   Two risks: internal monotony, and — a live reception risk — elite readers\n   now pattern-match \"It's not X, it's Y\" cadence as AI boilerplate and\n   discount it. Vary the syntax on all but the two best instances (e.g., \"Law\n   is not absent from this story; it is behind\" already varies it — that's the\n   model).\n3. **Visible stage machinery.** \"That is a claim about architecture, and it is\n   why the argument must now turn to the technology.\" (§I); \"The next two\n   sections concern the machinery…\" (§II); \"What, exactly, is lost when the\n   meeting shrinks? The next section is the answer, and it is the philosophical\n   center of the essay.\" (§X); \"…in ways the next section must be equally\n   precise about\" (§V); plus ~12 occurrences of \"this essay\"/\"the essay\" as\n   subject. The corpus keeps through-lines audible with one-sentence\n   paragraphs, not with self-narration, and the venue's stated norm is no\n   \"in this piece I will.\" Worst instance is §X's close: the question \"What,\n   exactly, is lost when the meeting shrinks?\" is a perfect transition on its\n   own — cut the sentence that follows it and the announcement of \"the\n   philosophical center\" (which also raises expectations §XI then undercuts;\n   see Structure #3).\n4. **Local repetition.** \"The phone completes the picture.\" then \"Face\n   completes identity's side of the ledger.\" — same verb, adjacent paragraphs\n   (§III). Vary one.\n\nOtherwise the line level is strong: register consistent (no lurches), hedge\nstacks absent, jargon earned, quotations integrated in the corpus's\nauthor-and-claim-in-prose style. \"Advice detached from a threat model is\ncostume\" (§XIV) and \"the delays are where liberty actually lives\" (§XV) are\nthe venue's kind of sentence.\n\n## Voice\n\nThere is one, and it is consistent: cold, precise, scoped, counting things\n(\"at a rate of two thousand seven hundred arrests\"). It is the right\ninstrument for an argument whose entire strategy is to out-precision both the\nhysterics and the complacent. Authority is earned by scoping discipline — the\nParagon paragraph (§IV) and the Minnesota not-yet-ruled caveats are models;\nnowhere does the persona claim expertise the text hasn't established. The one\nplace the voice risks sliding into self-parody is the aphorism ration (Prose\n#1). The piece sounds like *someone* throughout — the danger is only that it\nsounds like him slightly too often per thousand words.\n",
+  "meters": {
+   "readMin": 5,
+   "words": 1296
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3fdcc9a75d96238e8f1e7480cbe3d00cd0e09bc4ec6fc4e633f0d677402a60ba",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "correspondence/v1-review/04-craft-notes.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/thenextweb-anthropic-id-verification-2026-06-22.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cb3d0b4f1c24affa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/thenextweb-anthropic-id-verification-2026-06-22.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thenextweb-anthropic-id-verification-2026-06-22\n- **URL:** https://thenextweb.com/news/anthropic-claude-id-verification-privacy-policy-persona-biometric · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (scope of Persona verification)\n- **What it establishes:** Ana Maria Constantin, June 22, 2026. Confirms the flagged-subset scope and the appeals framing; lists accepted IDs (passports, driver's licenses, state IDs, national ID cards), selfie photo/video, and \"facial geometry templates\"; Persona is the processor; effective July 8, 2026.\n- **Key passages:**\n  - Shihipar: the policy gives flagged users \"a path to appeal through identity verification rather than losing access entirely.\"\n  - Shihipar: \"unrelated to the Fable or Mythos rollout.\"\n- **Reliability:** Secondary, tech press.\n- **Relevance to this project:** Third confirmation of the flagged-subset scope.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9b3a189667822bab95a8c12fcd3868c0bf7cdeea731086d42e38ab3946f68982",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/thenextweb-anthropic-id-verification-2026-06-22.md",
+ "kind": "artifact-page"
+}

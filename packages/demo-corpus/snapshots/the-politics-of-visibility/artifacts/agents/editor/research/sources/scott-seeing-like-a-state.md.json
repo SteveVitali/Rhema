@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/scott-seeing-like-a-state.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4c50bb8b4f885a5f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "1bdedf139b4f58d2",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "8459d1b70c8e19cf",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/scott-seeing-like-a-state.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Scott — Seeing Like a State (full text)\n\n- https://dreary.dev/pdfs/anarchism/james-c-scott-seeing-like-a-state.pdf (full-book PDF, text-extracted)\n- Accessed 2026-08-21 (Phase 1). PRIMARY TEXT.\n\nEstablishes verbatim: epigraph \"Legibility is a condition of manipulation.\" (opens a\nPart 3 chapter, followed by the vaccinate/tax/conscript list); Introduction: \"a state's\nattempt to make a society legible, to arrange the population in ways that simplified the\nclassic state functions of taxation, conscription, and prevention of rebellion\" (about\nsedentarization projects) and \"I began to see legibility as a central problem in\nstatecraft.\" Draft's \"Introduction and Part 3\" citation is right.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 88
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "496a892b6813fe00b498360aebd94796ede5ca31f5d3cf03710b4cdf74144830",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/scott-seeing-like-a-state.md",
+ "kind": "artifact-page"
+}

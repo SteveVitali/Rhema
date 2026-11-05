@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/voteview-poole-rosenthal.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0454b0ee191a69f4",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "358e6e4d345e84ca",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/voteview-poole-rosenthal.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# voteview-poole-rosenthal\n\n- **URL:** https://voteview.com/about · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Poole & Rosenthal's DW-NOMINATE: congressional roll-call behavior across US history is captured by low dimensionality. \"The primary dimension through most of American history has been 'liberal' vs. 'conservative' (also referred to as 'left' vs. 'right').\" \"A second dimension picks up differences within the major political parties over slavery, currency, nativism, civil rights, and lifestyle issues.\"\n- **Key passages:** As quoted.\n- **Reliability:** Primary (the project's own methodological statement); the low-dimensionality finding is among the most replicated results in American politics.\n- **Relevance to this project:** The statistical-economy counterargument: if one or two dimensions explain elite behavior, five coordinates are uneconomical for describing actual politicians. The draft has a real answer (coalitional compression is exactly what NOMINATE measures; the questions are about the content of bundles, not the statistics of votes — and NOMINATE's own second dimension keeps absorbing whatever cross-cuts the first), but the draft never makes it. Worth noting: low dimensionality of *elite behavior in a two-party system* is compatible with multidimensional *attitudes*, which the draft's cited multidimensionality literature shows; the draft should connect these explicitly.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 189
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5445055b900d778cd7c29b1c63a0616f3723dc017367ca2233fce6969f381d9e",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/voteview-poole-rosenthal.md",
+ "kind": "artifact-page"
+}

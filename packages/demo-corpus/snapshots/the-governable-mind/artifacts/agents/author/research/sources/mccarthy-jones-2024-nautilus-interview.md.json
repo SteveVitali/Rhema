@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/mccarthy-jones-2024-nautilus-interview.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "199e54a1ecb93898",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/mccarthy-jones-2024-nautilus-interview.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mccarthy-jones-2024-nautilus-interview\n- **URL:** https://nautil.us/who-controls-your-thoughts-498055 · **Accessed:** 2026-09-16 · **For:** v1 response round, repair material (external thinking; behavior-reading)\n- **Citation:** Katherine Harmon Courage, \"Who Controls Your Thoughts?\" (interview with Simon McCarthy-Jones), *Nautilus*, January 22, 2024.\n- **What it establishes:** McCarthy-Jones argues that a freedom of thought confined to the inner world \"would abandon more than it would save,\" because much thinking is external (fingers, lists, Google search, speech); and that the nearer-term threat is \"behavior-reading\" (inferring mental states from observable digital behavior), not brain-reading. The editor's phrase \"external thinking (conversation, writing, collaboration)\" is a paraphrase; the verbatim list is fingers / shopping lists / technology (Google search) / speech, and the interviewer's gloss mentions \"a written to-do list or a brainstorming session with a friend.\"\n- **Key passages:**\n  - \"I think a right to freedom of thought that just protects the inner world would abandon more than it would save—because we do a lot of our thinking externally, outside of our heads. As philosophers, technologists, and psychologists would say, there's this important kind of external thought that we need to protect: We count on our fingers, we make shopping lists, we think with technology (like with a Google search), we think with each other through speech.\"\n  - \"I think what's maybe a more immediate threat from new technologies is not brain-reading but more what is called behavior-reading. That is, the idea of measuring our observable behavior—what we like on Facebook, what websites we visit, what music we like, etcetera—that from knowing those facts about us, people could impute our mental states and can have a good idea of what it is we're thinking—and knowing what kinds of buttons they should press to get us to act in a certain way.\"\n  - Interviewer's framing: \"thought is always spilling outside of our craniums—whether in the form of a written to-do list or a brainstorming session with a friend—so laws protecting free thought must also consider these important, less internal types of cogitating.\"\n- **Reliability:** Secondary (journalistic interview) reporting a primary scholar's view; McCarthy-Jones is author of *Freethinking* (2024) and the 2019 *Frontiers in AI* paper on the autonomous mind.\n- **Relevance to this project:** Supports the essay's premise that thinking is done in external media and that the threat is reading behavior/records rather than brains; \"we think with technology (like with a Google search)\" is quotable. Note he does not name AI chat specifically.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 392
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5e8685c463eed3dbb61603dab14e94df4927b3f2c7a792f4f41a5fbd35359001",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/mccarthy-jones-2024-nautilus-interview.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/kim-order-2026-06-22.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c5619c80c27e0601",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/kim-order-2026-06-22.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kim-order-2026-06-22\n- **URL:** https://storage.courtlistener.com/recap/gov.uscourts.nysd.647496/gov.uscourts.nysd.647496.56.0.pdf · **Accessed:** 2026-09-16 (2 pp., read in full via a reader proxy) · **For:** v1 response round, item 7\n- **What it establishes:** United States v. Kim, 25 Crim. 359 (LGS), Dkt. 56, Order of Judge Lorna G. Schofield dated June 22, 2026 (filed 06/22/26). Denies Kim's motion to quash the SCA warrant served on OpenAI (issued by Magistrate Judge Lehrburger) and dissolves the June 15 directive that OpenAI not respond. Reasoning: § 2703(d), (h)(2)(A) allow only a provider to move to quash, in limited circumstances; \"The statute does not authorize a customer or subscriber to move to quash a warrant\"; no general pre-execution right (Grubbs); district courts have \"uniformly rejected pre-execution challenges to SCA warrants by the customers or subscribers whose information is sought\" (quoting Google LLC v. United States, 2025 WL 778150, at *5). The order does not reach privilege or overbreadth. Reuters reported it June 23 (\"on Monday\").\n- **Key passages:** p. 1: \"The statute does not authorize a customer or subscriber to move to quash a warrant.\" / p. 1: \"there is no general right to quash warrants pre-execution.\" / p. 2: \"ORDERED that the portion of the June 15, 2026, Order directing OpenAI not to respond to the warrant is DISSOLVED.\"\n- **Reliability:** Primary (court order).\n- **Relevance to this project:** Item 7. Corrects the editor's \"~June 23\" to June 22 (order date), and clarifies the denial was procedural (no standing to quash), not a ruling on privilege.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Order re-read locally from the CourtListener PDF. It rules on the OpenAI warrant ONLY: \"Defendant Richard Kim moves to quash a search warrant served on OpenAI OpCo, LLC\" and dissolves the directive \"directing OpenAI not to respond\". Anthropic is not mentioned. The DOJ letter (Dkt. 55, p. 6 n.3, re-read from the Reuters-hosted PDF) explains why: \"Kim’s application only challenges the Government’s warrant directed to OpenAI.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 316
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8c6e4aead27fb7ba5a19ba6cd3b35ffc038909b8afef86a152cc2e2c6a8b0b88",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/kim-order-2026-06-22.md",
+ "kind": "artifact-page"
+}

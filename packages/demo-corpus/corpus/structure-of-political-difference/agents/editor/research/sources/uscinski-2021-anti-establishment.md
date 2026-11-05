@@ -1,0 +1,7 @@
+# uscinski-2021-anti-establishment
+
+- **URL:** https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976 (abstract read; the draft's own [^7]) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Uscinski et al., AJPS 2021: an anti-establishment dimension — conspiracy thinking, populism, Manichean worldview — is **orthogonal** to left-right/partisan identity: "While many inherently view politics as a conflict between left and right, others see it as a battle between 'the people' and a corrupt establishment." It predicts support for both Trump and Sanders, acceptance of violence, and misinformation susceptibility.
+- **Key passages:** As quoted.
+- **Reliability:** Primary abstract of peer-reviewed article.
+- **Relevance to this project:** Misrepresentation check passes — the draft's [^7] use ("research on anti-establishment orientations finds precisely such a cross-cutting structure") is accurate. This is also the strongest empirical warrant for the draft's one genuinely non-8values axis (System). Caveat the draft omits: Uscinski et al. tie the dimension to antisocial traits and conspiracy belief, i.e., their "anti-establishment" is not a neutral preference about mediation but partly a psychological syndrome; the draft's charitable pole ("responsiveness and renewal") is a normative reconstruction, not what this source measures.

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eu-ai-act-article-52.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a4f8b6230fa4c89d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eu-ai-act-article-52.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eu-ai-act-article-52\n- **URL:** https://artificialintelligenceact.eu/article/52/ (raw HTML via curl; inline definition tooltips stripped) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K7)\n- **What it establishes:** Text of Regulation (EU) 2024/1689, Article 52 (\"Procedure\"), as reproduced by the Future of Life Institute's AI Act Explorer (unofficial host reproducing the OJ text). Rebuttable classification; ex officio designation; reassessment no sooner than six months; published list.\n- **Key passages:**\n  - 52(1): provider \"shall notify the Commission without delay and in any event within two weeks after that requirement is met or it becomes known that it will be met.\"\n  - 52(2): \"The provider of a general-purpose AI model that meets the condition referred to in Article 51(1), point (a), may present, with its notification, sufficiently substantiated arguments to demonstrate that, exceptionally, although it meets that requirement, the general-purpose AI model does not present, due to its specific characteristics, systemic risks and therefore should not be classified as a general-purpose AI model with systemic risk.\"\n  - 52(3): \"Where the Commission concludes that the arguments submitted pursuant to paragraph 2 are not sufficiently substantiated ... it shall reject those arguments, and the general-purpose AI model shall be considered to be a general-purpose AI model with systemic risk.\"\n  - 52(4): \"The Commission may designate a general-purpose AI model as presenting systemic risks, ex officio or following a qualified alert from the scientific panel pursuant to Article 90(1), point (a), on the basis of criteria set out in Annex XIII.\"\n  - 52(5): \"Upon a reasoned request of a provider whose model has been designated ... pursuant to paragraph 4, the Commission shall take the request into account and may decide to reassess ... Such a request shall contain objective, detailed and new reasons that have arisen since the designation decision. Providers may request reassessment at the earliest six months after the designation decision. Where the Commission, following its reassessment, decides to maintain the designation ..., providers may request reassessment at the earliest six months after that decision.\"\n  - 52(6): \"The Commission shall ensure that a list of general-purpose AI models with systemic risk is published and shall keep that list up to date, without prejudice to the need to observe and protect intellectual property rights and confidential business information or trade secrets\".\n- **Reliability:** Primary legal text on an unofficial but standard mirror.\n- **Relevance to this project:** Scope caution: the six-month reassessment in 52(5) applies to models designated under 52(4) (Commission designation), not expressly to models classified by the compute presumption whose 52(2) arguments were rejected. The burden is on the provider; the presumption is rebuttable only \"exceptionally\".\n",
+  "meters": {
+   "readMin": 2,
+   "words": 423
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "db8776bb43760b34aa6d3f83d82e7236114b0e715d02313104fddb447de460ec",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/eu-ai-act-article-52.md",
+ "kind": "artifact-page"
+}

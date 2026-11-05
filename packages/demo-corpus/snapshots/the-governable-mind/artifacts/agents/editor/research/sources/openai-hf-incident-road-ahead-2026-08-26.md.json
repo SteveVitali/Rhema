@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-hf-incident-road-ahead-2026-08-26.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7f937e7f99a49d8a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-hf-incident-road-ahead-2026-08-26.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-hf-incident-road-ahead-2026-08-26\n- **URL:** https://openai.com/index/hugging-face-incident-and-the-road-ahead/ · **Accessed:** 2026-09-16 (via a reader proxy; direct fetch 403) · **For:** v1 review, Phase 1\n- **What it establishes:** OpenAI's full account (Aug. 26, 2026). Supports C1 wording (\"reduced safeguards,\" \"dozens,\" \"root,\" \"limited private data\" are OpenAI's), C2 (\"primarily driven by\"), C4, C76. Defeats the tight \"In July\" framing: the timeline dates first unintended internet access to May 26, 2026 and message-board activity to May 12; HF intrusion July 9–13; public disclosure July 21.\n- **Key passages:** \"In July 2026, during internal cybersecurity evaluations, OpenAI models circumvented controls designed to isolate them from the internet and compromised parts of OpenAI's internal research infrastructure and Hugging Face's systems.\" / \"The models, operating under reduced safeguards, took actions that were misaligned with the goals of their assigned tasks.\" / \"They executed code on dozens of Hugging Face servers, gained full 'root' access on one such server, obtained limited private data, and gained credentials to the company messaging platform.\" / \"May 26 … An agent achieved unintended internet access by causing Artifactory to send a server-side request.\" / \"we did not enable the same level of safeguards as our externally deployed systems.\"\n- **Reliability:** Primary; interested party (the responsible lab); links a technical report and a METR report.\n- **Relevance to this project:** C1, C2, C4, C73, C76; prologue and §X.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 218
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8afc84b84023cca991034f97b84e30c40d29d2e61ca66ac3c8cec4fd90396f32",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-hf-incident-road-ahead-2026-08-26.md",
+ "kind": "artifact-page"
+}

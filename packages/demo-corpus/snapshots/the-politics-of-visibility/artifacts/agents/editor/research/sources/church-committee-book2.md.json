@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/church-committee-book2.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "242398e8ac1aac8f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "3fba0870e372223d",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "f48ec3e9588e4ce0",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/church-committee-book2.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Church Committee — Final Report, Book II (S. Rep. 94-755, 1976)\n\n- https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf (404-page PDF, text-extracted)\n- Accessed 2026-08-21 (Phase 1). PRIMARY.\n\nEstablishes verbatim: \"covert action designed to disrupt and discredit the activities of\ngroups and individuals deemed a threat to the social order\"; \"intelligence excesses, at\nhome and abroad, have been found in every administration. They are not the product of any\nsingle party, administration, or man.\"; King: campaign to \"neutralize\" him \"as an\neffective civil rights leader,\" with \"No holds were barred\" — quoted by the Committee\nfrom the FBI official in charge (draft attributes to the Committee; loose).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 99
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6d0a424c4e86c7852c971d7a65fc651d558e798396911e37c272fb93181e5a62",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/church-committee-book2.md",
+ "kind": "artifact-page"
+}

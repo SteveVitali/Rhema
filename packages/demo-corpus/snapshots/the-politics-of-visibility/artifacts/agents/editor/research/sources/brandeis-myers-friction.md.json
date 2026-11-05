@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/brandeis-myers-friction.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5e00d2747040a038",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "22477b021dfd5a13",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "44adffd29e9022ac",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/brandeis-myers-friction.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Brandeis, Myers v. United States dissent (1926) — friction pedigree\n\n- **URLs (search-level, quote confirmed across results):** https://constitution.congress.gov/browse/essay/intro.7-2/ALDE_00000031/ ; https://www.annenbergclassroom.org/glossary_term/separation-of-powers/ ; https://en.wikipedia.org/wiki/Myers_v._United_States\n- **Accessed:** 2026-08-21\n\n**Establishes:** §XV's \"constitutional government is friction, on purpose\" has an exact canonical ancestor, in the same vocabulary: \"The doctrine of the separation of powers was adopted... not to promote efficiency but to preclude the exercise of arbitrary power. The purpose was not to avoid friction but, by means of the inevitable friction incident to the distribution of the governmental powers among three departments, to save the people from autocracy.\" Citing Brandeis converts §XV's central move from apparent coinage into constitutional inheritance — strictly a strengthening.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 108
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a13dce787d89571817597f201d8c73e9584ac067f61597719a5355f47cac2887",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/brandeis-myers-friction.md",
+ "kind": "artifact-page"
+}

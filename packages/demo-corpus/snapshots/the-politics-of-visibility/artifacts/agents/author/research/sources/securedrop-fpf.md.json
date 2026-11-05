@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/securedrop-fpf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "310e3ab7a9a475fe",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/securedrop-fpf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# securedrop-fpf\n- **URL:** https://securedrop.org/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C44\n- **What it establishes:** \"SecureDrop is an open source whistleblower submission system that media organizations and NGOs can install to securely accept documents from anonymous sources.\" Footer: \"SecureDrop is a project of Freedom of the Press Foundation.\" The system \"Encrypts your data in transit and at rest\" and \"Does not log your IP addresses, browser, or computer.\" The homepage lists SecureDrop Workstation 1.8.0 released July 20, 2026 — the hardened (Qubes-based) workstation line is actively maintained/developed.\n- **Key passages:** as quoted above.\n- **Reliability:** Primary (project's own site, run by Freedom of the Press Foundation).\n- **Relevance to this project:** C44 — maintainer, purpose, and active Workstation development (recent release date is the evidence for \"active\").\n",
+  "meters": {
+   "readMin": 1,
+   "words": 124
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5a3256ede04645ba0ee87995c1cb5175c8969f6ec36b527a559d76f2cd473782",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/securedrop-fpf.md",
+ "kind": "artifact-page"
+}

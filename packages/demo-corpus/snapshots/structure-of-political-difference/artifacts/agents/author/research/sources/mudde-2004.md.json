@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/mudde-2004.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3e56b45f9f512e4d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/mudde-2004.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mudde-2004\n- **URL:** https://www.cambridge.org/core/journals/government-and-opposition/article/populist-zeitgeist/2CD34F8B25C4FFF4F322316833DB94B7 · **Accessed:** 2026-07-31 · **For:** v1-response — minor fix (canonical Mudde cite alongside Penn lecture page)\n- **What it establishes:** Cas Mudde, \"The Populist Zeitgeist,\" *Government and Opposition* 39(4), 2004, 541–563, DOI 10.1111/j.1477-7053.2004.00135.x. Definition: populism is \"an ideology that considers society to be ultimately separated into two homogeneous and antagonistic groups, 'the pure people' versus 'the corrupt elite', and which argues that politics should be an expression of the volonté générale (general will) of the people\" — a \"thin-centred ideology.\"\n- **Key passages:** as quoted.\n- **Reliability:** Primary (publisher page for the canonical article).\n- **Relevance:** Added to the populism reference entry in v2, retaining the Penn page as carrier.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 109
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4cb1a3da245d84e32a3bea504de700e968c5de31fba12dd5fd97dbb99afa3336",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/mudde-2004.md",
+ "kind": "artifact-page"
+}

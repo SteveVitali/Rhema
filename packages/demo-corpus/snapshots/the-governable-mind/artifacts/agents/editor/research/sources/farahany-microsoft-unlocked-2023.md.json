@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/farahany-microsoft-unlocked-2023.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d9b02c9c989a370f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/farahany-microsoft-unlocked-2023.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# farahany-microsoft-unlocked-2023\n- **URL:** https://unlocked.microsoft.com/ai-anthology/nita-farahany/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Farahany, 'Cultivating cognitive liberty in the age of generative AI' (June 19, 2023): GPT-4 threats are bias/distortion and manipulation; calls for rights against mental manipulation; no treatment of chat logs as a cognitive record.\n- **Key passages:** \"Generative AI tools ... can exacerbate biases and distortions that undermine the integrity and reliability of the information we consume.\" · \"we must act quickly to recognize rights against mental manipulation\"\n- **Reliability:** Primary essay by proponent, hosted by an interested corporate sponsor.\n- **Relevance to this project:** Report §1.5.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 99
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9780021f4fa08397ed8361a687f20108165c1ebe492df794fdb979cebffdaa6c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/farahany-microsoft-unlocked-2023.md",
+ "kind": "artifact-page"
+}

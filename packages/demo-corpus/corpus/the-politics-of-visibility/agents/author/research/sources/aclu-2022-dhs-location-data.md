@@ -1,0 +1,7 @@
+# aclu-2022-dhs-location-data
+
+- **URL:** https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** The original ACLU FOIA release (Shreya Tewari and Fikayo Walter-Johnson, July 18, 2022). DHS components purchasing app-derived location data: CBP, ICE, U.S. Secret Service, U.S. Coast Guard, DHS HQ. Vendors: Venntel and Babel Street. This is where the "pattern of life" wording actually lives — in Venntel marketing material, not ACLU's gloss.
+- **Key passages:** Venntel marketing: "15 billion location points from over 250 million cell phones and other mobile devices every day"; capabilities to "identify devices observed at places of interest" and "identify repeat visitors, frequented locations, pinpoint known associates, and discover pattern of life"; "pattern of life analysis to identify persons of interest." Data "quietly extracted from smartphone apps"; ~336,000 location points in reviewed CBP spreadsheets.
+- **Reliability:** Secondary/advocacy (ACLU), but quoting primary FOIA-obtained vendor documents; the load-bearing quotes are from the documents themselves.
+- **Relevance to this project:** C7 — this is the correct citation for the verbatim "pattern of life" / "repeat visitors" / "frequented locations" / "known associates" vendor language. The outline's lead URL points at the 2026 follow-up (see aclu-2026-dhs-location-data-update), which does NOT contain the "pattern of life" phrase.

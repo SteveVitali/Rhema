@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bublitz-blitz-law-ethics-fot-vol2-2026-toc.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a02919e4453d3789",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bublitz-blitz-law-ethics-fot-vol2-2026-toc.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bublitz-blitz-law-ethics-fot-vol2-2026-toc\n- **URL:** https://link.springer.com/book/10.1007/978-3-031-91466-9 (reached via Springer's cookie-fallback URL) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 4)\n- **What it establishes:** Bublitz & Blitz (eds.), The Law and Ethics of Freedom of Thought, Volume 2: Cognitive Liberty, Mental Privacy, and International Law (Palgrave, Jan. 1, 2026). Chapters: Boire, \"On Cognitive Liberty\" (open access); Bublitz, \"Cognitive Liberty: A Brief History\" (OA); Dore-Horgan & Douglas, \"Thinking What We Want\"; O'Callaghan & Shiner, \"Privacy 6.0: Privacy as Mental Integrity\"; Wallace-Wolf, \"Does the Privilege Against Self-Incrimination Guard Against a Distinct Kind of Mischief?\"; Blitz, \"Cognitive Liberty and Rights to (and Against) Cultural and Chemical Transformations of the Mind\"; Ligthart, \"Mental Privacy as Part of the Human Right to Freedom of Thought?\"; Bublitz, \"What Is 'Thought'? Interpreting and Constructing Article 18 ICCPR in Light of the Vienna Convention\" (OA); Ligthart, \"What Is Thought, or What Should It Be? Reply to Bublitz\"; Yildirim-Vranckaert, \"The Mind and the Law: A Contextualized Framework for Freedom of Thought Under the ECHR.\" Publisher's description: the volume \"looks more closely at challenges raised for liberty and privacy of thought by emerging neurotechnologies.\" No chapter is on AI conversation, chat logs, or externalized deliberation. The chapter PDFs (including OA ones) could not be retrieved today (Springer returned HTML interstitials to both WebFetch and curl).\n- **Key passages:** TOC as above.\n- **Reliability:** Primary bibliographic listing.\n- **Relevance to this project:** Agenda 4; ref [22]. The scope debate (\"What is 'thought'?\"; Ligthart's reply) is the live one and is neurotech-centred; the draft's object is absent from the volume, which is both its opening and its exposure. Boire's OA chapter would let the draft cite the coinage at first hand instead of via Bublitz (ref [28]).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 280
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "73b1a7aae9b179b3ab9e533610c6b7f265b0cbfdcb0bdb6333b41281902e9661",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bublitz-blitz-law-ethics-fot-vol2-2026-toc.md",
+ "kind": "artifact-page"
+}

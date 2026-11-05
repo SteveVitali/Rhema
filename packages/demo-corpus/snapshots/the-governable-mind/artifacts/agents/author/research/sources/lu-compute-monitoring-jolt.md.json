@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/lu-compute-monitoring-jolt.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "11299a2ed0896898",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/lu-compute-monitoring-jolt.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# lu-compute-monitoring-jolt\n- **URL:** https://jolt.law.harvard.edu/assets/articlePDFs/v39.1/Compute-Monitoring.pdf · **Accessed:** 2026-09-16 (31 pp.; abstract, TOC, Parts III.B.3, III.C, IV read) · **For:** v1 response round, item 11\n- **What it establishes:** Lisa Lu (Stanford Law '25), \"Compute Monitoring: Reviving the Encryption Backdoor Debate,\" 39 Harv. J.L. & Tech. 383 (Fall 2025). Thesis: compute-governance regimes that require providers (Amazon, Microsoft, Google) to access encrypted/confidential-computing customer data may be unconstitutional searches, and mandating decryption tools/backdoors is compelled speech (code as expression; Bernstein, Junger; the Apple–San Bernardino dispute). Distinction: reporting \"objective compute metrics\" (processing power, training duration) is permissible under Zauderer; \"subjective assessments or invasive data disclosures\" trigger heightened scrutiny. Third-party doctrine: unlikely to extinguish privacy in all cloud data (Riley, Carpenter), but \"the Fourth Amendment likely does not protect non-content data, such as compute metrics\" (Smith v. Maryland transactional-records line), p. 401. Recommends limiting requests to \"objectively defined compute usage metrics or transactional data\" and privacy-preserving tech. NOTE: the Clipper chip is never mentioned; her historical parallel is Apple/FBI 2016 (pp. 408–411), not Clipper/key escrow.\n- **Key passages:** Abstract (p. 383): \"distinguishes between constitutionally permissible reporting of objective compute metrics — such as processing power utilized or training duration — and problematic demands for subjective assessments or invasive data disclosures that implicate protected rights.\" / p. 401: \"the third-party doctrine is not likely to extinguish a reasonable expectation of privacy in all cloud-based data. However, the Fourth Amendment likely does not protect non-content data, such as compute metrics.\" / p. 408: \"routine disclosures of factual, operational data are unlikely to violate the First Amendment under Zauderer. But where reporting requires subjective assessments or burdensome technical changes, courts may apply heightened scrutiny.\" / p. 410: \"Were Amazon, Microsoft, and Google to have to create a backdoor for the government, their assurances to their customers would ring hollow.\" / p. 411: \"a broad encryption backdoor affecting all user accounts would likely not survive a strict scrutiny analysis.\"\n- **Reliability:** Secondary (student Note in a peer-edited law journal); independent.\n- **Relevance to this project:** Item 11; supplies the metric/content line the essay can borrow for \"legibility of compute vs. legibility of the record\"; Clipper parallel must be the author's own, not attributed to Lu.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 360
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2abe6af084e9eb8f872170bd3b6ababe3fc7e2513861bd41731452b25db95626",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/lu-compute-monitoring-jolt.md",
+ "kind": "artifact-page"
+}

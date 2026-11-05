@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/epic-clipper-chip.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b22652974cde24f9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/epic-clipper-chip.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# epic-clipper-chip\n- **URL:** https://archive.epic.org/crypto/clipper/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C49's 'later designated': Reno's announcement that NIST and Treasury would hold the escrowed keys; Skipjack developed by NSA; FIPS 185 Feb 1994.\n- **Key passages:** 'Attorney General Janet Reno announcement that NIST and the Department of the Treasury would be the key escrow holders.'\n- **Reliability:** Secondary index of primary documents (EPIC; advocacy organization, but the facts are documentary).\n- **Relevance to this project:** C49\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d9ec9931d813ca9db873b55dc175fbc5e9a4b13986d73705eafc1f84e57fff79",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/epic-clipper-chip.md",
+ "kind": "artifact-page"
+}

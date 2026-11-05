@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/accessnow-helpline.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "67a11b424df7d321",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/accessnow-helpline.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# accessnow-helpline\n- **URL:** https://www.accessnow.org/help/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C45\n- **What it establishes:** Access Now's Digital Security Helpline today: \"We provide 24/7 technical support for activists, journalists, and human rights defenders around the world\"; \"Our 24/7 services are available with support in ten languages\"; serves civil society groups/activists, media organizations/journalists/bloggers, human rights defenders; free; responds to all requests within two hours; offers rapid incident response, personalized recommendations, and risk-assessment help.\n- **Key passages:** as quoted above.\n- **Reliability:** Primary (organization's own service page).\n- **Relevance to this project:** C45 — 24/7 incident-response element and constituency.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 94
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1b1d72647d7239b8698cbf848051f4a360e1685402f0f2da355bde992c25a6c2",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/accessnow-helpline.md",
+ "kind": "artifact-page"
+}

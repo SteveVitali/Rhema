@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hrw-open-letter-transparency-bill-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0276f8d616f33566",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hrw-open-letter-transparency-bill-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hrw-open-letter-transparency-bill-2025\n- **URL:** https://www.hrw.org/news/2025/05/23/open-letter-hungarian-bill-entitled-transparency-public-life · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C40\n- **What it establishes:** The \"Transparency of Public Life\" bill was submitted May 13, 2025 by a Fidesz MP. It would have let the Sovereignty Protection Office propose lists of organizations using foreign funding to \"influence public life\" (final listing by government decree), cut listed groups off from the 1% tax-donation scheme, subject their foreign funding to bank/tax-authority scrutiny with possible transfers of funds to state accounts, and allow listing \"through normative decrees without judicial review.\" Civil society nicknamed it \"Operation Starve and Strangle\"; 350+ organizations signed. (Reuters, May 2025, per search: bill submitted May 14 to parliament \"would draft a list of organisations that get foreign funding and restrict or even shut them down if deemed to threaten Hungary's sovereignty and its culture.\" The bill was later shelved/never adopted before Fidesz lost the April 2026 election.)\n- **Key passages:** as summarized above; the letter calls the bill \"a stark warning\" ahead of the 2026 elections.\n- **Reliability:** Secondary (joint NGO open letter hosted by HRW); the bill's mechanics as characterized by its opponents — corroborated by ECNL, Amnesty EU, JURIST coverage per 2026-08-20 search.\n- **Relevance to this project:** C40(b) — the 2025 foreign-funding listing/restriction bill.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 205
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b3e646fd5a39b4aa28674c002a6230bca009c3d72f315f23f4e44a30a900dc6c",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/hrw-open-letter-transparency-bill-2025.md",
+ "kind": "artifact-page"
+}

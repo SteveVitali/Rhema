@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/orrick-state-chatbot-laws-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ff94bdca3a8efcf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/orrick-state-chatbot-laws-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# orrick-state-chatbot-laws-2026\n- **URL:** https://www.orrick.com/en/Insights/2026/04/2026-State-Chatbot-Laws-Key-Provisions-and-Regulatory-Trends · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** In-force US state chatbot laws (CA SB 243 eff. 1 Jan. 2026; NY eff. 5 Nov. 2025; TN SB 1580 eff. 1 July 2026; CO eff. 30 June 2026; OR/WA/NE/ID 2027) impose disclosure, crisis protocols and minor protections; no identity verification, retention or government-reporting mandate recorded (C15).\n- **Key passages:** laws establish \"transparency and safety protocols — including for youth safety.\"\n- **Reliability:** Secondary (law-firm survey, Apr. 2026).\n- **Relevance to this project:** C15.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 86
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a76dddd10ed34f8456d026802d49aa0049fa48c731ab2144f04eaae32d542cde",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/orrick-state-chatbot-laws-2026.md",
+ "kind": "artifact-page"
+}

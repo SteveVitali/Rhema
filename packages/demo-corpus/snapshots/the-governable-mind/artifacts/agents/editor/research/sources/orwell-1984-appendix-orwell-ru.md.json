@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/orwell-1984-appendix-orwell-ru.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a0a0d380b41ce985",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/orwell-1984-appendix-orwell-ru.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# orwell-1984-appendix-orwell-ru\n- **URL:** https://www.orwell.ru/library/novels/1984/english/en_app · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C59 verbatim.\n- **Key passages:** 'a heretical thought … should be literally unthinkable, at least so far as thought is dependent on words.'\n- **Reliability:** Primary text, unofficial mirror.\n- **Relevance to this project:** C59\n",
+  "meters": {
+   "readMin": 1,
+   "words": 48
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d522497f59a4a6f9617b0ef90ec65e8edb5623b6b9fa3e7df2fa6920ea396bff",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/orwell-1984-appendix-orwell-ru.md",
+ "kind": "artifact-page"
+}

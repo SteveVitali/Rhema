@@ -1,0 +1,70 @@
+{
+ "dto": {
+  "chip": {
+   "addressed": 6,
+   "open": 1
+  },
+  "drafts": [
+   {
+    "answered": true,
+    "claimsPendingVerification": false,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "v1",
+    "frozen": true,
+    "frozenAt": "2026-11-04T00:00:00.000Z",
+    "label": "v1",
+    "n": 1,
+    "obligations": {
+     "addressed": 6,
+     "open": 1
+    },
+    "origin": "drafted_from_outline",
+    "reviewed": true,
+    "state": "frozen",
+    "words": 10799
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "v2",
+    "frozen": true,
+    "frozenAt": "2026-11-04T00:00:00.000Z",
+    "label": "v2",
+    "n": 2,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "response_to_review",
+    "reviewed": false,
+    "state": "frozen",
+    "words": 14012
+   },
+   {
+    "answered": false,
+    "claimsPendingVerification": true,
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "draftId": "published",
+    "frozen": false,
+    "frozenAt": null,
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "n": 3,
+    "obligations": {
+     "addressed": 0,
+     "open": 0
+    },
+    "origin": "imported",
+    "reviewed": false,
+    "state": "working",
+    "words": 14004
+   }
+  ],
+  "outline": null,
+  "workingN": 3
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "",
+ "kind": "versions"
+}

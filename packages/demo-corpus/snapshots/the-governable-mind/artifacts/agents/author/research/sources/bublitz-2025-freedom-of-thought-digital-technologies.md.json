@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/bublitz-2025-freedom-of-thought-digital-technologies.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "06f1418f316ca5d8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/bublitz-2025-freedom-of-thought-digital-technologies.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bublitz-2025-freedom-of-thought-digital-technologies\n- **URL:** https://link.springer.com/article/10.1007/s12142-025-00751-0 (read via the cookie-redirect variant of the same page) and https://api.crossref.org/works/10.1007/s12142-025-00751-0 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C16\n- **What it establishes:** Jan Christoph Bublitz, \"Freedom of Thought and Digital Technologies: Operationalizing State Obligations for Social Media, Virtual Reality, and Neurotechnology,\" *Human Rights Review* 26(4): 313–336 (published online 22 November 2025), doi 10.1007/s12142-025-00751-0, open access CC BY. Exists; title exact. It distils \"ten core aspects\" of the right (listed in the article as: thinking for oneself; freedom from external influence; ability to think independently; free thinking; critical thinking; rational thought or reasoning; freedom to seek and see the truth; freedom of choice / free decision-making; higher-level or meta-control over thought; privacy of thought) and applies them to neurotechnology, VR and social media. It does argue that the right has had little practical application and that interference with, or reading of, thought \"seemed largely impossible\" until recently, but it does **not** use the words \"underdeveloped\" or \"inaccessible\"; the \"mind was inaccessible\" gloss is the essay's paraphrase.\n- **Key passages:** Abstract: \"Freedom of thought is among the strongest human rights, yet it is largely devoid of practical legal application.\" Introduction: \"Freedom of thought is one of the strongest yet least understood human rights.\" Section \"Legal Doctrinal Challenges\": \"Interferences with freedom of thought were traditionally imagined as powerful measures with severe impacts such as brainwashing, indoctrination, coercing people to renounce their beliefs; changing thought, belief, and desires against someone's will without such overwhelming means seemed largely impossible.\" Aspect 10, privacy of thought: \"It entails that unexpressed or unmanifested thought of persons should not be revealed against their will (e.g., Human Rights Committee, 1993, at 3). For a long time, this was largely impossible and required the use of force or coercion, but modern technologies may provide sophisticated means to do so, e.g. via inferences from biometric signals or digital surveillance\". Abstract: \"Detrimental effects on thought might be conceptualized as risks arising from a digital environment, which may prompt States' obligations to fulfil the enjoyment of the right by securing its factual–in this case, psychological–preconditions.\"\n- **Reliability:** Primary, peer-reviewed, open access. Bublitz is the leading academic proponent of an operational right to freedom of thought (also co-editor of the Palgrave volumes), so the piece advances a programme.\n- **Relevance to this project:** C16; the \"law lagged because the mind was out of reach\" argument. Attribute the *inaccessibility* framing carefully: Bublitz says interference and disclosure \"seemed largely impossible\" without force; Richards (C21) says intellectual privacy was \"underappreciated ... chiefly because it has been difficult ... to monitor or interfere with the thought processes in people's heads.\" The two together support the essay's point; neither alone says \"underdeveloped because inaccessible\" verbatim.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 446
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8632cce57a53c530ca8739ceb8a59ca4dc7fbb7272cd9e1b5a9da290f8d9a477",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/bublitz-2025-freedom-of-thought-digital-technologies.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/firth-rait-ordinance-1643-bho.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "311e659df16379b9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/firth-rait-ordinance-1643-bho.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# firth-rait-ordinance-1643-bho\n- **URL:** https://www.british-history.ac.uk/no-series/acts-ordinances-interregnum/pp184-186 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Primary text of the Ordinance for the Regulating of Printing, 14 June 1643. Confirms both draft quotations verbatim; shows that search/seizure authority was given to the Master and Wardens together with parliamentary officers and the Commons' examiners.\n- **Key passages:** 'unless the same be first approved of and licensed … and entred in the Register Book of the Company of Stationers' / 'to make diligent search in all places, where they shall think meet, for all unlicensed Printing Presses'\n- **Reliability:** Primary (Firth & Rait 1911 edition via BHO).\n- **Relevance to this project:** C47\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "dd83dc64382643a5791fb76fb67e30088ad7bc5d2c430e488e6e121e02a74d2d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/firth-rait-ordinance-1643-bho.md",
+ "kind": "artifact-page"
+}

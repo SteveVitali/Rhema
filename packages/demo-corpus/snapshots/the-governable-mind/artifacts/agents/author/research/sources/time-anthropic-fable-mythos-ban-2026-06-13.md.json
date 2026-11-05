@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/time-anthropic-fable-mythos-ban-2026-06-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a4fb842cba37c2aa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/time-anthropic-fable-mythos-ban-2026-06-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# time-anthropic-fable-mythos-ban-2026-06-13\n- **URL:** https://time.com/article/2026/06/13/anthropic-fable-mythos-ban-US-security/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (who sent the letter; official reaction)\n- **What it establishes:** TIME, June 13, 2026 (Richard Hall). Reports Commerce Secretary Howard Lutnick sent the letter to Dario Amodei \"on Friday\" (= June 12); first application of export controls directly to AI models rather than hardware; access blocked for all customers including Anthropic's own employees; Anthropic disputed the jailbreak justification. Includes a Pentagon CIO quote endorsing the action. No duration or verification detail.\n- **Key passages:**\n  - Anthropic: \"We apologize for this disruption to our customers. We believe this is a misunderstanding.\"\n  - Pentagon CIO Kirsten Davies: \"Some things are simply more important than revenue cycles...America First. Always.\"\n- **Reliability:** Secondary, mainstream press.\n- **Relevance to this project:** Establishes Lutnick-to-Amodei letter and the \"first time applied to models\" framing.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 134
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3eacdd5b810b465f673dd475502bf3d9ddf30759310d073ca4318ce4c0b900ba",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/time-anthropic-fable-mythos-ban-2026-06-13.md",
+ "kind": "artifact-page"
+}

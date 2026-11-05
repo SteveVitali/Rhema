@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/sep-spinoza-nadler.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "985fb2f873437b52",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/sep-spinoza-nadler.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-spinoza-nadler\n- **URL:** https://plato.stanford.edu/entries/spinoza/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C56\n- **What it establishes:** Steven Nadler, \"Baruch Spinoza,\" *Stanford Encyclopedia of Philosophy* (revision dated 8 November 2023). Confirms the TTP was published anonymously in 1670. The entry does not mention the 1674 ban (that is documented elsewhere; see the James and Gordon review notes).\n- **Key passages:**\n  - \"he put it aside to complete his 'scandalous' Theological-Political Treatise, published anonymously and to great alarm in 1670 (one overwrought critic called it 'a book forged in hell by the devil himself').\"\n- **Reliability:** Secondary, scholarly (SEP; Nadler is Spinoza's leading Anglophone biographer).\n- **Relevance to this project:** C56 (anonymous 1670 publication).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "91c1840e3c4cb8500339e6a7a618cf639692ae3831c300274cae818e54974566",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/sep-spinoza-nadler.md",
+ "kind": "artifact-page"
+}

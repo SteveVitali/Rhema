@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-lodewijk-meyer.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4846c30274491c28",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-lodewijk-meyer.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-lodewijk-meyer\n- **URL:** https://en.wikipedia.org/wiki/Lodewijk_Meyer · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C56 (lead only)\n- **What it establishes:** Tertiary statement that Meyer's *Philosophia S. Scripturae Interpres* \"had been banned by the Court of Holland together with Spinoza's Tractatus Theologico-Politicus in 1674.\" Web-search snippets (Brill's *Quaerendo* article on the Dutch TTP translations, not openable — 403) add that the same 19 July 1674 placard covered Hobbes's *Leviathan* and the *Bibliotheca Fratrum Polonorum*; I could not open that article, so treat the co-banned list as unverified.\n- **Key passages:**\n  - \"which had been banned by the Court of Holland together with Spinoza's Tractatus Theologico-Politicus in 1674.\"\n- **Reliability:** Tertiary; lead only. The \"Court of Holland\" (Hof van Holland) vs \"States of Holland\" wording differs between sources: the States recommended, the Court issued the placard (consistent with Gordon's \"officials of the Dutch court carried out the recommendation of the States of Holland\").\n- **Relevance to this project:** C56 — only if the essay wants the detail that the TTP was banned alongside *Leviathan*; that detail needs a further source before use.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 173
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "798f907f209a23d6baa1a687fef4fed2b85c4fbdae0f7ca77634776b8beed66d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-lodewijk-meyer.md",
+ "kind": "artifact-page"
+}

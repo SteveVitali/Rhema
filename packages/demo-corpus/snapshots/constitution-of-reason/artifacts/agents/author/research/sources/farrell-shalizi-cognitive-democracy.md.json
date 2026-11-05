@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/farrell-shalizi-cognitive-democracy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8ce17ec56f37003e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/farrell-shalizi-cognitive-democracy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# farrell-shalizi-cognitive-democracy\n- **URL:** https://bactra.org/weblog/917.html · **Accessed:** 2026-07-30 · **For:** v2→v3; nearest ancestor of the synthesis (Major issue 2)\n- **What it establishes:** Farrell & Shalizi, \"Cognitive Democracy\" (2012). Markets, hierarchies, and democracies compared *as information-processing institutions*: markets convey scarcity through prices but homogenize contact between modes of life; hierarchies suppress upward information flow (power blocks honest feedback); democracy combines cognitive diversity with equality and direct exposure of viewpoints. Uses Mercier–Sperber exactly as the draft does: \"when one is alone or with people who hold similar views, one's arguments will not be critically evaluated… in arguments among people who disagree but have a common interest in the truth, the confirmation bias contributes to an efficient form of division of cognitive labor.\" Persistent dissenting minorities (Nemeth) improve group problem-solving; network structure findings — too-fast convergence destroys productive diversity.\n- **Reliability:** primary (essay full text at Shalizi's mirror).\n- **Relevance:** The closest single ancestor of the essay's core synthesis (institutions-as-cognitive-architectures + interactionist reasoning + dissent preservation), minus the AI application and the Logos. Cite in §V at the Mercier–Sperber deployment or §IV. Their fast-convergence/network point also independently supports the essay's preserved-alternatives claim.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 185
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "75103f245fbcb6a8d83ad08b3dd9c94508c012d032e26772336e55e13abc7b3b",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/farrell-shalizi-cognitive-democracy.md",
+ "kind": "artifact-page"
+}

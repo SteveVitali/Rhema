@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eff-ssd-security-plan.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6f7fb5feb7409bab",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eff-ssd-security-plan.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-ssd-security-plan\n- **URL:** https://ssd.eff.org/module/your-security-plan · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C43\n- **What it establishes:** EFF Surveillance Self-Defense frames security around individual security plans/threat models, not universal configurations.\n- **Key passages:**\n  - \"Security isn't just about the tools you use or the software you download. It begins with understanding the unique threats you face and how you can counter those threats.\"\n  - \"there is no perfect option for security\" ... \"your risk assessment will allow you to plan the right strategy for you, balancing convenience, cost, and privacy.\"\n  - Core questions: \"What do I want to protect?\"; \"Who do I want to protect it from?\"; \"How bad are the consequences if I fail?\"; \"How likely is it that I will need to protect it?\"; \"How much trouble am I willing to go through to try to prevent potential consequences?\"; \"Who are my allies?\"\n  - \"assessing risks is both a personal and a subjective process.\"\n- **Reliability:** Primary for what EFF's guidance says (EFF's own resource).\n- **Relevance to this project:** C43(a) — threat-model framing.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 167
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a433fe5f0384e617f240f7e523cf21e15f57eb23a4ee2e68bdc6c70f76241c8f",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/eff-ssd-security-plan.md",
+ "kind": "artifact-page"
+}

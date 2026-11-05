@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/milton-areopagitica-gutenberg-608.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bd1db6fd950cf622",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/milton-areopagitica-gutenberg-608.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# milton-areopagitica-gutenberg-608\n- **URL:** https://www.gutenberg.org/cache/epub/608/pg608.txt · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C8, C55\n- **What it establishes:** Modernized-spelling *Areopagitica* (Project Gutenberg #608). Used for Milton's own paraphrase of the 1643 Order and for his statement of the pamphlet's aim. (Gutenberg prints \"warfaring Christian\" where Wikisource's 1644 transcription has \"wayfaring.\")\n- **Key passages:**\n  - \"by judging over again that Order which ye have ordained to regulate printing:--that no book, pamphlet, or paper shall be henceforth printed, unless the same be first approved and licensed by such, or at least one of such, as shall be thereto appointed.\"\n  - \"this Order avails nothing to the suppressing of scandalous, seditious, and libellous books, which were mainly intended to be suppressed.\"\n  - \"till the very time that this project of licensing crept out of the Inquisition, was catched up by our prelates, and hath caught some of our presbyters.\"\n  - \"ye must repeal and proscribe all scandalous and unlicensed books already printed and divulged\"\n- **Reliability:** Primary text, modernized spelling; use Wikisource 1644 for exact quotation.\n- **Relevance to this project:** C8, C55 — Milton's summary of what the Licensing Order required (pre-publication approval by appointed licensers).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 185
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5cce60804ccb0bed6602e7af98632ac6b88dd1afad6fea29574a0cd3c741d01e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/milton-areopagitica-gutenberg-608.md",
+ "kind": "artifact-page"
+}

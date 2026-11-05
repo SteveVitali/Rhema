@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/iris-merlin-sovereign-internet-law-2019.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6ad2ea3128bf9f2e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/iris-merlin-sovereign-internet-law-2019.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iris-merlin-sovereign-internet-law-2019\n- **URL:** https://merlin.obs.coe.int/article/8603 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C56: Federal Law 90-FZ signed 1 May 2019; in force 1 Nov 2019 (with exceptions); ISPs must install DPI devices; Roskomnadzor controls; rationale = operating independently in an emergency or foreign threat.\n- **Key passages:** 'signed by President Vladimir Putin on 1 May 2019' / 'enters into force on 1 November 2019 (with the exception of some provisions)'\n- **Reliability:** Secondary (Council of Europe legal observatory).\n- **Relevance to this project:** C56\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6102c342314b54431741a051194c5d5d30a3e09c311894e1bc1afc7677e613a3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/iris-merlin-sovereign-internet-law-2019.md",
+ "kind": "artifact-page"
+}

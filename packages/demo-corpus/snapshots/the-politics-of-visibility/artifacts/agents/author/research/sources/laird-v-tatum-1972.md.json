@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/laird-v-tatum-1972.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e96267b662c7e5e5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/laird-v-tatum-1972.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# laird-v-tatum-1972\n- **URL:** https://tile.loc.gov/storage-services/service/ll/usrep/usrep408/usrep408001/usrep408001.pdf (Library of Congress scan of U.S. Reports vol. 408; Justia mirror at https://supreme.justia.com/cases/federal/us/408/1/ was 403-blocked) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, doctrinal anchor: courts' refusal to treat surveillance-chill as cognizable injury\n- **What it establishes:** *Laird v. Tatum*, 408 U.S. 1 (1972) (Burger, C.J., 5–4; Douglas, J., dissenting, joined by Marshall; Brennan, J., dissenting, joined by Stewart and Marshall) held that plaintiffs alleging their First Amendment exercise was chilled by the *mere existence* of the Army's domestic surveillance/data-gathering program on civilian political activity had no justiciable claim — subjective chill is not an injury absent specific present objective harm or a threatened specific future harm. The key doctrinal wall the essay's argument runs into (and around): the harm of being watched, as such, is invisible to Article III.\n- **Key passages:** (verbatim from U.S. Reports text)\n  - Issue as framed by the Court (408 U.S. at 10): \"whether the jurisdiction of a federal court may be invoked by a complainant who alleges that the exercise of his First Amendment rights is being chilled by the mere existence, without more, of a governmental investigative and data-gathering activity that is alleged to be broader in scope than is reasonably necessary for the accomplishment of a valid governmental purpose.\" (The Court concludes the Court of Appeals \"decided that issue incorrectly.\")\n  - The respondents' theory, restated by the Court (408 U.S. at 13): \"their claim, simply stated, is that they disagree with the judgments made by the Executive Branch with respect to the type and amount of information the Army needs and that the very existence of the Army's data-gathering system produces a constitutionally impermissible chilling effect upon the exercise of their First Amendment rights.\" (Note: OCR of the scan shows minor artifacts, e.g. \"sim-ply staed\"; wording above is the corrected standard text — punctuation verified in context.)\n  - THE key sentence (408 U.S. at 13–14): \"Allegations of a subjective 'chill' are not an adequate substitute for a claim of specific present objective harm or a threat of specific future harm; 'the federal courts established pursuant to Article III of the Constitution do not render advisory opinions.' United Public Workers v. Mitchell, 330 U.S. 75, 89 (1947).\"\n  - Facts: Army Intelligence collected information about public civilian political activity with \"potential for civil disorder,\" reported through Fort Holabird, stored in a computer data bank; principal sources \"the news media and publications in general circulation\" (search-level phrasing from syllabus/opinion at 408 U.S. at 6; verify before print quotation).\n- **Reliability:** Primary (Library of Congress scan of the official U.S. Reports; the key sentence checked verbatim in context). 5–4 decision; Douglas's dissent is famous counter-material (\"this case is a cancer in the body politic\" — search-level; verify before print quotation).\n- **Relevance to this project:** The essay's foil: constitutional doctrine that refuses to see chilled self-government as harm unless individualized and objective. Pairs with clapper-v-amnesty-2013 (which extends the same logic to standing against secret surveillance) — together they show why domination-style harms are doctrinally homeless, which is the gap the republican non-domination frame (pettit-non-domination-sep) fills. Cite as: Laird v. Tatum, 408 U.S. 1, 13–14 (1972).\n",
+  "meters": {
+   "readMin": 2,
+   "words": 515
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "01bb68687874b4d9248051c829366120991e32ea949984183a97aeedf3bcd3b0",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/laird-v-tatum-1972.md",
+ "kind": "artifact-page"
+}

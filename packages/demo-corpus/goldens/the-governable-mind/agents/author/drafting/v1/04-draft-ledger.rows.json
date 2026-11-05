@@ -1,0 +1,141 @@
+{
+ "rows": [
+  {
+   "actual": 731,
+   "budget": 800,
+   "hash": "0",
+   "note": "verified",
+   "ordinal": 0,
+   "title": "The Double Revelation"
+  },
+  {
+   "actual": 1292,
+   "budget": 1150,
+   "hash": "I",
+   "note": "verified",
+   "ordinal": 1,
+   "title": "The Sanctuary of Conscience"
+  },
+  {
+   "actual": 728,
+   "budget": 700,
+   "hash": "II",
+   "note": "verified",
+   "ordinal": 2,
+   "title": "The Mind Was Never Entirely Inside the Skull"
+  },
+  {
+   "actual": 1085,
+   "budget": 1000,
+   "hash": "III",
+   "note": "verified",
+   "ordinal": 3,
+   "title": "The Externalized Forum Internum"
+  },
+  {
+   "actual": 711,
+   "budget": 650,
+   "hash": "IV",
+   "note": "verified",
+   "ordinal": 4,
+   "title": "Three Liberties"
+  },
+  {
+   "actual": 701,
+   "budget": 800,
+   "hash": "V",
+   "note": "verified",
+   "ordinal": 5,
+   "title": "The State, the Corporation, and the Right of Exit"
+  },
+  {
+   "actual": 987,
+   "budget": 900,
+   "hash": "VI",
+   "note": "verified",
+   "ordinal": 6,
+   "title": "The Chokepoint"
+  },
+  {
+   "actual": 676,
+   "budget": 700,
+   "hash": "VII",
+   "note": "verified",
+   "ordinal": 7,
+   "title": "From Behavioral Legibility to Cognitive Legibility"
+  },
+  {
+   "actual": 697,
+   "budget": 650,
+   "hash": "VIII",
+   "note": "verified",
+   "ordinal": 8,
+   "title": "The Authoritarian Archive"
+  },
+  {
+   "actual": 771,
+   "budget": 850,
+   "hash": "IX",
+   "note": "verified",
+   "ordinal": 9,
+   "title": "Orwell After Orwell"
+  },
+  {
+   "actual": 835,
+   "budget": 850,
+   "hash": "X",
+   "note": "verified",
+   "ordinal": 10,
+   "title": "The Hard Case: A Machine Is Not a Book"
+  },
+  {
+   "actual": 532,
+   "budget": 550,
+   "hash": "XI",
+   "note": "verified",
+   "ordinal": 11,
+   "title": "The Layers of the Machine"
+  },
+  {
+   "actual": 690,
+   "budget": 750,
+   "hash": "XII",
+   "note": "verified",
+   "ordinal": 12,
+   "title": "The Constitutional Test"
+  },
+  {
+   "actual": 328,
+   "budget": 450,
+   "hash": "XIII",
+   "note": "verified",
+   "ordinal": 13,
+   "title": "The Public-Private Cognitive-Security Complex"
+  },
+  {
+   "actual": 382,
+   "budget": 500,
+   "hash": "XIV",
+   "note": "verified",
+   "ordinal": 14,
+   "title": "Permissioned Cognition"
+  },
+  {
+   "actual": 301,
+   "budget": 400,
+   "hash": "XV",
+   "note": "verified",
+   "ordinal": 15,
+   "title": "Cognitive Federalism"
+  },
+  {
+   "actual": 347,
+   "budget": 400,
+   "hash": "—",
+   "note": "verified",
+   "ordinal": 16,
+   "title": "The Last Private Domain"
+  }
+ ],
+ "version": 1
+}

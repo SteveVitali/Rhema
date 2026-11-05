@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/clegg-2014-tudor-literary-censorship-oxford-handbooks.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ce54adab4ba3538c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/clegg-2014-tudor-literary-censorship-oxford-handbooks.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# clegg-2014-tudor-literary-censorship-oxford-handbooks\n- **URL:** https://academic.oup.com/edited-volume/43514/chapter/364252768 (DOI 10.1093/oxfordhb/9780199935338.013.9; Crossref record https://api.crossref.org/works/10.1093/oxfordhb/9780199935338.013.9) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C29\n- **What it establishes:** The chapter exists: Cyndia Susan Clegg, 'Tudor Literary Censorship', Oxford Handbooks Online (Oxford Handbook Topics in Literature), Oxford University Press, published online 2 Oct 2014. Verified by Crossref metadata and by resolving the DOI, which 302-redirects to exactly the outline's chapter URL. The OUP page itself returned 403 / navigation-only in every attempt, so the abstract could NOT be read.\n- **Key passages:** None readable. A search-engine snippet of the OUP page reads: the chapter 'considers William Baldwin's Mirror for Magistrates, George Gascoigne's Poesies, and Edmund Spenser's Faerie Queene within the wider contexts of Tudor censorship practices' — snippet only, not verified on the page; do not quote as the abstract. Clegg's underlying thesis is quoted secondhand in Deazley 2008 (see that note).\n- **Reliability:** Secondary, scholarly (OUP handbook); Clegg is the leading revisionist on Tudor press censorship. Metadata verified; content unverified.\n- **Relevance to this project:** C29: author/title/venue settled; the 'not merely a censoring organ' point should be attributed to Clegg's monographs via Deazley, or the author should obtain the chapter through a library.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 192
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cde34bbb423e39b74340c04d9328ea293d93a4bb0aae9d3c7826856d751c6173",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/clegg-2014-tudor-literary-censorship-oxford-handbooks.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/brennan-patel-antifascism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "10883b4d8e75910e",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "a873c34f67ea18ce",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "486f9ba96ab1868c",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/brennan-patel-antifascism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Patel (Brennan Center), \"Trump's Orders Targeting Anti-Fascism Aim to Criminalize Opposition\" (2025)\n\n- **URL:** https://www.brennancenter.org/our-work/research-reports/trumps-orders-targeting-antifascism-aim-criminalize-opposition\n- **Accessed:** 2026-08-21\n- **Author/date:** Faiza Patel, Oct. 9, 2025.\n\n**Establishes:** The strongest legal-advocacy critique of the Antifa EO + NSPM-7: no factual predicate for an organized conspiracy; the ideological categories sweep in \"labor organizers, socialists, many libertarians, those who criticize Christianity, pro-immigration groups, anti-ICE protestors, and racial justice and transgender activists\"; concrete material-support hypotheticals (\"Buying a sandwich for an activist... could all potentially be considered material support\"); predicts court challenges \"will likely meet with success.\" The draft cites Brennan only for ICE budget figures; this report is the closer neighbor to §V-§VI.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 105
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a5c4bedafe534c65fbe366213646db806d298d4181b1832bfcbee37163943b54",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/brennan-patel-antifascism.md",
+ "kind": "artifact-page"
+}

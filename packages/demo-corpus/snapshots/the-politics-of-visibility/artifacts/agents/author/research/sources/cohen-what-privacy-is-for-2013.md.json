@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cohen-what-privacy-is-for-2013.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "171477ebbca2c6ff",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "dbea7fa1bf68c721",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/cohen-what-privacy-is-for-2013.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cohen-what-privacy-is-for-2013\n\n- **URL:** https://www.juliecohen.com/attachments/File/CohenWhatPrivacyIsFor.pdf (author's own site; full PDF verified) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, accurate citation of the strongest prior statement of the surveillance-vs-liberal-democracy incompatibility thesis\n- **What it establishes:** Cohen's argument that privacy is not a static individualist good but \"breathing room\" for dynamic, socially constructed subjectivity; that surveillance (public and private) works by \"modulation\" toward rendering people \"fixed, transparent, and predictable\"; and — crucially — the flat structural claim that unchecked surveillance infrastructures are incompatible with liberal democracy itself (and, separately, with innovation). If the essay asserts surveillance–democracy incompatibility, Cohen said it first and categorically.\n- **Key passages:** (verified verbatim against the PDF, 126 Harv. L. Rev. 1904 (2013); PDF-extraction spacing normalized)\n  - \"Fixed, transparent, and predictable\" (p. 1905): \"Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable. It protects the situated practices of boundary management through which the capacity for self-determination develops.\"\n  - Breathing room (p. 1906): \"Privacy is shorthand for breathing room to engage in the processes of boundary management that enable and constitute self-development. So understood, privacy is fundamentally dynamic.\" (Related, p. 1908: privacy regulation \"must preserve breathing room for practices of boundary management by situated subjects.\")\n  - The democracy sentence (p. 1912): \"But a liberal democratic society cannot sustain itself without citizens who possess the capacity for democratic self-government. A society that permits the unchecked ascendancy of surveillance infrastructures cannot hope to remain a liberal democracy. Under such conditions, liberal democracy as a form of government is replaced, gradually but surely, by a different form of government that I will call modulated democracy because it relies on a form of surveillance that operates by modulation.\"\n  - Innovation twin (pp. 1918–19): \"A society that permits the unchecked ascendancy of surveillance infrastructures, which dampen and modulate behavioral variability, cannot hope to maintain a vibrant tradition of cultural and technical innovation.\" (Note: two near-identical \"unchecked ascendancy\" sentences exist — the p. 1912 one ends \"remain a liberal democracy,\" the p. 1918–19 one ends with the innovation clause. Quote the right one.)\n- **Reliability:** Primary source (the article itself, hosted by the author); Harvard Law Review symposium piece; Cohen (Georgetown) is a leading theorist of privacy and informational capitalism. Independent.\n- **Relevance to this project:** Bears on any \"surveillance is incompatible with democracy\" thesis statement, on self-formation/\"becoming\" arguments for privacy, and on claims about behavioral standardization/predictability as the mechanism of harm. The essay's version of the incompatibility claim should be positioned relative to Cohen's categorical formulation.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 416
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "93ecdc9f7f1d76446bac305856fe4c83b4c9d705b23dab4dd77102c2b24d489f",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/cohen-what-privacy-is-for-2013.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/seger-open-sourcing-highly-capable-2023.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "71dd1581a5a18c50",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/seger-open-sourcing-highly-capable-2023.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# seger-open-sourcing-highly-capable-2023\n- **URL:** https://arxiv.org/abs/2311.09227 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Seger et al. (GovAI), Nov 2023 (abstract read): risks of open-sourcing highly capable models may outweigh benefits; cannot be recalled; safeguards removable; should not be open-sourced at least initially; staged release and structured access; benefits acknowledged.\n- **Key passages:** \"Highly capable foundation models should not be open-sourced, at least not initially.\" · \"enabling external oversight, accelerating progress, and decentralizing control over AI development and use.\"\n- **Reliability:** Primary; GovAI; safety-aligned.\n- **Relevance to this project:** §4(a) irreversibility; §3 item 10.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ef034adc53ade85a1591492281112f6d562de008ea41693618e5a488bb38d480",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/seger-open-sourcing-highly-capable-2023.md",
+ "kind": "artifact-page"
+}

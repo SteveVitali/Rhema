@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/converse-1964-belief-systems.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c505fa160cf2ca7b",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "e498cd7a5a3675f7",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/converse-1964-belief-systems.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# converse-1964-belief-systems\n\n- **URL:** https://web.ics.purdue.edu/~hoganr/Soc%20312/The%20nature%20of%20belief%20systems%20in%20mass%20publics%201964.pdf (PDF read) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Converse 1964: a belief system is a configuration of attitudes \"bound together by some form of constraint or functional interdependence.\" Mass publics show little constraint: only a tiny minority (on the order of a few percent) genuinely use liberal-conservative abstractions as organizing principles; most reason via group benefits or \"nature of the times\"; panel reinterviews reveal \"non-attitudes\" — unstable, near-random responses. \"The mass public does not appear to have developed a capacity for utilizing the ideological abstractions frequently found in elite political discourse.\"\n- **Key passages:** As quoted.\n- **Reliability:** Primary (full text); foundational and contested-but-durable in public-opinion research.\n- **Relevance to this project:** The strongest objection to the draft's ambition of a *public* five-axis vocabulary: if most citizens cannot deploy one dimension with constraint, five dimensions plus metadata is a vocabulary for analysts, not publics. The draft's §VIII citation of heuristic left-right inference implicitly concedes Converse's world but never confronts the implication for its own proposal's audience. Mitigation available: the draft's real users are discourse producers (journalists, essayists, analysts), and vocabularies trickle down; but the draft should say so.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 194
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f161737d3f659a74b9a8c13ddf3cc0dba4a933b22b546b9e7c6a8f922e227ad5",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/converse-1964-belief-systems.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "alt": "figure_2_ches_correlations_v2",
+  "assetUri": "/bff/demo/asset/structure-of-political-difference/drafts/figures/figure_2_ches_correlations_v2.png",
+  "caption": "",
+  "demo": {
+   "notRecorded": [
+    "spec",
+    "svg",
+    "run_provenance",
+    "caption",
+    "source_line"
+   ]
+  },
+  "id": "figure_2_ches_correlations_v2",
+  "provenance": "imported",
+  "sourceLine": "",
+  "specKind": "image",
+  "title": "figure_2_ches_correlations_v2",
+  "versions": [
+   {
+    "label": "imported",
+    "n": 1
+   }
+  ]
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "figure_2_ches_correlations_v2",
+ "kind": "figure-image"
+}

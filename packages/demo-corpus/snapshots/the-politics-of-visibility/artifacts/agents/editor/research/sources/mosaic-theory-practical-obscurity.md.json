@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mosaic-theory-practical-obscurity.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fa92694c36d7de4a",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "abf7a5219ef6a691",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "66bfbb114835702a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/mosaic-theory-practical-obscurity.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Doctrine check: mosaic theory & practical obscurity\n\n- **URLs (search-level, verbatim doctrine confirmed in results):** Kerr, \"The Mosaic Theory of the Fourth Amendment,\" 111 Mich. L. Rev. 311 (2012), https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2032821; United States v. Maynard (D.C. Cir. 2010) via https://en.wikipedia.org/wiki/Mosaic_theory_of_the_Fourth_Amendment; DOJ v. Reporters Committee, 489 U.S. 749 (1989) via https://www2.archivists.org/glossary/citation/the-term-practical-obscurity-first-appears-in-us-dept-of-justice-v-reporters-commi and https://supreme.justia.com/cases/federal/us/489/749/; Hartzog & Selinger, \"Surveillance as Loss of Obscurity\" located at https://scholarship.law.bu.edu/cgi/viewcontent.cgi?article=4034&context=faculty_scholarship (not fetched)\n- **Accessed:** 2026-08-21\n\n**Establishes:** Two existing terms of art the draft re-derives without naming. (1) Mosaic theory: aggregated data points, individually unprotected, become a Fourth Amendment \"search\" as a whole because the mosaic \"reveals a great deal about a person's life, even if each piece... reveal[s] little in isolation\" — this IS the draft's §IV combinatorial claim and §XV's \"facts politically intelligible that were harmless apart.\" (2) \"Practical obscurity\" (Reporters Committee, 1989): the Supreme Court's own name for the privacy that inheres in information being hard to compile — the direct doctrinal ancestor of the draft's \"practical opacity.\" Both are gifts: they give §XV constitutional pedigree, at the price of the novelty claim.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 175
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d62a0c5bbc1d8f3ec312c7ea9b9a16d86381c756a061c991781a18c4c8f9ca18",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/mosaic-theory-practical-obscurity.md",
+ "kind": "artifact-page"
+}

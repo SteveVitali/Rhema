@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kambhamettu-traceable-text-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0b656a26451372a1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/kambhamettu-traceable-text-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kambhamettu-traceable-text-2024\n- **URL:** https://arxiv.org/abs/2409.13099 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Kambhamettu, Flores & Head, \"Traceable Text: Deepening Reading of AI-Generated Summaries with Phrase-Level Provenance Links\" (Sept. 19, 2024): \"As AI-generated summaries proliferate, how can we help people understand the veracity of those summaries? ... we design a simple interaction primitive, traceable text, to support critical examination of generated summaries and the source texts they were derived from.\" Usability study on medical records.\n- **Key passages:** as quoted.\n- **Reliability:** Primary (HCI preprint).\n- **Relevance to this project:** Agenda 8: an engineering predecessor to \"can a person get to the document the summary was made from\" (l.254), framed as interface design.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 113
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0b70c25bcd528d3226cf5391f9cf31497f78f8adaf4800ba45becfad5dbb1558",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/kambhamettu-traceable-text-2024.md",
+ "kind": "artifact-page"
+}

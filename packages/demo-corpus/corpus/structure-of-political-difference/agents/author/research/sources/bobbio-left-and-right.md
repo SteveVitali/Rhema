@@ -1,0 +1,6 @@
+# bobbio-left-and-right
+- **URL:** https://en.wikipedia.org/wiki/Left_and_Right:_The_Significance_of_a_Political_Distinction · **Accessed:** 2026-07-31 · **For:** v1-response — MI6 (the substantive defense of left–right)
+- **What it establishes:** Norberto Bobbio, *Destra e sinistra* (1994); English: *Left and Right: The Significance of a Political Distinction*, trans. Allan Cameron, Polity Press, 1996. Thesis: the left–right distinction is real and enduring, grounded in attitudes toward equality — the left holds "a horizontal or egalitarian conception of society," the right "a vertical or inegalitarian perception of society"; the divide turns on whether inequality is social (removable) or natural (inevitable).
+- **Key passages:** as quoted above.
+- **Reliability:** Secondary (encyclopedia) for a canonical, uncontroversial attribution; do not quote beyond the standard formulations.
+- **Relevance:** v2 §IX (What Left and Right Still Do) engages Bobbio by name: equality-monism cannot score Milei (egalitarian nowhere, yet insurgent + traditional + anti-statist) or the welfare nationalist (egalitarian inside the boundary, inegalitarian at it) without remainder. Related: Gonzalez's egalitarianism defense (see gonzalez-hxa-reply) cites Lukes, not Bobbio.

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cooper-wms-palestine-action.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bc67125405cc9845",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "7be135432d681516",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "9bb24c1d184fa37e",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/cooper-wms-palestine-action.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Cooper, Written Ministerial Statement HCWS729 on proscribing Palestine Action (June 23, 2025)\n\n- **URL:** https://questions-statements.parliament.uk/written-statements/detail/2025-06-23/hcws729 (read in full via web.archive.org mirror)\n- **Accessed:** 2026-08-21 (primary text read)\n\n**Establishes (misrepresentation check):** The government's own case is broader than \"sprayed paint into engines\": a five-year \"nationwide campaign of direct criminal action\" against defence firms and national infrastructure; \"its methods have become more aggressive, with its members demonstrating a willingness to use violence\"; Thales Glasgow 2022 (over GBP 1M damage, staff \"who feared for their safety\"); \"The Underground Manual\" (cells, targets, operational security); and an explicit assurance: \"This decision is specific to Palestine Action and does not affect lawful protest groups and other organisations campaigning on issues around Palestine\" — plus \"The right to peaceful protest is a cornerstone of our democracy. Should Parliament vote to proscribe, that right will be unaffected.\" The draft's §VI should acknowledge the violence/intimidation claims and the assurance — the 92%/s.13 arrest statistics then land harder as the empirical answer to that assurance, not as an omission.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 167
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "70cc54e0038f420d2f0ac0e134ba209de99861f4745881ace076214860b3cf58",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/cooper-wms-palestine-action.md",
+ "kind": "artifact-page"
+}

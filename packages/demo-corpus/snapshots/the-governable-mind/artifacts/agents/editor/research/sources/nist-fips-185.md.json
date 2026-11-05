@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nist-fips-185.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "698549aeed20ba60",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nist-fips-185.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nist-fips-185\n- **URL:** https://csrc.nist.gov/pubs/fips/185/final · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C49 dates: FIPS 185 Escrowed Encryption Standard published Feb 9, 1994; withdrawn Oct 19, 2015; algorithm and LEAF method classified.\n- **Key passages:** 'The algorithm and the LEAF creation method are classified and are referenced, but not specified, in the standard'\n- **Reliability:** Primary (NIST record).\n- **Relevance to this project:** C49\n",
+  "meters": {
+   "readMin": 1,
+   "words": 65
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "99416f1cfccb21177ca7a3f4f60ce9cdc1f4f0f0aced9623f77a3f09f0c4311b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nist-fips-185.md",
+ "kind": "artifact-page"
+}

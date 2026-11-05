@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nybooks-mcginn-williams-review.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9d1d7926ac989da2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nybooks-mcginn-williams-review.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nybooks-mcginn-williams-review\n- **URL:** https://www.nybooks.com/articles/2003/04/10/isnt-it-the-truth/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Bears on C63: McGinn paraphrases Accuracy and Sincerity; no verbatim quotation of the draft's sentence.\n- **Key passages:** (paraphrase only; no quotable sentence matching the draft)\n- **Reliability:** Secondary (review essay).\n- **Relevance to this project:** C63\n",
+  "meters": {
+   "readMin": 1,
+   "words": 49
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ed2e1860f5561dfac68f10371efb1bbd99671b52a8a3595a3359ce1c8abda898",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nybooks-mcginn-williams-review.md",
+ "kind": "artifact-page"
+}

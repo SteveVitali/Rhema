@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/benson-2026-evidence-frame-integrity.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2bd71a246d01023d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/benson-2026-evidence-frame-integrity.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# benson-2026-evidence-frame-integrity\n- **URL:** https://neuralhorizons.substack.com/p/evidence-frame-integrity-when-summaries · **Accessed:** 2026-09-16 (direct curl, 200; JSON-LD datePublished 2026-09-07) · **For:** v2→v3 response round, slice N (item N5)\n- **What it establishes:** A records-management argument that an AI summary stored in a durable system can displace its source as the operative record; recommends that summaries never overwrite sources by default.\n- **Key passages:**\n  - Section heading (it is a HEADING, not a body sentence): \"A summary can become the memory without becoming the truth\"\n  - \"Even a factually good summary can change organisational memory if it is promoted, silently, from a temporary aid into tomorrow's record of what happened.\"\n  - \"The source survives physically and loses practical authority.\"\n  - \"The danger is not deletion alone: a derived representation becomes the default evidentiary object while its derived status fades from view.\"\n  - Recommendation: \"Distinguish the primary source, the derived summary, any human interpretation and the final decision as separate record objects. Do not allow the summary to overwrite the source by default. Require source identity and version, creation time, material transformations and the purpose for which the summary was approved.\"\n- **Reliability:** Secondary/commentary; a single practitioner's Substack (Peter Benson, CEO Neural Horizons Ltd). Useful for the formulation, not as evidence of prevalence. It cites Archives New Zealand and NARA guidance (not opened here).\n- **Relevance to this project:** Eighth question. Citation: Peter Benson, \"Evidence Frame Integrity – When Summaries Become Records,\" Neural Horizons (Substack), Sep 07, 2026.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 230
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2038780dcc6fc28378627a4d29a4d08fb76f11f8814156a47c94c0b012a8f715",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/benson-2026-evidence-frame-integrity.md",
+ "kind": "artifact-page"
+}

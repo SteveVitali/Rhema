@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hungary-2026-election.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "56e61e509edd635b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hungary-2026-election.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hungary-2026-election\n- **URL:** https://en.wikipedia.org/wiki/2026_Hungarian_parliamentary_election and https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz · **Accessed:** 2026-07-31 · **For:** v1-response — verify C23d (Orbán present-tense Misleading)\n- **What it establishes:** April 12, 2026: Péter Magyar's Tisza party defeated Fidesz, ending Orbán's 16-year tenure (in office 2010–2026). Final result (Wikipedia): Tisza 141 of 199 seats (53.18% list vote) — a two-thirds constitutional supermajority; Fidesz–KDNP 52. Al Jazeera election-night figures: 138 seats / 53.6% (early count — prefer \"two-thirds supermajority\" phrasing over an exact seat count, or use final 141). Orbán conceded; Magyar elected PM when the Assembly convened May 9, 2026.\n- **Key passages:** Orbán: \"The responsibility and possibility of governing was not given to us\" (Al Jazeera).\n- **Reliability:** Wikipedia (secondary, current) cross-checked with Al Jazeera contemporaneous reporting; figures agree except early-vs-final seat count.\n- **Relevance:** Confirms editor's C23d verdict. v2 dates the Orbán profile \"in office 2010–2026,\" past tense, and uses the fall (insurgent unseats a consolidated party-state via elections) as live evidence in the System-axis discussion. Cite Al Jazeera in the reference list.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 162
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5ffe1c227296350b56e8e467a504725a7759424fac195a9f280824257e91c9fd",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/hungary-2026-election.md",
+ "kind": "artifact-page"
+}

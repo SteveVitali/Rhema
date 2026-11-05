@@ -1,0 +1,2809 @@
+{
+ "dto": {
+  "sections": [
+   {
+    "advancedRows": [],
+    "key": "drafts",
+    "rows": [
+     {
+      "artifactId": "v1",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "draftRef": {
+       "n": 1,
+       "state": "frozen"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 10799
+     },
+     {
+      "artifactId": "v2",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "draftRef": {
+       "n": 2,
+       "state": "frozen"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 14012
+     },
+     {
+      "artifactId": "published",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "draftRef": {
+       "n": 3,
+       "state": "working"
+      },
+      "editMode": "live_doc",
+      "kind": "draft",
+      "label": "Draft",
+      "level": "SE",
+      "lock": "editable",
+      "provenance": {
+       "actor": "you"
+      },
+      "readOnly": false,
+      "words": 14004
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [],
+    "key": "rounds",
+    "rows": [
+     {
+      "artifactId": "agents/author/drafting/v1/03-claim-ledger.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "claim_ledger",
+      "label": "Claim ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 6354
+     },
+     {
+      "artifactId": "agents/author/ledgers/v1-response-ledger.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_ledger",
+      "label": "Response ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 2689
+     },
+     {
+      "artifactId": "correspondence/v1-drafting-note.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "drafting_note",
+      "label": "Drafting note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 1060
+     },
+     {
+      "artifactId": "correspondence/v1-response.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "response_letter",
+      "label": "Response letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 3343
+     },
+     {
+      "artifactId": "correspondence/v1-review/01-claim-ledger.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "claim_ledger",
+      "label": "Claim ledger",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 8344
+     },
+     {
+      "artifactId": "correspondence/v1-review/02-discourse-report.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "discourse_report",
+      "label": "Discourse report",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 5053
+     },
+     {
+      "artifactId": "correspondence/v1-review/05-second-read.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "second_read",
+      "label": "Second read",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 2133
+     },
+     {
+      "artifactId": "correspondence/v1-review/editors-letter.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "editors_letter",
+      "label": "Editors letter",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 5277
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [],
+    "key": "research",
+    "rows": [
+     {
+      "artifactId": "agents/author/research/index.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "research_note",
+      "label": "Research note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 1527
+     },
+     {
+      "artifactId": "agents/author/research/sources/accessnow-espionage-for-repression-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 224
+     },
+     {
+      "artifactId": "agents/author/research/sources/accessnow-first-10000-cases-2021.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 243
+     },
+     {
+      "artifactId": "agents/author/research/sources/accessnow-helpline.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 94
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-2022-dhs-location-data.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 197
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-2026-dhs-location-data-update.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 200
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-2026-palantir-roundup.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 220
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-galati-testimony-2012.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 177
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-khalil-scotus-review.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 148
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-nypd-surveillance-factsheet.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 139
+     },
+     {
+      "artifactId": "agents/author/research/sources/aclu-nypd-unit-disbanded-2014.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 167
+     },
+     {
+      "artifactId": "agents/author/research/sources/amnesty-2021-pegasus-project.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 194
+     },
+     {
+      "artifactId": "agents/author/research/sources/ap-15-charged-2026-06.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 245
+     },
+     {
+      "artifactId": "agents/author/research/sources/ap-mn-surveillance-2026-08-13.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 511
+     },
+     {
+      "artifactId": "agents/author/research/sources/ap-pulitzer-2012-nypd.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 193
+     },
+     {
+      "artifactId": "agents/author/research/sources/apsa-riaz-bermeo-definition.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 89
+     },
+     {
+      "artifactId": "agents/author/research/sources/arendt-origins-total-domination-scan.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 282
+     },
+     {
+      "artifactId": "agents/author/research/sources/austin-social-legibility-2022.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 298
+     },
+     {
+      "artifactId": "agents/author/research/sources/aviationist-brize-norton-2025-06-20.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 186
+     },
+     {
+      "artifactId": "agents/author/research/sources/balkin-national-surveillance-state-2008.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 702
+     },
+     {
+      "artifactId": "agents/author/research/sources/binney-turnkey-totalitarian-2012.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 441
+     },
+     {
+      "artifactId": "agents/author/research/sources/bogost-warzel-american-panopticon-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 335
+     },
+     {
+      "artifactId": "agents/author/research/sources/brandeis-myers-dissent-1926.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 344
+     },
+     {
+      "artifactId": "agents/author/research/sources/brennan-deportation-industrial-complex.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 183
+     },
+     {
+      "artifactId": "agents/author/research/sources/brussels-signal-spo-vote-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 138
+     },
+     {
+      "artifactId": "agents/author/research/sources/cbs-comey-second-indictment.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 217
+     },
+     {
+      "artifactId": "agents/author/research/sources/cbs-doj-drops-law-firm-eo-appeals.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 238
+     },
+     {
+      "artifactId": "agents/author/research/sources/chatrie-docket-check.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 131
+     },
+     {
+      "artifactId": "agents/author/research/sources/chilling-effects-skeptic-trail.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 853
+     },
+     {
+      "artifactId": "agents/author/research/sources/church-committee-book-ii-1976.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 533
+     },
+     {
+      "artifactId": "agents/author/research/sources/citizenlab-2025-graphite-caught.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 210
+     },
+     {
+      "artifactId": "agents/author/research/sources/clapper-v-amnesty-2013.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 464
+     },
+     {
+      "artifactId": "agents/author/research/sources/clearinghouse-khalil-v-joyce.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 274
+     },
+     {
+      "artifactId": "agents/author/research/sources/clearinghouse-mennonite-v-dhs.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 153
+     },
+     {
+      "artifactId": "agents/author/research/sources/clearinghouse-newsom-v-trump.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 252
+     },
+     {
+      "artifactId": "agents/author/research/sources/clearinghouse-pym-45979.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 298
+     },
+     {
+      "artifactId": "agents/author/research/sources/cohen-what-privacy-is-for-2013.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 416
+     },
+     {
+      "artifactId": "agents/author/research/sources/conversation-2026-chatrie.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 134
+     },
+     {
+      "artifactId": "agents/author/research/sources/crs-lsb10340-domestic-terrorism-considerations.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 240
+     },
+     {
+      "artifactId": "agents/author/research/sources/crs-r46829-domestic-terrorism-federal-criminal-law.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 240
+     },
+     {
+      "artifactId": "agents/author/research/sources/damn-arraignment-pleas-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 276
+     },
+     {
+      "artifactId": "agents/author/research/sources/decrypt-2026-os-investigate.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 193
+     },
+     {
+      "artifactId": "agents/author/research/sources/democracynow-nspm7-link-assertion.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 271
+     },
+     {
+      "artifactId": "agents/author/research/sources/democracynow-puppet-master-2026-08-17.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 329
+     },
+     {
+      "artifactId": "agents/author/research/sources/doj-usao-mn-damn-indictment-2026-06-16.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 364
+     },
+     {
+      "artifactId": "agents/author/research/sources/doj-v-reporters-committee-1989.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 493
+     },
+     {
+      "artifactId": "agents/author/research/sources/eff-2026-chatrie-victory.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 173
+     },
+     {
+      "artifactId": "agents/author/research/sources/eff-ssd-attending-protest.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 178
+     },
+     {
+      "artifactId": "agents/author/research/sources/eff-ssd-mobile-location-tracking.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 170
+     },
+     {
+      "artifactId": "agents/author/research/sources/eff-ssd-problem-mobile-phones.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 142
+     },
+     {
+      "artifactId": "agents/author/research/sources/eff-ssd-security-plan.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 167
+     },
+     {
+      "artifactId": "agents/author/research/sources/fbi-centennial-history-2008.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 246
+     },
+     {
+      "artifactId": "agents/author/research/sources/fbi-history-palmer-raids.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 202
+     },
+     {
+      "artifactId": "agents/author/research/sources/flock-faq-scale-capture.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 175
+     },
+     {
+      "artifactId": "agents/author/research/sources/flock-langley-defense-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 408
+     },
+     {
+      "artifactId": "agents/author/research/sources/foucault-panopticism-foucault-info.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 259
+     },
+     {
+      "artifactId": "agents/author/research/sources/foxnews-natanson-home-search.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 164
+     },
+     {
+      "artifactId": "agents/author/research/sources/fraenkel-dual-state-oup-2017-preview.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 282
+     },
+     {
+      "artifactId": "agents/author/research/sources/gao-23-105607-facial-recognition.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 142
+     },
+     {
+      "artifactId": "agents/author/research/sources/gao-24-107372-facial-recognition.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 140
+     },
+     {
+      "artifactId": "agents/author/research/sources/garden-court-supreme-court-permission.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 168
+     },
+     {
+      "artifactId": "agents/author/research/sources/gizmodo-2026-os-investigate.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 209
+     },
+     {
+      "artifactId": "agents/author/research/sources/glissant-for-opacity.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 495
+     },
+     {
+      "artifactId": "agents/author/research/sources/gutenberg-tocqueville-democracy-vol2.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 232
+     },
+     {
+      "artifactId": "agents/author/research/sources/hac-bard-arendt-power-quote.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 119
+     },
+     {
+      "artifactId": "agents/author/research/sources/hassan-v-nyc-3d-cir-2015.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 199
+     },
+     {
+      "artifactId": "agents/author/research/sources/holder-v-humanitarian-law-project.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 284
+     },
+     {
+      "artifactId": "agents/author/research/sources/home-office-tact-stats-dec-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 210
+     },
+     {
+      "artifactId": "agents/author/research/sources/hrw-hungary-spo-abolished-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 156
+     },
+     {
+      "artifactId": "agents/author/research/sources/hrw-open-letter-transparency-bill-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 205
+     },
+     {
+      "artifactId": "agents/author/research/sources/hrw-uk-court-upholds-ban-2026-06-15.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 178
+     },
+     {
+      "artifactId": "agents/author/research/sources/intercept-aaup-v-rubio-young-ruling.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 221
+     },
+     {
+      "artifactId": "agents/author/research/sources/investigatetv-2026-flock-training-videos.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 206
+     },
+     {
+      "artifactId": "agents/author/research/sources/jan6-investigation-network-methods.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 596
+     },
+     {
+      "artifactId": "agents/author/research/sources/jod-bermeo-backsliding-page.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 144
+     },
+     {
+      "artifactId": "agents/author/research/sources/kirk-assassination-nspm7-timing.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 431
+     },
+     {
+      "artifactId": "agents/author/research/sources/laird-v-tatum-1972.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 515
+     },
+     {
+      "artifactId": "agents/author/research/sources/levitsky-way-path-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 521
+     },
+     {
+      "artifactId": "agents/author/research/sources/levitsky-way-ziblatt-price-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 390
+     },
+     {
+      "artifactId": "agents/author/research/sources/liberty-court-of-appeal-judgment-breakdown.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 201
+     },
+     {
+      "artifactId": "agents/author/research/sources/maynard-mosaic-theory-2010.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 996
+     },
+     {
+      "artifactId": "agents/author/research/sources/mn-reformer-metro-surge-spying.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 495
+     },
+     {
+      "artifactId": "agents/author/research/sources/nandong-2026-ajps.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 240
+     },
+     {
+      "artifactId": "agents/author/research/sources/npr-2026-dhs-paragon-no-relationship.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 203
+     },
+     {
+      "artifactId": "agents/author/research/sources/nspm-7-whitehouse-2025-09-25.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 526
+     },
+     {
+      "artifactId": "agents/author/research/sources/nyclu-raza-v-nyc.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 142
+     },
+     {
+      "artifactId": "agents/author/research/sources/ohchr-palestine-action-refetch.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 303
+     },
+     {
+      "artifactId": "agents/author/research/sources/peerj-2024-gait-recognition-survey.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 181
+     },
+     {
+      "artifactId": "agents/author/research/sources/penney-wikipedia-chilling-2016.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 676
+     },
+     {
+      "artifactId": "agents/author/research/sources/pettit-non-domination-sep.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 568
+     },
+     {
+      "artifactId": "agents/author/research/sources/posner-privacy-concealment-2014.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 783
+     },
+     {
+      "artifactId": "agents/author/research/sources/propublica-frontline-caught-in-the-crackdown.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 195
+     },
+     {
+      "artifactId": "agents/author/research/sources/propublica-us-citizens-held-by-immigration-agents.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 239
+     },
+     {
+      "artifactId": "agents/author/research/sources/pym-fourth-circuit-ruling.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 223
+     },
+     {
+      "artifactId": "agents/author/research/sources/rcfp-natanson-quote-verification.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 228
+     },
+     {
+      "artifactId": "agents/author/research/sources/rcfp-natanson-search-ruling.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 209
+     },
+     {
+      "artifactId": "agents/author/research/sources/reuters-doj-comey-fdr-drive-filing.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 215
+     },
+     {
+      "artifactId": "agents/author/research/sources/reuters-hungary-spo-abolition-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 195
+     },
+     {
+      "artifactId": "agents/author/research/sources/richards-dangers-of-surveillance-2013.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 475
+     },
+     {
+      "artifactId": "agents/author/research/sources/rosenthal-selod-2026-genealogy.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 252
+     },
+     {
+      "artifactId": "agents/author/research/sources/scheppele-autocratic-legalism-uchicago.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 394
+     },
+     {
+      "artifactId": "agents/author/research/sources/scott-seeing-like-a-state-full-text.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 341
+     },
+     {
+      "artifactId": "agents/author/research/sources/securedrop-fpf.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 124
+     },
+     {
+      "artifactId": "agents/author/research/sources/sep-arendt.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 237
+     },
+     {
+      "artifactId": "agents/author/research/sources/shklar-liberalism-of-fear-scan.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 368
+     },
+     {
+      "artifactId": "agents/author/research/sources/snowden-turnkey-tyranny-2013.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 445
+     },
+     {
+      "artifactId": "agents/author/research/sources/snyder-obey-in-advance.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 256
+     },
+     {
+      "artifactId": "agents/author/research/sources/solove-nothing-to-hide-2007.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 449
+     },
+     {
+      "artifactId": "agents/author/research/sources/stateline-flock-2026-scale.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 169
+     },
+     {
+      "artifactId": "agents/author/research/sources/stoycheff-2016-under-surveillance.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 177
+     },
+     {
+      "artifactId": "agents/author/research/sources/stoycheff-2018-privacy-panopticon.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 175
+     },
+     {
+      "artifactId": "agents/author/research/sources/stoycheff-nandong-refetch-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 907
+     },
+     {
+      "artifactId": "agents/author/research/sources/stripes-la-deployment-numbers.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 114
+     },
+     {
+      "artifactId": "agents/author/research/sources/techcrunch-2026-ice-paragon.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 216
+     },
+     {
+      "artifactId": "agents/author/research/sources/uk-hcws729-wms-2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 432
+     },
+     {
+      "artifactId": "agents/author/research/sources/uk-si-2025-803-proscription-order.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 149
+     },
+     {
+      "artifactId": "agents/author/research/sources/uk-terrorism-act-2000-ss12-13.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 250
+     },
+     {
+      "artifactId": "agents/author/research/sources/un-experts-ohchr-palestine-action.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 271
+     },
+     {
+      "artifactId": "agents/author/research/sources/understanding-society-fraenkel-dual-state.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 171
+     },
+     {
+      "artifactId": "agents/author/research/sources/vdem-uwp54-bermeo-aggrandizement.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 144
+     },
+     {
+      "artifactId": "agents/author/research/sources/venable-2026-chatrie-analysis.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 169
+     },
+     {
+      "artifactId": "agents/author/research/sources/volokh-comey-indictment-analysis.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 141
+     },
+     {
+      "artifactId": "agents/author/research/sources/wikipedia-palestine-action-timeline.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 185
+     },
+     {
+      "artifactId": "agents/author/research/sources/wired-os-investigate-2026.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 437
+     },
+     {
+      "artifactId": "agents/author/research/sources/zuboff-behavioral-surplus.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 438
+     },
+     {
+      "artifactId": "agents/editor/research/index.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "research_note",
+      "label": "Research note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 856
+     },
+     {
+      "artifactId": "agents/editor/research/sources/aclu-dhs-location-data.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 70
+     },
+     {
+      "artifactId": "agents/editor/research/sources/aclu-palantir-roundup.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 53
+     },
+     {
+      "artifactId": "agents/editor/research/sources/aclu-shamsi-nspm7.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 78
+     },
+     {
+      "artifactId": "agents/editor/research/sources/ap-minnesota-surveillance.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 136
+     },
+     {
+      "artifactId": "agents/editor/research/sources/austin-social-legibility.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 89
+     },
+     {
+      "artifactId": "agents/editor/research/sources/balkin-national-surveillance-state.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 189
+     },
+     {
+      "artifactId": "agents/editor/research/sources/bermeo-scheppele-backsliding.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 85
+     },
+     {
+      "artifactId": "agents/editor/research/sources/bogost-warzel-american-panopticon.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 125
+     },
+     {
+      "artifactId": "agents/editor/research/sources/brandeis-myers-friction.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 108
+     },
+     {
+      "artifactId": "agents/editor/research/sources/brennan-patel-antifascism.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 105
+     },
+     {
+      "artifactId": "agents/editor/research/sources/chatrie-scotus.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 63
+     },
+     {
+      "artifactId": "agents/editor/research/sources/checks-calibration-cases.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 140
+     },
+     {
+      "artifactId": "agents/editor/research/sources/chilling-empirics.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 128
+     },
+     {
+      "artifactId": "agents/editor/research/sources/church-committee-book2.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 99
+     },
+     {
+      "artifactId": "agents/editor/research/sources/citizenlab-graphite-pegasus.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 73
+     },
+     {
+      "artifactId": "agents/editor/research/sources/cohen-what-privacy-is-for.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 130
+     },
+     {
+      "artifactId": "agents/editor/research/sources/cooper-wms-palestine-action.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 167
+     },
+     {
+      "artifactId": "agents/editor/research/sources/crs-domestic-terrorism.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 62
+     },
+     {
+      "artifactId": "agents/editor/research/sources/damn-indictment-arraignment.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 97
+     },
+     {
+      "artifactId": "agents/editor/research/sources/democracynow-puppet-master.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 115
+     },
+     {
+      "artifactId": "agents/editor/research/sources/fbi-palmer-raids.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 93
+     },
+     {
+      "artifactId": "agents/editor/research/sources/flock-langley-defense.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 134
+     },
+     {
+      "artifactId": "agents/editor/research/sources/flock-person-tracking-freeform.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 97
+     },
+     {
+      "artifactId": "agents/editor/research/sources/flock-scale-and-retrenchment.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 81
+     },
+     {
+      "artifactId": "agents/editor/research/sources/gao-facial-recognition.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 60
+     },
+     {
+      "artifactId": "agents/editor/research/sources/glissant-for-opacity.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 132
+     },
+     {
+      "artifactId": "agents/editor/research/sources/holder-v-hlp.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 73
+     },
+     {
+      "artifactId": "agents/editor/research/sources/home-office-tact-dec2025.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 73
+     },
+     {
+      "artifactId": "agents/editor/research/sources/ice-paragon-spyware.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 109
+     },
+     {
+      "artifactId": "agents/editor/research/sources/immigration-prerogative-cases.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 144
+     },
+     {
+      "artifactId": "agents/editor/research/sources/levitsky-way-path-american-authoritarianism.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 182
+     },
+     {
+      "artifactId": "agents/editor/research/sources/mn-reformer-metro-surge.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 92
+     },
+     {
+      "artifactId": "agents/editor/research/sources/mosaic-theory-practical-obscurity.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 175
+     },
+     {
+      "artifactId": "agents/editor/research/sources/nspm7-context-wikipedia.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 104
+     },
+     {
+      "artifactId": "agents/editor/research/sources/nspm7-primary-text.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 129
+     },
+     {
+      "artifactId": "agents/editor/research/sources/nspm7-verification.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 106
+     },
+     {
+      "artifactId": "agents/editor/research/sources/nypd-demographics-hassan.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 88
+     },
+     {
+      "artifactId": "agents/editor/research/sources/ohchr-palestine-action-un-experts.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 116
+     },
+     {
+      "artifactId": "agents/editor/research/sources/penney-chilling-effects.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 163
+     },
+     {
+      "artifactId": "agents/editor/research/sources/posner-nothing-to-hide-holders.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 192
+     },
+     {
+      "artifactId": "agents/editor/research/sources/protect-democracy-doge-panopticon.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 102
+     },
+     {
+      "artifactId": "agents/editor/research/sources/richards-dangers-of-surveillance.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 145
+     },
+     {
+      "artifactId": "agents/editor/research/sources/scott-seeing-like-a-state.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 88
+     },
+     {
+      "artifactId": "agents/editor/research/sources/security-practice-sources.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 95
+     },
+     {
+      "artifactId": "agents/editor/research/sources/snowden-turnkey-tyranny.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 113
+     },
+     {
+      "artifactId": "agents/editor/research/sources/solove-nothing-to-hide.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 135
+     },
+     {
+      "artifactId": "agents/editor/research/sources/techpolicy-ice-architecture.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 100
+     },
+     {
+      "artifactId": "agents/editor/research/sources/theory-quotes-foucault-tocqueville-arendt-shklar-fraenkel.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 156
+     },
+     {
+      "artifactId": "agents/editor/research/sources/uk-palestine-action-law-litigation.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 123
+     },
+     {
+      "artifactId": "agents/editor/research/sources/veliz-schneier-snyder.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 146
+     },
+     {
+      "artifactId": "agents/editor/research/sources/wired-flock-os-investigate.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 115
+     },
+     {
+      "artifactId": "agents/editor/research/sources/zuboff-surveillance-capitalism.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "source_note",
+      "label": "Source note",
+      "level": "SR",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 132
+     }
+    ],
+    "sealedCount": 0
+   },
+   {
+    "advancedRows": [
+     {
+      "artifactId": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "commissioning_brief",
+      "label": "Commissioning brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 3024
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/01-voice-brief.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "voice_brief",
+      "label": "Voice brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 1344
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/04-draft-ledger.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "draft_ledger",
+      "label": "Draft ledger",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 1041
+     },
+     {
+      "artifactId": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "fidelity_audit",
+      "label": "Fidelity audit",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 7015
+     },
+     {
+      "artifactId": "correspondence/v1-review/00-piece-brief.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "piece_brief",
+      "label": "Piece brief",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 2686
+     },
+     {
+      "artifactId": "correspondence/v1-review/03-argument-notes.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "argument_notes",
+      "label": "Argument notes",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 2188
+     },
+     {
+      "artifactId": "correspondence/v1-review/04-craft-notes.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "none",
+      "kind": "craft_notes",
+      "label": "Craft notes",
+      "level": "I",
+      "lock": "immutable",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": true,
+      "words": 1296
+     }
+    ],
+    "key": "advanced",
+    "rows": [
+     {
+      "artifactId": "agents/author/drafting/v1/02-structure-plan.md",
+      "createdAt": "2026-11-04T00:00:00.000Z",
+      "editMode": "guidance_only",
+      "kind": "structure_plan",
+      "label": "Structure plan",
+      "level": "SR",
+      "lock": "inspect",
+      "provenance": {
+       "actor": "agent"
+      },
+      "readOnly": false,
+      "words": 2856
+     }
+    ],
+    "sealedCount": 1
+   }
+  ]
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "",
+ "kind": "files"
+}

@@ -1,0 +1,92 @@
+{
+ "dto": [
+  {
+   "activeRun": null,
+   "archivedAt": null,
+   "headDraftId": "published",
+   "headDraftN": 3,
+   "id": "the-politics-of-visibility",
+   "protocolId": null,
+   "slug": "the-politics-of-visibility",
+   "state": {
+    "key": "accepted",
+    "overlay": null,
+    "pill": "Accepted",
+    "suggested": {
+     "action": "open",
+     "label": null
+    }
+   },
+   "title": "The Politics of Visibility",
+   "venue": null,
+   "voice": null
+  },
+  {
+   "activeRun": null,
+   "archivedAt": null,
+   "headDraftId": "published",
+   "headDraftN": 5,
+   "id": "structure-of-political-difference",
+   "protocolId": null,
+   "slug": "structure-of-political-difference",
+   "state": {
+    "key": "accepted",
+    "overlay": null,
+    "pill": "Accepted",
+    "suggested": {
+     "action": "open",
+     "label": null
+    }
+   },
+   "title": "The Structure of Political Difference",
+   "venue": null,
+   "voice": null
+  },
+  {
+   "activeRun": null,
+   "archivedAt": null,
+   "headDraftId": "published",
+   "headDraftN": 4,
+   "id": "constitution-of-reason",
+   "protocolId": null,
+   "slug": "constitution-of-reason",
+   "state": {
+    "key": "accepted",
+    "overlay": null,
+    "pill": "Accepted",
+    "suggested": {
+     "action": "open",
+     "label": null
+    }
+   },
+   "title": "The Constitution of Reason",
+   "venue": null,
+   "voice": null
+  },
+  {
+   "activeRun": null,
+   "archivedAt": null,
+   "headDraftId": "published",
+   "headDraftN": 4,
+   "id": "the-governable-mind",
+   "protocolId": null,
+   "slug": "the-governable-mind",
+   "state": {
+    "key": "accepted",
+    "overlay": null,
+    "pill": "Accepted",
+    "suggested": {
+     "action": "open",
+     "label": null
+    }
+   },
+   "title": "The Governable Mind",
+   "venue": null,
+   "voice": null
+  }
+ ],
+ "essay": "*",
+ "format": 1,
+ "key": "projects",
+ "kind": "projects"
+}

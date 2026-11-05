@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/risko-gilbert-2016-cognitive-offloading.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cc840db9f84052e3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/risko-gilbert-2016-cognitive-offloading.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# risko-gilbert-2016-cognitive-offloading\n- **URL:** https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:10.1016/j.tics.2016.07.002&resultType=core&format=json (Europe PMC record for PMID 27542527) and https://api.crossref.org/works/10.1016/j.tics.2016.07.002 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C11\n- **What it establishes:** Evan F. Risko & Sam J. Gilbert, \"Cognitive Offloading,\" *Trends in Cognitive Sciences* 20(9): 676–688 (September 2016), doi 10.1016/j.tics.2016.07.002, PMID 27542527. The paper exists and its abstract gives the canonical one-sentence definition. Full text is paywalled at Cell Press; I read the abstract via Europe PMC and the bibliographic record via Crossref, not the body.\n- **Key passages:** \"If you have ever tilted your head to perceive a rotated image, or programmed a smartphone to remind you of an upcoming appointment, you have engaged in cognitive offloading: the use of physical action to alter the information processing requirements of a task so as to reduce cognitive demand.\" / \"We offer a novel metacognitive framework that integrates results from diverse domains and suggests avenues for future research.\"\n- **Reliability:** Primary (peer-reviewed review article in a leading cognitive-science journal); abstract text taken from the indexing record, which reproduces the publisher's abstract. No independence concerns.\n- **Relevance to this project:** C11; the \"offloading\" section. The definition is deliberately about *physical action* (head-tilting, setting reminders) reducing cognitive demand; it is not itself a claim about AI or about harm.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 205
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "82724b6ff9c16372ee4b294c537def1bec5ee55bb2ee0fdfe736437959e73ac9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/risko-gilbert-2016-cognitive-offloading.md",
+ "kind": "artifact-page"
+}

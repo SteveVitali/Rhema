@@ -1,0 +1,39 @@
+- [8values-test](sources/8values-test.md) — four of the draft's five axes replicate 8values' axes, two with verbatim pole names; its "Closest Match" is a proto-version of coordinates-then-family-name
+- [9axes-test](sources/9axes-test.md) — hobbyist successor test already covers the draft's "modules" (federalism, regime, foreign policy, religion) as raw axes
+- [politiscales-about](sources/politiscales-about.md) — 8values-inspired French test with ecology and revolution/reform axes anticipating the draft's module and System moves
+- [political-compass-two-axes](sources/political-compass-two-axes.md) — the founding popular two-axis critique of one-dimensionality; National Rally example prefigures the welfare-nationalist demonstration
+- [kling-three-languages](sources/kling-three-languages.md) — nearest popular predecessor for the "grammar/languages" framing and the charitable-poles method
+- [lewis-myth-left-right-reviews](sources/lewis-myth-left-right-reviews.md) — Lewis & Lewis 2023: left/right are tribal bundles reverse-engineered into stories; nearest predecessor AND strongest counterargument
+- [lewis-quillette-retire-spectrum](sources/lewis-quillette-retire-spectrum.md) — Hyrum Lewis's 2017 essay version; eliminativist remedy the draft can position against
+- [caplan-lewis-exchange](sources/caplan-lewis-exchange.md) — Caplan's simple-model defense of the spectrum vs Lewis's granularity objection ("more than one issue in politics"), both directly applicable to the draft
+- [gonzalez-spectrum-does-exist](sources/gonzalez-spectrum-does-exist.md) — substantive (egalitarianism-based) defense of left-right the draft never engages
+- [bobbio-left-and-right](sources/bobbio-left-and-right.md) — canonical philosophical claim that left/right = attitudes to equality; conspicuous omission for a philosophy venue
+- [hooghe-marks-wilson-2002-galtan](sources/hooghe-marks-wilson-2002-galtan.md) — GAL/TAN: the draft's culture+coercion+belonging CHES bundle is this known dimension, uncited
+- [voteview-poole-rosenthal](sources/voteview-poole-rosenthal.md) — DW-NOMINATE low-dimensionality of elite behavior; the statistical-economy counterargument
+- [converse-1964-belief-systems](sources/converse-1964-belief-systems.md) — mass publics lack ideological constraint; the audience problem for a public five-axis vocabulary
+- [mudde-populism-definition](sources/mudde-populism-definition.md) — draft's Mudde characterization checks out against the cited source
+- [caramani-2017-will-vs-reason](sources/caramani-2017-will-vs-reason.md) — draft's populism/technocracy characterization checks out against the abstract
+- [muller-what-is-populism](sources/muller-what-is-populism.md) — anti-pluralism/exclusive moral representation = the draft's unitarism and pluralism facets; clearest attribution gap
+- [akkerman-mudde-zaslove-2014](sources/akkerman-mudde-zaslove-2014.md) — populist-attitudes scale (anti-elitism, people-centrism, Manicheism + pluralism/elitism) that the draft's facets parallel
+- [poppa-expert-survey](sources/poppa-expert-survey.md) — party-level multi-facet populism measurement infrastructure already exists
+- [uscinski-2021-anti-establishment](sources/uscinski-2021-anti-establishment.md) — orthogonal anti-establishment dimension; accurate use in draft; charitable-pole caveat
+- [dewilde-cosmopolitan-communitarian](sources/dewilde-cosmopolitan-communitarian.md) — confirms belonging-axis terminology; cited article's own finding mildly undercuts cleavage crystallization
+- [ssc-thrive-survive](sources/ssc-thrive-survive.md) — rationalist-adjacent one-real-dimension theory; maps the discourse the draft enters
+- [welfare-chauvinism-literature](sources/welfare-chauvinism-literature.md) — draft's "Welfare Nationalist" family renames 30-year-old "welfare chauvinism" concept
+- [freeden-morphology](sources/freeden-morphology.md) — Freeden characterization accurate, but decontestation cuts against fixed-meaning coordinate poles; unaddressed tension
+- [collier-mahon-radial-categories](sources/collier-mahon-radial-categories.md) — prototype/radial-category semantics for political concepts predates the draft by 30 years
+- [two-dimensional-precursors](sources/two-dimensional-precursors.md) — Eysenck, Kitschelt's diagonal, Inglehart–Norris: the academic lineage of second dimensions and bundled diagonals
+- [venue-sjsebastian-substack](sources/venue-sjsebastian-substack.md) — venue is an AI-philosophy Substack; politics piece is off-pattern; AI-pattern-match risk for apparatus-heavy format
+- [pew-2026-political-typology](sources/pew-2026-political-typology.md) — fn 10 is real: June 10, 2026, nine groups, 30 questions, all five quoted group names exact (C17 Verified)
+- [lee-santoso-stevenson-2026-heuristic-inference](sources/lee-santoso-stevenson-2026-heuristic-inference.md) — fn 1 is real (Lee/Santoso/Stevenson 2026 Cambridge Element) and says what the draft uses it for; footnote omits authors (C4 Verified)
+- [ches-2024-codebook-and-site](sources/ches-2024-codebook-and-site.md) — 609 experts / 279 parties / 31 countries exact; position–salience–dissent–blur and anti_elite_salience/people_v_elite items confirmed; codebook itself warns parties fit multiple families (C7, C9, C13, C16)
+- [ches-2024-dataset-rederivation](sources/ches-2024-dataset-rederivation.md) — author's §II correlations reproduce from the downloaded CSV: culture/coercion/belonging r=.84–.90, economy .47–.56, anti-elite × market economics slightly negative (C10 Substantially accurate)
+- [uscinski-et-al-2021-two-dimensions](sources/uscinski-et-al-2021-two-dimensions.md) — Phase 1 bibliographic verification of fn 7 (title, authors, journal, year, abstract) (C12 Verified)
+- [feldman-huddy-2014-not-so-simple](sources/feldman-huddy-2014-not-so-simple.md) — fn 4a exists but is a 2-page BBS commentary; supports economic/social two-dimensionality (C8)
+- [mongrain-walgrave-2026-nondimensional](sources/mongrain-walgrave-2026-nondimensional.md) — fn 4b exists; finds mass opinion largely NON-dimensional — verifies "no universal structure" but double-edged for any five-axis mass vocabulary (C8 caveat)
+- [dewilde-2023-cosmo-comm](sources/dewilde-2023-cosmo-comm.md) — Phase 1 bibliographic verification of fn 6 (EPSR 15(2) 2023, 157–176) (C11 Verified)
+- [mair-mudde-1998-via-manifesto-handbook](sources/mair-mudde-1998-via-manifesto-handbook.md) — fn 3 DOI canonical; four approaches are origin/sociology, transnational links, policy-ideology, name — draft's "organization" is interpolated (C6 Substantially accurate)
+- [taxfoundation-2026-trump-tariff-tracker](sources/taxfoundation-2026-trump-tariff-tracker.md) — mid-2026 record: universal + Section 232/301 tariffs, ~11% applied rate, Intel stake, SWF — grounds C23a "market-leaning" = Misleading in context (MAJOR)
+- [hungary-2026-election](sources/hungary-2026-election.md) — Orbán lost April 12, 2026 to Magyar's Tisza supermajority; draft's present-tense "governing" is stale — C23d Misleading in context (MAJOR)
+- [orbanomics-wikipedia](sources/orbanomics-wikipedia.md) — Orbán's interventionist/workfare/financial-nationalist economics: supports "welfare nationalist not laissez-faire" with workfare caveat (C18)
+- [jrws-wola-trump-milei](sources/jrws-wola-trump-milei.md) — Trump/Milei right-wing-populist pairing, chainsaw program, and Milei's cultural traditionalism documented (C1, C19, C23c)

@@ -1,0 +1,14 @@
+# wired-lowell-white-house-expand-ai-policy-2026-08-12
+- **URL:** https://www.wired.com/story/the-white-house-is-going-to-expand-its-ai-policy/ (raw HTML via curl; opened this round — earlier rounds could not) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K5)
+- **What it establishes:** Hugo Lowell's "Inner Loop" newsletter, WIRED, "Aug 12, 2026 5:00 PM". THE primary report behind the TechRepublic/AI Weekly/PYMNTS relays. One unnamed "White House official"; NOTHING the official said is in direct quotation marks except the single word "frontier". The official's statements are in the reporter's indirect speech.
+- **Key passages:**
+  - Dek: "Open models may soon be added to an updated AI framework, sources tell WIRED".
+  - "White House officials are almost certain to revise the Trump administration's new artificial intelligence guidelines and expand its oversight of AI models, according to people familiar with the matter."
+  - "The administration has not made the framework public, and reportedly has no plans to do so."
+  - "The AI framework currently deals only with so-called closed models developed by the likes of Anthropic and OpenAI. But the framework is expected in the coming months to cover open models, too, a White House official tells Inner Loop."
+  - "In short, as soon as open models reach the same "frontier" capabilities as Anthropic's Mythos-class models and OpenAI's GPT-5.6, they will be added to the framework and subject to prerelease testing, the White House official says."
+  - Two-tier worry: "if only closed models start getting seals of approval, enterprises might become hesitant to use open models that don't have the same approval, even if they are cheaper." · "imposing a potential 30-day testing requirement could equally stifle development."
+  - "The AI framework remains voluntary for now, according to a White House official, in large part because President Donald Trump has been adamant that formal regulation of the industry would only help China catch up".
+  - "the current framework is still vague."
+- **Reliability:** Primary reporting; single anonymous official plus "people familiar"; a newsletter item.
+- **Relevance to this project:** The exact wording is "expected in the coming months to cover open models, too" (AI Weekly's "extend to open models as well" is a relay paraphrase). Any essay sentence must attribute this as an anonymous official's forecast about a voluntary, unpublished framework; do not put words in quotation marks as the official's.

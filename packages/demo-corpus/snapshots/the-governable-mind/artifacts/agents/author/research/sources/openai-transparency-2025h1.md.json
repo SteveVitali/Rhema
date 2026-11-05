@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/openai-transparency-2025h1.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "90ec8fce77ab5342",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/openai-transparency-2025h1.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-transparency-2025h1\n- **URL:** https://cdn.openai.com/trust-and-transparency/report-2025h1-government-requests-for-user-data.pdf · **Accessed:** 2026-09-16 (2 pp.) · **For:** v1 response round, item 9\n- **What it establishes:** OpenAI Report on Government Requests for User Data, January–June 2025. Non-content requests: 119 received, 81 with data disclosed, 147 accounts. Content requests: 26 received, 23 disclosed, 41 accounts. Emergency requests: the row reads \"112\" in the extracted table (most plausibly 1 request / 1 disclosed / 2 accounts, the column split is ambiguous in extraction). National security process (FISA/NSL): 0–249 requests, 0–249 accounts.\n- **Key passages:** \"'Content requests' consist of legal process such as search warrants to produce content data, such as text or files input or output in connection with the use of OpenAI services.\" / \"'Non-content requests' consist of legal process such as subpoenas to produce non-content data, such as information of an account user's name, email address, payment information, and transaction history.\"\n- **Reliability:** Primary (company transparency report); self-reported.\n- **Relevance to this project:** Item 9; baseline volume for the first half of 2025. Editor's figures (119 non-content, 26 content) verified.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 169
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "08979e88785c145a336265103e8254a3fb73323aef0c83f72771f947066332b0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/openai-transparency-2025h1.md",
+ "kind": "artifact-page"
+}

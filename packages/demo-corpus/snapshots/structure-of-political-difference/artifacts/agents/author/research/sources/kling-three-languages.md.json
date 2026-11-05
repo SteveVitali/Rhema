@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/kling-three-languages.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cfeb55f6904a70dd",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/kling-three-languages.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kling-three-languages\n- **URL:** https://quillette.com/2018/08/08/the-three-languages-of-politics-a-review/ · **Accessed:** 2026-07-31 · **For:** v1-response — discourse-report credit clause (charitable-poles move)\n- **What it establishes:** Arnold Kling, *The Three Languages of Politics: Talking Across the Political Divides* (Cato Institute, 2017 ed.). Three rhetorical axes — oppressor↔oppressed (progressives), civilization↔barbarism (conservatives), liberty↔coercion (libertarians) — as the *languages* three American tribes speak; aim is steelmanning: \"treating people who use other heuristics as reasonable is likely to prove a less stressful and more productive way of approaching politics.\"\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (review); safe for attribution of the well-known scheme.\n- **Relevance:** One endnote clause at the charitable-poles table: the steelmanning posture is Klingian; the difference is that Kling's axes are rhetorical heuristics of tribes, this framework's are positional coordinates of claims.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 122
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4f1a4f9d05777486d640c545dd4a3ffff2600991d7401d94762db796f68d7777",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/kling-three-languages.md",
+ "kind": "artifact-page"
+}

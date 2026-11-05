@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/chan-2025-infrastructure-for-ai-agents.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e54b73f904965ed3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/chan-2025-infrastructure-for-ai-agents.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# chan-2025-infrastructure-for-ai-agents\n- **URL:** https://arxiv.org/html/2501.10114v3 (v3, 19 Jun 2025; full HTML read locally); arXiv abs page comment: \"Accepted to TMLR\" · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice N (item N1)\n- **What it establishes:** Defines \"identity binding\" as linking an agent or its actions to a legal identity, with the rider that binding need not be public; states the anonymity cost in the paper's own limitations paragraph.\n- **Key passages:**\n  - §3.1 Identity Binding: \"With this motivation, we define identity binding to be a process that consists of (1) authentication of an identity and (2) linking that identity to an (instance of an) agent or its actions.\"\n  - §3.1, next sentences: \"Crucially, linking an identity to an agent does not mean making the identity publicly visible. For example, identity information could be accessible only to authorized parties, such as if needed for legal action, or only reveal limited information, such as the fact that a real person is responsible for the agent (Adler et al., 2024).\"\n  - Figure 2 caption: \"Identity binding links an agent or its actions to an existing legal identity\"\n  - §3.1 (limitations paragraph): \"Identity binding entails at least some collection and use of user information, even if that information is only shared with authorized actors when needed. ... More broadly, reduced anonymity (or the threat of reduced anonymity) could threaten personal safety (e.g., doxxing), hinder whistleblowing, and reduce expression of novel ideas (Kling et al., 1999; Zittrain, 2006; Choi, 2012; Kang et al., 2013). Such concerns imply that identity binding may not be appropriate in every application of agents, and proportionate confidentiality provisions will be necessary when it is used.\"\n  - §3.1 motivation: \"The ability (but not necessarily the requirement) to associate an agent's actions with a legal entity, such as a human or a corporation, could help existing institutions accommodate agents.\"\n- **Reliability:** Primary; arXiv listing says accepted to TMLR (journal page not opened). Same author circle as Chan 2024.\n- **Relevance to this project:** Confirms the review's quotation (the elisions in the review's \"reduced anonymity ... could ... hinder whistleblowing\" are fair). Citation: Alan Chan, Kevin Wei, Sihao Huang, Nitarshan Rajkumar, Elija Perrier, Seth Lazar, Gillian K. Hadfield, Markus Anderljung, \"Infrastructure for AI Agents,\" arXiv:2501.10114 (v3, 19 June 2025); accepted to Transactions on Machine Learning Research.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 373
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "91d265f6a2077ed181bb1841a7daa2a57eb5bc966ba38543a1b5fba87f3a2ca4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/chan-2025-infrastructure-for-ai-agents.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,13 @@
+# balkin-2008-national-surveillance-state
+- **URL:** https://openyls.law.yale.edu/handle/20.500.13051/1545 (Yale Law School repository; PDF bitstream https://openyls.law.yale.edu/server/api/core/bitstreams/2f402164-2297-47c7-8d05-28480b4bbf22/content) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C52
+- **What it establishes:** Exists. Jack M. Balkin, "The Constitution in the National Surveillance State," 93 Minn. L. Rev. 1 (2008) (Essay; HeinOnline pagination in the PDF). Defines the National Surveillance State as a special case of the Information State, and distinguishes authoritarian information states ("gluttons and misers") from democratic information states ("gourmets and philanthropists") at pp. 17–18. Note: the minnesotalawreview.org, scholarship.law.umn.edu, and SSRN copies all returned 403/404 to automated fetch; the Yale copy was read in full (25 pp.).
+- **Key passages:**
+  - p. 3: "In the National Surveillance State, the government uses surveillance, data collection, collation, and analysis to identify problems, to head off potential threats, to govern populations, and to deliver valuable social services."
+  - p. 3: "The National Surveillance State is a special case of the Information State—a state that tries to identify and solve problems of governance through the collection, collation, analysis, and production of information."
+  - p. 17: "We might begin by distinguishing between an authoritarian information state and a democratic information state. Authoritarian information states are information gluttons and information misers."
+  - p. 17: "Like gluttons they grab as much information as possible because this helps maximize their power. Authoritarian states are information misers because they try to keep the information they collect—and their own operations—secret from the public."
+  - p. 18: "By contrast, democratic information states are information gourmets and information philanthropists. Like gourmets they collect and collate only the information they need to ensure efficient government and national security."
+  - p. 18: "If the information state is unable to forget, it is imperative that it be able to forgive."
+  - p. 18: "Democratic information states are also information philanthropists because they willingly distribute much valuable information they create to the public"
+- **Reliability:** Primary (author's published essay, institutional repository copy of the law-review print). Lockhart Lecture (2006) revised for print. Normative legal scholarship; no independence issue.
+- **Relevance to this project:** C52; surveillance / democratic-vs-authoritarian information state framing. The distinction is Balkin's own coinage in this essay; safe to quote with page numbers 17–18.

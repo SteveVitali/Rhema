@@ -1,0 +1,495 @@
+{
+ "claims": [
+  {
+   "id": "C1",
+   "ordinal": 0
+  },
+  {
+   "id": "C2",
+   "ordinal": 1
+  },
+  {
+   "id": "C3",
+   "ordinal": 2
+  },
+  {
+   "id": "C4",
+   "ordinal": 3
+  },
+  {
+   "id": "C5",
+   "ordinal": 4
+  },
+  {
+   "id": "C6",
+   "ordinal": 5
+  },
+  {
+   "id": "C7",
+   "ordinal": 6
+  },
+  {
+   "id": "C8",
+   "ordinal": 7
+  },
+  {
+   "id": "C9",
+   "ordinal": 8
+  },
+  {
+   "id": "C10",
+   "ordinal": 9
+  },
+  {
+   "id": "C11",
+   "ordinal": 10
+  },
+  {
+   "id": "C12",
+   "ordinal": 11
+  },
+  {
+   "id": "C13",
+   "ordinal": 12
+  },
+  {
+   "id": "C14",
+   "ordinal": 13
+  },
+  {
+   "id": "C15",
+   "ordinal": 14
+  },
+  {
+   "id": "C16",
+   "ordinal": 15
+  },
+  {
+   "id": "C17",
+   "ordinal": 16
+  },
+  {
+   "id": "C73",
+   "ordinal": 17
+  },
+  {
+   "id": "C75",
+   "ordinal": 18
+  },
+  {
+   "id": "C76",
+   "ordinal": 19
+  },
+  {
+   "id": "C18",
+   "ordinal": 20
+  },
+  {
+   "id": "C19",
+   "ordinal": 21
+  },
+  {
+   "id": "C20",
+   "ordinal": 22
+  },
+  {
+   "id": "C21",
+   "ordinal": 23
+  },
+  {
+   "id": "C22",
+   "ordinal": 24
+  },
+  {
+   "id": "C23",
+   "ordinal": 25
+  },
+  {
+   "id": "C24",
+   "ordinal": 26
+  },
+  {
+   "id": "C25",
+   "ordinal": 27
+  },
+  {
+   "id": "C26",
+   "ordinal": 28
+  },
+  {
+   "id": "C27",
+   "ordinal": 29
+  },
+  {
+   "id": "C28",
+   "ordinal": 30
+  },
+  {
+   "id": "C29",
+   "ordinal": 31
+  },
+  {
+   "id": "C30",
+   "ordinal": 32
+  },
+  {
+   "id": "C31",
+   "ordinal": 33
+  },
+  {
+   "id": "C32",
+   "ordinal": 34
+  },
+  {
+   "id": "C33",
+   "ordinal": 35
+  },
+  {
+   "id": "C34",
+   "ordinal": 36
+  },
+  {
+   "id": "C35",
+   "ordinal": 37
+  },
+  {
+   "id": "C36",
+   "ordinal": 38
+  },
+  {
+   "id": "C37",
+   "ordinal": 39
+  },
+  {
+   "id": "C38",
+   "ordinal": 40
+  },
+  {
+   "id": "C39",
+   "ordinal": 41
+  },
+  {
+   "id": "C40",
+   "ordinal": 42
+  },
+  {
+   "id": "C41",
+   "ordinal": 43
+  },
+  {
+   "id": "C42",
+   "ordinal": 44
+  },
+  {
+   "id": "C43",
+   "ordinal": 45
+  },
+  {
+   "id": "C44",
+   "ordinal": 46
+  },
+  {
+   "id": "C66",
+   "ordinal": 47
+  },
+  {
+   "id": "C67",
+   "ordinal": 48
+  },
+  {
+   "id": "C68",
+   "ordinal": 49
+  },
+  {
+   "id": "C69",
+   "ordinal": 50
+  },
+  {
+   "id": "C80",
+   "ordinal": 51
+  },
+  {
+   "id": "C45",
+   "ordinal": 52
+  },
+  {
+   "id": "C46",
+   "ordinal": 53
+  },
+  {
+   "id": "C78",
+   "ordinal": 54
+  },
+  {
+   "id": "C47",
+   "ordinal": 55
+  },
+  {
+   "id": "C48",
+   "ordinal": 56
+  },
+  {
+   "id": "C70",
+   "ordinal": 57
+  },
+  {
+   "id": "C49",
+   "ordinal": 58
+  },
+  {
+   "id": "C79",
+   "ordinal": 59
+  },
+  {
+   "id": "C50",
+   "ordinal": 60
+  },
+  {
+   "id": "C51",
+   "ordinal": 61
+  },
+  {
+   "id": "C52",
+   "ordinal": 62
+  },
+  {
+   "id": "C53",
+   "ordinal": 63
+  },
+  {
+   "id": "C54",
+   "ordinal": 64
+  },
+  {
+   "id": "C55",
+   "ordinal": 65
+  },
+  {
+   "id": "C77",
+   "ordinal": 66
+  },
+  {
+   "id": "C56",
+   "ordinal": 67
+  },
+  {
+   "id": "C57",
+   "ordinal": 68
+  },
+  {
+   "id": "C58",
+   "ordinal": 69
+  },
+  {
+   "id": "C59",
+   "ordinal": 70
+  },
+  {
+   "id": "C60",
+   "ordinal": 71
+  },
+  {
+   "id": "C72",
+   "ordinal": 72
+  },
+  {
+   "id": "C61",
+   "ordinal": 73
+  },
+  {
+   "id": "C62",
+   "ordinal": 74
+  },
+  {
+   "id": "C64",
+   "ordinal": 75
+  },
+  {
+   "id": "C65",
+   "ordinal": 76
+  },
+  {
+   "id": "C63",
+   "ordinal": 77
+  },
+  {
+   "id": "C71",
+   "ordinal": 78
+  }
+ ],
+ "findings": [
+  {
+   "id": "The one thing",
+   "ordinal": 0
+  },
+  {
+   "aliases": [
+    "SR iv"
+   ],
+   "id": "Major 1",
+   "ordinal": 1
+  },
+  {
+   "id": "Major 2",
+   "ordinal": 2
+  },
+  {
+   "id": "Major 3",
+   "ordinal": 3
+  },
+  {
+   "id": "Major 4",
+   "ordinal": 4
+  },
+  {
+   "aliases": [
+    "SR iii"
+   ],
+   "id": "Major 5",
+   "ordinal": 5
+  },
+  {
+   "aliases": [
+    "SR i"
+   ],
+   "id": "Major 6",
+   "ordinal": 6
+  },
+  {
+   "aliases": [
+    "SR v"
+   ],
+   "id": "Major 7",
+   "ordinal": 7
+  },
+  {
+   "id": "Strength 1",
+   "ordinal": 8
+  },
+  {
+   "id": "Strength 2",
+   "ordinal": 9
+  },
+  {
+   "id": "Strength 3",
+   "ordinal": 10
+  },
+  {
+   "id": "Strength 4",
+   "ordinal": 11
+  },
+  {
+   "id": "Strength 5",
+   "ordinal": 12
+  },
+  {
+   "id": "Strength 6",
+   "ordinal": 13
+  },
+  {
+   "id": "Strength 7",
+   "ordinal": 14
+  },
+  {
+   "id": "Strength 8",
+   "ordinal": 15
+  },
+  {
+   "id": "Strength 9",
+   "ordinal": 16
+  },
+  {
+   "id": "Strength 10",
+   "ordinal": 17
+  },
+  {
+   "id": "Strength 11",
+   "ordinal": 18
+  },
+  {
+   "id": "Minor 1",
+   "ordinal": 19
+  },
+  {
+   "id": "Minor 2",
+   "ordinal": 20
+  },
+  {
+   "id": "Minor 3",
+   "ordinal": 21
+  },
+  {
+   "id": "Minor 4",
+   "ordinal": 22
+  },
+  {
+   "id": "Minor 5",
+   "ordinal": 23
+  },
+  {
+   "id": "Minor 6",
+   "ordinal": 24
+  },
+  {
+   "id": "Minor 7",
+   "ordinal": 25
+  },
+  {
+   "id": "Minor 8",
+   "ordinal": 26
+  },
+  {
+   "id": "Minor 9",
+   "ordinal": 27
+  },
+  {
+   "id": "Minor 10",
+   "ordinal": 28
+  },
+  {
+   "id": "Minor 11",
+   "ordinal": 29
+  },
+  {
+   "id": "Line note 1",
+   "ordinal": 30
+  },
+  {
+   "id": "Line note 2",
+   "ordinal": 31
+  },
+  {
+   "id": "Line note 3",
+   "ordinal": 32
+  },
+  {
+   "id": "Line note 4",
+   "ordinal": 33
+  },
+  {
+   "id": "Line note 5",
+   "ordinal": 34
+  },
+  {
+   "id": "SR ii",
+   "ordinal": 35
+  }
+ ],
+ "importRule": {
+  "claims[].accessedAt": "assigned by import rule",
+  "claims[].sources[].accessedAt": "assigned by import rule",
+  "claims[].sources[].stance": "assigned by import rule",
+  "findings[].evidence.urls[].accessed": "assigned by import rule",
+  "findings[].kind": "assigned by import rule",
+  "findings[].origin": "assigned by import rule",
+  "findings[].reconciliation": "assigned by import rule",
+  "findings[].severity": "assigned by import rule"
+ },
+ "roles": {
+  "drafting": "the drafting agent",
+  "editor": "the editor (agent)",
+  "revising": "the revising agent",
+  "writer": "the writer"
+ },
+ "version": 1
+}

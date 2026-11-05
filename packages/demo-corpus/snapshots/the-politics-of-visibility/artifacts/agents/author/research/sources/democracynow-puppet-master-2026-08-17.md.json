@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/democracynow-puppet-master-2026-08-17.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7b2184c93f4dbcb0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/democracynow-puppet-master-2026-08-17.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# democracynow-puppet-master-2026-08-17\n- **URL:** https://www.democracynow.org/2026/8/17/operation_puppet_master · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C1 (not-charged status; chart composition; financial-records depth)\n- **What it establishes:** (1) The explicit not-charged statement: \"So far, none of the groups targeted by the HSI inquiry have faced charges.\" (2) Additional named organizations on the conspiracy chart per Riach's motion: AFL-CIO, Minneapolis Federation of Educators, MAPE, Monarca, Veterans for Peace, and the Grease Pit bicycle repair shop. (3) Financial records of SEIU, CWA, and Sunrise Movement \"go back three years.\" (4) One defendant (Isaac Sant) indicted for conspiracy to impede or injure a federal officer and interstate stalking. (5) Says the court-filed documents were \"first reported on by The New York Times.\"\n- **Key passages:** \"undercover agents posing as protesters spied on community members at meetings in churches, parks, libraries, schools and union halls.\" — HSI \"secretly obtained the financial records of national labor unions, including the SEIU and the Communication Workers of America, CWA, as well as national nonprofits like the Sunrise Movement. The financial records go back three years.\" — Chart contents per Riach motion: \"the AFL-CIO, the Minneapolis Federation of Educators, the Minnesota Association of Professional Employees, Monarca, Veterans for Peace, and the Grease Pit bicycle repair shop, among others.\" — \"So far, none of the groups targeted by the HSI inquiry have faced charges.\" — Emilia González Avalos (Unidos MN): \"a government that puts a bicycle collective and a teachers' union and a network of regular people like Unidos on a conspiracy chart, in my opinion, loses the right to be believed.\" — Isaac Sant: activism \"was nonviolent throughout Metro Surge... this is a naked act of political repression.\"\n- **Reliability:** Secondary; advocacy-leaning independent news program, but the load-bearing items (chart names, not-charged status) are drawn from the court filing and interviews with the defense attorney and named participants; corroborates AP and Reformer.\n- **Relevance to this project:** C1 (not-charged element — the only source in hand stating it flatly; chart membership; three-year depth of financial records).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 329
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b77772a681dd451f99901e3af25dfb616a3f42f1d9e87aae15987585a5cf29fd",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/democracynow-puppet-master-2026-08-17.md",
+ "kind": "artifact-page"
+}

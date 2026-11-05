@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/democracynow-puppet-master.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a38e555b65c4112e",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "b19ab988a73a08a6",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "24c50a793c45d95a",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/democracynow-puppet-master.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Democracy Now!, \"Operation Puppet Master\" segment (Aug. 17, 2026)\n\n- **URL:** https://www.democracynow.org/2026/8/17/operation_puppet_master\n- **Accessed:** 2026-08-21\n\n**Establishes (reception + fact-check flag):** Left-media framing of the Minnesota story: operation launched four days after federal agents killed protester Alex Pretti, weeks after the shooting of Renee Good, during \"Operation Metro Surge\" protests — context absent from the draft's opening. Crucially, DN asserts the operation \"stemmed from\" NSPM-7 — the connection the draft explicitly declines to assert (\"No public document connects...\"). The draft's caution may be the more accurate position, but Phase 3 should decide whether to note that major coverage does assert the link. Interviews: defendant Isaac Sant (\"politically motivated charges intended to quell dissent\"), Unidos MN, CWA local president.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 115
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b75a0f2bde77db637b7c6e252f27a8c22ca6868cfddac78cd71b709421d5c86e",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/democracynow-puppet-master.md",
+ "kind": "artifact-page"
+}

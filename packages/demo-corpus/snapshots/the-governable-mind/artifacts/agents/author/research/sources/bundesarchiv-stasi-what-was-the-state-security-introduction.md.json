@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/bundesarchiv-stasi-what-was-the-state-security-introduction.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "adac8c7b3ce88aea",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/bundesarchiv-stasi-what-was-the-state-security-introduction.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bundesarchiv-stasi-what-was-the-state-security-introduction\n- **URL:** https://www.bundesarchiv.de/en/stasi-records-archive/education/what-was-the-state-security/introduction/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C36\n- **What it establishes:** Bundesarchiv (Stasi Records Archive) English introduction: the MfS penetrated private life and bugged phones; about 91,000 full-time employees by 1989; HV A figures. Does not itemise telex, room surveillance, technical observation, or the evolution of interception technology.\n- **Key passages:** \"The MfS penetrated into the citizens' private lives; observing them, bugging their phones, spying on them, arresting and interrogating them.\" \"By 1989 the State Security had about 91,000 full-time employees.\" \"By 1989 the HV A had a full-time staff of 4,600, plus 13,400 unofficial collaborators in the GDR and another 1,500 in West Germany.\"\n- **Reliability:** Primary/official (German Federal Archives).\n- **Relevance to this project:** C36: the 91,000 figure; the outline over-attributes the detailed surveillance taxonomy to this page.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 131
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "90c2ffcb6195d1949c4714dbbe3893878e990eea13351c5809f44eac0857d017",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/bundesarchiv-stasi-what-was-the-state-security-introduction.md",
+ "kind": "artifact-page"
+}

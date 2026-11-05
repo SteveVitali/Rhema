@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/register-openai-age-prediction-persona-2026-01-21.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "633c4493544a514e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/register-openai-age-prediction-persona-2026-01-21.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# register-openai-age-prediction-persona-2026-01-21\n- **URL:** https://www.theregister.com/2026/01/21/openai_bets_on_age_prediction/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** The Register, Jan. 21, 2026: age prediction uses \"behavioral and account-level signals, including how long an account has existed, typical times of day when someone is active, usage patterns over time, and a user's stated age\"; adults misclassified verify through Persona by \"sending a live selfie or uploading a photo of a government-issued ID\"; EU rollout \"in a few weeks.\"\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (trade press).\n- **Relevance to this project:** Agenda 3: the same vendor (Persona) that runs the defenders' verified tiers at l.206 runs the consumer age gate; behavioural classification of every account is the mechanism.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 115
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "162097cbc03ac4697d36ee2d8e042810ec362ae21840361ad94b846bec47a343",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/register-openai-age-prediction-persona-2026-01-21.md",
+ "kind": "artifact-page"
+}

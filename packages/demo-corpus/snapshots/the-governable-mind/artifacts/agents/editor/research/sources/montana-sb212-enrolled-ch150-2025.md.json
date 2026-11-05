@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/montana-sb212-enrolled-ch150-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5356c366cda22bf6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/montana-sb212-enrolled-ch150-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# montana-sb212-enrolled-ch150-2025\n- **URL:** https://archive.legmt.gov/content/Sessions/69th/Contractor_index/CH0150.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (PDF downloaded, text extracted)\n- **What it establishes:** Enrolled SB 212 (69th Leg., 2025), \"Right to Compute Act,\" ch. 150. Section 3 carries both draft quotations verbatim; Section 2 repeats the standard as a finding; Section 7 definitions; Section 10 effective on passage (V6; ref [50]).\n- **Key passages:** Sec. 3: \"Government actions that restrict the ability to privately own or make use of computational resources for lawful purposes, which infringes on citizens' fundamental rights to property and free expression, must be limited to those demonstrably necessary and narrowly tailored to fulfill a compelling government interest.\" · Sec. 1: \"may be cited as the 'Right to Compute Act'.\"\n- **Reliability:** Primary; enrolled bill text from the legislature's archive.\n- **Relevance to this project:** l.122; ref [50].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 136
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "867d88635a8f07118a64e0644bc642665178c71472b92dc7245ddf29c7bb4346",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/montana-sb212-enrolled-ch150-2025.md",
+ "kind": "artifact-page"
+}

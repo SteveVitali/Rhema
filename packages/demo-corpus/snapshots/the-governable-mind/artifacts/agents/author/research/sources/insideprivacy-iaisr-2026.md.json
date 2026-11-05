@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/insideprivacy-iaisr-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "32c7638441651611",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/insideprivacy-iaisr-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# insideprivacy-iaisr-2026\n- **URL:** https://www.insideprivacy.com/artificial-intelligence/international-ai-safety-report-2026-examines-ai-capabilities-risks-and-safeguards/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C44\n- **What it establishes:** Covington & Burling law-firm summary. Gives the release date (February 3, 2026) and chair (Yoshua Bengio); paraphrases the loss-of-control and open-weight findings consistently with the PDF.\n- **Key passages:**\n  - quoting the report: \"once released, a model's weights cannot be recalled—meaning options to mitigate harms after release may be limited.\"\n- **Reliability:** Secondary; law-firm client alert; accurate on the points checked.\n- **Relevance to this project:** Establishes the Feb 3, 2026 publication date for C44.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 86
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1c65332382afc401234820f09bda839b65a65b478a641a7310d871360c5084e6",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/insideprivacy-iaisr-2026.md",
+ "kind": "artifact-page"
+}

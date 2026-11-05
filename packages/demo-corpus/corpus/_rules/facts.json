@@ -1,0 +1,97 @@
+{
+  "$comment": "Structured round/approval facts authored by 214b from the projects’ round logs — the only facts PROVENANCE.md and S-9 may cite; anything absent reads “approvals not recorded”. Writer-directed versions per REQ-CORPUS-13 (SPD v3/v4, CoR v4). sourceCommit = agent-discourse HEAD context at export time (the source root itself is untracked scratch).",
+  "slugs": {
+    "the-politics-of-visibility": {
+      "sourceCommit": "c3b434d7feec9ef341c425997d72b703e1358701",
+      "writerDirected": [],
+      "approvals": [
+        {
+          "round": "v1 drafting",
+          "decision": "structure approved by the writer at the Phase 2 drafting gate"
+        },
+        {
+          "round": "v1 review",
+          "decision": "major revisions"
+        },
+        {
+          "round": "v1 response",
+          "decision": "revision delivered (v2)",
+          "note": "49 findings: 28 accepted, 12 adapted, 3 rebutted, 1 declined, 2 escalated to the conservative default; the appendix bold-tier labels stay an open question for the writer"
+        }
+      ]
+    },
+    "the-governable-mind": {
+      "sourceCommit": "c3b434d7feec9ef341c425997d72b703e1358701",
+      "writerDirected": [],
+      "approvals": [
+        {
+          "round": "v1 review",
+          "decision": "major revisions"
+        },
+        {
+          "round": "v1 response",
+          "decision": "revision delivered (v2)",
+          "note": "88 ledger rows: 36 accepted, 31 adapted, 3 rebutted, 1 deferred, 6 escalated"
+        },
+        {
+          "round": "v2 review",
+          "decision": "major revisions"
+        },
+        {
+          "round": "v2 response",
+          "decision": "revision delivered (v3)",
+          "note": "87 ledger rows: 42 accepted, 27 adapted, 3 rebutted, 3 deferred or declined, 5 escalated"
+        }
+      ]
+    },
+    "structure-of-political-difference": {
+      "sourceCommit": "c3b434d7feec9ef341c425997d72b703e1358701",
+      "writerDirected": [
+        "v3",
+        "v4"
+      ],
+      "approvals": [
+        {
+          "round": "v1 review",
+          "decision": "major revisions"
+        },
+        {
+          "round": "v1 response",
+          "decision": "revision delivered (v2)"
+        },
+        {
+          "round": "v3",
+          "decision": "writer-directed edit (not reviewed)",
+          "note": "retitle plus intro replacement and section-name passes"
+        },
+        {
+          "round": "v4",
+          "decision": "writer-directed edit (not reviewed)",
+          "note": "profile roster revision and copyedits"
+        }
+      ]
+    },
+    "constitution-of-reason": {
+      "sourceCommit": "c3b434d7feec9ef341c425997d72b703e1358701",
+      "writerDirected": [
+        "v4"
+      ],
+      "approvals": [
+        {
+          "round": "v2 review",
+          "decision": "major revisions"
+        },
+        {
+          "round": "v2 response",
+          "decision": "revision delivered (v3)",
+          "note": "30 accept / 4 adapt / 1 rebut / 2 defer / 4 escalate"
+        },
+        {
+          "round": "v4",
+          "decision": "writer-directed edit (not reviewed)",
+          "note": "unrecorded edit pass over v3"
+        }
+      ]
+    }
+  }
+}

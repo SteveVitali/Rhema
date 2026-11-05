@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/security-practice-sources.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a34b50f4ffe11098",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "4da8c54f4829bc60",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/security-practice-sources.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Security-practice sources — EFF SSD, Access Now, SecureDrop\n\n- EFF SSD Your Security Plan: https://ssd.eff.org/module/your-security-plan (threat-model framing verbatim); Mobile Phones: Location Tracking: https://ssd.eff.org/module/mobile-phones-location-tracking (four channels; protest-presence disclosure; carrier tracking unavoidable while powered on).\n- Access Now: helpline https://www.accessnow.org/help/ ; 10,000-cases report PR: https://www.accessnow.org/press-release/digital-security-helpline-cases-report/ (surpassed 10,000 by mid-2021); Espionage for Repression (Apr. 2026) PDF read: https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf (Apple/Google impersonation, OAuth phishing — people-targeting pattern).\n- SecureDrop: https://securedrop.org — \"a project of Freedom of the Press Foundation.\"\n- Accessed 2026-08-21 (Phase 1). Draft's \"overwhelmingly... rather than cryptography\"\n  is a fair inference, not a stated statistic — soften or cite the 10,000-case report.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 95
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f8b09dd47f736673fa125bff3af2043b5ebb3634e7cda825e1b3c01ff597b3de",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/security-practice-sources.md",
+ "kind": "artifact-page"
+}

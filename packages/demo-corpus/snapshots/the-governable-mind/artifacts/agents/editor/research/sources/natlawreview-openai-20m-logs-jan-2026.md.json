@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/natlawreview-openai-20m-logs-jan-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "719e8914f1344e32",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/natlawreview-openai-20m-logs-jan-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# natlawreview-openai-20m-logs-jan-2026\n- **URL:** https://natlawreview.com/article/openai-loses-privacy-gambit-20-million-chatgpt-logs-likely-headed-copyright · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Jan. 5–6, 2026: Judge Stein affirms Magistrate Wang's Nov. 2025 order to produce 20 million de-identified ChatGPT logs to the NYT plaintiffs; privacy objections rejected on voluntary-submission and de-identification grounds.\n- **Key passages:** ChatGPT users, \"unlike wiretap subjects, voluntarily submitted their communications to OpenAI\"\n- **Reliability:** Secondary (legal press); independent.\n- **Relevance to this project:** Report §6, §4 (third-party logic in civil discovery), §4′(D); draft l.88, l.276.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d113daf37ea24e7a859ed35541e33fe0b50989359f110a645e9919da00e36039",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/natlawreview-openai-20m-logs-jan-2026.md",
+ "kind": "artifact-page"
+}

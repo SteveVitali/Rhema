@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/tesink-2024-mental-integrity-extended-mind.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "70f8651c320997dc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/tesink-2024-mental-integrity-extended-mind.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# tesink-2024-mental-integrity-extended-mind\n- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC11503137/ · **Accessed:** 2026-09-16 · **For:** v1 response round, repair material (extended mind in current rights scholarship)\n- **Citation:** Vera Tesink, Thomas Douglas, Lisa Forsberg, Sjors Ligthart, Gerben Meynen, \"Right to mental integrity and neurotechnologies: implications of the extended mind thesis,\" *Journal of Medical Ethics* 50:10 (2024): e109645, doi:10.1136/jme-2023-109645.\n- **What it establishes:** In the mental-integrity (not freedom-of-thought) literature, accepting the EMT expands the right's scope to external artifacts; tampering with Otto's notebook would infringe mental integrity; the extension is restricted to artifacts satisfying the conditions for being \"physical realisers of mental states\" (conditions contested — Clark & Chalmers' parity/trust-and-glue vs. Palermos's stricter coupling to avoid \"cognitive bloat\"). Note: their example is *alteration* (ripping out a page), i.e., integrity — not reading.\n- **Key passages:**\n  - Abstract: \"We argue that, on an extended account of the mind, the scope of the right to mental integrity would expand significantly, implying that neurotechnologies would no longer pose a uniquely serious threat to the right. In addition, some neurotechnologies may even be protected by the right to mental integrity, as the technologies would become part of the mind.\"\n  - \"If someone were to go through Otto's notebook and rip out the page containing the location of the museum right after Otto mentioned he wanted to visit it, this could, on the EMT, infringe his right to mental integrity. For, on the EMT, this intervention could count as physically altering the physical basis of some of Otto's mental states.\"\n  - \"It is important to stress that not all external artefacts that a person uses would fall within the scope of the right to mental integrity according to the EMT—only those that satisfy the conditions for being physical realisers of mental states would do so. As mentioned above, there is no consensus about these conditions.\"\n- **Reliability:** Primary, peer-reviewed; Oxford/Utrecht/Tilburg neuroethics-law group (Ligthart is a co-author).\n- **Relevance to this project:** Shows the extended-mind-to-rights inference is live in 2024 scholarship, but applied to *integrity* (alteration) rather than to *privacy of the record*. The essay can position its claim as the missing third application: after Blitz (prohibition) and Tesink et al. (alteration), the externalized forum internum (observation/disclosure).\n- **Addendum 2026-09-16 (slice M / M7) — do they \"warn against\" over-breadth? No.** Their stated stance: \"To clarify, we do not argue for adopting the extended mind thesis (EMT); we merely consider the implications that adopting such a view would have.\" The \"cognitive bloat\" sentence attributes the worry to *others* and concerns conditions for mind-extension, not the right's breadth: \"However, some have argued for more demanding integration conditions, on the basis that the parity principle would lead to 'cognitive bloat'.\" (n. 39 = Allen-Hermanson 2013; next sentence gives Palermos's feedback-loop condition, which \"would, for instance, prevent artefacts such as a camera used to take one picture from becoming part of the mind and only allow for artefacts that we bidirectionally and continuously interact with (eg, smartphones or laptops)\".) On the implication itself they write in the register of entailment, not warning: \"Therefore, it seems that accepting the EMT forces us to accept that interventions such as tampering with someone's smartphone can infringe the right to mental integrity in the same way as tampering with their brain states can—and thus that neurotechnologies do not pose a more serious threat to mental integrity than external interventions.\" Also relevant: \"Palermos contends that an extended mind perspective would have significant implications for the right to mental privacy, as it would imply that information stored in external devices, which is relatively easy to access, could include mental data. He therefore argues for expansion of the right to mental privacy to include such data if the EMT holds true.\" **Fairest verbs:** \"trace / draw out / note the implication\"; they \"restrict\" the extension to artefacts meeting realiser conditions. Not \"warn against,\" and not \"endorse.\"\n",
+  "meters": {
+   "readMin": 3,
+   "words": 633
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ffc6c78320130228e35b75777637289a9dbaaf559b0150ca00390686ac5edb0f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/tesink-2024-mental-integrity-extended-mind.md",
+ "kind": "artifact-page"
+}

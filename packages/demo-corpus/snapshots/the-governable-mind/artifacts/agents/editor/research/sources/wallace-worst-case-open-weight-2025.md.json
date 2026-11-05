@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wallace-worst-case-open-weight-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "01606e02f144610a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wallace-worst-case-open-weight-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wallace-worst-case-open-weight-2025\n- **URL:** https://arxiv.org/abs/2508.03153 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Wallace, Watkins, Wang, Chen, Koch (OpenAI), Aug 2025 (abstract read): malicious fine-tuning of gpt-oss for bio and cyber; underperforms o3; may marginally increase bio capability but does not advance the frontier; informed release.\n- **Key passages:** \"gpt-oss may marginally increase biological capabilities but does not substantially advance the frontier.\"\n- **Reliability:** Primary; interested party; methodologically explicit.\n- **Relevance to this project:** §4(a) marginal-risk reply.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 76
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bdba8d9a5aa58acfec4f68e8ee35345b493f1ed633219c5dd4f2b703b919f50d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wallace-worst-case-open-weight-2025.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,1875 @@
+{
+ "dto": {
+  "addressedObligations": 24,
+  "claims": [
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b4",
+     "confidence": 1,
+     "endOffset": 66,
+     "quote": "Donald Trump and Javier Milei are both called right-wing populists",
+     "startOffset": 0
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C1",
+    "normalizedUrl": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+    "note": "Fix: none.\nFinding: Standard characterization. Scholarly and journalistic sources routinely treat Trump and Milei as comparable right-wing populists; Milei's chainsaw-to-the-state campaign symbolism is extensively documented.",
+    "ordinal": 0,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+      "stance": "supports",
+      "url": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger",
+      "stance": "supports",
+      "url": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger/"
+     }
+    ],
+    "text": "\"Donald Trump and Javier Milei are both called right-wing populists… the other came to power promising to take a chainsaw to the state.\"",
+    "tier": 2,
+    "url": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b4",
+     "confidence": 1,
+     "endOffset": 375,
+     "quote": "Bernie Sanders and Trump can both speak of a betrayed people ruled by a corrupt elite, but almost every substantive answer they give",
+     "startOffset": 243
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C2",
+    "normalizedUrl": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+    "note": "Fix: none.\nFinding: The shared anti-establishment register is exactly what Uscinski et al. document: anti-establishment orientations predict support for both Trump and Sanders while being orthogonal to left–right substance. The substantive divergence (property, immigration, punishment, labor) is uncontested public record.",
+    "ordinal": 1,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+      "stance": "supports",
+      "url": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976"
+     }
+    ],
+    "text": "\"Bernie Sanders and Trump can both speak of a betrayed people ruled by a corrupt elite, but almost every substantive answer they give… pulls in another direction.\"",
+    "tier": 2,
+    "url": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b4",
+     "confidence": 1,
+     "endOffset": 681,
+     "quote": "Barack Obama and Emmanuel Macron are easily grouped together as establishment liberals, though they differ significantly in their relation to markets, administrative authority, and the welfare state.",
+     "startOffset": 482
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C3",
+    "normalizedUrl": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron",
+    "note": "Fix: none.\nFinding: Spot-checked. The grouping is real and public: Obama endorsed Macron in 2017, praising him for standing up for \"liberal values\"; Macron is standardly described as the centrist, establishment-backed candidate. The stated differences (Macron more market-liberalizing) are fair characterization, not checkable as fact.",
+    "ordinal": 2,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron",
+      "stance": "supports",
+      "url": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron/"
+     }
+    ],
+    "text": "\"Barack Obama and Emmanuel Macron are easily grouped together as establishment liberals, though they differ significantly in their relation to markets, administrative authority, and the welfare state.\"",
+    "tier": 3,
+    "url": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron/",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b186",
+     "confidence": 1,
+     "endOffset": 243,
+     "quote": "people use a small number of predictive cues to place parties, though more politically sophisticated voters draw from a broader set of policies, values, and constituencies.",
+     "startOffset": 71
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C4",
+    "normalizedUrl": "https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340",
+    "note": "Fix: Footnote omits the authors; add \"Seonghui Lee, Lie Philip Santoso, and Randolph Stevenson\" and the subtitle.\nFinding: The cited work exists and says precisely this. *Heuristic Inference and the Left-Right: An Experimental Analysis of How Voters Form Their Left-Right Images of Parties*, by Seonghui Lee, Lie Philip Santoso, and Randolph Stevenson, Cambridge Elements in Experimental Political Science, 2026 (online June 26, 2026). Conjoint experiments in Canada, Denmark, Germany, UK; voters infer party left-right positions from policy, value, partisan-cooperation, and social-group cues; less sophisticated voters lean on partisan signals, more sophisticated voters \"draw from a broader range of indicators, including party policies, ideological values, and social group support.\"",
+    "ordinal": 3,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340"
+     }
+    ],
+    "text": "\"Voters use them to infer large bundles of positions from a few cues… [^1]\"; §VIII: \"people use a small number of predictive cues to place parties, though more politically sophisticated voters draw from a broader set of policies, values, and constituencies.\"",
+    "tier": 1,
+    "url": "https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b15",
+     "confidence": 1,
+     "endOffset": 277,
+     "quote": "Ideologies draw from a common field of contested political concepts—liberty, equality, authority, community, democracy, order—and give them determinate meaning by placing them into characteristic configurations.[^2]",
+     "startOffset": 62
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C5",
+    "normalizedUrl": "https://academic.oup.com/book/3196",
+    "note": "Fix: none required.\nFinding: Accurate summary of Freeden's morphology: ideologies are configurations of contested concepts whose meanings are fixed by \"decontestation\" and by each concept's relations/position within the configuration (core/adjacent/peripheral). Both cited works exist at the cited URLs: the OUP page for *Ideologies and Political Theory: A Conceptual Approach* and the Oxford Handbook of Political Ideologies chapter \"The Morphological Analysis of Ideology.\" Primary texts are paywalled; content verified via secondary.",
+    "ordinal": 4,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://academic.oup.com/book/3196",
+      "stance": "supports",
+      "url": "https://academic.oup.com/book/3196"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://academic.oup.com/edited-volume/34324/chapter-abstract/291329165",
+      "stance": "supports",
+      "url": "https://academic.oup.com/edited-volume/34324/chapter-abstract/291329165"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://en.wikipedia.org/wiki/Michael_Freeden",
+      "stance": "supports",
+      "url": "https://en.wikipedia.org/wiki/Michael_Freeden"
+     }
+    ],
+    "text": "\"Michael Freeden's morphological theory… Ideologies draw from a common field of contested political concepts—liberty, equality, authority, community, democracy, order—and give them determinate meaning by placing them into characteristic configurations.[^2]\"",
+    "tier": 1,
+    "url": "https://academic.oup.com/book/3196",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b17",
+     "confidence": 1,
+     "endOffset": 505,
+     "quote": "parties can be classified by origin, organization, international affiliation, name, policy, or ideology, and the boundaries do not always coincide.[^3]",
+     "startOffset": 354
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C6",
+    "normalizedUrl": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+    "note": "Fix: Drop \"organization\" or rephrase to track the four approaches (\"origin, transnational affiliation, policy and ideology, or name\").\nFinding: Mair & Mudde 1998 identify **four** approaches: (1) origin and sociology, (2) international federations/transnational groupings, (3) policy and ideology, (4) party name. The draft's list is essentially right but interpolates \"organization\" as if it were a separate approach, and splits policy/ideology into two. Substance (boundaries don't coincide; origin and ideology best suited) is correct.",
+    "ordinal": 5,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+      "stance": "supports",
+      "url": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.annualreviews.org/content/journals/10.1146/annurev.polisci.1.1.211",
+      "stance": "supports",
+      "url": "https://www.annualreviews.org/content/journals/10.1146/annurev.polisci.1.1.211"
+     }
+    ],
+    "text": "\"parties can be classified by origin, organization, international affiliation, name, policy, or ideology, and the boundaries do not always coincide.[^3]\"",
+    "tier": 2,
+    "url": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+    "verdict": "substantially_accurate"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b17",
+     "confidence": 1,
+     "endOffset": 616,
+     "quote": "Even expert surveys that assign parties to standard families warn that some belong plausibly to more than one.",
+     "startOffset": 506
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C7",
+    "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "note": "Fix: none.\nFinding: The CHES 2024 codebook itself says exactly this: \"Some parties may fit into two or more categories (e.g., at various times, Lega can be classified as TAN and Regionalist). CHES users are advised to review family codings to ensure they match their own research goals and definitions.\"",
+    "ordinal": 6,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf"
+     }
+    ],
+    "text": "\"Even expert surveys that assign parties to standard families warn that some belong plausibly to more than one.\"",
+    "tier": 2,
+    "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b28",
+     "confidence": 1,
+     "endOffset": 252,
+     "quote": "economic and cultural attitudes can be separated both conceptually and empirically.[^4] Second, no universal factor structure settles politics once and for all.",
+     "startOffset": 92
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C8",
+    "normalizedUrl": "https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462",
+    "note": "Fix: none for accuracy; consider acknowledging that [^4]'s second source finds mass opinion weakly structured *tout court* (Phase 3 matter). Note: the first source is a 2-page open peer commentary — legitimate but lightweight for a T1 load-bearing footnote.\nFinding: Both cited works exist and support the sentences as written. Feldman & Huddy argue \"political ideology is best explained by at least two dimensions linked to economic and social ideology.\" Mongrain & Walgrave (EJPR 2026) find no single settled structure — indeed largely *non*-dimensional mass opinion in Belgium (elite constraint 2–3× citizens'). Caveat for Phase 3: the second source's central finding (mass publics show minimal ideological structure of any dimensionality) also cuts against a five-axis structure in mass opinion; the draft's hedged use (\"no universal factor structure\") is accurate but the source proves more than the draft acknowledges.",
+    "ordinal": 7,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/journals/european-journal-of-political-research/article/onedimensional-multidimensional-or-nondimensional-ideological-structure-in-mass-and-elite-opinion/78C953E1B5CC289B183AC549621DB14D",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/journals/european-journal-of-political-research/article/onedimensional-multidimensional-or-nondimensional-ideological-structure-in-mass-and-elite-opinion/78C953E1B5CC289B183AC549621DB14D"
+     }
+    ],
+    "text": "\"economic and cultural attitudes can be separated both conceptually and empirically.[^4] Second, no universal factor structure settles politics once and for all.\"",
+    "tier": 1,
+    "url": "https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b33",
+     "confidence": 1,
+     "endOffset": 149,
+     "quote": "the 2024 Chapel Hill Expert Survey, which asked 609 political scientists to assess 279 European parties",
+     "startOffset": 46
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C9",
+    "normalizedUrl": "https://www.chesdata.eu/ches-europe",
+    "note": "Fix: none. Pedantic option: \"asked\" → \"was completed by\" (609 is completions, not invitations).\nFinding: Exact. The CHES site: \"The survey was completed by 609 political scientists specializing in political parties and European integration… positioning of the leadership of 279 parties in 31 countries.\" Codebook states the same (decoded from the PDF: \"completed by 609 political scientists… 279 parties in 31 countries\"). Re-derived: the downloaded party-level dataset contains exactly 279 rows across 31 countries.",
+    "ordinal": 8,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/ches-europe",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/ches-europe"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv"
+     }
+    ],
+    "text": "\"the 2024 Chapel Hill Expert Survey, which asked 609 political scientists to assess 279 European parties\"",
+    "tier": 1,
+    "url": "https://www.chesdata.eu/ches-europe",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b34",
+     "confidence": 1,
+     "endOffset": 332,
+     "quote": "Culture, coercion, and belonging formed a strong contemporary bundle, correlating at roughly .78 to .82. Economy was related but more independent, with correlations of roughly .39 to .56. The insurgent or anti-establishment measures cut across the others more sharply, including a slight negative relationship with market economics.",
+     "startOffset": 0
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C10",
+    "normalizedUrl": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv",
+    "note": "Fix: none required; publishing the composite definitions (even in a footnote or linked appendix) would make the exercise checkable by readers. Phase 3 should note the .78–.90 bundle is the strongest ammunition for a \"that's just one cultural dimension in Europe\" objection.\nFinding: Author's own exploratory analysis; exact values depend on unstated variable choices, but the pattern **reproduces**. I downloaded CHES 2024 and built plausible composites (economy: lrecon/redistribution/deregulation/spendvtax; culture: galtan/womens_rights/lgbtq_rights/samesex_marriage/religious_principles; coercion: civlib_laworder/executive_power; belonging: nationalism/immigrate_policy/multiculturalism/ethnic_minorities; system: anti_elite_salience/people_v_elite). Result: culture–coercion–belonging pairwise r = .84–.90 (draft: .78–.82); economy vs those three r = .47–.56 (draft: .39–.56); system vs economy r = −.13 (single vars: lrecon×anti_elite_salience = −.10, lrecon×people_v_elite = −.20) — \"slight negative relationship with market economics\" confirmed. Draft's stated ranges are consistent with reasonable alternative composites; my reproduction runs slightly higher on the culture bundle.",
+    "ordinal": 9,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv"
+     }
+    ],
+    "text": "\"Culture, coercion, and belonging formed a strong contemporary bundle, correlating at roughly .78 to .82. Economy was related but more independent, with correlations of roughly .39 to .56. The insurgent or anti-establishment measures cut across the others more sharply, including a slight negative relationship with market economics.\"",
+    "tier": 2,
+    "url": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv",
+    "verdict": "substantially_accurate"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b59",
+     "confidence": 1,
+     "endOffset": 159,
+     "quote": "The academic literature often calls this the cosmopolitan–communitarian divide, especially in work on globalization, integration, borders, and sovereignty.[^6]",
+     "startOffset": 0
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C11",
+    "normalizedUrl": "https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA",
+    "note": "Fix: none.\nFinding: The cited article exists and is exactly on point: de Wilde, Langsæther & Özdemir, \"Critical junctures and the crystallization of cosmopolitanism and communitarianism,\" EPSR 15(2), 2023, 157–176 — analyzing the cosmopolitanism–communitarianism cleavage over borders, international authority, identity, and values. The term is standard in this literature (de Wilde et al.'s broader project).",
+    "ordinal": 10,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA"
+     }
+    ],
+    "text": "\"The academic literature often calls this the cosmopolitan–communitarian divide, especially in work on globalization, integration, borders, and sovereignty.[^6]\"",
+    "tier": 2,
+    "url": "https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b68",
+     "confidence": 1,
+     "endOffset": 265,
+     "quote": "Research on anti-establishment orientations finds precisely such a cross-cutting structure",
+     "startOffset": 175
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C12",
+    "normalizedUrl": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+    "note": "Fix: none.\nFinding: Correct. Uscinski et al. 2021 (AJPS 65:4): many problems attributed to left-right polarization \"are less the product of left-right orientations than an orthogonal 'anti-establishment' dimension\"; some Americans view politics as \"the people\" vs \"a corrupt establishment\" rather than left vs right.",
+    "ordinal": 11,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+      "stance": "supports",
+      "url": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976"
+     }
+    ],
+    "text": "\"Research on anti-establishment orientations finds precisely such a cross-cutting structure… [^7]\"",
+    "tier": 1,
+    "url": "https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b68",
+     "confidence": 1,
+     "endOffset": 383,
+     "quote": "contemporary expert surveys separately measure anti-elite rhetoric and preferences for direct popular decision",
+     "startOffset": 273
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C13",
+    "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "note": "Fix: none.\nFinding: CHES 2024 includes `anti_elite_salience` (\"How salient has ANTI-ESTABLISHMENT and ANTI-ELITE RHETORIC been to each party during 2024?\") and `people_v_elite` (\"the people… should have the final say… by voting directly in referendums\" vs \"ELECTED REPRESENTATIVES should make the most important political decisions\") — two separate items, as claimed.",
+    "ordinal": 12,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES_2024_final_v2.csv"
+     }
+    ],
+    "text": "\"contemporary expert surveys separately measure anti-elite rhetoric and preferences for direct popular decision\"",
+    "tier": 2,
+    "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b72",
+     "confidence": 0.8,
+     "endOffset": 200,
+     "quote": "Cas Mudde’s influential definition treats populism as a “thin-centered” ideology that divides society between a pure people and a corrupt elite and demands that politics express the people’s general w",
+     "startOffset": 0
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C14",
+    "normalizedUrl": "https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century",
+    "note": "Fix: The Penn page is a legitimate carrier of the definition (it is Mudde's own text) but the canonical cite is Mudde 2004; add it to fn 8, retaining the Penn link if desired.\nFinding: Verbatim-accurate paraphrase, and the quoted term appears at the cited page. The cited Penn (Andrea Mitchell Center) page contains Mudde's own words: \"I define populism as a thin-centered ideology that considers society to be ultimately separated into two homogenous and antagonistic groups: 'the pure people' and 'the corrupt elite,' and argues that politics should be an expression of the *volonté générale* (general will) of the people.\" The canonical scholarly source of the definition is Mudde, \"The Populist Zeitgeist,\" *Government and Opposition* 39(4), 2004, 541–563 — confirmed at Cambridge Core.",
+    "ordinal": 13,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century",
+      "stance": "supports",
+      "url": "https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/journals/government-and-opposition/article/populist-zeitgeist/2CD34F8B25C4FFF4F322316833DB94B7",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/journals/government-and-opposition/article/populist-zeitgeist/2CD34F8B25C4FFF4F322316833DB94B7"
+     }
+    ],
+    "text": "\"Cas Mudde's influential definition treats populism as a 'thin-centered' ideology that divides society between a pure people and a corrupt elite and demands that politics express the people's general will.[^8]\"",
+    "tier": 1,
+    "url": "https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b78",
+     "confidence": 0.9,
+     "endOffset": 394,
+     "quote": "Daniele Caramani’s comparison of populism and technocracy shows that both can imagine society’s general interest as unitary, unmediated, and relatively unaccountable; they differ principally over whether that interest is discovered through popular will or expert reason.",
+     "startOffset": 124
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C15",
+    "normalizedUrl": "https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15",
+    "note": "Fix: none.\nFinding: Accurate. Caramani 2017 (APSR 111(1), 54–67): both forms view the general interest as \"unitary, nonpluralist, unmediated, and unaccountable\"; technocracy stresses responsibility via expert rational analysis, populism responsiveness to \"a putative will of the people.\" Draft's \"relatively unaccountable\" is a fair softening of \"unaccountable.\"",
+    "ordinal": 14,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15",
+      "stance": "supports",
+      "url": "https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15"
+     }
+    ],
+    "text": "\"Daniele Caramani's comparison of populism and technocracy shows that both can imagine society's general interest as unitary, unmediated, and relatively unaccountable; they differ principally over whether that interest is discovered through popular will or expert reason.[^9]\"",
+    "tier": 1,
+    "url": "https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b101",
+     "confidence": 1,
+     "endOffset": 365,
+     "quote": "The Chapel Hill survey accordingly records position, salience, internal dissent, and deliberate blurring separately.[^5]",
+     "startOffset": 245
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C16",
+    "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "note": "Fix: none.\nFinding: Confirmed in the 2024 codebook: for major dimensions CHES records position (`lrecon`, `galtan`, `eu_position`…), salience (`lrecon_salience`, `galtan_salience`…), dissent (`lrecon_dissent`: \"how DIVIDED has each party been…\"), and blurring (`lrecon_blur`: \"Some parties may BLUR POSITIONS… by taking vague, ambiguous, or contradictory stances\").",
+    "ordinal": 15,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+      "stance": "supports",
+      "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf"
+     }
+    ],
+    "text": "\"The Chapel Hill survey accordingly records position, salience, internal dissent, and deliberate blurring separately.[^5]\"",
+    "tier": 2,
+    "url": "https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b196",
+     "confidence": 1,
+     "endOffset": 350,
+     "quote": "Using responses to thirty questions, Pew identified nine groups with memorable names such as *Leftward Progressives*, *Loyal Liberals*, *Order and Opportunity Left*, *Unconventional Right*, and *Faith First Conservatives*.[^10]",
+     "startOffset": 123
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C17",
+    "normalizedUrl": "https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology",
+    "note": "Fix: none.\nFinding: **Checks out in every particular** — this was flagged as the highest fabrication risk and it is real. The report exists at the cited URL, dated June 10, 2026; it \"classifies the public into nine groups based on their responses to 30 questions\"; the nine groups are No Apologies Right, Faith First Conservatives, Unconventional Right, Pragmatic and Polite Right, Tuned-Out Middle, Order and Opportunity Left, Left-Out Left, Loyal Liberals, Leftward Progressives. All five names quoted in the draft are correct. Corroborated by Pew's own group sub-pages and report PDF surfaced in search.",
+    "ordinal": 16,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology",
+      "stance": "supports",
+      "url": "https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology/"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.pewresearch.org/politics/2026/06/10/order-and-opportunity-left",
+      "stance": "supports",
+      "url": "https://www.pewresearch.org/politics/2026/06/10/order-and-opportunity-left/"
+     }
+    ],
+    "text": "\"Pew Research Center's 2026 American political typology… Using responses to thirty questions, Pew identified nine groups with memorable names such as *Leftward Progressives*, *Loyal Liberals*, *Order and Opportunity Left*, *Unconventional Right*, and *Faith First Conservatives*.[^10]\"",
+    "tier": 1,
+    "url": "https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology/",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b152",
+     "confidence": 1,
+     "endOffset": 325,
+     "quote": "than the language of laissez-faire conservatism would suggest.",
+     "startOffset": 263
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C18",
+    "normalizedUrl": "https://en.wikipedia.org/wiki/Orbanomics",
+    "note": "Fix: none mandatory; a clause noting the workfare/flat-tax character would forestall specialist objection.\nFinding: The anti-laissez-faire half is solidly supported: Orbánomics combines selective state intervention, sectoral taxes, financial nationalism (bank/pension nationalization), price controls on utilities, and large family subsidies. Nuance: Hungary's social model is explicitly **workfare**, not generous welfare (\"a shift from a welfare to workfare model\"), plus a flat 15% income tax — so \"welfare nationalist\" fits the draft's own definition (\"economic protection and social provision bounded primarily by national membership,\" e.g., natalist subsidies) but \"welfare\" should not be read as redistributive generosity.",
+    "ordinal": 17,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://en.wikipedia.org/wiki/Orbanomics",
+      "stance": "supports",
+      "url": "https://en.wikipedia.org/wiki/Orbanomics"
+     }
+    ],
+    "text": "\"Viktor Orbán's political economy is nearer this neighborhood [welfare nationalism] than the language of laissez-faire conservatism would suggest.\"",
+    "tier": 2,
+    "url": "https://en.wikipedia.org/wiki/Orbanomics",
+    "verdict": "substantially_accurate"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b149",
+     "confidence": 1,
+     "endOffset": 302,
+     "quote": "Javier Milei is best understood not as the essence of libertarianism but as a populist, culturally mixed or traditionalist variant.",
+     "startOffset": 171
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C19",
+    "normalizedUrl": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger",
+    "note": "Fix: none.\nFinding: Supported. Milei closed the Ministry for Women, Gender, and Diversities, banned gender-affirming care for minors, campaigns against \"wokeism\" and DEI, and opposes abortion — cultural traditionalism joined to radical market libertarianism; his populist style is extensively documented (see C1 sources).",
+    "ordinal": 18,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger",
+      "stance": "supports",
+      "url": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger/"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+      "stance": "supports",
+      "url": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw"
+     }
+    ],
+    "text": "\"Javier Milei is best understood not as the essence of libertarianism but as a populist, culturally mixed or traditionalist variant.\"",
+    "tier": 2,
+    "url": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger/",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b155",
+     "confidence": 1,
+     "endOffset": 361,
+     "quote": "Donald Trump, Giorgia Meloni, Jair Bolsonaro, and Narendra Modi are not interchangeable, but the label",
+     "startOffset": 259
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C20",
+    "normalizedUrl": "https://www.illiberalism.org/giorgia-meloni-an-italian-trump",
+    "note": "Fix: none.\nFinding: The grouping is standard in both scholarship and self-description. Meloni is analyzed as radical-right populist with national-conservative leanings who \"identifies with… Vance's national conservatism\" and herself groups her cause with Trump, Milei, and Modi; the National Conservatism conference movement has drawn Meloni (Rome 2020) and Indian-right figures pledging alignment. The draft's own hedge (\"not interchangeable\") plus the sourced caveat that the \"international reactionary bloc\" is partly a political construct keeps this honest.",
+    "ordinal": 19,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.illiberalism.org/giorgia-meloni-an-italian-trump",
+      "stance": "supports",
+      "url": "https://www.illiberalism.org/giorgia-meloni-an-italian-trump/"
+     }
+    ],
+    "text": "\"Donald Trump, Giorgia Meloni, Jair Bolsonaro, and Narendra Modi are not interchangeable, but the label [natcon] identifies a real shared neighborhood.\"",
+    "tier": 2,
+    "url": "https://www.illiberalism.org/giorgia-meloni-an-italian-trump/",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b189",
+     "confidence": 1,
+     "endOffset": 114,
+     "quote": "Free trade has migrated between coalitions. Opposition to centralized state power has moved between left and right",
+     "startOffset": 0
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C21",
+    "normalizedUrl": "https://en.wikipedia.org/wiki/Protectionism_in_the_United_States",
+    "note": "Fix: none.\nFinding: Spot-checked the free-trade leg, the most falsifiable: 19th-century Republicans were the protectionist party (Lincoln, \"Henry Clay tariff Whig,\" 44% Civil War tariff) while Southern Democrats wanted free trade; post-WWII bipartisan liberalization under GATT; protectionism returned to the GOP under Trump from 2016. Migration between coalitions confirmed. The nationalism-forms list is textbook-level and uncontroversial.",
+    "ordinal": 20,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://en.wikipedia.org/wiki/Protectionism_in_the_United_States",
+      "stance": "supports",
+      "url": "https://en.wikipedia.org/wiki/Protectionism_in_the_United_States"
+     }
+    ],
+    "text": "\"Free trade has migrated between coalitions. Opposition to centralized state power has moved between left and right… Nationalism has appeared in anti-colonial, socialist, liberal, fascist, and conservative forms.\"",
+    "tier": 3,
+    "url": "https://en.wikipedia.org/wiki/Protectionism_in_the_United_States",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b143",
+     "confidence": 1,
+     "endOffset": 227,
+     "quote": "historically combines welfare provision and labor accommodation with religious or communitarian social thought.",
+     "startOffset": 116
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C22",
+    "normalizedUrl": "https://en.wikipedia.org/wiki/Christian_democracy",
+    "note": "Fix: none.\nFinding: Spot-checked; accurate. Christian democracy draws on Catholic social teaching; emphasizes community, solidarity, subsidiarity, a social market economy, \"supporting a welfare state, labor unions, and… regulation of market forces\"; Christian-democratic movements organized their own labor unions.",
+    "ordinal": 21,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://en.wikipedia.org/wiki/Christian_democracy",
+      "stance": "supports",
+      "url": "https://en.wikipedia.org/wiki/Christian_democracy"
+     }
+    ],
+    "text": "\"[Christian democracy] historically combines welfare provision and labor accommodation with religious or communitarian social thought.\"",
+    "tier": 3,
+    "url": "https://en.wikipedia.org/wiki/Christian_democracy",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b177",
+     "confidence": 1,
+     "endOffset": 164,
+     "quote": "Trump is a populist natcon: market-leaning, authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features.",
+     "startOffset": 4
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C23a",
+    "normalizedUrl": "https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war",
+    "note": "escalated to Tier 1\nFix: Re-score Economy toward \"mixed\" (a 3, or 4 with an explicit protectionism tag), or split rhetoric/program/practice as §V itself prescribes — e.g., \"market-rhetorical, protectionist-statist in practice.\" This would *strengthen* the essay: Trump is the best available demonstration of its own rhetoric/program/practice distinction.\nFinding: \"Market-leaning\" is not what the mid-2026 record supports on the draft's own Economy axis. Second-term economic policy is tariff-centered and state-directive: a 10% universal baseline tariff (re-imposed under Section 122 after the Supreme Court's Feb 20, 2026 ruling struck the IEEPA tariffs), Section 232 tariffs of 10–50% on steel, aluminum, copper, autos, pharmaceuticals, lumber, furniture; estimated applied tariff rate rising toward ~11.8%; ~$900 average household tax increase in 2026; plus a 9.9% federal equity stake in Intel and a sovereign-wealth-fund initiative putting \"government ownership back on the policy agenda.\" Tax cuts and deregulation exist on the other side of the ledger, so \"mixed/protectionist-statist\" is defensible — \"market-leaning\" as the profile's first coordinate is not, and the draft itself warns that \"a nominally market-oriented party can construct protectionist policy\" (§V) without applying the warning here. Reputationally consequential characterization of a named person; readers will contest it immediately.",
+    "ordinal": 22,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war",
+      "stance": "contextualizes",
+      "url": "https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.forbes.com/sites/jamesbroughel/2026/07/22/trump-has-put-government-ownership-back-on-the-policy-agenda",
+      "stance": "contextualizes",
+      "url": "https://www.forbes.com/sites/jamesbroughel/2026/07/22/trump-has-put-government-ownership-back-on-the-policy-agenda/"
+     }
+    ],
+    "text": "\"Trump is a populist natcon: market-leaning, authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features.\"",
+    "tier": 1,
+    "url": "https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/",
+    "verdict": "misleading_in_context"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b178",
+     "confidence": 1,
+     "endOffset": 138,
+     "quote": "Obama is a liberal: economically mixed, moderately authority-accepting, culturally progressive, universal, and strongly institutional.",
+     "startOffset": 4
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C23b",
+    "normalizedUrl": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron",
+    "note": "Fix: none.\nFinding: Uncontested mainstream characterization; no factual predicate at odds with the record (see C3 evidence for the \"liberal/establishment\" grouping). Evaluative scoring, not further checkable.",
+    "ordinal": 23,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron",
+      "stance": "supports",
+      "url": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron/"
+     }
+    ],
+    "text": "\"Obama is a liberal: economically mixed, moderately authority-accepting, culturally progressive, universal, and strongly institutional.\"",
+    "tier": 2,
+    "url": "https://time.com/4766893/barack-obama-endorses-emmanuel-macron/",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b179",
+     "confidence": 1,
+     "endOffset": 200,
+     "quote": "Milei is a populist libertarian: radically market-oriented, comparatively anti-statist, culturally traditional in important respects, neither fully universal nor nationalist, and highly insurgent.",
+     "startOffset": 4
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C23c",
+    "normalizedUrl": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+    "note": "Fix: none.\nFinding: Consistent with the record: chainsaw austerity program, Ley de Bases state-shrinking, culturally traditionalist moves (C19), outsider insurgency.",
+    "ordinal": 24,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+      "stance": "supports",
+      "url": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger",
+      "stance": "supports",
+      "url": "https://www.wola.org/analysis/three-ways-that-argentinas-milei-is-trumps-doppelganger/"
+     }
+    ],
+    "text": "\"Milei is a populist libertarian: radically market-oriented, comparatively anti-statist, culturally traditional in important respects, neither fully universal nor nationalist, and highly insurgent.\"",
+    "tier": 2,
+    "url": "https://jrws.berkeley.edu/carlos-joly-trump-and-milei-or-government-chain-saw",
+    "verdict": "verified"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "anchor": {
+     "blockId": "b180",
+     "confidence": 1,
+     "endOffset": 202,
+     "quote": "Orbán is a welfare nationalist: economically mixed, authority-oriented, traditional, strongly communal, and populist in legitimation despite governing through a consolidated institutional apparatus.",
+     "startOffset": 4
+    },
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C23d",
+    "normalizedUrl": "https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz",
+    "note": "escalated to Tier 1\nFix: Date the profile (\"Orbán in office, 2010–2026\") or recast in past tense; the loss of power is itself a usable data point for the essay's insurgent/institutional discussion.\nFinding: Currency failure: Orbán is no longer governing. On April 12, 2026, Péter Magyar's Tisza party defeated Fidesz in a landslide (Tisza ~138–141 of 199 seats, a two-thirds supermajority; Fidesz ~55), ending 16 years of Orbán government; Orbán conceded (\"The responsibility and possibility of governing was not given to us\") and Magyar formed a government. Since the draft cites a June 10, 2026 Pew report, it was written *after* this — the present-tense \"governing\" is false as written, and the \"consolidated institutional apparatus\" is being dismantled by a constitutional supermajority. The ideological characterization itself remains sound (C18). Ironic against the draft's own Rule 4, \"Date every profile.\"",
+    "ordinal": 25,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz",
+      "stance": "contextualizes",
+      "url": "https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://www.cnn.com/2026/04/12/world/live-news/hungary-election-orban-magyar",
+      "stance": "contextualizes",
+      "url": "https://www.cnn.com/2026/04/12/world/live-news/hungary-election-orban-magyar"
+     },
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://en.wikipedia.org/wiki/2026_Hungarian_parliamentary_election",
+      "stance": "contextualizes",
+      "url": "https://en.wikipedia.org/wiki/2026_Hungarian_parliamentary_election"
+     }
+    ],
+    "text": "\"Orbán is a welfare nationalist: economically mixed, authority-oriented, traditional, strongly communal, and populist in legitimation despite governing through a consolidated institutional apparatus.\"",
+    "tier": 1,
+    "url": "https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz",
+    "verdict": "misleading_in_context"
+   },
+   {
+    "accessedAt": "2026-07-30T00:00:00Z",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "humanAdded": false,
+    "id": "C24",
+    "normalizedUrl": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+    "note": "Fix: Add authors to [^1]; add Mudde 2004 to [^8]; otherwise none.\nFinding: Every URL resolves and points to the work the draft describes; no wrong-but-plausible links found. Itemized: [^1] Cambridge Element — exists, matches use (C4). [^2] OUP book p.3196 = *Ideologies and Political Theory*; OUP chapter 291329165 = \"The Morphological Analysis of Ideology,\" Oxford Handbook of Political Ideologies — both correct (C5). [^3] Annual Reviews DOI page for Mair & Mudde 1998 — canonical URL, resolves (403 to automated fetch; DOI confirmed independently, C6). [^4] BBS \"Not so simple\" (Feldman & Huddy 2014) and EJPR Mongrain & Walgrave 2026 — both correct (C8). [^5] chesdata.eu/ches-europe and the 2024 codebook PDF — both live (C7, C9, C13, C16). [^6] EPSR de Wilde et al. — correct (C11). [^7] Miami repository, Uscinski et al. 2021 — correct (C12). [^8] Penn AMC Mudde page — correct carrier of the definition (C14). [^9] APSR Caramani 2017 — correct (C15). [^10] Pew June 10, 2026 typology — correct (C17). Quality notes, not integrity failures: [^1] omits authors; [^8] is a lecture-essay page rather than the canonical Mudde 2004 article; [^4]'s first item is a 2-page peer commentary; [^3] blocks robots.",
+    "ordinal": 26,
+    "sources": [
+     {
+      "accessedAt": "2026-07-30T00:00:00Z",
+      "normalizedUrl": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+      "stance": "supports",
+      "url": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf"
+     }
+    ],
+    "text": "All ten reference URLs, [^1]–[^10].",
+    "tier": 1,
+    "url": "https://manifesto-project.wzb.eu/down/papers/Manifesto_Project_Party_Family_Handbook.pdf",
+    "verdict": "verified"
+   }
+  ],
+  "demo": {
+   "importRule": {
+    "claims[].accessedAt": "assigned by import rule",
+    "claims[].sources[].accessedAt": "assigned by import rule",
+    "claims[].sources[].stance": "assigned by import rule",
+    "findings[].evidence.urls[].accessed": "assigned by import rule",
+    "findings[].kind": "assigned by import rule",
+    "findings[].origin": "assigned by import rule",
+    "findings[].reconciliation": "assigned by import rule",
+    "findings[].severity": "assigned by import rule"
+   },
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate",
+    "rigor",
+    "fetch_log",
+    "access_report"
+   ],
+   "roles": {
+    "drafting": "the drafting agent",
+    "editor": "the editor (agent)",
+    "revising": "the revising agent",
+    "writer": "the writer"
+   }
+  },
+  "fetchLog": [],
+  "findingObligations": {
+   "Line note 1": "addressed",
+   "Line note 2": "addressed",
+   "Line note 3": "addressed",
+   "Line note 4": "addressed",
+   "Major 1": "addressed",
+   "Major 2": "addressed",
+   "Major 3": "addressed",
+   "Major 4": "addressed",
+   "Major 5": "addressed",
+   "Major 6": "addressed",
+   "Minor 1": "addressed",
+   "Minor 10": "addressed",
+   "Minor 11": "addressed",
+   "Minor 12": "addressed",
+   "Minor 2": "addressed",
+   "Minor 3": "addressed",
+   "Minor 4": "addressed",
+   "Minor 5": "addressed",
+   "Minor 6": "addressed",
+   "Minor 7": "addressed",
+   "Minor 8": "addressed",
+   "Minor 9": "addressed",
+   "SR 3": "addressed",
+   "SR 4": "addressed"
+  },
+  "findings": [
+   {
+    "anchor": null,
+    "body": "Claim the ground the piece actually occupies. Its real contribution is not the five axes (four of which exist verbatim on a quiz site) but the *grammar* — the separation of coordinates from family names, and the usage discipline around them. Add the section that names your predecessors and flanking opponents (8values, GAL/TAN, Bobbio, Lewis & Lewis, Caplan) and answers \"why five\" as a pragmatic optimum between one line and issue-atomism. Every other major issue becomes easier once the piece knows which conversation it is in.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "The one thing",
+    "kind": "argument",
+    "letterSection": "one_thing",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "major",
+    "title": "The one thing"
+   },
+   {
+    "anchor": {
+     "blockId": "b37",
+     "confidence": 1,
+     "endOffset": 53,
+     "quote": "The point is not that politics secretly has five axes",
+     "startOffset": 0
+    },
+    "body": "- **The problem:** §II's counterfactual-independence test overgenerates — ecology, foreign policy, centralization, and regime commitment all pass it, and §X concedes as much by exiling exactly those to \"modules\" with no stated selection principle. Meanwhile the discourse audit found the four non-System axes replicate the 8values test — *three with verbatim pole names* — and the strongest published counterargument (Lewis & Lewis, *The Myth of Left and Right*, 2023, sharpened in the Caplan–Lewis exchange) attacks precisely this joint: if bundling is the spectrum's sin, five axes is a bigger reification, since each \"question\" is itself a bundle (Economy compresses trade, tax, redistribution, regulation, property, labor — a protectionist tax-cutter has no true Economy score, only a lossy 3). The Lewises are simultaneously the nearest predecessor of §VIII's own \"coalition names\" thesis and its standing refutation; the piece neither credits nor answers them. Steelman considered: the draft's fragments (§VII \"Labels gain explanatory power by excluding detail,\" the metadata, the modules) already imply the answer — five is a pragmatic optimum between one line and issue-atomism — but an implied answer to an unnamed objection is invisible.\n- **Why it matters here:** The hostile-but-fair one-liner writes itself: \"8values with a populism axis and no test, which never says why five.\" For an AI-adjacent readership primed to detect derivative taxonomy, the unnamed 8values overlap alone is disqualifying if a reader finds it before you disclose it.\n- **Direction:** Add one section (or two long paragraphs) — \"Why five, and not fifty\" — that (a) gives the genealogy in one paragraph: Nolan → Political Compass → 8values → 9Axes, crediting 8values by name and explaining why a *test* is the wrong form (tests score people; this vocabulary describes claims); (b) names Caplan's pragmatic monism and Lewis eliminativism as the flanking positions and locates the framework between them; (c) states the selection principle for core-vs-module (historical recurrence across polities and centuries; coalition-forming power; mutual irreducibility) and applies it visibly to Green and foreign policy.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 1",
+    "kind": "argument",
+    "letterSection": "major",
+    "origin": "both",
+    "provisional": false,
+    "reconciliation": "kept",
+    "rubricDims": [
+     "argument_rigor"
+    ],
+    "severity": "major",
+    "title": "The central number is never argued, and the predecessors who make that fatal are never named"
+   },
+   {
+    "anchor": {
+     "blockId": "b34",
+     "confidence": 1,
+     "endOffset": 103,
+     "quote": "Culture, coercion, and belonging formed a strong contemporary bundle, correlating at roughly .78 to .82",
+     "startOffset": 0
+    },
+    "body": "- **The problem:** Heads-I-win framing — near-orthogonal composites would also have \"confirmed\" the framework (\"distinct enough to separate; history binds them\"). Worse, the bundle *is* GAL/TAN: the Chapel Hill survey was built around the Hooghe–Marks two-dimensional model whose second dimension welds green/alternative/libertarian to traditionalism/authority/nationalism, and Kitschelt's diagonal is the standard published explanation for the bundling the draft attributes to \"history.\" A political scientist reads §II as naive rediscovery; the ledger meanwhile confirms your correlations are real and reproducible (C10: .84–.90 / .47–.56 / −.10 to −.20 on my re-derivation), so the empirics deserve better framing than they get. Also unstated: which variables entered each composite — the exercise is currently irreproducible as described.\n- **Why it matters here:** §II is the piece's only empirical footing; as framed it is the piece's most attackable section for exactly the readers it should impress.\n- **Direction:** Cite GAL/TAN and Kitschelt; invert the framing — *the reigning two-dimensional model welds together three questions that current politics is visibly unwelding*, with Milei and welfare nationalism as the unwelding evidence; state what would count against the framework (if no consequential actors occupied the off-diagonal cells, the extra axes would be idle); and list the composite variables in an endnote so the exercise is checkable.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 2",
+    "kind": "argument",
+    "letterSection": "major",
+    "origin": "both",
+    "provisional": false,
+    "reconciliation": "kept",
+    "rubricDims": [
+     "argument_rigor"
+    ],
+    "severity": "major",
+    "title": "The CHES exercise rediscovers its own dataset's design dimension and is framed unfalsifiably"
+   },
+   {
+    "anchor": {
+     "blockId": "b90",
+     "confidence": 0.4,
+     "endOffset": 35,
+     "quote": "## V. Coordinates Before Categories",
+     "startOffset": 0
+    },
+    "body": "- **The problem:** Nothing at the venue looks like the second half; the second read independently called it \"two documents in a trench coat\" and located the reader's death in the fourteen consecutive dictionary entries of §VI. The package already contains `taxonomy_reference_sheet.md` — the manual has a home that is not the essay's body. In the July-2026 environment, tables and symmetrical bulleted apparatus are also the surface features an AI-literate readership pattern-matches to machine-generated taxonomy — a reception risk the discourse report rates as the largest formal one.\n- **Why it matters here:** This is the venue's first politics piece; it will be judged as an essay, and the essay is currently interrupted for roughly 2,500 words.\n- **Direction:** Keep the *argument* of the apparatus, compress the *inventory*. §VI: discuss the families that do argumentative work (socdem/demsoc as a minimal pair; welfare nationalist and natcon as the proof that left/right fails; libertarian via Milei) in continuous prose and hand the rest to the figure and the linked reference sheet. §X: two paragraphs (the trust argument + regime type as the non-negotiable tag). §XI: keep Rule 5 and the charitable-poles material as prose, fold rules 1–4 and 6 into a paragraph or the reference sheet. Cut the 1–5 scale table; state it in a sentence.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 3",
+    "kind": "structure",
+    "letterSection": "major",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [
+     "structure"
+    ],
+    "severity": "major",
+    "title": "Essay and manual in a trench coat — a genre break the venue cannot absorb"
+   },
+   {
+    "anchor": {
+     "blockId": "b180",
+     "confidence": 1,
+     "endOffset": 34,
+     "quote": "Orbán is a welfare nationalist",
+     "startOffset": 4
+    },
+    "body": "- **The problem:** Ledger C23a: the mid-2026 record is tariff-centered and state-directive (universal §122 baseline tariff after the February IEEPA ruling; §232 tariffs of 10–50% across major sectors; applied rate ≈ 11.8%; a 9.9% federal Intel stake; a sovereign wealth fund) — \"market-leaning\" as the first coordinate misleads on the draft's own Economy axis, and §V itself warns that \"a nominally market-oriented party can construct protectionist policy.\" Ledger C23d: Orbán lost power on April 12, 2026 (Tisza supermajority) — the present tense is false in a draft that postdates it (it cites a June 10 Pew report), an ironic breach of the draft's own Rule 4, \"date every profile.\" More generally (second read Objection 3, adopted): the profiles carry no dates, no evidence, no rhetoric/program/practice split, and the essay never once runs its machinery end-to-end on a contested case — its flagship application is scored on exactly the vibes Rule 1 ranks last.\n- **Why it matters here:** \"Trump: market-leaning\" is the single most screenshot-quotable phrase in the piece for hostile readers, and both errors are self-inflicted demonstrations of the framework's necessity.\n- **Direction:** Convert both bugs into features. Trump becomes the worked demonstration of the rhetoric/program/practice split (\"market-rhetorical, protectionist-statist in practice\"), with dates and two cited facts. Orbán's profile is dated (\"in office 2010–2026\") and his fall becomes live evidence in the insurgent/institutional discussion. Add one sentence before the profiles conceding they are dated, disputable illustrations of the grammar, not verdicts.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 4",
+    "kind": "claim",
+    "letterSection": "major",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "major",
+    "title": "The showcase profiles violate the essay's own rules — including two Misleading-in-context findings on named persons"
+   },
+   {
+    "anchor": {
+     "blockId": "b71",
+     "confidence": 0.4,
+     "endOffset": 29,
+     "quote": "## IV. What Populism Contains",
+     "startOffset": 0
+    },
+    "body": "- **The problem:** Müller's exclusive-moral-representation thesis is the unnamed source of the \"moral dualism\"/\"unitarism\"/pluralism facets, currently presented as an unpacking of Mudde; Akkerman–Mudde–Zaslove and POPPA show disaggregated populism measurement is existing practice, so the facets are a design choice among known components, not a discovery; \"Welfare Nationalist\" renames welfare chauvinism (Andersen & Bjørklund 1990, thirty years of literature); prototype-family semantics ≈ Collier & Mahon's radial categories (1993). None of this destroys the section's originality — the two-level architecture and the three-way disambiguation remain yours — but unacknowledged, each is a \"reinvented X\" tweet waiting to be written.\n- **Why it matters here:** The piece's authority rests on scholarly seriousness; the pattern of near-miss attribution reads, at this venue, as either naivety or concealment.\n- **Direction:** One clause or endnote each. Müller in the §IV text proper (he is the best-known populism author among your likely readers); the others can live in the endnotes.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 5",
+    "kind": "argument",
+    "letterSection": "major",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "major",
+    "title": "Attribution debts that change what the argument can claim"
+   },
+   {
+    "anchor": {
+     "blockId": "b183",
+     "confidence": 0.4,
+     "endOffset": 37,
+     "quote": "## VIII. What Left and Right Still Do",
+     "startOffset": 0
+    },
+    "body": "- **The problem:** The substantive defense — Bobbio's thesis that left and right track a real, enduring attitude toward equality, in which case the five questions are one question wearing five masks — is never engaged; treating \"coalition name\" as the only live account wins by definition a debate that is open (the discourse report's strawman-by-omission finding). The draft holds the counterexamples (Milei; welfare nationalism — egalitarian inside, exclusionary at the boundary) but never fires them at a named target. Relatedly, §I's Freeden borrowing is double-edged: decontestation applies to the pole-words of your own axes, which presuppose the stable meanings the cited theory denies — a Freeden-literate reader at this venue will notice.\n- **Why it matters here:** The philosophy-literate audience is precisely the one that knows Bobbio and Freeden.\n- **Direction:** One paragraph in §VIII naming and answering Bobbio (equality-monism cannot score Milei or the welfare nationalist without remainder); one sentence in §I or §II conceding the axes are themselves historical constructions — a convention proposed, not a geometry discovered — which is already the piece's official position (§II) applied to itself.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Major 6",
+    "kind": "discourse",
+    "letterSection": "major",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "major",
+    "title": "Only the beatable defense of left–right is engaged"
+   },
+   {
+    "anchor": {
+     "blockId": "b88",
+     "confidence": 1,
+     "endOffset": 115,
+     "quote": "A president can remain populist. An outsider can be institutionalist. A bureaucracy can be insurgently reorganized.",
+     "startOffset": 0
+    },
+    "body": "**§IV is the piece's spine and its genuine contribution.** The four-facet decomposition of populism and, above all, the three-way disambiguation — \"**Populist** is a substantive tag… **Establishment** is a contextual status… **Institutional** is an ideological preference\" — resolve a real equivocation in public discourse. \"A president can remain populist. An outsider can be institutionalist. A bureaucracy can be insurgently reorganized.\" Both independent reads converged on this section; the discourse audit confirmed the two-level public/analytic architecture has no published predecessor.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 1",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**§IV is the piece's spine and its genuine contribution.** The four-facet decomposition of populism and, above all, the three-way disambiguation — \"**Populist** is a substantive tag… **Establishment**"
+   },
+   {
+    "anchor": {
+     "blockId": "b3",
+     "confidence": 1,
+     "endOffset": 58,
+     "quote": "The left–right spectrum is not false. It is a compression.",
+     "startOffset": 0
+    },
+    "body": "**The compression frame, and the §VIII concession.** \"The left–right spectrum is not false. It is a compression.\" — and then the refusal of cheap victory: \"not merely a philosophical error imposed on politics… an adaptation to limited attention.\" Naming what left–right does well before proposing to supplement it is the mark of a serious piece.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 2",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**The compression frame, and the §VIII concession.** \"The left–right spectrum is not false. It is a compression.\" — and then the refusal of cheap victory: \"not merely a philosophical error imposed on "
+   },
+   {
+    "anchor": {
+     "blockId": "b90",
+     "confidence": 0.4,
+     "endOffset": 35,
+     "quote": "## V. Coordinates Before Categories",
+     "startOffset": 0
+    },
+    "body": "**The no-master-score rule with decomposable distance (§V).** Genuinely novel usage discipline; the single most defensible hill in the framework; the natural favorite of the piece's likeliest adopters.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 3",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**The no-master-score rule with decomposable distance (§V).** Genuinely novel usage discipline; the single most defensible hill in the framework; the natural favorite of the piece's likeliest adopters"
+   },
+   {
+    "anchor": {
+     "blockId": "b204",
+     "confidence": 1,
+     "endOffset": 61,
+     "quote": "A taxonomy becomes untrustworthy when it hides its exclusions",
+     "startOffset": 0
+    },
+    "body": "**The self-audit.** §X's \"A taxonomy becomes untrustworthy when it hides its exclusions,\" the §XI.7 charitable-poles table, and Rule 5 (\"The entire framework exists to prevent those inferences\") are intellectually honest in a way ideological cartography almost never is.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 4",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**The self-audit.** §X's \"A taxonomy becomes untrustworthy when it hides its exclusions,\" the §XI.7 charitable-poles table, and Rule 5 (\"The entire framework exists to prevent those inferences\") are i"
+   },
+   {
+    "anchor": {
+     "blockId": "b248",
+     "confidence": 0.4,
+     "endOffset": 40,
+     "quote": "## XII. A Better Grammar of Disagreement",
+     "startOffset": 0
+    },
+    "body": "**§XII delivers the payoff** — the instead/say rewrites demonstrate the framework changing actual sentences, which is the piece's own success criterion.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 5",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**§XII delivers the payoff** — the instead/say rewrites demonstrate the framework changing actual sentences, which is the piece's own success criterion."
+   },
+   {
+    "anchor": null,
+    "body": "**The factual substrate.** 22 of 27 ledger entries Verified, zero Contradicted or Unsupported; the Pew 2026 typology, the 2026 Cambridge Element, and the CHES 609/279 figures are all exact; your CHES correlations reproduce from the raw CSV (ledger C10). Report against interest: every claim flagged pre-check as a likely fabrication checked out in every particular.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Strength 6",
+    "kind": "craft",
+    "letterSection": "strength",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**The factual substrate.** 22 of 27 ledger entries Verified, zero Contradicted or Unsupported; the Pew 2026 typology, the 2026 Cambridge Element, and the CHES 609/279 figures are all exact; your CHES "
+   },
+   {
+    "anchor": {
+     "blockId": "b125",
+     "confidence": 0.9,
+     "endOffset": 121,
+     "quote": "less committed to replacing capitalism than the democ",
+     "startOffset": 68
+    },
+    "body": "§VI Socdem: \"less committed to replacing capitalism than the **democ**\" — typo for \"demsoc\"; a defined-term failure inside the proposed lexicon itself (second read caught this too).",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 1",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "§VI Socdem: \"less committed to replacing capitalism than the **democ**\" — typo for \"demsoc\"; a defined-term failure inside the proposed lexicon itself (second read caught this too)."
+   },
+   {
+    "anchor": {
+     "blockId": "b90",
+     "confidence": 0.4,
+     "endOffset": 35,
+     "quote": "## V. Coordinates Before Categories",
+     "startOffset": 0
+    },
+    "body": "Figures referenced out of order: figure_5 appears in §V, figure_4 in §VI (second read).",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 2",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Figures referenced out of order: figure_5 appears in §V, figure_4 in §VI (second read)."
+   },
+   {
+    "anchor": {
+     "blockId": "b96",
+     "confidence": 1,
+     "endOffset": 21,
+     "quote": "2 · 4 · 1 · 2 · 5",
+     "startOffset": 4
+    },
+    "body": "Notation wobbles: \"2 · 4 · 1 · 2 · 5\" (§V) vs \"2–3–1–2–4\" (§VI); pick the interpunct form everywhere.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 3",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Notation wobbles: \"2 · 4 · 1 · 2 · 5\" (§V) vs \"2–3–1–2–4\" (§VI); pick the interpunct form everywhere."
+   },
+   {
+    "anchor": {
+     "blockId": "b17",
+     "confidence": 0.7,
+     "endOffset": 200,
+     "quote": "This also explains why ideological families have both reality and indeterminacy. Social democrats across countries share enough history and conceptual structure to constitute a recognizable family, bu",
+     "startOffset": 0
+    },
+    "body": "Ledger C6: Mair & Mudde list is four approaches — drop \"organization\" or rephrase (\"origin, transnational affiliation, policy and ideology, or name\").",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "evidence": {
+     "urls": [],
+     "verdict": "substantially_accurate"
+    },
+    "id": "Minor 4",
+    "kind": "claim",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Ledger C6: Mair & Mudde list is four approaches — drop \"organization\" or rephrase (\"origin, transnational affiliation, policy and ideology, or name\")."
+   },
+   {
+    "anchor": null,
+    "body": "Ledger C4: footnote 1 omits its authors (Lee, Santoso & Stevenson) — an authorless citation on a twice-load-bearing source.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "evidence": {
+     "urls": [],
+     "verdict": "verified"
+    },
+    "id": "Minor 5",
+    "kind": "claim",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Ledger C4: footnote 1 omits its authors (Lee, Santoso & Stevenson) — an authorless citation on a twice-load-bearing source."
+   },
+   {
+    "anchor": null,
+    "body": "Ledger C14: add the canonical Mudde 2004 (*Government and Opposition*) alongside the Penn lecture page.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "evidence": {
+     "urls": [],
+     "verdict": "verified"
+    },
+    "id": "Minor 6",
+    "kind": "claim",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Ledger C14: add the canonical Mudde 2004 (*Government and Opposition*) alongside the Penn lecture page."
+   },
+   {
+    "anchor": {
+     "blockId": "b33",
+     "confidence": 1,
+     "endOffset": 97,
+     "quote": "asked 609",
+     "startOffset": 88
+    },
+    "body": "Ledger C9 (pedantic): \"asked 609\" → \"was completed by 609.\"",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "evidence": {
+     "urls": [],
+     "verdict": "verified"
+    },
+    "id": "Minor 7",
+    "kind": "claim",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Ledger C9 (pedantic): \"asked 609\" → \"was completed by 609.\""
+   },
+   {
+    "anchor": null,
+    "body": "Ledger C18: a clause noting Hungary's workfare/flat-tax character would forestall the specialist objection to \"welfare\" nationalist.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "evidence": {
+     "urls": [],
+     "verdict": "substantially_accurate"
+    },
+    "id": "Minor 8",
+    "kind": "claim",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Ledger C18: a clause noting Hungary's workfare/flat-tax character would forestall the specialist objection to \"welfare\" nationalist."
+   },
+   {
+    "anchor": null,
+    "body": "Uscinski caveat: their anti-establishment dimension carries conspiracist freight your charitable Insurgent pole strips away; do not silently attribute the normative reconstruction to the source.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 9",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Uscinski caveat: their anti-establishment dimension carries conspiracist freight your charitable Insurgent pole strips away; do not silently attribute the normative reconstruction to the source."
+   },
+   {
+    "anchor": {
+     "blockId": "b67",
+     "confidence": 0.85,
+     "endOffset": 28,
+     "quote": "Populist ↔ Establishment",
+     "startOffset": 4
+    },
+    "body": "§III.5 gloss \"Populist ↔ Establishment\" appears before §IV argues for it; add a forward-pointing clause.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 10",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "§III.5 gloss \"Populist ↔ Establishment\" appears before §IV argues for it; add a forward-pointing clause."
+   },
+   {
+    "anchor": null,
+    "body": "Figure captions: none exist; the CHES figure especially needs its exploratory-not-official caveat in the caption, where screenshots carry it.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 11",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Figure captions: none exist; the CHES figure especially needs its exploratory-not-official caveat in the caption, where screenshots carry it."
+   },
+   {
+    "anchor": null,
+    "body": "Writer requirement: convert `[^n]` footnotes to `[n]` brackets with a numbered reference list (Substack renders `[^n]` unreliably when pasted); renumber in order of first appearance.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Minor 12",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "Writer requirement: convert `[^n]` footnotes to `[n]` brackets with a numbered reference list (Substack renders `[^n]` unreliably when pasted); renumber in order of first appearance."
+   },
+   {
+    "anchor": {
+     "blockId": "b48",
+     "confidence": 1,
+     "endOffset": 48,
+     "quote": "It is not a disguised measure of government size",
+     "startOffset": 0
+    },
+    "body": "**\"Not X. It is Y.\" saturation** — ≥15 instances; a venue signature at 5, an AI-cadence liability at 15. Keep the intro's, §I's, §VI's prototype line, and the closing; recast the rest as positive assertions (e.g., \"It is not a disguised measure of government size\" → \"A large welfare state can remain strongly civil-libertarian; a privatizing state can expand prisons and surveillance\" already does the work — delete the drumbeat sentence and lead with the evidence).",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Line note 1",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**\"Not X. It is Y.\" saturation** — ≥15 instances; a venue signature at 5, an AI-cadence liability at 15. Keep the intro's, §I's, §VI's prototype line, and the closing; recast the rest as positive asse"
+   },
+   {
+    "anchor": {
+     "blockId": "b163",
+     "confidence": 0.4,
+     "endOffset": 34,
+     "quote": "## VII. A Grammar, Not a Catalogue",
+     "startOffset": 0
+    },
+    "body": "**Apparatus intrusions** — the 1–5 scale table, the §VII triple Q&A blockquotes, ~10 pull-quote emphasis blocks; halve, per Major issue 3.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Line note 2",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**Apparatus intrusions** — the 1–5 scale table, the §VII triple Q&A blockquotes, ~10 pull-quote emphasis blocks; halve, per Major issue 3."
+   },
+   {
+    "anchor": {
+     "blockId": "b122",
+     "confidence": 1,
+     "endOffset": 42,
+     "quote": "The term is short for democratic socialist",
+     "startOffset": 0
+    },
+    "body": "**Register drops** — §VI encyclopedia voice (\"The term is short for democratic socialist…\"), §XI style-guide imperatives (\"Record which.\"); rewrite as essay prose where retained.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Line note 3",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**Register drops** — §VI encyclopedia voice (\"The term is short for democratic socialist…\"), §XI style-guide imperatives (\"Record which.\"); rewrite as essay prose where retained."
+   },
+   {
+    "anchor": {
+     "blockId": "b33",
+     "confidence": 1,
+     "endOffset": 242,
+     "quote": "I constructed exploratory composites",
+     "startOffset": 206
+    },
+    "body": "**First person** — used exactly once (\"I constructed exploratory composites\"); correct venue calibration; keep singular.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "Line note 4",
+    "kind": "craft",
+    "origin": "editor",
+    "provisional": false,
+    "rubricDims": [],
+    "severity": "note",
+    "title": "**First person** — used exactly once (\"I constructed exploratory composites\"); correct venue calibration; keep singular."
+   },
+   {
+    "anchor": null,
+    "body": "Section XI, Rule 1 orders evidence from \"enacted policy and governing practice\" down to \"isolated quotations, vibes, and cultural association,\" and Section V insists every address carry salience, confidence, time, and object metadata (\"These distinctions are not bureaucratic ornament\"). Yet the essay's own demonstration cases — Section VII's \"Trump is a populist natcon: market-leaning, authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features,\" and the parallel Obama, Milei, and Orbán sentences — are delivered with no evidence, no dates, no object specification, and no rhetoric/program/practice split, despite Section V having just argued that a leader \"can campaign as an insurgent, govern through institutions, and use unitary rhetoric.\" (Is \"market-leaning\" Trump the 2017 tax-cut president or the tariff president the opening paragraph invokes against Milei?) The framework's flagship application is scored on exactly the vibes its own Rule 1 ranks last. Relatedly, the essay never once runs its machinery on a live, contested disagreement end-to-end; Section XII's improved sentences are substitutions, not demonstrations. The single most persuasive thing this piece could contain — one real dispute, scored with cited evidence, yielding a non-obvious conclusion — is absent.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "SR 3",
+    "kind": "argument",
+    "letterSection": "considered_rejected",
+    "origin": "second_read",
+    "provisional": false,
+    "reconciliation": "rejected",
+    "rubricDims": [],
+    "severity": "note",
+    "title": "The showcase profiles violate the essay's own rules of evidence"
+   },
+   {
+    "anchor": {
+     "blockId": "b185",
+     "confidence": 1,
+     "endOffset": 360,
+     "quote": "A one-word cue compresses policies, values, social groups, historical loyalties, and expectations about alliance.",
+     "startOffset": 247
+    },
+    "body": "The Nolan chart, the Political Compass, GAL/TAN, 8values-style quizzes, and Pew's typologies all already decompose left–right into multiple dimensions; several have decades of public circulation and none has displaced the spectrum. The essay engages none of them as *predecessors* (Pew appears in Section IX only as a foil for historical contingency) and so never answers the obvious question: why will this scheme succeed where they failed? The problem is sharpened by the essay's own best section. Section VIII argues that left–right \"persist[s] because they solve a real coordination problem... A one-word cue compresses policies, values, social groups, historical loyalties, and expectations about alliance.\" That is an adoption argument *against* a five-number address with four metadata fields and three profiles per actor. \"It should sit beneath it\" (Section VIII) gestures at an answer — the vocabulary is for analysts and writers, not voters — but the intended user is never specified, and Section XIII's \"We do not need a more complicated compass. We need a grammar\" is an aphorism doing the work of an argument.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "SR 4",
+    "kind": "argument",
+    "origin": "second_read",
+    "provisional": false,
+    "reconciliation": "kept",
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "The essay never confronts the graveyard of previous compasses, and its own Section VIII explains why it may join them"
+   },
+   {
+    "anchor": null,
+    "body": "Concrete instances: (a) Footnote 1 — \"*Heuristic Inference and the Left-Right*, Cambridge University Press, 2026\" — cites a work with no author, twice load-bearing (Sections \"intro\" and VIII). (b) Section VI, Socdem entry: \"less committed to replacing capitalism than the democ\" — \"democ\" is a typo or a ghost of an abandoned coinage; either way it is a defined-term failure in the very lexicon the essay is proposing. (c) The figures are referenced out of order: figure_5 appears in Section V, figure_4 in Section VI. (d) Footnote 8 cites Mudde's thin-centered definition via a university lecture page rather than the canonical published statements (e.g., \"The Populist Zeitgeist,\" *Government and Opposition*, 2004, or Mudde & Rovira Kaltwasser). (e) The 2024 CHES figure of \"609 political scientists... 279 European parties\" and the June 2026 Pew typology names are stated with precision that must be verified against the sources before publication; I could not verify them on this read and they are exactly the kind of detail hostile readers check first. For a piece whose thesis is disciplined precision of vocabulary, apparatus sloppiness is not cosmetic — it is on-theme damage.",
+    "correspondenceId": "correspondence/v1-review",
+    "draftId": "v1",
+    "id": "SR 5",
+    "kind": "argument",
+    "origin": "second_read",
+    "provisional": false,
+    "reconciliation": "kept",
+    "rubricDims": [],
+    "severity": "minor",
+    "title": "The scholarly apparatus has errors that would embarrass a serious publication"
+   }
+  ],
+  "letterSections": [
+   {
+    "findingRefs": [
+     {
+      "findingId": "The one thing",
+      "label": "See finding 1"
+     }
+    ],
+    "id": "verdict",
+    "paragraphs": [
+     "**Major revisions.** This is a serious, intelligent, unusually honest piece of conceptual construction whose factual substrate is close to impeccable — the fact-check came back cleaner than any draft of this ambition I have seen (zero contradicted claims; your own statistical exercise *reproduces from the raw data*). It is not yet publishable, for three structural reasons, none cosmetic: it never argues for its central number or names the predecessors that make that omission fatal; its empirical showpiece rediscovers the design dimension of its own dataset and frames the result unfalsifiably; and it is two documents in a trench coat — an essay and a user manual — at a venue that publishes only essays. The independent second read, given nothing but the draft, reached the same verdict for substantially the same reasons, which should give you confidence that these are properties of the text, not of one reader.",
+     "**The one thing:** Claim the ground the piece actually occupies. Its real contribution is not the five axes (four of which exist verbatim on a quiz site) but the *grammar* — the separation of coordinates from family names, and the usage discipline around them. Add the section that names your predecessors and flanking opponents (8values, GAL/TAN, Bobbio, Lewis & Lewis, Caplan) and answers \"why five\" as a pragmatic optimum between one line and issue-atomism. Every other major issue becomes easier once the piece knows which conversation it is in."
+    ],
+    "title": "Verdict"
+   },
+   {
+    "id": "the-piece-s-project",
+    "paragraphs": [
+     "The left–right spectrum is a lossy compression of at least five recurrent, analytically separable political disagreements — over economy, coercion, culture, belonging, and the mediation of political will. The error is not the compression but mistaking it for the thing compressed. The remedy is a three-layer public vocabulary: five-axis coordinates that describe positions exactly; a disciplined lexicon of prototype family names (socdem, natcon, welfare nationalist…) that identify historical neighborhoods speakably; and modifiers, metadata, and regime tags for what both miss — with left and right retained *above* the coordinates as coalition names, doing the coordination work they have always done. Success, on the piece's own terms, is a reader who stops arguing about five different things while pretending there is only one.",
+     "That is a real project, and the second read reconstructed the same thesis independently — the draft transmits it reliably. The audience is the venue's: educated generalists fluent in the history of ideas, primed by seven prior essays of continuous Bourdieu-inflected prose about AI and modernity. This would be the publication's first politics piece — a genre debut that raises, rather than lowers, the bar for formal control."
+    ],
+    "title": "The piece's project"
+   },
+   {
+    "findingRefs": [
+     {
+      "findingId": "Strength 1",
+      "label": "See finding 8"
+     },
+     {
+      "findingId": "Strength 2",
+      "label": "See finding 9"
+     },
+     {
+      "findingId": "Strength 3",
+      "label": "See finding 10"
+     },
+     {
+      "findingId": "Strength 4",
+      "label": "See finding 11"
+     },
+     {
+      "findingId": "Strength 5",
+      "label": "See finding 12"
+     },
+     {
+      "findingId": "Strength 6",
+      "label": "See finding 13"
+     }
+    ],
+    "id": "strengths",
+    "paragraphs": [
+     "Protection orders — these must survive revision:",
+     "1. **§IV is the piece's spine and its genuine contribution.** The four-facet decomposition of populism and, above all, the three-way disambiguation — \"**Populist** is a substantive tag… **Establishment** is a contextual status… **Institutional** is an ideological preference\" — resolve a real equivocation in public discourse. \"A president can remain populist. An outsider can be institutionalist. A bureaucracy can be insurgently reorganized.\" Both independent reads converged on this section; the discourse audit confirmed the two-level public/analytic architecture has no published predecessor.\n2. **The compression frame, and the §VIII concession.** \"The left–right spectrum is not false. It is a compression.\" — and then the refusal of cheap victory: \"not merely a philosophical error imposed on politics… an adaptation to limited attention.\" Naming what left–right does well before proposing to supplement it is the mark of a serious piece.\n3. **The no-master-score rule with decomposable distance (§V).** Genuinely novel usage discipline; the single most defensible hill in the framework; the natural favorite of the piece's likeliest adopters.\n4. **The self-audit.** §X's \"A taxonomy becomes untrustworthy when it hides its exclusions,\" the §XI.7 charitable-poles table, and Rule 5 (\"The entire framework exists to prevent those inferences\") are intellectually honest in a way ideological cartography almost never is.\n5. **§XII delivers the payoff** — the instead/say rewrites demonstrate the framework changing actual sentences, which is the piece's own success criterion.\n6. **The factual substrate.** 22 of 27 ledger entries Verified, zero Contradicted or Unsupported; the Pew 2026 typology, the 2026 Cambridge Element, and the CHES 609/279 figures are all exact; your CHES correlations reproduce from the raw CSV (ledger C10). Report against interest: every claim flagged pre-check as a likely fabrication checked out in every particular."
+    ],
+    "title": "Strengths"
+   },
+   {
+    "findingRefs": [
+     {
+      "findingId": "Major 1",
+      "label": "See finding 2"
+     },
+     {
+      "findingId": "Major 2",
+      "label": "See finding 3"
+     },
+     {
+      "findingId": "Major 3",
+      "label": "See finding 4"
+     },
+     {
+      "findingId": "Major 4",
+      "label": "See finding 5"
+     },
+     {
+      "findingId": "Major 5",
+      "label": "See finding 6"
+     },
+     {
+      "findingId": "Major 6",
+      "label": "See finding 7"
+     }
+    ],
+    "id": "major-issues",
+    "paragraphs": [
+     "### 1. The central number is never argued, and the predecessors who make that fatal are never named",
+     "- **Where:** The title; §II (\"The point is not that politics secretly has five axes…\"); §X's module exclusions; the entire absence of 8values, Lewis & Lewis, Nolan/Political Compass from a piece about multi-axis political vocabularies.\n- **The problem:** §II's counterfactual-independence test overgenerates — ecology, foreign policy, centralization, and regime commitment all pass it, and §X concedes as much by exiling exactly those to \"modules\" with no stated selection principle. Meanwhile the discourse audit found the four non-System axes replicate the 8values test — *three with verbatim pole names* — and the strongest published counterargument (Lewis & Lewis, *The Myth of Left and Right*, 2023, sharpened in the Caplan–Lewis exchange) attacks precisely this joint: if bundling is the spectrum's sin, five axes is a bigger reification, since each \"question\" is itself a bundle (Economy compresses trade, tax, redistribution, regulation, property, labor — a protectionist tax-cutter has no true Economy score, only a lossy 3). The Lewises are simultaneously the nearest predecessor of §VIII's own \"coalition names\" thesis and its standing refutation; the piece neither credits nor answers them. Steelman considered: the draft's fragments (§VII \"Labels gain explanatory power by excluding detail,\" the metadata, the modules) already imply the answer — five is a pragmatic optimum between one line and issue-atomism — but an implied answer to an unnamed objection is invisible.\n- **Why it matters here:** The hostile-but-fair one-liner writes itself: \"8values with a populism axis and no test, which never says why five.\" For an AI-adjacent readership primed to detect derivative taxonomy, the unnamed 8values overlap alone is disqualifying if a reader finds it before you disclose it.\n- **Direction:** Add one section (or two long paragraphs) — \"Why five, and not fifty\" — that (a) gives the genealogy in one paragraph: Nolan → Political Compass → 8values → 9Axes, crediting 8values by name and explaining why a *test* is the wrong form (tests score people; this vocabulary describes claims); (b) names Caplan's pragmatic monism and Lewis eliminativism as the flanking positions and locates the framework between them; (c) states the selection principle for core-vs-module (historical recurrence across polities and centuries; coalition-forming power; mutual irreducibility) and applies it visibly to Green and foreign policy.",
+     "### 2. The CHES exercise rediscovers its own dataset's design dimension and is framed unfalsifiably",
+     "- **Where:** §II: \"Culture, coercion, and belonging formed a strong contemporary bundle, correlating at roughly .78 to .82… This is exactly what the framework should predict.\"\n- **The problem:** Heads-I-win framing — near-orthogonal composites would also have \"confirmed\" the framework (\"distinct enough to separate; history binds them\"). Worse, the bundle *is* GAL/TAN: the Chapel Hill survey was built around the Hooghe–Marks two-dimensional model whose second dimension welds green/alternative/libertarian to traditionalism/authority/nationalism, and Kitschelt's diagonal is the standard published explanation for the bundling the draft attributes to \"history.\" A political scientist reads §II as naive rediscovery; the ledger meanwhile confirms your correlations are real and reproducible (C10: .84–.90 / .47–.56 / −.10 to −.20 on my re-derivation), so the empirics deserve better framing than they get. Also unstated: which variables entered each composite — the exercise is currently irreproducible as described.\n- **Why it matters here:** §II is the piece's only empirical footing; as framed it is the piece's most attackable section for exactly the readers it should impress.\n- **Direction:** Cite GAL/TAN and Kitschelt; invert the framing — *the reigning two-dimensional model welds together three questions that current politics is visibly unwelding*, with Milei and welfare nationalism as the unwelding evidence; state what would count against the framework (if no consequential actors occupied the off-diagonal cells, the extra axes would be idle); and list the composite variables in an endnote so the exercise is checkable.",
+     "### 3. Essay and manual in a trench coat — a genre break the venue cannot absorb",
+     "- **Where:** The seam at §V. §§I–IV, VIII–IX, XII–XIII are an essay; §§V–VII, X–XI are a reference manual (scoring table, metadata checklist, 14-entry glossary, 9 modifiers, 6 exclusion subsections, 7 rules).\n- **The problem:** Nothing at the venue looks like the second half; the second read independently called it \"two documents in a trench coat\" and located the reader's death in the fourteen consecutive dictionary entries of §VI. The package already contains `taxonomy_reference_sheet.md` — the manual has a home that is not the essay's body. In the July-2026 environment, tables and symmetrical bulleted apparatus are also the surface features an AI-literate readership pattern-matches to machine-generated taxonomy — a reception risk the discourse report rates as the largest formal one.\n- **Why it matters here:** This is the venue's first politics piece; it will be judged as an essay, and the essay is currently interrupted for roughly 2,500 words.\n- **Direction:** Keep the *argument* of the apparatus, compress the *inventory*. §VI: discuss the families that do argumentative work (socdem/demsoc as a minimal pair; welfare nationalist and natcon as the proof that left/right fails; libertarian via Milei) in continuous prose and hand the rest to the figure and the linked reference sheet. §X: two paragraphs (the trust argument + regime type as the non-negotiable tag). §XI: keep Rule 5 and the charitable-poles material as prose, fold rules 1–4 and 6 into a paragraph or the reference sheet. Cut the 1–5 scale table; state it in a sentence.",
+     "### 4. The showcase profiles violate the essay's own rules — including two Misleading-in-context findings on named persons",
+     "- **Where:** §VII: \"Trump is a populist natcon: **market-leaning**…\" and \"Orbán is a welfare nationalist: … **populist in legitimation despite governing through a consolidated institutional apparatus**.\"\n- **The problem:** Ledger C23a: the mid-2026 record is tariff-centered and state-directive (universal §122 baseline tariff after the February IEEPA ruling; §232 tariffs of 10–50% across major sectors; applied rate ≈ 11.8%; a 9.9% federal Intel stake; a sovereign wealth fund) — \"market-leaning\" as the first coordinate misleads on the draft's own Economy axis, and §V itself warns that \"a nominally market-oriented party can construct protectionist policy.\" Ledger C23d: Orbán lost power on April 12, 2026 (Tisza supermajority) — the present tense is false in a draft that postdates it (it cites a June 10 Pew report), an ironic breach of the draft's own Rule 4, \"date every profile.\" More generally (second read Objection 3, adopted): the profiles carry no dates, no evidence, no rhetoric/program/practice split, and the essay never once runs its machinery end-to-end on a contested case — its flagship application is scored on exactly the vibes Rule 1 ranks last.\n- **Why it matters here:** \"Trump: market-leaning\" is the single most screenshot-quotable phrase in the piece for hostile readers, and both errors are self-inflicted demonstrations of the framework's necessity.\n- **Direction:** Convert both bugs into features. Trump becomes the worked demonstration of the rhetoric/program/practice split (\"market-rhetorical, protectionist-statist in practice\"), with dates and two cited facts. Orbán's profile is dated (\"in office 2010–2026\") and his fall becomes live evidence in the insurgent/institutional discussion. Add one sentence before the profiles conceding they are dated, disputable illustrations of the grammar, not verdicts.",
+     "### 5. Attribution debts that change what the argument can claim",
+     "- **Where:** §IV (facets), §VI (Welfare Nationalist), §I/§VI (prototype semantics), §III.4 (Belonging).\n- **The problem:** Müller's exclusive-moral-representation thesis is the unnamed source of the \"moral dualism\"/\"unitarism\"/pluralism facets, currently presented as an unpacking of Mudde; Akkerman–Mudde–Zaslove and POPPA show disaggregated populism measurement is existing practice, so the facets are a design choice among known components, not a discovery; \"Welfare Nationalist\" renames welfare chauvinism (Andersen & Bjørklund 1990, thirty years of literature); prototype-family semantics ≈ Collier & Mahon's radial categories (1993). None of this destroys the section's originality — the two-level architecture and the three-way disambiguation remain yours — but unacknowledged, each is a \"reinvented X\" tweet waiting to be written.\n- **Why it matters here:** The piece's authority rests on scholarly seriousness; the pattern of near-miss attribution reads, at this venue, as either naivety or concealment.\n- **Direction:** One clause or endnote each. Müller in the §IV text proper (he is the best-known populism author among your likely readers); the others can live in the endnotes.",
+     "### 6. Only the beatable defense of left–right is engaged",
+     "- **Where:** §VIII, which answers the coordination/heuristic defense — and nothing else.\n- **The problem:** The substantive defense — Bobbio's thesis that left and right track a real, enduring attitude toward equality, in which case the five questions are one question wearing five masks — is never engaged; treating \"coalition name\" as the only live account wins by definition a debate that is open (the discourse report's strawman-by-omission finding). The draft holds the counterexamples (Milei; welfare nationalism — egalitarian inside, exclusionary at the boundary) but never fires them at a named target. Relatedly, §I's Freeden borrowing is double-edged: decontestation applies to the pole-words of your own axes, which presuppose the stable meanings the cited theory denies — a Freeden-literate reader at this venue will notice.\n- **Why it matters here:** The philosophy-literate audience is precisely the one that knows Bobbio and Freeden.\n- **Direction:** One paragraph in §VIII naming and answering Bobbio (equality-monism cannot score Milei or the welfare nationalist without remainder); one sentence in §I or §II conceding the axes are themselves historical constructions — a convention proposed, not a geometry discovered — which is already the piece's official position (§II) applied to itself."
+    ],
+    "title": "Major issues"
+   },
+   {
+    "id": "minor-issues",
+    "paragraphs": [
+     "- §VI Socdem: \"less committed to replacing capitalism than the **democ**\" — typo for \"demsoc\"; a defined-term failure inside the proposed lexicon itself (second read caught this too).\n- Figures referenced out of order: figure_5 appears in §V, figure_4 in §VI (second read).\n- Notation wobbles: \"2 · 4 · 1 · 2 · 5\" (§V) vs \"2–3–1–2–4\" (§VI); pick the interpunct form everywhere.\n- Ledger C6: Mair & Mudde list is four approaches — drop \"organization\" or rephrase (\"origin, transnational affiliation, policy and ideology, or name\").\n- Ledger C4: footnote 1 omits its authors (Lee, Santoso & Stevenson) — an authorless citation on a twice-load-bearing source.\n- Ledger C14: add the canonical Mudde 2004 (*Government and Opposition*) alongside the Penn lecture page.\n- Ledger C9 (pedantic): \"asked 609\" → \"was completed by 609.\"\n- Ledger C18: a clause noting Hungary's workfare/flat-tax character would forestall the specialist objection to \"welfare\" nationalist.\n- Uscinski caveat: their anti-establishment dimension carries conspiracist freight your charitable Insurgent pole strips away; do not silently attribute the normative reconstruction to the source.\n- §III.5 gloss \"Populist ↔ Establishment\" appears before §IV argues for it; add a forward-pointing clause.\n- Figure captions: none exist; the CHES figure especially needs its exploratory-not-official caveat in the caption, where screenshots carry it.\n- Writer requirement: convert `[^n]` footnotes to `[n]` brackets with a numbered reference list (Substack renders `[^n]` unreliably when pasted); renumber in order of first appearance."
+    ],
+    "title": "Minor issues"
+   },
+   {
+    "id": "fact-check-summary",
+    "paragraphs": [
+     "- Claims inventoried: 24 (T1: 9, T2: 12, T3: 3); checked 24/24 as 27 ledger entries.\n- **Verified: 22 · Substantially accurate: 3 (C6, C10, C18) · Misleading in context: 2 (C23a Trump, C23d Orbán) · Unsupported: 0 · Contradicted: 0 · Unverifiable: 0.**",
+     "The substrate is exceptional for the genre, and I report against interest: every claim flagged pre-check as a probable fabrication verified in every particular — the Pew June 10, 2026 typology (nine groups, 30 questions, all five quoted names exact), the 2026 Cambridge Element (Lee, Santoso & Stevenson, saying exactly what the draft uses it for), the CHES figures (609/279, re-derived from the downloaded dataset), and your own correlations (reproduced in direction and magnitude from the raw CSV). The two Misleading findings are both §VII profile-level, both fixable in ways that strengthen the essay (Major issue 4). Full trail in `01-claim-ledger.md`."
+    ],
+    "title": "Fact-check summary"
+   },
+   {
+    "id": "the-discursive-situation",
+    "paragraphs": [
+     "The piece enters a conversation far more crowded than its reference list admits (full map in `02-discourse-report.md`). The popular multi-axis tradition (Nolan 1969 → Political Compass → 8values → 9Axes/PolitiScales) has run the \"spectrum conflates separable disagreements\" argument for fifty years; 8values shares four axes with the draft, three with verbatim pole names, and even a crude coordinates-then-nearest-family mechanic. Academically, GAL/TAN is the draft's culture-coercion-belonging bundle; welfare chauvinism is its Welfare Nationalist; Müller/Akkerman et al. are its System facets; Lewis & Lewis published its \"coalition names\" thesis in 2023.",
+     "**Originality verdict: novel synthesis with significant unwitting reinventions — currently packaged to advertise the reinvented layer.** Against interest: the discourse audit found *no prior work anywhere* combining (a) the explicit coordinates-vs-names two-function separation, (b) a disciplined prototype lexicon with modifiers, and (c) usage rules (metadata, rhetoric/program/practice, no-master-score, evidence hierarchy). The grammar is new. The axes are not. The revision should invert the advertising accordingly.",
+     "**Strongest existing counterargument:** Lewis & Lewis's granularity/anti-reification argument (Major issue 1). The draft is partially armored by accident; it must armor itself on purpose."
+    ],
+    "title": "The discursive situation"
+   },
+   {
+    "id": "reception-forecast",
+    "paragraphs": [
+     "Publication day, realistically: the venue's readership is small, AI-focused, and formally attentive; this is its first politics piece. (1) Rationalist-adjacent readers are the likeliest sharers and the source of the deadliest one-liner (\"8values with a populism axis and no test\") — and also the natural adopters of the no-master-score rule and the three-layer profile sentences. (2) Political scientists will spot GAL/TAN, welfare chauvinism, and the irreproducible composites — or, post-revision, will respect a piece that names them. (3) Partisan readers will screenshot \"market-leaning\" Trump (fixed by Major issue 4) and contest Modi's natcon membership (defensible; keep the \"not interchangeable\" hedge and consider a Hindu-nationalism clause). Favorable quotables: the compression opening, \"Left and right are coalition names,\" \"never compute a master score,\" the §XII rewrites. Misreadings to preempt in text: that the axes are natural kinds (one-line reminder inside §III); that the charitable-poles table is both-sides moral equivalence (give the existing disclaimer one more sentence); that coordinates score *people* (\"what's my number?\" — the classify-arguments rule, stated earlier); that Insurgent = populist = bad (§IV's disambiguation, forward-referenced sooner)."
+    ],
+    "title": "Reception forecast"
+   },
+   {
+    "id": "line-notes",
+    "paragraphs": [
+     "Patterns with exemplars (full detail in `04-craft-notes.md`):",
+     "- **\"Not X. It is Y.\" saturation** — ≥15 instances; a venue signature at 5, an AI-cadence liability at 15. Keep the intro's, §I's, §VI's prototype line, and the closing; recast the rest as positive assertions (e.g., \"It is not a disguised measure of government size\" → \"A large welfare state can remain strongly civil-libertarian; a privatizing state can expand prisons and surveillance\" already does the work — delete the drumbeat sentence and lead with the evidence).\n- **Apparatus intrusions** — the 1–5 scale table, the §VII triple Q&A blockquotes, ~10 pull-quote emphasis blocks; halve, per Major issue 3.\n- **Register drops** — §VI encyclopedia voice (\"The term is short for democratic socialist…\"), §XI style-guide imperatives (\"Record which.\"); rewrite as essay prose where retained.\n- **First person** — used exactly once (\"I constructed exploratory composites\"); correct venue calibration; keep singular."
+    ],
+    "title": "Line notes"
+   },
+   {
+    "id": "scorecard",
+    "paragraphs": [
+     "| Dimension | Score | Basis |\n|---|---|---|\n| Thesis & contribution | 4 | Clear, contestable, transmitted (second read reconstructed it verbatim); packaging misallocates emphasis to the axes (03-A0), but the contribution is real. |\n| Argument rigor | 3 | Capped: strongest counterargument (Lewis & Lewis) unengaged (Major issue 1); CHES framing unfalsifiable (MI 2); core §I/§IV reasoning is strong. |\n| Evidence & accuracy | 2 | Capped by rule: two Misleading-in-context Tier 1 findings (C23a, C23d) — despite an otherwise exceptional substrate (22 Verified, correlations reproduce). Both fixes are local; this is the cheapest two-point recovery in the piece. |\n| Originality & situatedness | 2 | Four of five axes are an unwitting reinvention with verbatim pole names (8values); System facets ≈ existing measurement schemes; the piece does not know which conversation it is in — though the grammar layer is genuinely novel (discourse §2). |\n| Structure | 2 | Essay/manual genre break at §V (MI 3); §VI pacing dead zone; convergent across both reads. |\n| Prose | 4 | High control, venue-matched aphoristic register; liabilities are pattern-level (tic density, apparatus intrusions), not sentence-level. |\n| Voice & audience fit | 3 | The essay half is the venue's voice; the manual half breaks it; the addressee of the vocabulary is never stated (03-A5). |\n| Intellectual honesty | 3 | Unusually honest self-audit (§II, §X) — but \"exactly what the framework should predict\" overclaims, the profiles assert what the rules forbid, and §VIII wins the left/right debate by omission of Bobbio. |",
+     "**Lowest dimensions.** *Evidence & accuracy (2)* is a rule-cap, not a substrate judgment: fix the two §VII profiles (MI 4) and this is a 4 — no other change in the piece buys two points this cheaply. *Originality & situatedness (2)* and *Structure (2)* are the real work: one point on originality requires the positioning section (MI 1) plus the attribution clauses (MI 5); one point on structure requires the manual compression (MI 3)."
+    ],
+    "title": "Scorecard"
+   },
+   {
+    "id": "revision-roadmap",
+    "paragraphs": [
+     "1. **Structural surgery first.** Compress §VI to prose around 4–5 working families + reference-sheet handoff; reduce §X to two paragraphs; fold §XI rules 1–4/6 into prose, keep Rule 5 + charitable poles; cut the scale table and the Q&A blocks; resequence so the CHES material follows the five questions (§II's disclaimer folds into the presentation); fix figure order.\n2. **Argument repairs, in dependency order.** (a) Write \"Why five, and not fifty\" — genealogy (8values credited), Caplan/Lewis flanks, selection principle (MI 1); (b) reframe CHES as the GAL/TAN-unwelding argument + falsifiability sentence + composite-variables endnote (MI 2); (c) rebuild the §VII profiles — Trump as the worked rhetoric/program/practice demonstration, Orbán dated 2010–2026, illustrative-not-verdict sentence (MI 4); (d) add Bobbio paragraph to §VIII and the Freeden-reflexivity sentence (MI 6); (e) attribution clauses: Müller in text, welfare chauvinism/Akkerman/Collier–Mahon in endnotes (MI 5); (f) one paragraph naming the addressee (discourse producers, trickle-down via [1]'s own mechanism).\n3. **Research follow-ups** (starting sources, all fetched this session — URLs in dossier): 8values (https://8values.github.io/); Caplan–Lewis exchange (https://www.betonit.ai/p/the-myth-of-left-and-right-the-last); Hooghe–Marks–Wilson 2002 PDF (garymarks.web.unc.edu); Gonzalez's Bobbio-style reply (heterodoxacademy.org); Müller via LSE review; Tax Foundation tariff tracker (taxfoundation.org/research/all/federal/trump-tariffs-trade-war/); Al Jazeera on the April 12 Hungarian election.\n4. **Craft passes** once structure is stable: ration the \"not X / it is Y\" cadence to ~5; kill register drops in retained apparatus; halve pull-quotes; add figure captions (CHES caveat in-caption); notation to interpuncts; convert citations to `[n]` endnotes with authors added ([1] Lee/Santoso/Stevenson; [8] + Mudde 2004), renumbered by first appearance.\n5. **Open questions for the author.** (a) Modi in the natcon list: defensible with the hedge, but decide whether one clause on Hindu-nationalist specificity is worth the length. (b) The Green module: keep as-is or use it as the worked example of the selection principle (recommended — it converts a concession into a demonstration). (c) Whether to link the reference sheet publicly (recommended: it absorbs the manual). (d) Title: \"Politics Has Five Questions\" advertises the axes; something like \"The Grammar of Political Disagreement\" advertises the contribution — but the current title is stickier. Editor's lean: keep the title, fix the advertising in the text."
+    ],
+    "title": "Revision roadmap"
+   },
+   {
+    "findingRefs": [
+     {
+      "findingId": "SR 3",
+      "label": "See finding 30"
+     }
+    ],
+    "id": "considered-and-rejected",
+    "paragraphs": [
+     "- **Second read, Objection 3 (full version): replace the four §VII profiles with a single worked case.** Adapted, not adopted: the four one-sentence profiles are the piece's most quotable payoff; instead, Trump's expands into the worked demonstration and all four get dates and an illustrative-not-verdict frame. Reason: the profiles are load-bearing for §XII's grammar demonstration and for reader adoption.\n- **Reframing the piece as a reply to Lewis & Lewis throughout.** Rejected: one section suffices; a debate frame would surrender the piece's constructive register, which is its venue fit.\n- **Cutting the CHES exercise entirely** (tempting given MI 2): rejected — the correlations reproduce, and the reframed version (unwelding GAL/TAN) is the piece's best answer to the parsimony objection. The empirics stay; the framing changes.\n- **Retitling.** Considered (see open question d); the editor's lean is to keep it, so it is recorded here rather than as an issue."
+    ],
+    "title": "Considered and rejected"
+   }
+  ],
+  "letterTitle": "The Structure of Political Difference",
+  "openObligations": 0,
+  "projectTitle": "The Structure of Political Difference",
+  "replayed": true,
+  "reviewedDraftId": "v1",
+  "rubric": [
+   {
+    "dimension": "thesis_contribution",
+    "score": 4
+   },
+   {
+    "cap": {
+     "at": 3,
+     "entailedByFindingOrdinal": 1,
+     "reason": "Capped: strongest counterargument (Lewis & Lewis) unengaged (Major issue 1); CHES framing unfalsifiable (MI 2); core §I/§IV reasoning is strong."
+    },
+    "dimension": "argument_rigor",
+    "score": 3
+   },
+   {
+    "cap": {
+     "at": 2,
+     "reason": "Capped by rule: two Misleading-in-context Tier 1 findings (C23a, C23d) — despite an otherwise exceptional substrate (22 Verified, correlations reproduce). Both fixes are local; this is the cheapest two-point recovery in the piece."
+    },
+    "dimension": "evidence_accuracy",
+    "score": 2
+   },
+   {
+    "dimension": "originality_situatedness",
+    "score": 2
+   },
+   {
+    "dimension": "structure",
+    "score": 2
+   },
+   {
+    "dimension": "prose",
+    "score": 4
+   },
+   {
+    "dimension": "voice_audience_fit",
+    "score": 3
+   },
+   {
+    "dimension": "intellectual_honesty",
+    "score": 3
+   }
+  ],
+  "runId": "v1-review",
+  "runSummary": {
+   "card": {
+    "actions": [
+     "open_deliverable",
+     "report"
+    ],
+    "approvals": [
+     {
+      "decision": "major revisions",
+      "round": "v1 review"
+     }
+    ],
+    "artifacts": [
+     "correspondence/v1-review/00-piece-brief.md",
+     "correspondence/v1-review/01-claim-ledger.md",
+     "correspondence/v1-review/02-discourse-report.md",
+     "correspondence/v1-review/03-argument-notes.md",
+     "correspondence/v1-review/04-craft-notes.md",
+     "correspondence/v1-review/05-second-read.md",
+     "correspondence/v1-review/editors-letter.md"
+    ],
+    "decisions": [],
+    "deliverables": [
+     {
+      "key": "letter"
+     },
+     {
+      "count": 26,
+      "key": "findings"
+     },
+     {
+      "count": 6,
+      "key": "strengths"
+     },
+     {
+      "count": 27,
+      "key": "claims"
+     },
+     {
+      "key": "piece_brief"
+     },
+     {
+      "key": "claim_ledger"
+     },
+     {
+      "key": "discourse_report"
+     },
+     {
+      "key": "argument_notes"
+     },
+     {
+      "key": "craft_notes"
+     },
+     {
+      "key": "second_read"
+     }
+    ],
+    "delivered": {
+     "counts": {
+      "claims": 27,
+      "findings": 26,
+      "strengths": 6
+     },
+     "links": [
+      "dossier",
+      "letter",
+      "ledger"
+     ],
+     "verdict": "**Major revisions.** This is a serious, intelligent, unusually honest piece of conceptual construction whose factual substrate is close to impeccable — the fact-check came back cleaner than any draft of this ambition I have seen (zero contradicted claims; your own statistical exercise *reproduces from the raw data*). It is not yet publishable, for three structural reasons, none cosmetic: it never argues for its central number or names the predecessors that make that omission fatal; its empirical showpiece rediscovers the design dimension of its own dataset and frames the result unfalsifiably; and it is two documents in a trench coat — an essay and a user manual — at a venue that publishes only essays. The independent second read, given nothing but the draft, reached the same verdict for substantially the same reasons, which should give you confidence that these are properties of the text, not of one reader."
+    },
+    "deliveryLabel": null,
+    "done": 7,
+    "failureCode": null,
+    "notRecorded": [
+     "time",
+     "credits",
+     "model",
+     "estimate"
+    ],
+    "phases": [
+     {
+      "key": "intake",
+      "ordinal": 1,
+      "status": "done"
+     },
+     {
+      "key": "verification",
+      "ordinal": 2,
+      "status": "done"
+     },
+     {
+      "key": "discourse",
+      "ordinal": 3,
+      "status": "done"
+     },
+     {
+      "key": "argument",
+      "ordinal": 4,
+      "status": "done"
+     },
+     {
+      "key": "craft",
+      "ordinal": 5,
+      "status": "done"
+     },
+     {
+      "key": "second_read",
+      "ordinal": 6,
+      "status": "done"
+     },
+     {
+      "key": "letter",
+      "ordinal": 7,
+      "status": "done"
+     }
+    ],
+    "phaseSource": "inferred_from_delivered_files",
+    "recordSource": "agent-discourse",
+    "replayed": true,
+    "runId": "v1-review",
+    "running": 0,
+    "state": "completed",
+    "total": 7
+   },
+   "createdAt": null,
+   "runId": "v1-review",
+   "state": "completed",
+   "workflow": "review"
+  },
+  "slug": "structure-of-political-difference",
+  "versionLabel": "Review of v1"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "v1-review",
+ "kind": "dossier"
+}

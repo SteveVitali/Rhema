@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wustl-richards-intellectual-privacy.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "129656c184499f2a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wustl-richards-intellectual-privacy.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wustl-richards-intellectual-privacy\n- **URL:** https://web.archive.org/web/2022id_/https://openscholarship.wustl.edu/cgi/viewcontent.cgi?article=1508&context=law_scholarship (record: https://openscholarship.wustl.edu/law_scholarship/522/) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** All three Richards quotations verbatim; the first two on p. 389, the third on p. 391 (C35). Live repository PDF returned 403; the archived copy of the same file was read.\n- **Key passages:** \"chiefly because it has been difficult—even for those so inclined—to monitor or interfere with the thought processes in people's heads\" (389); \"It is not concerned with remedying tort injury, but rather with the way our cognitive processes, and ultimately our public discourse, are constituted.\" (391).\n- **Reliability:** Primary (author's institutional repository copy of 87 Tex. L. Rev. 387).\n- **Relevance to this project:** C35; §III.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 113
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d6e64068a063d8388700589c63703c29e8c7322636dfb0498643da7cfed14c6e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wustl-richards-intellectual-privacy.md",
+ "kind": "artifact-page"
+}

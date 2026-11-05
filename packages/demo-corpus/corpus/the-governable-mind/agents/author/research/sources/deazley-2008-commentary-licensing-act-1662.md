@@ -1,0 +1,6 @@
+# deazley-2008-commentary-licensing-act-1662
+- **URL:** https://www.copyrighthistory.org/cam/commentary/uk_1662/uk_1662_com_9720071246.html · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C28
+- **What it establishes:** Ronan Deazley (2008), 'Commentary on the Licensing Act 1662'. Gives the Act's periods in force (1662–79, 1685–95), its search provisions, and its lapse in 1695.
+- **Key passages:** "In force between 1662 and 1679, and then again between 1685 and 1695, the Act represents the last occasion on which the censorship of the press was formally and strategically linked to the protection of the economic interests of the Stationers' Company." "Searches could be carried out on the authority of the King, or the secretaries of state, or at the instigation of the master and wardens of the Company of Stationers." "While the Act did secure the stationers position within the book trade, the company's role in the process of regulating the press was at the same time considerably diminished."
+- **Reliability:** Secondary, scholarly; same project as above.
+- **Relevance to this project:** C28: correct the 1662–1695 chronology (it was not continuously in force) and note the Company's diminished censorship role under the Act.

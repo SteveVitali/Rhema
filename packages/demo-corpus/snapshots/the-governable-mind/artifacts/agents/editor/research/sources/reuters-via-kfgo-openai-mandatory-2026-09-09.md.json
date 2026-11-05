@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/reuters-via-kfgo-openai-mandatory-2026-09-09.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b5bc044c960d3919",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/reuters-via-kfgo-openai-mandatory-2026-09-09.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# reuters-via-kfgo-openai-mandatory-2026-09-09\n- **URL:** https://kfgo.com/2026/09/09/openai-pushes-for-mandatory-national-ai-safety-requirements/ (syndicated copy; reuters.com blocked to this tool) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Reuters, Sept. 9, 2026, by Chandni Shah: dates the OpenAI post (\"said on Wednesday\") and paraphrases its asks (C11).\n- **Key passages:** \"capability-based national AI safety requirements, including testing standards, independent assessments, cybersecurity protections and incident-reporting rules for the most advanced AI systems.\" / \"The prospect of AI-accelerated AI development demands more than voluntary commitments.\"\n- **Reliability:** Secondary (wire); independent; syndicated text.\n- **Relevance to this project:** C11; ref [44].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f2d07c94567bf3bab39631f9a2d472ac5bb560055fd941d9de0225ccd2ee7607",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/reuters-via-kfgo-openai-mandatory-2026-09-09.md",
+ "kind": "artifact-page"
+}

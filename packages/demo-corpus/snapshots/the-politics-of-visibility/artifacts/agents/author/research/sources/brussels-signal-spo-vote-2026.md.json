@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/brussels-signal-spo-vote-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8b61b5e5b240e3f1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/brussels-signal-spo-vote-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# brussels-signal-spo-vote-2026\n- **URL:** https://brusselssignal.eu/2026/07/hungarys-parliament-votes-to-abolish-orbans-sovereignty-office/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C40\n- **What it establishes:** Mechanics of the abolition: parliament approved on June 30, 2026 by \"135 votes to 44, with six abstentions\"; a constitutional amendment passed June 15 removed the office's constitutional anchor; \"the law takes effect 15 days after promulgation, when the body's assets would pass to the Ministry of Justice.\" The office was \"set up in 2023 and operational from February 2024,\" \"held wide powers to scrutinise organisations, media outlets and individuals suspected of serving foreign interests,\" and ran on a budget exceeding EUR 17 million/year.\n- **Key passages:** as quoted above.\n- **Reliability:** Secondary (Brussels-based outlet with a right-leaning editorial slant; used here for procedural facts that match HRW and Reuters).\n- **Relevance to this project:** C40(a)/(c) — operating dates (\"operating 2024–\" confirmed) and the vote detail.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 138
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fdc42378484a90568b7218c82f83aad00e736cab2e490a97e41af0a748c4d5b7",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/brussels-signal-spo-vote-2026.md",
+ "kind": "artifact-page"
+}

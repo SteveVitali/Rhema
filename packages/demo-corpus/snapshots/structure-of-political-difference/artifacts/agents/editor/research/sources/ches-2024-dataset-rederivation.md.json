@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ches-2024-dataset-rederivation.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2fde37de5afecd8a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ches-2024-dataset-rederivation.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ches-2024-dataset-rederivation\n- **URL:** https://www.chesdata.eu/s/CHES_2024_final_v2.csv · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** Independent re-derivation of the draft's §II correlation claims (C10) from the party-level CHES 2024 file (279 rows, 31 countries — also re-confirms C9).\n- **Key passages (computed, z-scored composites):** economy = lrecon/redistribution/deregulation/spendvtax; culture = galtan/womens_rights/lgbtq_rights/samesex_marriage/religious_principles; coercion = civlib_laworder/executive_power; belonging = nationalism/immigrate_policy/multiculturalism/ethnic_minorities; system = anti_elite_salience/people_v_elite. Results: r(coercion,culture)=.84, r(coercion,belonging)=.90, r(culture,belonging)=.85 (draft: .78–.82); r(economy, those three)=.47–.56 (draft: .39–.56); r(economy,system)=−.13; single-var lrecon×anti_elite_salience=−.10, lrecon×people_v_elite=−.20 (draft: \"slight negative relationship with market economics\").\n- **Reliability:** Primary data, own computation (python, Pearson r, pairwise deletion). Composite choices are mine; the draft's are unstated, so exact figures needn't match.\n- **Relevance to this project:** C10 pattern reproduces — culture/coercion/belonging bundle strong (if anything stronger than the draft says), economy semi-independent, anti-establishment cross-cutting with slight negative economic tilt. Phase 3 note: the .84–.90 bundle is the strongest basis for a \"that's one dimension in Europe\" objection.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 148
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "275af1fdd5aba97672a76352b6aee6973ac11113893e3700e05bb10d59b873ad",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/ches-2024-dataset-rederivation.md",
+ "kind": "artifact-page"
+}

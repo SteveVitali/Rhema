@@ -1,0 +1,7 @@
+# amnesty-2021-pegasus-project
+
+- **URL:** https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** Amnesty International, "Massive data leak reveals Israeli NSO Group's spyware used to target activists, journalists, and political leaders globally" (July 19, 2021). The Pegasus Project: leak of 50,000 phone numbers of potential surveillance targets; at least 180 journalists across 20 countries identified (2016–June 2021), including Jamal Khashoggi's family (Hatice Cengiz, Hanan Elatr, son Abdullah), Mexican journalist Cecilio Pineda (killed weeks after appearing on the list, 2017), The Wire's Siddharth Varadarajan and MK Venu, FT editor Roula Khalaf, and journalists at AP, CNN, NYT, Reuters. Suspected NSO clients in 11 countries (incl. Azerbaijan, Hungary, India, Mexico, Morocco, Saudi Arabia, UAE). Amnesty Security Lab did the phone forensics and infrastructure mapping (700+ domains).
+- **Key passages:** Agnès Callamard: NSO's spyware is "a weapon of choice for repressive governments" seeking to silence dissent. NSO response: "firmly denies" the claims, calling them "uncorroborated theories."
+- **Reliability:** Primary-adjacent (Amnesty Security Lab forensics underlie the consortium reporting); advocacy organization, but its Pegasus forensic methodology was independently peer-reviewed (Citizen Lab).
+- **Relevance to this project:** C13 (NSO Pegasus used internationally against journalists, activists, political figures — concrete named cases).

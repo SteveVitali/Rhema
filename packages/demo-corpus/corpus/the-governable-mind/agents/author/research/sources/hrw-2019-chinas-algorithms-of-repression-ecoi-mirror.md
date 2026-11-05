@@ -1,0 +1,6 @@
+# hrw-2019-chinas-algorithms-of-repression-ecoi-mirror
+- **URL:** https://www.ecoi.net/en/document/2007754.html (mirror of https://www.hrw.org/report/2019/05/01/chinas-algorithms-repression/reverse-engineering-xinjiang-police-mass-surveillance) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C38
+- **What it establishes:** The full HRW report 'China's Algorithms of Repression: Reverse Engineering Xinjiang Police Mass Surveillance App', May 1, 2019: the IJOP treats lawful everyday behaviour as suspicious and flags 'micro-clues'; Cure53 reverse-engineered the app in late 2018.
+- **Key passages:** "Xinjiang authorities consider many forms of lawful, everyday, non-violent behavior—such as 'not socializing with neighbors, often avoiding using the front door'—as suspicious." "When the IJOP system detects irregularities or deviations from what it considers normal ... the system flags these 'micro-clues' to the authorities as suspicious." "We enlisted Cure53, a Berlin-based security company, to 'reverse engineer' the IJOP app in late 2018."
+- **Reliability:** As above.
+- **Relevance to this project:** C38: the report title/date and the 'lawful, everyday' wording the essay is likely to quote.

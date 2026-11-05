@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cohen-what-privacy-is-for.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5a92524d833065aa",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "77315dbaf367da24",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "05d773ae74ff5582",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/cohen-what-privacy-is-for.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Julie Cohen, \"What Privacy Is For\" (2013)\n\n- **URL:** https://www.juliecohen.com/attachments/File/CohenWhatPrivacyIsFor.pdf (PDF downloaded and read)\n- **Accessed:** 2026-08-21\n- **Cite:** 126 Harv. L. Rev. 1904 (2013) (same symposium as Richards).\n\n**Establishes:** The formation argument of §XIII, a decade early. Verbatim: \"Privacy is shorthand for breathing room to engage in the processes of boundary management that enable and constitute self-development.\" \"Privacy shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable.\" And the thesis-adjacent flourish: \"A society that permits the unchecked ascendancy of surveillance infrastructures cannot hope to remain a liberal democracy\" — replaced \"gradually but surely\" by what she calls \"modulated democracy.\" The draft's \"privacy that matters politically is a condition of formation\" is Cohen's claim with an associational rather than subjectivity-centered grounding.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 130
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce8869df18a8672eec6b16e3d0a17b1aa999d93579c3ee07023d6793bc0808bd",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/cohen-what-privacy-is-for.md",
+ "kind": "artifact-page"
+}

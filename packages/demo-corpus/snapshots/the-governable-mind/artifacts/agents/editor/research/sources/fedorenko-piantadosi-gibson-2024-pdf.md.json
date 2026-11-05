@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fedorenko-piantadosi-gibson-2024-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2a9191c46ca81278",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fedorenko-piantadosi-gibson-2024-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fedorenko-piantadosi-gibson-2024-pdf\n- **URL:** https://tedlab.mit.edu/tedlab_website/researchpapers/Fedorenko_Piantadosi_Gibson_2024.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Nature 630:575 (2024), author PDF (read): double dissociation between language network and thought; 'language does not appear to be a prerequisite for complex thought, including symbolic thought'; no discussion of linguistic relativity or lexical effects.\n- **Key passages:** \"We then review evidence for a double dissociation between language and thought\" · \"all types of thought tested to date are possible without language\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §5 item 13; draft l.192 (C60, C72): scope slightly over-read.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 96
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "73163b85dbbb879d61ef05013b363db7a491d4e39706f037ae7e57624b72baed",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fedorenko-piantadosi-gibson-2024-pdf.md",
+ "kind": "artifact-page"
+}

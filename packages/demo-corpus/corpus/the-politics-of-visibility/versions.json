@@ -1,0 +1,29 @@
+{
+  "slug": "the-politics-of-visibility",
+  "versions": [
+    {
+      "version": "v1",
+      "file": "drafts/v1.md",
+      "label": "v1",
+      "title": "The Politics of Visibility",
+      "subtitle": "*Surveillance and the Conditions of Democratic Freedom*",
+      "origin": "source"
+    },
+    {
+      "version": "v2",
+      "file": "drafts/v2.md",
+      "label": "v2",
+      "title": "The Politics of Visibility",
+      "subtitle": "*Surveillance and the Conditions of Democratic Freedom*",
+      "origin": "source"
+    }
+  ],
+  "published": {
+    "file": "published.md",
+    "url": "https://sjsebastian.substack.com/p/the-politics-of-visibility",
+    "fetched": "2026-11-04",
+    "sha256": "23c5ad860155dce89e8dd3b7068f0d1950992ffacf9466187d46b24f3376cf61",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "origin": "imported"
+  }
+}

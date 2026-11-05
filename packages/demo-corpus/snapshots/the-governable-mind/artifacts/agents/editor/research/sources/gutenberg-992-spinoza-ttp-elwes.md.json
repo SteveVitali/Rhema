@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gutenberg-992-spinoza-ttp-elwes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ef29da703a4eb106",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/gutenberg-992-spinoza-ttp-elwes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gutenberg-992-spinoza-ttp-elwes\n- **URL:** https://www.gutenberg.org/cache/epub/992/pg992.txt · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Elwes translation (header: \"Translator: R. H. M. Elwes\"); ch. XX heading and all five quotations in C21 verbatim; the seditious-opinions passage (C22).\n- **Key passages:** [20:2] \"no man's mind can possibly lie wholly at the disposition of another\"; [20:3] \"is accounted tyrannical\"; [20:20] \"In fact, the true aim of government is liberty.\"; [20:33] \"seditious, not so much from his actual opinions and judgment, as from the deeds which they involve\"; [20:60] \"over his actions, but not over his judgment and reason\".\n- **Reliability:** Primary text (public-domain 1883 translation).\n- **Relevance to this project:** C21, C22; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 108
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cc7faa06ff56dd50804643939e35af2cf6cb99b2ffe2299cd1ee323b5d43e56a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/gutenberg-992-spinoza-ttp-elwes.md",
+ "kind": "artifact-page"
+}

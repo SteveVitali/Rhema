@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-palestine-action-timeline.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e1ab1b00eae596fa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-palestine-action-timeline.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-palestine-action-timeline\n- **URL:** https://en.wikipedia.org/wiki/Palestine_Action · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C17, C19\n- **What it establishes:** Cross-checking timeline and arrest aggregates. Proscription: Commons approved 385–26 on 2 July 2025; Lords 3 July 2025; in force 5 July 2025. Arrest aggregates: at least 2,489 arrested by 30 November 2025; at least 3,070 by end of April 2026, many at mass sit-ins (Parliament Square 9 Aug. and 6 Sept. 2025; Trafalgar Square 4 Oct. 2025), including people holding signs supporting Palestine Action. Brize Norton: 20 June 2025, red paint sprayed into turbine engines of two Airbus Voyager refuelling planes using repurposed fire extinguishers. NGO reactions: Amnesty International — proscription was \"unprecedented legal overreach\"; UK terrorism definitions \"overly broad.\"\n- **Key passages:** Sign text used at mass protests: \"I oppose genocide. I support Palestine Action.\"\n- **Reliability:** Tertiary aggregator — use for cross-checking dates/counts only; every load-bearing figure here is independently anchored (SI 2025/803; Home Office statistics; HRW). Arrest counts beyond the official year-ending-Dec-2025 figure (e.g., 3,070 by April 2026) are activist/press tallies — attribute if used.\n- **Relevance to this project:** C17 vote timeline; C19(c) \"thousands arrested, many for signs.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 185
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0581c39bf2b09b69e53ad38fd6b8e8b2e9c3edf5e79641807877f7b6351090a8",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-palestine-action-timeline.md",
+ "kind": "artifact-page"
+}

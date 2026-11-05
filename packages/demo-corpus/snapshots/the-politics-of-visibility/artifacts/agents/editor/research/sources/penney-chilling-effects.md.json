@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/penney-chilling-effects.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "692a165c7dde0da8",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "c764e820b9b0f19a",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "e76a257ebc5049e6",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/penney-chilling-effects.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Penney — chilling effects: the empirical support and the skepticism\n\n- **URLs:** empirical study located: \"Chilling Effects: Online Surveillance and Wikipedia Use,\" 31 Berkeley Tech. L.J. 117 (2016), https://btlj.org/data/articles2016/vol31/31_1/0117_0182_Penney_ChillingEffects_WEB.pdf; theory paper: \"Understanding Chilling Effects,\" 106 Minn. L. Rev. (2022), https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3855619 (SSRN/paywalls blocked fetch; content via search results incl. https://libpubsdss.lib.umn.edu/minnesotalawreviewprod/article/understanding-chilling-effects/ and https://digitalcommons.osgoode.yorku.ca/scholarly_works/3080/)\n- **Accessed:** 2026-08-21 (search-level; full texts not fetched — flag for Phase 1/3 if quoted)\n\n**Establishes:** Both the best empirical support beyond Stoycheff (post-Snowden decline in privacy-sensitive Wikipedia browsing) and the honest problem: chilling-effects theory has a long skeptical literature — per the search record, Schauer (1978) conceded its empirical assumptions were \"most likely unprovable\"; Blasi called it \"oft-criticized\" \"crude behavioral speculation\"; Kendrick calls the empirical basis \"weak\"/\"flimsy\"; Penney himself concedes conventional fear-based accounts are \"narrow and empirically weak\" and rebuilds the concept as social conformity. The draft's §X concedes the AJPS non-monotonicity but not this deeper line; its coda's confident mechanism (\"the meeting is simply one person smaller\") outruns the evidence it cites.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 163
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f900f95cbb570db8b19c2ff812bff918a8da40af750020b84eb18c32bf1f4f3d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/penney-chilling-effects.md",
+ "kind": "artifact-page"
+}

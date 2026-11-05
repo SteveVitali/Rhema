@@ -1,0 +1,419 @@
+{
+ "dto": {
+  "artifactKind": "fidelity_audit",
+  "artifactPath": "agents/author/drafting/v1/06-fidelity-audit.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d37a8d47ef31b9b9",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "dd976e8536ef04c5",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "4b7d9fda8e6342a1",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "818fd8c9f2c6969a",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "b6e4e47d1163e644",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "4e2fa1269b5a0aea",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "66add325ab527fef",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "974e76127a5e8b03",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "9b8c7cea8f07feb8",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "164f7d8defaf3169",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "b264be9f112f2121",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "eb25903a52e47287",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "ea57dff59bfd6176",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "187fad452ccabc00",
+    "ordinal": 22
+   },
+   "b23": {
+    "contentHash": "fbfcb55d0a189002",
+    "ordinal": 23
+   },
+   "b24": {
+    "contentHash": "f644a3bd4ba8c903",
+    "ordinal": 24
+   },
+   "b25": {
+    "contentHash": "eb73debebdba7ae2",
+    "ordinal": 25
+   },
+   "b26": {
+    "contentHash": "51bf8d6ffeb5f26c",
+    "ordinal": 26
+   },
+   "b27": {
+    "contentHash": "7f736ec635477c96",
+    "ordinal": 27
+   },
+   "b28": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 28
+   },
+   "b29": {
+    "contentHash": "6b70eceb83d80a15",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "f56da4c6e1dfa9f6",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "682452845004e2c0",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "2cef57707f208133",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "c94392cfbed98c12",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "83f994664d11c6b4",
+    "ordinal": 33
+   },
+   "b34": {
+    "contentHash": "95a65cda1f9c24be",
+    "ordinal": 34
+   },
+   "b35": {
+    "contentHash": "839a8423704acb51",
+    "ordinal": 35
+   },
+   "b36": {
+    "contentHash": "350057701994ca3e",
+    "ordinal": 36
+   },
+   "b37": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 37
+   },
+   "b38": {
+    "contentHash": "6e7172974297bf71",
+    "ordinal": 38
+   },
+   "b39": {
+    "contentHash": "60e70ccc21eb3af4",
+    "ordinal": 39
+   },
+   "b4": {
+    "contentHash": "4d955169ae53241a",
+    "ordinal": 4
+   },
+   "b40": {
+    "contentHash": "c9a261aad3d46279",
+    "ordinal": 40
+   },
+   "b41": {
+    "contentHash": "a39ead55df85d619",
+    "ordinal": 41
+   },
+   "b42": {
+    "contentHash": "46dcf0c820512b4f",
+    "ordinal": 42
+   },
+   "b43": {
+    "contentHash": "3630b9dcfdea7da4",
+    "ordinal": 43
+   },
+   "b44": {
+    "contentHash": "05e199dc665d9d81",
+    "ordinal": 44
+   },
+   "b45": {
+    "contentHash": "21ed34e9051918a6",
+    "ordinal": 45
+   },
+   "b46": {
+    "contentHash": "0a6811e09d11466d",
+    "ordinal": 46
+   },
+   "b47": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 47
+   },
+   "b48": {
+    "contentHash": "7733a6c03fc3701c",
+    "ordinal": 48
+   },
+   "b49": {
+    "contentHash": "d3e44775fce7fb7d",
+    "ordinal": 49
+   },
+   "b5": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 5
+   },
+   "b50": {
+    "contentHash": "d2df5b1741e69553",
+    "ordinal": 50
+   },
+   "b51": {
+    "contentHash": "82a64a030311c563",
+    "ordinal": 51
+   },
+   "b52": {
+    "contentHash": "56ec88c60c25cad2",
+    "ordinal": 52
+   },
+   "b53": {
+    "contentHash": "1a6f5e6716b97dbf",
+    "ordinal": 53
+   },
+   "b54": {
+    "contentHash": "e3b6e42e087a2846",
+    "ordinal": 54
+   },
+   "b55": {
+    "contentHash": "31860cef476674b7",
+    "ordinal": 55
+   },
+   "b56": {
+    "contentHash": "5fede8376f3ee6b2",
+    "ordinal": 56
+   },
+   "b57": {
+    "contentHash": "f60ad579c1543325",
+    "ordinal": 57
+   },
+   "b58": {
+    "contentHash": "2aae3b9b1c3662b2",
+    "ordinal": 58
+   },
+   "b59": {
+    "contentHash": "dc5e3b04da3099d5",
+    "ordinal": 59
+   },
+   "b6": {
+    "contentHash": "e605c404aa1baa69",
+    "ordinal": 6
+   },
+   "b60": {
+    "contentHash": "f9207ef2ce304b74",
+    "ordinal": 60
+   },
+   "b61": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 61
+   },
+   "b62": {
+    "contentHash": "e86f7c62001fd95b",
+    "ordinal": 62
+   },
+   "b63": {
+    "contentHash": "af9582ac90e1f9b2",
+    "ordinal": 63
+   },
+   "b64": {
+    "contentHash": "264594e36111161b",
+    "ordinal": 64
+   },
+   "b65": {
+    "contentHash": "bc114aec1edaef4a",
+    "ordinal": 65
+   },
+   "b66": {
+    "contentHash": "c8bbcfa30146cc17",
+    "ordinal": 66
+   },
+   "b67": {
+    "contentHash": "a468f24ca4355f1f",
+    "ordinal": 67
+   },
+   "b68": {
+    "contentHash": "6d4066662fe2a700",
+    "ordinal": 68
+   },
+   "b69": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 69
+   },
+   "b7": {
+    "contentHash": "8b28896b8efdd854",
+    "ordinal": 7
+   },
+   "b70": {
+    "contentHash": "4c7a6bc802c0c122",
+    "ordinal": 70
+   },
+   "b71": {
+    "contentHash": "d6b4e5446e2acc32",
+    "ordinal": 71
+   },
+   "b72": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 72
+   },
+   "b73": {
+    "contentHash": "70f794c1867b4fe0",
+    "ordinal": 73
+   },
+   "b74": {
+    "contentHash": "19d6cf237ab54f76",
+    "ordinal": 74
+   },
+   "b75": {
+    "contentHash": "c38881174c2233e7",
+    "ordinal": 75
+   },
+   "b76": {
+    "contentHash": "4ad66d53bb9ce65a",
+    "ordinal": 76
+   },
+   "b77": {
+    "contentHash": "a41ce5927d6f3fb5",
+    "ordinal": 77
+   },
+   "b78": {
+    "contentHash": "862aca87372a7613",
+    "ordinal": 78
+   },
+   "b79": {
+    "contentHash": "57d7dbb73c8658d1",
+    "ordinal": 79
+   },
+   "b8": {
+    "contentHash": "4437e0000e7f7f82",
+    "ordinal": 8
+   },
+   "b80": {
+    "contentHash": "0c79a788b5abf982",
+    "ordinal": 80
+   },
+   "b81": {
+    "contentHash": "cfa3dfa0cb135501",
+    "ordinal": 81
+   },
+   "b82": {
+    "contentHash": "1b7e4e03454f6f27",
+    "ordinal": 82
+   },
+   "b83": {
+    "contentHash": "c21ea1733bb4213c",
+    "ordinal": 83
+   },
+   "b84": {
+    "contentHash": "1330760915a2379b",
+    "ordinal": 84
+   },
+   "b85": {
+    "contentHash": "8603b735c1162945",
+    "ordinal": 85
+   },
+   "b86": {
+    "contentHash": "99219fbbc9a22531",
+    "ordinal": 86
+   },
+   "b87": {
+    "contentHash": "2639879dc7100516",
+    "ordinal": 87
+   },
+   "b88": {
+    "contentHash": "e4a563ee017acb19",
+    "ordinal": 88
+   },
+   "b89": {
+    "contentHash": "6fb6cc4ea53b50c5",
+    "ordinal": 89
+   },
+   "b9": {
+    "contentHash": "df8e579250eda458",
+    "ordinal": 9
+   },
+   "b90": {
+    "contentHash": "c1111e70ee63d894",
+    "ordinal": 90
+   },
+   "b91": {
+    "contentHash": "554d41782323f15c",
+    "ordinal": 91
+   },
+   "b92": {
+    "contentHash": "39fef5739679c3e5",
+    "ordinal": 92
+   },
+   "b93": {
+    "contentHash": "9fa76628e8be3968",
+    "ordinal": 93
+   },
+   "b94": {
+    "contentHash": "d88c7d1efb235edb",
+    "ordinal": 94
+   },
+   "b95": {
+    "contentHash": "6095799606aca16c",
+    "ordinal": 95
+   },
+   "b96": {
+    "contentHash": "4eeee8e1e9d9bbda",
+    "ordinal": 96
+   }
+  },
+  "demo": {
+   "notPublishedRefs": [
+    {
+     "line": 5,
+     "path": "agents/author/outline/1_article_sketch_and_outline.md"
+    }
+   ]
+  },
+  "draftId": "agents/author/drafting/v1/06-fidelity-audit.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Fidelity audit — The Politics of Visibility, draft v1\n\nFresh-context audit, 2026-08-20. Auditor did not write the draft and read it as\na document, not as process residue. Inputs: `drafts/v1.md`; the full outline\n(`agents/author/outline/1_article_sketch_and_outline.md`, read completely);\n`00-commissioning-brief.md`; `02-structure-plan.md`; `03-claim-ledger.md`;\n`01-voice-brief.md`; persona profile (`voice-print.md`, `exemplars.md`,\n`structure-repertoire.md`, `lexicon.md`). The draft ledger (04) and\nconsolidation notes (05) were not read, by design.\n\nMeasured baseline (script, references excluded; citation markers stripped):\n**body 9,367 words + appendix 276 = 9,643** (target 10,000–10,500 — within\n~4% of the floor). Section words: Opening 756 · I 395 · II 329 · III 772 ·\nIV 570 · V 609 · VI 830 · VII 734 · VIII 564 · IX 368 · X 484 · XI 489 ·\nXII 727 · XIII 411 · XIV 389 · XV 528 · Coda 387.\n\nSeverity: **major** = must close before delivery; **minor** = should close,\ncheap; **note** = record in the drafting note or fix opportunistically.\n\n---\n\n## Walk 1 — Coverage of commitments\n\nThe commitment list was rebuilt from the outline itself and then checked\nagainst the brief. Result: the brief's 22 commitments are a faithful\nextraction; the one outline unit the brief never lists is outline §XIII (see\nF3). Against the draft, 21 of the brief's 22 commitments are present and\ndischarged where the structure plan said they would be; the exception is the\nnormalization stage inside commitment 5 (F1). Spot checks of the preserved\nlines, all found verbatim or near-verbatim: \"The machinery can precede the\nregime.\" (opening); \"Authoritarian capacity grows combinatorially.\" (IV);\n\"Surveillance that once required armies of agents becomes a query.\" (IX);\n\"The perfect chilling effect leaves no defendant, and therefore produces no\ncivil-liberties litigation, no appellate record, no scandal.\" (X); \"The\nliberal question is not only 'may I speak?' It is 'what must I reasonably\nfear if I do?'\" (XI); \"The technological ideal is frictionless power. The\nconstitutional ideal is power subjected to friction.\" (XV); the nine\nthresholds (XII, all nine, Comey in one sentence as specified).\n\n**Refusal drift: none found.** Each refusal is not merely avoided but\nargued against in the draft's own voice: \"It is the wrong word, and the ways\nin which it is wrong are the beginning of the analysis\" (totalitarian); \"ICE\nis not the Gestapo: it operates under statutory jurisdiction…\" (XII);\n\"Whoever tells this story as the invention of one president is telling it\nwrong, and the error is load-bearing\" (VIII); \"No public evidence establishes\nAmerican use of such tools against domestic political dissent, and that\nsentence must be written exactly as scoped\" (IV); the gait correction with\nthe Condor/FreeForm caveat (III); \"plainly prosecutable if proved, and\nnothing in this essay suggests otherwise\" (opening); the checks record in\nXII; the non-fatalist coda.\n\n**Thesis from the draft alone:** authoritarianism is a capacity as well as a\nregime type; the capacity is accumulating lawfully and largely privately\ninside functioning democratic institutions; its most efficient product is\nanticipatory self-suppression of association; therefore practical opacity\nbetween citizen and state is democratic infrastructure. This is the outline's\ncentral thesis, undistorted. No material divergence.\n\n**F1 (major).** The committed seven-stage sequence (commitment 5: \"every\nstage must be installed\") is installed six-sevenths. LEGIBILITY (II–IV),\nCLASSIFICATION (V), ASSOCIATION (V, XI), EXCEPTION (VI–VII), ENFORCEMENT\n(VII), CHILLING (X) are all named stages of the argument. NORMALIZATION —\nthe outline's \"Exceptional mechanisms become ordinary administrative\ninfrastructure. This is where authoritarian capacity becomes durable\" — never\nbecomes a stage. It survives only as glancing phrases: \"Military deployment\nfor domestic political enforcement becomes normal rather than litigated\"\n(XII, one threshold) and \"it is being designed right now, mostly in\nprocurement documents\" (XV). Nothing in the draft argues that the danger\ncompounds when the exceptional becomes routine — which is the stage that\nmakes capacity *durable*, and thus part of why the thesis matters. Fix: two\nto four sentences, most naturally at the end of IX (the economics section\nalready explains why the machinery, once built, is never dismantled:\n\"Inherited capacity does not leave. It waits.\" is the hook) or in XII before\nthe thresholds.\n\n**F2 (minor).** The taxonomy (commitment 4) installs five of its six terms\nwhere used — backsliding (Bermeo, I), autocratic legalism (Scheppele, I),\nauthoritarian capacity (opening), prerogative state (Fraenkel, VII),\ntotalitarianism by refusal (opening, XII, Arendt's total-domination language\nin XI). \"Authoritarianism\" itself — the outline's middle tier, \"political\norders in which meaningful constraints on executive power… become\nsystematically impaired\" — is never defined; the draft leaps from\n\"totalitarian is the wrong word\" to \"Authoritarianism is usually discussed\nas a type of regime. It is also a capacity.\" A reader can infer the tier but\nwas promised the discipline. Fix: half a sentence in the opening or I.\n\n**F3 (note).** Outline §XIII (The Privatized Security State) — the chain\n\"citizen → app → broker → analytics company → local police → federal agency\n→ fusion platform,\" the question \"Where, in that chain, does constitutional\nscrutiny begin?\", and the flagged formulation \"the commercial surveillance\neconomy is a latent intelligence service whose original client was\nadvertising\" — appears in neither the brief's commitment list nor the plan's\ncut list. Its substance is partially covered (\"The better description is a\npublic-private assemblage…\" in III; \"Constitutional limits should not\nevaporate because the database is privately owned\" in XV), and the\ncompression reads deliberate and defensible. But it is the one outline unit\nwhose disposition was never recorded anywhere. Record it in the drafting\nnote; consider whether the \"latent intelligence service\" line earns a place\nin III — it is the strongest unused sentence in the outline.\n\n**F4 (note).** Two enumerated items the plan claimed would survive\ncompression did not: design principle 7, *notice* (\"people should eventually\nlearn that extraordinary surveillance occurred\") is absent from XV's\nprinciples run; and outline XXI Lesson 3, *redundancy before crisis*, is\nabsent from XIV (the plan said XXI's five lessons distribute; four did).\nNeither is load-bearing; both should move to the cut list rather than be\nsilently gone.\n\n---\n\n## Walk 4 — Provenance\n\nEvery citation [1]–[51] was mapped to a ledger row; **all resolve, and every\nrow carries verdict Verified or Substantially accurate. No orphan citations;\nno claim class the ledger forbids.** The binding corrections in the ledger\nheader were honored almost throughout, and several are honored exactly where\na lazier draft would have slipped: CWA and Sunrise appear as\nfinancial-records targets, not diagram entries; the recording claim is\nfenced with \"By one account…[2]\"; OS Investigate is \"on the basis of files\nexposed through Flock's own login pages,\" never \"obtained code\"; the UK\nappellate posture is rendered precisely (\"the High Court found the\nproscription unlawful… the Court of Appeal reversed in June 2026, and the\nSupreme Court agreed in July to decide the question\"); the AAUP \"acted in\nconcert to misuse the sweeping powers\" finding is attributed to \"a separate\ncase brought by academic associations,\" not to Khalil's; Tocqueville is the\nReeve wording exactly; Bermeo, Scheppele, Scott, Fraenkel, Arendt, Shklar,\nFoucault, NSPM-7, CRS, Holder, Church Committee, and the FBI \"nightmare\"\npassage all check character-for-character against the ledger's recorded\nwording, including the CRS caveat (\"Beneath the surface… co-conspirator and\naccomplice liability look much like providing material support\") whose\nomission the ledger warned against. The opening is built strictly from the\ndocumented record — no invented detail, no witnessed pose. The exceptions:\n\n**F5 (minor).** \"His report, filed under the designation UCA 9833, records\nwhat he heard.\" The ledger assigns the designation to the *officer*\n(\"undercover officer 'UCA 9833'\"), not to the report. Fix: \"the report of an\nundercover officer designated UCA 9833.\"\n\n**F6 (minor).** \"administrative subpoenas… that obtained roughly three years\nof financial records… [1]\". The \"~3 years\" figure is Democracy Now's per the\nledger; AP (cite [1]) says \"years of certain financial records,\" and\nDemocracy Now appears nowhere in the References. Fix: either \"years of\nfinancial records\" on AP's authority, or add the Democracy Now citation.\n\n**F7 (minor).** \"the Pegasus Project traced its predecessor to more than 180\njournalists in twenty countries.[15][16]\" Pegasus is NSO Group's product;\nGraphite is Paragon's. No ledger row supports a predecessor relation between\nthe two companies' tools, and a knowledgeable reader will catch it. Fix:\n\"…traced Pegasus, the industry's older flagship, to…\" or simply \"an earlier\ncommercial spyware product.\"\n\n**F8 (minor).** \"the communities the NYPD seeded with informants reported\nexactly that corrosion: the question 'is this person an informant?' did\ndamage no prosecution ever did.[33]\" The quoted question appears in no\nledger row — it is the outline's own formulation (l. 2009) wearing quotation\nmarks — and \"reported exactly that corrosion\" asserts community testimony\nthe ledger does not record. Fix: drop the quotation marks and recast as the\nessay's own characterization, or scope to what [33]'s reporting documents.\n\n**F9 (minor).** \"the litigation it spawned ended with a federal appeals\ncourt comparing the program's logic to the internment cases and letting the\nconstitutional claims proceed.[35]\" Litigation that \"ended\" by letting\nclaims *proceed* is internally contradictory; Hassan's remand was 2015 and\nthe ledger records no terminal event. Fix: \"produced a federal appeals\ndecision comparing…\"\n\n**F10 (minor).** \"The unit's commanding officer then testified, under oath,\nto what it had produced.\" The ledger identifies Galati as \"NYPD Assistant\nChief\" deposed in Handschu; he commanded the Intelligence Division, not the\nDemographics Unit. Fix: \"the commanding officer of the NYPD's intelligence\ndivision,\" and \"said in a sworn deposition\" is more exact than \"testified.\"\n\n**F11 (note).** \"ImmigrationOS, promising 'near real-time visibility' into\nthe movement of targeted people through the immigration system.\" The\nledger's recorded object of that quotation is self-deportations and\noverstays; the draft's gloss is broader than the source wording. Tighten or\nmatch the ledger's scope.\n\n**F12 (note).** The ledger lists three Paragon complications as \"binding on\nthe draft\"; the draft carries two (letter names no vendor; DHS denial) and\nomits the third (a procurement notice says the contract \"was closed out\nJan. 20\"). The sentence \"declining to say whether it reaches the same\ncapability through third parties\" partially compensates. Add the clause or\nlog the omission.\n\n**F13 (note).** The UN-experts quotations (\"mere property damage, without\nendangering life…\"; \"should be properly investigated as ordinary crimes\")\ncarry the ledger's own flag: verified via corroborated excerpts, \"re-verify\nbefore print\" (ohchr.org was blocked). This belongs in the drafting note as\nan outstanding verification, not silently shipped.\n\n**F14 (note).** The *Holder* dictum (\"did not suggest Congress could 'extend\nthe same prohibition…'\") is deployed with the sly gloss \"in a sentence that\nreads differently each year\" but is not labeled as dictum, which the ledger\ninstruction requires (\"may be used as dictum, labeled as such\"). One word\n(\"in dictum\") fixes it.\n\n**F15 (note).** Two small specifications beyond the recorded wording: \"404\npeople were charged under section 13, most for holding signs\" (the ledger\ngives the 404 figure; \"most for holding signs\" is a gloss on a\ndisplay-of-article offense) and \"logged the license plates of worshippers at\nFriday prayers\" (ledger: \"attending services\"). Both are probably true;\nneither is in the record as written.\n\n---\n\n## Walk 3 — Link integrity\n\nThe draft is, for the most part, unusually disciplined about the\noutline-juxtaposition failure this walk hunts. The Britain-to-America\ninference is stated as a conditional with its warrant explicit (\"precisely\nbecause British institutions resemble ours enough for the difference to be\nlegible\"; \"Britain is what the missing statute would mean\") — no drift into\nprediction. The chilling chain is built with its own corrective (the AJPS\nmodel conceded, the claim narrowed to \"surveillance changes the strategic\nenvironment of dissent\"). The Minnesota material is consistently framed as\nallegation where it is allegation: \"The defense motion… calls the\ninvestigation broad, irrational, and politically driven. The government will\nanswer in court, and no court has yet ruled.\" The exceptions:\n\n**F16 (major).** \"Research on American Muslims has since found that\npolice-surveillance encounters, specifically, are associated with decreased\nelectoral participation.[36] Surveillance of a community suppressed the\ncommunity's most basic democratic act. That is the mechanism this essay has\nbeen assembling, observed in the wild, at home, within twenty years.\" The\nfirst sentence states the association accurately; the second upgrades it to\na causal verb, and the third claims the *mechanism* was \"observed\" — when\nthe study (per its own ledger row: \"police encounters are linked to\ndecreased electoral participation\") observed a correlation in 2016 turnout\ndata. This is the essay's single field-data warrant for its central\nempirical claim, and it is exactly the capability-for-use class of overreach\nthe piece elsewhere polices in itself. A hostile reader lands here first.\nFix: \"is associated with the suppression of…\" / \"the mechanism this essay\nhas been assembling, with its footprint visible in the wild\" — keep the\nforce, lose the causal assertion.\n\n**F17 (minor).** \"An investigation that began around alleged criminal\ninterference with immigration enforcement produced, within months, a\nfinancial canvass of unions and a diagram of eighteen civic\norganizations…[1]\" The ledger's C1 instruction: \"Omit any launch date for\nPuppet Master (unconfirmed).\" \"Within months\" asserts an elapsed time that\nrequires the unconfirmed start date. Fix: \"produced, by the time the\ndocuments surfaced, a financial canvass…\"\n\n**F18 (minor).** \"A memorandum supplies the categories. An investigation\nsupplies the graph. What converts the two into legal consequence is a word…\"\n(V→VI hinge), following \"Operation Puppet Master is the network logic made\noperational.\" The network-logic claim is warranted by the documents\nthemselves (the diagram *is* network mapping). But the two-sentence\ncomposition invites the reader to assemble NSPM-7 and the Minnesota\ninvestigation into one machine, and no source in the draft connects them —\nnothing shows the investigators operated under, or even after, the\nmemorandum's categories. The draft never asserts the connection; it lets\nadjacency do the work. Fix that strengthens rather than weakens: state the\nnon-connection explicitly (\"No public document connects the memorandum to\nthe Minnesota investigation; what connects them is the logic\") — which is\nalso the more frightening sentence, and true.\n\n**F19 (note).** \"And the enforcement layer has been funded to match: the\n2025 budget reconciliation act granted ICE roughly $75 billion…\" (IX). The\nappropriation is for immigration enforcement; presenting it as the funding\nof *the* enforcement layer beneath NSPM-7's classification layer imports the\nessay's thesis into a budget fact. The regime/capacity frame partially\nlicenses this (capacity is capacity, whoever holds it), but one scoping\nclause (\"an immigration-enforcement budget, but capacity is not earmarked by\nintention\") would close the gap a hostile reader will open.\n\n**F20 (note).** The Palantir paragraph (IV) states contract facts and system\ncapabilities in the essay's own voice with only the endnote [13] carrying\nthe ACLU provenance; every comparable factual block in the draft names its\nsource in prose (\"Records obtained by the American Civil Liberties Union\nshow…\", \"The Government Accountability Office found…\", \"WIRED reported…\").\nThe asymmetry is the residue of an advocacy-compiled source presented as\nneutral inventory. One attributive clause fixes it.\n\nAlso observed, below finding threshold: \"the meetings he attended will be\nattended a little differently once it is known that he was there\" (X) is a\nprediction stated as fact — defensible as analysis, but \"will be\" could be\n\"will presumably be\" without loss of nerve.\n\n---\n\n## Walk 2 — Prose, from the draft alone\n\n**Heading test: passes.** Deleting the headers mentally leaves a continuous\nargument; nearly every section ends by handing its conclusion to the next\n(\"That is a claim about architecture, and it is why the argument must now\nturn to the technology\"; \"Everything to this point describes an\ninfrastructure of seeing… What aims it is classification\"; \"Which returns\nthe argument to Minnesota…\"). The transition test likewise passes: first and\nlast sentences read in order reconstruct the spine's fifteen claims almost\nexactly. Specificity is strong — nearly every abstraction is cashed within a\nparagraph (behavioral legibility → \"which cars recur outside which\nmeetings\"; process punishment → the tackled, transported, phone-stripped\nperson; friction → warrants, trials, appeals). **The opening is the draft's\nbest writing**: a serious Substack reader does not stop in it, and the\nquotation-marks detail in paragraph one is the kind of found object that\nbuys the next thousand words. **The ending lands the thesis** and completes\nthe epigraph rather than restating it. The failures are local:\n\n**F21 (minor).** Section XIV is one 230-word paragraph carrying six\nprinciples in sequence: \"Threat-model honestly… Protect the endpoint before\nthe channel… Minimize… Compartmentalize, so that no single failure\nsurrenders a whole network. Understand what encryption does not hide… And\ntreat security as organizational rather than individual…\" This is the\ndraft's clearest bullet ghost — claim, claim, claim of equal weight, each\nsentence a former list item with its bullet filed off — and the register\nbriefly becomes a manual. Fix: split into two or three paragraphs; let one\nprinciple (minimization's \"whom besides me would it expose?\" is the best\ncandidate) breathe with its own concrete case, and subordinate the rest.\n\n**F22 (minor).** Section XIII: \"The essay's five thinkers, assembled, say\nwhy this matters structurally rather than sentimentally. Scott: the state's\npower begins in legibility. Foucault: visibility disciplines whether or not\nforce follows. Tocqueville: association is where democratic power is\ngenerated. Arendt: plurality and beginning are what total power must\ndestroy. Shklar: the anticipation of arbitrary power is itself the political\nharm.\" Five name-colon-clause items in a row is list grammar, and the\nparagraph is also a summary restating material argued two sections earlier —\na persona hazard the voice brief names. The synthesis is a commitment\n(17) and must stay; the *form* should become prose, or compress to two\nsentences that combine rather than enumerate.\n\n**F23 (minor).** Section XV's design-principles run: \"Intrusive\ninvestigation should follow… Data collected for one purpose should not…\nCollection and retention should be bounded… Sensitive searches… should\nrequire… Political, journalistic, religious, and legal association deserve…\nConstitutional limits should not evaporate… And the institutions able to\nimpose costs on abuse… must themselves be kept strong…\" — seven\nequal-weight \"should\" sentences, former bullets, partially redeemed by the\nclosing turn (\"Readers will recognize these as the lessons of the Church\nCommittee, restated for the fusion layer\"). Fix: vary the weight; cash one\nprinciple against a concrete instance from earlier in the essay (retention\nagainst Flock's 30-to-7-day cut is sitting right there).\n\n**F24 (note).** Section IX's colon-labeled enumeration (\"Scale: collection\nhappens… Persistence: observations accumulate… Integration: databases built\nfor separate purposes join. Automation: software performs…\nRetrospectivity, the strangest of the new properties: …\") is announced\nenumeration, which the persona permits, but it is also the one section\nwhere the re-derivation test partially succeeds: the outline's bullets are\nreconstructible one-per-sentence. The variation on \"Retrospectivity\" shows\nthe fix for the other four.\n\n**F25 (note).** Section XII's second paragraph chains seven case outcomes\n(Chatrie, Natanson, law firms, churches, LA, Minnesota, Hungary) in a\nsingle paragraph. Each clause earns its place, but at reading speed it is an\nevidence file, not an argument, until the Hungary pivot. Splitting at \"And\nthe strongest recent evidence that accumulation is reversible comes from\nabroad\" would give the reversal the paragraph it deserves.\n\n**F26 (note).** Proportion: the draft's own transition declares XI \"the\nphilosophical center of the essay,\" and XI is 489 words — leaner than the\ntechnology survey (III, 772) and the terrorism-law section (VI, 830). The\nsection holds because the three quotations are load-bearing, but the center\nof the essay is its eighth-longest section. If anything grows in revision,\nit is XI's synthesis paragraph, not the machinery.\n\n**Surveys rather than arguments:** III comes closest (roads → phone → face\ninventory) but each block turns analytic before it closes (\"Notice who built\nall of this\"; the correction paragraph), and the section is rescued; XIV is\nthe true survey (F21). **Paragraphs cuttable without argumentative loss:**\nnone at paragraph scale — the draft is tight. At sentence scale, the\nstandalone aphorism lines are the only removable matter (\"A file could hold\na name. A pattern holds a network.\"; \"Lag is a race, not a verdict.\"; \"The\nperson carries the file.\"; \"It has never before been this cheap.\"), and\ntheir removability is the definition of payoff rather than argument; the\nration question is Walk 5's.\n\n---\n\n## Walk 5 — Voice fidelity\n\nMeasured against the voice brief's targets (script; quotations included in\ncounts except where stated; prose base 9,526 words incl. appendix, excl.\nheadings/epigraph/references).\n\n| Feature | Target | Measured | Verdict |\n|---|---|---|---|\n| Sentence median | 14–16 | 16 | pass (upper edge) |\n| Sentence mean | ~18 | 21.2 | **miss** |\n| p90 | ≤36 | 41 | **miss** |\n| ≤10-word share | ≥30% | 28.7% | marginal miss |\n| ≥40-word share | ≤8% | 10.3% | **miss** |\n| Paragraph median | 35–50 w | 77.5 w | **miss, large** |\n| Single-sentence paragraphs | 20–30% | 15.2% (17/112) | **miss, low** |\n| Em dash | 0.6–1.4/1k | 4 total, all inside quoted matter; **0/1k own prose** | miss (under) |\n| Parenthetical asides | ~3–6.6/1k expected | 1.15/1k | low |\n| Semicolon | ≤6/1k | 6.5/1k (62; several in quotes) | at/over cap |\n| Colon | 10–14/1k | 11.0/1k | pass |\n| Question marks | ≤3/1k | 2.4/1k | pass |\n| Exclamation | 0 | 0 | pass |\n| First person (authorial) | ~0 | 0 (all 7 \"I\" tokens inside quotations) | pass |\n| Second person | 0 | 9 \"you\" tokens; ≥1 authorial (F30) | **miss** |\n| Contractions | 0 | 0 | pass |\n| Triads | ≤4/1k | ~2.2/1k, never stacked | pass |\n| Aphoristic closers | ≤1/~600 w | 17 one-liners ≈ 1/560 w; never two in a row | marginal, acceptable |\n| Sentence-initial \"But\" | ~1.4/1k | 1 instance, 0.1/1k; \"Yet\" 0 | miss (under) |\n| \"This is why\" | ≤2 | 2 | at cap |\n| Negation-then-correction | 4–6/1k, three forms varied | ~30–38 total ≈ 3.5–4/1k; **form skew: ≥18 \"X is not Y. It is Z.\" vs ~9 \"not X but Y\", few semicolon forms** | density at band floor; **variety miss** |\n\n**Register hazards: clean sweep.** Zero hits on the entire marker list\n(delve, tapestry, landscape, crucial, notably, robust, nuanced, testament,\nleverage, navigate, myriad, etc.). No hedge stacks, no throat-clearing, no\nboth-sidesing (\"Read one way… read the other\" in IV resolves rather than\nsplits the difference), no filler \"not only… but also\" (all three instances\ncontentful), no stacked tricolons. Signature moves all present and mostly\nrationed: concede-correct-diagnose at the opening turn; two named steelmen\nin structural positions (IX's \"Has America not always done this?\"; XIII's\nstrongest-form \"nothing to hide\"); three reports against interest as\nplanned (gait correction, AJPS complication, thresholds-as-falsification);\nboth coinages marked (\"Call it authoritarian capacity\"; \"behavioral\nlegibility, an extension of Scott's term coined here for the purpose\").\n\n**F27 (minor).** Paragraph shape is the largest single voice divergence:\nmedian 77.5 words against a 35–50 target (model piece ~37), and 15.2%\nsingle-sentence paragraphs against 20–30% (model 31%). The draft argues in\nlong paragraphs punctuated by aphorisms; the persona argues in short\nparagraphs punctuated by pivots. Fixing F21/F22/F25 (splitting the three\nmega-paragraphs) moves both numbers materially in one pass.\n\n**F28 (minor).** The sentence distribution is top-heavy: mean 21.2, p90 41,\n10.3% of sentences ≥40 words. Some of this is quotation load (Bermeo,\nNSPM-7), but sentences like \"These documents are public because defense\nlawyers obtained them in discovery and filed them in open court, where\njournalists read them and published them, and where a judge will now weigh\nwhat they show\" are the draft's own. A pass that breaks the ten longest\nnon-quoted sentences would land the profile.\n\n**F29 (minor).** Negation-then-correction is at the band's floor and skewed\nto one form. The two-sentence \"X is not Y. It is Z.\" appears at least 18\ntimes (\"The danger is not the eye. It is the interoperability.\" / \"The\nmechanism is not the coup. It is…\" / \"The ideology is not the charge. It is\nthe query.\" / \"The mechanism is not observation. It is uncertainty…\"), many\nas standalone paragraphs, against ~9 \"not X but Y\" and few semicolon-hinged\nforms (\"Law is not absent from this story; it is behind, which is\ndifferent\" is the best of the rare third form). The voice brief's stated\nfailure mode is monotony, not density; this is monotony. Fix: convert five\nor six of the two-sentence instances into the other two forms.\n\n**F30 (minor).** Authorial second person, venue rule 0: \"the law stops\nasking only what you did and begins asking with whom you did it\" (VI). The\nother \"you\" tokens are ventriloquized (the state's questions in II, the\nsteelman in XIII) and defensible; this one is the essay's own voice\naddressing a generic reader. Fix: \"what a person did… with whom she did it.\"\n\n**F31 (note).** The aside texture is flat relative to the persona's long\nform: own-prose em dashes 0/1k (band floor 0.6 — under-production is the\ncalibration-documented error mode), parentheses 1.15/1k against the 2.7–6.6\nthe long pieces run, sentence-initial \"But\" once in 9,500 words against\n~1.4/1k. The draft folds nearly every aside into commas, which produces a\nmore relentless period than the corpus's. Two or three parenthetical asides\nand a handful of \"But\" openings per two thousand words would restore the\ntexture.\n\n**F32 (note).** Semicolons 6.5/1k against a ≤6 cap — effectively at the cap\nonce quoted matter is discounted; watch it in revision, do not add more.\n\n**F33 (note).** The voice brief asks for ≥1 negation-then-correction in the\nopening paragraph; the opening paragraph (the documented miniature) contains\nnone — the first arrives in paragraph four (\"It is the wrong word\"). Given\nthat the miniature is the right opening for this piece, this is a rule the\ndraft was probably right to break; record it rather than fix it.\n\n**F34 (note).** Apparatus deviations from the plan: 51 references against\nthe plan's \"expect 30–40\" (defensible for this claim density; log it), and\nthe appendix's bold lead-ins (\"**For politically engaged citizens:**\")\nagainst the plan's \"Bold in prose: 0\" (the corpus has no bolded pull-phrases\ninside paragraphs; the appendix is arguably outside the essay proper — log\nor unbold).\n\n**The honest question** — would a regular reader of sjsebastian.substack.com\naccept this as belonging to the body of work? Three specific divergences,\nper instruction, rather than a verdict: (1) *the page looks different* — the\ncorpus's long form moves in short paragraphs with one-sentence pivots every\nfew hundred words; this draft's median paragraph is nearly double the\npersona's, so the scroll reads denser than anything on the Substack;\n(2) *the asides are missing* — Sebastian's long pieces think in parentheses\n(2.7–6.6/1k); this draft almost never steps out of its own sentence, which\nreads as a more austere, less companionable writer; (3) *the signature is\nplayed fortissimo* — \"X is not Y. It is Z.\" recurs at a cadence the corpus\nnever sustains, and by section III an attentive corpus reader would notice\nthe drumbeat.\n\n---\n\n## Walk 6 — The reader's first read\n\nOne pass, reading speed, as the venue's reader; reported without re-reading.\n\n**What I believe the piece argues:** that the United States has built, mostly\nlawfully and mostly privately, the observation-classification-and-targeting\nmachinery an authoritarian state would need, while remaining a functioning\ndemocracy; that the machinery's characteristic product is not arrest but\nanticipatory self-suppression of association, which trips no constitutional\nalarm; and that some opacity between citizen and state is therefore\nload-bearing democratic infrastructure to be defended now, while the\ndefending institutions still bind.\n\n**Three passages that landed:** (1) the opening paragraph's quotation marks —\n\"The quotation marks around *peaceful* are his\" — which does in eleven words\nwhat the next nine thousand argue; (2) the no-defendant paragraph in X:\n\"No officer acted. No prosecutor filed. No court will ever see the case,\nbecause there is no case: nothing happened, which is precisely the outcome…\nAnticipation trips none of them.\"; (3) the Britain sequence in VI, ending\n\"Britain's answer, in its first full year: the movement itself became the\noffense, at a rate of two thousand seven hundred arrests.\" — the essay's\nbest use of a number.\n\n**Where attention first broke:** midway through XIV, at \"Compartmentalize,\nso that no single failure surrenders a whole network.\" The essay had been\narguing for eight thousand words and suddenly it was instructing; the\nsix-principles-in-one-paragraph block reads at a different, flatter cadence,\nand I surfaced from the piece for the first time. (Second dip: the seven-case\nchain in XII's checks paragraph, though the Hungary turn recovered it.)\n\n**What I expected to be told and was not:** whether Operation Puppet Master\nhas any documented relationship to NSPM-7. The essay sets the memorandum and\nthe investigation side by side twice (\"A memorandum supplies the categories.\nAn investigation supplies the graph.\") and never says whether the one\noperated under the other — even \"no public document connects them\" would\nhave answered the question the structure keeps raising. Secondarily: what\nhappens when the machinery becomes ordinary — the essay explains how\ncapacity accumulates and what it chills, but not the stage at which it\nbecomes unremovable (the missing normalization argument, F1).\n\n**Did anything read as machine-written, and which sentence first suggested\nit:** the prose is clean of machine vocabulary and mostly clean of machine\nrhythm; what suggested generation was not any sentence's content but a\ncadence — the two-beat negation aphorism recurring on schedule. The first\nsentence that raised the suspicion was \"The danger is not the eye. It is\nthe interoperability.\" — not because it is bad (it is good) but because it\nwas the third sentence of exactly that shape in four pages, and the pattern\nkept its metronome for the rest of the piece.\n\n---\n\n## Verdict\n\nThis draft is deliverable after closing the majors, and the majors are\ncheap: F1 (install normalization — two to four sentences in IX or XII) and\nF16 (one verb and one clause de-causalizing the Rosenthal & Selod sentence).\nThe minors divide into an afternoon of provenance precision (F5–F10, F17,\nF18 — every one is a wording fix, none structural) and one real revision\npass for prose-and-voice shape (F21–F23 paragraph splits, F27–F31 texture),\nwhich are the same pass: splitting the three mega-paragraphs and varying\nthe negation form fixes most of the voice numbers as a side effect. Nothing\nfound contradicts the outline's thesis, no refusal was drifted into, no\ncitation is orphaned, and the draft's discipline about allegation,\ncapability, and posture is better than the genre's norm — the audit's\nhardest findings are concentrated where the outline's own material was\nlist-shaped. Report honestly in the drafting note rather than fix: the\nOHCHR re-verify flag (F13); the single-origin (AP-read-of-filings) status of\nthe \"Conspiracy\" slide details, already attributed but worth naming; the\nundocumented NSPM-7/Minnesota relationship once F18's scoping sentence\nstates it; the disposition of outline §XIII and the two silently dropped\nenumerables (F3, F4); the 51-reference count and the appendix bolding\n(F34); and the deliberate rule-break of the opening paragraph (F33). If the\nauthor fixes F16, F18, and F21 and nothing else, the piece survives a\nhostile read; if the voice pass is skipped, it survives as a very good essay\nthat a longtime subscriber would, on a close read, suspect was not written\nthe usual way.\n\n---\n\n# Iteration 2 — fix verification, 2026-08-20\n\nSecond-pass audit after gap closure (run log: 21 + 2 edits). Inputs: revised\n`drafts/v1.md`; `03-claim-ledger.md`; and — read this iteration, deliberately,\nto verify report-in-note classifications — `04-draft-ledger.md` and\n`05-consolidation-notes.md`. All numbers re-measured by script on the revised\ndraft (prose base 9,699 words incl. appendix, excl. headings/epigraph/\nreferences; 496 sentences; 119 paragraphs). Segmentation may differ from\niteration 1's script by a hair; treat deltas as directional.\n\n## Majors\n\n**F1 — CLOSED.** Installed at the end of IX, as recommended, as a named stage\nwith its own warrant: \"The last novelty is the quietest, and the outline of\nthis argument has been pointing at it all along: normalization. Palmer's raids\nwere an emergency and ended; a camera network is a subscription and renews.\nCapacity that arrives as software and appropriations does not need to be\ndefended as an exception, because it is never experienced as one — it persists\nas a budget line, an interoperability agreement, a default setting, ordinary\nadministrative infrastructure that no one remembers adopting. This is the\nstage at which authoritarian capacity stops being an event and becomes an\ninheritance, and it is the stage the United States is in now.\" The\nemergency/subscription contrast is the argument, not an assertion; \"ordinary\nadministrative infrastructure\" honors the outline's commitment verbatim;\n\"inheritance\" picks up VIII's \"Inherited capacity does not leave. It waits.\"\nRegister is the essay's own (the semicolon hinge, the colon, the flat closing\ndiagnosis). One blemish, logged as F36.\n\n**F16 — CLOSED.** Now: \"Survey research on American Muslims has since found\npolice-surveillance encounters, specifically, associated with decreased\nelectoral participation.[36] An association is not proof of cause. But its\nshape is exactly the mechanism this essay has been assembling — a watched\ncommunity, voting less — observed at home, within twenty years.\" The causal\nverb is gone, the disclaimer is explicit and load-bearing, and the force\nsurvives in the appositive. \"Observed\" now attaches to the association's\nshape, which is what the study observed. A hostile reader has nothing to land\non.\n\n## Provenance minors — each fix checked against the ledger's recorded wording\n\n- **F5 CLOSED** — designation moved to the officer (\"The report of an officer\n  identified in the filings only as UCA 9833\"); accurate per C1/C3. The fix\n  left an article seam (new finding F35).\n- **F6 CLOSED** — \"years of financial records\" on AP's authority; the\n  Democracy Now figure dropped rather than newly cited.\n- **F7 CLOSED** — \"forensic researchers have confirmed Paragon's Graphite\n  spyware on the phones of European journalists, and the earlier Pegasus\n  Project traced NSO Group's comparable tool to more than 180 journalists in\n  twenty countries\": Pegasus is now NSO's, the relation is \"comparable,\" no\n  predecessor claim across vendors. Accurate per C13.\n- **F8 CLOSED** — the quoted-question sentence is gone from VIII; corrosion\n  now appears in XIV as a warranted analytic claim: \"an infiltrated meeting is\n  not merely observed but changed, because everyone at the next one must\n  wonder who else is listening.\" No citation, and none is needed — the\n  because-clause carries it. (Bookkeeping residue: 04's XIV table row still\n  says the corrosion claim is \"cited to NYPD record (C31)\" — now stale.)\n- **F9 CLOSED** — \"the litigation it spawned produced a federal appeals court\n  decision… letting the constitutional claims proceed.\" No terminal verb.\n- **F10 CLOSED** — \"The commanding officer of the NYPD's Intelligence Division\n  then stated, in a sworn deposition\" — matches C31 exactly.\n- **F11 CLOSED** — \"'near real-time visibility' into self-deportations and\n  visa overstays\" — matches C11's recorded object of the quotation.\n- **F12 CLOSED** — the third Paragon complication is carried: \"(a procurement\n  notice recorded the contract as closed out in January 2026)\".\n- **F14 CLOSED** — \"The Court was careful to add — in dictum, in a sentence\n  that reads differently each year —\". Labeled as C16 requires.\n- **F15 CLOSED** — \"404 people were charged under section 13, the provision\n  reached by holding a sign\" and \"worshippers attending services\": both now\n  inside the record. (\"The provision reached by holding a sign\" is slightly\n  contorted; optional polish, not error.)\n- **F17 CLOSED** — \"within months\" removed; no elapsed-time assertion\n  requiring the unconfirmed launch date remains.\n- **F18 CLOSED** — V now states: \"No public document connects the Minnesota\n  investigation to NSPM-7, and this essay asserts no such link; what the two\n  share is the logic, and the logic is the point.\" Natural, in register, and —\n  as iteration 1 predicted — the stronger sentence. It also answers Walk 6's\n  reported expectation gap, and it defuses the V→VI hinge's adjacency problem\n  without weakening the hinge.\n\n## Prose findings\n\n- **F21 CLOSED** — XIV is now four paragraphs; threat-modeling and\n  organizational security each carry a concrete case, and minimization\n  breathes (\"if this were seized tomorrow, whom besides me would it expose?\"\n  with the retention corollary). Residue: the second paragraph still runs four\n  imperative-colon principles in sequence — cadence improved, list ancestry\n  visible at reading speed.\n- **F22 CLOSED** — the five name-colon fragments became one grammatical\n  sentence with \"because\" warrants, followed by a conclusion turn (\"The\n  conclusion they converge on is not a right to be invisible. It is narrower\n  and harder to dismiss…\"). Cost: four own-prose semicolons against an at-cap\n  rate (see F32).\n- **F23 CLOSED** — the seven \"should\" bullets became five indicative sentences\n  with internal hierarchy (\"Above all…\"), causal subordination, and an em-dash\n  aside; and the rewrite restored F4's dropped notice principle (\"end with\n  eventual notice to the person searched where no case follows\"). Residue: a\n  recognize/recognizable echo (F38).\n- **F25 CLOSED** — XII split exactly at \"And the strongest recent evidence\n  that accumulation is reversible comes from abroad.\"\n- **F2 CLOSED** — the middle tier is defined in the opening: \"an order in\n  which the constraints on executive power, contestation, and association have\n  been systematically impaired.\"\n- **F30 CLOSED** — VI now reads \"what a person did and begins asking with whom\n  she did it\"; the remaining seven \"you\" tokens are all ventriloquized (the\n  state's questions in II, the steelman in XIII).\n\n## Notes — classification check\n\n- **F3 report-in-note CONFIRMED** — 04 records outline §XIII's disposition\n  (folded into III–IV; \"latent intelligence service\" cut, with a stated\n  reason).\n- **F4 CLOSED** — notice restored to XV; redundancy-before-crisis recorded as\n  cut in 04.\n- **F13 report-in-note CONFIRMED** — 05 residual 5 and ledger C19b carry the\n  OHCHR re-verify flag.\n- **F34 report-in-note CONFIRMED** — 05 residuals 2 and 4 record the\n  51-endnote count and the appendix bolding.\n- **F19 OPEN (note)** — the ICE-budget sentence is unchanged; the scoping\n  clause was not added.\n- **F20 OPEN (note)** — the Palantir block still carries its ACLU provenance\n  only in endnote [13].\n- **F24 accepted** — announced enumeration unchanged; persona-permitted.\n- **F26 OPEN (note)** — XI unchanged; the declared philosophical center\n  remains the eighth-longest section.\n- **F33 OPEN (report item)** — the opening-paragraph rule-break stands\n  (correctly), but is recorded nowhere in 04/05.\n\n## Voice re-measure\n\n| Feature | Brief target | Corpus per-piece range | Iter 1 | Iter 2 | Verdict |\n|---|---|---|---|---|---|\n| Sentence median | 14–16 | — | 16 | 16 | pass |\n| Sentence mean | ~18 | 14.2–21.7 | 21.2 | 19.6 | above target, inside corpus — report |\n| p90 | ≤36 | — | 41 | 36 | pass (at cap) |\n| ≤10-word share | ≥30% | — | 28.7% | 28.6% | marginal miss — report |\n| ≥40-word share | ≤8% | 0–13.8% | 10.3% | 7.3% | pass |\n| Paragraph median | 35–50 w | 32–90 | 77.5 | 80 | outside target, inside corpus — report |\n| Single-sentence ¶ | 20–30% | 6–41% | 15.2% | 13.4% (16/119) | outside target, inside corpus — report |\n| Em dash (own prose) | 0.6–1.4/1k | 0.6–1.4 | 0/1k | 0.82/1k (8 own; 4 quoted) | pass — fixed |\n| Parenthetical asides | ~3–6.6/1k | — | 1.15/1k | 1.13/1k | low — report |\n| Semicolon | ≤6/1k | 0–8 | 6.5/1k | 6.8/1k (6.3 excl. quoted) | over cap, inside corpus — report (F32) |\n| Colon | 10–14/1k | — | 11.0 | 10.5 | pass |\n| Question marks | ≤3/1k | — | 2.4 | 2.3 | pass |\n| Exclamation | 0 | — | 0 | 0 | pass |\n| First person (authorial) | ~0 | — | 0 | 0 (7 tokens, all quoted/formulaic) | pass |\n| Second person (authorial) | 0 | — | 1 | 0 | pass — fixed |\n| Contractions | 0 | — | 0 | 0 (1 inside Galati quote) | pass |\n| Sentence-initial \"But\" | ~1.4/1k | — | 0.1/1k | 0.31/1k (3) | improved, still under — report |\n| \"This is why\" | ≤2 | — | 2 | 1 | pass |\n| Negation-then-correction | 4–6/1k, 3 forms varied | — | ~3.5–4/1k; ≥18 form A | ~3.4–3.8/1k; ≈15 A / ~7 B / 11 C | density at/below floor; variety improved — report |\n| Aphoristic closers | ≤1/~600 w | — | 1/560 w | ≈1/606 w | pass |\n\n- **F27 — REPORT, not fix**: paragraph median 80 w and single-sentence share\n  13.4% are outside the brief's model-piece targets but inside the corpus\n  per-piece ranges. The splits fixed the three worst paragraphs without moving\n  the global shape; this remains a long-paragraph entry at the dense end of\n  the persona's attested range.\n- **F28 — CLOSED**: p90 36 (at the cap), ≥40-word share 7.3% (under the cap);\n  mean 19.6 is above the ~18 target but inside the corpus range, and the\n  surviving 40-plus sentences are predominantly quote-bearing (Church, Bermeo,\n  Fraenkel, Arendt).\n- **F29 — CLOSED-WITH-RESIDUE**: forms now ≈ 15 two-sentence / ~7\n  semicolon-hinged / 11 \"not X but Y\" (was ≥18 / ~9 / few); all three forms\n  genuinely in play. But the four metronome instances iteration 1 quoted\n  (eye/interoperability, coup/accumulation, charge/query,\n  observation/uncertainty) all survive; the drumbeat is slower, not gone.\n- **F31 — CLOSED-WITH-RESIDUE**: own-prose em dashes 0.82/1k — inside the\n  band; the calibration-documented under-production is corrected. Parentheses\n  (1.13/1k vs ~3–6.6) and \"But\" openings (0.31/1k vs ~1.4) remain\n  under-produced — report.\n- **F32 — REPORT, slightly worse**: 6.8/1k total, 6.3/1k excluding quoted\n  matter (cap ≤6; corpus 0–8). The F22 rewrite added four semicolons against\n  an explicit do-not-add instruction. Inside corpus range; do not add more in\n  any further pass.\n\n## Citation-graph integrity\n\n[1]–[51] in the body and 1–51 in References are bijective: no orphan in\neither direction. Spot checks confirm the fixes did not shift any number onto\nthe wrong note ([33] AP/NYPD, [34] Galati, [35] Hassan, [36] Rosenthal &\nSelod, [15] Citizen Lab reused in XIV, [51] Access Now). Marker-vocabulary\nscan: zero hits. Doubled-word scan: zero.\n\n## New findings\n\n**F35 (minor).** The F5 fix left an article seam in the opening paragraph:\n\"a federal undercover officer attended a meeting… The report of an officer\nidentified in the filings only as UCA 9833\" — the indefinite article\nre-introduces the same person and can be read cold as a second officer. Fix:\n\"The report of the officer, identified in the filings only as UCA 9833,\nrecords what he heard.\"\n\n**F36 (note).** \"the outline of this argument has been pointing at it all\nalong\" (IX, the F1 insertion) — idiomatic English, but \"outline\" is process\nvocabulary in a document drafted from one; \"the shape of this argument\" says\nthe same without the wink.\n\n**F37 (note).** \"A month later the Department of Homeland Security said…\"\n(IV): the letter is April 1, 2026, and the DHS statement May 22 — seven\nweeks. \"In May\" would be exact and costs nothing.\n\n**F38 (note).** \"the answer has a recognizable shape… Readers will recognize\nwhat follows\" (XV) — a recognize/recognizable echo across adjacent sentences,\nintroduced by the F23 rewrite.\n\nThe six edited regions (opening, IV Paragon, V Minnesota, VIII NYPD, IX\nnormalization, XIII five-thinkers, XIV splits, XV principles) were reread in\nfull context: no register breaks, no grammar slips, no seam other than F35.\n\n## Verdict — iteration 2\n\nDeliverable as-is. Both majors are genuinely closed — F1 argued rather than\nasserted, F16 scoped without losing its force — and every provenance minor\nwas fixed accurately against the ledger's recorded wording, not merely\nreworded. The fixes introduced four small defects, of which only F35 (one\narticle, in the draft's most-read paragraph) is worth an edit before\ndelivery; F36–F38 are optional polish. What remains beyond that is report,\nnot fix: the voice-shape numbers (F27 and the residues of F29/F31/F32) all\nsit inside the corpus's attested per-piece ranges and should be logged in the\ndrafting note as this piece's stated posture — a dense, long-paragraph entry\nat the edge of the persona's range — together with the still-unrecorded F33\nrule-break, the stale XIV row in 04's section table, and the standing notes\nF19, F20, and F26. If the author makes the one-word F35 edit and appends\nthose log lines, nothing found in two iterations stands between this draft\nand delivery.\n",
+  "meters": {
+   "readMin": 29,
+   "words": 7015
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5aa21f6e1e84c5b45eb5baa877e111613c062d34df02fde7730c970db7b728e1",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/drafting/v1/06-fidelity-audit.md",
+ "kind": "artifact-page"
+}

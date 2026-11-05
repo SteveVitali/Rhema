@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/uk-aisi-open-weight-cyber-gap-2026-07-17.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2c9d69a214f4ae0d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/uk-aisi-open-weight-cyber-gap-2026-07-17.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# uk-aisi-open-weight-cyber-gap-2026-07-17\n- **URL:** https://www.aisi.gov.uk/blog/how-far-behind-the-frontier-are-leading-open-weight-models-on-cyber (raw HTML fetched by curl and tag-stripped; also WebFetch) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K2)\n- **What it establishes:** UK AI Security Institute blog, dated \"Jul 17, 2026\", no named authors. AISI's first public analysis of the open/closed gap, CYBER ONLY. Headline finding: recent open-weight models (GLM-5.2, DeepSeek V4-Pro) trail frontier closed models on cyber by \"4 to 7 months\", narrower than the \"6 to 10 month\" gap AISI measured internally for open-weight models released Jan–Sept 2025. The source writes \"4 to 7\" and \"6 to 10\" (words, not hyphens). The \"less than 7 months\" sentence is specific to one cyber range (TLO), which AISI itself calls weaker evidence.\n- **Key passages:**\n  - Standfirst: \"We evaluated the cyber capabilities of leading open and closed weight AI models, and found that recent open models GLM-5.2 and DeepSeek V4-Pro perform similarly to frontier closed models released 4 to 7 months before them – a narrower gap than the 6 to 10 months we measured through most of 2025.\"\n  - \"This is our first public analysis of how far leading open weight models trail the closed cyber frontier. Our evaluations find that GLM-5.2 (June 2026) was the most cyber-capable open weight model at time of testing. It performs similarly to Opus 4.6 (Feb 2026) on AISI's narrow cyber tasks and Opus 4.5 (Nov 2025) on our longer-horizon cyber ranges, meaning it trails the frontier by 4 to 7 months. This is narrower than the 6 to 10 month gap we measured in internal evaluations of open weight models released from January to September 2025.\"\n  - Narrow tasks: \"GLM-5.2 performs comparably to the most cyber-capable models released 4 months before it (Opus 4.6 and GPT-5.3-Codex) ... DeepSeek's V4-Pro is comparable to Opus 4.5, released 5 months before it. Both gaps are narrower than in internal evaluations AISI conducted in 2025, when open weight models lagged the frontier by 6 to 10 months.\"\n  - Caveat: \"but it is not predictive of whether future open weight models will replicate the more recent jumps delivered by Mythos Preview and GPT-5.5.\"\n  - Ranges: \"On TLO, GLM-5.2 reaches as far as Opus 4.5, a model released less than 7 months before it, while DeepSeek's V4-Pro falls below Sonnet 4.5 (a sub-cyber-frontier model released 7 months before it).\" Followed by: \"The gap here is larger than on our narrow cyber tasks, though we treat the comparison from our ranges as weaker evidence since it's drawn from a smaller set of ranges\".\n  - Safeguards: \"Deployment-time safety measures like monitoring, classifiers, and user-banning require control over access to the model and cannot be universally applied once weights are made public.\" · \"Our evaluations of recent open weight models were largely unimpeded by safeguards.\"\n  - Conclusion: \"Based on our evaluation methodology, recent open weight models lag frontier closed models' cyber capabilities by 4 to 7 months – a narrower gap than the 6 to 10 months we measured internally through most of 2025. This implies cyber defenders have a short window to prepare\". · \"It's uncertain whether this gap will change in future.\" · \"Open weight models deliver various, real benefits.\"\n- **Reliability:** Primary (government evaluator's own results); single-domain; the comparators are Opus 4.5/4.6-era models, NOT Mythos Preview / GPT-5.5, which AISI says made \"some of the largest jumps\" in April 2026 — so the 4–7 month figure is measured against the pre-April frontier.\n- **Relevance to this project:** Supports a \"months, not years\" lag sentence for cyber. Do not generalize beyond cyber (\"inferences to other capabilities\" are not offered by AISI), and do not say open weights are 4–7 months behind Mythos-class models.\n",
+  "meters": {
+   "readMin": 3,
+   "words": 598
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "69b776f99b5a91d7288bf86bf8a478bbfa8e746576c592d6cbaccf18ba80dde8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/uk-aisi-open-weight-cyber-gap-2026-07-17.md",
+ "kind": "artifact-page"
+}

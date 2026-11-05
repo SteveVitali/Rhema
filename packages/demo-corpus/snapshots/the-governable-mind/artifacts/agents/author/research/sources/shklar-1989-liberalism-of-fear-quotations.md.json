@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/shklar-1989-liberalism-of-fear-quotations.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a23c9fb77d6f28de",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/shklar-1989-liberalism-of-fear-quotations.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# shklar-1989-liberalism-of-fear-quotations\n- **URL:** https://www.kith.org/vardibidian/2003/06/03/the-liberalism-of-fear/ and https://www.goodreads.com/author_blog_posts/17172186-weekend-reading-judith-shklar-the-liberalism-of-fear (J. Bradford DeLong, Aug 10, 2018) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C27\n- **What it establishes:** No legitimately hosted full text of \"The Liberalism of Fear\" (in N. Rosenblum, ed., *Liberalism and the Moral Life*, Harvard UP, 1989, pp. 21–38; repr. *Political Thought and Political Thinkers*, Chicago, 1998) was found; scholarly articles quoting it (Cambridge, Springer, T&F, W&M, Philosophers' Imprint) were bot-walled (403). The three passages were confirmed verbatim against two independent online reproductions of the essay's text; pagination (p. 27) is as given by the kith.org post. Verify against the printed edition before publication.\n- **Key passages:** (a) \"For this liberalism the basic units of political life are not discursive and reflecting persons, nor friends and enemies, nor patriotic soldier-citizens, nor energetic litigants, but the weak and the powerful\" (p. 27 per kith.org). (b) \"it certainly does begin with a summum malum, which all of us know and would avoid if only we could. That evil is cruelty and the fear it inspires\" (DeLong reproduction; ellipses in his excerpt). (c) \"The fear it does want to prevent is that which is created by arbitrary, unexpected, unnecessary, and unlicensed acts of force and by habitual and pervasive acts of cruelty and torture\" (DeLong reproduction).\n- **Reliability:** Reproductions of a primary text on non-scholarly blogs (one by an academic economist); wording consistent across both and with search snippets of scholarly articles; not the printed edition.\n- **Relevance to this project:** C27 — cruelty as summum malum; weak vs powerful; fear from arbitrary force.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 256
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "21a1172cc6a01e89176de236d715baba0646ad787be0b748db2330ce5030de64",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/shklar-1989-liberalism-of-fear-quotations.md",
+ "kind": "artifact-page"
+}

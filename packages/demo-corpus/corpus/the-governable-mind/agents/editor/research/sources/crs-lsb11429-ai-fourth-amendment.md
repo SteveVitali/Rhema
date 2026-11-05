@@ -1,0 +1,6 @@
+# crs-lsb11429-ai-fourth-amendment
+- **URL:** https://www.congress.gov/crs_external_products/LSB/PDF/LSB11429/LSB11429.1.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2
+- **What it establishes:** CRS Legal Sidebar, May 5, 2026 (read in full via PDF extraction). Federal courts have not decided whether chatbot histories carry a reasonable expectation of privacy; the question hinges on the third-party doctrine as limited by Carpenter; chatbot logs used as evidence in arson (Palisades), child exploitation, fraud, vandalism; a Sept. 2025 reverse chatbot warrant to OpenAI identified a suspect by his prompts.
+- **Key passages:** "federal courts have not yet had the occasion to determine whether a user maintains a reasonable expectation of privacy in chatbot histories" · "the extent to which users' data such as chat histories are protected by the Fourth Amendment may hinge in large part on the limits of the third-party doctrine" · warrant compelled OpenAI "to disclose the user's names, account credentials, session histories, IP addresses"
+- **Reliability:** Primary-adjacent (nonpartisan congressional research); independent; no known bias.
+- **Relevance to this project:** Report §6, §4; draft l.20, l.88, l.154, l.232, l.244, l.276.

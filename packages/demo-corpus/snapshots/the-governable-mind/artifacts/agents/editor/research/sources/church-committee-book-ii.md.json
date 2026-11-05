@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/church-committee-book-ii.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ecf163f4c72d4581",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/church-committee-book-ii.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# church-committee-book-ii\n- **URL:** https://www.intelligence.senate.gov/wp-content/uploads/2024/08/sites-default-files-94755-ii.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Primary text of Final Report Book II (S. Rep. 94-755, Apr 26, 1976). The 'Too many people' sentence is in §I.C 'Summary of the Main Problem', printed p. 5 (PDF p. 21; PDF p. 17 = printed p. 1). Scan has OCR errors ('to much', 'beeen').\n- **Key passages:** 'The answer to each of these questions is disturbing. Too many people have been spied upon by too many Government agencies and to[o] much information has bee[n] collected.'\n- **Reliability:** Primary (Senate scan).\n- **Relevance to this project:** C50\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d86ca1516477bd0f65b0cf178cb2497ce6ca4497b9fe52ed63998e91a9e1b19a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/church-committee-book-ii.md",
+ "kind": "artifact-page"
+}

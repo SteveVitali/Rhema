@@ -1,0 +1,12 @@
+# shklar-liberalism-of-fear-scan
+- **URL:** https://speculativematerialism.wordpress.com/wp-content/uploads/2014/01/shklar-liberalism-of-fear.pdf · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C37, C48
+- **What it establishes:** Scan of Judith N. Shklar, "The Liberalism of Fear," ch. 1 of *Liberalism and the Moral Life*, ed. Nancy L. Rosenblum (Harvard University Press, 1989), pp. 21–38 — the essay itself, read in full (10 scanned pages; running heads with page numbers visible). OCR artifacts normalized against the visible text.
+- **Key passages (verbatim, page numbers from running heads):**
+  - p. 27: "The liberalism of fear is a response to these undeniable actualities, and it therefore concentrates on damage control."
+  - p. 27: "Given the inevitability of that inequality of military, police, and persuasive power which is called government, there is evidently always much to be afraid of."
+  - p. 27: "For this liberalism the basic units of political life are not discursive and reflecting persons, nor friends and enemies, nor patriotic soldier-citizens, nor energetic litigants, but the weak and the powerful. And the freedom it wishes to secure is freedom from the abuse of power and intimidation of the defenseless that this difference invites."
+  - p. 28: "The liberalism of fear, on the contrary, regards abuses of public powers in all regimes with equal trepidation. It worries about the excesses of official agents at every level of government, and it assumes that these are apt to burden the poor and weak most heavily."
+  - p. 29: "It does not, to be sure, offer a summum bonum toward which all political agents should strive, but it certainly does begin with a summum malum, which all of us know and would avoid if only we could. That evil is cruelty and the fear it inspires, and the very fear of fear itself."
+  - p. 29: "The fear it does want to prevent is that which is created by arbitrary, unexpected, unnecessary, and unlicensed acts of force and by habitual and pervasive acts of cruelty and torture performed by military, paramilitary, and police agents in any regime."
+- **Reliability:** Primary (scan of the 1989 Harvard UP printing; title page of the volume visible).
+- **Relevance to this project:** C37 (all three sub-claims verbatim: cruelty/fear as first concern; summum malum not summum bonum; weak vs. powerful asymmetry). C48 epigraph candidates (pp. 27 and 29).

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/covington-globalpolicywatch-guard-act-2026-05-08.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e84eac833fc83214",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/covington-globalpolicywatch-guard-act-2026-05-08.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# covington-globalpolicywatch-guard-act-2026-05-08\n- **URL:** https://www.globalpolicywatch.com/2026/05/senate-judiciary-committee-advances-guard-act-regulating-minor-use-of-ai/ · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Covington & Burling (Nicholas Xenakis, Diana Lee, Evan Chiacchiaro), Global Policy Watch, May 8, 2026. Law-firm summary of the bill as advanced: accounts and age verification are tied to AI companions; penalties; next step full Senate; House companion introduced; privacy and First Amendment opposition noted.\n- **Key passages:**\n  - \"Critically, the bill further requires user accounts to use AI companions, defined as AI chatbots that simulate a sustained interpersonal relationship or emotional interaction through certain types of responses. Entities that make AI companions publicly available to end consumers are mandated to implement “reasonable age verification measures” for all user accounts.\"\n  - \"Following its unanimous committee approval, the GUARD Act moves on to the full Senate.\"\n- **Reliability:** Secondary (law firm client alert); accurate against the GPO text.\n- **Relevance to this project:** L5 corroboration of scope and status.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 149
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "484e4186f112df40006298055f3e9244eaa88bfd862a8b1b3253ff3a146f89f4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/covington-globalpolicywatch-guard-act-2026-05-08.md",
+ "kind": "artifact-page"
+}

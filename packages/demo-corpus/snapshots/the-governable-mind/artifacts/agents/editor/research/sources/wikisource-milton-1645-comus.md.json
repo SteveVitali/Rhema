@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikisource-milton-1645-comus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2b162e6be33cd7e5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikisource-milton-1645-comus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikisource-milton-1645-comus\n- **URL:** https://en.wikisource.org/wiki/Poems_of_Mr._John_Milton,_Both_English_and_Latin,_Compos%27d_at_several_times/A_Mask_(Comus) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C65: 1645 spelling of the lines; 'At Ludlow-Castle 1634'; stage direction 'the Lady set in an inchanted Chair'. No line numbers.\n- **Key passages:** 'Thou canst not touch the freedom of my minde / Withall thy charms, although this corporal rinde / Thou haste immanacl'd, while Heav'n sees good.'\n- **Reliability:** Primary text (1645 edition transcription).\n- **Relevance to this project:** C65; epigraph\n",
+  "meters": {
+   "readMin": 1,
+   "words": 76
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2ea24e1f82340e09c6d96d3e554b22a78a73949218b6be85a3345c694ea9f4e6",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikisource-milton-1645-comus.md",
+ "kind": "artifact-page"
+}

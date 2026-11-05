@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikimedia-miller-new-user-trends-2025-10-17.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7bbe382742fd5749",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikimedia-miller-new-user-trends-2025-10-17.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikimedia-miller-new-user-trends-2025-10-17\n- **URL:** https://diff.wikimedia.org/2025/10/17/new-user-trends-on-wikipedia/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Marshall Miller (Wikimedia Foundation), Oct. 17, 2025: human pageviews May-Aug. 2025 down \"roughly 8% as compared to the same months in 2024\" after bot reclassification; \"Search engines are increasingly using generative AI to provide answers directly to searchers rather than linking to sites like ours\"; asks that \"platforms should make it clear where the information is sourced from and elevate opportunities to visit and participate in those sources.\"\n- **Key passages:** as quoted.\n- **Reliability:** Primary (the source institution's own statement).\n- **Relevance to this project:** Agenda 8 (l.194, l.254): the archive's own demand for reachability beneath the synthesis, stated as an ecosystem plea rather than a right.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 121
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2c1d55d5cf22378ec9b9922f988c1b12cb6d12208d21c501b9ef2e8d05c54ed4",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikimedia-miller-new-user-trends-2025-10-17.md",
+ "kind": "artifact-page"
+}

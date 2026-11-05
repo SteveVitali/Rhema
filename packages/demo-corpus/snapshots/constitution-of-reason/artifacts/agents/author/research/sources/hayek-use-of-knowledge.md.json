@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hayek-use-of-knowledge.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "844f6fab96fb2503",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hayek-use-of-knowledge.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hayek-use-of-knowledge\n- **URL:** https://www.econlib.org/library/Essays/hykKnw.html · **Accessed:** 2026-07-30 · **For:** v2→v3; citation repair for §IV dispersed-knowledge passage (Major issue 2)\n- **What it establishes:** Hayek, \"The Use of Knowledge in Society,\" *American Economic Review* 35:4 (1945), 519–30. Knowledge \"never exists in concentrated or integrated form but solely as the dispersed bits of incomplete and frequently contradictory knowledge which all the separate individuals possess\"; \"knowledge of the particular circumstances of time and place\" gives practically every individual an advantage over all others in some respect; the price system is \"a mechanism for communicating information,\" notable for \"the economy of knowledge with which it operates.\"\n- **Key passages:** as quoted above (all verbatim from Econlib full text).\n- **Reliability:** primary (full text).\n- **Relevance:** The review is right — v2's §IV aggregation passage (\"no centralized perspective contains all the local knowledge relevant to collective life\"; center vs. periphery) is Hayek's argument nearly clause for clause. Cite him there; add the market/price form to the constitutions-of-disagreement taxonomy (coordination of dispersed knowledge through prices, without shared deliberation).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 167
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "70b71fe65e3b1c5cf89b5d9e8ce94118bdcc8c9c2cb66f3612f1c65a15831a11",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/hayek-use-of-knowledge.md",
+ "kind": "artifact-page"
+}

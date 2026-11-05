@@ -1,0 +1,6 @@
+# fedorenko-piantadosi-gibson-2024
+- **URL:** https://www.nature.com/articles/s41586-024-07522-w (author PDF: https://tedlab.mit.edu/tedlab_website/researchpapers/Fedorenko_Piantadosi_Gibson_2024.pdf) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1
+- **What it establishes:** Supports C60 verbatim (abstract). For C72: Box 1 distinguishes necessity claims from facilitation claims and the paper rejects the former; it does not discuss Whorf/word-level relativity; it acknowledges 'potential facilitative effects of language'. Byline 'Edward A. F. Gibson'. Nature labels it a Perspective.
+- **Key passages:** 'language does not appear to be a prerequisite for complex thought, including symbolic thought' / 'from claims that linguistic representations are necessary for thinking … to claims that they only augment or facilitate thinking'
+- **Reliability:** Primary (peer-reviewed Perspective, Nature 630:575–586).
+- **Relevance to this project:** C60, C72

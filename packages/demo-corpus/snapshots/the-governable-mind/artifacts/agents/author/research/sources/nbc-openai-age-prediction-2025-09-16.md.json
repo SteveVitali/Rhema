@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/nbc-openai-age-prediction-2025-09-16.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "247e40b4ded1a8cc",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/nbc-openai-age-prediction-2025-09-16.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nbc-openai-age-prediction-2025-09-16\n- **URL:** https://www.nbcnews.com/tech/tech-news/chatgpt-teen-safety-measures-include-age-verification-openai-says-rcna231637 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Kevin Collier, NBC News, Sept 16, 2025, \"New ChatGPT teen-safety measures will include age prediction and verification, OpenAI says.\" OpenAI announced an age-prediction system and ID age verification \"in some countries\"; quotes Altman's blog post.\n- **Key passages:**\n  - \"ChatGPT developer OpenAI announced new teen safety features Tuesday, including an age-prediction system and ID age verification in some countries.\"\n  - Altman: \"If there is doubt, we’ll play it safe and default to the under-18 experience,\" ... \"In some cases or countries we may also ask for an ID; we know this is a privacy compromise for adults but believe it is a worthy tradeoff.\"\n  - If a flagged under-18 user expresses suicidal ideation, the company \"will attempt to contact the users’ parents and if unable, will contact the authorities in case of imminent harm,\"\n- **Reliability:** Mainstream secondary quoting Altman's own post.\n- **Relevance to this project:** L7 CONFIRMED: announcement date Sept 16, 2025; Altman's exact wording is \"a privacy compromise for adults but believe it is a worthy tradeoff\".\n",
+  "meters": {
+   "readMin": 1,
+   "words": 180
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f691d22d4dd245d9068099e628fdd3417e2a96cd71dd7068ccb0933114df3fd2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/nbc-openai-age-prediction-2025-09-16.md",
+ "kind": "artifact-page"
+}

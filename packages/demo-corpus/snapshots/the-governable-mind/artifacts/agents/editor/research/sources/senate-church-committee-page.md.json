@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/senate-church-committee-page.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1be607b9f4ccb100",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/senate-church-committee-page.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# senate-church-committee-page\n- **URL:** https://www.senate.gov/about/powers-procedures/investigations/church-committee.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C50: committee created Jan 27, 1975, final report Apr 29, 1976; COINTELPRO; NSA's SHAMROCK and MINARET; S. Res. 400 (1976) creating the Select Committee on Intelligence; FISA 1978.\n- **Key passages:** 'NSA's Projects SHAMROCK and MINARET, programs which monitored wire communications to and from the United States'\n- **Reliability:** Primary-adjacent (official Senate history).\n- **Relevance to this project:** C50\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d72baff2856d78ed320d36e450b85e41be763d674d26202222e51ee5fc9b3851",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/senate-church-committee-page.md",
+ "kind": "artifact-page"
+}

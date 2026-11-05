@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/crs-r46829-domestic-terrorism-federal-criminal-law.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f54d6220c91ed981",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/crs-r46829-domestic-terrorism-federal-criminal-law.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# crs-r46829-domestic-terrorism-federal-criminal-law\n- **URL:** https://www.congress.gov/crs_external_products/R/PDF/R46829/R46829.2.pdf · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C14–C15\n- **What it establishes:** CRS Report R46829, \"Domestic Terrorism: Overview of Federal Criminal Law and Constitutional Issues\" (July 2, 2021; 71 pp., full PDF text-extracted). States the § 2339A / § 2339B distinction exactly as the essay needs it, and confirms no federal provision expressly prohibits \"domestic terrorism.\"\n- **Key passages:** \"Despite the federal statutory definition, no federal criminal provision expressly prohibits 'domestic terrorism.'\" · \"Broadly, Section 2339A prohibits providing support for specific terrorism-related criminal offenses, while Section 2339B prohibits providing support to foreign terrorist organizations. As such, Section 2339A can apply to conduct meeting the definition of domestic terrorism, depending on the applicable offense being supported, while Section 2339B may be viewed as being limited in scope to international terrorism.\" · § 2339A mens rea: support must be provided \"knowing or intending that they are to be used\" in preparing for or carrying out one of \"over fifty predicate federal offenses.\" · § 2339B's \"terrorist organization\" = one designated under § 219 of the INA (Secretary of State designation; procedures, revocation, judicial review detailed at the report's FTO section).\n- **Reliability:** Primary-adjacent (CRS, nonpartisan); the standard reference on this question; 2021 vintage — currency checked separately (no standalone domestic-terrorism offense enacted through Aug. 2026; Domestic Terrorism Prevention Act reintroduced as S. 2457, 119th Cong., not enacted and not a criminalization bill).\n- **Relevance to this project:** C15 verbatim backbone; C14 corroboration.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 240
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6801609acee5a160ce121ae6202db26a4a9cdecb4452105c8eb6c0705fe1b3f6",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/crs-r46829-domestic-terrorism-federal-criminal-law.md",
+ "kind": "artifact-page"
+}

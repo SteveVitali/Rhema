@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/iccpr-udhr-freedom-of-thought-texts.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fd93b70ff55b46a7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/iccpr-udhr-freedom-of-thought-texts.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iccpr-udhr-freedom-of-thought-texts\n- **URL:** ICCPR official PDF https://www.ohchr.org/sites/default/files/ccpr.pdf ; mirror https://hrlibrary.umn.edu/instree/b3ccpr.htm ; UDHR https://www.un.org/en/about-us/universal-declaration-of-human-rights · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C18\n- **What it establishes:** Exact treaty text of ICCPR arts. 4(1)–(2) and 18(1)–(2) (GA res. 2200A (XXI), 16 Dec 1966; in force 23 Mar 1976) and UDHR art. 18 (1948). Art. 4(2) lists art. 18 among the non-derogable provisions.\n- **Key passages:** ICCPR art. 18(1): \"Everyone shall have the right to freedom of thought, conscience and religion. This right shall include freedom to have or to adopt a religion or belief of his choice, and freedom, either individually or in community with others and in public or private, to manifest his religion or belief in worship, observance, practice and teaching.\" Art. 18(2): \"No one shall be subject to coercion which would impair his freedom to have or to adopt a religion or belief of his choice.\" Art. 18(3): \"Freedom to manifest one's religion or beliefs may be subject only to such limitations as are prescribed by law and are necessary to protect public safety, order, health, or morals or the fundamental rights and freedoms of others.\" Art. 4(2): \"No derogation from articles 6, 7, 8 (paragraphs 1 and 2), 11, 15, 16 and 18 may be made under this provision.\" UDHR art. 18: \"Everyone has the right to freedom of thought, conscience and religion; this right includes freedom to change his religion or belief, and freedom, either alone or in community with others and in public or private, to manifest his religion or belief in teaching, practice, worship and observance.\"\n- **Reliability:** Primary (OHCHR official PDF; UN.org UDHR page). UMN mirror is an archived academic copy used only for cross-checking; the texts match.\n- **Relevance to this project:** C18. Note that the *text* of art. 18(2) speaks of coercion impairing freedom to \"have or to adopt a religion or belief\"; it is General Comment 22, not the treaty text, that reads it as also barring compelled revelation of thoughts.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 326
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "47b0c73559cef8e714f503dc1834661d777c5d85ec74dabfee1ec0ec9385a12c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/iccpr-udhr-freedom-of-thought-texts.md",
+ "kind": "artifact-page"
+}

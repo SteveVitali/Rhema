@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/stein-order-20m-logs-2026-01-05.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5b97e0f45b8a8168",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/stein-order-20m-logs-2026-01-05.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# stein-order-20m-logs-2026-01-05\n- **URL:** https://assets.law360news.com/2426000/2426657/https-ecf-nysd-uscourts-gov-doc1-127138822336.pdf (ECF copy of the order; read via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v1 response round, item 2\n- **What it establishes:** In re OpenAI, Inc., Copyright Infringement Litigation, No. 25-md-3143 (SHS)(OTW) (S.D.N.Y.), Order of Judge Sidney H. Stein dated Jan. 5, 2026 (4 pp.). Denies OpenAI's objections and affirms Magistrate Judge Wang's orders of Nov. 7, 2025 (Dkt. 734; production of the full 20 million de-identified log sample to News Plaintiffs) and Dec. 5, 2025 (Dkt. 910; same to Class Plaintiffs). Background: OpenAI \"has retained tens of billions of such logs\" in the ordinary course; plaintiffs moved in July 2025 for 120 million; OpenAI proffered 20 million de-identified; on Oct. 14, 2025 OpenAI reversed and proposed search terms only; Wang compelled the full sample. Stein distinguishes SEC v. Rajaratnam (wiretaps). NOTE: the order's actual words are \"voluntarily disclosed,\" not \"voluntarily submitted their communications.\"\n- **Key passages:** p. 3: \"privacy interests in the wiretapped recordings of private phone conversations in Rajaratnam are stronger than the privacy interests in users' conversations with ChatGPT which users voluntarily disclosed to OpenAI and which OpenAI retains in the normal course of its business.\" / p. 2: \"She adequately balanced ChatGPT users' privacy interests against the relevance of the documents in light of the privacy protections already in place.\" / p. 2 (quoting Wang, Dkt. 896 at 6): \"output logs that do not contain reproductions of News Plaintiffs' works may still be relevant to OpenAI's fair use defense.\" / p. 3: \"OpenAI identifies no caselaw requiring a court to order the least burdensome discovery possible\".\n- **Reliability:** Primary (court order).\n- **Relevance to this project:** The adjudicated production of 20 million conversations; the court's reasoning that submission to the provider lowers the privacy interest relative to wiretaps. Corrects the editor's quotation.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Same order re-read from https://cdn.arstechnica.net/wp-content/uploads/2026/01/NYT-v-OpenAI-Order-1-5-26.pdf (filed as Dkt. 1087 in 23-cv-11195; Heppner cites it as 25 MD 3143, ECF No. 1021). Operative words: \"OpenAI's objections are denied and Judge Wang's orders are affirmed.\" The order AFFIRMS orders to produce; it says nothing about production having occurred, and no source I found says production was completed in January 2026 (see techcrunch-nyt-says-openai-hid-evidence-2026-07-09).\n",
+  "meters": {
+   "readMin": 2,
+   "words": 365
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5f7612bf3fd815de6ff43404a577a29a7322177c7787319246bd32ae35637e0b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/stein-order-20m-logs-2026-01-05.md",
+ "kind": "artifact-page"
+}

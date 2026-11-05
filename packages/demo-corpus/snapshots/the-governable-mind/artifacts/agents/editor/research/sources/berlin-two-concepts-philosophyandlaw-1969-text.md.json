@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/berlin-two-concepts-philosophyandlaw-1969-text.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "51a37d52f7919c5d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/berlin-two-concepts-philosophyandlaw-1969-text.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# berlin-two-concepts-philosophyandlaw-1969-text\n- **URL:** https://philosophyandlaw.org/Philosophers/Berlin/Berlin_twoconceptsofliberty.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** A 32-page transcription headed \"Berlin, I. (1958) 'Two Concepts of Liberty.' In Isaiah Berlin (1969) Four Essays on Liberty. Oxford: Oxford University Press.\" It carries the revised (1969) wording of both passages the draft quotes: \"is able to do or be\" and \"to bully, oppress, torture them in the name, and on behalf, of their 'real' selves\" (with \"them\"). No 1969 page numbers; the 1969 page images (archive.org lending copies) returned 401.\n- **Key passages:** \"'What is the area within which the subject - a person or group of persons - is or should be left to do or be what he is able to do or be, without interference by other persons?'\" · \"Once I take this view, I am in a position to ignore the actual wishes of men or societies, to bully, oppress, torture them in the name, and on behalf, of their 'real' selves, in the secure knowledge that whatever is the true goal of man … must be identical with his freedom\".\n- **Reliability:** Secondary transcription (teaching site) of the primary text; wording corroborated by the SEP's quotation and pinpoint (see sep-liberty-positive-negative-berlin-pinpoint).\n- **Relevance to this project:** IV1 (l.96), XV2 (l.298); ref [42].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 212
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e555c67544ac778f01c773af68ac704f05d83c020d0371af786b6307f736d6a0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/berlin-two-concepts-philosophyandlaw-1969-text.md",
+ "kind": "artifact-page"
+}

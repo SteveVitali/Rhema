@@ -1,0 +1,381 @@
+{
+ "rows": [
+  {
+   "disposition": "adapt",
+   "entry": true,
+   "findingOrdinal": 1,
+   "id": "F1",
+   "source": "Letter Major 1",
+   "status": "done"
+  },
+  {
+   "disposition": "accept + adapt",
+   "entry": true,
+   "findingOrdinal": 2,
+   "id": "F2",
+   "source": "Letter Major 2",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 3,
+   "id": "F3",
+   "source": "Letter Major 3",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 4,
+   "id": "F4",
+   "source": "Letter Major 4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 5,
+   "id": "F5",
+   "source": "Letter Major 5",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 6,
+   "id": "F6",
+   "source": "Letter Major 6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 12,
+   "id": "F-m1",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (verified: possessive restored)",
+   "entry": true,
+   "findingOrdinal": 13,
+   "id": "F-m2",
+   "source": "Minor / C49",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (= F3c)",
+   "entry": true,
+   "findingOrdinal": 14,
+   "id": "F-m3",
+   "source": "Minor / C6",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 15,
+   "id": "F-m4",
+   "source": "Minor / C19",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut with evidence (`fbi-centennial-history-2008`: Wayback capture of the book PDF reads \"was questionable\" verbatim; web page differs) — no change",
+   "entry": true,
+   "findingOrdinal": 16,
+   "id": "F-m5",
+   "source": "Minor / C39",
+   "status": "done (no change needed)"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 17,
+   "id": "F-m6",
+   "source": "Minor / C25",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 18,
+   "id": "F-m7",
+   "source": "Minor / C40",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 19,
+   "id": "F-m8",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 20,
+   "id": "F-m9",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 21,
+   "id": "F-m10",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 22,
+   "id": "F-m11",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut with evidence (`fraenkel-dual-state-oup-2017-preview`: publisher preview confirms p. xxiii, Introduction to the 1941 Edition) + ref tweak",
+   "entry": true,
+   "findingOrdinal": 23,
+   "id": "F-m12",
+   "source": "Minor / C12",
+   "status": "done"
+  },
+  {
+   "disposition": "accept in part (Stoycheff 2016 + Rosenthal & Selod now full-text; Nandong abstract verified verbatim and correctly scoped as a formal model in v2; Stoycheff 2018 still abstract-only → pre-publication flag)",
+   "entry": true,
+   "findingOrdinal": 24,
+   "id": "F-m13",
+   "source": "Minor",
+   "status": "done (residual flagged)"
+  },
+  {
+   "disposition": "adapt (cheap compressions only; merges declined)",
+   "entry": true,
+   "findingOrdinal": 25,
+   "id": "F-m14",
+   "source": "Minor",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-c3",
+   "source": "Claim ledger C3",
+   "status": "done"
+  },
+  {
+   "disposition": "rebut with evidence — confirmed 25-112",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-c26",
+   "source": "C26 note",
+   "status": "done (no change needed)"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-c55",
+   "source": "C55",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-r3",
+   "source": "Ref hygiene",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-r22",
+   "source": "Ref hygiene",
+   "status": "done"
+  },
+  {
+   "disposition": "accept (+ quote extended)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-r24",
+   "source": "Ref hygiene",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-r34",
+   "source": "Ref hygiene",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-d1",
+   "source": "Discourse",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt — only the state-as-subscriber junction is claimed in text (it is an argument); the threshold list and ideology-as-query are left to speak for themselves because the persona's register treats self-praise as a defect, and the positioning program already implies what is *not* inherited by naming everything that is",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-d2",
+   "source": "Discourse",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (B&W in endnote [54]; Schneier/Véliz declined — rationale: the letter's Major 1 list omits both; neither supplies a formulation v2 touches; the citation program's discipline is one predecessor per point of contact, and adjacency alone is not contact. Reversible on editorial request at one clause each.)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-d3",
+   "source": "Discourse",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-d4",
+   "source": "Discourse/forecast",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-a1",
+   "source": "Argument notes",
+   "status": "done"
+  },
+  {
+   "disposition": "adapt (new prose states cost-lowering only)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-a2",
+   "source": "Argument notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-a3",
+   "source": "Argument notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-a4",
+   "source": "Argument notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 26,
+   "id": "F-cr1",
+   "source": "Line notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 27,
+   "id": "F-cr2",
+   "source": "Line notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 28,
+   "id": "F-cr3",
+   "source": "Line notes",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": true,
+   "findingOrdinal": 29,
+   "id": "F-cr4",
+   "source": "Line notes",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate→conservative (keep, middle path, reorder)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-q1",
+   "source": "Open q. 1",
+   "status": "escalated (resolved; flagged)"
+  },
+  {
+   "disposition": "accept editor rec",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-q2",
+   "source": "Open q. 2",
+   "status": "done"
+  },
+  {
+   "disposition": "escalate→conservative (no self-cite)",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-q3",
+   "source": "Open q. 3",
+   "status": "escalated (resolved; flagged)"
+  },
+  {
+   "disposition": "accept editor rec",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-q4",
+   "source": "Open q. 4",
+   "status": "done"
+  },
+  {
+   "disposition": "accept",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-q5",
+   "source": "Open q. 5",
+   "status": "done"
+  },
+  {
+   "disposition": "duplicates — discharged there",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-s1–s4",
+   "source": "Self",
+   "status": "done"
+  },
+  {
+   "disposition": "mapping only",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-rub",
+   "source": "Scorecard caps",
+   "status": "done"
+  },
+  {
+   "disposition": "decline — the report prescribed no fix; the detail is a single advocacy outlet's causal framing of an operation the essay now explicitly treats as sub judice, and importing it would cut against the provenance discipline the review praised (I5). Reversible if the editor disagrees.",
+   "entry": false,
+   "findingOrdinal": null,
+   "id": "F-d5",
+   "source": "Discourse §4 (Minnesota link check)",
+   "status": "done (no change)"
+  }
+ ],
+ "version": 1
+}

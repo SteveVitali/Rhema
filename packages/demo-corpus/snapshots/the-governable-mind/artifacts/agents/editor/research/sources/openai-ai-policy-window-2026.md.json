@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-ai-policy-window-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "518a64c2969a6fd9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-ai-policy-window-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-ai-policy-window-2026\n- **URL:** https://openai.com/index/ai-policy-window/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** OpenAI (Lehane), Sept 10, 2026 (text captured locally; page 403): mandatory capability-based national regulation for the handful of frontier labs; explicit carve-out that frontier policy is not open-weights policy; signed the Nvidia letter; framework should reduce concentration of power; supports CA SB 813, AB 1405, SB 1119 (age assurance for companion chatbots), AB 1864; 'reverse federalism'.\n- **Key passages:** \"demands more than voluntary commitments.\" · \"Nor should frontier safety policy become open-weights policy by another name.\" · \"A serious public framework should reduce, not increase, the concentration of power.\" · SB 1119 \"would require age assurance.\"\n- **Reliability:** Primary; interested party. Corroborated by govinfosecurity.com summary (read).\n- **Relevance to this project:** §5 OpenAI row: accurate; omissions (open-weights carve-out; age assurance at layer 3); §4(b) republican remedy in OpenAI's voice.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 141
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "48444626cf4e2c87f7552e8f39aafe6b5502d5e19a558916d9ea7c69cbaf6f6d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-ai-policy-window-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/berlin-1958-two-concepts-oxford-vl.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "49d446bbe52975d7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/berlin-1958-two-concepts-oxford-vl.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# berlin-1958-two-concepts-oxford-vl\n- **URL:** https://berlin.wolf.ox.ac.uk/published_works/tcl/tcl-e.pdf (also tcl-a.pdf \"Original dictation\", tcl-b.pdf \"First corrected draft\", tcl-d.pdf \"Fourth draft\") · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C24\n- **What it establishes:** The Isaiah Berlin Virtual Library (Wolfson College, Oxford; posted by the Berlin Legacy Fellow with the Literary Trust's support) hosts the textual history of \"Two Concepts of Liberty\" (1958 inaugural lecture). tcl-e is \"Text delivered to the Clarendon Press\" (the 1958 lecture text). It gives Berlin's own definition of negative liberty as a question about an \"area,\" and the \"bully, oppress, torture ... in the name of their 'real' selves\" passage. NOTE: the 1958 wording differs slightly from the 1969 *Four Essays on Liberty* revision that SEP quotes (see sep-liberty-positive-negative). The outline's phrase \"the area within which a man can act unobstructed by others\" does NOT occur in any of the Oxford drafts (searched); if used it must be sourced to the 1969 revised text, which I did not open.\n- **Key passages (1958 Clarendon text, tcl-e):** \"‘What is the area within which the subject – a person or group of persons – is or should be left to do or be what he wants to do or be, without interference by other persons?’\" · \"Once I take this view, I am in a position to ignore the actual wishes of men or societies, to bully, oppress, torture them in the name of their ‘real’ selves, in the secure knowledge that whatever is the true goal of man ... must be identical with his freedom – the free choice of his ‘true’, albeit submerged and inarticulate, self.\" · (Original dictation, tcl-a:) \"Political freedom was simply the area within which a man could do what he liked. If I was prevented by other persons from doing what I liked, I was to that degree unfree\".\n- **Reliability:** Primary; authoritative scholarly host (Berlin Literary Trust). Drafts, not the final 1969 printed text; cite as 1958 lecture text via the Berlin Virtual Library.\n- **Relevance to this project:** C24 — negative/positive liberty; the \"real self\" coercion warning.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 337
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c38f96010003625ba6bf5efd0bd45591b735262e97b3e38cf1f84ea17670ce23",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/berlin-1958-two-concepts-oxford-vl.md",
+ "kind": "artifact-page"
+}

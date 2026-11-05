@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/stop-rogue-ai-act-pymnts-2026-09-10.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3de7ebea1bfb5eb2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/stop-rogue-ai-act-pymnts-2026-09-10.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# stop-rogue-ai-act-pymnts-2026-09-10\n- **URL:** https://www.pymnts.com/news/artificial-intelligence/2026/congress-pushes-ai-agents-into-the-audit-trail/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** PYMNTS, Sept 10, 2026, on the Stop Rogue AI Act (Gottheimer–Lawler, introduced Sept 3): NIST standards within a year for machine-readable agent inventories, 'tamper-resistant logs of agent activity,' continuous verification; applies to federal agencies (contractors per other accounts); no new private-sector mandate; logs cover agent identity, permissions, tools, actions; nothing on attribution to human operators; no privacy analysis.\n- **Key passages:** 'continuously updated, machine-readable inventories of the AI agents operating' · 'tamper-resistant logs of agent activity' · 'doesn't create a new private-sector mandate or a new enforcement agency.'\n- **Reliability:** Secondary; payments trade press.\n- **Relevance to this project:** Q3: the 2026 mandatory-agent-log proposal; action-scoped, federal-scoped.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 119
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "014a953060a301a070d643012ac107386f8a26057be16c7c68775a8ca2b48370",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/stop-rogue-ai-act-pymnts-2026-09-10.md",
+ "kind": "artifact-page"
+}

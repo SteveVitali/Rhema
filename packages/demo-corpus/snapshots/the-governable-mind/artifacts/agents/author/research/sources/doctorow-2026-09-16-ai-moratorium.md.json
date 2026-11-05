@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/doctorow-2026-09-16-ai-moratorium.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1f5030ad0c962cf5",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "cda4c45c244fd8e0",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/doctorow-2026-09-16-ai-moratorium.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# doctorow-2026-09-16-ai-moratorium\n- **URL:** https://pluralistic.net/2026/09/16/beggar-thy-neighbor/ · **Accessed:** 2026-09-16 · **For:** v1 response round, F44 (the capture argument's current form)\n- **What it establishes:** Cory Doctorow, \"How an AI moratorium can save AI bosses,\" Pluralistic, Sept. 16, 2026. Argues that a government-declared \"superintelligence risk\" moratorium would entail an antitrust shelter for the largest labs. Does not name Amodei or attribute moratorium advocacy to Anthropic (Anthropic is mentioned once, on profitability claims).\n- **Key passages:** \"Once the government stipulates that 'superintelligence risk' is an existential crisis, it must grant the hyperscalers a consent decree absolving them from any violations of antitrust law stemming from a conspiracy to halt direct competition with one another.\"\n- **Reliability:** Secondary; polemical commentary by a well-known critic; independent of the labs.\n- **Relevance to this project:** The regulatory-capture reading in its strongest current form, for §X's declining of it. Do not attribute to him a claim about Amodei's essay specifically.\n\n## Added 2026-09-16 (v2→v3 round, slice K, K9; page re-fetched as raw HTML and grepped)\n- **\"regulatory capture\" appears ZERO times; the word \"capture\" appears zero times.** His frame is antitrust/cartel plus securities fraud, not capture. Post tags: \"ai, ai moratorium, antitrust, business, competition, criti-hype, superintelligence, switching costs, unit economics, wasteful competition\". Subtitle: \"If you can't impose switching costs, just eliminate the competition.\" The earlier note's \"regulatory-capture reading\" label is mine, not his; do not attribute the term to him.\n- The open-weights sentences, verbatim:\n  - \"The only way they could escape that trap is by signing a nonaggression pact amongst themselves promising not to compete anymore. But there's two giant problems with this: first, it is incredibly, fantastically illegal under antitrust law, because it represents a conspiracy among the dominant players to cease to compete with one another, and; second, it leaves the field open for the further development of Chinese \"open weight\" models that customers can run on their own modest, low-powered computers, which are presently lagging the US \"frontier models\" by a mere four months:\" (links Ars Technica, Sept 2026)\n  - \"But what if there was a way for the AI companies to get government permission to violate antitrust law and cease to compete with one another, and secure a ban on the use of Chinese open weight models? Turns out, there is a way to call time on the Red Queen's Race: merely insist that you are on the verge of teaching so many words to the word-guessing program that it will wake up and devour us all, and call for a ban on \"superintelligence\":\"\n  - \"When an industry that is eating itself alive through \"hyperscaling\" demands that the government bless a conspiracy to halt competition and ban open source alternatives, you should be suspicious.\"\n- Other frame terms, verbatim: \"Freaking out about \"superintelligence\" is a canonical example of \"criti-hype,\" where critics repeat boosters' claims but append, \"(and that's bad)\" to them:\" · \"That doesn't mean we should allow the AI companies to get the government to bless their conspiracy in restraint of trade; rather, it militates for having the government investigate them for securities fraud ...\" · consent-decree sentence as already quoted above.\n- He asserts, without a source, that the industry \"demands\" a ban on open source alternatives; no lab is quoted asking for one. He calls the HF incident \"a story about how a hacking tool did exactly what it was designed to do\".\n",
+  "meters": {
+   "readMin": 2,
+   "words": 550
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "db7912c2aa5a1d70dfd322a02c002904ad4fa30bdf0691297c5bd52ca720334c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/doctorow-2026-09-16-ai-moratorium.md",
+ "kind": "artifact-page"
+}

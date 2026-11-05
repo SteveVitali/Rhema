@@ -1,0 +1,13 @@
+# kant-enlightenment-gregor-marxists
+- **URL:** https://www.marxists.org/reference/subject/ethics/kant/enlightenment.htm · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C9
+- **What it establishes:** Kant, "An Answer to the Question: What Is Enlightenment?", in *Practical Philosophy*, trans. and ed. Mary J. Gregor (Cambridge University Press, 1996), transcribed by Andy Blunden. Gregor renders Unmündigkeit as "minority" and the public/private distinction with "the entire public of the world of readers."
+- **Key passages:**
+  - "Enlightenment is the human being's emergence from his self-incurred minority."
+  - "This minority is self-incurred when its cause lies not in lack of understanding but in lack of resolution and courage to use it without direction from another."
+  - "Sapere aude! [dare to be wise] Have courage to make use of your own understanding! is thus the motto of enlightenment."
+  - "those guardians who have kindly taken it upon themselves to supervise them; after they have made their domesticated animals dumb and carefully prevented these placid creatures from daring to take a single step without the walking cart in which they have confined them"
+  - "The public use of one's reason must always be free, and it alone can bring about enlightenment among human beings; the private use of one's reason may, however, often be very narrowly restricted"
+  - "by the public use of one's own reason I understand that use which someone makes of it as a scholar before the entire public of the world of readers."
+  - "What I call the private use of reason is that which one may make of it in a certain civil post or office with which he is entrusted."
+- **Reliability:** Primary text in the standard modern scholarly translation (Gregor, Cambridge 1996; in copyright; transcription on marxists.org, so verify against the printed Cambridge edition before final citation). Wording matches the German checked at de.wikisource.
+- **Relevance to this project:** C9 — preferred translation for "self-incurred minority" and the public/private definitions.

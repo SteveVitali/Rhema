@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ansari-hardware-level-governance-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "89426e8fce8b75aa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ansari-hardware-level-governance-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ansari-hardware-level-governance-2026\n- **URL:** https://arxiv.org/abs/2604.04712 and https://arxiv.org/pdf/2604.04712 · **Accessed:** 2026-09-16 (PDF downloaded, 23 pp.) · **For:** v1 review, Phase 1\n- **What it establishes:** First C17 quotation verbatim (abstract). \"risk infringing on civil liberties\" and \"perceived as a violation of sovereignty\" are nested quotations of Heim, Anderljung & Belfield and of Petrie et al. (p. 14), not the paper's own words. Self-described taxonomy; dated Apr. 6–7, 2026.\n- **Key passages:** \"the mechanisms most needed for treaty verification, including on-chip compute metering, cryptographic proof-of-training, and hardware-embedded enforcement, are also the least mature.\" / \"Heim, Anderljung, and Belfield warn that 'intrusive compute governance measures risk infringing on civil liberties' [7].\" / \"Petrie et al. acknowledge that … fully automatic on-device compliance checking is 'unlikely to be feasible' partly because it would be 'perceived as a violation of sovereignty' [24].\"\n- **Reliability:** Primary (single-author preprint).\n- **Relevance to this project:** C17; §XI; ref [49].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 145
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "063230b4ccc32fd3f96b33bbce75b69d546d9eff1764a3b2ca4be4a045a05b01",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ansari-hardware-level-governance-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sjsebastian-substack-style.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "77c7f14cb1676334",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "13cd2928e13f4492",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/sjsebastian-substack-style.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sjsebastian-substack-style\n\n- **URL:** https://sjsebastian.substack.com/archive (+ /p/the-narcissistic-injury-of-artificial, /p/distinction-after-the-human, /p/against-the-sentimental-critics-of, /p/after-bureaucracy) · **Accessed:** 2026-07-30 · **For:** v1 review, venue calibration\n- **What it establishes:** The target venue's identity and house style. Publication: \"S. J. Sebastian — Philosophy, cultural commentary, the history of ideas.\" Seven substantive essays (Oct 2025–Jul 2026), mostly on AI, organizations, and the history of ideas.\n- **House style, distilled:**\n  - Roman-numeral sections with descriptive conceptual headers; occasional epigraphs.\n  - Declarative, aphoristic openings (\"AI does not overturn modernity; it completes it\") followed by subordinate-heavy elaboration; waves of assertion → development.\n  - Impersonal, authoritative voice; first person rare and strategic (used once to establish credibility in \"After Bureaucracy\"); \"we\" as universal subject.\n  - Elevated latinate diction with strategic colloquial grounding; abstract nouns; no jargon walls.\n  - Citation practice: essentially NONE — epigraphs and in-text name-checks (Heidegger, Bourdieu, Marx) without formal apparatus. (The writer has overridden this for the current piece: [n] endnote citations required.)\n  - Rhetorical signatures: inversion/paradox, redefinition, historical periodization, analogy chains, categorical policing (\"category error\"), prophetic closing cadence.\n  - Tone: diagnostic, grave, assured, \"diagnosis rather than prescription,\" slightly contemptuous of muddled opposition but clinical rather than accusatory.\n- **Reliability:** Primary (the venue itself).\n- **Relevance:** The v1 draft already approximates this register (declarative compression, roman numerals, impersonal authority). Key deltas to check in Phase 4: v1 is more listy/manual-like than any published essay at the venue (tables, bulleted lexicons, rules of use); the venue's pieces are continuous argumentative prose. Also v1 lacks the venue's characteristic historical-genealogical periodization until §VIII–IX; venue essays front-load it. Watch for \"It is not X, it is Y\" density — a venue signature but also an AI-cadence reception risk at high frequency.\n- **Representative venue sentences (verbatim):** \"What troubles us is the mirror they hold up to our civilization.\" / \"The soul learned to think of itself as a factory.\" / \"To say 'AI makes us dumber' is therefore not an empirical claim about outcomes. It is a performative act of differentiation.\" / \"Behind every prompt stands a human will.\" / \"When the time it takes to obtain alignment is longer than the time it takes to prototype the answer, the culture that valorizes alignment becomes self-parody.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 349
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c2a3e535ef7e8c0379ee418b1966113747eb59405b294724690be96ed064a118",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/sjsebastian-substack-style.md",
+ "kind": "artifact-page"
+}

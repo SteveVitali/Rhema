@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-republicanism-lovett.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f2a6b644fff5bd15",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-republicanism-lovett.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-republicanism-lovett\n- **URL:** https://plato.stanford.edu/entries/republicanism/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** All three C41 quotations verbatim (Lovett, rev. Aug 12 2026).\n- **Key passages:** \"this master in particular leaves his slaves for the most part alone\"; \"Imagine living in a community where our lives are regulated down to the tiniest detail, but always in strict accordance with commonly-known, non-arbitrary rules and procedures.\"; \"we do indeed place some independent value on non-interference (Larmore 2001; Wall 2001).\"\n- **Reliability:** Secondary, scholarly; the draft's cited source.\n- **Relevance to this project:** C41; §IV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 91
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2f2f48b0a65f4caf593ada373e9c30fae23ea014d1cf7e9c7742d87a9d04f30d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-republicanism-lovett.md",
+ "kind": "artifact-page"
+}

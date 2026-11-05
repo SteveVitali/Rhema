@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/pym-fourth-circuit-ruling.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "547b8a38e9235fca",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/pym-fourth-circuit-ruling.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# pym-fourth-circuit-ruling\n- **URL:** https://www.pym.org/appeals-court-backs-philadelphia-yearly-meeting-in-lawsuit-against-trump-administration-press-release/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C46\n- **What it establishes:** Aug. 18, 2026: the Fourth Circuit (No. 25-1512, published; Justia lists it as Yearly Meeting of the Religious Society of Friends v. DHS) AFFIRMED Judge Theodore Chuang's Feb. 24, 2025 preliminary injunction (D. Md., 8:25-cv-00243) barring warrantless immigration-enforcement actions \"in or near the places of worship owned, operated, occupied, or used by\" the plaintiffs — Quaker meetings (Philadelphia, New York, New England, Baltimore Yearly Meetings), Cooperative Baptist Fellowship, and the Sikh Temple of Sacramento. District court found plaintiffs likely to succeed on their RFRA/expressive-association challenge to the Jan. 2025 rescission of the sensitive-locations policy. Injunction is plaintiff-specific, NOT nationwide; litigation continues.\n- **Key passages:** PYM General Secretary Chris Mohr: \"We are relieved that our meetinghouses continue to be safe for all community members to gather for worship while the case moves through the legal process.\"\n- **Reliability:** Party press release (advocacy) — but the ruling's existence, date, and case number are corroborated by Justia (25-1512, decided 2026-08-18), Democracy Forward, Courthouse News, and the CA4 published-opinion PDF (ca4.uscourts.gov/opinions/251512.P.pdf, not machine-readable this session).\n- **Relevance to this project:** C46 — this IS the citable ruling: a court has constrained immigration enforcement at (plaintiff) houses of worship, affirmed on appeal two days before the essay's date. Scope must be stated as plaintiff-specific and preliminary.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 223
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7ae8b8be94eedca028cdfe2b7a702d97648a2a983960f28205eac23ae69631f5",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/pym-fourth-circuit-ruling.md",
+ "kind": "artifact-page"
+}

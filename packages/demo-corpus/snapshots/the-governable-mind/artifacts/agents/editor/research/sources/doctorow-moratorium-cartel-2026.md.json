@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/doctorow-moratorium-cartel-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "821cc031bab0fa05",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/doctorow-moratorium-cartel-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# doctorow-moratorium-cartel-2026\n- **URL:** https://pluralistic.net/2026/09/16/beggar-thy-neighbor/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Doctorow, Sept 16, 2026 (and Aug 10 piece read): a coordinated slowdown requires an antitrust consent decree, i.e., a government-blessed cartel; superintelligence fear as criti-hype; Chinese open weights close the gap; state should prosecute fraud instead.\n- **Key passages:** \"Once the government stipulates that 'superintelligence risk' is an existential crisis, it must grant the hyperscalers a consent decree absolving them from antitrust violations stemming from a conspiracy to halt direct competition.\"\n- **Reliability:** Secondary; activist-journalist; anti-incumbent.\n- **Relevance to this project:** §4(b) capture argument's best current form; l.220.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "69eb889d94667500394bcf15b780b083903fb7af784155144fb0acafcac6eaac",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/doctorow-moratorium-cartel-2026.md",
+ "kind": "artifact-page"
+}

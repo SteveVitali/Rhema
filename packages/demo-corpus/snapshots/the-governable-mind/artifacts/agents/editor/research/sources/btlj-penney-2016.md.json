@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/btlj-penney-2016.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e60d556544e267e4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/btlj-penney-2016.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# btlj-penney-2016\n- **URL:** https://btlj.org/data/articles2016/vol31/31_1/0117_0182_Penney_ChillingEffects_WEB.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** 48 articles; 526,614 mean-monthly reduction = ~19.5% (p. 146); 995,085 immediate drop on a 2,960,778 base = \"over 30%\" (p. 147; 33.6% re-derived); \"a true control group was not possible\" (p. 145) and fn. 132; comparator results p. 159; without the Hamas outlier the immediate drop is \"just under 25%\" (p. 151) (C38, C80).\n- **Key passages:** \"a reduction of 526,614 in the average monthly views for the articles, which represents approximately a 19.5% drop\"; \"this decline represents an immediate drop-off of over 30% of overall views.\"\n- **Reliability:** Primary (journal PDF).\n- **Relevance to this project:** C38, C80; §III.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 112
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6b8366c897d6f939c4f03fd4849d48ed7f2619f5560411590b40b4281fff745a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/btlj-penney-2016.md",
+ "kind": "artifact-page"
+}

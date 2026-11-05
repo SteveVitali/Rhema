@@ -1,0 +1,83 @@
+{
+ "dto": {
+  "artifactKind": "companion_doc",
+  "artifactPath": "drafts/taxonomy_reference_sheet.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "06d71170a72e0f23",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "eaf113e1d09b82eb",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "85c62662184b9520",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "c27dc998602cdc61",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "79ea01e3839a7a8e",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "514c55429930f626",
+    "ordinal": 14
+   },
+   "b2": {
+    "contentHash": "2a6ecccd6f476155",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "885a362e74a2b1d0",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "0e44f3431a0025cb",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "2f18738d456be8ec",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "602794bd56774be0",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "b982847920cbd7d6",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "629eae98275f0870",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "c6a9198d059e487d",
+    "ordinal": 9
+   }
+  },
+  "draftId": "drafts/taxonomy_reference_sheet.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Five Questions Taxonomy — Reference Sheet\n\n## Canonical order\n\n1. Economy — Equality ↔ Markets\n2. Coercion — Liberty ↔ Authority\n3. Culture — Progress ↔ Tradition\n4. Belonging — Universal ↔ Communal\n5. System — Insurgent ↔ Institutional\n\n## Profile metadata\n\n- Position: 1–5\n- Salience: 0–3\n- Confidence: low / medium / high\n- Date and jurisdiction\n- Object: person / party / government / electorate / document / argument\n- Layer: rhetoric / program / practice\n\n## Fifth-axis facets\n\n- Anti-establishment orientation\n- Directism versus representation\n- Pluralism versus unitarism\n- Mode of legitimation: popular will / expertise / law / tradition\n\n## Public families\n\n- **Demsoc** — equality + emancipation\n- **Socdem** — equality through institutions\n- **Left Populist** — egalitarian insurgency\n- **Progressive** — cultural revision + inclusion\n- **Green** — ecology + post-material politics\n- **Liberal** — rights + pluralism + mixed markets\n- **Technocrat** — expert-led reform\n- **Christian Democrat** — social market + inherited community\n- **Conservative** — markets + order + continuity\n- **Libertarian** — markets + personal liberty\n- **Welfare Nationalist** — social protection for members\n- **Natcon** — nation + tradition + authority\n- **Developmentalist** — state capacity + national growth\n- **State Socialist** — state economy + concentrated rule\n\n## Recommended syntax\n\n**[optional modifier] + [nearest family]**, followed by the five-coordinate address.\n\nExample:\n\n> Populist natcon — 4 · 5 · 4 · 5 · 1\n\nUse no more than one modifier. When more detail is needed, show the coordinates rather than extending the label.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 222
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b3a942e73ea44a18cc92c717dce48cd846ad70920950812d1633bca909db9849",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "drafts/taxonomy_reference_sheet.md",
+ "kind": "artifact-page"
+}

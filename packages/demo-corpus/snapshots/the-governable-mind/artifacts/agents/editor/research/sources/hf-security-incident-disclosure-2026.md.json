@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hf-security-incident-disclosure-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2e507a0c49991e53",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hf-security-incident-disclosure-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hf-security-incident-disclosure-2026\n- **URL:** https://huggingface.co/blog/security-incident-july-2026 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Hugging Face, July 16, 2026: intrusion via dataset-loader RCE and template injection; autonomous agent framework; commercial API guardrails blocked forensic analysis; pivot to GLM-5.2 on own infrastructure; attacker not yet identified.\n- **Key passages:** \"blocked by the providers' safety guardrails, which cannot distinguish an incident responder from an attacker.\" · \"the attacker was bound by no usage policy, while our own forensic work was blocked by the guardrails of the hosted models we first tried.\"\n- **Reliability:** Primary; interested party (open-model platform).\n- **Relevance to this project:** C5, C9; l.12; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 103
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "083b10d9df7f7bad222b845047e801eeb8c37d30a86c871d5e90bdc4a76ba0cc",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hf-security-incident-disclosure-2026.md",
+ "kind": "artifact-page"
+}

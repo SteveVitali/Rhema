@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ohchr-palestine-action-un-experts.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "eaa993403a2c96c1",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "ae05b187274dbdaf",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "ebb7622428d83a6e",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/ohchr-palestine-action-un-experts.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# UN experts on Palestine Action proscription (June 30 / July 1, 2025)\n\n- Press release (ohchr.org Cloudflare-blocked; mirror read via curl): https://www.globalsecurity.org/security/library/news/2025/07/sec-250701-ohchr01.htm\n- Primary communication AL GBR 9/2025 (June 30, 2025), PDF fetched and text-extracted: https://spcommreports.ohchr.org/TMResultsBase/DownLoadPublicCommunicationFile?gId=30118\n- Canonical press-release URL to cite: https://www.ohchr.org/en/press-releases/2025/07/un-experts-urge-united-kingdom-not-misuse-terrorism-laws-against-protest\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes verbatim: \"Mere property damage, without endangering life, is not sufficiently\nserious to qualify as terrorism.\" and \"Protest actions that are not genuinely 'terrorist',\nbut which involve alleged property damage, should be properly investigated as ordinary\ncrimes or other security offences.\" Signatories: Saul, Romero, Katrougalos, Albanese.\nCommunication also recites Brize Norton facts (June 20, 2025; red paint in engines of two\naircraft, crowbars). Timing: statement preceded the ban taking effect (July 5).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "689a3a1eda6d68467e06eca85de4ec5c1d7ce2ee661c4b890f9fee32536fdc8d",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/ohchr-palestine-action-un-experts.md",
+ "kind": "artifact-page"
+}

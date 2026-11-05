@@ -1,0 +1,14 @@
+# milton-areopagitica-1644-wikisource
+- **URL:** https://en.wikisource.org/wiki/Areopagitica_(1644) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C8, C55
+- **What it establishes:** Original-spelling text of *Areopagitica* (1644). Wikisource's header notes it was "Published November 23, 1644." Supplies the exact wording of the three candidate quotations and of Milton's endorsement of post-publication punishment.
+- **Key passages:**
+  - "as good almost kill a Man as kill a good Book; who kills a Man kills a reasonable creature, Gods Image; but hee who destroyes a good Booke, kills reason it selfe, kills the Image of God, as it were in the eye."
+  - "a good Booke is the pretious life-blood of a master spirit, imbalm'd and treasur'd up on purpose to a life beyond life."
+  - "I cannot praise a fugitive and cloister'd vertue, unexercis'd & unbreath'd, that never sallies out and sees her adversary, but slinks out of the race, where that immortall garland is to be run for, not without dust and heat."
+  - Preceding sentence (textual crux): "he is the true wayfaring Christian." (This transcription prints "wayfaring"; Gutenberg #608 prints "warfaring"; the 1644 printing reads "wayfaring" with "warfaring" a contemporary hand-correction in some copies. Avoid quoting that word or note the crux.)
+  - "And though all the windes of doctrin were let loose to play upon the earth, so Truth be in the field, we do injuriously, by licencing and prohibiting to misdoubt her strength. Let her and Falshood grapple; who ever knew Truth put to the wors, in a free and open encounter."
+  - What Milton did not oppose: "let no man think to have the honour of advising ye better then your selves have done in that Order publisht next before this, that no book be Printed, unlesse the Printers and the Authors name, or at least the Printers be register'd."
+  - "Those which otherwise come forth, if they be found mischievous and libellous, the fire and the executioner will be the timeliest and the most effectuall remedy, that mans prevention can use."
+  - "this authentic Spanish policy of licencing books ... was the immediat image of a Star-chamber decree"
+- **Reliability:** Primary text (public-domain; volunteer transcription of the 1644 quarto). Original spelling; punctuation as transcribed.
+- **Relevance to this project:** C8 (all three quotations plus the post-publication caveat); C55 (Milton's own reference to the "Order publisht next before this," i.e. the January 1642 registration order, versus the 1643 licensing order he attacks).

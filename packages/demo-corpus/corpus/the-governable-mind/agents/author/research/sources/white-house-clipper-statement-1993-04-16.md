@@ -1,0 +1,6 @@
+# white-house-clipper-statement-1993-04-16
+- **URL:** https://archive.epic.org/crypto/clipper/white_house_statement_4_93.html · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C31
+- **What it establishes:** White House press statement of April 16, 1993 announcing the Clipper Chip initiative and the two-key escrow design with databases to be established by the Attorney General.
+- **Key passages:** "The President today announced a new initiative that will bring the Federal Government together with industry in a voluntary program to improve the security and privacy of telephone communications while meeting the legitimate needs of law enforcement." "A state-of-the-art microcircuit called the 'Clipper Chip' has been developed by government engineers." "When the device is manufactured, the two keys will be deposited separately in two 'key-escrow' data bases that will be established by the Attorney General." "Access to these keys will be limited to government officials with legal authorization to conduct a wiretap."
+- **Reliability:** Primary (government statement) preserved in EPIC's archive.
+- **Relevance to this project:** C31: exact announcement date and the escrow design in the government's own words.

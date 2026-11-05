@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techbuzz-white-house-open-models-2026-08-12.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "10dfe3fe84cb7cf7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techbuzz-white-house-open-models-2026-08-12.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techbuzz-white-house-open-models-2026-08-12\n- **URL:** https://www.techbuzz.ai/articles/white-house-preps-expanded-ai-policy-for-open-models · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding C\n- **What it establishes:** Aug 12, 2026 (same day as WIRED). Relays WIRED that the expansion is the government's \"first comprehensive attempt to address open-weight models,\" expected \"in the coming weeks,\" emphasizing \"pre-release safety testing and transparency requirements rather than restricting distribution.\" Does not mention the Mythos/GPT-5.6 threshold.\n- **Key passages:** \"pre-release safety testing and transparency requirements rather than restricting distribution\"\n- **Reliability:** Secondary, low-tier aggregator; timing wording (\"weeks\") differs from AI Weekly (\"months\").\n- **Relevance to this project:** Shows the timing language is unstable across relays; cite the official's \"coming months\" via AI Weekly with attribution.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "92e9726663db5af94d1b7f10121b5659414adddbdccadf267962427bc363b7db",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techbuzz-white-house-open-models-2026-08-12.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techpolicy-hoefer-mythos-precedent-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8e1c08df87f9a665",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/techpolicy-hoefer-mythos-precedent-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techpolicy-hoefer-mythos-precedent-2026\n- **URL:** https://www.techpolicy.press/did-the-us-government-just-set-an-ai-export-precedent-by-blocking-mythos/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Hoefer, TechPolicy.Press, June 15, 2026: BIS directive by letter, not public; access restriction by nationality; novel application of transfer-based export authorities to an API-accessed model; contrast between notice-and-comment policy and ad hoc action.\n- **Key passages:** \"arrived by letter, which has not been made public, so the precise scope and rationale are known mostly secondhand.\" · authorities \"built around discrete transfers of an identifiable item\" applied to \"a continuously available frontier model reached by API.\"\n- **Reliability:** Secondary; policy commentary.\n- **Relevance to this project:** §4(d); the process point the essay's Q6 asks.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 105
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b8a524324f1f057029a7e8ef0e113d77473f30a8e80a69afc73c35d04209f2b9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/techpolicy-hoefer-mythos-precedent-2026.md",
+ "kind": "artifact-page"
+}

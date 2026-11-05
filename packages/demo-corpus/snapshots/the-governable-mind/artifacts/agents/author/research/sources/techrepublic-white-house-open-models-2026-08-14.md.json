@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techrepublic-white-house-open-models-2026-08-14.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c7b7288a6c7669be",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "4a302876b19e91a0",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/techrepublic-white-house-open-models-2026-08-14.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techrepublic-white-house-open-models-2026-08-14\n- **URL:** https://www.techrepublic.com/article/news-white-house-open-ai-model-safety-reviews/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding C\n- **What it establishes:** Aminu Abdullahi, Aug 14, 2026. Cites WIRED: a White House official said open models could face prerelease testing once they match \"Anthropic's Mythos-class models and OpenAI's GPT-5.6\"; the administration views \"models with frontier capabilities and national security risks as requiring some form of government collaboration, regardless of whether they are open or closed.\"\n- **Key passages:**\n  - \"models with frontier capabilities and national security risks as requiring some form of government collaboration, regardless of whether they are open or closed\"\n- **Reliability:** Secondary, relaying WIRED.\n- **Relevance to this project:** Second relay of the WIRED official's position; usable for the \"regardless of whether they are open or closed\" framing.\n\n## CORRECTION added 2026-09-16 (v2→v3 round, slice K; page re-read as raw HTML)\n- The earlier note above misattributes the \"regardless of whether they are open or closed\" clause. TechRepublic's actual sentences: \"A White House official told WIRED that open models could face prerelease testing when their capabilities reach the level of Anthropic's Mythos-class models and OpenAI's GPT-5.6.\" and, separately, \"The framework remains voluntary and has not been publicly released. Axios reported that the administration has generally viewed models with frontier capabilities and national security risks as requiring some form of government collaboration, regardless of whether they are open or closed.\" So the \"regardless\" language is TechRepublic's paraphrase of AXIOS reporting, not the WIRED official, and it is not in quotation marks in the source. Nothing in the TechRepublic article is a direct quotation of the official. TechRepublic's own verb is \"could face\" / \"may expand\" — softer than WIRED's \"will be added\".\n- Also: \"The administration's current framework applies to closed models from leading AI companies ... But White House officials are now expected to expand it to open models once they reach frontier-level capabilities, according to WIRED.\"\n- For the official's wording use sources/wired-lowell-white-house-expand-ai-policy-2026-08-12.md (now opened).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 315
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c31e043da675424e92be1d35154d9ff26d63159dbe0c5bfc42e93768a03794bd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techrepublic-white-house-open-models-2026-08-14.md",
+ "kind": "artifact-page"
+}

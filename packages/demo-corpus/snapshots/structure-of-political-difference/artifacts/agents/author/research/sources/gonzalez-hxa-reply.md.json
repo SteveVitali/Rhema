@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gonzalez-hxa-reply.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7680780254b96b20",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/gonzalez-hxa-reply.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gonzalez-hxa-reply\n- **URL:** https://heterodoxacademy.org/blog/the-political-spectrum-does-exist-a-reply-to-hyrum-lewis/ · **Accessed:** 2026-07-31 · **For:** v1-response — MI6 (the substantive defense in living form)\n- **What it establishes:** Christian Gonzalez's reply to Hyrum Lewis: the spectrum exists at the level of theory — \"the left advances a politics of egalitarianism, while the right opposes the left and attempts to defend some *other* value—tradition, for example, or individual freedom, or public order.\" Cites Steven Lukes (not Bobbio) as his theoretical source.\n- **Key passages:** as quoted.\n- **Reliability:** Primary (the reply itself).\n- **Relevance:** Confirms the equality-monist defense is live in current discourse, not only in Bobbio 1994; v2 can note the position spans Bobbio to present-day replies. Correction to dossier nuance: Gonzalez's source is Lukes, so v2 should attribute the canonical thesis to Bobbio and not imply Gonzalez cites him.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 129
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4a76cd8ce0cf603776f38ccb14af654846035eed2ac0c3c970e13871a6c8891d",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/gonzalez-hxa-reply.md",
+ "kind": "artifact-page"
+}

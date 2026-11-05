@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/popper-critical-rationalism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "5c8dcf0c29aa7d39",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/popper-critical-rationalism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# popper-critical-rationalism\n- **URL:** https://iep.utm.edu/karl-popper-critical-ratiotionalism/ · **Accessed:** 2026-07-30 · **For:** v2→v3; citation repair at \"organized corrigibility\" (Major issue 2)\n- **What it establishes:** IEP, \"Karl Popper: Critical Rationalism\" (the URL's misspelling is IEP's own slug). Knowledge grows by conjecture and refutation — \"scientists gain knowledge not by proofs but by refutations of good conjectures and by replacing them with new and better ones\"; fallibilism without justificationism (\"all 'assignments' are conjectural\"); extension to institutions: \"Only open societies preserve reason, that is, criticism, and as a consequence only open societies can be civilized\"; piecemeal reform of criticizable institutions.\n- **Reliability:** secondary (reference encyclopedia); adequate for a one-line acknowledgment citation.\n- **Relevance:** \"Organized corrigibility under conditions of incomplete knowledge\" is critical rationalism generalized; v3 credits Popper at that formulation (cite *Conjectures and Refutations* / the open-society application) and differentiates: Popper supplies the logic of error-elimination; the essay's subject is the *machinery* that supplies errors with the standing to eliminate anything.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 152
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d3795929b7494cd0c17cc4ffbaadf2e49136663efe348020c4e62a0cd5076ac3",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/popper-critical-rationalism.md",
+ "kind": "artifact-page"
+}

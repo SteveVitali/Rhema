@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/venable-chatrie.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "983e7f892dbcf4ae",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/venable-chatrie.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# venable-chatrie\n- **URL:** https://www.venable.com/insights/publications/2026/07/supreme-court-holds-geofence-warrant-access · **Accessed:** 2026-09-16 · **For:** v1 response round, item 8\n- **What it establishes:** Venable LLP client alert, July 2026. Chatrie v. United States: 6–3, Justice Kagan; acquiring Location History via a geofence warrant is a Fourth Amendment search; Court relied on Carpenter; rejected the government's short-duration and opt-in arguments; left the validity of the warrant (probable cause/particularity) to the Fourth Circuit; Jackson (with Sotomayor) concurred; Gorsuch concurred in judgment (papers/effects); Alito and Barrett dissented. The editor's \"not outside the scope of the Fourth Amendment just because the data is held by a third party\" line is Venable's gloss, not the Court's words.\n- **Key passages:** \"The decision establishes that law enforcement access to Location History is not outside the scope of the Fourth Amendment just because the data is held by a third party.\" / \"Fourth Amendment protection cannot turn on whether a user clicked through a particular setting.\" / \"Google has since altered the way that it stores location data, storing the information on individual devices rather than internally by the company.\"\n- **Reliability:** Secondary (law-firm summary); accurate against the slip opinion.\n- **Relevance to this project:** Item 8; supplies the practical framing (third-party custody does not remove protection) and the Google data-minimization coda.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 205
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "225089d0886aa901ad5e419751a4047ac7fc94170d955f0514afd030dfa97cc3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/venable-chatrie.md",
+ "kind": "artifact-page"
+}

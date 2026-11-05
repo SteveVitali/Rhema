@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/iasr-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "63be5f2e62832657",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/iasr-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iasr-2026\n- **URL:** https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** International AI Safety Report 2026 (full text captured locally; site blocked by loader): open-weight benefits and irreversibility (exec summary and §3.4 p.134); conditional conclusion with trailing risk-tolerance clause; lists user vetting and KYC among industry safeguards; notes privacy concerns of logging user interactions; warns legibility-enhancing AI 'could also enable surveillance and social control'.\n- **Key passages:** \"Open-weight models offer significant benefits for research, innovation, and access.\" · \"these benefits may outweigh the additional risk of releasing weights openly, though this depends on relevant decision-makers' risk tolerance.\" · \"AI systems that enhance government legibility by analysing vast data streams could also enable surveillance and social control.\"\n- **Reliability:** Primary; international expert panel; not an interested party.\n- **Relevance to this project:** C10 confirmed (truncated clause flagged); §4(a); §5 IAISR row; the Report can be cited for the essay's own surveillance worry.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 152
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bced77f46fbb4f909d32fec7909d97a079a9e059cd64d7b2bfed249e15face3b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/iasr-2026.md",
+ "kind": "artifact-page"
+}

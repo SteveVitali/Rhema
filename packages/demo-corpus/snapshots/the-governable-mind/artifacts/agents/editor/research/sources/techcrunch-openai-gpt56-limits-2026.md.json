@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techcrunch-openai-gpt56-limits-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "07fb63f74c869846",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/techcrunch-openai-gpt56-limits-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-openai-gpt56-limits-2026\n- **URL:** https://techcrunch.com/2026/06/26/openai-limits-gpt-5-6-rollout-after-government-request-says-restrictions-shouldnt-be-the-norm/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** TechCrunch (Bellan), June 26, 2026: under the June 2 EO's voluntary early-submission framework the administration asked OpenAI to limit GPT-5.6 Sol/Terra/Luna to a small group of trusted partners; OpenAI complied under protest; context of Anthropic order. Axios June 25 (snippet only; 403) adds ONCD/OSTP, ~20 partners, 'first time' preemptive request; CNBC July 8 (snippet; 403) reports public release ~two weeks later.\n- **Key passages:** \"We don't believe this kind of government access process should become the long-term default. It keeps the best tools from users, developers, enterprises, cyber defenders, and global partners who need them.\"\n- **Reliability:** Secondary; tech press; OpenAI statement quoted directly.\n- **Relevance to this project:** §4(d): the EO's voluntary channel used as de facto preclearance; l.218, l.266.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ddf1cade72ad599d0c8b77a28bf8652060803f75481fd3518d9880874cf90916",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/techcrunch-openai-gpt56-limits-2026.md",
+ "kind": "artifact-page"
+}

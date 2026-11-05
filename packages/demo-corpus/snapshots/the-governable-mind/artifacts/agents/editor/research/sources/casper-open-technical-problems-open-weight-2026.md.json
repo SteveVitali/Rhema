@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/casper-open-technical-problems-open-weight-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e17e5835e4e1ff66",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/casper-open-technical-problems-open-weight-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# casper-open-technical-problems-open-weight-2026\n- **URL:** https://arxiv.org/html/2608.07514 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Stephen Casper (MIT CSAIL) and 22 co-authors (Stanford, CMU, Princeton, UK AISI, Mila et al.), 'Open Technical Problems in Open-Weight AI Model Risk Management,' July 1, 2026: frontier open-weight models lag 6–12 months; proprietary models approaching critical thresholds; does not propose holding open weights below the frontier nor defend a sub-frontier commons; wants adversarial multi-party evaluation and tamper-resistant safeguards.\n- **Key passages:** 'proprietary model developers have reported that their models are approaching critical risk thresholds' · 'the capabilities of frontier open-weight models only lag 6 to 12 months behind.'\n- **Reliability:** Primary preprint; multi-institution safety research.\n- **Relevance to this project:** Q1(d): the safety side's arithmetic; no promise the commons stays.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 124
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "866d2fc6e20918a8a1df1a9db9dffd3358d28f04d3f9d53e587feccfddc8432f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/casper-open-technical-problems-open-weight-2026.md",
+ "kind": "artifact-page"
+}

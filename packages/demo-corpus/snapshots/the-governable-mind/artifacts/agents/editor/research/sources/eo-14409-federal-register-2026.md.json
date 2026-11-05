@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eo-14409-federal-register-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2b673931dee54245",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eo-14409-federal-register-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eo-14409-federal-register-2026\n- **URL:** https://www.govinfo.gov/content/pkg/FR-2026-06-05/html/2026-11415.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** EO 14409, June 2, 2026, 91 FR 34565: §3(a) classified cyber-capability benchmarking and 'covered frontier model' threshold; §3(b) voluntary pre-release access up to 30 days; §3(c) savings clause against licensing/preclearance; §2(c) CISA to facilitate access to covered models for agencies and critical infrastructure; §4 criminal enforcement. Nothing on hosted inference, cloud providers, KYC, logging, or consequences of non-participation.\n- **Key passages:** \"Nothing in this section shall be construed to authorize the creation of a mandatory governmental licensing, preclearance, or permitting requirement for the development, publication, release, or distribution of new AI models, including frontier models.\"\n- **Reliability:** Primary; official text.\n- **Relevance to this project:** l.218, l.266 confirmed; §5 EO row; extension to open weights (see aiweekly note) and the June 12 directive are the missing context.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 139
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1eba3403305f49af101c4c33d9268c36af6b56381e5a218acb0936b7e1fee9cb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eo-14409-federal-register-2026.md",
+ "kind": "artifact-page"
+}

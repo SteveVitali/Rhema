@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fmf-third-party-assessments-2025-08-04.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7b0041fe54d580c7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/fmf-third-party-assessments-2025-08-04.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# fmf-third-party-assessments-2025-08-04\n- **URL:** https://www.frontiermodelforum.org/technical-reports/third-party-assessments/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Frontier Model Forum technical report, Aug 4, 2025: third-party ecosystem nascent; no technical standards; accreditation frameworks needed; independence stressed; nothing on appeal, dispute resolution, or sunset.\n- **Key passages:** 'The third-party ecosystem for frontier models remains relatively nascent' · 'The lack of technical standards for frontier capability evaluations can lead to inconsistency' · 'Developing both accreditation frameworks to identify qualified assessors and targeted capacity-building programs.'\n- **Reliability:** Primary; industry consortium (interested).\n- **Relevance to this project:** Q1(e): the draft's third condition is unmet and known to be unmet by the industry body.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 105
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0b82b0062da0b291635c82d523dc3dd8dab6817162849c2a0e182000513a4ef0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/fmf-third-party-assessments-2025-08-04.md",
+ "kind": "artifact-page"
+}

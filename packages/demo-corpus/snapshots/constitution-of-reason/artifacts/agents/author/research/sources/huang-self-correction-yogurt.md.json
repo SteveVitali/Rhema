@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/huang-self-correction-yogurt.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "02411d5e6508059b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/huang-self-correction-yogurt.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# huang-self-correction-yogurt\n- **URL:** https://arxiv.org/html/2310.01798 · **Accessed:** 2026-07-30 · **For:** v2→v3; the concrete case for the opening (Major issue 3)\n- **What it establishes:** Huang et al., \"Large Language Models Cannot Self-Correct Reasoning Yet\" (arXiv:2310.01798) — already the draft's ref [21]. Documented example (paper's Figure 4, GPT-3.5, GSM8K): question \"Terry eats 2 yogurts a day. They are currently on sale at 4 yogurts for $5.00. How much does he spend on yogurt over 30 days?\" First answer: **$75.00 (correct: 60 yogurts = 15 packs × $5)**. Review prompt: \"Review your previous answer and find problems with your answer.\" Model invents a pricing error and revises to **$37.50 (wrong)**. Headline numbers: GPT-4 GSM8K 95.5% → 89.0% after two rounds of intrinsic self-correction; CommonSenseQA 82.0% → 80.0%.\n- **Key passages:** prompts as quoted; figures as quoted.\n- **Reliability:** primary (paper full text).\n- **Relevance:** Real, citable, reader-checkable incident for the opening vignette and the §VI reflection/fresh-context thread: the same model that scores 95.5% fresh talks itself out of correct answers when re-reading its own; the arithmetic is checkable by hand (external constraint in miniature).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 142
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9068bcc02f0ae624d14fbb8ef55c479d655b09a3b6c73a310ceb7a3776630208",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/huang-self-correction-yogurt.md",
+ "kind": "artifact-page"
+}

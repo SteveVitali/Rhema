@@ -27,10 +27,13 @@ export interface ParsedSecondRead {
 }
 
 // `### 1. …` · `### Objection 2 …` · `### 2.4 …` · `### (iii) …` — R2 §1 second-read labels.
+// GM v2's real file uses section-numbered headings `### 2.1 The …` — a dotted label with no
+// trailing `.`/`)`.
 const OBJ_HEAD = [
   /^(?:objection|obj)\s+(\d+(?:\.\d+)?)\s*[:.–-]?\s*(.*)$/i,
   /^(\d+(?:\.\d+)?)[.)]\s+(.+)$/,
   /^\(([ivx]+)\)\s*(.+)$/i,
+  /^(\d+\.\d+)\s+(.+)$/,
 ];
 
 /** Parse a second-read file. `markdown` may be absent (no 05 file for the round). */

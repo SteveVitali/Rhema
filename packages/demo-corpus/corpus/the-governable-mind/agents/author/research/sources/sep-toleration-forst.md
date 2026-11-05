@@ -1,0 +1,14 @@
+# sep-toleration-forst
+- **URL:** https://plato.stanford.edu/entries/toleration/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C5, C6, C7
+- **What it establishes:** Rainer Forst, "Toleration," *Stanford Encyclopedia of Philosophy* (revision dated 16 January 2026). Names Spinoza's TTP (1670), Bayle's *Commentaire Philosophique* (1686) and Locke's *Letter* (1689) as the three 17th-century paradigmatic classics. Gives the scholarly formulation of Bayle's argument: not chiefly "conscience cannot be forced" but a reciprocity argument from the natural light, with religious truth unable to trump moral respect because faith rests on personal trust, not objective apprehension. Also summarizes Locke's civil interests / care of the soul distinction and his exclusions (Catholicism, atheists).
+- **Key passages:**
+  - "Bayle's Commentaire is the most comprehensive attempt to refute the arguments for the duty of intolerance that go back to Augustine"
+  - "Bayle does not primarily take recourse to the idea that religious conscience must not and cannot be forced, for he was aware of the powerful Augustinian arguments against both points"
+  - "Bayle argued that there is a 'natural light' of practical reason revealing certain moral truths to every sincere person, regardless of their faith, even including atheists."
+  - "such principles of moral respect and of reciprocity cannot be trumped by religious truths, according to Bayle, for reasonable religious faith is aware that ultimately it is based on personal faith and trust, not on apprehensions of objective truth."
+  - "Bayle was the first thinker to try to develop a universally valid argument for toleration, one that implied universal toleration of persons of different faiths as well as of those seen as lacking any faith."
+  - On Spinoza: "The natural right to freedom of thought and judgment and to 'inner' religion cannot, however, be entrusted to the state; here political authority finds the factual limits of its power."
+  - On Locke: "While it is the duty of the state to secure the 'civil interests' of its citizens, the 'care of the soul' cannot be its business"
+  - "Locke draws the limits of toleration where a religion does not accept its proper place in civil society (such as Catholicism, in Locke's eyes) as well as where atheists deny any higher moral authority"
+- **Reliability:** Secondary, scholarly (SEP). Forst is a leading toleration theorist; his reading of Bayle as a reciprocity theorist is his own well-known interpretation (he flags Kilcullen/Kukathas's skeptical reading as the alternative).
+- **Relevance to this project:** C5 (scholarly framing of Bayle), C6 (Spinoza's limit of state power), C7 (Locke's exclusions read as Catholicism and atheists).

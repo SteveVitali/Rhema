@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nextgov-kelley-kill-switch-2026-07-23.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4c5bba2a02a6e7aa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nextgov-kelley-kill-switch-2026-07-23.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nextgov-kelley-kill-switch-2026-07-23\n- **URL:** https://www.nextgov.com/artificial-intelligence/2026/07/lawmakers-introduce-bill-mandating-kill-switches-ai-models/414969/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Alexandra Kelley, Nextgov/FCW, July 23, 2026: bill introduced days after the HF incident; DHS, Commerce, DNI authorizations; Brad Carson (ARI) and Rep. Trahan quoted in support. No thresholds, judicial review, open weights, or use-pattern discussion.\n- **Key passages:** Carson: 'Advanced AI models should never be deployed without a reliable off switch.'\n- **Reliability:** Secondary; government-tech press.\n- **Relevance to this project:** Q2 reception; supporters list.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "290f667e6571106b3950fb6b6ad781423d1ebe3cd410e3c90043f4f94b3df110",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nextgov-kelley-kill-switch-2026-07-23.md",
+ "kind": "artifact-page"
+}

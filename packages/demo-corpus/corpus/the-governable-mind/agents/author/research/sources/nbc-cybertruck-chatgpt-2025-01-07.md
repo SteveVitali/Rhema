@@ -1,0 +1,10 @@
+# nbc-cybertruck-chatgpt-2025-01-07
+- **URL:** https://www.nbcnews.com/news/us-news/driver-las-vegas-cybertruck-explosion-used-chatgpt-plan-blast-authorit-rcna186704 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L
+- **What it establishes:** NBC News (Tom Winter, Andrew Blankstein, Antonio Planas), published Jan 7, 2025 (timestamp 2025-01-08T01:59Z). Reports the LVMPD press conference: Matthew Alan Livelsberger's ChatGPT queries; Sheriff Kevin McMahill's "first incident" quote; OpenAI's statement. The article does NOT say where investigators obtained the ChatGPT history (device vs. OpenAI). It says a six-page "manifesto" and letters were found on his phone. McMahill said he did not know whether a capability to track AI use exists.
+- **Key passages:**
+  - "Matthew Alan Livelsberger, 37, queried ChatGPT for information about how he could put together an explosive, how fast a round would need to be fired for the explosives found in the truck to go off — not just catch fire — and what laws he would need to get around to get the materials, law enforcement officials said."
+  - McMahill: "We know AI was going to change the game for all of us at some point or another, in really all of our lives," ... "I think this is the first incident that I’m aware of on U.S. soil where ChatGPT is utilized to help an individual build a particular device."
+  - OpenAI: "Our models are designed to refuse harmful instructions and minimize harmful content. In this case, ChatGPT responded with information already publicly available on the internet and provided warnings against harmful or illegal activities."
+  - "Asked Tuesday whether law enforcement agencies should have been aware of Livelsberger's queries of ChatGPT, McMahill said he didn't know whether the capability to track how someone uses artificial intelligence exists yet."
+- **Reliability:** Mainstream secondary reporting of an on-record press conference.
+- **Relevance to this project:** L2(a). Confirms the queries and the sheriff's quote. Provenance of the chat history is NOT stated here; see abc/ktnv/klas notes.

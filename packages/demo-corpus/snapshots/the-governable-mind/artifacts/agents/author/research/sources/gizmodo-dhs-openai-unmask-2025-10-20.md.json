@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/gizmodo-dhs-openai-unmask-2025-10-20.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "35be0aa1c8629eee",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/gizmodo-dhs-openai-unmask-2025-10-20.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gizmodo-dhs-openai-unmask-2025-10-20\n- **URL:** https://gizmodo.com/dhs-asks-openai-to-unmask-user-behind-chatgpt-prompts-possibly-the-first-such-case-2000674472 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** Lucas Ropek, Gizmodo, Oct 20, 2025. Relays Forbes and independently quotes the (still public) criminal complaint: agents built a profile from undercover conversations; military recruiters told agents about the suspect's June/July 2025 interview and weight. Says the search warrant \"appears to have since been sealed.\" CAUTION: Gizmodo's sentence that DHS \"has not asked OpenAI for any identifying information\" is contradicted by the warrant affidavit (¶¶21–22), which sought IP addresses and other records precisely to identify the user.\n- **Key passages:**\n  - \"According to the criminal complaint against the suspect, undercover agents used context clues pieced together from ongoing conversations with the user to put together a profile on who he might be. Those context clues included comments he allegedly made while speaking with the undercover agent, including his desire to join the military, the places he’d lived (and visited), a favorite restaurant, and his work for a military base, among other things.\"\n  - Complaint excerpt as quoted: \"In several conversations occurring between SUSPECT USER and the UC [undercover agent] in July 2025 and August 2025, SUSPECT USER indicated that he was too overweight to be considered for employment by the military. Agents were informed by the military recruiters that when\" the suspect \"first came for an initial interview it was approximately June or July 2025,\"\n  - \"Forbes refers to this as the “first known federal search warrant asking OpenAI for user data”\"\n- **Reliability:** Secondary; the complaint quotation is valuable because the complaint is not on RECAP. One factual error (see caution).\n- **Relevance to this project:** L1. Confirms identification ran through undercover chats and military recruiters, per the complaint.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 280
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e51a956182b751c119b4557aa4cf87aea28a5933210172f0f432aad938cda33d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/gizmodo-dhs-openai-unmask-2025-10-20.md",
+ "kind": "artifact-page"
+}

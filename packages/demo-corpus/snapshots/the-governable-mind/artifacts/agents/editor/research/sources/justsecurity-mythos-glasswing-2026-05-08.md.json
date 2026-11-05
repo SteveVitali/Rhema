@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/justsecurity-mythos-glasswing-2026-05-08.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "512ba1c4ea8f0d11",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/justsecurity-mythos-glasswing-2026-05-08.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# justsecurity-mythos-glasswing-2026-05-08\n- **URL:** https://www.justsecurity.org/138011/too-dangerous-anthropic-mythos/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Just Security, May 8, 2026 (via text proxy; pre-directive): Glasswing's 11 founding partners plus 40 organizations; WH considering an EO to vet models before release; European allies sidelined; earlier federal-use directive against Anthropic.\n- **Key passages:** 'European allies, for example, have been sidelined and are questioning why a private U.S. entity is making decisions with such bearing on their national security.'\n- **Reliability:** Secondary; legal-policy site.\n- **Relevance to this project:** Q5 geography of trusted access before the state's version.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 93
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0b2e4767f9c0920f7751d24be7d4979c34f3d98e648406ef83eed79ba7326eb7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/justsecurity-mythos-glasswing-2026-05-08.md",
+ "kind": "artifact-page"
+}

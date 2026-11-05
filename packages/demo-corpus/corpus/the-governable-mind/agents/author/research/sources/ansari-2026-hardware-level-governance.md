@@ -1,0 +1,12 @@
+# ansari-2026-hardware-level-governance
+- **URL:** https://arxiv.org/abs/2604.04712 (abstract) and https://arxiv.org/html/2604.04712 (full text) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C50
+- **What it establishes:** Exists. Samar Ansari (School of Computing and Engineering Sciences, University of Chester, UK), "Hardware-Level Governance of AI Compute: A Feasibility Taxonomy for Regulatory Compliance and Treaty Verification," arXiv 2604.04712, submitted 6 April 2026. Single author. Taxonomy of 20 hardware-level mechanisms (monitoring / verification / enforcement) rated on a four-point feasibility scale. Covers on-chip compute metering, remote attestation via cryptographic licensing, location verification, proof-of-training, kill switches. Finds the mechanisms most needed for treaty verification are the least mature; discusses sovereignty and civil-liberties/privacy concerns in a section titled "Privacy, Sovereignty, and Political Feasibility."
+- **Key passages:**
+  - Abstract: "the mechanisms most needed for treaty verification, including on-chip compute metering, cryptographic proof-of-training, and hardware-embedded enforcement, are also the least mature."
+  - Abstract: "We assess principal threats to compute-based governance, including algorithmic efficiency gains, distributed training methods, and sovereignty concerns."
+  - Abstract: "the appropriate security standard is tamper-evident assurance analogous to IAEA verification rather than absolute tamper-proofing."
+  - §3.2 (Verification, mechanism V4): "remote attestation via cryptographic licensing"
+  - §3.1 (Monitoring, M5): "On-chip compute metering"; §3.4 feasibility summary places it in the "requires R&D" tier.
+  - §4.4 (Privacy, Sovereignty, and Political Feasibility): on-device compliance checking may be "perceived as a violation of sovereignty"; "intrusive compute governance measures risk infringing on civil liberties"
+- **Reliability:** Primary (preprint, not peer-reviewed as of access). Single-author engineering/policy survey; reasonably even-handed (rates its own mechanisms as immature). Section quotes extracted via fetch-and-summarise tool; short fragments only.
+- **Relevance to this project:** C50; compute-governance section — supports "attestation and metering; some mechanisms technologically immature; sovereignty and privacy questions." Note the paper's own word for the privacy concern is "civil liberties" in the quoted line, though the section heading uses "Privacy."

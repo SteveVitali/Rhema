@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/brennan-deportation-industrial-complex.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3dbbbdded827df80",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/brennan-deportation-industrial-complex.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# brennan-deportation-industrial-complex\n- **URL:** https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C42\n- **What it establishes:** Analysis (Margy O'Herron, Aug. 13, 2025) of the 2025 reconciliation act (H.R. 1, signed July 4, 2025): \"more than $170 billion over four years\" for immigration enforcement overall; ICE receives \"$75 billion over four years, approximately $18.7 billion each year\"; of that, \"$45 billion over four years\" is for detention (\"two-thirds of ICE's funding\"); \"The $11.25 billion added to ICE's annual detention budget is a 400% increase from last year\"; combined with the \"$10 billion Congress already appropriated ICE for fiscal year 2025,\" ICE had \"$28.7 billion at its disposal this year... nearly triple ICE's entire budget for FY24\"; funds 10,000 new ICE officers; detention capacity \"potentially more than 100,000 people per year.\"\n- **Key passages:** As quoted above (all figures verbatim).\n- **Reliability:** Secondary analysis; Brennan Center for Justice — liberal-leaning policy institute, but figures track the act text and align with American Immigration Council's independent analysis ($45B detention; $29.9B ICE enforcement/deportation ops; $170.7B total through Sept. 2029; projected ~116,000 detention beds). AIC pages returned 403 to automated fetch this session; AIC figures here are from search-result snippets of americanimmigrationcouncil.org fact sheets.\n- **Relevance to this project:** C42 — the citable figures: ~$75B for ICE over four years (through FY2029), $45B of it detention, vs. a prior annual ICE budget of ~$9-10 billion (FY2024 enacted ~$9.1-9.6B).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 183
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2275d44e47ff9509c856e93943bb7df6b96d10e80de869380eb29d467ab312eb",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/brennan-deportation-industrial-complex.md",
+ "kind": "artifact-page"
+}

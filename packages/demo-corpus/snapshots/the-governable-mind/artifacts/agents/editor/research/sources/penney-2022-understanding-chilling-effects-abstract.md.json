@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/penney-2022-understanding-chilling-effects-abstract.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6a7b1ece73b6f74b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/penney-2022-understanding-chilling-effects-abstract.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# penney-2022-understanding-chilling-effects-abstract\n- **URL:** https://digitalcommons.osgoode.yorku.ca/scholarly_works/3080/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Penney, 106 Minn. L. Rev. 1451 (2022), abstract: fear-based theories 'narrow, empirically weak'; proposes social-conformity-under-uncertainty account.\n- **Key passages:** \"conventional theories, based on fear of legal or privacy harm, are narrow, are empirically weak\" · \"in moments of situational uncertainty, people conform to and comply with the relevant social norm\"\n- **Reliability:** Primary scholarly abstract; independent.\n- **Relevance to this project:** Report §4′(B); draft l.90–92, l.160.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7cd99fcbcd6bab33c15e0297495577dbf246399fb39e76c58dd9803f72fd201e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/penney-2022-understanding-chilling-effects-abstract.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e076ade4d1866374",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# paddo-only-the-paced-get-paced-2026-09-13\n- **URL:** https://paddo.dev/blog/only-the-paced-get-paced · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** paddo.dev, Sept 13, 2026 (author unnamed on page): Amodei's mechanisms presuppose a company ('Every mechanism needs a building'); the Aug 4 framework exempted open weights by name (Llama, Nemotron); two futures: exempt open weights or gate them via pre-release certification; notes the four-month frontier gap and a Cognition fine-tune matching frontier.\n- **Key passages:** 'Every mechanism needs a building' · pacing that covers open weights 'requires \"pre-release certification,\" effectively a gate.'\n- **Reliability:** Secondary; developer blog; open-weights-sympathetic; the Aug 4 exemption claim corroborates a CNBC Aug 3 snippet not opened.\n- **Relevance to this project:** Q1(b)/(c); Q5; Q7 neighbor of 'permissioned cognition' (names the developer's condition, not the thinker's).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 122
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bb66a85677f8f856dd5d004c8a39fed2906c05478af3e410cde4b6b17c922a7a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/paddo-only-the-paced-get-paced-2026-09-13.md",
+ "kind": "artifact-page"
+}

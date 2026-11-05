@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ohchr-palestine-action-refetch.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2a6bf3d7616547f1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ohchr-palestine-action-refetch.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ohchr-palestine-action-refetch\n- **URL:** https://www.ohchr.org/en/press-releases/2025/07/un-experts-urge-united-kingdom-not-misuse-terrorism-laws-against-protest and https://www.ohchr.org/en/press-releases/2025/07/uk-palestine-action-ban-disturbing-misuse-uk-counter-terrorism-legislation (live pages 403/Cloudflare-blocked; both read in full via Wayback snapshots of 2026-07-03 and 2026-07-25) · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, verbatim verification of OHCHR quotations\n- **What it establishes:** Both releases reachable via archive.org. Release 1: \"UN experts urge United Kingdom not to misuse terrorism laws against protest group Palestine Action,\" 01 July 2025 (Special Procedures: Saul, Katrougalos, Khan, Romero, Albanese). It contains BOTH target quotes, with wording notes: (a) the property-damage quote appears WITHOUT a bracketed [M] — the source sentence begins \"Mere property damage...\" — so an essay rendering \"[M]ere\" implies a mid-sentence start that the source does not have; (b) \"should be properly investigated as ordinary crimes\" is accurate but the sentence continues \"...or other security offences.\" Release 2: \"UK: Palestine Action ban 'disturbing' misuse of UK counter-terrorism legislation, Türk warns,\" 25 July 2025 (High Commissioner Volker Türk; notes 200+ arrests since the 5 July ban; urges rescission).\n- **Key passages:** Release 1: \"'The UK supported this approach in voting for Security Council resolution 1566 in 2004,' they said. 'Mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism.'\" / \"'Protest actions that are not genuinely \"terrorist\", but which involve alleged property damage, should be properly investigated as ordinary crimes or other security offences,' they said.\" Release 2: \"The decision appears disproportionate and unnecessary.\" / \"Since the UK Government's ban came into effect on 5 July, at least 200 people have been arrested under the UK Terrorism Act 2000, many of them while attending peaceful protests.\"\n- **Reliability:** primary (official OHCHR press releases, via archived snapshots of ohchr.org)\n- **Relevance to this project:** Settles the quotation-verification correction: both quoted phrases are genuine and verbatim; \"Mere\" starts its sentence (no bracket needed), and the \"ordinary crimes\" quote elides a trailing \"or other security offences.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 303
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6202cd97c0c0ced90bb4c114d8c3b7660d1a669a20c2f71350a78542775757c7",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/ohchr-palestine-action-refetch.md",
+ "kind": "artifact-page"
+}

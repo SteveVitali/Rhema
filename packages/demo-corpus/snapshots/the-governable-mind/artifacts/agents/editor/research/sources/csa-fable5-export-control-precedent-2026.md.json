@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/csa-fable5-export-control-precedent-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6ae6bc7bd079ccd9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/csa-fable5-export-control-precedent-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# csa-fable5-export-control-precedent-2026\n- **URL:** https://labs.cloudsecurityalliance.org/research/csa-research-note-ai-model-export-controls-20260618-csa-styl/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Cloud Security Alliance research note, June 18, 2026: instrument was a BIS 'Is Informed' letter under the EAR invoking ECRA 2018, from Lutnick to Amodei, June 12; individually validated export license required before any foreign national accesses Fable 5/Mythos 5; not indicated as Federal Register-published; trigger a reported jailbreak; precedent: administrative revocation without notice for any dual-use frontier model.\n- **Key passages:** \"directing the company to obtain an individually validated export license before allowing any foreign national — anywhere in the world.\" · \"the legal mechanism — a BIS 'Is Informed' letter under the Export Administration Regulations.\"\n- **Reliability:** Secondary; industry research note; consistent with CSIS.\n- **Relevance to this project:** §4(d) instrument identification; Q6/Q7 on unpublished directives.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 130
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "168d68e67e441b9135d08ac1a1f7ead1bdff2dc4fca296cd013146a815e230ec",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/csa-fable5-export-control-precedent-2026.md",
+ "kind": "artifact-page"
+}

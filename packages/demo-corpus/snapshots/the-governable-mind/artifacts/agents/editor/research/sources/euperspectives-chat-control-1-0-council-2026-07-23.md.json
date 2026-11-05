@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/euperspectives-chat-control-1-0-council-2026-07-23.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "06cc53cbfd875037",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/euperspectives-chat-control-1-0-council-2026-07-23.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# euperspectives-chat-control-1-0-council-2026-07-23\n- **URL:** https://euperspectives.eu/2026/07/eu-countries-approve-temporary-chat-control-1-0/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** EU Perspectives, July 23, 2026: member states approved the renewed interim regulation on voluntary detection, to \"apply until 3 April 2028 or a permanent regulation is in place\"; \"The regulation does not oblige companies to scan their services. What it does is give providers the legal basis to do so\"; end-to-end encrypted communications excluded; permanent-regulation talks \"expected to resume in September,\" still disputing \"whether detection orders should cover private communications and whether they could be implemented without weakening encryption or subjecting all users to generalised monitoring.\"\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (Brussels trade press).\n- **Relevance to this project:** Agenda 3: confirms the EU regime as of Sept. 2026 is voluntary, encryption-exempt, and not an inference gate.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 133
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c641f57298ad9e4ebdea22750c8844c4fca085885050d427df59dcf7437f2148",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/euperspectives-chat-control-1-0-council-2026-07-23.md",
+ "kind": "artifact-page"
+}

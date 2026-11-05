@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/austin-social-legibility.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "40c8d02d6e2c5ccb",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "caa6afed26adaf92",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "dd06dd6358c39f7d",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/austin-social-legibility.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Austin, \"From Privacy to Social Legibility\" (2022)\n\n- **URL:** https://ojs.library.queensu.ca/index.php/surveillance-and-society/article/view/15762\n- **Accessed:** 2026-08-21 (abstract read)\n- **Cite:** Lisa Austin, Surveillance & Society 20:3 (2022).\n\n**Establishes:** Coinage-adjacency check for \"behavioral legibility\": Scott's legibility has already been extended into privacy theory as \"social legibility\" — Austin argues privacy law's \"focus on the legibility of individuals... is too narrow\" and proposes governing \"the fair and just terms of social legibility.\" No collision with \"behavioral legibility\" as a phrase (a distinct search found no prior surveillance-context use), but the extension-of-Scott move itself is not virgin territory.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ff2e26e30c15e6f34492c37009634a6d26d8fbcdcd880a5034d4400c45ab9ffc",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/austin-social-legibility.md",
+ "kind": "artifact-page"
+}

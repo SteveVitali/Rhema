@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wikisource-kant-enlightenment-beck.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8792c7d877c6ae84",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/wikisource-kant-enlightenment-beck.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikisource-kant-enlightenment-beck\n- **URL:** https://en.wikisource.org/wiki/What_is_Enlightenment%3F · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Beck (1963) translation. Two of the draft's four Kant fragments are Beck's wording, not Gregor's: \"as a scholar before the reading public\"; \"in a particular civil post or office which is entrusted to him.\" Beck renders the opening as \"self-incurred tutelage.\"\n- **Key passages:** \"By the public use of one's reason I understand the use which a person makes of it as a scholar before the reading public. Private use I call that which one may make of it in a particular civil post or office which is entrusted to him.\"\n- **Reliability:** Primary (translation), public domain.\n- **Relevance to this project:** C25; §I.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f2a0ae78d41c15990283e1a46e463dcc05b3bba3082fbb687238189bef267b6c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/wikisource-kant-enlightenment-beck.md",
+ "kind": "artifact-page"
+}

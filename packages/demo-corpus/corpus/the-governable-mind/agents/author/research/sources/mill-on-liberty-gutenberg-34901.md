@@ -1,0 +1,15 @@
+# mill-on-liberty-gutenberg-34901
+- **URL:** https://www.gutenberg.org/cache/epub/34901/pg34901.txt (HTML: https://www.gutenberg.org/files/34901/34901-h/34901-h.htm) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C10
+- **What it establishes:** J. S. Mill, *On Liberty* (1859), Project Gutenberg #34901 (Walter Scott Publishing Co. edition, introduction by W. L. Courtney). Chapter II, "Of the Liberty of Thought and Discussion": the fallibility argument, the "collision with error" sentence, the "dead dogma" sentence, and the four-part recapitulation.
+- **Key passages:**
+  - "the peculiar evil of silencing the expression of an opinion is, that it is robbing the human race; posterity as well as the existing generation; those who dissent from the opinion, still more than those who hold it."
+  - "If the opinion is right, they are deprived of the opportunity of exchanging error for truth: if wrong, they lose, what is almost as great a benefit, the clearer perception and livelier impression of truth, produced by its collision with error."
+  - "To refuse a hearing to an opinion, because they are sure that it is false, is to assume that _their_ certainty is the same thing as _absolute_ certainty. All silencing of discussion is an assumption of infallibility."
+  - "it is not the feeling sure of a doctrine (be it what it may) which I call an assumption of infallibility. It is the undertaking to decide that question _for others_, without allowing them to hear what can be said on the contrary side."
+  - "however true it may be, if it is not fully, frequently, and fearlessly discussed, it will be held as a dead dogma, not a living truth."
+  - Recap: "First, if any opinion is compelled to silence, that opinion may, for aught we can certainly know, be true. To deny this is to assume our own infallibility."
+  - "Secondly, though the silenced opinion be an error, it may, and very commonly does, contain a portion of truth"
+  - "Thirdly, even if the received opinion be not only true, but the whole truth; unless it is suffered to be, and actually is, vigorously and earnestly contested, it will, by most of those who receive it, be held in the manner of a prejudice"
+  - "fourthly, the meaning of the doctrine itself will be in danger of being lost, or enfeebled, and deprived of its vital effect on the character and conduct: the dogma becoming a mere formal profession"
+- **Reliability:** Primary text, public domain (reprint of the standard text; Gutenberg does not state which lifetime edition, so cite by chapter rather than page).
+- **Relevance to this project:** C10 — the argument's structure is two hypotheses (the suppressed opinion may be true; if false, truth still needs it) elaborated into four grounds; "dead dogma" belongs to the second division (opinion assumed true).

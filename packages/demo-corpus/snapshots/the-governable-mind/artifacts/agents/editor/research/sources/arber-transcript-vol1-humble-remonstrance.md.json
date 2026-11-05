@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/arber-transcript-vol1-humble-remonstrance.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f060dea8af3cbcae",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/arber-transcript-vol1-humble-remonstrance.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# arber-transcript-vol1-humble-remonstrance\n- **URL:** https://archive.org/download/transcriptofregi01statuoft/transcriptofregi01statuoft_djvu.txt · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Primary text of the Humble Remonstrance (Arber, Transcript, vol. 1, Addendum 'The Controversy, &c. of 1643-5', I.581 ff.). Confirms the quotation with the original singular 'Presse' and the surrounding three-point petition.\n- **Key passages:** '(2) That in matters of the Presse, no man can so effectually prosecute, as Stationers themselves.' / 'The main care is to appoint severe Examiners for the licensing of things profitable, and suppressing of things harmfull'\n- **Reliability:** Primary (19th-c. scholarly transcription of the 1643 pamphlet; OCR text).\n- **Relevance to this project:** C47\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "73131134c8dbc7ae6b3aa0e214fdb5ea8164f7e12b0fbce7028dbbf36eaa53c2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/arber-transcript-vol1-humble-remonstrance.md",
+ "kind": "artifact-page"
+}

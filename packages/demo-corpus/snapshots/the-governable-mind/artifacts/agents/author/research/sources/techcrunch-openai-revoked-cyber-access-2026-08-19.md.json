@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techcrunch-openai-revoked-cyber-access-2026-08-19.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "039712c4a287500c",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techcrunch-openai-revoked-cyber-access-2026-08-19.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-openai-revoked-cyber-access-2026-08-19\n- **URL:** https://techcrunch.com/2026/08/19/researchers-complain-that-openai-revoked-their-access-to-limited-cyber-program/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding D (failure mode)\n- **What it establishes:** Lorenzo Franceschi-Bicchierai, Aug 19, 2026. Trusted Access for Cyber (Daybreak Blue tier) researchers \"have to submit an ID and be vetted by OpenAI.\" Five researchers, all \"outside of the U.S. and Europe,\" saw messages that their identity \"could not be verified\" or that their account \"is ineligible at this time.\" OpenAI called it \"a technical issue affecting a limited number of users,\" said a \"limited set of users' access to Daybreak Blue is no longer active and they will need to re-verify,\" and that it was \"not the user experience we want to deliver.\" Notes both defensive and offensive researchers complain that guardrails \"prevent them from doing legitimate work.\"\n- **Key passages:**\n  - researchers \"have to submit an ID and be vetted by OpenAI\"\n  - their identity \"could not be verified\" / account \"is ineligible at this time\"\n  - \"all the researchers TechCrunch spoke to said they live outside of the U.S. and Europe, suggesting the revocations may be limited to certain regions.\"\n- **Reliability:** Secondary, mainstream tech press with company response.\n- **Relevance to this project:** Exact source for the \"your identity could not be verified\" failure mode; the regional pattern is a useful detail for the nationality theme.\n- **Slice L addendum (re-opened 2026-09-16, v2→v3 response round):** Article re-read via a reader proxy (headline now \"Researchers say OpenAI revoked their access to limited cyber program\"; footer \"Updated with comment from OpenAI\"). ATTRIBUTION NUANCE: \"This was an issue on our end, and not the user experience we want to deliver\" is from an EMAIL OpenAI sent to an affected researcher, which the researcher shared with TechCrunch (\"read the message, which the researcher shared with TechCrunch\"); it is not a statement OpenAI gave to the press. The same email said access was revoked \"due to a technical issue affecting a limited number of users.\" OpenAI's on-record response was to point to a tweet: a \"limited set of users’ access to Daybreak Blue is no longer active and they will need to re-verify to maintain their access.\" TechCrunch's lede: \"OpenAI confirmed that the issue was caused by an error.\" Program description: TAC offers \"vetted researchers access to the company’s most advanced AI models with fewer cybersecurity guardrails than the models that regular users can access.\" Daybreak Blue launched Aug 10, 2026. Read with OpenAI's later help-page account, the \"error\" appears to be that access was GRANTED through a faulty verification and then removed, with no guarantee of restoration.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 418
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a58b4e06d15490a344820dd0d50765fe18703f93734fe55afb3735998c7235b5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techcrunch-openai-revoked-cyber-access-2026-08-19.md",
+ "kind": "artifact-page"
+}

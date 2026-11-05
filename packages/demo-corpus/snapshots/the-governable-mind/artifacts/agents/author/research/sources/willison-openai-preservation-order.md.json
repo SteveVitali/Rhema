@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/willison-openai-preservation-order.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8d5e46430a5e5d08",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/willison-openai-preservation-order.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# willison-openai-preservation-order\n- **URL:** https://simonwillison.net/2025/Oct/23/openai-no-longer-has-to-preserve/ and https://simonwillison.net/2025/Jun/5/openai-court-order/ · **Accessed:** 2026-09-16 · **For:** v1 response round, item 1\n- **What it establishes:** The June 5, 2025 post pins the original preservation order to May 13, 2025 (linking the two-page order PDF hosted by Ars Technica) and quotes its operative paragraph; it notes the order covered \"temporary private chats and API outputs served to paying customers, which previously had a 30 day retention policy.\" The Oct. 23, 2025 post relays Engadget: Wang's Oct. 9 order lifts the going-forward duty; already-preserved logs and NYT-flagged accounts remain. Willison calls the original order \"very worrying\" and the lifting \"a relief.\"\n- **Key passages:** From the May 13 order as quoted (June 5 post): \"OpenAI is NOW DIRECTED to preserve and segregate all output log data that would otherwise be deleted on a going forward basis until further order of the Court (in essence, the output log data that OpenAI has been destroying)\". / Oct. 23 post: \"OpenAI were compelled by a court order to preserve all output, even from private chats, in case it became relevant to the ongoing New York Times lawsuit.\"\n- **Reliability:** Secondary (independent technologist's link blog) quoting the primary order verbatim; the June post links the order PDF itself.\n- **Relevance to this project:** Supplies the May 13, 2025 date and the order's operative language; corroborates the Oct. 9 lifting.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 223
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f3ac468f36ef5a2d831108c970cb27127757573b957f7d5f7d9bd4b8a3e08ed1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/willison-openai-preservation-order.md",
+ "kind": "artifact-page"
+}

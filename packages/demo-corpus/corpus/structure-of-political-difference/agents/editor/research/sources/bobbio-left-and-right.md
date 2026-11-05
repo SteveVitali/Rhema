@@ -1,0 +1,7 @@
+# bobbio-left-and-right
+
+- **URL:** https://en.wikipedia.org/wiki/Left_and_Right:_The_Significance_of_a_Political_Distinction (and search-result summaries; full text at https://mronline.org/wp-content/uploads/2018/07/Bobbio-Norberto-Left-and-Right-Significance-Political-Distinction.pdf not read in full) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Norberto Bobbio, *Left and Right* (1994/1996): the distinction is real and enduring, grounded in attitudes to equality — the left holds a "horizontal or egalitarian conception of society," the right a "vertical or inegalitarian" one; left sees inequality as socially created and removable, right as natural and inevitable. Bobbio also holds the terms are relative, "a shifting map... relative to the particular cultural and historical contexts."
+- **Key passages:** As above (via search summaries and the Wikipedia synthesis).
+- **Reliability:** I read summaries and encyclopedic digests this session, not the book itself — treat quotations as second-hand.
+- **Relevance to this project:** The canonical philosophical defense of left-right as a single real dimension. The draft never mentions it, yet its own Belonging/Culture/Economy poles can each be redescribed as equality-vs-hierarchy applied to different objects — exactly Bobbio's move in reverse. For a philosophy-inflected venue, ignoring Bobbio is the most conspicuous scholarly omission.

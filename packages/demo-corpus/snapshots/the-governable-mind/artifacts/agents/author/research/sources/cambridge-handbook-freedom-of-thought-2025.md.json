@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cambridge-handbook-freedom-of-thought-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "625dd4f2121d64fa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cambridge-handbook-freedom-of-thought-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cambridge-handbook-freedom-of-thought-2025\n- **URL:** https://research.ucc.ie/en/publications/the-cambridge-handbook-of-the-right-to-freedom-of-thought/ (University College Cork research portal) ; Cambridge Core page https://www.cambridge.org/core/books/cambridge-handbook-of-the-right-to-freedom-of-thought/C309F5AF4F395DE46ECFDE7B9F9507B1 returned 403 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C19\n- **What it establishes:** *The Cambridge Handbook of the Right to Freedom of Thought*, eds Patrick O'Callaghan (UCC) and Bethany Shiner (Middlesex), Cambridge University Press, published 13 March 2025, 393 pp., ISBN 9781009539647 (print), 9781009539616 (e-book), doi 10.1017/9781009539616. Exists; editors and publisher as stated in the outline. Eighteen jurisdictions surveyed.\n- **Key passages:** \"This handbook presents the first attempt to set out how the right is protected, interpreted and applied globally. Eighteen jurisdictions are examined along with chapters describing context-setting, interdisciplinary approaches, and close analysis of the right in relation to specific challenges and conceptual difficulties.\" / \"The right to freedom of thought features prominently in debates about emerging technologies including neurotechnology and AI, but there is little understanding of its scope, content or application.\"\n- **Reliability:** Institutional repository record reproducing the publisher's blurb; the DOI prefix 10.1017 is CUP's. Not independent of the publisher, but adequate for an existence claim at Tier 3.\n- **Relevance to this project:** C19; useful as a \"the field now exists\" marker alongside C23.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 190
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7c12a8c4a4d7ed69f040a06f11e1161bab82bb0f6708936eb135172d7d13a709",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/cambridge-handbook-freedom-of-thought-2025.md",
+ "kind": "artifact-page"
+}

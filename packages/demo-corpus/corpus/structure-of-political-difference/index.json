@@ -1,0 +1,485 @@
+{
+  "slug": "structure-of-political-difference",
+  "artifacts": [
+    {
+      "path": "agents/author/ledgers/v1-response-ledger.md",
+      "bytes": 18762,
+      "sha256": "f616841a935a773d1ef708a7393a15232b2cb526828b7ec2077f70494eefd70e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/index.md",
+      "bytes": 2378,
+      "sha256": "3dabddb3a3163fda820549f7599a12690fdddac5b33a54517ee190dd9c4d4430",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/akkerman-mudde-zaslove-2014.md",
+      "bytes": 1128,
+      "sha256": "3afcdb162d73109493fe1a0f1e26eacbaf8cfb117266c3ccf3032289ad356417",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/bobbio-left-and-right.md",
+      "bytes": 1280,
+      "sha256": "b47afd6422e5b20fda3c4e5fa4782c81668747eefae7bd0f9a5946fa924b890d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/caplan-lewis-exchange.md",
+      "bytes": 1334,
+      "sha256": "41c7dcdc409bf2c395e5dcbb6133f29f495641268cb7bc833f2838edfa957d64",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/ches-2024-rederivation.md",
+      "bytes": 1460,
+      "sha256": "7984fd61ae8f06ebbcecbebb528369555e505970a1a711c2d0303b26ce94f1ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/collier-mahon-1993.md",
+      "bytes": 1085,
+      "sha256": "c8f0c1d9aee9e2ea323661b3fb98567ef8047229561ce2176907ff29da376f48",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/eight-values.md",
+      "bytes": 1172,
+      "sha256": "6af9686915f4b9a2d13613324aa663161c2746f84e1ee284819aa06169102e18",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/gonzalez-hxa-reply.md",
+      "bytes": 987,
+      "sha256": "4a76cd8ce0cf603776f38ccb14af654846035eed2ac0c3c970e13871a6c8891d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hooghe-marks-wilson-2002.md",
+      "bytes": 1285,
+      "sha256": "375a25b74518443d92b1e84bcb09eccc2938cb1568b4f21e0d046490cbe00948",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hungary-2026-election.md",
+      "bytes": 1380,
+      "sha256": "5ffe1c227296350b56e8e467a504725a7759424fac195a9f280824257e91c9fd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kitschelt-1994.md",
+      "bytes": 1161,
+      "sha256": "a59de0c50b995199e12a07afbf6949c0eaf4ad29062ece1b4f405e88ad40a9c5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kling-three-languages.md",
+      "bytes": 1067,
+      "sha256": "4f1a4f9d05777486d640c545dd4a3ffff2600991d7401d94762db796f68d7777",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/mudde-2004.md",
+      "bytes": 943,
+      "sha256": "4cb1a3da245d84e32a3bea504de700e968c5de31fba12dd5fd97dbb99afa3336",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/muller-what-is-populism.md",
+      "bytes": 1159,
+      "sha256": "c2b05c505cd93cad2d998c1cae3f9f1ee70f59a9974366a19ebc8c91bd52d569",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/orbanomics.md",
+      "bytes": 992,
+      "sha256": "4331dcb2f2e027347efdcafa4e7ca6b5220f4c9b89cba4b9b82ca43aa92f2c3a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/sjsebastian-venue-style.md",
+      "bytes": 1390,
+      "sha256": "38ddba4e53c05b091732f77fce00654fa33567ae3f5d38bec44d6225d549733f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/tax-foundation-tariff-tracker.md",
+      "bytes": 2159,
+      "sha256": "e91d60743abb9c1263ef2cd514b0cf829ab294713198685d013ac1a40b9d5b35",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/welfare-chauvinism.md",
+      "bytes": 1186,
+      "sha256": "718e7c6a3e1c31c29a95f63e9d777de030673082ecec8409dd7ceff0ef9c27c5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/index.md",
+      "bytes": 7481,
+      "sha256": "8f1a76d7624d48bc49f28759e3e5b352911df2849c7651504ae7cb45b83dea07",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/8values-test.md",
+      "bytes": 1897,
+      "sha256": "91c90ede4b9d175d71c1a786b3175bd7a272863329d3a62a8f8fdae5044c6ee9",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/9axes-test.md",
+      "bytes": 1384,
+      "sha256": "b38cf7cea393de288b75c2dd3af8f64ad20953672c8c3aa1003265c9afca03d7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/akkerman-mudde-zaslove-2014.md",
+      "bytes": 1416,
+      "sha256": "378bb4ab9c3de869bdfb577bbfbef56b0ac38d0df9982cef1792b59c3dfb7158",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/bobbio-left-and-right.md",
+      "bytes": 1445,
+      "sha256": "bd00e0c2d355c504eb0216570ccc032da5d30d40368d0b66f70340790153c3f2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/caplan-lewis-exchange.md",
+      "bytes": 1591,
+      "sha256": "03ea47e5cb5f577c035154389b85ec0fe62a160cca87f442162d5ce8beb6a21a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/caramani-2017-will-vs-reason.md",
+      "bytes": 1493,
+      "sha256": "01a6a25a6bfe0614fc01b9ebcbc5a78f0ae633abd8a659bcee90601bc39a680d",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ches-2024-codebook-and-site.md",
+      "bytes": 1401,
+      "sha256": "da5b557a5bdc29670214974fa385e6d5986a08f2daf7ceb7ad70dcb76a375fbd",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ches-2024-dataset-rederivation.md",
+      "bytes": 1541,
+      "sha256": "275af1fdd5aba97672a76352b6aee6973ac11113893e3700e05bb10d59b873ad",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/collier-mahon-radial-categories.md",
+      "bytes": 1529,
+      "sha256": "c9216840b4a8c424ded8549f904b0489b155363c088fb605d6c4eedfc745c91e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/converse-1964-belief-systems.md",
+      "bytes": 1568,
+      "sha256": "f161737d3f659a74b9a8c13ddf3cc0dba4a933b22b546b9e7c6a8f922e227ad5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/dewilde-2023-cosmo-comm.md",
+      "bytes": 1073,
+      "sha256": "0384a5e9908deefb9ebbf46d54792de9b3d3ce64565f24d6a96a010879becd30",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/dewilde-cosmopolitan-communitarian.md",
+      "bytes": 1422,
+      "sha256": "a09bba2881159b11560da1b7aefcb7ff8903fd62779246a23e10d186384a3634",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/feldman-huddy-2014-not-so-simple.md",
+      "bytes": 933,
+      "sha256": "649452a94d5fc2f220150fe2cc0a996240e34c9087b6de87129cde5d090a452a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/freeden-morphology.md",
+      "bytes": 1904,
+      "sha256": "c9e3ac50aa41da099ff33f8b08e9a0791072781ed77fec9ac960526f9b874b58",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/gonzalez-spectrum-does-exist.md",
+      "bytes": 1485,
+      "sha256": "8b3027885232198beba77465784c272a5a5d6fe5a57992b303eb7aa83c494011",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hooghe-marks-wilson-2002-galtan.md",
+      "bytes": 1758,
+      "sha256": "4b4f750a0f8d8f909bc21a3a397022b7c01dbaa8e5d549143ac8f7327dbcf815",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/hungary-2026-election.md",
+      "bytes": 1171,
+      "sha256": "558256ec011a89cee1da0dcf85e1041e67637c6bbdd7f71e9ac1f58150a8438e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/jrws-wola-trump-milei.md",
+      "bytes": 1224,
+      "sha256": "22980ff9ab9de742222d852c1f58814e2909a448b283d1ef59860f168528c378",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/kling-three-languages.md",
+      "bytes": 1765,
+      "sha256": "d1fbc5709e9d1fd7e0331472664bec1c6fb6727e91c5b9535ff0acf82de7b5e5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lee-santoso-stevenson-2026-heuristic-inference.md",
+      "bytes": 1199,
+      "sha256": "62600269b04b7ef1d6d314375b4eb0d757993237224d8422fc7daa950fffa417",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lewis-myth-left-right-reviews.md",
+      "bytes": 1879,
+      "sha256": "825b8c7f235d0b6377112d88822f26dd0edb8a3a3ed2139950d3fe5019f089ed",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/lewis-quillette-retire-spectrum.md",
+      "bytes": 1540,
+      "sha256": "19570608e11081f75932147391d52425353442db1f686f69887352c26d69d654",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mair-mudde-1998-via-manifesto-handbook.md",
+      "bytes": 1177,
+      "sha256": "a801f11d9a07dd825f660bab420eb2ce3f1e0d5d14c9895fec3f604ad74bb65a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mongrain-walgrave-2026-nondimensional.md",
+      "bytes": 1089,
+      "sha256": "f2d8f4227c32f75617b2d6a9f399a0f119c44ad713e15aa1f3c29d1121e59c39",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/mudde-populism-definition.md",
+      "bytes": 1392,
+      "sha256": "27c8714c45805e47e2a634e9ab893d473959c1e8bd23bed6fc3efd9a5b4de2fc",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/muller-what-is-populism.md",
+      "bytes": 1640,
+      "sha256": "9423524f62bb49239134e134dc8f6eac65cab75033185294092f889580929013",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/orbanomics-wikipedia.md",
+      "bytes": 1041,
+      "sha256": "4233fcfda7c51b9bf3dc6d60a7e8ae0181783e570c930ac9a88c648f78a6a11e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/pew-2026-political-typology.md",
+      "bytes": 1160,
+      "sha256": "40b3d092b48f474dc4a98f3ca9c9cffb28470f5dbbbaca2b4f5602afda8e1b7f",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/political-compass-two-axes.md",
+      "bytes": 1593,
+      "sha256": "9b39663ab43d394e1ce6cceaf18b9902d88895e6a91a023c47497c7f90bd66d8",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/politiscales-about.md",
+      "bytes": 1107,
+      "sha256": "d7ce169d1bae7464a896c8404ac17609be114be9b92524019cc4c69bac423772",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/poppa-expert-survey.md",
+      "bytes": 1320,
+      "sha256": "222ea7e4a5ac2dd8d04d05aae363ab7f6e58e0d573db93e1411d5c7f5beaa79a",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/sjsebastian-substack-style.md",
+      "bytes": 2769,
+      "sha256": "c2a3e535ef7e8c0379ee418b1966113747eb59405b294724690be96ed064a118",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/ssc-thrive-survive.md",
+      "bytes": 1380,
+      "sha256": "ae35d385c354152b33aafb2dce32e3503c28c8c7739b3bdd33ce9a98af396d49",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md",
+      "bytes": 1394,
+      "sha256": "648c64bbfeec2ef9a354801ecd5b1da6124b655d622cd2bf11b0a3be8834c6f5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/two-dimensional-precursors.md",
+      "bytes": 1997,
+      "sha256": "53c44be05b7f17fad8994a39a4b321cb933cef5b69d1d40b8a859b972e1ae481",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/uscinski-2021-anti-establishment.md",
+      "bytes": 1453,
+      "sha256": "bcfea57ff3e96c3c5d7370707377eba9d7989a75e3345e1b65e0e6344e6f6bc2",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/uscinski-et-al-2021-two-dimensions.md",
+      "bytes": 942,
+      "sha256": "2ad1c9f8064369d10b98164b5565636d7e0f1abbf49cc2c1ecd0eb585c100520",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/venue-sjsebastian-substack.md",
+      "bytes": 1578,
+      "sha256": "dc6dd63bbb28bc120657fcc5f3b0b2d51b89e566c4baa2e8fc85f63d19d0e5b7",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/voteview-poole-rosenthal.md",
+      "bytes": 1451,
+      "sha256": "5445055b900d778cd7c29b1c63a0616f3723dc017367ca2233fce6969f381d9e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/sources/welfare-chauvinism-literature.md",
+      "bytes": 1573,
+      "sha256": "96de90dd4ad2febc3778ca7d8888e1fced4513622867716491ce71a11add3f30",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-response.md",
+      "bytes": 15462,
+      "sha256": "493cb5cb0a28d9450ab2ef122dc135051414b621637a3112b00fd075cc9a1983",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/00-piece-brief.md",
+      "bytes": 12338,
+      "sha256": "e70b39ff46e6b242d823b4daf3e85a9316dc90e979ef7a22d6978259d8ebd22f",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/01-claim-ledger.md",
+      "bytes": 31047,
+      "sha256": "37ee3292d3cccc9c4d0872bdc83bdbab9486a85f01a2cd5b229c87ad932ee9d1",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/02-discourse-report.md",
+      "bytes": 31707,
+      "sha256": "627fa9d2c0737e93741698e9f76bde62d07af25565f2e5153c56724d8fc52ed1",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/03-argument-notes.md",
+      "bytes": 12726,
+      "sha256": "b459227cce2159acbbcd4185c8efacb4fb73ef6613f88210647b378b79f6cae7",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/04-craft-notes.md",
+      "bytes": 9022,
+      "sha256": "9621333207cd13092de1855688bd986e2c42aff7585d3725edf42c418d6f36e0",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/05-second-read.md",
+      "bytes": 12000,
+      "sha256": "3d5c18d0c7c48e3ca379a56a25e54da0d7a34c735e74d7a850903c89c5b454f8",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v1-review/editors-letter.md",
+      "bytes": 28492,
+      "sha256": "2d6298756a4b2a619cfe46d71d6c35586d6ead39ef9a1b6b99c44a870c3c7825",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/figures/figure_1_five_questions.png",
+      "bytes": 151219,
+      "sha256": "0349f6763500a216453afb0843168c2b72186333f0841a197d8086918fc439ed",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_2_ches_correlations_v2.png",
+      "bytes": 171081,
+      "sha256": "12d34d46d4ffe8a7ce45bc2e616a569161ef6dae769bc1229e02e8e2a580fa94",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_2_ches_correlations.png",
+      "bytes": 202022,
+      "sha256": "3b90715da93eb47451ee558cd99f73756c754d8d03b40a12046674c45a628451",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_3_system_axis.png",
+      "bytes": 191005,
+      "sha256": "393d033ba41e27f3713da571311138e214fc3975577e21174fa0924b7a9c261e",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_4_public_lexicon.png",
+      "bytes": 273725,
+      "sha256": "076836c4070fb86f63b649aca7042b08294a28c05f8076db4648dff6b0f363fd",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/figures/figure_5_illustrative_profiles.png",
+      "bytes": 113651,
+      "sha256": "b9b97a66485dd3c5ae6533786b58d50c626d2eab2eca1e7296bcd651a4f07428",
+      "kind": "image"
+    },
+    {
+      "path": "drafts/taxonomy_reference_sheet.md",
+      "bytes": 1696,
+      "sha256": "b3a942e73ea44a18cc92c717dce48cd846ad70920950812d1633bca909db9849",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v1.md",
+      "bytes": 42841,
+      "sha256": "d016521596b425833c989ff22fb2a92c508359d795c3977b954554311b508441",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v2.md",
+      "bytes": 55847,
+      "sha256": "ff12822487c93b7bd14111b038a66b646fdd3e86efe0cd0543a04837245b2c3c",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v3.md",
+      "bytes": 56140,
+      "sha256": "120da1c492dcf52ab17f20f429937fa22d1cfe5cb883226b4dd2982037f263a8",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v4.md",
+      "bytes": 57543,
+      "sha256": "84c82cd012b4aed84427b784f918473380436052074815abedd1a3637f65b5a3",
+      "kind": "markdown"
+    },
+    {
+      "path": "published.md",
+      "bytes": 61637,
+      "sha256": "9ff463ed3d50951dd198c89b24d3923aa52434cd3e741a03efb62b2d9a450afc",
+      "kind": "markdown"
+    }
+  ]
+}

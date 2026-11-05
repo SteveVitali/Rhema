@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/reason-ibrahim-kill-switch-2026-07-27.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "b9e9f3ff0f3c8a9b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/reason-ibrahim-kill-switch-2026-07-27.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# reason-ibrahim-kill-switch-2026-07-27\n- **URL:** https://reason.com/2026/07/27/ai-kill-switch-act-wont-stop-rogue-ai-but-it-will-slow-down-innovation/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Reem Ibrahim, Reason, July 27, 2026: the Act is a 'knee-jerk reaction'; Adam Thierer on a 'lowest common denominator regulatory standard'; the 2010 internet-kill-switch precedent abandoned over 'concentrating control over the internet in government hands'; speech-risk note; $20M/day penalties. Nothing on judicial review, the use-pattern clause, open weights, or local models.\n- **Key passages:** 'very unlikely' that government could 'immediately use a bill like this to solve various types of cyber intrusions.'\n- **Reliability:** Secondary; libertarian magazine; R Street's Thierer quoted.\n- **Relevance to this project:** Q2 commentary map; the only R Street voice found.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 108
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "00bb1f2b66e363dc8cbf5172fc4f92632bf080cf78a8a61531d891731ab9aca1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/reason-ibrahim-kill-switch-2026-07-27.md",
+ "kind": "artifact-page"
+}

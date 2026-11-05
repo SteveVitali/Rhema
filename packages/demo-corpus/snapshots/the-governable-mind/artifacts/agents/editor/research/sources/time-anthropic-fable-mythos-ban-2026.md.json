@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/time-anthropic-fable-mythos-ban-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "367c121d83ff43da",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/time-anthropic-fable-mythos-ban-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# time-anthropic-fable-mythos-ban-2026\n- **URL:** https://time.com/article/2026/06/13/anthropic-fable-mythos-ban-US-security/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Time (Hall), June 13, 2026: global shutoff of Fable 5/Mythos 5 to comply with the foreign-national order; national-security rationale; Pentagon CIO comment.\n- **Key passages:** \"We had to abruptly disable access to the models for all customers to comply with the order.\"\n- **Reliability:** Secondary; mainstream press.\n- **Relevance to this project:** Headline 1 corroboration.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 67
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "33ed3af6497d76cd2458d98361d382e1f437b0eb55232295d855e6df86e723f1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/time-anthropic-fable-mythos-ban-2026.md",
+ "kind": "artifact-page"
+}

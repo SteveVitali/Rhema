@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/deleuze-postscript-purdue-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d4448447078f9023",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/deleuze-postscript-purdue-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# deleuze-postscript-purdue-pdf\n- **URL:** https://deleuze.cla.purdue.edu/wp-content/uploads/2023/09/Deleuze_Gilles-Postscript-on-the-Societies-of-Control.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** PDF extracted: 'Enclosures are molds, distinct castings, but controls are a modulation'; 'codes that mark access to information, or reject it'; 'dividuals'; 'samples, data, markets, or banks'; colophon: L'Autre Journal May 1990, October 59 (Winter 1992).\n- **Key passages:** \"The numerical language of control is made of codes that mark access to information, or reject it.\" · \"Originally published in L'Autre Journal 1 (May 1990) ... translated in the journal OCTOBER 59 (Winter 1992)\"\n- **Reliability:** Primary text (translation).\n- **Relevance to this project:** Report §5 item 10; draft l.164 (C54), l.290.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4e385c20b18f8c2b0ef07ad6ab12d88546757499e81750dab0655b737d750c36",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/deleuze-postscript-purdue-pdf.md",
+ "kind": "artifact-page"
+}

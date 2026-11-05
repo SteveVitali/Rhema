@@ -1,0 +1,47 @@
+{
+ "dto": {
+  "arc": [
+   {
+    "draftId": "v1",
+    "kind": "draft",
+    "label": "v1",
+    "n": 1
+   },
+   {
+    "kind": "review",
+    "runId": "v1-review",
+    "subjectN": 1
+   },
+   {
+    "draftId": "v2",
+    "kind": "draft",
+    "label": "v2",
+    "n": 2
+   },
+   {
+    "draftId": "published",
+    "kind": "draft",
+    "label": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+    "n": 3
+   }
+  ],
+  "counts": {
+   "claimsChecked": 56,
+   "major": 7,
+   "minor": 19,
+   "strengths": 5
+  },
+  "essay": "the-politics-of-visibility",
+  "publishedLabel": "Published · sjsebastian.substack.com · fetched 2026-11-04",
+  "publishedOn": "2026-11-04",
+  "publishedUrl": "https://sjsebastian.substack.com/p/the-politics-of-visibility",
+  "retitle": null,
+  "subtitle": "*Surveillance and the Conditions of Democratic Freedom*",
+  "title": "The Politics of Visibility",
+  "words": 14004
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "",
+ "kind": "card-facts"
+}

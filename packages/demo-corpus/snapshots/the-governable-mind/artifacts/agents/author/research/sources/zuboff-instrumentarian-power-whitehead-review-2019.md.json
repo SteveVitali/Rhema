@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/zuboff-instrumentarian-power-whitehead-review-2019.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2d25d641b764c8f4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/zuboff-instrumentarian-power-whitehead-review-2019.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# zuboff-instrumentarian-power-whitehead-review-2019\n- **URL:** https://antipodeonline.org/wp-content/uploads/2019/10/Book-review_Whitehead-on-Zuboff.pdf (Mark Whitehead, review of Zuboff, *The Age of Surveillance Capitalism*, Antipode Online, Oct. 2019; 22 pp.) · **Accessed:** 2026-09-16 · **For:** v1 response round, \"instrumentarian power\" definition\n- **What it establishes:** Gives Zuboff's definition in her own words with a page cite to the UK (Profile Books) edition, p. 352, in Part III \"Instrumentarian Power for a Third Modernity\" (ch. 12). Reviewer uses UK spelling \"behaviour\"; Zuboff's US edition (PublicAffairs) reads \"behavior.\" The page is the same in both editions to my knowledge but I only verified the Profile edition cite.\n- **Key passages:**\n  - Whitehead, p. 13: \"Instrumentarian power is characterised by Zuboff as the 'instrumentation and instrumentalization of behaviour for the purposes of modification, prediction, monetization, and control' (p.352).\"\n  - Whitehead, p. 13, quoting Zuboff p. 381: instrumentarianism \"erodes … [democracy] from within, eating away at the human capabilities and self-understanding required to sustain a democratic life\".\n  - Whitehead, p. 1: reviewed edition is \"London: Profile Books, 2019. ISBN: 9781781256848 (cloth)\".\n- **Reliability:** Secondary (academic book review, Antipode); direct quotation with page number. Sympathetic reviewer.\n- **Relevance to this project:** Sources the definition the essay uses. Reference: Shoshana Zuboff, *The Age of Surveillance Capitalism: The Fight for a Human Future at the New Frontier of Power* (New York: PublicAffairs; London: Profile Books, 2019), 352.\n- **Addendum 2026-09-16 (slice M / M9):** Whitehead's p. 13 quotation of Zuboff p. 359 (\"Totalitarian power cannot be achieved by remote control … Each inner life must be claimed…\") is a MISQUOTE; Zuboff's text reads \"Totalitarian power cannot succeed by remote control. Mere conformity is insufficient. Each individual inner life must be claimed and transformed by the perpetual threat of punishment without crime.\" See zuboff-2019-totalitarian-and-china-passages.md. Treat Whitehead's other quotations (incl. the p. 352 definition) as needing a print check for exact wording.\n  - Re-check of the p. 352 definition the same day: Google Books snippet of the PublicAffairs e-book reads \"instrumentation and instrumentalization of behavior for the purposes of modification, prediction, monetization, and control. In this formulation, 'instrumentation' refers to the puppet…\" — Whitehead's wording of the definition is accurate (UK spelling aside).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 344
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1cac655b07a2326b2564098b5d07b0b129be748b4880c75a2c91d89238dd985d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/zuboff-instrumentarian-power-whitehead-review-2019.md",
+ "kind": "artifact-page"
+}

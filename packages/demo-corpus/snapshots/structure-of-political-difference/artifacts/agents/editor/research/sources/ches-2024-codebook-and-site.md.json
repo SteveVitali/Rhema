@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ches-2024-codebook-and-site.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "870b65e449ecf6fa",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ches-2024-codebook-and-site.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ches-2024-codebook-and-site\n- **URL:** https://www.chesdata.eu/ches-europe and https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** CHES 2024: \"completed by 609 political scientists specializing in political parties and European integration… positioning of the leadership of 279 parties in 31 countries\" (site and codebook agree). Codebook (fetched via Squarespace redirect; text extracted from a custom font encoding) confirms per-dimension position/salience/dissent/blur items and the two populism items.\n- **Key passages:** `anti_elite_salience`: \"How salient has ANTI-ESTABLISHMENT and ANTI-ELITE RHETORIC been to each party during 2024?\" · `people_v_elite`: \"the people should have the final say… by voting directly in referendums\" vs \"ELECTED REPRESENTATIVES should make the most important political decisions.\" · `lrecon_blur`: \"Some parties may BLUR POSITIONS… vague, ambiguous, or contradictory stances.\" · Party-family note: \"Some parties may fit into two or more categories (e.g., at various times, Lega can be classified as TAN and Regionalist). CHES users are advised to review family codings…\"\n- **Reliability:** Primary source (survey team's own documentation).\n- **Relevance to this project:** Verifies C9 (609/279 exact), C13, C16, and — directly in the codebook's own words — C7.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 177
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "da5b557a5bdc29670214974fa385e6d5986a08f2daf7ceb7ad70dcb76a375fbd",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/ches-2024-codebook-and-site.md",
+ "kind": "artifact-page"
+}

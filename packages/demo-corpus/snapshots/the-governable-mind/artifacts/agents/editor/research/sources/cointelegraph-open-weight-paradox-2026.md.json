@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cointelegraph-open-weight-paradox-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bfbe04a1763b1b8a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cointelegraph-open-weight-paradox-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cointelegraph-open-weight-paradox-2026\n- **URL:** https://cointelegraph.com/features/hugging-face-hack-exposes-the-open-weight-ai-cybersecurity-paradox · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Cointelegraph (Zmudzinski), Aug 25, 2026: the paradox; Hinton and Sutskever quotes against open-sourcing frontier; OpenAI June 2026 blueprint would subject frontier open-weight release to pre-release examination; Anthropic Apr 2025 diffusion-rule submission; no Anthropic response to guardrails claim.\n- **Key passages:** \"The attacker was bound by no usage policy, while our own forensic work was blocked by guardrails.\" (quoting HF) · Sutskever: \"It just does not make sense to open-source\" frontier models.\n- **Reliability:** Secondary; crypto trade press; editorially reviewed.\n- **Relevance to this project:** §2; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 98
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7d345c8ccad18690177259526886325176c9fafd81b6fac4c217d95d0edcb97c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cointelegraph-open-weight-paradox-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# sastry-computing-power-governance-2024
+- **URL:** https://arxiv.org/abs/2402.08797 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2
+- **What it establishes:** Sastry, Heim, Belfield, Anderljung et al., Feb 2024 (full PDF extracted): compute governance is a 'double-edged sword'; risks to privacy, leakage, economics, concentration of power; five guardrail principles; visibility mechanisms target developers not consumers; chip-level interventions should leave consumer use unaffected; consumer-chip power could change the picture.
+- **Key passages:** "it can also be used to infringe on civil liberties, prop up the powerful, and entrench authoritarian regimes." · "1. Exclude small-scale AI compute and non-AI compute from governance 2. Implement privacy-preserving practices and technologies 3. Focus compute-based controls where ex ante measures are justified 4. Periodically revisit controlled computing technologies 5. Implement all controls with substantive and procedural safeguards." · "should be designed to leave consumer use cases unaffected."
+- **Reliability:** Primary; GovAI/OpenAI/Cambridge authors; safety-aligned, self-critical.
+- **Relevance to this project:** Most important uncited predecessor; §2 test verdict; §4(c); l.238–264.

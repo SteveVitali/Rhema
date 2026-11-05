@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/robinsoncole-20m-logs-affirmed.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "92033454c3606a3e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/robinsoncole-20m-logs-affirmed.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# robinsoncole-20m-logs-affirmed\n- **URL:** https://www.dataprivacyandsecurityinsider.com/2026/01/when-chats-become-evidence-court-affirms-order-requiring-openai-to-produce-20-million-de-identified-chatgpt-logs/ · **Accessed:** 2026-09-16 · **For:** v1 response round, item 2 (second source)\n- **What it establishes:** Robinson+Cole's Data Privacy + Cybersecurity Insider, Jan. 15, 2026. Full procedural chronology: July 2025 motion for 120M; OpenAI's 20M de-identified counter-offer; Oct. 2025 reversal to search-terms only; Wang's Nov. 7, 2025 grant; reconsideration denied; Stein's Jan. 5, 2026 affirmance. Three safeguards credited: sample reduction from \"tens of billions,\" de-identification, protective order. Paraphrases the Rajaratnam distinction (\"ChatGPT users voluntarily provided their data to OpenAI as part of ordinary platform usage\").\n- **Key passages:** \"Judge Wang treated users' 'sincere' privacy interests as one factor in proportionality but still found production appropriate given the safeguards.\" / \"organizations should treat conversational AI data as a discoverable record category and build governance accordingly.\" / \"This case is also a telling reminder that—regardless of your privacy settings—your interactions with AI chatbots ... may, one day, be produced in court\" (that last line is from ABA Journal quoting Ilia Kolochenko, Jan. 8, 2026: https://www.abajournal.com/news/article/chatgpt-creator-must-turn-over-20m-chat-logs-in-copyright-litigation-federal-judge-says, also opened).\n- **Reliability:** Secondary (law-firm blog); ABA Journal is independent legal press quoting Stein's order accurately (\"neither clearly erroneous nor contrary to law\").\n- **Relevance to this project:** Independent corroboration of item 2's chronology and the \"discoverable record category\" framing.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 203
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e0e38968607e0759a47463d54a244d94d11f47e4d33ef6e6831bf17efccd9310",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/robinsoncole-20m-logs-affirmed.md",
+ "kind": "artifact-page"
+}

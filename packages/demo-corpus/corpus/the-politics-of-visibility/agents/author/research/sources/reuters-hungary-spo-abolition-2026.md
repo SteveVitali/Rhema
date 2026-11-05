@@ -1,0 +1,8 @@
+# reuters-hungary-spo-abolition-2026
+- **URL:** https://www.internazionale.it/ultime-notizie-reuters/2026/06/03/hungary-s-government-moves-to-abolish-orban-era-sovereignty-protection-office (licensed reprint of the Reuters wire story; reuters.com original at /business/media-telecom/hungarys-government-moves-abolish-orban-era-sovereignty-protection-office-2026-06-03/ blocks fetchers) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C40
+- **What it establishes:** Reuters, Budapest, June 3, 2026: Hungary's governing Tisza party submitted legislation to parliament to dissolve the Sovereignty Protection Office (SPO), created in 2023 under Orbán's Fidesz to monitor alleged "undue political interference" by foreign entities. The SPO's studies routinely accused opposition figures, journalists, NGOs, and academics of serving "foreign interests"; the European Commission had opened an infringement procedure over the founding law. Fidesz lost the April 2026 parliamentary election after 16 years to the centre-right Tisza party of PM Péter Magyar.
+- **Key passages (bill text as quoted by Reuters):**
+  - "The Sovereignty Protection Office performs no actual public duty, and its creation served purely political intent and interest"
+  - its "real purpose ... was to exert pressure for political purposes on citizens, certain organisations, and media outlets."
+- **Reliability:** Secondary (Reuters wire via licensed republisher — treat as Reuters); primary-adjacent for the bill quotes.
+- **Relevance to this project:** C40(c) — the reversal move, load-bearing for the reversibility argument; pairs with hrw-hungary-spo-abolished-2026 and brussels-signal-spo-vote-2026 for the June 30 vote and outcome.

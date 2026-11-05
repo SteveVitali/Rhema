@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/acx-highlights-discourse-hf-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0b8508fa2d7d47ee",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/acx-highlights-discourse-hf-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# acx-highlights-discourse-hf-2026\n- **URL:** https://www.astralcodexten.com/p/highlights-from-the-discourse-on · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Scott Alexander, July 30, 2026: discourse roundup focused on alignment and coordination; reports Delangue's open-weights point; no Anthropic rebuttal, no surveillance/KYC angle, no e/acc reading.\n- **Key passages:** (paraphrase) Delangue: open-weight AI proved valuable for defensive analysis after closed models' guardrails blocked requests.\n- **Reliability:** Secondary; rationalist Substack.\n- **Relevance to this project:** §6: the safety stratum did not engage the second revelation.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 75
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2fb15b826af27e149babaecd0da02a1db075e7569ec666ba12e934f6a567036d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/acx-highlights-discourse-hf-2026.md",
+ "kind": "artifact-page"
+}

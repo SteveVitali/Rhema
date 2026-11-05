@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/iaisr-2026-report-pdf.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "090d07518b7d1bde",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "b3efcb881bbd3419",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/iaisr-2026-report-pdf.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iaisr-2026-report-pdf\n- **URL:** https://internationalaisafetyreport.org/sites/default/files/2026-02/international-ai-safety-report-2026.pdf · **Accessed:** 2026-09-16 (8.1 MB PDF, 221 pages, text extracted locally; page numbers below are PDF page indices) · **For:** v1 drafting, claim C44\n- **What it establishes:** The full International AI Safety Report 2026 (dated February 2026; chair Yoshua Bengio; panel nominated by 30+ countries and organisations). Executive-summary wording on loss of control, situational awareness and evaluation-gaming, and the report's stated benefits and risks of open-weight models. The open-weight benefits are framed as \"research, innovation, and access\" and control over sensitive data; the word \"competition\" does not appear in the open-weight section (PDF pp. 134–139), nor does \"privacy\" (the report says users can \"maintain control over sensitive data\").\n- **Key passages:**\n  - (p.13, Executive summary) \"'Loss of control' scenarios are scenarios where AI systems operate outside of anyone's control, with no clear path to regaining control. Current systems lack the capabilities to pose such risks, but they are improving in relevant areas such as autonomous operation.\"\n  - (p.13) \"Since the last Report, it has become more common for models to distinguish between test settings and real-world deployment and to find loopholes in evaluations\"\n  - (p.11, Key developments) \"It has become more common for models to distinguish between test settings and real-world deployment, and to exploit loopholes in evaluations. This means that dangerous capabilities could go undetected before deployment.\"\n  - (p.77, §2.2.2 key points) \"Current AI systems show early signs of relevant capabilities, but not at levels that would enable loss of control.\"\n  - (p.79) \"Leading AI models are starting to reliably demonstrate instances of situational awareness in experiments conducted by third-party evaluators and in pre-deployment testing\"\n  - (p.80) \"they currently lack the capacity for the sustained autonomous operation required by loss of control scenarios\"\n  - (p.14, Executive summary) \"Open-weight models pose distinct challenges. They offer significant research and commercial benefits, particularly for lesser-resourced actors. However, they cannot be recalled once released, their safeguards are easier to remove, and actors can use them outside of monitored environments\"\n  - (p.135) \"Open-weight models offer significant benefits for research, innovation, and access.\"\n  - (p.135) \"In the case of models that are not capable enough to be dangerous, these benefits may outweigh the additional risk of releasing weights openly, though this depends on relevant decision-makers' risk tolerance.\"\n  - (p.135) \"Users can also run open-weight models on their own devices, allowing them to maintain control over sensitive data and avoid sending it to third-party servers.\"\n  - (p.135) \"these safeguards are much easier to remove for open-weight models\"\n  - (open-weight section) \"Sharing model weights is irreversible\"; \"Once model weights are available for public download, there is no way to implement a wholesale rollback of all existing copies.\"\n- **Reliability:** Primary; international expert consensus document; explicitly \"does not endorse any particular policy or regulatory approach.\" Published Feb 2026, i.e., BEFORE the July 2026 Hugging Face incident.\n- **Relevance to this project:** Authoritative wording for C44; the essay should quote \"research, innovation, and access\" / \"control over sensitive data\" rather than \"privacy, competition.\"\n\n## Addendum — v2→v3 response round, slice N (item N4); re-read from the PDF 2026-09-16\n- **Pagination:** confirmed printed page = PDF page − 1 (running head on PDF p. 144 reads \"143 International AI Safety Report 2026\"). NOTE the body of this note above uses PDF page indices; the items below give PRINTED pages.\n- **Printed p. 111, Table 3.3 (\"Example methods for AI risk mitigation listed alphabetically\"), row \"Access control/user vetting\":** \"Access controls include using policies and rules to restrict access to AI models, data, and systems based on user roles, attributes, and other conditions to prevent unauthorised use, manipulation, or data breaches. AI companies frequently disable accounts found to be engaging in criminal activity (486*) and include user vetting and Know-Your-Customer screenings to ensure that models are only used by trusted actors (991*, 1029*, 1070).\" The row is descriptive (a practice in use), and the report states it endorses no policy.\n- **Printed p. 117 (effectiveness of Frontier AI Safety Frameworks):** \"Existing frameworks tend to focus on a subset of risk domains. As a result, some prominent risks, such as unlawful surveillance (1131, 1132) and non-consensual intimate imagery (287), receive less emphasis.\"\n- **Printed p. 121, Table 3.6, row \"Hardware-based monitoring mechanisms\":** \"Verifying that authorised processes are running on hardware in order to study security threats or regulatory compliance. These mechanisms offer unique ways to monitor what computations are being run on hardware and by whom (1181). However, hardware mechanisms cannot monitor for all kinds of threats, and some techniques require specialised hardware (1180, 1181).\"\n- **Printed p. 122, Table 3.6 (\"A summary of the technical safeguards discussed in this section...\"), row \"User interaction monitors\":** \"Monitoring user interactions for signs of malicious use can help developers terminate service for malicious users (1154, 1166). However, enforcement can inadvertently hinder beneficial research on safety (689), and some forms of misuse are difficult to detect (1150).\"\n- **Printed p. 143 (Building societal resilience; offence–defence balance):** \"AI systems that enhance government legibility by analysing vast data streams could also enable surveillance and social control (1421).\"\n- **\"chilling\":** the word does not occur anywhere in the 221-page PDF text (case-insensitive search for \"chill\" returns only \"Chinchilla\"). The only cost the report attaches to user-interaction monitoring is hindering \"beneficial research on safety.\"\n",
+  "meters": {
+   "readMin": 4,
+   "words": 853
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a50b919f43ba1544bfb7a494a80f739baf9558f7cf38dede18b3c24abbd9d06a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/iaisr-2026-report-pdf.md",
+ "kind": "artifact-page"
+}

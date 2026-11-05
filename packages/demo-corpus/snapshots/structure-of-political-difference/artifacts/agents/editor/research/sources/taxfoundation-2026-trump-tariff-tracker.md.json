@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "bcbff310dbc5ae4b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# taxfoundation-2026-trump-tariff-tracker\n- **URL:** https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 1\n- **What it establishes:** The mid-2026 record of Trump's second-term economic policy: tariff-centered and state-directive, not \"market-leaning.\"\n- **Key passages:** SCOTUS ruled Feb 20, 2026 the president \"cannot use IEEPA to impose tariffs\" (~$166B to be refunded); administration re-imposed a 10% universal baseline under Section 122 (effective Feb 24, 2026, expired after 150 days July 24, replaced by Section 301/338 measures); Section 232 tariffs of 10–50% on steel, aluminum, copper, autos, pharmaceuticals, lumber, furniture; applied tariff rate ~10.8%, heading to ~11.8%; $1.6T conventional revenue 2026–2035; ~$900 average household tax increase in 2026.\n- **Reliability:** High-quality secondary tracker (Tax Foundation), continuously updated, with statutory detail; search corpus corroborates the state-ownership strand (9.9% federal Intel stake, sovereign wealth fund; Forbes, July 22, 2026: \"Trump Has Put Government Ownership Back On The Policy Agenda\").\n- **Relevance to this project:** Grounds the C23a Misleading-in-context verdict on Trump \"market-leaning\" — the draft's most reputationally consequential worked profile. Best fix: apply the draft's own rhetoric/program/practice split.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 121
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "648c64bbfeec2ef9a354801ecd5b1da6124b655d622cd2bf11b0a3be8834c6f5",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/taxfoundation-2026-trump-tariff-tracker.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/wired-flock-os-investigate.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "76f1b252876ce622",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "fc0d455e1fba09fe",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "75b6784b36c0369c",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/wired-flock-os-investigate.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# WIRED — Flock OS Investigate (Mehrotra & Cameron, 2026-08-19)\n\n- Canonical (blocks fetching): https://www.wired.com/story/flock-safety-os-investigate/\n- Full text read via mirror: https://globalcommunityweekly.substack.com/p/flock-has-a-powerful-new-ai-tool ; URL confirmed via https://lemmy.ml/post/51617790\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: prompts found in \"a cache of more than 450 files... on Flock's own website,\nserved by its login pages to anyone who loaded them\"; 69 prewritten prompts; \"14 call for\nno plate, no name, and no description\"; witness query (vehicles most seen in neighborhood,\nlast 14 days); \"top three associates\" via co-located plate reads within a two-minute\nwindow; 45 tools reaching case files, dispatch logs, ballistics, commercial identity\nrecords (SSNs, DOBs, relatives); testing with a small group of agencies. Draft's ref [8]\nshould cite WIRED directly.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 115
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d1c798b868de00845634c61cbbbef484814e0fb891d5c7424598068bd187c71a",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/wired-flock-os-investigate.md",
+ "kind": "artifact-page"
+}

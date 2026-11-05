@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/anthropic-position-open-weights-2026-07-27.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "90f1d512057bbfea",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/anthropic-position-open-weights-2026-07-27.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-position-open-weights-2026-07-27\n- **URL:** https://www.anthropic.com/news/position-open-weights-models · **Accessed:** 2026-09-16 (via a reader proxy) · **For:** v1 review, Phase 1\n- **What it establishes:** All three C13 quotations verbatim; first-person post by Dario Amodei; carries \"Edit 28 July.\" Date July 27 corroborated by a Substack audio re-post dated July 28 (https://askwhocastsai.substack.com/p/our-position-on-open-weights-models, read).\n- **Key passages:** \"Anthropic has never advocated for a ban on open-weights models.\" / \"Open-weights models that don't have dangerous capabilities are a public good.\" / \"All sufficiently capable models, open and closed, should go through mandatory safety testing.\" / \"We should instead focus on keeping powerful chips out of authoritarian hands, stopping industrial-scale distillation, and requiring safety testing.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** C13; ref [46].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a877d7c6d387e5585504b73625fa7144054b948a321d0e9dd44fc1fd51a5458c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/anthropic-position-open-weights-2026-07-27.md",
+ "kind": "artifact-page"
+}

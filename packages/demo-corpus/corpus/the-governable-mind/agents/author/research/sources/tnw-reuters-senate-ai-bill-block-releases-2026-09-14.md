@@ -1,0 +1,16 @@
+# tnw-reuters-senate-ai-bill-block-releases-2026-09-14
+- **URL:** https://thenextweb.com/news/senate-ai-bill-duty-of-care-block-model-releases-state-preemption (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K6)
+- **What it establishes:** TNW (byline bio: Alina Maria Stan), "A Senate bill would let Washington block AI models, Reuters reports", published September 14, 2026 1:07 pm UTC. A relay of Courtney Rozen's Reuters report (sources: "two Senate aides, a person familiar with the deliberations and a lobbyist involved in the talks") plus the Nextgov piece. Reuters original NOT opened (reuters.com refuses the tool). Confirms: a draft, not published, not introduced; negotiators Thune (majority leader), Cruz (Commerce chair), Klobuchar; Cantwell "is not in the negotiating trio".
+- **Key passages:**
+  - Standfirst: "Senate negotiators want a duty of care for AI developers, and the power to block an unsafe model's release. The draft would also override state AI laws. The fight is over who runs the safety tests. No text has been published."
+  - "Senate negotiators are drafting a bill that would let the US government stop the release of an AI model."
+  - "The bill would create a duty of care for AI developers, according to two Senate aides. Companies would have to design their products with the goal of preventing catastrophic risks."
+  - "It would also give the government the power to block the release of certain models judged unsafe. A company could challenge that decision in federal court. How much power the government would hold is still under discussion."
+  - "The bill would apply to models with the most advanced capabilities. Reuters named Google, Anthropic and OpenAI as the US companies holding those models."
+  - "A Democratic committee aide described the draft this way. Companies would run the safety tests themselves, then present the results to the Commerce secretary for deployment approval." (this exact wording, with "the results", is TNW's restatement of Nextgov)
+  - "Cantwell wants the models sent to federal agencies instead, including the national laboratories and national security agencies. The aide called the draft "primarily a voluntary standard type situation"."
+  - "Part of the bill would stop states enforcing their own laws on certain model risks".
+  - "Nobody outside the talks has seen the text. That leaves three things open: the scope of the government's blocking power, the shape of the court challenge, and the reach of the preemption clause."
+  - Cruz "said this month that the committee may hold a markup."
+- **Reliability:** Tertiary relay of Reuters + Nextgov; useful because Reuters cannot be opened; TNW's sentences are its own paraphrases, not Reuters quotations.
+- **Relevance to this project:** "A company could challenge that decision in federal court" and "Nobody outside the talks has seen the text" are verbatim TNW. No open-weights provision is reported anywhere in either piece.

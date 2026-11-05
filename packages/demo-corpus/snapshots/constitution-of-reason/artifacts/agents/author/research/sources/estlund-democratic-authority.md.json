@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/estlund-democratic-authority.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c4aeea25a8fa243d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/estlund-democratic-authority.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# estlund-democratic-authority\n- **URL:** https://press.princeton.edu/books/paperback/9780691143248/democratic-authority (record); characterization corroborated via Cambridge Episteme review https://www.cambridge.org/core/journals/episteme/article/abs/an-epistemic-defense-of-democracy-david-estlunds-democratic-authority/B28B89DB8BB1F4EFB08C8965EBAF1568 · **Accessed:** 2026-07-30 · **For:** v2→v3; §IV legitimacy-vs-accuracy boundary (Major issue 2)\n- **What it establishes:** David Estlund, *Democratic Authority: A Philosophical Framework* (Princeton UP, 2008): epistemic proceduralism — democratic legitimacy derives partly from procedures' modest truth-tracking tendency but cannot be reduced to accuracy; expertise alone cannot ground authority unless acceptable from all reasonable points of view (the anti-epistocracy argument: the knowers' being right doesn't make them boss).\n- **Reliability:** secondary (publisher record + peer-reviewed review abstract; Brown chapter PDF unreadable this session). Cite at this granularity only.\n- **Relevance:** v2's \"Democratic legitimacy also cannot be reduced to collective accuracy\" paragraph is Estlund's boundary-drawing move; v3 credits him there in one clause.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 120
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cb534c628042e70449cebdfe784b8e359423cf1d99deb9cb2a24dfa40302bfaa",
+  "state": "frozen"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "agents/author/research/sources/estlund-democratic-authority.md",
+ "kind": "artifact-page"
+}

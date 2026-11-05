@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cohen-2013-what-privacy-is-for.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "fedebb34d90d2f66",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cohen-2013-what-privacy-is-for.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cohen-2013-what-privacy-is-for\n- **URL:** https://harvardlawreview.org/print/vol-126/what-privacy-is-for/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Cohen, 126 Harv. L. Rev. 1904 (2013): privacy shelters emergent subjectivity from being rendered fixed, transparent, predictable; surveillance as modulation; freedom from surveillance foundational to reflective citizenship; privacy shelters play from which innovation emerges.\n- **Key passages:** privacy \"shelters dynamic, emergent subjectivity from the efforts of commercial and government actors to render individuals and communities fixed, transparent, and predictable\" · \"Freedom from surveillance, whether public or private, is foundational to the practice of informed and reflective citizenship.\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §3, §7; draft l.86–92, l.164 ('modulation').\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f3a01e3d1e4e9b90f2b546263165bd789bbfc0962cb9cb310e8569342b832402",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cohen-2013-what-privacy-is-for.md",
+ "kind": "artifact-page"
+}

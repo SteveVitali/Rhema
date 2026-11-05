@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ansari-2026-hardware-level-governance.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f9eddd8b8e8a0fc1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ansari-2026-hardware-level-governance.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ansari-2026-hardware-level-governance\n- **URL:** https://arxiv.org/abs/2604.04712 (abstract) and https://arxiv.org/html/2604.04712 (full text) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C50\n- **What it establishes:** Exists. Samar Ansari (School of Computing and Engineering Sciences, University of Chester, UK), \"Hardware-Level Governance of AI Compute: A Feasibility Taxonomy for Regulatory Compliance and Treaty Verification,\" arXiv 2604.04712, submitted 6 April 2026. Single author. Taxonomy of 20 hardware-level mechanisms (monitoring / verification / enforcement) rated on a four-point feasibility scale. Covers on-chip compute metering, remote attestation via cryptographic licensing, location verification, proof-of-training, kill switches. Finds the mechanisms most needed for treaty verification are the least mature; discusses sovereignty and civil-liberties/privacy concerns in a section titled \"Privacy, Sovereignty, and Political Feasibility.\"\n- **Key passages:**\n  - Abstract: \"the mechanisms most needed for treaty verification, including on-chip compute metering, cryptographic proof-of-training, and hardware-embedded enforcement, are also the least mature.\"\n  - Abstract: \"We assess principal threats to compute-based governance, including algorithmic efficiency gains, distributed training methods, and sovereignty concerns.\"\n  - Abstract: \"the appropriate security standard is tamper-evident assurance analogous to IAEA verification rather than absolute tamper-proofing.\"\n  - §3.2 (Verification, mechanism V4): \"remote attestation via cryptographic licensing\"\n  - §3.1 (Monitoring, M5): \"On-chip compute metering\"; §3.4 feasibility summary places it in the \"requires R&D\" tier.\n  - §4.4 (Privacy, Sovereignty, and Political Feasibility): on-device compliance checking may be \"perceived as a violation of sovereignty\"; \"intrusive compute governance measures risk infringing on civil liberties\"\n- **Reliability:** Primary (preprint, not peer-reviewed as of access). Single-author engineering/policy survey; reasonably even-handed (rates its own mechanisms as immature). Section quotes extracted via fetch-and-summarise tool; short fragments only.\n- **Relevance to this project:** C50; compute-governance section — supports \"attestation and metering; some mechanisms technologically immature; sovereignty and privacy questions.\" Note the paper's own word for the privacy concern is \"civil liberties\" in the quoted line, though the section heading uses \"Privacy.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 290
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c14244daf5fda941dc9ee0543da619f6ac87eba32904d491c41d02ab4df3773a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/ansari-2026-hardware-level-governance.md",
+ "kind": "artifact-page"
+}

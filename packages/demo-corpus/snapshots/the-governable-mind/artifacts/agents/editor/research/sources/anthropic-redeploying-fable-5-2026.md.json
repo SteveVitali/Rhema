@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/anthropic-redeploying-fable-5-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7600c2105e73fd6b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/anthropic-redeploying-fable-5-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# anthropic-redeploying-fable-5-2026\n- **URL:** https://www.anthropic.com/news/redeploying-fable-5 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Anthropic, June 30/July 1, 2026: export controls lifted June 30; global restoration July 1; no reliable real-time nationality verification was the reason for the global shutoff; commitments: classifier blocking the bypass in over 99% of cases, expanded pre-release access for designated partners, rapid jailbreak notification to government, cross-industry jailbreak-severity standard with Amazon, Microsoft, Google.\n- **Key passages:** \"we had no reliable way to verify nationality in real-time.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** §4(d); Headline 1; the settlement terms are layer-1/2 legibility about the lab plus 'designated partner' pre-release access.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e62c685e61c5ad83896db1e9a9bcb4c0e78fd991fd81bd6f3596c8eaed9fc779",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/anthropic-redeploying-fable-5-2026.md",
+ "kind": "artifact-page"
+}

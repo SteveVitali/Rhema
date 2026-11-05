@@ -1,0 +1,12 @@
+# fortune-white-house-framework-unpublished-2026-08-04
+- **URL:** https://fortune.com/2026/08/04/baffling-white-house-wont-publicly-release-ai-model-evaluation-framework-it-reviewed-today-with-openai-anthropic-microsoft-and-others/ (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K5, K12)
+- **What it establishes:** Emily Forlini, Fortune, "August 4, 2026, 6:53 PM ET". The framework is unpublished and voluntary; Aug 4 meeting attendees; EO deadline. Says nothing about open-weight models. Confirms GPT-5.6's "July 9 debut".
+- **Key passages:**
+  - "The White House has no plans to publicly reveal the framework ... the details will be kept under wraps, only known to a select group of companies that may choose to participate in the process, which is voluntary."
+  - "Attendees included Meta, Nvidia, Microsoft, OpenAI, Anthropic, and a variety of smaller companies, according to sources familiar with the matter."
+  - "The administration issued an executive order on June 2 mandating the creation of this framework within 60 days, or by Aug. 1. The directive ... instructs the AI labs that they have "up to 30 days" to submit them to the government prior to their public release."
+  - "Per the executive order, the framework is not a "mandatory governmental licensing, preclearance, or permitting requirement for the development, publication, release, or distribution of new AI models, including frontier models.""
+  - Chris McGuire (CFR) "called the decision to keep the framework behind closed doors "baffling.""
+  - "Then the government worked closely with OpenAI ahead of its July 9 debut of GPT-5.6." · "It's unclear if the framework is finalized or still in progress."
+- **Reliability:** Secondary; reputable business press; anonymous sourcing for the meeting.
+- **Relevance to this project:** Supports "unpublished, voluntary" and the July 9 date.

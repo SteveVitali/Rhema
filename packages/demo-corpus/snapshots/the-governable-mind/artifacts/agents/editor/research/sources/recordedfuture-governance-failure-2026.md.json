@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/recordedfuture-governance-failure-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "10113b137180127f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/recordedfuture-governance-failure-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# recordedfuture-governance-failure-2026\n- **URL:** https://www.recordedfuture.com/blog/hugging-face-ai-safety · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Recorded Future (Insikt), 2026: control failure not capability breakthrough; two futures incl. proliferation via open weights and modified models; monitor behavior not outputs; cites export controls with identity requirements.\n- **Key passages:** \"Monitor behavior, not just outputs. Organizations need visibility into the tools an agent invokes, the systems it contacts, the credentials it uses.\"\n- **Reliability:** Secondary; threat-intel vendor.\n- **Relevance to this project:** §6; layer-5 monitoring framed as the remedy.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 83
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ad03e699bd6e67340f7fbab83b80a99d5e02f1e017d45c268d1f42dfa85f89d9",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/recordedfuture-governance-failure-2026.md",
+ "kind": "artifact-page"
+}

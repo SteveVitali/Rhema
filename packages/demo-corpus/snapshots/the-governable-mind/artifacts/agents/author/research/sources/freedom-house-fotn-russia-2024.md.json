@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/freedom-house-fotn-russia-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ef38048788fa1962",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/freedom-house-fotn-russia-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# freedom-house-fotn-russia-2024\n- **URL:** https://freedomhouse.org/country/russia/freedom-net/2024 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C37\n- **What it establishes:** Freedom on the Net 2024, Russia: SORM lawful-intercept obligations (FSB-approved, license-conditioned), fines for non-installation effective Jan 2024; TSPU/DPI equipment enabling Roskomnadzor blocking; sovereign-internet law in force November 2019.\n- **Key passages:** \"System for Operational Investigate Measures (SORM), a system developed in various forms since the early 1990s, which allows the government to conduct surveillance\". \"Service providers must work with the FSB to build a plan for SORM implementation within six months of receiving a license.\" \"Installation of Technical Measures to Combat Threats (TSPU) equipment, which is based on the use of DPI technology on telecommunications networks, allows Roskomnadzor to restrict access and block websites.\" \"companies spent more than 20 billion rubles ($327.8 million) installing TSPU equipment between 2019 and 2022.\" \"In November 2019, a law aimed at achieving the 'sovereignization' of the Runet took effect.\"\n- **Reliability:** Secondary; U.S.-government-funded NGO index; widely cited, methodologically documented, anti-authoritarian orientation.\n- **Relevance to this project:** C37: SORM and TSPU in one authoritative place.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 172
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e202a214c08ac50f8fba1c6b40f41f46ac0d2198611d0493e8acff1ff7344351",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/freedom-house-fotn-russia-2024.md",
+ "kind": "artifact-page"
+}

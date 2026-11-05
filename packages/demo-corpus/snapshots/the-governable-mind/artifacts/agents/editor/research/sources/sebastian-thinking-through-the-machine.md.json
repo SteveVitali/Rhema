@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sebastian-thinking-through-the-machine.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "056d8c053e6fdfc7",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sebastian-thinking-through-the-machine.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sebastian-thinking-through-the-machine\n- **URL:** https://sjsebastian.substack.com/p/thinking-through-the-machine · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Self-citation C32: first quote verbatim; second truncated (source adds \"beyond the human mind\"). Date Oct 31, 2025.\n- **Key passages:** \"It is the first tool in the history of humanity that is not subordinated to human reason but actively participates in it.\"; \"not the automation of cognition but its externalization beyond the human mind.\"\n- **Reliability:** Primary (author's prior essay); not independent.\n- **Relevance to this project:** C32; §II.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 81
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cabf4eefe1eddc3a2b92a411ac6384b010c4d15e1ddcde0f5d86970569dc2e91",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sebastian-thinking-through-the-machine.md",
+ "kind": "artifact-page"
+}

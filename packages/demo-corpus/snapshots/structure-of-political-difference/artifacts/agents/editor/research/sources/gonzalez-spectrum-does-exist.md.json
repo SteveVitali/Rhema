@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gonzalez-spectrum-does-exist.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1f85e6ee7dd33cb6",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "b0c01f0a80f17688",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/gonzalez-spectrum-does-exist.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gonzalez-spectrum-does-exist\n\n- **URL:** https://heterodoxacademy.org/blog/the-political-spectrum-does-exist-a-reply-to-hyrum-lewis/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2\n- **What it establishes:** Christian Alejandro Gonzalez's substantive (non-coordination) defense of left-right: \"the left advances a politics of egalitarianism, while the right opposes the left and attempts to defend some other value—tradition, for example, or individual freedom, or public order.\" Left ideologies aim at \"eradicating some system of power that is deemed to be unequal\"; right ideologies are united only by ranking something above equality. He concedes the model works \"at the level of theory, as an ideal-type representation\" and that some alignments (gun control) are \"partisanship (i.e. tribalism) rather than political ideology.\"\n- **Key passages:** As above.\n- **Reliability:** Primary (opinion essay, Heterodox Academy blog); representative of the Bobbio-style substantive defense.\n- **Relevance to this project:** The draft's §VIII treats left/right purely as coalition names and never engages the live claim (Bobbio, Gonzalez) that the spectrum tracks one real master attitude — toward equality/hierarchy. If that claim is right, the five questions are five theaters of a single war, and the draft's \"coalition name\" demotion is under-argued. The draft needs a paragraph answering the equality-essentialist, not just the coordination defense it already concedes.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 192
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8b3027885232198beba77465784c272a5a5d6fe5a57992b303eb7aa83c494011",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/editor/research/sources/gonzalez-spectrum-does-exist.md",
+ "kind": "artifact-page"
+}

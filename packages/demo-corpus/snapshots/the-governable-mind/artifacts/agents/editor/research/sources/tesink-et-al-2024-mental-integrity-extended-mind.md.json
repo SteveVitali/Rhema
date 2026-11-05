@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/tesink-et-al-2024-mental-integrity-extended-mind.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ec3697eb5ce148f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/tesink-et-al-2024-mental-integrity-extended-mind.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# tesink-et-al-2024-mental-integrity-extended-mind\n- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC11503137/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Tesink, Douglas, Forsberg, Ligthart & Meynen, J. Med. Ethics 2024: under EMT the right to mental integrity expands to integrated artifacts (Otto's notebook); flags over-breadth; restricts to artifacts meeting integration conditions; adopts EMT arguendo.\n- **Key passages:** \"the protective scope of the right to mental integrity would expand significantly\" · \"neurotechnologies do not constitute the unique threat to mental integrity they are ... generally assumed to pose\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §3, §4′(C); draft l.58–62.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 95
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b150acc5a3f9c1f754424298410c910f21de06a8aca24b6f1567f8d2d707c45e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/tesink-et-al-2024-mental-integrity-extended-mind.md",
+ "kind": "artifact-page"
+}

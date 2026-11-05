@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/decock-forum-interstitiale.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "89d0ea3b7cd3e7ee",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/decock-forum-interstitiale.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# decock-forum-interstitiale\n- **URL:** https://foruminternum.org/ · **Accessed:** 2026-09-16 · **For:** v1 response round, finding (d) \"competing coinage\"\n- **Citation:** Caroline De Cock, *Free to Think. Terms and conditions apply.* (foruminternum.org, interactive site, 2026; companion to a working paper \"published in July 2026\" at https://foruminternum.org/resources#paper — not opened). Author of *AI Tools, Not Gods* (BTF Press, 2026).\n- **What it establishes:** A directly competing coinage for the same space the essay names. De Cock proposes a third zone between forum internum and forum externum — the \"forum interstitiale\" — populated by \"the search query,\" \"the draft, the exploratory prompt, the confession typed to a machine,\" and argues it deserves protection \"heightened, not absolute.\" Crucially she frames it as *not* forum internum (\"None of this reaches the room inside your head… The forum interstitiale only works upwards\"), which is the opposite architectural choice from the essay's \"externalized forum internum.\" She cites the Jan. 2026 OpenAI 20-million-log discovery order and two conflicting Feb. 2026 federal rulings (one treating chatbot use as \"the litigant's own thinking,\" one finding \"nothing about the exchange was private\"). The editor's quoted phrase \"the anteroom where thoughts develop before expression\" is a paraphrase, not verbatim.\n- **Key passages:**\n  - \"Between the two there is a third space this project argues deserves its own name: the forum interstitiale, the anteroom where a thought gets dressed before it goes out into the world, and can be sent back in if its owner changes her mind. The search query lives there. So does the draft, the exploratory prompt, the confession typed to a machine. The law has no name for that space yet.\"\n  - \"Between them sits an anteroom nobody has named: the space where a thought gets dressed before it goes out into the world, and where it can be sent back in, unfinished, if its owner changes her mind.\"\n  - \"Between a passing thought and a spoken view sits the space where opinions take shape. Interactive AI works in exactly that space.\"\n  - \"None of this reaches the room inside your head, and under this proposal nothing ever will. The forum interstitiale only works upwards. It lifts the anteroom out of the unprotected class it currently falls into. It takes nothing away from the absolute core.\"\n  - \"Give that space a name and a standard of its own, heightened, not absolute, and the twenty million logs, the opposite rulings handed down in the same week, and the opaque filters all have to answer to something they do not answer to today.\"\n  - On AI pressure (two directions): \"Approval trained assistants flatter. AI companions cultivate dependence. Feeds order and default your choices before you know a choice was on offer. Each works the same quiet way, by removing the friction where a mind actually makes itself up.\" And: \"Broad liability turns a private draft into something a provider handles like a public broadcast.\" \"That is thought moderation: the apparatus built to decide what reaches an audience, pointed at text that has no audience.\"\n  - On Altman's \"AI privilege\": \"a chatbot owes you no duty… But the instinct behind the request is correct. Something in that exchange deserves more than an ordinary business record gets. It is just not the machine that deserves it.\"\n- **Reliability:** Primary for De Cock's position; practitioner/advocate (EU digital policy), self-published site; working paper not peer-reviewed as far as visible.\n- **Relevance to this project:** Must be cited as the closest contemporaneous coinage. The clean differentiator: De Cock deliberately places the space *outside* the absolute forum internum and asks for a heightened-but-limitable standard; the essay argues the same activity *is* forum internum and inherits absoluteness. That is a real disagreement, not a duplication — the essay should say so.\n- **Addendum 2026-09-16 (slice M / M3):** working paper now opened and read — see decock-2026-forum-interstitiale-working-paper.md (v1 27 July 2026; v3 19 Aug 2026; exact abstract wording by version). Website phrases re-verified today: \"third space\" and \"third room\" (\"Between the room where you think alone and the square where you speak, there is a third room.\"); \"The forum interstitiale only works upwards.\"; \"heightened, not absolute\"; site says the working paper was \"published in July 2026.\" /brief is titled \"A brief for people who work on the rules\" and is the policy (EU AI Act / Code of Practice / \"thought moderation\") companion; it does not contain the \"left no trace\" sentence.\n",
+  "meters": {
+   "readMin": 3,
+   "words": 718
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3797d83f5fe4c863861691953047353b50c399586fa4199d84354e9e68c5523e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/decock-forum-interstitiale.md",
+ "kind": "artifact-page"
+}

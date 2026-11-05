@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/stoycheff-2018-privacy-panopticon.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "572c7724aedd74bf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/stoycheff-2018-privacy-panopticon.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# stoycheff-2018-privacy-panopticon\n- **URL:** https://journals.sagepub.com/doi/full/10.1177/1461444818801317 (page blocks fetchers; metadata + publisher-deposited abstract verified verbatim via https://api.crossref.org/works/10.1177/1461444818801317) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C33\n- **What it establishes:** Elizabeth Stoycheff, Juan Liu, Kai Xu, Kunto Wibowo, \"Privacy and the Panopticon: Online mass surveillance's deterrence and chilling effects,\" *New Media & Society* (published online 2018-10-08; print 2019). Two experiments: perceived online government surveillance deters not only illegal activities but also lawful political activities online.\n- **Key passages (abstract, verbatim from Crossref deposit):**\n  - \"Study 1 indicates that surveillance significantly deters individuals' intentions to engage in illegal offenses, an effect that extends to political, but not privacy-protective behaviors.\"\n  - \"Study 2 retests the pervasiveness of this effect with a sample of Muslims who reside in the United States. Results indicate that restrictive chilling effects are not specific to any one online population, experimental stimuli, or political context.\"\n- **Reliability:** Secondary (peer-reviewed); the load-bearing scope claim — chilling extends beyond illegal behavior to lawful political activity — is in the authors' own abstract.\n- **Relevance to this project:** C33 — chilling-effects mechanism; pairs with stoycheff-2016-under-surveillance.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 175
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aac27251b1f9747e3bb0533cb3ab3a2070fa4509ec3d1555eb26854c49aac8be",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/stoycheff-2018-privacy-panopticon.md",
+ "kind": "artifact-page"
+}

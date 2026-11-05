@@ -1,0 +1,127 @@
+{
+ "dto": {
+  "artifactKind": "drafting_note",
+  "artifactPath": "correspondence/v1-drafting-note.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e5eb21e22e67c569",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "b0b9b73aec94e70b",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "b5292e1949fda528",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "61567b54926b38e1",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "38234cda3785b681",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "232b5709ecf6b220",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "13b885ebcf8cf46e",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "1c67cb68bba77dd5",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "1b01d55f438e7f97",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "734146b8b0865510",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "7acc35cefa4c1f54",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "eda32e27728ca358",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "b00504ff660106ad",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "00a1bcea3c9c9f56",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "d3bd596e1fc897ab",
+    "ordinal": 22
+   },
+   "b23": {
+    "contentHash": "df5a4fb624660f66",
+    "ordinal": 23
+   },
+   "b3": {
+    "contentHash": "d5c2c6351a439f0c",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "b1582fe7da7b211c",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "d2fa3f48272f5bb5",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "c77077eb77d668ee",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "633c81c7cd0ff64a",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "dcf226fa7d38298e",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "9a3ba1f99b812c4b",
+    "ordinal": 9
+   }
+  },
+  "demo": {
+   "notPublishedRefs": [
+    {
+     "line": 5,
+     "path": "agents/author/outline/the-governable-mind-pass-iii-article-spec.md"
+    }
+   ]
+  },
+  "draftId": "correspondence/v1-drafting-note.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Drafting note — v1, 2026-09-16\n\n`draft-from-outline` run against persona `the S. J. Sebastian corpus` (profile built\n2026-08-20, refreshed 2026-09-16, verdict fresh; resolved via the workspace\npersonas directory). Source: `agents/author/outline/the-governable-mind-pass-iii-article-spec.md`\n(the writer's \"Pass III article specification\"). Autonomous run; no\n`guidance`, `length`, `venue`, or `register` inputs were supplied, so each\nwas inferred and is declared below.\n\n## The piece as drafted\n\n- **Title:** *The Governable Mind* — *Artificial Intelligence, Cognitive\n  Liberty, and the Constitutional Limits of the Legible Mind* (the outline's\n  stated preference over *Permissioned Cognition* and *The Externalized\n  Conscience*).\n- **Thesis:** liberalism was built around a boundary between inward judgment\n  and governable conduct; artificial intelligence moves important parts of\n  judgment across that boundary into technical systems where they become\n  recordable, classifiable, and permissionable; the constitutional problem\n  is therefore how to govern dangerous artificial capability without making\n  lawful human cognition itself governable. Second thesis: open and locally\n  executable models matter as *epistemic exit*, regardless of market share.\n  The qualification (a capable model is also an operational instrument) is\n  built in from the prologue.\n- **Length:** ~11,800 body words plus 50 numbered references (target\n  11,500, tolerance 12,000; the outline advised 12,000–16,000; the corpus\n  ceiling is 12,250).\n- **Shape:** epigraph (Milton, *Comus*, l. 663), unnumbered opening (\"The\n  Double Revelation\"), fifteen roman-numeral sections, unnumbered coda (\"The\n  Last Private Domain\") that returns the epigraph in its last sentence.\n  Register: analytic-philosophical (the corpus's register 2), opened by a\n  documented miniature from OpenAI's and Hugging Face's own publications.\n\n## Decisions among the outline's alternatives\n\n- Title and epigraph as above. The epigraph's wording verified against the\n  1645 text (l. 663; \"minde\"/\"rinde\"); quoted in modernized spelling.\n- Cross-references to the three predecessor essays adopted, in the corpus's\n  one attested form: relative reference in prose (\"an earlier essay in this\n  series,\" \"the previous essay\"), titles and URLs only in the References\n  ([14], [22], [10] after renumbering). See open question 1.\n- The §XI layer table rendered as five short paragraphs; the §XII test as\n  seven titled paragraphs; no `<h3>` subsections; no lists, tables, or bold.\n- Three coinages marked (\"Call it…\"): *externalized forum internum*,\n  *cognitive legibility*, *epistemic exit*. *Cognitive record*, *probability\n  shaping*, *constitutional half-life*, *permissioned cognition*, and the\n  *public-private cognitive-security complex* are used once or twice,\n  unmarked, per the outline's own instruction. \"Cognitive federalism\" appears\n  in the §XV header and once in its text.\n\n## Deviations from the outline (fidelity: adaptive; full log in the plan)\n\n1. Church Committee reduced to one paragraph referring to the previous essay\n   (settled ground in the corpus).\n2. Scott's legibility compressed to a sentence plus the cross-reference (same\n   reason).\n3. Length ~11,800 rather than 12,000–16,000 (corpus ceiling; compression\n   falls on settled ground).\n4. Section sequence otherwise as the outline gives it; the re-budgeting is\n   the departure, not the order.\n5. The outline's advice that §VIII \"correct the social-credit caricature\"\n   was narrowed after verification (below).\n\n## Cuts (recoverable; in the plan's cut list)\n\nBalkin and Mann (verified, unused); Russia at paragraph length (kept to one\nparagraph); the nine-item \"intermediary can affect\" list (compressed to\nfive); the fourteen-item plural-society list and the seven exit mechanisms\n(each to a sentence); the Cambridge handbook and the Bublitz & Blitz volume\n(bundled into reference [17] with one clause of prose).\n\n## Verification: what changed under checking\n\nAll 58 inventoried claims were checked against fetched sources by six\nresearch subagents (110 source notes in `agents/author/research/`); two\nrows were added during drafting. Every outline citation carried\na deep-research tracking parameter and started at zero trust. Nothing was contradicted\noutright, but verification changed the draft in these places:\n\n- **The Hugging Face incident:** OpenAI's models compromised OpenAI's own\n  research infrastructure as well as Hugging Face's; the hosted models that\n  refused the forensic work were Anthropic's, per Hugging Face's own\n  timeline, not OpenAI's; the \"inversion\" reading is on the record from\n  Hugging Face and its CEO, and the FT piece the outline cited could not be\n  opened, so the FT is not cited. The prologue's symmetry was rewritten\n  accordingly (reduced control was the danger; another company's intact\n  control was the obstacle). Hugging Face's interest as an open-model\n  platform is disclosed in the text.\n- **Shklar:** the outline's \"Edward Hall, *Political Studies* 2023\" DOI\n  resolves to a republished Shklar lecture with a Hall & Sleat foreword;\n  the draft cites the 1989 Rosenblum volume instead.\n- **Bayle:** the \"sincere persecutor\" is the classic objection to Bayle (the\n  Persecutor Paradox), not his argument; the draft presents his doctrine,\n  the objection, and Forst's reciprocity reading in that order.\n- **Berlin:** the outline's \"area within which a man can act unobstructed by\n  others\" does not occur in the 1958 lecture; the question form is quoted.\n- **Stationers' Company:** the extended search powers date to Privy Council\n  ordinances of 1566, not the 1557 charter; the 1662 Licensing Act was in\n  force only 1662–79 and 1685–95; the 1643 instrument is the Ordinance of\n  14 June 1643. Deazley's and Clegg's caution (Tudor censorship \"ad hoc and\n  reactive\") is carried in the text.\n- **Social credit:** the outline's source (Liang et al. 2018) supports\n  \"primarily financial and commercial rather than political\" but not\n  \"fragmented, no single score\"; the draft says only what the source\n  supports and separates the Platform from the headline \"social credit\n  system.\"\n- **Lessig:** the *Harvard Magazine* essay does not state the four-modality\n  framework; that is attributed to *Code* (1999); an omitted sentence in the\n  quotation is marked with an ellipsis.\n- **International AI Safety Report:** its open-weight benefits are \"research,\n  innovation, and access,\" not \"research, privacy, competition\"; the report\n  (February 2026) predates the incident, and the draft says so.\n- **Penney:** the chilling figure is given as \"roughly a fifth\" (19.5%) with\n  the model's ~30% immediate drop and the author's own no-control-group\n  caveat.\n- **Orwell:** the Newspeak appendix's own qualifying clause (\"at least so\n  far as thought is dependent on words\") is quoted; it strengthens the\n  refusal to read Orwell as a cognitive scientist.\n- **The predecessor essay** says \"no finite *mind* can safely identify itself\n  with reason,\" not \"finite reasoner.\"\n\n## Unverified-claims list\n\n**None shipped.** Zero `[unverified]` marks; every citation resolves to a\nVerified or Substantially-accurate ledger row used at its rescoped strength.\nProvenance flags for the next round:\n\n1. Shklar (1989) and Scott (1998) page numbers were confirmed against online\n   reproductions, not print; pin them before publication.\n2. HRW's Xinjiang report was read via the ecoi.net mirror (hrw.org returned\n   403); re-check wording against hrw.org.\n3. The Clegg Oxford Handbook chapter could not be opened; its point is\n   attributed via Deazley's commentary.\n4. The Zuckerberg quotation is as carried by CNBC/RTÉ (the X post returned\n   403); the OpenAI/Reuters wording is from the wire syndication and OpenAI's\n   own post.\n5. The Stasi surveillance taxonomy is cited to the Bundesarchiv's German\n   finding aid and MfS-Lexikon, not the English introduction page the\n   outline cited.\n\n## What the audit left (report, not fix)\n\nFresh-context fidelity audit, three iterations (the maximum). Iteration 1:\n\"deliverable after listed fixes,\" six majors (prologue symmetry\ncounterfactual; unledgered Orwell quotation; social-credit sourcing; five\noutline stage directions surfacing in prose; the §XV thinker roll-call as\nbullet-ghost; coinage over-marking) — all closed. Iteration 2: one major\nleft (thirteen self-directive sentences) — eleven cut, two rewritten in\niteration 3. Iteration 3: \"deliverable after listed fixes\"; the four\nclause-level edits were applied; no further audit run. Remaining, in the\naudit's own terms:\n\n- **Texture:** parenthetical asides 0.25/1k against the register-2 model\n  piece's 2.7; colons 6.7/1k against 9–12; one-sentence paragraphs ~12–15%\n  against 14–20%; sentences ≥40 words ~11–14% against ≤10% (at the\n  *Visibility* high). The audit's phrase: \"commas-and-colons where the\n  persona's long form uses parentheses.\" Not forced, because inserting\n  parentheses to hit a rate is the imitation failure the calibration file\n  warns against.\n- **Proportion:** §I is the longest section (~1,280) and §XIII, the\n  diagnosis, the shortest (~305 against 450). The outline weights the\n  history heavily and asks that §XIII be precise; the audit judges the\n  climax lean.\n- **Self-narration:** \"this essay\"/\"the essay\" now ~1.9/1k (inside the\n  *Visibility* band); 22 intra-essay section references; the audit flags the\n  density as high even where the corpus permits the device.\n- **§XV** is now an argument by chained insufficiency rather than a\n  roll-call, but the seven thinkers still appear in the outline's order.\n- **Prologue ¶3** paraphrases ¶2's guardrail point; a light repetition.\n- The audit's first read broke at §III's freedom-of-thought literature\n  paragraph (now shortened) and found the third layer's question in §XI\n  unanswered (now answered in §XII).\n\n## Open questions for the human\n\n1. **Self-citation.** The corpus's essays have never cited each other; this\n   draft refers to three predecessors in the attested relative form. Keep,\n   or strip to nothing (easy: six sentences).\n2. **Length.** ~11,800 against the outline's 12,000–16,000. If the writer\n   wants the longer piece, the natural growth is §§XIII–XIV (the diagnosis\n   and the imagined system), not the history.\n3. **Naming companies and executives.** §X and the prologue name OpenAI,\n   Anthropic, Meta's CEO, and Hugging Face from their own published\n   statements, without imputing motives. The prologue names Anthropic's\n   models as the ones that refused the forensic work, because Hugging\n   Face's timeline does. Whether the author has an interest to disclose is\n   not known to this agent; the corpus's habit (\"interest, disclosed\")\n   suggests a sentence if so.\n4. **The legibility ladder** (§VII) uses \"a person … she\"; the outline's form\n   was second-person questions (\"Who are you?\"). The persona's long form\n   permits voiced questions; the draft chose the third person after the\n   audit counted the second person as authorial.\n5. Whether the four unused verified sources (Balkin, Mann, the Cambridge\n   handbook, the Bublitz & Blitz volume) should be restored as references.\n\n## Natural next step\n\nAn `editorial-review` round on `drafts/v1.md`.\n",
+  "meters": {
+   "readMin": 6,
+   "words": 1546
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "bbe2bac5c43d5ce5e83123bb6d2cbffd6cfaad65dcc1fac68609978bbe1865ab",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "correspondence/v1-drafting-note.md",
+ "kind": "artifact-page"
+}

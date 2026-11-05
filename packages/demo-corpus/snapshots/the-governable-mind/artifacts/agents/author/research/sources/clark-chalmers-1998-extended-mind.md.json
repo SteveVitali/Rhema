@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/clark-chalmers-1998-extended-mind.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7b67b6a034fc90bf",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/clark-chalmers-1998-extended-mind.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# clark-chalmers-1998-extended-mind\n- **URL:** https://consc.net/papers/extended.html (Chalmers' own posted copy) and https://api.crossref.org/works/10.1093/analys/58.1.7 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C12\n- **What it establishes:** Andy Clark & David J. Chalmers, \"The Extended Mind,\" *Analysis* 58(1): 7–19 (January 1998), doi 10.1093/analys/58.1.7. Note: Chalmers' page carries the header \"Published in Analysis 58:10-23, 1998\"; the journal's own Crossref record gives pp. 7–19. Cite 58(1): 7–19. The paper exists, states \"active externalism\", the parity principle, the constitutive claim (\"Cognitive processes ain't (all) in the head!\"), and the Otto/Inga notebook case.\n- **Key passages:** Parity principle: \"If, as we confront some task, a part of the world functions as a process which, were it done in the head, we would have no hesitation in recognizing as part of the cognitive process, then that part of the world is (so we claim) part of the cognitive process.\" Immediately following: \"Cognitive processes ain't (all) in the head!\" Active externalism: \"the human organism is linked with an external entity in a two-way interaction, creating a coupled system that can be seen as a cognitive system in its own right.\" Otto: \"Otto suffers from Alzheimer's disease, and like many Alzheimer's patients, he relies on information in the environment to help structure his life. Otto carries a notebook around with him everywhere he goes.\" / \"For Otto, his notebook plays the role usually played by a biological memory.\" / \"the notebook plays for Otto the same role that memory plays for Inga.\" The paper's footnote: \"Authors are listed in order of degree of belief in the central thesis.\"\n- **Reliability:** Primary; author-posted full text of the published article. Pagination discrepancy noted above.\n- **Relevance to this project:** C12; the section on extended cognition. The parity principle is a *functional-role* criterion (it does not by itself say a chatbot is part of your mind); Otto's notebook meets it because of trust, reliable availability, and automatic endorsement — conditions the paper spells out.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 315
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0ae5896c1626e9c7e8cf7131308ce678101a1963a6a6f32761b770b901f01edb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/clark-chalmers-1998-extended-mind.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/caplan-lewis-exchange.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1054345812da9165",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/caplan-lewis-exchange.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# caplan-lewis-exchange\n- **URL:** https://www.betonit.ai/p/the-myth-of-left-and-right-the-last · **Accessed:** 2026-07-31 · **For:** v1-response — verify MI1's \"strongest counterargument\" characterization; source the flanking-positions paragraph\n- **What it establishes:** Hyrum Lewis (with Verlan Lewis, *The Myth of Left and Right*, OUP 2023) argues against \"monism\": \"There is more than one issue in politics. That's all. It's not complicated.\" Tribal conformism (\"85% sounds about right\") suffices to explain belief clustering. His remedy is unbundling into issues: \"Why not just say anti-market instead of left-wing?\"; \"Politics, like biology, is pluralist not monist and we should do in politics what we have done in biology: keep unrelated issues unbundled.\" Caplan's counterposition: the spectrum is genuinely useful for understanding political identity and conflict as they exist — pragmatic retention.\n- **Key passages:** as quoted above.\n- **Reliability:** Primary for both positions (the authors' own exchange).\n- **Relevance:** The two flanking positions for v2's \"Why five, and not fifty\" section: Caplan's pragmatic monism on one side, Lewis eliminativism (issue-atomism) on the other; the framework sits between. Lewis's granularity objection (each axis is itself a bundle) must be stated and answered in text.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 177
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "41c7dcdc409bf2c395e5dcbb6133f29f495641268cb7bc833f2838edfa957d64",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/caplan-lewis-exchange.md",
+ "kind": "artifact-page"
+}

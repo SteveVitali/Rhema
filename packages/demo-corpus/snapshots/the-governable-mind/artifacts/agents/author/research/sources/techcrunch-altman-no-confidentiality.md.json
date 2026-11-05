@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techcrunch-altman-no-confidentiality.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "101e9d0090554b75",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techcrunch-altman-no-confidentiality.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techcrunch-altman-no-confidentiality\n- **URL:** https://techcrunch.com/2025/07/25/sam-altman-warns-theres-no-legal-confidentiality-when-using-chatgpt-as-a-therapist/ · **Accessed:** 2026-09-16 · **For:** v1 response round, item 5\n- **What it establishes:** Sarah Perez, TechCrunch, July 25, 2025, reporting Altman's remarks on Theo Von's podcast \"This Past Weekend.\" Altman: no legal privilege for ChatGPT conversations; in a lawsuit OpenAI could be required to produce them. NOTE: the \"legally required to produce those conversations\" line is TechCrunch's paraphrase, not a direct Altman quotation.\n- **Key passages:** Altman (direct): \"right now, if you talk to a therapist or a lawyer or a doctor about those problems, there's legal privilege for it. ... And we haven't figured that out yet for when you talk to ChatGPT.\" / TechCrunch (paraphrase): \"This could create a privacy concern for users in the case of a lawsuit, Altman added, because OpenAI would be legally required to produce those conversations today.\" / Altman (direct): \"I think we should have the same concept of privacy for your conversations with AI that we do with a therapist or whatever — and no one had to think about that even a year ago\". / Altman: \"People talk about the most personal sh** in their lives to ChatGPT\".\n- **Reliability:** Secondary (tech press) quoting a primary podcast (linked YouTube). Independent.\n- **Relevance to this project:** Item 5; the provider's CEO conceding absence of privilege. Author should quote the \"same concept of privacy\" line directly and attribute the \"legally required to produce\" line as reported.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 233
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c90e98a4706bad66fb3b4b3873dd6b8da746c8d79a6304b58d2097ac3f7dd1b5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techcrunch-altman-no-confidentiality.md",
+ "kind": "artifact-page"
+}

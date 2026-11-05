@@ -1,0 +1,20 @@
+{
+  "$comment": "Denylist line-allowlist for the derived snapshots dir — file:line only, no quoted text. The S-11 Published credit lines allowlisted in corpus/_rules/line-allowlist.json (la-pub-credit-*) propagate verbatim into the derived published/diff/what-changed chunks; each row here covers a real derived hit at exactly that line. The snapshot bytes are deterministic, so a regen that moves the credit line also fails this gate as stale — regenerating snapshots and re-allowlisting the moved line is the sanctioned correction.",
+  "entries": [
+    { "id": "la-pub-credit-cor-diff-a", "file": "constitution-of-reason/diffs/3-4.json", "line": 35, "reason": "la-pub-credit-cor derived verbatim in the v4→published diff payload (S-11)" },
+    { "id": "la-pub-credit-cor-diff-b", "file": "constitution-of-reason/diffs/3-4.json", "line": 3632, "reason": "la-pub-credit-cor derived verbatim in the v4→published diff payload (S-11)" },
+    { "id": "la-pub-credit-cor-diff-c", "file": "constitution-of-reason/diffs/3-4.json", "line": 5789, "reason": "la-pub-credit-cor derived verbatim in the v4→published diff payload (S-11)" },
+    { "id": "la-pub-credit-cor-draft", "file": "constitution-of-reason/drafts/published.json", "line": 1031, "reason": "la-pub-credit-cor carried verbatim in the published draft chunk (S-11)" },
+    { "id": "la-pub-credit-cor-wc", "file": "constitution-of-reason/what-changed/v4-published.json", "line": 35, "reason": "la-pub-credit-cor derived verbatim in the v4→published what-changed (S-11)" },
+    { "id": "la-pub-credit-gm-diff-a", "file": "the-governable-mind/diffs/3-4.json", "line": 35, "reason": "la-pub-credit-gm derived verbatim in the v3→published diff payload (S-11)" },
+    { "id": "la-pub-credit-gm-diff-b", "file": "the-governable-mind/diffs/3-4.json", "line": 3170, "reason": "la-pub-credit-gm derived verbatim in the v3→published diff payload (S-11)" },
+    { "id": "la-pub-credit-gm-diff-c", "file": "the-governable-mind/diffs/3-4.json", "line": 5686, "reason": "la-pub-credit-gm derived verbatim in the v3→published diff payload (S-11)" },
+    { "id": "la-pub-credit-gm-draft", "file": "the-governable-mind/drafts/published.json", "line": 1103, "reason": "la-pub-credit-gm carried verbatim in the published draft chunk (S-11)" },
+    { "id": "la-pub-credit-gm-wc", "file": "the-governable-mind/what-changed/v3-published.json", "line": 35, "reason": "la-pub-credit-gm derived verbatim in the v3→published what-changed (S-11)" },
+    { "id": "la-pub-credit-pov-diff-a", "file": "the-politics-of-visibility/diffs/2-3.json", "line": 35, "reason": "la-pub-credit-pov derived verbatim in the v2→published diff payload (S-11)" },
+    { "id": "la-pub-credit-pov-diff-b", "file": "the-politics-of-visibility/diffs/2-3.json", "line": 2652, "reason": "la-pub-credit-pov derived verbatim in the v2→published diff payload (S-11)" },
+    { "id": "la-pub-credit-pov-diff-c", "file": "the-politics-of-visibility/diffs/2-3.json", "line": 4516, "reason": "la-pub-credit-pov derived verbatim in the v2→published diff payload (S-11)" },
+    { "id": "la-pub-credit-pov-draft", "file": "the-politics-of-visibility/drafts/published.json", "line": 927, "reason": "la-pub-credit-pov carried verbatim in the published draft chunk (S-11)" },
+    { "id": "la-pub-credit-pov-wc", "file": "the-politics-of-visibility/what-changed/v2-published.json", "line": 35, "reason": "la-pub-credit-pov derived verbatim in the v2→published what-changed (S-11)" }
+  ]
+}

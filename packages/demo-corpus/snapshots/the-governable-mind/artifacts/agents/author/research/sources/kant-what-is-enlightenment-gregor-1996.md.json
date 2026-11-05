@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/kant-what-is-enlightenment-gregor-1996.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "23fd04bf2e0e1b6d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/kant-what-is-enlightenment-gregor-1996.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kant-what-is-enlightenment-gregor-1996\n- **URL:** https://www.marxists.org/reference/subject/ethics/kant/enlightenment.htm (transcription by Andy Blunden; \"Source: Immanuel Kant. Practical Philosophy, Cambridge University Press, translated and edited by Mary J. Gregor, 1996\") · **Accessed:** 2026-09-16 · **For:** v1 response round, Gregor wording of four phrases\n- **What it establishes:** All four phrases appear verbatim in the Gregor rendering as transcribed. (The Kant text is 8:35–8:37 in the Akademie pagination; Gregor's *Practical Philosophy* prints it at pp. 17–22.)\n- **Key passages:**\n  - \"Enlightenment is the human being's emergence from his self-incurred minority.\"\n  - \"will soon be seen to by those guardians who have kindly taken it upon themselves to supervise them\"\n  - \"by the public use of one's own reason I understand that use which someone makes of it as a scholar before the entire public of the world of readers.\"\n  - \"What I call the private use of reason is that which one may make of it in a certain civil post or office with which he is entrusted.\"\n- **Reliability:** Secondary transcription of the Gregor translation (marxists.org); wording matches the Cambridge text as I know it; no page images.\n- **Relevance to this project:** Confirms the essay's Kant quotations. Reference: Immanuel Kant, \"An Answer to the Question: What Is Enlightenment?\" (1784), in *Practical Philosophy*, trans. and ed. Mary J. Gregor (Cambridge: Cambridge University Press, 1996), 17–22 (Ak. 8:35–42).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 212
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d66c73b4855b277e540383e272e3c5f04f290111368152911bda3e19b1a6ac32",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/kant-what-is-enlightenment-gregor-1996.md",
+ "kind": "artifact-page"
+}

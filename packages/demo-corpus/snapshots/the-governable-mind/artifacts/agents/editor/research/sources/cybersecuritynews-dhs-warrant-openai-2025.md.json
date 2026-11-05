@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cybersecuritynews-dhs-warrant-openai-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a740562d97944508",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cybersecuritynews-dhs-warrant-openai-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cybersecuritynews-dhs-warrant-openai-2025\n- **URL:** https://cybersecuritynews.com/dhs-warrant-openai/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Trade-press relay of Forbes: the OpenAI data \"proved unnecessary for identification\"; identification via undercover disclosures (health assessments, seven years at Ramstein, father's Afghanistan service) cross-referenced with DoD records → Drew Hoehner (III16).\n- **Key passages:** \"Ironically, the OpenAI data proved unnecessary for identification.\" · \"The warrant seen by Forbes directed OpenAI to surrender extensive records on the account behind these prompts.\"\n- **Reliability:** Secondary; derivative of Forbes; used as the second source for the identification point.\n- **Relevance to this project:** l.84, l.152.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "63a0af4b8f8cedfa749978ff289fae4cbc03fe120e3ed224d92d21f5a4355a4b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cybersecuritynews-dhs-warrant-openai-2025.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/eight-values.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "515f96e51eed2cd8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/eight-values.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eight-values\n- **URL:** https://8values.github.io/ · **Accessed:** 2026-07-31 · **For:** v1-response — verify MI1/discourse claim of verbatim axis overlap\n- **What it establishes:** 8values has four axes: Economic (Equality ↔ Markets), Diplomatic (Nation ↔ Globe), Civil (Liberty ↔ Authority), Society (Tradition ↔ Progress). Three share pole names verbatim with the draft's axes (Equality/Markets, Liberty/Authority, Tradition/Progress); Diplomatic (Nation↔Globe) is the cruder cousin of Belonging. After scoring, it names a \"Closest Match\" ideology — a coordinates-then-nearest-family mechanic — with the disclaimer that matching is \"a work in progress and is much less accurate than the values and axes, so don't take it too seriously.\"\n- **Key passages:** axis/pole names as above; closest-match disclaimer as quoted.\n- **Reliability:** Primary (the test itself, open source).\n- **Relevance:** Confirms the editor's originality finding in full. v2 must credit 8values by name in the \"Why five\" section and differentiate (tests score people; this vocabulary describes claims; 8values treats its naming layer as noise where v2 gives it a semantics).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 157
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6af9686915f4b9a2d13613324aa663161c2746f84e1ee284819aa06169102e18",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/eight-values.md",
+ "kind": "artifact-page"
+}

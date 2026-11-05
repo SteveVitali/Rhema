@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/thehackernews-anthropic-restores-fable-5-2026-07-01.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "16024cfb3668ac02",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/thehackernews-anthropic-restores-fable-5-2026-07-01.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thehackernews-anthropic-restores-fable-5-2026-07-01\n- **URL:** https://thehackernews.com/2026/07/anthropic-restores-claude-fable-5-after.html · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding A (timeline; verification rationale)\n- **What it establishes:** Published June 30 / July 1, 2026. Timeline: June 12 order, June 30 lifted, July 1 restored worldwide. States the nationality-verification rationale in its own voice (no Anthropic attribution). Mythos 5 restored June 26 \"for approximately 100 U.S. companies and federal agencies defending critical infrastructure.\" Does not discuss identity verification.\n- **Key passages:**\n  - \"the company had no reliable way to check every user's nationality in real time, so it shut both models down for everyone.\"\n- **Reliability:** Secondary, security trade press.\n- **Relevance to this project:** The closest published phrasing to the editor's \"no reliable way to verify nationality in real-time\"; it is the reporter's summary, not a quote.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 125
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7aefb5815180ca8028b2726a394cc47aa3de2763986efcf7bdd2c03b2f60fe9a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/thehackernews-anthropic-restores-fable-5-2026-07-01.md",
+ "kind": "artifact-page"
+}

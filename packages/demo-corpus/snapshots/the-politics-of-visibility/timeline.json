@@ -1,0 +1,199 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate"
+   ]
+  },
+  "nextStep": {
+   "estimateCredits": null,
+   "headDraftN": 3,
+   "label": null,
+   "verb": "none"
+  },
+  "originChip": {
+   "kind": "outline"
+  },
+  "project": {
+   "id": "the-politics-of-visibility",
+   "slug": "the-politics-of-visibility",
+   "title": "The Politics of Visibility"
+  },
+  "rounds": [
+   {
+    "anchor": {
+     "draftId": "v1",
+     "n": 1,
+     "origin": "drafted_from_outline"
+    },
+    "n": 1,
+    "parts": [
+     {
+      "kind": "version",
+      "n": 1
+     },
+     {
+      "count": 26,
+      "kind": "run",
+      "workflow": "review"
+     },
+     {
+      "kind": "version",
+      "n": 2
+     }
+    ],
+    "producedN": 2,
+    "runs": [
+     {
+      "card": {
+       "actions": [
+        "open_deliverable",
+        "report"
+       ],
+       "approvals": [
+        {
+         "decision": "major revisions",
+         "round": "v1 review"
+        }
+       ],
+       "artifacts": [
+        "correspondence/v1-review/00-piece-brief.md",
+        "correspondence/v1-review/01-claim-ledger.md",
+        "correspondence/v1-review/02-discourse-report.md",
+        "correspondence/v1-review/03-argument-notes.md",
+        "correspondence/v1-review/04-craft-notes.md",
+        "correspondence/v1-review/05-second-read.md",
+        "correspondence/v1-review/editors-letter.md"
+       ],
+       "decisions": [],
+       "deliverables": [
+        {
+         "key": "letter"
+        },
+        {
+         "count": 26,
+         "key": "findings"
+        },
+        {
+         "count": 5,
+         "key": "strengths"
+        },
+        {
+         "count": 56,
+         "key": "claims"
+        },
+        {
+         "key": "piece_brief"
+        },
+        {
+         "key": "claim_ledger"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "argument_notes"
+        },
+        {
+         "key": "craft_notes"
+        },
+        {
+         "key": "second_read"
+        }
+       ],
+       "delivered": {
+        "counts": {
+         "claims": 56,
+         "findings": 26,
+         "strengths": 5
+        },
+        "links": [
+         "dossier",
+         "letter",
+         "ledger"
+        ],
+        "verdict": "**Major revisions.** This is a serious piece of intellectual work with an exceptionally sound factual substrate — the fact-check returned zero contradicted, misleading, or unsupported claims across 56 checked, which in this genre is close to unheard of — and its three best elements (the regime/capacity instrument, the ideology-as-query analysis of NSPM-7, the falsification-threshold list) have no analogue anywhere in the surveyed discourse. But the essay does not yet know, or does not say, which conversation it is in: its thesis, its §XIII, its §XV, and its declared philosophical center each have famous predecessors it never names, and at this venue that converts a strength (synthesis) into an exposure (apparent rediscovery). Its central injury claim — anticipatory chilling — is the least-evidenced thing in it, and the strongest published counterargument (Posner's collection/use distinction) goes unanswered. The independent second read, given only the draft, reached the same verdict on independent grounds. The revision is heavy but well-defined, and nothing in it requires weakening a single claim — nearly every fix makes the essay stronger on its own terms."
+       },
+       "deliveryLabel": null,
+       "done": 7,
+       "failureCode": null,
+       "notRecorded": [
+        "time",
+        "credits",
+        "model",
+        "estimate"
+       ],
+       "phases": [
+        {
+         "key": "intake",
+         "ordinal": 1,
+         "status": "done"
+        },
+        {
+         "key": "verification",
+         "ordinal": 2,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 3,
+         "status": "done"
+        },
+        {
+         "key": "argument",
+         "ordinal": 4,
+         "status": "done"
+        },
+        {
+         "key": "craft",
+         "ordinal": 5,
+         "status": "done"
+        },
+        {
+         "key": "second_read",
+         "ordinal": 6,
+         "status": "done"
+        },
+        {
+         "key": "letter",
+         "ordinal": 7,
+         "status": "done"
+        }
+       ],
+       "phaseSource": "inferred_from_delivered_files",
+       "recordSource": "agent-discourse",
+       "replayed": true,
+       "runId": "v1-review",
+       "running": 0,
+       "state": "completed",
+       "total": 7
+      },
+      "createdAt": null,
+      "producedN": 2,
+      "runId": "v1-review",
+      "state": "completed",
+      "subjectN": 1,
+      "workflow": "review"
+     }
+    ]
+   }
+  ],
+  "state": {
+   "key": "accepted",
+   "overlay": null,
+   "pill": "Accepted",
+   "suggested": {
+    "action": "open",
+    "label": null
+   }
+  },
+  "ungrouped": []
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "",
+ "kind": "timeline"
+}

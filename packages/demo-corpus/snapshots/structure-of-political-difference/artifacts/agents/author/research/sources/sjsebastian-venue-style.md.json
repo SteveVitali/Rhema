@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/sjsebastian-venue-style.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6a4908715f1fd0f4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/sjsebastian-venue-style.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sjsebastian-venue-style\n- **URL:** https://sjsebastian.substack.com/archive and https://sjsebastian.substack.com/p/after-bureaucracy · **Accessed:** 2026-07-31 · **For:** v1-response — guidance (\"match the style and register\")\n- **What it establishes:** Seven essays (Oct 2025–Jul 2026), all AI/philosophy/social-theory (\"What the Model Cannot Give Itself,\" \"The Narcissistic Injury of Artificial Intelligence,\" \"After Bureaucracy,\" etc.), tagline \"Philosophy, cultural commentary, the history of ideas.\" House style per \"After Bureaucracy\": roman-numeral numbered sections with bolded headers; continuous argumentative prose, zero footnotes/citations natively (the writer has overridden this — [n] endnotes required); variable paragraph length, short declaratives alternating with subordinate-heavy builds; strategic inversions (\"They do not eliminate coordination; they relocate it\"); aphoristic punctuation (\"When execution is cheap, waiting is expensive\"); minimal but intimate first person; endings framed as fact, not judgment.\n- **Key passages:** \"Flatness was never the principle. It was a surface expression of a deeper invariant: agency amplification.\"\n- **Reliability:** Primary (the venue itself).\n- **Relevance:** v2 register calibration: continuous prose over apparatus; ration inversions; keep roman numerals; single first-person use; confident diagnostic endings.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 158
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "38ddba4e53c05b091732f77fce00654fa33567ae3f5d38bec44d6225d549733f",
+  "state": "frozen"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "agents/author/research/sources/sjsebastian-venue-style.md",
+ "kind": "artifact-page"
+}

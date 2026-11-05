@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sep-rawls-wenar.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "893b1aef3ab5dd00",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sep-rawls-wenar.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-rawls-wenar\n- **URL:** https://plato.stanford.edu/entries/rawls/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** C42 quotation verbatim (§4.3, in the conscription example); first-principle priority; liberty of conscience among basic liberties (Wenar, rev. Sept 3 2025).\n- **Key passages:** \"Citizens' equal liberty must have priority over economic policy.\"\n- **Reliability:** Secondary, scholarly; the draft's cited source.\n- **Relevance to this project:** C42; §IV, §XV.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 61
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4331d1a1185bd4a075101ba2695d092b6040c639f964255727ad77df9e482ddb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sep-rawls-wenar.md",
+ "kind": "artifact-page"
+}

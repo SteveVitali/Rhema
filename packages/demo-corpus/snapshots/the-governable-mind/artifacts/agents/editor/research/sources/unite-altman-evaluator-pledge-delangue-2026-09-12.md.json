@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/unite-altman-evaluator-pledge-delangue-2026-09-12.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8167668f05401449",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/unite-altman-evaluator-pledge-delangue-2026-09-12.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# unite-altman-evaluator-pledge-delangue-2026-09-12\n- **URL:** https://www.unite.ai/altman-says-openai-will-match-anthropics-embedded-evaluator-pledge/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Unite.ai, Sept 12, 2026: Altman's matching pledge; Delangue's Open Alignment Initiative and request to join the embedded-evaluator program; METR as example evaluator; no accreditation details.\n- **Key passages:** Altman: 'Committing to having independent evaluators with employee-like access is a great idea, and we will do the same.' · Delangue: 'It's now clear that alignment is critical and won't be solved behind the closed doors of a handful of frontier labs.'\n- **Reliability:** Secondary; AI trade site.\n- **Relevance to this project:** Q1(c)/(e): the plurality demand from the open side; Q5.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 103
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "810ec0496aa5376c6b8c3f2b12b7ad7bc19f8b41c1b46c18e6075def2eb00086",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/unite-altman-evaluator-pledge-delangue-2026-09-12.md",
+ "kind": "artifact-page"
+}

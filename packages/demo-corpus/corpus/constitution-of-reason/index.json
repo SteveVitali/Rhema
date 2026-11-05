@@ -1,0 +1,185 @@
+{
+  "slug": "constitution-of-reason",
+  "artifacts": [
+    {
+      "path": "agents/author/ledgers/v2-response-ledger.md",
+      "bytes": 18124,
+      "sha256": "e128edc45da761eaff5376bf53893ee66003df69b4e94b125a6d9f389b94efc0",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/index.md",
+      "bytes": 2696,
+      "sha256": "13c3461ce99f651ccab6d8084c415bc9cf281398774e5e2557554b1e4c3caf3e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anderson-epistemology-of-democracy.md",
+      "bytes": 1307,
+      "sha256": "2a2ef7198af06151f3e597458933294276d8b9eeb864a862ff8f25843a732287",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/anthropic-multi-agent-figures.md",
+      "bytes": 1004,
+      "sha256": "7b47d3856d058dd7d5676ac9cc81068d9faa79d3f4a7802396fdb7d7c9a830bb",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/chen-more-llm-calls.md",
+      "bytes": 997,
+      "sha256": "98bafcc43bb4cbfdb660eab9931a224897950224b830d94c3b86480865a986f5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/cognition-dont-build-multi-agents.md",
+      "bytes": 1134,
+      "sha256": "34d628637de7fde100266eb2b2fc69e984870733fd09fd6117d7fc3e9a2b43b5",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/estlund-democratic-authority.md",
+      "bytes": 1223,
+      "sha256": "cb534c628042e70449cebdfe784b8e359423cf1d99deb9cb2a24dfa40302bfaa",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/farrell-shalizi-cognitive-democracy.md",
+      "bytes": 1520,
+      "sha256": "75103f245fbcb6a8d83ad08b3dd9c94508c012d032e26772336e55e13abc7b3b",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/federalist-51-authorship.md",
+      "bytes": 737,
+      "sha256": "91099b530aa6c7e1587b42c3d1b3133af22cd67b85a219a7cd00143f8e0eb019",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/fei-when-agents-evolve.md",
+      "bytes": 2114,
+      "sha256": "793259d2d678416309476625fcbbe3a987e15d7d5c272fc8ac9bf566fcd5d165",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/four-color-kempe-heawood.md",
+      "bytes": 1270,
+      "sha256": "b57ced9eb728c7d8064448c0104be344d759d369c01f2aaa44c3a31ad16f616c",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/hayek-use-of-knowledge.md",
+      "bytes": 1302,
+      "sha256": "70b71fe65e3b1c5cf89b5d9e8ce94118bdcc8c9c2cb66f3612f1c65a15831a11",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/huang-self-correction-yogurt.md",
+      "bytes": 1259,
+      "sha256": "9068bcc02f0ae624d14fbb8ef55c479d655b09a3b6c73a310ceb7a3776630208",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/kaesberg-voting-consensus.md",
+      "bytes": 1421,
+      "sha256": "57ebf1c8c0f4c702c6b2edf4c206c6f88e2243991c9d8611bd284a662fa9d79e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/popper-critical-rationalism.md",
+      "bytes": 1265,
+      "sha256": "d3795929b7494cd0c17cc4ffbaadf2e49136663efe348020c4e62a0cd5076ac3",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/rauch-constitution-of-knowledge.md",
+      "bytes": 1647,
+      "sha256": "a7cb63fa272afc0aa5073dd8e3b8a14b144dbfde610bc4ba0a863852615edc37",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/author/research/sources/smit-going-mad.md",
+      "bytes": 1080,
+      "sha256": "be488ad216acb43503759afbe26e987f0b56f8d81ffec728430425dcb0a5801e",
+      "kind": "markdown"
+    },
+    {
+      "path": "agents/editor/research/index.md",
+      "bytes": 40,
+      "sha256": "fc09d92edb85c79550f3597f60c9f4a0c05a00a9b2ec91e7a75b837a045085a2",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-response.md",
+      "bytes": 17235,
+      "sha256": "8c8dc83944c009623b9c90cd8e4d7acdb5f886372623626e0c91a3c9cbc0cf01",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/00-piece-brief.md",
+      "bytes": 15058,
+      "sha256": "ca64051a83bb7a3f76931bc1abbd47d1c545c020b000cd8c05a9ea3392ee6833",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/01-claim-ledger.md",
+      "bytes": 41862,
+      "sha256": "dad953e827f657238e32f9a1445e34704f7f189ccb18d5a0123812b967dcaaa8",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/02-discourse-report.md",
+      "bytes": 43896,
+      "sha256": "7bc142e280ab0fc61e3980790e5b6546047e9beaeeab5b55f8faf60c795af571",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/03-argument-notes.md",
+      "bytes": 12625,
+      "sha256": "a4ff5d0379f3336a139a09c8b4163ff37bb8782f14b1cdfb702cd293e1893898",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/04-craft-notes.md",
+      "bytes": 10655,
+      "sha256": "06d76aa640447cdf5accc5c5efaa45f05f8704448ecda7a18ce76910e55a5eb9",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/05-second-read.md",
+      "bytes": 10808,
+      "sha256": "f3d9ac40c709eebc42386ec4b5a6af2f10e00ddd3d0b700baf2a18f6a8bf7718",
+      "kind": "markdown"
+    },
+    {
+      "path": "correspondence/v2-review/editors-letter.md",
+      "bytes": 33907,
+      "sha256": "05117c7f5418f9d6488e0279091535b24b214a4e9249e617f1bb82b2a71d5486",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v2.md",
+      "bytes": 71864,
+      "sha256": "a8f58c66c447295158f888a3b56cf2a2825d2a3096358bcc8a84f84e6e170c81",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v3.md",
+      "bytes": 77224,
+      "sha256": "db383a1d939989d2cdc06fc987c5246ce99fb17c04fc476bbb7a6b2bd5a5ad7d",
+      "kind": "markdown"
+    },
+    {
+      "path": "drafts/v4.md",
+      "bytes": 76943,
+      "sha256": "7594bfc5bfe411a2a1915e92e08ca13d45ec26dc2adab7800ff97b3030555d94",
+      "kind": "markdown"
+    },
+    {
+      "path": "published.md",
+      "bytes": 77627,
+      "sha256": "3f79652bb49365b0be401318b21fefe7fa8ea9e4923467998babf54a1d314f64",
+      "kind": "markdown"
+    }
+  ]
+}

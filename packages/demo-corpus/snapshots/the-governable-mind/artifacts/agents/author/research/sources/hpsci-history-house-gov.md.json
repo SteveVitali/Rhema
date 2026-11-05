@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/hpsci-history-house-gov.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ecef712f7683b00e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/hpsci-history-house-gov.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hpsci-history-house-gov\n- **URL:** https://intelligence.house.gov/about/history-and-jurisdiction.htm · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C32\n- **What it establishes:** House Permanent Select Committee on Intelligence's own page: created 1977. Page does not mention the Church or Pike committees.\n- **Key passages:** \"Created in 1977, HPSCI is charged with oversight of the United States Intelligence Community\"\n- **Reliability:** Primary/official.\n- **Relevance to this project:** C32: supports 'permanent House intelligence committee' (1977, H.Res. 658) — the causal link to Church is the Senate page's, not this page's.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7027cf928529291d16276e5c30601ea8d71994777e0149a96d31f26ada4f4323",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/hpsci-history-house-gov.md",
+ "kind": "artifact-page"
+}

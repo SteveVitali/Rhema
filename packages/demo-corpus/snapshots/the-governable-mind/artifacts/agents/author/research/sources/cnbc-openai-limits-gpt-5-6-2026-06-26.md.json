@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/cnbc-openai-limits-gpt-5-6-2026-06-26.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ebdbc1e0f4e6743f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/cnbc-openai-limits-gpt-5-6-2026-06-26.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cnbc-openai-limits-gpt-5-6-2026-06-26\n- **URL:** https://www.cnbc.com/2026/06/26/openai-limits-new-ai-models-to-trusted-partners-request-us-government.html (read via a reader proxy) · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding B\n- **What it establishes:** Ashley Capoot, June 26, 2026. Trump administration requested; June EO asks developers to voluntarily allow government assessment before full release; OpenAI did not name partners or give a count; \"generally available in the coming weeks\"; \"a short-term step.\"\n- **Key passages:**\n  - \"OpenAI didn't disclose the names of partners that can use its new models.\"\n  - \"We don't believe this kind of government access process should become the long-term default\"\n- **Reliability:** Secondary, mainstream.\n- **Relevance to this project:** Confirms no official partner count was disclosed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 102
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "79fcda2c41db94b203497d8f760a68a1a9df2913aeb8d9896981c82e7190f6ac",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/cnbc-openai-limits-gpt-5-6-2026-06-26.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,122 @@
+{
+ "sections": [
+  {
+   "purpose": "Establish the paradox before the theory: one incident supports both camps",
+   "ref": "0",
+   "targetWords": 800,
+   "title": "*The Double Revelation* (unnumbered)"
+  },
+  {
+   "purpose": "Reconstruct the inner/outer boundary as built, contested, partial; install Mill's fallibilism as the theory of truth",
+   "ref": "I",
+   "targetWords": 1150,
+   "title": "The Sanctuary of Conscience"
+  },
+  {
+   "purpose": "Distinguish three levels of claim; rest the political case on the weakest; pivot: what leaves the skull can be recorded",
+   "ref": "II",
+   "targetWords": 700,
+   "title": "The Mind Was Never Entirely Inside the Skull"
+  },
+  {
+   "purpose": "Coin the central concept; ground it in the freedom-of-thought renaissance; introduce cognitive records and the chilling mechanism",
+   "ref": "III",
+   "targetWords": 1000,
+   "title": "The Externalized Forum Internum"
+  },
+  {
+   "purpose": "Disaggregate freedom; show convergence",
+   "ref": "IV",
+   "targetWords": 650,
+   "title": "Three Liberties"
+  },
+  {
+   "purpose": "Distinguish species of power; concede infrastructural dependence; coin epistemic exit",
+   "ref": "V",
+   "targetWords": 800,
+   "title": "The State, the Corporation, and the Right of Exit"
+  },
+  {
+   "purpose": "Historical centerpiece: concentration makes control tractable; from licensing to architecture; abuse and correction",
+   "ref": "VI",
+   "targetWords": 900,
+   "title": "The Chokepoint"
+  },
+  {
+   "purpose": "Join the previous essay; define the new degree; name its form (modulated permission)",
+   "ref": "VII",
+   "targetWords": 700,
+   "title": "From Behavioral Legibility to Cognitive Legibility"
+  },
+  {
+   "purpose": "Capability demonstrations, not predictions; the bottleneck moves to computation; correct the social-credit myth",
+   "ref": "VIII",
+   "targetWords": 650,
+   "title": "The Authoritarian Archive"
+  },
+  {
+   "purpose": "Reject Newspeak; install probability shaping; Arendt's mutable intermediary; Williams; the fallibilist answer",
+   "ref": "IX",
+   "targetWords": 850,
+   "title": "Orwell After Orwell"
+  },
+  {
+   "purpose": "The objection at full force; present evidence; the incident's other half; not capture; the boundary question",
+   "ref": "X",
+   "targetWords": 850,
+   "title": "The Hard Case: A Machine Is Not a Book"
+  },
+  {
+   "purpose": "Decompose \"AI regulation\" into five layers; show no technological law forces safety into surveillance",
+   "ref": "XI",
+   "targetWords": 550,
+   "title": "The Layers of the Machine"
+  },
+  {
+   "purpose": "Seven questions; the half-life problem; apply the test to the essay's own proposals",
+   "ref": "XII",
+   "targetWords": 750,
+   "title": "The Constitutional Test"
+  },
+  {
+   "purpose": "Name the failure mode with four necessary components; what does not constitute it",
+   "ref": "XIII",
+   "targetWords": 450,
+   "title": "The Public-Private Cognitive-Security Complex"
+  },
+  {
+   "purpose": "The speculative climax: emergent, convenient, administratively rational; Deleuze over Orwell; Shklar's question",
+   "ref": "XIV",
+   "targetWords": 500,
+   "title": "Permissioned Cognition"
+  },
+  {
+   "purpose": "The plural alternative, without a manifesto; the traditions converge",
+   "ref": "XV",
+   "targetWords": 400,
+   "title": "Cognitive Federalism"
+  },
+  {
+   "purpose": "Return to Milton; two losses of control; the litany; the closing pair",
+   "ref": "S17",
+   "targetWords": 400,
+   "title": "*The Last Private Domain* (coda)"
+  }
+ ],
+ "sidecar": "structure_plan",
+ "spine": [
+  "The same incident showed why people want AI governed and why it is",
+  "Liberalism's protection of the inner life was built, contested, and",
+  "Cognition was never confined to the skull, and the political argument",
+  "Records generated during thought are not thoughts, but the political",
+  "Three traditions of freedom (non-interference, non-domination, conscience)",
+  "Private and sovereign epistemic power are different species of problem;",
+  "Historically, control of a cognitive technology has been achieved by",
+  "Legibility of persons proceeds by degrees, and AI adds a new degree:",
+  "The authoritarian archive shows what those affordances do when",
+  "Control of thought through an intermediary works by probability shaping,",
+  "The hard case is real: a model is not a book; present evidence is sober",
+  "A seven-question test locates that boundary; the failure mode is a"
+ ],
+ "version": 1
+}

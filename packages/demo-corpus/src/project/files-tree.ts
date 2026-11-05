@@ -34,7 +34,9 @@ export function artifactKindFor(path: string): string | null {
     if (/^03-claim-ledger\.md$/.test(name)) return "claim_ledger";
     if (/^04-draft-ledger\.md$/.test(name)) return "draft_ledger";
     if (/^06-fidelity-audit\.md$/.test(name)) return "fidelity_audit";
-    if (/^draft-part.*\.md$|^ledger-slice.*\.md$/.test(name)) return "consolidation_notes";
+    // the real corpus names the consolidated drafting slice literally: 05-consolidation-notes.md
+    if (/^draft-part.*\.md$|^ledger-slice.*\.md$|^05-consolidation-notes\.md$/.test(name))
+      return "consolidation_notes";
     return null;
   }
   if (/^agents\/[^/]+\/research\/index\.md$/.test(path)) return "research_note";

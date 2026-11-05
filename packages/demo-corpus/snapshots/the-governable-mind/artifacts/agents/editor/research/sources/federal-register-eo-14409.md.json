@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/federal-register-eo-14409.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "38aa2b94a2996feb",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/federal-register-eo-14409.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# federal-register-eo-14409\n- **URL:** https://www.federalregister.gov/documents/full_text/text/2026/06/05/2026-11415.txt · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** EO 14409, \"Promoting Advanced Artificial Intelligence Innovation and Security,\" signed June 2, 2026, 91 FR 34565. Sec. 3(a) classified benchmarking; 3(b) voluntary framework; 3(c) savings clause verbatim (C14).\n- **Key passages:** \"Nothing in this section shall be construed to authorize the creation of a mandatory governmental licensing, preclearance, or permitting requirement for the development, publication, release, or distribution of new AI models, including frontier models.\" / \"a classified benchmarking process to assess the advanced cyber capabilities of AI models.\"\n- **Reliability:** Primary (official text).\n- **Relevance to this project:** C14; §X, §XII; ref [47].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1f407c443ac6ad7d4b1e2b14e184daa6b67b1cc1adbe4fdaf39feacb49a4028f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/federal-register-eo-14409.md",
+ "kind": "artifact-page"
+}

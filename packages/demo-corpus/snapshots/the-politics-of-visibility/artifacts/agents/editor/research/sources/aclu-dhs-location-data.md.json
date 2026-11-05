@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/aclu-dhs-location-data.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c54ae7f35649f506",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "15b9c77b00510b39",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "5cb96fcfa1ca8a2b",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/aclu-dhs-location-data.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ACLU — DHS purchase of app location data (2022-07-18)\n\n- https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: CBP, ICE, Secret Service, Coast Guard, DHS HQ bought broker location data;\nVenntel marketing verbatim: \"identify repeat visitors, frequented locations, pinpoint\nknown associates, and discover pattern of life\"; \"more than 15 billion location points\nfrom over 250 million cell phones and other mobile devices every day\"; data \"quietly\nextracted from smartphone apps\" (Venntel, Babel Street).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 70
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3fc61e845ab0478da5237318cba049a5a875dfbb6ec0b37d916d005ef3ee28b8",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/aclu-dhs-location-data.md",
+ "kind": "artifact-page"
+}

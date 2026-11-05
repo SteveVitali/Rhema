@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eff-chatbot-bulk-surveillance-dec-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a3d79a0dc7457dc4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eff-chatbot-bulk-surveillance-dec-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eff-chatbot-bulk-surveillance-dec-2025\n- **URL:** https://www.eff.org/deeplinks/2025/12/ai-chatbot-companies-should-protect-your-conversations-bulk-surveillance · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** EFF, Dec. 2, 2025 (Trujillo, Hoffman-Andrews, Noble): chatbot conversations deserve email-level Fourth Amendment protection; warns of reverse searches; asks companies to fight bulk orders, notify users, publish transparency reports.\n- **Key passages:** \"Before the government can rifle through your private thoughts stored on digital platforms, it must ... get a warrant.\" · \"Commit to fighting bulk orders for user data in court\"\n- **Reliability:** Secondary (advocacy organization); civil-liberties bias, stated.\n- **Relevance to this project:** Report §6, §7 (privacy-law reception).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 92
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d0b28bdc3fdd04adce01262e52f996d12764e99da66626427b1bc131520dedbc",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eff-chatbot-bulk-surveillance-dec-2025.md",
+ "kind": "artifact-page"
+}

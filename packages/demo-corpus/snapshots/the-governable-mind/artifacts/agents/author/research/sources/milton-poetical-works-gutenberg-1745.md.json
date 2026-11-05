@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/milton-poetical-works-gutenberg-1745.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f37502ab43ff0fed",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/milton-poetical-works-gutenberg-1745.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# milton-poetical-works-gutenberg-1745\n- **URL:** https://www.gutenberg.org/cache/epub/1745/pg1745.txt · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C3\n- **What it establishes:** *The Poetical Works of John Milton* (Project Gutenberg #1745), which preserves seventeenth-century spelling for *A Mask*. Confirms the original-spelling line with \"With all\" as two words.\n- **Key passages:**\n  - \"La:  Fool do not boast, / Thou canst not touch the freedom of my minde / With all thy charms, although this corporal rinde / Thou haste immanacl'd, while Heav'n sees good.\"\n- **Reliability:** Primary text in a public-domain transcription; no line numbers (a raw count from \"Before the starry threshold\" gives ~692 non-blank lines including stage directions and split lines, which is consistent with, but not a substitute for, the edited numbering of 663).\n- **Relevance to this project:** C3 — second witness for the original spelling and the \"With all\" reading.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 134
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7e8a7d252d65adfbf5133c7b293c0b547d6c38203bdb76169dd7418c041272fc",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/milton-poetical-works-gutenberg-1745.md",
+ "kind": "artifact-page"
+}

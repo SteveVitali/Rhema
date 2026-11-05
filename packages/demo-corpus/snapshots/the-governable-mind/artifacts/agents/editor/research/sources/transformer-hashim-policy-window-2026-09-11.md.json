@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/transformer-hashim-policy-window-2026-09-11.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a5a23f73d7c772f2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/transformer-hashim-policy-window-2026-09-11.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# transformer-hashim-policy-window-2026-09-11\n- **URL:** https://www.transformernews.ai/p/congress-must-not-waste-the-ai-policy-window · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Shakeel Hashim, Transformer, Sept 11, 2026 (via text proxy): answers OpenAI's post; Cruz bill not 'meaningful'; preemption only if federal law at least as strong; Cantwell 'backdoor' quote; Khanna's SB 1047 mea culpa; WH framework lacks public incident-reporting guidelines and WH declined Senate Democrats' questions.\n- **Key passages:** 'any congressional actions must in fact be \"meaningful\" if they are to make a difference' · Cantwell: 'not a weak federal standard that becomes a backdoor for wiping out stronger state protections.'\n- **Reliability:** Secondary; safety-adjacent newsletter.\n- **Relevance to this project:** Q5 reception; preemption.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 106
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8382a84c868caded9f3e845bf35f28b79ce43f9e7fd378217f102fa8acc6922d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/transformer-hashim-policy-window-2026-09-11.md",
+ "kind": "artifact-page"
+}

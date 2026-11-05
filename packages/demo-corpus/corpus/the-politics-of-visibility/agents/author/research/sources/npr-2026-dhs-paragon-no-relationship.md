@@ -1,0 +1,7 @@
+# npr-2026-dhs-paragon-no-relationship
+
+- **URL:** https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions (NPR story by Jude Joffe-Block, May 22, 2026; npr.org fetch timed out, GPB carries NPR content) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** DHS statement: "ICE has no relationship with Paragon Solutions, Inc. or with the company that acquired them" and "ICE has not entered another contract with Paragon Solutions, Inc." — while declining to say whether ICE retains access to Paragon tools through third parties. A federal procurement notice states the contract "was closed out Jan. 20" (2026). Recaps Lyons' April 1, 2026 letter: "I approved HSI's procurement and operational use of cutting-edge technological tools," certified compliance with the 2023 executive order; Lyons referenced disrupting "foreign terrorist organizations and fentanyl traffickers" and did not name Paragon.
+- **Key passages:** As above. Contains no evidence Graphite targeted protesters or domestic dissent.
+- **Reliability:** Secondary; NPR national desk.
+- **Relevance to this project:** C12(a) — essential complication: ICE leadership confirmed operational use in April 2026, then DHS asserted "no relationship" in May 2026 and the contract was reportedly closed out Jan 20, 2026. The essay should say "acknowledged operational use" with the April letter, and note the later DHS denial of an ongoing relationship, rather than asserting continuing use.

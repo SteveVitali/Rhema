@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rinderknecht-palisades-complaint-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "1e0f1d52aa7bacb5",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rinderknecht-palisades-complaint-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rinderknecht-palisades-complaint-2025\n- **URL:** https://static.foxnews.com/foxnews.com/content/uploads/2025/10/palisades-fire-criminal-complaint_redacted.pdf · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** PRIMARY. Affidavit in support of criminal complaint, United States v. Jonathan Rinderknecht (C.D. Cal.; 18 U.S.C. § 844(f)(1)), redacted copy hosted by Fox News (26 pp.; text layer read locally). The Jan 1, 2025 ChatGPT question was typed \"into the ChatGPT app on his iPhone\" (¶26) and captured in a three-minute iPhone screen-recording he made himself (¶37(c)). The affidavit never mentions OpenAI as a source of records. NUANCE: ¶37(h) and ¶37(i) also quote older ChatGPT prompts (Nov 1, 2024, burning a Bible; July 11, 2024, the \"dystopian painting\" image prompt) WITHOUT saying whether they came from the phone or from OpenAI.\n- **Key passages:**\n  - ¶26 (p. 10): \"During the call, RINDERKNECHT typed a question into the ChatGPT app on his iPhone, asking, “Are you at fault if a fire is lift [sic] because of your cigarettes.” (ChatGPT’s response was “Yes,” followed by an explanation.)\"\n  - ¶37(c) (p. 16): \"While RINDERKNECHT was descending the hill after the Lachman Fire had begun on January 1, 2025, he made a three-minute screen-recording on his iPhone, recording himself attempting to call 911 several times (and eventually connecting with 911), and asking ChatGPT, “Are you at fault if a fire is lift [sic] because of your cigarettes?” Based on my training and experience and this investigation, this indicates that RINDERKNECHT wanted to preserve evidence of himself trying to assist in the suppression of the fire and he wanted to create evidence regarding a more innocent explanation for the cause of the fire.\"\n  - ¶37(h) (p. 18): \"On November 1, 2024, RINDERKNECHT asked the following prompt to ChatGPT: “I am 28 years old. ... I literally burnt the Bible that I had. It felt amazing. I felt so liberated.”\"\n  - ¶37(i) (pp. 18–19): \"On July 11, 2024, RINDERKNECHT provided the following prompt to ChatGPT: “A dystopian painting divided into distinct parts ...\" ... \"In response, ChatGPT produced the following image:\"\n- **Reliability:** Primary sworn affidavit; hosted by a news organization (redacted). Note the complaint's text reads \"lift [sic]\"; CRS renders it \"[lit]\".\n- **Relevance to this project:** L2(c) CONFIRMED for the fault question (iPhone, self-recorded). Do not write that ALL the Palisades ChatGPT evidence came from the phone: the complaint is silent on the source of the 2024 prompts.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 383
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4fe0560ca9fe892c0dcb9f5965e87c05d3858be34630ac704aee4ef36a5363ed",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/rinderknecht-palisades-complaint-2025.md",
+ "kind": "artifact-page"
+}

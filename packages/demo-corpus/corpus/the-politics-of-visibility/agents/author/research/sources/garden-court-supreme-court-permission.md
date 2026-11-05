@@ -1,0 +1,6 @@
+# garden-court-supreme-court-permission
+- **URL:** https://gardencourtchambers.co.uk/supreme-court-grants-permission-to-appeal-palestine-action-terrorism-proscription/ · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C19(a)
+- **What it establishes:** The current (Aug. 2026) state of the Ammori litigation. Divisional Court, 13 February 2026: proscription "unlawfully interfered with the right to protest" under ECHR Articles 10–11. Court of Appeal, 15 June 2026 (five-member panel including the Lady Chief Justice and the Master of the Rolls): overturned the Divisional Court. UK Supreme Court, 31 July 2026: granted Huda Ammori permission to appeal; hearing expected later in 2026.
+- **Key passages:** Permission granted 31 July 2026; "The appeal is likely to be heard later this year."
+- **Reliability:** Secondary but well-placed — chambers of Ammori's junior counsel (Owen Greenhall, Audrey Cherryl Mogan; leaders Raza Husain KC, Blinne Ní Ghrálaigh KC); party-adjacent, but procedural facts are checkable and consistent with judiciary.uk press summaries.
+- **Relevance to this project:** C19(a) — as of 2026-08-20 the ban stands after the CA ruling, but the question is before the Supreme Court; the essay should not present the June 2026 ruling as final.

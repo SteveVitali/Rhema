@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ienca-andorno-2017-pmc.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2b238efa1048db79",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ienca-andorno-2017-pmc.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ienca-andorno-2017-pmc\n- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC5447561/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Ienca & Andorno, LSSP 2017 (read): opens with the Comus line; 'last refuge' and 'unassailable fortress' verified; four rights (cognitive liberty, mental privacy, mental integrity, psychological continuity).\n- **Key passages:** \"the mind is a kind of last refuge of personal freedom and self-determination\" · \"the mind might no longer be such unassailable fortress\"\n- **Reliability:** Primary scholarly source; independent.\n- **Relevance to this project:** Report §1.7, §5; draft l.78 (C37) confirmed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 83
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e7af00074df7242625a3d56c527950584d04b6594c88e2881398b8301c70fda8",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ienca-andorno-2017-pmc.md",
+ "kind": "artifact-page"
+}

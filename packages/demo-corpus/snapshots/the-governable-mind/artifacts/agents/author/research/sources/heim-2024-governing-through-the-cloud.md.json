@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/heim-2024-governing-through-the-cloud.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e5f983338b0ed1c3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/heim-2024-governing-through-the-cloud.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# heim-2024-governing-through-the-cloud\n- **URL:** https://arxiv.org/abs/2403.08501 (abstract, v2 26 Mar 2024) and https://arxiv.org/html/2403.08501v2 (full text) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C49\n- **What it establishes:** Heim, Fist, Egan, Huang, Zekany, Trager, Osborne, Zilberman, \"Governing Through the Cloud: The Intermediary Role of Compute Providers in AI Regulation\" (arXiv 2403.08501, v1 13 Mar 2024). Argues compute providers should act as regulatory intermediaries in four capacities (securers, record keepers, verifiers, enforcers). Proposes identity verification (explicitly labelled KYC), workload classification, and record-keeping. Scope is frontier AI, i.e. a small set of large customers, not the general customer base. Workload classification targets \"large-scale pre-training/inference workloads\" — i.e. large inference is in scope too; the paper does not say \"training rather than inference.\" It states detailed workload verification is currently impossible without observing customer code/data, and frames the feasible measures as using data providers already hold, without direct access to customer code and data. It does not use the phrase \"prompt-level monitoring.\"\n- **Key passages:**\n  - Abstract: \"Compute providers can play an essential role in a regulatory ecosystem via four key capacities: as securers, safeguarding AI systems and critical infrastructure; as record keepers, enhancing visibility for policymakers; as verifiers of customer activities, ensuring oversight; and as enforcers, taking actions against rule violations.\"\n  - §3.3.1: \"Identity verification (also commonly known as 'Know-Your-Customer (KYC)') is a useful measure to ensure customers are meeting applicable rules, and enforce relevant penalties\"\n  - §3.3.2: \"We expect frontier-scale training in 2024 will likely have several distinguishing features relative to other possible workloads. These could include the number of accelerators used (tens of thousands), the peak operation throughput utilization\"\n  - §2.2.3: \"Some of these capabilities, such as identifying whether a customer is training or deploying an AI model, can likely be implemented using existing data collected by compute providers\"\n  - §3 Table 2: \"workload classification: likely feasible for detecting large-scale pre-training and inference workloads\"\n  - §3.3: \"Detailed workload verification: currently not possible without directly observing customer code or data. However, with some technical development work, it may become possible\"\n  - §3: \"Much of this data could also be used to support identity verification...without direct access to customer code and data.\"\n  - §1.2 fn 10: \"regulatory measures are specifically aimed at key actors in frontier AI development, rather than being broadly applied to the entire customer base of compute providers, such as individuals.\"\n  - §2.2.2: \"focusing on essential data that informs without compromising privacy and confidentiality.\"\n- **Reliability:** Primary (the paper itself, arXiv preprint; authors from GovAI/CNAS/Oxford). Policy-advocacy piece, not neutral survey: argues for the intermediary role. Quotes above were extracted through a fetch-and-summarise tool from the arXiv HTML; section attributions are the tool's.\n- **Relevance to this project:** C49; compute-governance section — supports \"KYC, workload classification, record-keeping, aimed at frontier-scale customers\"; requires rescoping \"training runs rather than inference\" to \"large-scale training or inference rather than ordinary customers,\" and \"no prompt-level monitoring\" should be stated as an inference from the paper's design (existing provider data; no access to customer code/data), not as a quotation.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 487
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7f797792e6cd2b667874ab997ffce7f3acc0524520a57f4c3a9938c85955ec4e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/heim-2024-governing-through-the-cloud.md",
+ "kind": "artifact-page"
+}

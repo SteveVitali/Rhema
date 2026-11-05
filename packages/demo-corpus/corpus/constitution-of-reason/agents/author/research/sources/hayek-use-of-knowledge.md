@@ -1,0 +1,6 @@
+# hayek-use-of-knowledge
+- **URL:** https://www.econlib.org/library/Essays/hykKnw.html · **Accessed:** 2026-07-30 · **For:** v2→v3; citation repair for §IV dispersed-knowledge passage (Major issue 2)
+- **What it establishes:** Hayek, "The Use of Knowledge in Society," *American Economic Review* 35:4 (1945), 519–30. Knowledge "never exists in concentrated or integrated form but solely as the dispersed bits of incomplete and frequently contradictory knowledge which all the separate individuals possess"; "knowledge of the particular circumstances of time and place" gives practically every individual an advantage over all others in some respect; the price system is "a mechanism for communicating information," notable for "the economy of knowledge with which it operates."
+- **Key passages:** as quoted above (all verbatim from Econlib full text).
+- **Reliability:** primary (full text).
+- **Relevance:** The review is right — v2's §IV aggregation passage ("no centralized perspective contains all the local knowledge relevant to collective life"; center vs. periphery) is Hayek's argument nearly clause for clause. Cite him there; add the market/price form to the constitutions-of-disagreement taxonomy (coordination of dispersed knowledge through prices, without shared deliberation).

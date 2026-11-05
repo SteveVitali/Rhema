@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/reuters-yahoo-mythos-trusted-orgs-2026-06-27.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4d1e6ea756d125a0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/reuters-yahoo-mythos-trusted-orgs-2026-06-27.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# reuters-yahoo-mythos-trusted-orgs-2026-06-27\n- **URL:** https://www.yahoo.com/news/politics/articles/us-allows-anthropic-release-mythos-161756887.html · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Reuters via Yahoo, June 27, 2026: Lutnick's directive allowing Mythos 5 to 'trusted' US organizations (100+, mostly Glasswing Fortune 500); FIRE's John Coleman on opacity; Altman objects to government picking customers; no appeal or foreign-access discussion.\n- **Key passages:** Coleman: 'No one knows how these companies are picked and why everyone else is excluded.' · Altman: 'I just don't like the idea of the government picking the customers.'\n- **Reliability:** Secondary; wire service.\n- **Relevance to this project:** Q5 trusted-access geography; §XIII's tier has a published contestability critique.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "136f77f9b455feb27e114e177284ab7fd0686365365797cef500dcea288a7e81",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/reuters-yahoo-mythos-trusted-orgs-2026-06-27.md",
+ "kind": "artifact-page"
+}

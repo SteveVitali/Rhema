@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "overrides": [
+    { "kind": "reconciliation", "objection": "iii", "outcome": "merged", "major": 5, "cite": "agents/author/ledgers/v2-response-ledger.md:26" },
+    { "kind": "reconciliation", "objection": "v", "outcome": "merged", "major": 6, "cite": "agents/author/ledgers/v2-response-ledger.md:27" }
+  ]
+}

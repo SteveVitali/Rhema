@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/levitsky-way-ziblatt-price-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6b7f0a7dd560a972",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/levitsky-way-ziblatt-price-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# levitsky-way-ziblatt-price-2025\n- **URL:** https://www.foreignaffairs.com/united-states/american-authoritarianism-levitsky-way-ziblatt · **Accessed:** 2026-08-25 (article page returned 403 to fetch; quotes assembled from publisher's own channels and Harvard pages — search-level; verify before print quotation) · **For:** v1→v2 response round, the regime call the essay engages\n- **What it establishes:** Levitsky, Way & Ziblatt, \"The Price of American Authoritarianism,\" Foreign Affairs, December 2025 (Harvard Dept. of Government announcement dated Dec. 16, 2025). The three authors make the regime call explicitly: the U.S. crossed out of full democracy in 2025 into competitive authoritarianism — while insisting the change is reversible and warning against both complacency and fatalism. They note opposition channels remain open, citing Democratic wins in the November 2025 elections.\n- **Key passages:**\n  - \"In 2025, the United States ceased to be a full democracy in the way that Canada, Germany, or even Argentina are democracies.\" (Quoted verbatim by Foreign Affairs' own X account, https://x.com/ForeignAffairs/status/2023228844023423198, attributing it to Levitsky, @LucanWay, @dziblatt — publisher self-quotation, so high confidence, but the article body itself was not directly readable: verify against print before quoting.)\n  - \"Reversing the United States' slide into authoritarianism will require democracy's defenders to recognize the twin dangers of complacency and fatalism.\" (Verified verbatim on the Harvard Dept. of Government announcement page, https://www.gov.harvard.edu/2025/12/16/steven-levitsky-daniel-ziblatt-publish-article-in-foreign-affairs/; also paraphrased by CFR's X account.)\n  - Search-level framing (CES Harvard / gov.harvard summaries): the article examines \"the withering away of American democracy and the 'competitive authoritarianism' taking its place.\"\n- **Companion citation (term of art):** Way, Lucan A. & Steven Levitsky, \"The Dynamics of Autocratic Coercive Capacity After the Cold War,\" *Communist and Post-Communist Studies* 39, no. 3 (2006): 387–410. (Confirmed via Levitsky's Harvard publications page, https://levitsky.scholars.harvard.edu/publications/dynamics-autocratic-coercive-capacity-after-cold-war, and Semantic Scholar. This is the citation for \"coercive capacity\" as a Levitsky/Way term of art — search-level, not read in full.)\n- **Reliability:** Primary authors, secondary access route: the load-bearing quote comes via the publisher's official social account and Harvard institutional pages, not the paywalled article itself. Mark the \"ceased to be a full democracy\" sentence \"(verified via publisher's own excerpt; article paywalled)\" if quoted in print.\n- **Relevance to this project:** Gives the essay a dated, named scholarly regime call for \"the United States of 2026\" — the sequel to the Feb. 2025 prediction note (levitsky-way-path-2025): the same authors say the predicted breakdown happened in 2025. The coercive-capacity citation supports using that phrase as their term of art rather than the essay's coinage.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 390
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e7923fb0088eb5f3a9fa96f9ccd0f68401e52118d4f4e36636694e107caa14af",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/levitsky-way-ziblatt-price-2025.md",
+ "kind": "artifact-page"
+}

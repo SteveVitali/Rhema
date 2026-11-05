@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/breyer-chat-control-tracker-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "96cec2f80abeaace",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/breyer-chat-control-tracker-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# breyer-chat-control-tracker-2026\n- **URL:** https://www.patrick-breyer.de/en/posts/chat-control/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 3)\n- **What it establishes:** Former MEP Patrick Breyer's running tracker of the EU CSA Regulation (\"Chat Control 2.0\"). Council negotiating mandate adopted 13 November 2025 after \"mandatory chat control was finally removed\"; end-to-end encrypted services out of scope of detection; but the mandate retains \"voluntary\" provider scanning \"at the provider's discretion\" and age verification / under-16 app restrictions. Parliament's mandate (14 November 2023): hash-matching of known material only, targeted at suspects, \"no mandatory age verification.\" Trilogues: 9 Dec. 2025, 26 Feb., 16 Apr., 11 May, 29 June 2026, without agreement. Interim regulation (\"Chat Control 1.0,\" voluntary scanning): Parliament rejected a second extension in March 2026 and it \"expired on 4 April 2026.\" Breyer's warning: \"mandatory age verification resulting in the end of anonymous communication.\"\n- **Key passages:** \"mandatory chat control was finally removed\"; \"no mandatory age verification\"; \"expired on 4 April 2026.\"\n- **Reliability:** Secondary; advocacy (Pirate Party) but the most detailed public timeline; dates cross-checked against The Register (July 9, 2026).\n- **Relevance to this project:** Agenda 3. Client-side scanning is not in the Council text; the live identity mechanism in the EU file is age verification, contested between Council and Parliament; the mandatory regime is not enacted as of Sept. 2026.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 213
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4c9ebeba665c180588fc52ae9f70d1d8c7b12f1c205f8338ea8853324434f5ec",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/breyer-chat-control-tracker-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,99 @@
+{
+ "dto": {
+  "artifactKind": "consolidation_notes",
+  "artifactPath": "agents/author/drafting/v1/05-consolidation-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4c3f79ee51d58a74",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "c2954031c8be4ee8",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "633fd7c88d26e89e",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "c87911a11507d072",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "23fb3424e4bcfbf6",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "05b2a994bc9524e2",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "81c1603e2054d4be",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "5abedd8935eee65d",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "554a7a5182a46189",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "0291ee97a35e81e6",
+    "ordinal": 18
+   },
+   "b2": {
+    "contentHash": "1eaf06ef0be42088",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "ab846867cde6a731",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "9bc0d830f0858d2d",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "a43b3f9f7af89d26",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "9152091edaef95fa",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "f49a044548fbdd89",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "d27e070c3586f7f9",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "08dad696f94b7261",
+    "ordinal": 9
+   }
+  },
+  "draftId": "agents/author/drafting/v1/05-consolidation-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Consolidation notes — v1 (Phase 5), 2026-08-20\n\nFull end-to-end read performed after drafting; 29 + 8 + 6 edits applied in\nthree passes. What was found and fixed, and what stands.\n\n## Coherence\n\n- Seams read cleanly; each section opens from the previous exit state\n  (checked pairwise on the full read). The III→IV, VI→VII, and XII→XIII\n  seams carry the argument, not headings.\n- The coda's censorship image (\"no sentence is censored\") had been garbled in\n  drafting (\"no sentence framed\") — restored to the outline's intended image.\n- \"Weimar analogies\" (§VIII) corrected to \"reaching abroad\" — Fraenkel is\n  Nazi-era, not Weimar; and §VII already used him.\n- Fraenkel/Gestapo sentence de-tangled.\n\n## Promise and payoff (walked against the plan's table)\n\nAll discharged: opening's \"what are we seeing\" → V/VII/XII; \"machinery can\nprecede the regime\" → IX + XII; title → II/XIII/coda final lines; \"The\nConspiracy\" returns in V, XII (implicitly via \"adversarial system worked\"),\nand the coda; epigraph (Scott) returns verbatim in the coda's penultimate\nline; IX's \"becomes a query\" → X's \"no case\" logic; XII's thresholds → XIII\npivot via \"what citizens can watch\"/\"can do\" (gap G8 closed by the XIII\nopening's \"standard reply to everything above\").\n\n## Thesis discipline\n\nThesis at start = thesis at end (capacity vs. regime; wait-or-decide). No\ndrift into any Phase-0 refusal: the draft states explicitly that the US is\nnot totalitarian (opening + XII), that ICE is not the Gestapo (XII), that\ncapability ≠ use for spyware (IV), that the gait claim is unsupported (III),\nthat alleged crimes are prosecutable (opening), that capacity is bipartisan\n(VIII), and it ends non-fatalist (XII checks + coda).\n\n## Budget reconciliation\n\nBody + coda ≈ 9,360; appendix ≈ 280; total ≈ 9,650 (target 10,000–10,500,\nceiling 10,400). Under target by ~350: acceptable — under-runs concentrated\nin II, IX, X, XIV, all sections whose material compressed well; no section\nover budget by more than ~130 (VI at 830 vs 700, justified: it carries the\nBritain merge). Ledger rows updated with actuals.\n\n## Voice audit (measured; targets from 01-voice-brief.md)\n\n| Feature | Target | Measured | Verdict |\n|---|---|---|---|\n| Sentence median | 14–16 | 16 | ✓ |\n| Sentence mean | ~18 | 20.7 | high side of per-piece range (14.2–21.7) — acceptable |\n| p90 | ≤36 | 38 | within corpus range 27–42; quote-frames inflate |\n| ≤10 words | ≥30% | 29% | ✓ (rounding) |\n| ≥40 words | ≤8% | 9.7% | slightly over; residual is quote-carrying sentences; corpus range 0–13.8 |\n| Single-sentence paragraphs | 20–30% (long ~18%) | 16% | ✓ vs long-form 18% |\n| Em dash | ≤1.4/1k | 0.42/1k (mostly quoted matter) | under-produced vs 0.6–1.4 band — deliberate; matches Constitution of Reason (0.58) direction |\n| Semicolon | ≤6/1k | 6.4/1k | at band edge (corpus 0–8) |\n| Colon | 10–14/1k | 11.5/1k | ✓ |\n| Question marks | ≤3/1k structural | 2.4/1k | ✓ |\n| Exclamation | 0 | 0 | ✓ |\n| Contractions | 0 | 0 in author prose (1 inside quotation) | ✓ |\n| First person singular | ~0 | 0 narrative (all instances in quotes/formulations) | ✓ |\n| Negation-then-correction | 4–6/1k | ~3.9/1k rough count | just under band; forms varied |\n| Triads | ≤4/1k, never stacked | spot-checked, no stacks | ✓ |\n| Marker vocabulary | 0 | 0 (scripted scan) | ✓ |\n\n## Apparatus vs. budget\n\nEpigraph 1 ✓ · roman-numeral h2 titles, unnumbered opening + coda ✓ · endnotes:\n51 (budget \"30–40, expect ~45\"; model piece ran 22, Constitution of Reason 49\n— at the corpus ceiling, justified by the piece's factual density) · block\nquotes 0 used (budget ≤4; quotes ran inline instead — cleaner for this\nmaterial) · bullet lists 2 (thresholds; appendix tiers) ✓ · tables 0, figures\n0, bold only in appendix tier labels (borderline; venue shows bold section\nlabels in short essays — accepted, noted for review).\n\n## Provenance sweep\n\nEvery endnote resolves to ledger rows with Verified/Substantially accurate\nverdicts; every quotation was checked against ledger wording on the full\nread (Tocqueville = Reeve rendering; Church Committee = Book II wording;\nNSPM-7, Fraenkel, Shklar, Foucault, Bermeo, Scheppele, CRS, Holder verbatim\nper ledger). No `[unverified]` marks needed: zero unverified claims shipped.\nCapability/use, allegation/adjudication, citizen/noncitizen, federal/private\ndistinctions checked per the outline's Rules 1–8. Corrections applied during\ndrafting: CWA/Sunrise kept off the diagram (C1), \"recorded\" attributed to\nReformer (C1), WIRED method stated (C6), Paragon complications carried (C12),\nUK litigation posture as contested (C19), Judge Young finding attributed to\nAAUP v. Rubio (C24), law-firm appeals noted pending (C39), PYM scoped to\nplaintiff congregations (C46), Comey allegation-framed with named expert\n(C41).\n\n## Known residuals (for the audit and the drafting note)\n\n1. Sentence mean/long-share slightly above the model piece; driven by\n   quotation-bearing sentences.\n2. Endnote count (51) above plan estimate, at corpus ceiling.\n3. Em-dash rate below the long-form band (under-, not over-production).\n4. Appendix uses bold tier labels (venue-permitted in short-essay headers;\n   flag for editorial review).\n5. UN-experts quotation (C19b) rests on corroborated excerpts because\n   ohchr.org blocked fetching; flagged in ledger for pre-publication\n   re-verification.\n",
+  "meters": {
+   "readMin": 3,
+   "words": 750
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "77b05c12f6272cae4887e6802e3a860a09dba1b4f653b83ad78d14730ebfb5c4",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/drafting/v1/05-consolidation-notes.md",
+ "kind": "artifact-page"
+}

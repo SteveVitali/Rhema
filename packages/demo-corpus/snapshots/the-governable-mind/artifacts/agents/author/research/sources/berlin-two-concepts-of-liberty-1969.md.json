@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/berlin-two-concepts-of-liberty-1969.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "33a0eb905e392b93",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/berlin-two-concepts-of-liberty-1969.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# berlin-two-concepts-of-liberty-1969\n- **URL:** https://philosophyandlaw.org/Philosophers/Berlin/Berlin_twoconceptsofliberty.pdf (typescript transcription headed \"Berlin, I. (1958) 'Two Concepts of Liberty.' In Isaiah Berlin (1969) Four Essays on Liberty. Oxford: Oxford University Press.\"; 32 pp., unpaginated to the OUP edition) · Also consulted: https://en.wikipedia.org/wiki/Two_Concepts_of_Liberty · **Accessed:** 2026-09-16 · **For:** v1 response round, Berlin wording check\n- **What it establishes:** Both target sentences appear in this transcription, which declares the 1969 Four Essays text as its source and includes the 1969 footnotes and bracketed \"[1958]\" insertions characteristic of that edition. archive.org copies of Four Essays on Liberty (identifiers fouressaysonlibe0000berl, libertyincorpora0000berl) exist but are lending-only with no public OCR text, so I could not check against a page image; Wikipedia independently reproduces sentence (a) with the same wording. The archive.org and Aeon (Kasmirli 2019) sources also confirm sentence (b)'s wording.\n- **Key passages:**\n  - (a) Sec. I: \"'What is the area within which the subject - a person or group of persons - is or should be left to do or be what he is able to do or be, without interference by other persons?'\"\n  - Positive sense, same paragraph: \"'What, or who, is the source of control or interference that can determine someone to do, or be, this rather than that?'\"\n  - (b) Sec. II: \"Once I take this view, I am in a position to ignore the actual wishes of men or societies, to bully, oppress, torture them in the name, and on behalf, of their 'real' selves, in the secure knowledge that whatever is the true goal of man … must be identical with his freedom\".\n  - Sec. I: \"Political liberty in this sense is simply the area within which a man can act unobstructed by others.\"\n- **Reliability:** Secondary transcription of a primary text (no page images); wording corroborated by Wikipedia and Aeon. Adequate for confirming phrasing; cite the OUP edition, not this PDF, and give page numbers from a print copy if the essay needs them (1969 Four Essays: essay at pp. 118–172; 2002 Liberty ed. Hardy: pp. 166–217).\n- **Relevance to this project:** Confirms the essay's quoted Berlin wording. Reference: Isaiah Berlin, \"Two Concepts of Liberty\" (1958), in *Four Essays on Liberty* (Oxford: Oxford University Press, 1969); reprinted in *Liberty*, ed. Henry Hardy (Oxford: Oxford University Press, 2002).\n- **Cross-reference (added after writing):** the earlier note [berlin-1958-two-concepts-oxford-vl](berlin-1958-two-concepts-oxford-vl.md) shows the 1958 Clarendon lecture text reads \"what he wants to do or be\" and \"in the name of their 'real' selves\" (no \"and on behalf,\"), and lacks the \"area within which a man can act unobstructed by others\" sentence. The transcription read here has all three 1969 features (\"is able to do or be\"; \"in the name, and on behalf, of\"; the \"unobstructed\" sentence), which corroborates that it reproduces the 1969 Four Essays revision. Cite \"is able to\" and \"and on behalf\" wording to the 1969/2002 editions, not to the 1958 lecture.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 467
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "a3705a025ed8abf4d5821b3c7de49969ac852f2f7651bb77ce1d3ad5be936489",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/berlin-two-concepts-of-liberty-1969.md",
+ "kind": "artifact-page"
+}

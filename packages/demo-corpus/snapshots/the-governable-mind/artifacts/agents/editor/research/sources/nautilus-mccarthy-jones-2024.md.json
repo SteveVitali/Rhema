@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/nautilus-mccarthy-jones-2024.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d0e28f6f091931d2",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/nautilus-mccarthy-jones-2024.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nautilus-mccarthy-jones-2024\n- **URL:** https://nautil.us/who-controls-your-thoughts-498055 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Interview with McCarthy-Jones (Jan. 22, 2024) on Freethinking: right is 'effectively hollow'; near-term threat is behavior-reading plus AI; proposes protecting external thinking (conversation, writing, collaboration).\n- **Key passages:** \"The combination of that knowledge with AI technologies could be a really huge threat to our autonomy.\" · \"there's nothing there. It's effectively hollow.\"\n- **Reliability:** Secondary (interview) with the author; self-presentation.\n- **Relevance to this project:** Report §1.9, §3; draft l.76, l.82.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 83
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3d04f00158624aaf38c15dae8e5c14e027aa6c715bb4c5a4fa8b0046edb6a936",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/nautilus-mccarthy-jones-2024.md",
+ "kind": "artifact-page"
+}

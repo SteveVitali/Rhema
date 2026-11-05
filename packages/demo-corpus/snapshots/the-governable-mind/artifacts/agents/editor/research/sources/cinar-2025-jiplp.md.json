@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cinar-2025-jiplp.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a71a0155be651854",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cinar-2025-jiplp.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cinar-2025-jiplp\n- **URL:** https://academic.oup.com/jiplp/article/20/10/681/8246693 (DOI 10.1093/jiplp/jpaf054; Crossref record https://api.crossref.org/works/10.1093/jiplp/jpaf054) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C45 quotations verbatim; 24 June 1566 Privy Council ordinances at the High Commission's request; 1662 Act effective 10 June 1662; 1695 lapse. Defeats ref [27]'s subtitle: the published title is 'Understanding technology regulation through history: insights from the legal history of the printing press and copyright in early modern England', JIPLP 20:10 (2025) 681–691.\n- **Key passages:** 'In exchange for relieving the state of censorship responsibilities, leading members of the Stationers' Company were granted a near-monopoly over English book printing.' / 'Centralization of the book trade in London, instead of a dispersed industry, facilitated governmental oversight.'\n- **Reliability:** Secondary (peer-reviewed legal history); independent of Deazley though it cites the same literature.\n- **Relevance to this project:** C45, C46, C78; ref [27]\n",
+  "meters": {
+   "readMin": 1,
+   "words": 139
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4103d682898c82082026b25d733ca2c2b082bfbef7a9b038f41b37bd11d392fd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cinar-2025-jiplp.md",
+ "kind": "artifact-page"
+}

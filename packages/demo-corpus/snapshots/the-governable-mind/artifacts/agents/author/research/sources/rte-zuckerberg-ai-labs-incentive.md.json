@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/rte-zuckerberg-ai-labs-incentive.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "434c19694ffdaa9d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/rte-zuckerberg-ai-labs-incentive.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# rte-zuckerberg-ai-labs-incentive\n- **URL:** https://www.rte.ie/news/business/2026/0916/1591713-ai-labs-mark-zuckerberg/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C46\n- **What it establishes:** RTÉ carrying AFP/Reuters (Sept 16, 2026). Zuckerberg's X post: \"every lab has the responsibility and incentive to move at the pace required to train its models safely\"; labs face \"significant\" liability; he did not call for an industry-wide slowdown, in contrast to Altman and Musk who endorsed Amodei's call \"within hours.\"\n- **Key passages:**\n  - \"every lab has the responsibility and incentive to move at the pace required to train its models safely\"\n  - \"Trust and alignment are quickly becoming the most important capabilities that will differentiate agents and models\"\n- **Reliability:** Wire copy via a public broadcaster; consistent with CNBC.\n- **Relevance to this project:** Gives the \"responsibility and incentive\" sentence that most directly matches C46.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 127
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d6e644d4717e370edb4652a14825b5cf9bb48dc26cddd98d689490d2a0c1dbb5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/rte-zuckerberg-ai-labs-incentive.md",
+ "kind": "artifact-page"
+}

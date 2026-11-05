@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/sebastian-politics-of-visibility-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "ea8049c1c205e963",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/sebastian-politics-of-visibility-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sebastian-politics-of-visibility-2026\n- **URL:** https://sjsebastian.substack.com/p/the-politics-of-visibility · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** The author's prior essay (Aug. 25, 2026; read via summary fetch): authoritarian capacity vs. regime; behavioral legibility; sensing/fusion/classification layers; Penney, Foucault, Shklar, Pettit, Cohen, Zuboff, Balkin, Solove; cites Carpenter and Chatrie; 'right to opacity'; does not discuss AI, chat logs, or freedom of thought.\n- **Key passages:** \"The machinery can precede the regime.\" · \"Surveillance of association is surveillance of the generative mechanism of democratic power.\"\n- **Reliability:** Primary (author's own prior work).\n- **Relevance to this project:** Report §7 (reader continuity), §4 (Carpenter cited there, not here).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "6e3f06d896090917fe7de9c3cdbc4cec582a07a4d5c3153f96e3ed83816c91c7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/sebastian-politics-of-visibility-2026.md",
+ "kind": "artifact-page"
+}

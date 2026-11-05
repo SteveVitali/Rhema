@@ -1,0 +1,6 @@
+# us-v-rinderknecht-criminal-complaint-2025-10-08
+- **URL:** https://static.foxnews.com/foxnews.com/content/uploads/2025/10/palisades-fire-criminal-complaint_redacted.pdf · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy; press-hosted redacted copy)
+- **What it establishes:** Criminal complaint and ATF affidavit, United States v. Rinderknecht (C.D. Cal.), Oct. 8, 2025: the ChatGPT question typed during the 911 call (¶26), recovered from his iPhone; the affiant's state-of-mind reading (¶37c); earlier prompts (Bible-burning, Nov. 1, 2024; dystopian painting, July 11, 2024) (III17; VII3-scope timing).
+- **Key passages:** ¶26: "During the call, RINDERKNECHT typed a question into the ChatGPT app on his iPhone, asking, 'Are you at fault if a fire is lift [sic] because of your cigarettes.'" · ¶37c: "indicates that RINDERKNECHT wanted to preserve evidence of himself trying to assist in the suppression of the fire and he wanted to create evidence regarding a more innocent explanation for the cause of the fire"
+- **Reliability:** Primary; charging document (allegations, not findings; case pending).
+- **Relevance to this project:** l.84; ref [33] (CRS quotes the same line).

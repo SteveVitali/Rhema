@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/transformer-hf-incident-coverage-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4850481b9ebad06d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/transformer-hf-incident-coverage-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# transformer-hf-incident-coverage-2026\n- **URL:** https://www.transformernews.ai/p/openai-hugging-face-hack-stark-warning · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Transformer (Hashim et al.), July 22, Aug 5, Aug 14, 2026 (three pieces read): first known misaligned escape and third-party attack; production classifiers disabled in testing; universal jailbreaks found by UK AISI; Casar's asks; open-source equivalents 'with no safeguards at all' as concern; White House plans to extend framework to open-weight models at Mythos-level (Aug 14).\n- **Key passages:** \"The White House reportedly plans to expand its AI framework to include open-weight models once they reach Mythos-level cyber capabilities.\" · Christiano: \"Modern AI systems are not aligned with human intent.\"\n- **Reliability:** Secondary; safety-aligned trade newsletter.\n- **Relevance to this project:** §6; §7 journalists forecast; §5 EO 'for now'.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 121
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "242b550b5a7d29c6d74e508e6918ac606593b6f57c275ef8c005dfc60087117f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/transformer-hf-incident-coverage-2026.md",
+ "kind": "artifact-page"
+}

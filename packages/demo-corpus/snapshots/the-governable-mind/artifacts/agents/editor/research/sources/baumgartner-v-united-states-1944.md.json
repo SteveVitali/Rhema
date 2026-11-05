@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/baumgartner-v-united-states-1944.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "eaab8a6324fb53fe",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/baumgartner-v-united-states-1944.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# baumgartner-v-united-states-1944\n- **URL:** https://www.law.cornell.edu/supremecourt/text/322/665 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Baumgartner v. United States, 322 U.S. 665 (1944), was a denaturalization suit (certificate of 1932) in which the Government relied mainly on the defendant's private diary (Dec. 1, 1938 – summer 1941) and seven years of pro-Nazi statements; the Court held that post-naturalization expressions cannot by presumption prove a fraudulent oath and reversed. Confirms the draft's \"a private diary offered as evidence against its author\" and Blitz's fn. 103 characterization.\n- **Key passages:** \"the diary which Baumgartner kept from December 1, 1938, to the summer of 1941 reveals that he attended a meeting of the German Vocational League … Other diary entries reflect violent anti-semitism\" · \"Baumgartner's diary, on which the Government mainly relies, reveals that when in 1939 he attended a meeting of the German Vocational League … it was apparently his only experience with this group\" · proof of state of mind at the oath \"can be removed, if at all, only by a presumption that disqualifying views expressed after naturalization were accurate representations\" (rejected).\n- **Reliability:** Primary (U.S. Reports text via Cornell LII).\n- **Relevance to this project:** III9 (l.74); the diary-in-miniature point is stronger than the draft states.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 206
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8f68f1e845af45112c2524a2d3f86152bcf98b9aa0f4ff1a6792f39ffcc6a6a3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/baumgartner-v-united-states-1944.md",
+ "kind": "artifact-page"
+}

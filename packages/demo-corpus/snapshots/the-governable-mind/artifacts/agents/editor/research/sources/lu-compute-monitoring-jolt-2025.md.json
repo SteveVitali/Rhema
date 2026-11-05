@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/lu-compute-monitoring-jolt-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8e54995a15097e03",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/lu-compute-monitoring-jolt-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# lu-compute-monitoring-jolt-2025\n- **URL:** https://jolt.law.harvard.edu/assets/articlePDFs/v39.1/Compute-Monitoring.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Lisa Lu, Harvard JOLT 39:1 (Fall 2025; full PDF extracted): compute monitoring revives the encryption-backdoor debate; compelled access to encrypted/confidential-computing data may be an unconstitutional search; mandated backdoors are compelled speech; permissible objective metrics vs invasive disclosures; third-party doctrine protects content less than metrics.\n- **Key passages:** \"government-compelled access to user data through compute providers…may constitute an unconstitutional search.\" · \"requiring providers to build decryption mechanisms or backdoors constitutes compelled speech.\" · \"the Fourth Amendment likely does not protect non-content data, such as compute metrics.\"\n- **Reliability:** Primary; student note, Stanford; independent.\n- **Relevance to this project:** Clipper parallel (l.142–146); Q3 metrics/content line; §4(c).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "51052ac320436a43353ab0cbd48e6aecaa29ef34b5d5f1d6f6403ed356beff5c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/lu-compute-monitoring-jolt-2025.md",
+ "kind": "artifact-page"
+}

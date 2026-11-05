@@ -1,0 +1,7 @@
+# collier-mahon-radial-categories
+
+- **URL:** https://www.cambridge.org/core/journals/american-political-science-review/article/abs/conceptual-stretching-revisited-adapting-categories-in-comparative-analysis/52A5DA1F2B8A9516A45C04F5B165E1C5 (located; read at abstract/search-summary level) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Collier & Mahon, APSR 1993: political-science categories often are not classical (necessary-and-sufficient-conditions) categories but **family resemblance** and **radial categories** (prototype-centered, with members related to a central case in different ways); applying classical taxonomy to them causes conceptual stretching errors. Builds on Sartori.
+- **Key passages:** Sartori's classical view sees "taxonomic hierarchy with clear boundaries and defining properties shared by all members"; Collier & Mahon examine "family resemblances and radial categories" (second-hand).
+- **Reliability:** Abstract/summary level.
+- **Relevance to this project:** The draft's "prototype families" move ("A prototype is not a checklist. It is a recognizable center of gravity") is a well-established methodology in political concept formation — Collier & Mahon made exactly this argument, with the same cognitive-linguistics lineage (Rosch/Lakoff), thirty years ago. The draft credits only Freeden. Not damaging, but the prototype-semantics element should not be counted as novel, and citing Collier & Mahon would strengthen the piece's methodological pedigree.

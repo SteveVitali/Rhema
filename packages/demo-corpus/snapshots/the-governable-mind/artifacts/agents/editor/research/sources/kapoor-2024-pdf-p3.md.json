@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/kapoor-2024-pdf-p3.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "715951ad309017a6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/kapoor-2024-pdf-p3.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# kapoor-2024-pdf-p3\n- **URL:** https://arxiv.org/pdf/2403.07918 · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice B\n- **What it establishes:** Kapoor, Bommasani et al., \"On the Societal Impact of Open Foundation Models\" (arXiv v1 Feb. 27, 2024). The five distinctive properties are stated at pp. 1–2 and developed in §3 \"Distinctive properties of open foundation models\" beginning on p. 3.\n- **Key passages:** pp. 1–2: \"Open foundation models are marked by broader access, greater customizability, the potential for local inference, an inability to rescind model access once released, and weaker monitoring.\" · p. 3: \"Here, we enumerate five distinctive properties of open foundation models compared to closed foundation models. … Broader access. Given our definition, open foundation models require that the model weights be widely available…\"\n- **Reliability:** Primary preprint; Princeton/Stanford; open-weights-sympathetic but rigorous.\n- **Relevance to this project:** XI1 (l.220); ref [78] pinpoint \"3\" (could read 2–3).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 142
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "aee96864d7131f4e26758a955fac3d866b293dbb49fca587ae332f31c7664aef",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/kapoor-2024-pdf-p3.md",
+ "kind": "artifact-page"
+}

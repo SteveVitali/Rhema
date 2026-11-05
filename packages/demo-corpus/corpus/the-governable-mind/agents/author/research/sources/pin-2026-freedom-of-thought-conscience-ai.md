@@ -1,0 +1,12 @@
+# pin-2026-freedom-of-thought-conscience-ai
+- **URL:** https://doi.org/10.1017/jlr.2026.10079 (Cambridge Core full text via a reader proxy; abstract via https://api.crossref.org/works/10.1017/jlr.2026.10079) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M10)
+- **Citation:** Andrea Pin, "Freedom of Thought, Conscience, and AI," *Journal of Law and Religion* (FirstView, published online 22 July 2026), pp. 1–20, doi 10.1017/jlr.2026.10079. No volume/issue assigned in Crossref.
+- **What it establishes:** The "obsolete" sentence is in the **abstract**, verbatim; the body restates the inaccessibility premise and invokes the extended mind. Another prior statement (five days before De Cock v1) of the essay's "unobservability" diagnosis.
+- **Key passages:**
+  - Abstract: "Because AI capabilities can extract information about individuals' thoughts and feelings, they are making obsolete the deeply held belief that what is within the human mind (forum internum) is protected from intrusion by its very nature. The author explores the notion of the extended mind to show how the frequent reliance on smart technologies reveals a need to strengthen their protection in order to protect their users."
+  - Body: "The silence is unsurprising because it stems from the deep-seated, centuries-old belief that human conscience and thought would be simply inaccessible for worldly powers, to the extent that they would not need a specific protection or even a fine-grained legal definition."
+  - Body: "it seems that the law has treated human thought as another 'black box,' equally impenetrable and opaque."
+  - Body: "The historical trajectory of freedom of thought and conscience was premised on the fact that the depth of the human soul is impenetrable to human institutions, be they private or public. This reality is being increasingly questioned. The 'black box' of human conscience can be opened."
+  - Body (on *Jones v. Opelika*, 1942): "Writing for the majority, Justice Reed explained that the true protector of human thought is not even the US constitution, but its own nature".
+- **Reliability:** Primary, peer-reviewed (CUP). Body skimmed by keyword, not read end to end.
+- **Relevance to this project:** §III priority: the unobservability diagnosis is in print from Pin (22 July 2026), De Cock (27 July 2026), and earlier Richards 2008 p. 389, Alegre 2017 p. 221, Bublitz 2026 p. 249 ("factual invincibility of thought … largely assumed for centuries"). The essay cannot present it as its own observation.

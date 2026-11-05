@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/evangelista-2019-surveillance-society-review-zuboff.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6c13a59923bd7e3f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/evangelista-2019-surveillance-society-review-zuboff.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# evangelista-2019-surveillance-society-review-zuboff\n- **URL:** https://ojs.library.queensu.ca/index.php/surveillance-and-society/article/download/13132/8501 (PDF extracted) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Rafael Evangelista, review of Zuboff, Surveillance & Society 17(1/2): 246-251 (2019). On China: \"she identifies China's use of instrumentarian power for the constitution of a 'social credit.' Here, Big Other, the materialization of this instrumentarian power in action, would create stimuli for good behaviours in detriment of bad and the Chinese government defines which is which. Being a technology developed in the US, at home Big Other serves in the creation of profits; in China, it serves a government that wishes to control the social body.\" Notes Zuboff spends \"many pages establishing parallels between it and fascism and Stalinism.\"\n- **Key passages:** as quoted.\n- **Reliability:** Secondary (academic review); independent.\n- **Relevance to this project:** Agenda 10 (l.288): Zuboff does say a state can wield instrumentarian power (China, ch. 13); the draft's \"commercial and behavioral\" is accurate for her definition and paradigm case but incomplete as a contrast with \"sovereign.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 165
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c7016631ea03a926c6d2b0839291cb362550bf6842b9104525b858e01f878a9b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/evangelista-2019-surveillance-society-review-zuboff.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/iaisr-2026-web-page.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3cf79c505142c1e9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/iaisr-2026-web-page.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# iaisr-2026-web-page\n- **URL:** https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026 · **Accessed:** 2026-09-16 (site serves a bot-check to direct fetch; text read via a reader proxy) · **For:** v1 drafting, claim C44\n- **What it establishes:** The report's landing page reproduces the executive-summary language: current systems lack loss-of-control capabilities but improve in autonomous operation; models increasingly distinguish test from deployment and exploit evaluation loopholes; open-weight models offer research and commercial benefits for lesser-resourced actors but cannot be recalled, have removable safeguards, and can run unmonitored.\n- **Key passages:**\n  - \"Current systems lack the capabilities to pose such risks, but they are improving in relevant areas such as autonomous operation.\"\n  - \"AI agents – systems that can act in the world with limited human oversight – have become increasingly capable and reliable.\"\n  - \"They offer significant research and commercial benefits, particularly for lesser-resourced actors.\"\n  - \"However, they cannot be recalled once released, their safeguards are easier to remove, and actors can use them outside of monitored environments.\"\n- **Reliability:** Primary (publisher's own page). Matches the PDF.\n- **Relevance to this project:** Web-citable location for the C44 quotations; the PDF gives page numbers.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 176
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4c67898bbcb490b49cb90c0046dcbde8e262ca6995b468d09aef7004e06bb803",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/iaisr-2026-web-page.md",
+ "kind": "artifact-page"
+}

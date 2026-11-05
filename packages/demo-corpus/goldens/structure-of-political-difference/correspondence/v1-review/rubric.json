@@ -1,0 +1,47 @@
+{
+ "dimensions": [
+  {
+   "dimension": "thesis_contribution",
+   "score": 4
+  },
+  {
+   "cap": {
+    "at": 3,
+    "entailedByFindingOrdinal": 1,
+    "reason": "Capped: strongest counterargument (Lewis & Lewis) unengaged (Major issue 1); CHES framing unfalsifiable (MI 2); core §I/§IV reasoning is strong."
+   },
+   "dimension": "argument_rigor",
+   "score": 3
+  },
+  {
+   "cap": {
+    "at": 2,
+    "reason": "Capped by rule: two Misleading-in-context Tier 1 findings (C23a, C23d) — despite an otherwise exceptional substrate (22 Verified, correlations reproduce). Both fixes are local; this is the cheapest two-point recovery in the piece."
+   },
+   "dimension": "evidence_accuracy",
+   "score": 2
+  },
+  {
+   "dimension": "originality_situatedness",
+   "score": 2
+  },
+  {
+   "dimension": "structure",
+   "score": 2
+  },
+  {
+   "dimension": "prose",
+   "score": 4
+  },
+  {
+   "dimension": "voice_audience_fit",
+   "score": 3
+  },
+  {
+   "dimension": "intellectual_honesty",
+   "score": 3
+  }
+ ],
+ "sidecar": "rubric",
+ "version": 1
+}

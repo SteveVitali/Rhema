@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/sep-republicanism.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cd0cd482721fd95f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/sep-republicanism.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# sep-republicanism\n- **URL:** https://plato.stanford.edu/entries/republicanism/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C25\n- **What it establishes:** SEP \"Republicanism\" (Frank Lovett; substantive revision Aug 12, 2026) states freedom as non-domination, gives the benign-master/slave example (slaves unfree despite being left alone), and explicitly concedes that non-interference retains independent value. Pettit's *Republicanism* (1997) itself was not opened; the \"kindly/gentle master\" phrasing is Pettit's and should be attributed via SEP unless the book is checked.\n- **Key passages:** \"While the latter has an institutionally-protected right to treat his slaves more or less as he pleases (he might start whipping them just for the heck of it, say), let us suppose that this master in particular leaves his slaves for the most part alone.\" · \"Republican freedom merely requires the absence of something, namely, the absence of any structural dependence on arbitrary power or domination.\" · \"Imagine living in a community where our lives are regulated down to the tiniest detail, but always in strict accordance with commonly-known, non-arbitrary rules and procedures. Although we enjoy extensive freedom from arbitrary power, we have hardly any freedom of individual choice. Most would not want to live in such a community, and this suggests that we do indeed place some independent value on non-interference.\"\n- **Reliability:** Secondary, peer-reviewed reference by a leading republican theorist (Lovett); independent of the essay.\n- **Relevance to this project:** C25 — non-domination vs non-interference; the \"regulated in every detail\" concession.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 233
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f686332436cc248186211a5b4727b86a76c114f8f659058b083f215edd874167",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/sep-republicanism.md",
+ "kind": "artifact-page"
+}

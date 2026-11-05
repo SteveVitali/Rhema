@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/lessig-harvard-magazine-2000.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "cb70ed300d806b1f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/lessig-harvard-magazine-2000.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# lessig-harvard-magazine-2000\n- **URL:** https://www.harvardmagazine.com/2000/01/code-is-law-html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C48 and C70: the founders/Mill/progressives/cyberspace sequence is the article's opening; the quoted passage is verbatim; the ellipsis omits two sentences. The web page's headline is 'Lawrence Lessig on the increasing regulation of cyberspace', dek 'On liberty in cyberspace'; 'Code Is Law' appears only in the URL.\n- **Key passages:** 'Every age has its potential regulator, its threat to liberty.' / 'This regulator is code--the software and hardware that make cyberspace as it is.'\n- **Reliability:** Primary (author's own essay).\n- **Relevance to this project:** C48, C70; ref [29]\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "37fbbdf41eb5e461d9b147fe20bd72ef806ff28903f184d05bba5de62a5bf79e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/lessig-harvard-magazine-2000.md",
+ "kind": "artifact-page"
+}

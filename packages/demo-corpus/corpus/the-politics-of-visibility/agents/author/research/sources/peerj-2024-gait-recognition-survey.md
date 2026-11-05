@@ -1,0 +1,7 @@
+# peerj-2024-gait-recognition-survey
+
+- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/ (PeerJ Computer Science, open-access copy; peerj.com blocked fetch this session) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** Munusamy & Senthilkumar, "Emerging trends in gait recognition based on deep learning: a survey," PeerJ Computer Science, 2024. Peer-reviewed survey establishing gait recognition as an active biometric research field.
+- **Key passages:** "Gait recognition, a biometric identification method, has garnered significant attention due to its unique attributes, including non-invasiveness, long-distance capture, and resistance to impersonation." "Unlike other biometric methods like face recognition, fingerprint recognition, and iris scanning, gait recognition operates from a distance and requires no direct interaction with the person being identified."
+- **Reliability:** Primary for the state of the research field (peer-reviewed academic survey). Note: the survey frames the field as research-stage — results on academic datasets (CASIA-B, OU-MVLP), with open challenges (clothing, viewpoint, speed); it presents little evidence of mature real-world deployment. That supports the essay's capability-vs-use distinction.
+- **Relevance to this project:** C10(a) (gait recognition exists as a technical field; long-range non-contact identification is its selling point) and indirectly C10(d) (research maturity ≠ deployed use).

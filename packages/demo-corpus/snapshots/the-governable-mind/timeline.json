@@ -1,0 +1,356 @@
+{
+ "dto": {
+  "demo": {
+   "notRecorded": [
+    "time",
+    "credits",
+    "model",
+    "estimate"
+   ]
+  },
+  "nextStep": {
+   "estimateCredits": null,
+   "headDraftN": 4,
+   "label": null,
+   "verb": "none"
+  },
+  "originChip": {
+   "kind": "outline"
+  },
+  "project": {
+   "id": "the-governable-mind",
+   "slug": "the-governable-mind",
+   "title": "The Governable Mind"
+  },
+  "rounds": [
+   {
+    "anchor": {
+     "draftId": "v2",
+     "n": 2,
+     "origin": "response_to_review"
+    },
+    "n": 2,
+    "parts": [
+     {
+      "kind": "version",
+      "n": 2
+     },
+     {
+      "count": 25,
+      "kind": "run",
+      "workflow": "review"
+     },
+     {
+      "kind": "version",
+      "n": 3
+     }
+    ],
+    "producedN": 3,
+    "runs": [
+     {
+      "card": {
+       "actions": [
+        "open_deliverable",
+        "report"
+       ],
+       "approvals": [
+        {
+         "decision": "major revisions",
+         "round": "v2 review"
+        }
+       ],
+       "artifacts": [
+        "correspondence/v2-review/00-piece-brief.md",
+        "correspondence/v2-review/01-claim-ledger.md",
+        "correspondence/v2-review/02-discourse-report-policy.md",
+        "correspondence/v2-review/02-discourse-report.md",
+        "correspondence/v2-review/04-craft-notes.md",
+        "correspondence/v2-review/05-second-read.md",
+        "correspondence/v2-review/editors-letter.md"
+       ],
+       "decisions": [],
+       "deliverables": [
+        {
+         "key": "letter"
+        },
+        {
+         "count": 25,
+         "key": "findings"
+        },
+        {
+         "count": 9,
+         "key": "strengths"
+        },
+        {
+         "count": 68,
+         "key": "claims"
+        },
+        {
+         "key": "piece_brief"
+        },
+        {
+         "key": "claim_ledger"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "craft_notes"
+        },
+        {
+         "key": "second_read"
+        }
+       ],
+       "delivered": {
+        "counts": {
+         "claims": 68,
+         "findings": 25,
+         "strengths": 9
+        },
+        "links": [
+         "dossier",
+         "letter",
+         "ledger"
+        ],
+        "verdict": "**Major revisions**, and closer to publication than v1 by a clear margin. You wrote the paragraphs the last letter asked for, and they are the right paragraphs: the layer-2 run at l.260, the eighth question, the relocation of absoluteness, the June record, the exit paragraph, the labeled construction, the falsification clause with data in it. The constructive half is now 23 percent of the body instead of 17, and the second reader, cold, named the self-testing at l.234 and l.260 among the three strongest things in the piece. What stands between this draft and publication has changed character. In v1 the problem was silence: conclusions the draft implied and would not print. In v2 the problem is counting. Three Tier 1 claims are contradicted by the primary record and one is misleading, and all four sit in the essay's own apparatus (l.152, l.260, l.276), each overstated in the direction that flatters the thesis's balance: the warrant that \"found a man\" did not; the \"first documented instance\" was preceded by two others; the bill that \"passes most cleanly\" carries a terms-of-service trigger and no court deadline; the verified tier that fails contestability has an appeal form at one of its two gates. The layer-2 verdict, which the essay now has, does not yet say what it costs, and a reader who took §VI seriously meets it as the Stationers with better paperwork. And the identity story is mis-dated by a year in a way the privacy-law readership will catch in its first minute. None of this needs new argument. All of it needs the essay to count as carefully in §§XII–XIV as it does in §I."
+       },
+       "deliveryLabel": null,
+       "done": 7,
+       "failureCode": null,
+       "notRecorded": [
+        "time",
+        "credits",
+        "model",
+        "estimate"
+       ],
+       "phases": [
+        {
+         "key": "intake",
+         "ordinal": 1,
+         "status": "done"
+        },
+        {
+         "key": "verification",
+         "ordinal": 2,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 3,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 4,
+         "status": "done"
+        },
+        {
+         "key": "craft",
+         "ordinal": 5,
+         "status": "done"
+        },
+        {
+         "key": "second_read",
+         "ordinal": 6,
+         "status": "done"
+        },
+        {
+         "key": "letter",
+         "ordinal": 7,
+         "status": "done"
+        }
+       ],
+       "phaseSource": "inferred_from_delivered_files",
+       "recordSource": "agent-discourse",
+       "replayed": true,
+       "runId": "v2-review",
+       "running": 0,
+       "state": "completed",
+       "total": 7
+      },
+      "createdAt": null,
+      "producedN": 3,
+      "runId": "v2-review",
+      "state": "completed",
+      "subjectN": 2,
+      "workflow": "review"
+     }
+    ]
+   },
+   {
+    "anchor": {
+     "draftId": "v1",
+     "n": 1,
+     "origin": "drafted_from_outline"
+    },
+    "n": 1,
+    "parts": [
+     {
+      "kind": "version",
+      "n": 1
+     },
+     {
+      "count": 25,
+      "kind": "run",
+      "workflow": "review"
+     },
+     {
+      "kind": "version",
+      "n": 2
+     }
+    ],
+    "producedN": 2,
+    "runs": [
+     {
+      "card": {
+       "actions": [
+        "open_deliverable",
+        "report"
+       ],
+       "approvals": [
+        {
+         "decision": "major revisions",
+         "round": "v1 review"
+        }
+       ],
+       "artifacts": [
+        "correspondence/v1-review/00-piece-brief.md",
+        "correspondence/v1-review/01-claim-ledger.md",
+        "correspondence/v1-review/02-discourse-report-policy.md",
+        "correspondence/v1-review/02-discourse-report.md",
+        "correspondence/v1-review/04-craft-notes.md",
+        "correspondence/v1-review/05-second-read.md",
+        "correspondence/v1-review/editors-letter.md"
+       ],
+       "decisions": [],
+       "deliverables": [
+        {
+         "key": "letter"
+        },
+        {
+         "count": 25,
+         "key": "findings"
+        },
+        {
+         "count": 11,
+         "key": "strengths"
+        },
+        {
+         "count": 79,
+         "key": "claims"
+        },
+        {
+         "key": "piece_brief"
+        },
+        {
+         "key": "claim_ledger"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "discourse_report"
+        },
+        {
+         "key": "craft_notes"
+        },
+        {
+         "key": "second_read"
+        }
+       ],
+       "delivered": {
+        "counts": {
+         "claims": 79,
+         "findings": 25,
+         "strengths": 11
+        },
+        "links": [
+         "dossier",
+         "letter",
+         "ledger"
+        ],
+        "verdict": "**Major revisions.** This is a serious, unusually well-sourced political-philosophical essay with three contributions that would survive any amount of cutting: the Stationers' Company as the shared origin of press freedom and public-private information control; the five layers ordered by what governing each must know about a person; and the observation that a synthesis is not a record. Its factual substrate is sound in a way rare in the genre: of 79 claims checked to primary sources, none is contradicted. What stands between it and publication is not research or prose but three things the draft declines to say and one thing it does not know. It never runs its own test on the one policy question the whole Milton apparatus was built to answer (pre-release certification of open weights). It enters the freedom-of-thought field without knowing that field's founding article makes its central move, or that the field has since abandoned the absolutism the draft opens with. It calls itself \"anticipatory\" on a subject where the record has already caught up: chat logs are warranted and adjudicated objects, and in June 2026 a liberal state made identity a condition of capable inference for eighteen days by an instrument the essay's test never examines. And the constructive half (§§XI–XV) is starved by a history that takes 62 percent of the length. None of this requires new argument; all of it requires the author to write down conclusions the draft already implies."
+       },
+       "deliveryLabel": null,
+       "done": 7,
+       "failureCode": null,
+       "notRecorded": [
+        "time",
+        "credits",
+        "model",
+        "estimate"
+       ],
+       "phases": [
+        {
+         "key": "intake",
+         "ordinal": 1,
+         "status": "done"
+        },
+        {
+         "key": "verification",
+         "ordinal": 2,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 3,
+         "status": "done"
+        },
+        {
+         "key": "discourse",
+         "ordinal": 4,
+         "status": "done"
+        },
+        {
+         "key": "craft",
+         "ordinal": 5,
+         "status": "done"
+        },
+        {
+         "key": "second_read",
+         "ordinal": 6,
+         "status": "done"
+        },
+        {
+         "key": "letter",
+         "ordinal": 7,
+         "status": "done"
+        }
+       ],
+       "phaseSource": "inferred_from_delivered_files",
+       "recordSource": "agent-discourse",
+       "replayed": true,
+       "runId": "v1-review",
+       "running": 0,
+       "state": "completed",
+       "total": 7
+      },
+      "createdAt": null,
+      "producedN": 2,
+      "runId": "v1-review",
+      "state": "completed",
+      "subjectN": 1,
+      "workflow": "review"
+     }
+    ]
+   }
+  ],
+  "state": {
+   "key": "accepted",
+   "overlay": null,
+   "pill": "Accepted",
+   "suggested": {
+    "action": "open",
+    "label": null
+   }
+  },
+  "ungrouped": []
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "",
+ "kind": "timeline"
+}

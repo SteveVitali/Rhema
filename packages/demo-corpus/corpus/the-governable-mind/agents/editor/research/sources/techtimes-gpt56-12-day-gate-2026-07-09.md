@@ -1,0 +1,6 @@
+# techtimes-gpt56-12-day-gate-2026-07-09
+- **URL:** https://www.techtimes.com/articles/319979/20260709/gpt-56-goes-public-after-12-day-white-house-gate-tests-voluntary-ai-framework.htm · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A
+- **What it establishes:** Tech Times (McCain), July 9, 2026: hold began June 26 at the request of ONCD and OSTP; public release July 9; "12 days" is its count of June 26–July 9 (thirteen calendar days); roughly 20 vetted organizations. Reconciles "two weeks" vs "12-day" (X10).
+- **Key passages:** "On June 26, OpenAI previewed the GPT-5.6 family and simultaneously agreed to restrict access at the request of two White House offices" · "For the 12 days between June 26 and July 9, GPT-5.6 was available only through OpenAI's API and Codex" · "roughly 20 vetted organizations whose identities OpenAI had shared directly with the government" · names "the Office of the National Cyber Director and the Office of Science and Technology Policy."
+- **Reliability:** Secondary; tech press; single source for the count alongside Axios.
+- **Relevance to this project:** l.210; ref [76].

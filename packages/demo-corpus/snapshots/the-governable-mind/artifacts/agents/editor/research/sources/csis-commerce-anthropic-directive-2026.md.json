@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/csis-commerce-anthropic-directive-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "149e193da52325da",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/csis-commerce-anthropic-directive-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# csis-commerce-anthropic-directive-2026\n- **URL:** https://www.csis.org/analysis/department-commerce-restricted-access-anthropics-latest-models-what-comes-next · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** CSIS (Koren, Kurland, Mehta), June 16, 2026: legal basis (ECRA emerging-tech 'is informed' letter; EAR 744.22 military-intelligence end-use); unclear how user access equals an export; compliance path would be identity and citizenship verification for all users; precedent risk.\n- **Key passages:** \"It is unclear how user access to models equates to a release of EAR software or technology to any foreign nationals except those working at Anthropic.\" · \"every company must consider the possibility of such controls being used again.\"\n- **Reliability:** Secondary; think tank; independent of Anthropic.\n- **Relevance to this project:** Headline 1; §5 EO row (the executive's actual instrument); Q7 reversibility.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "cb4a0ce36bd511ac9e36f9423b2699372329ffdbc297c07bbc31e559022b9d6c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/csis-commerce-anthropic-directive-2026.md",
+ "kind": "artifact-page"
+}

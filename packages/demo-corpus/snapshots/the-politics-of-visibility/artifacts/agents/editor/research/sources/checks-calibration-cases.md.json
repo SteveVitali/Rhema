@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/checks-calibration-cases.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "aef192d80a255174",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "3b4b450f059df34d",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/editor/research/sources/checks-calibration-cases.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Checks/calibration — Natanson, law firms, churches, Hungary, Comey\n\n- Natanson: https://www.rcfp.org/natanson-post-search-ruling/ — Porter (E.D. Va.), Feb. 25, 2026; quote is \"...the government's fox in charge of the WASHINGTON POST'S henhouse\" (draft truncates); court-controlled review.\n- Law-firm EOs: https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms/ — four judges, orders struck in entirety (Perkins Coie, Jenner, WilmerHale, Susman Godfrey); DOJ dismissal attempt reversed next day; appeals pending (argued, D.C. Cir.).\n- Churches: https://www.ca4.uscourts.gov/opinions/251512.P.pdf — PYM v. DHS, No. 25-1512, AFFIRMED Aug. 18, 2026 (Keenan; RFRA; waiver). Correct clearinghouse record is /case/45979; the draft's ref [46] (/case/46097) is the Mennonite case where the PI was DENIED (confirmed by fetching it).\n- Hungary: https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished ; vote 135–44 (6 abst.), June 30, 2026, via Brussels Signal/Xinhua (search-confirmed); Tisza won April 2026 with 2/3 majority.\n- Comey: https://firstamendment.mtsu.edu/article/indictment-against-james-comey-over-instagram-post/ (E.D.N.C., indicted Apr. 28, 2026; retaliation/selective-prosecution motion); https://reason.com/volokh/2026/04/28/analyzing-indictment-of-james-comey-for-86-47-post/ (Volokh: \"unjustified, and will get thrown out\").\n- Accessed 2026-08-21 (Phase 1).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 140
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "423e72ec70a3db91d688f714fb3cd53cbc62e2640a0c061b09ce715b8d881415",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/checks-calibration-cases.md",
+ "kind": "artifact-page"
+}

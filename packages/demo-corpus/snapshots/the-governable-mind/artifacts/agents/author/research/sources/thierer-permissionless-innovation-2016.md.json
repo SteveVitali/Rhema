@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/thierer-permissionless-innovation-2016.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c71e899a1c446c2e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/thierer-permissionless-innovation-2016.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# thierer-permissionless-innovation-2016\n- **URL:** https://techliberation.com/2016/04/19/permissionless-innovation-book-video-slides-podcast-paper-more/ (Thierer's own summary page for the book) · **Accessed:** 2026-09-16 · **For:** v1 response round, \"permissionless innovation\" definition\n- **What it establishes:** Thierer's canonical two-sentence definition, verbatim, as he reproduces it from the book.\n- **Key passages:**\n  - \"Permissionless innovation refers to the notion that experimentation with new technologies and business models should generally be permitted by default.\"\n  - \"Unless a compelling case can be made that a new invention will bring serious harm to society, innovation should be allowed to continue unabated and problems, if they develop at all, can be addressed later.\"\n- **Reliability:** Primary (author's own site, Technology Liberation Front); advocacy source by definition (Mercatus/R Street libertarian tech policy).\n- **Relevance to this project:** Sources the term. Reference: Adam Thierer, *Permissionless Innovation: The Continuing Case for Comprehensive Technological Freedom*, 2nd ed. (Arlington, VA: Mercatus Center at George Mason University, 2016).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 140
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "68496fe7a72c2ffebdb626c15ca1e1126194428202e04b45f6cd1e73e7ab5ee2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/thierer-permissionless-innovation-2016.md",
+ "kind": "artifact-page"
+}

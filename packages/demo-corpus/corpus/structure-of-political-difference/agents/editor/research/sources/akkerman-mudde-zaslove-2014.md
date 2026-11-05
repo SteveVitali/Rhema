@@ -1,0 +1,7 @@
+# akkerman-mudde-zaslove-2014
+
+- **URL:** https://journals.sagepub.com/doi/10.1177/0010414013512600 (located; abstract-level access via search results and repository pages, e.g. https://research.rug.nl/en/publications/how-populist-are-the-people-measuring-populist-attitudes-in-voter/) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Akkerman, Mudde & Zaslove, "How Populist Are the People?" (*CPS* 2014): populist attitudes are measured via a battery covering **anti-elitism, people-centrism, and Manicheism**, and are empirically distinguished from **pluralist attitudes** and **elitist attitudes** (three statistically separate scales, Dutch sample, PCA).
+- **Key passages:** As summarized; full text not read this session.
+- **Reliability:** Abstract/repository-level; the scale is the standard in populist-attitudes survey research.
+- **Relevance to this project:** The draft's four System-axis facets (anti-establishment ≈ anti-elitism; directism ≈ people-centrism/direct-decision preference; pluralism ≈ the pluralism scale; legitimation ≈ Caramani's will/reason plus elitism scale) closely parallel this existing measurement scheme. Not a strawman — a reinvention. The draft cites Mudde's definition but not the measurement literature that already decomposed it; citing Akkerman et al. (and POPPA) would convert an apparent invention into a credible synthesis.

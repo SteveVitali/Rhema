@@ -1,0 +1,1818 @@
+{
+ "claims": [
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b5",
+    "confidence": 1,
+    "endOffset": 587,
+    "quote": "During the Action meeting, it was made clear that the Sunrise Movement organization focused on 'peaceful' protests",
+    "startOffset": 473
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+   "note": "Finding: All elements confirmed in the AP story (full syndicated copies). Undercover officer \"UCA 9833,\" Jan. 31 meeting in a Minneapolis library; both quoted phrases verbatim, including the scare quotes around *peaceful* inside the agent's own summary sentence. This was a flagged \"too-good-to-check\" item; it checks.\nNote: No source gives the officer's sex; the draft's \"he/his\" is an inference. Consider \"the agent.\"",
+   "ordinal": 0,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://abcnews.com/US/wireStory/documents-show-federal-surveillance-operation-minnesota-targeted-progressive-135630659",
+     "stance": "supports",
+     "url": "https://abcnews.com/US/wireStory/documents-show-federal-surveillance-operation-minnesota-targeted-progressive-135630659"
+    }
+   ],
+   "text": "UCA 9833 at a Minneapolis library on \"the last day of January 2026\"; \"During the Action meeting, it was made clear that the Sunrise Movement organization focused on 'peaceful' protests\"; \"having a police liaison and safety marshal present during events\"",
+   "tier": 1,
+   "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b6",
+    "confidence": 1,
+    "endOffset": 216,
+    "quote": "a pair of federal investigations, Operation Puppet Master and Project Whipple Shield, whose internal documents became public on August 13, 2026, in a defense motion filed in federal court",
+    "startOffset": 29
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+   "note": "Finding: Confirmed. HSI opened Puppet Master Jan. 28 (four days after the killing of Alex Pretti); Whipple Shield followed about two weeks later. Documents were filed Thursday, Aug. 13, 2026, in a motion by defense lawyer Kevin Riach.",
+   "ordinal": 1,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+     "stance": "supports",
+     "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html"
+    }
+   ],
+   "text": "\"a pair of federal investigations, Operation Puppet Master and Project Whipple Shield, whose internal documents became public on August 13, 2026, in a defense motion filed in federal court\"",
+   "tier": 1,
+   "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b6",
+    "confidence": 1,
+    "endOffset": 529,
+    "quote": "collecting the license-plate numbers of attendees and compiling dossiers of names, photographs, addresses, and vehicle registrations",
+    "startOffset": 397
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+   "note": "Fix: Add [2] to the dossier/venues sentence (draft's own convention elsewhere: \"By one account…[2]\").\nFinding: Every element is in the record, but split across the two cited outlets. AP: churches, schools, parks; plates used to compile attendee names. Minnesota Reformer: libraries and union halls in the venue list, and the dossier contents — \"compiled a dossier including attendees' names, photos, addresses, vehicle registrations, family and employment information\" (Prince of Peace Lutheran Church, Roseville). The draft's sentence sits in a paragraph anchored to [1] (AP); the dossier detail and full venue list are [2] (Reformer).",
+   "ordinal": 2,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+     "stance": "supports",
+     "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches",
+     "stance": "supports",
+     "url": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    }
+   ],
+   "text": "undercover officers \"attending gatherings in churches, schools, parks, libraries, and union halls... collecting the license-plate numbers of attendees and compiling dossiers of names, photographs, addresses, and vehicle registrations\"",
+   "tier": 1,
+   "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b6",
+    "confidence": 1,
+    "endOffset": 627,
+    "quote": "By one account, agents also secretly recorded conversations and joined encrypted group chats.[2]",
+    "startOffset": 531
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+   "note": "Finding: Confirmed and correctly attributed. Reformer: \"Homeland Security investigators secretly recorded conversations, infiltrated Signal chats\"; agents wore audio recorders into trainings; Riach: agents \"surreptitiously recorded dozens of conversations with ordinary people.\"",
+   "ordinal": 3,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+     "stance": "supports",
+     "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches",
+     "stance": "supports",
+     "url": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches/"
+    }
+   ],
+   "text": "\"By one account, agents also secretly recorded conversations and joined encrypted group chats.[2]\"",
+   "tier": 1,
+   "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b6",
+    "confidence": 1,
+    "endOffset": 979,
+    "quote": "(instruments issued by the agency itself, with no judge involved) that obtained years of financial records from the Service Employees International Union, the Communications Workers of America, the Sunrise Movement, and other organizations, together with the request that the summonses remain secret indefinitely",
+    "startOffset": 667
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+   "note": "Finding: Confirmed. AP: \"The government also obtained years of certain financial records for groups ranging from the Sunrise Movement to major unions, including the Service Employees International Union and the Communications Workers of America,\" and quotes the DHS request to FedWire: \"You are requested not to disclose the existence of this summons for an indefinite period of time.\" Reformer/NationOfChange: HSI \"used administrative subpoenas,\" bank statements plus PayPal/Venmo histories, \"three years of records.\" Administrative subpoenas are by definition agency-issued without prior judicial approval; the parenthetical is fair.",
+   "ordinal": 4,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches",
+     "stance": "supports",
+     "url": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches/"
+    }
+   ],
+   "text": "administrative subpoenas \"(instruments issued by the agency itself, with no judge involved) that obtained years of financial records from the Service Employees International Union, the Communications Workers of America, the Sunrise Movement, and other organizations, together with the request that the summonses remain secret indefinitely\"",
+   "tier": 1,
+   "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b7",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "And they include a slide, prepared by the investigative branch of the Department of Homeland Security and shown to a grand jury, titled \"The Conspiracy.\" It maps eighteen organizations, from a small M",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+   "note": "Fix: Either attribute the grand-jury clause to [2] (\"and, by the Reformer's account, shown to a grand jury\") or drop \"shown to a grand jury\" from the slide sentence and let the Reformer's diagram carry it separately.\nFinding: The slide, its creator, its title, the count of 18, and the bicycle-collective-to-AFL-CIO span are AP verbatim: \"A slide created by Homeland Security's investigative branch titled 'The Conspiracy' shows 18 organizations, from a small Minneapolis bicycle repair collective to the AFL-CIO.\" \"None charged\" is independently corroborated: \"None of the 18 organizations named on the government's slide has been charged\" (NationOfChange); \"The records do not say that any of the named organizations face charges\" (VisaVerge). **But** the grand-jury element is not in the AP story: it comes from Minnesota Reformer (\"A diagram shown to the grand jury during the indictment process linked a number of organizations to the conspiracy — centered around... 'Direct Action MN' — with no evidence\"), and whether that grand-jury diagram is the same exhibit as the titled slide is not established in any source read. Single-origin caveat (AP for the slide details) stands as the drafting note said, though the syndication is wide and no outlet disputes it.",
+   "ordinal": 5,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html",
+     "stance": "supports",
+     "url": "https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches",
+     "stance": "supports",
+     "url": "https://www.nationofchange.org/2026/08/14/court-filings-describe-a-homeland-security-operation-that-infiltrated-minnesota-unions-and-churches/"
+    }
+   ],
+   "text": "\"a slide, prepared by the investigative branch of the Department of Homeland Security and shown to a grand jury, titled 'The Conspiracy.' It maps eighteen organizations, from a small Minneapolis bicycle repair collective to the AFL-CIO. None of the eighteen has been charged with anything.[1]\"",
+   "tier": 1,
+   "url": "https://www.clickorlando.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b8",
+    "confidence": 1,
+    "endOffset": 330,
+    "quote": "Direct Action Minnesota, indicted in June 2026 for conspiracy to impede a federal officer, with some facing additional counts including assault on a federal officer and destruction of government property; fourteen have pleaded not guilty.",
+    "startOffset": 92
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.kaxe.org/minnesota-news/2026-07-02/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges",
+   "note": "Finding: Confirmed in full. DOJ announced the 15-defendant indictment June 16, 2026 (charges include conspiracy to impede a federal officer; four defendants face additional counts including interstate stalking, assault on a federal officer, destruction of federal property). At the July 1 arraignment, 14 pleaded not guilty; the fifteenth (Kyle Wagner) was in federal custody in Michigan. The 94-page indictment details blockading the **Whipple Federal Building** (flipping a trailer, human chains); AP: conduct \"from throwing ice chunks to setting up blockades.\"",
+   "ordinal": 6,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kaxe.org/minnesota-news/2026-07-02/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges",
+     "stance": "supports",
+     "url": "https://www.kaxe.org/minnesota-news/2026-07-02/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties",
+     "stance": "supports",
+     "url": "https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties"
+    }
+   ],
+   "text": "\"Fifteen people have been charged... alleged members and associates of... Direct Action Minnesota, indicted in June 2026 for conspiracy to impede a federal officer, with some facing additional counts including assault on a federal officer and destruction of government property; fourteen have pleaded not guilty.\" Alleged conduct: \"blockading a federal building, throwing ice at federal vehicles, assaulting officers\"",
+   "tier": 1,
+   "url": "https://www.kaxe.org/minnesota-news/2026-07-02/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b55",
+    "confidence": 1,
+    "endOffset": 676,
+    "quote": "calls the investigation broad, irrational, and politically driven. The government will answer in court, and no court has yet ruled.[1]",
+    "startOffset": 542
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+   "note": "Finding: Confirmed. Riach's motion: Puppet Master and Whipple Shield were a \"broad and irrational investigation\" driven by politics, not criminal conduct. No ruling on the motion located as of 2026-08-21 (filed Aug. 13).",
+   "ordinal": 7,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions",
+     "stance": "supports",
+     "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/"
+    }
+   ],
+   "text": "\"The defense motion... calls the investigation broad, irrational, and politically driven. The government will answer in court, and no court has yet ruled.[1]\"",
+   "tier": 1,
+   "url": "https://www.news4jax.com/news/2026/08/14/documents-show-federal-surveillance-operation-in-minnesota-targeted-progressive-groups-unions/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b16",
+    "confidence": 1,
+    "endOffset": 508,
+    "quote": "Open-ended coups d'état, executive coups, and blatant election-day vote fraud are declining while promissory coups, executive aggrandizement and strategic electoral manipulation and harassment are increasing",
+    "startOffset": 301
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.journalofdemocracy.org/articles/on-democratic-backsliding",
+   "note": "Finding: All three verbatim. Definition (article p. 5) confirmed via a scholarly source quoting it exactly (the JoD landing page paraphrases it slightly; the draft matches the article text, not the blurb). The declining/increasing sentence appears on the JoD page. The aggrandizement definition (p. 10) confirmed via V-Dem working paper quoting it in full.",
+   "ordinal": 8,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.journalofdemocracy.org/articles/on-democratic-backsliding",
+     "stance": "supports",
+     "url": "https://www.journalofdemocracy.org/articles/on-democratic-backsliding/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.cambridge.org/core/journals/ps-political-science-and-politics/article/measuring-democratic-backsliding/9EE2044CDA598BD815349912E61189D8",
+     "stance": "supports",
+     "url": "https://www.cambridge.org/core/journals/ps-political-science-and-politics/article/measuring-democratic-backsliding/9EE2044CDA598BD815349912E61189D8"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.v-dem.net/media/publications/UWP_54.pdf",
+     "stance": "supports",
+     "url": "https://www.v-dem.net/media/publications/UWP_54.pdf"
+    }
+   ],
+   "text": "Bermeo: backsliding = \"the state-led debilitation or elimination of any of the political institutions that sustain an existing democracy\"; \"Open-ended coups d'état, executive coups, and blatant election-day vote fraud are declining while promissory coups, executive aggrandizement and strategic electoral manipulation and harassment are increasing\"; aggrandizement \"occurs when elected executives weaken checks on executive power one by one...\"",
+   "tier": 1,
+   "url": "https://www.journalofdemocracy.org/articles/on-democratic-backsliding/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b17",
+    "confidence": 1,
+    "endOffset": 530,
+    "quote": "They carefully preserve the shell of the prior liberal state—the same institutions, the same ceremonies, an overall appearance of rights protection—but in the meantime they hollow out its moral core.",
+    "startOffset": 331
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf",
+   "note": "Finding: All three quotations verbatim in the article PDF (pp. 548, 562). Hungary is her \"archetypal case\"; Turkey and Venezuela are the other principal cases (Poland also treated). Draft's characterization accurate.",
+   "ordinal": 9,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf",
+     "stance": "supports",
+     "url": "https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf"
+    }
+   ],
+   "text": "Scheppele: \"When electoral mandates plus constitutional and legal change are used in the service of an illiberal agenda... I call this phenomenon autocratic legalism\"; \"come to power not with bullets but with laws\"; \"They carefully preserve the shell of the prior liberal state—the same institutions, the same ceremonies, an overall appearance of rights protection—but in the meantime they hollow out its moral core.\"; cases Hungary, Turkey, Venezuela",
+   "tier": 1,
+   "url": "https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b21",
+    "confidence": 1,
+    "endOffset": 259,
+    "quote": "a state's attempt to make a society legible, to arrange the population in ways that simplified the classic state functions of taxation, conscription, and prevention of rebellion",
+    "startOffset": 82
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://dreary.dev/pdfs/anarchism/james-c-scott-seeing-like-a-state.pdf",
+   "note": "(epigraph)\nFinding: All verbatim against the full text. The epigraph sentence opens a Part 3 chapter (\"Legibility is a condition of manipulation. Any substantial state intervention in society...\"). The two Introduction quotes are exact (Scott's sentence describes his re-reading of sedentarization projects; the draft's use as the term's definition is fair in context). Draft's citation \"Introduction and Part 3\" matches.",
+   "ordinal": 10,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://dreary.dev/pdfs/anarchism/james-c-scott-seeing-like-a-state.pdf",
+     "stance": "supports",
+     "url": "https://dreary.dev/pdfs/anarchism/james-c-scott-seeing-like-a-state.pdf"
+    }
+   ],
+   "text": "Epigraph: \"Legibility is a condition of manipulation.\" Legibility passage: \"a state's attempt to make a society legible, to arrange the population in ways that simplified the classic state functions of taxation, conscription, and prevention of rebellion\"; Scott \"began to see legibility as a central problem in statecraft\"",
+   "tier": 1,
+   "url": "https://dreary.dev/pdfs/anarchism/james-c-scott-seeing-like-a-state.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b68",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "Writing from inside Nazi Germany, the labor lawyer Ernst Fraenkel observed something that hindsight flattens: the dictatorship did not abolish law. Ordinary contracts were enforced, ordinary cases hea",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://undsoc.org/2025/12/19/the-dual-state-1938",
+   "note": "Fix: Confirm the OUP 2017 page or cite by preface rather than page.\nFinding: Quotation verbatim (Shils translation, Fraenkel's preface). The page citation is edition-dependent: the source read cites it at p. ix; Wikipedia cites the 2018 printing at p. 17; the draft cites p. xxiii of the 2017 OUP edition, which could not be confirmed. Wording is right; the page number needs a copy-check against the OUP edition.",
+   "ordinal": 11,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://undsoc.org/2025/12/19/the-dual-state-1938",
+     "stance": "supports",
+     "url": "https://undsoc.org/2025/12/19/the-dual-state-1938/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://en.wikipedia.org/wiki/Dual_state_(model",
+     "stance": "supports",
+     "url": "https://en.wikipedia.org/wiki/Dual_state_(model"
+    }
+   ],
+   "text": "Fraenkel: \"By the Prerogative State we mean that governmental system which exercises unlimited arbitrariness and violence unchecked by any legal guarantees, and by the Normative State an administrative body endowed with elaborate powers for safeguarding the legal order as expressed in statutes, decisions of the courts, and activities of the administrative agencies.\" (p. xxiii)",
+   "tier": 1,
+   "url": "https://undsoc.org/2025/12/19/the-dual-state-1938/",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b94",
+    "confidence": 1,
+    "endOffset": 509,
+    "quote": "to induce in the inmate a state of conscious and permanent visibility that assures the automatic functioning of power",
+    "startOffset": 392
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://foucault.info/documents/foucault.disciplineAndPunish.panOpticism",
+   "note": "Finding: All three verbatim in the Sheridan translation's \"Panopticism\" chapter; the draft's gloss (uncertainty of observation doing the work) matches the surrounding argument.",
+   "ordinal": 12,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://foucault.info/documents/foucault.disciplineAndPunish.panOpticism",
+     "stance": "supports",
+     "url": "https://foucault.info/documents/foucault.disciplineAndPunish.panOpticism/"
+    }
+   ],
+   "text": "Foucault: \"He is seen, but he does not see; he is the object of information, never a subject in communication.\"; \"to induce in the inmate a state of conscious and permanent visibility that assures the automatic functioning of power\"; surveillance \"permanent in its effects, even if it is discontinuous in its action\"",
+   "tier": 1,
+   "url": "https://foucault.info/documents/foucault.disciplineAndPunish.panOpticism/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b101",
+    "confidence": 1,
+    "endOffset": 271,
+    "quote": "In democratic countries the science of association is the mother of science; the progress of all the rest depends upon the progress it has made.",
+    "startOffset": 127
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.marxists.org/reference/archive/de-tocqueville/democracy-america/ch28.htm",
+   "note": "Finding: Verbatim, Reeve translation, *Democracy in America* vol. 2, Second Book, ch. V (\"Of the Use Which the Americans Make of Public Associations in Civil Life\") — exactly as the draft cites. (This is the quotation the drafting note says was corrected during drafting; the correction held.)",
+   "ordinal": 13,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.marxists.org/reference/archive/de-tocqueville/democracy-america/ch28.htm",
+     "stance": "supports",
+     "url": "https://www.marxists.org/reference/archive/de-tocqueville/democracy-america/ch28.htm"
+    }
+   ],
+   "text": "Tocqueville: \"In democratic countries the science of association is the mother of science; the progress of all the rest depends upon the progress it has made.\" (Reeve, vol. 2)",
+   "tier": 1,
+   "url": "https://www.marxists.org/reference/archive/de-tocqueville/democracy-america/ch28.htm",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b102",
+    "confidence": 1,
+    "endOffset": 238,
+    "quote": "power springs up between men when they act together and vanishes the moment they disperse.",
+    "startOffset": 148
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://hac.bard.edu/amor-mundi/quote-of-the-week-2011-11-14",
+   "note": "Finding: All verbatim. HC sentence confirmed with p. 200 citation. Origins: \"Total domination, which strives to organize the infinite plurality and differentiations of human beings as if all of humanity were just one individual...\" (p. 438, Harcourt); \"...to destroy individuality is to destroy spontaneity, man's power to begin something new out of his own resources...\" — draft's fragment exact and in context. Draft's page cites (438, 455) match the Harcourt edition for the first; 455 for the second is plausible but was not page-confirmed.",
+   "ordinal": 14,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://hac.bard.edu/amor-mundi/quote-of-the-week-2011-11-14",
+     "stance": "supports",
+     "url": "https://hac.bard.edu/amor-mundi/quote-of-the-week-2011-11-14"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://philosophicaleggs.com/209-radical-and-banal-evil-in-hannah-arendt-part-1",
+     "stance": "supports",
+     "url": "https://philosophicaleggs.com/209-radical-and-banal-evil-in-hannah-arendt-part-1/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://kortina.nyc/notes/origins-of-totalitarianism",
+     "stance": "supports",
+     "url": "https://kortina.nyc/notes/origins-of-totalitarianism/"
+    }
+   ],
+   "text": "Arendt: \"While strength is the natural quality of an individual seen in isolation... power springs up between men when they act together and vanishes the moment they disperse.\" (HC p. 200); total domination organizes plurality \"as if all of humanity were just one individual\"; destroying spontaneity, \"man's power to begin something new out of his own resources\" (Origins)",
+   "tier": 1,
+   "url": "https://hac.bard.edu/amor-mundi/quote-of-the-week-2011-11-14",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b103",
+    "confidence": 1,
+    "endOffset": 483,
+    "quote": "the basic units of political life are not discursive and reflecting persons, nor friends and enemies, nor patriotic soldier-citizens, nor energetic litigants, but the weak and the powerful.",
+    "startOffset": 294
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://eprints.whiterose.ac.uk/189710/1/Shklar_JoP.pdf",
+   "note": "Finding: All three verbatim from \"The Liberalism of Fear\" (1989). (\"Discursive **and** reflecting\" is the original; one scholarly PDF's \"or\" is that paper's transcription slip, not the draft's.) Third quote in context: \"The fear it does want to prevent is that which is created by arbitrary, unexpected, unnecessary, and unlicensed acts of force...\" — draft's use matches.",
+   "ordinal": 15,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://eprints.whiterose.ac.uk/189710/1/Shklar_JoP.pdf",
+     "stance": "supports",
+     "url": "https://eprints.whiterose.ac.uk/189710/1/Shklar_JoP.pdf"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.kith.org/vardibidian/2003/06/03/the-liberalism-of-fear",
+     "stance": "supports",
+     "url": "https://www.kith.org/vardibidian/2003/06/03/the-liberalism-of-fear/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.hks.harvard.edu/centers/carr-ryan/our-work/carr-ryan-commentary/when-fear-spreading",
+     "stance": "supports",
+     "url": "https://www.hks.harvard.edu/centers/carr-ryan/our-work/carr-ryan-commentary/when-fear-spreading"
+    }
+   ],
+   "text": "Shklar: \"That evil is cruelty and the fear it inspires, and the very fear of fear itself.\"; \"the basic units of political life are not discursive and reflecting persons, nor friends and enemies, nor patriotic soldier-citizens, nor energetic litigants, but the weak and the powerful.\"; fear \"created by arbitrary, unexpected, unnecessary, and unlicensed acts of force\"",
+   "tier": 1,
+   "url": "https://eprints.whiterose.ac.uk/189710/1/Shklar_JoP.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b30",
+    "confidence": 1,
+    "endOffset": 229,
+    "quote": "operates more than 120,000 cameras across some 6,000 communities in forty-nine states, serving thousands of law-enforcement agencies",
+    "startOffset": 97
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+   "note": "Finding: Confirmed. Stateline: \"more than 120,000 cameras,\" \"more than 6,000 communities across 49 states,\" \"thousands of law enforcement agencies.\" Flock's own FAQ: make, model, color, plate, timestamp, \"Damage or alterations (i.e. broken taillight...),\" Vehicle Signature features including \"roof racks.\"",
+   "ordinal": 16,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+     "stance": "supports",
+     "url": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.flocksafety.com/faq",
+     "stance": "supports",
+     "url": "https://www.flocksafety.com/faq"
+    }
+   ],
+   "text": "Flock \"operates more than 120,000 cameras across some 6,000 communities in forty-nine states, serving thousands of law-enforcement agencies... records plate, vehicle make and model, color, timestamp, and distinguishing features down to roof racks and damaged taillights\"",
+   "tier": 1,
+   "url": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b30",
+    "confidence": 1,
+    "endOffset": 872,
+    "quote": "In 2026, after more than fifty communities canceled contracts and roughly fifty officers were accused of misusing searches, Flock cut its default retention from thirty days to seven and restricted cross-agency queries.",
+    "startOffset": 654
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+   "note": "Finding: Confirmed with minor texture. Stateline (per DeFlock tracking): 50+ agencies/communities \"terminated, suspended, or rejected\" Flock arrangements since the start of 2026 (\"canceled\" slightly compresses a category that includes rejections); nearly 50 officers faced charges or accusations of misuse. August 2026 changes: default/recommended retention cut 30→7 days (existing customers may keep longer settings); cross-agency search controls (agencies can restrict other departments' searches by offense type; case codes required by end of 2026; federal organizations removed from statewide/national lookup in Aug. 2025).",
+   "ordinal": 17,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+     "stance": "supports",
+     "url": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.police1.com/technology/flock-safety-sets-7-day-default-for-alpr-data-adds-mandatory-misuse-safeguards",
+     "stance": "supports",
+     "url": "https://www.police1.com/technology/flock-safety-sets-7-day-default-for-alpr-data-adds-mandatory-misuse-safeguards"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.flocksafety.com/blog/flock-guardrails-address-lpr-privacy-concerns-and-police-transparency",
+     "stance": "supports",
+     "url": "https://www.flocksafety.com/blog/flock-guardrails-address-lpr-privacy-concerns-and-police-transparency"
+    }
+   ],
+   "text": "\"In 2026, after more than fifty communities canceled contracts and roughly fifty officers were accused of misusing searches, Flock cut its default retention from thirty days to seven and restricted cross-agency queries.\"",
+   "tier": 1,
+   "url": "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b32",
+    "confidence": 1,
+    "endOffset": 214,
+    "quote": "In August 2026, WIRED reported, on the basis of files exposed through Flock's own login pages, on a product in testing called OS Investigate",
+    "startOffset": 74
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://globalcommunityweekly.substack.com/p/flock-has-a-powerful-new-ai-tool",
+   "note": "Fix: Reference [8] should cite WIRED's own story (aggregators optional).\nFinding: Confirmed against WIRED's text (read in full via mirror; wired.com blocks fetching). \"The suggested prompts sit in a cache of more than 450 files that WIRED found on Flock's own website, served by its login pages to anyone who loaded them\"; 69 prewritten prompts; \"14 call for no plate, no name, and no description\"; witnesses \"based on vehicles most seen in [neighborhood] during [last 14 days]\"; \"top three associates\" counted by plates appearing at the same cameras within a two-minute window; joins to case files, dispatch logs, ballistics, and commercial identity databases. In testing with a small group of agencies. Dhruv Mehrotra & Dell Cameron, Aug. 19, 2026.",
+   "ordinal": 18,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://globalcommunityweekly.substack.com/p/flock-has-a-powerful-new-ai-tool",
+     "stance": "supports",
+     "url": "https://globalcommunityweekly.substack.com/p/flock-has-a-powerful-new-ai-tool"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://lemmy.ml/post/51617790",
+     "stance": "supports",
+     "url": "https://lemmy.ml/post/51617790"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.wired.com/story/flock-safety-os-investigate",
+     "stance": "supports",
+     "url": "https://www.wired.com/story/flock-safety-os-investigate/"
+    }
+   ],
+   "text": "\"In August 2026, WIRED reported, on the basis of files exposed through Flock's own login pages, on a product in testing called OS Investigate... offers investigators sixty-nine prewritten queries. Fourteen of them require no plate, no name, and no description of a suspect... vehicles most seen in a neighborhood over the last fourteen days, or... a vehicle's 'associates,' inferred from co-location.\"",
+   "tier": 1,
+   "url": "https://globalcommunityweekly.substack.com/p/flock-has-a-powerful-new-ai-tool",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b35",
+    "confidence": 1,
+    "endOffset": 479,
+    "quote": "identify repeat visitors, frequented locations, pinpoint known associates, and discover pattern of life",
+    "startOffset": 376
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data",
+   "note": "Finding: Confirmed. ACLU (July 2022): CBP, ICE, Secret Service, Coast Guard, HQ purchased access; Venntel marketing verbatim: \"identify repeat visitors, frequented locations, pinpoint known associates, and discover pattern of life\"; Venntel collects \"more than 15 billion location points from over 250 million cell phones and other mobile devices every day\"; data \"quietly extracted from smartphone apps,\" sold by brokers (Venntel/Babel Street).",
+   "ordinal": 19,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data",
+     "stance": "supports",
+     "url": "https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data"
+    }
+   ],
+   "text": "ACLU records: DHS components incl. CBP and ICE purchased app-harvested broker location data; marketing promised to \"identify repeat visitors, frequented locations, pinpoint known associates, and discover pattern of life\"; \"fifteen billion location points from more than 250 million devices every day\"",
+   "tier": 1,
+   "url": "https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b36",
+    "confidence": 0.6621,
+    "endOffset": 200,
+    "quote": "Face completes identity's side of the ledger. The Government Accountability Office found seven federal law-enforcement agencies, the FBI and ICE's investigative arm among them, using commercial facial",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.gao.gov/products/gao-24-107372",
+   "note": "Finding: Confirmed across the two cited GAO products. Seven DOJ/DHS agencies; GAO-23-105607 names ICE-HSI and FBI among them; \"about 60,000 searches... when they did not have training requirements in place,\" Oct. 2019–Mar. 2022 (= 2.5 years, recomputed); \"All seven agencies had initially used these services without first requiring staff to take training.\"",
+   "ordinal": 20,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.gao.gov/products/gao-24-107372",
+     "stance": "supports",
+     "url": "https://www.gao.gov/products/gao-24-107372"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.gao.gov/products/gao-23-105607",
+     "stance": "supports",
+     "url": "https://www.gao.gov/products/gao-23-105607"
+    }
+   ],
+   "text": "GAO: seven federal LE agencies (FBI, ICE's investigative arm among them) using commercial facial recognition; ~60,000 searches in 2.5 years; none had training requirements in place",
+   "tier": 2,
+   "url": "https://www.gao.gov/products/gao-24-107372",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b37",
+    "confidence": 1,
+    "endOffset": 319,
+    "quote": "a live research field, not a documented feature of American roadside cameras; there is no good public evidence that ordinary Flock deployments identify pedestrians by gait or by Bluetooth signature",
+    "startOffset": 122
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174",
+   "note": "(escalated: reputationally protective)\nFix (optional): [11] doesn't cover the natural-language person-search sentence; add the 404 Media or Flock FreeForm citation.\nFinding: The negative claim holds as scoped: the gait-recognition survey literature documents an active research field with no deployment in US roadside/ALPR infrastructure; the InvestigateTV exposé documents person-*tracking* (Condor PTZ camera, \"it will actually acquire and track that person as they walk\"), not gait or Bluetooth identification. The parenthetical positives are documented: Condor person-following (InvestigateTV) and natural-language person search (Flock FreeForm — \"heavy set male with a black and white hat\" etc.; 404 Media, July 16, 2026, and Flock's own product page).",
+   "ordinal": 21,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174",
+     "stance": "supports",
+     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.investigatetv.com/2026/06/15/flock-says-its-cameras-dont-track-people-its-own-training-videos-say-otherwise",
+     "stance": "supports",
+     "url": "https://www.investigatetv.com/2026/06/15/flock-says-its-cameras-dont-track-people-its-own-training-videos-say-otherwise/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.404media.co/how-cops-use-flock-to-track-people-not-cars",
+     "stance": "supports",
+     "url": "https://www.404media.co/how-cops-use-flock-to-track-people-not-cars/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.flocksafety.com/products/flock-freeform",
+     "stance": "supports",
+     "url": "https://www.flocksafety.com/products/flock-freeform"
+    }
+   ],
+   "text": "Gait recognition is \"a live research field, not a documented feature of American roadside cameras; there is no good public evidence that ordinary Flock deployments identify pedestrians by gait or by Bluetooth signature... (Flock does sell a camera that can optically follow a walking person, and a search tool that accepts natural-language descriptions of people...)\"",
+   "tier": 2,
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b41",
+    "confidence": 1,
+    "endOffset": 383,
+    "quote": "near real-time visibility",
+    "startOffset": 358
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup",
+   "note": "Finding: Confirmed at the cited compilation. ICM: Palantir-run since 2014, funding \"ballooned to over $145 million\"; FALCON: \"tip synthesis tool used by ICE since 2012\"; ImmigrationOS: $30M, April 2025, \"near real-time visibility\" into self-deportations/overstays; ELITE: \"address confidence score\" ratings on mapped targets (draft's plural \"confidence scores\" is a fair rendering); data classes: family relationships, employment, phone records, biometrics, criminal records, addresses, schooling, plus FBI/DEA/ ATF/SEVIS feeds and commercial broker data (\"CLEAR... Thompson-Reuters\").",
+   "ordinal": 22,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup",
+     "stance": "supports",
+     "url": "https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup"
+    }
+   ],
+   "text": "Palantir: ICM for ICE since 2014, >$145M; FALCON since 2012; ImmigrationOS $30M April 2025, \"near real-time visibility\"; ELITE ranks addresses by \"confidence scores\"; unified data classes incl. agency feeds and commercial brokers",
+   "tier": 1,
+   "url": "https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b43",
+    "confidence": 1,
+    "endOffset": 246,
+    "quote": "procurement and operational use of cutting-edge technological tools",
+    "startOffset": 179
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases",
+   "note": "Finding: Confirmed in all seven elements. Lyons letter (Apr. 1, 2026), verbatim: \"I approved HSI's procurement and operational use of cutting-edge technological tools that address the specific challenges posed by the Foreign Terrorist Organizations' thriving exploitation of encrypted communication platforms,\" framed by \"the unprecedented lethality of fentanyl.\" Letter named no vendor. DHS (May 22, 2026): \"ICE has no relationship with Paragon Solutions, Inc. or with the company that acquired them\"; federal procurement notice: contract \"closed out Jan. 20\"; DHS \"declined to clarify whether or not ICE still has access to Paragon-developed tools, such as through a third party.\" Rep. Summer Lee: Lyons \"did not provide substantive answers to her questions, including who could be targeted with the technology and the legal basis for using it within the United States.\"",
+   "ordinal": 23,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases",
+     "stance": "supports",
+     "url": "https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions",
+     "stance": "supports",
+     "url": "https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.iowapublicradio.org/news-from-npr/2026-05-22/dhs-says-ice-has-no-relationship-with-spyware-maker-paragon-solutions",
+     "stance": "supports",
+     "url": "https://www.iowapublicradio.org/news-from-npr/2026-05-22/dhs-says-ice-has-no-relationship-with-spyware-maker-paragon-solutions"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.wunc.org/2026-04-07/ice-acknowledges-it-is-using-powerful-spyware",
+     "stance": "supports",
+     "url": "https://www.wunc.org/2026-04-07/ice-acknowledges-it-is-using-powerful-spyware"
+    }
+   ],
+   "text": "ICE/Paragon: April 2026 acting-director letter approving \"procurement and operational use of cutting-edge technological tools\" against FTOs/fentanyl traffickers on encrypted platforms; first on-record acknowledgment; letter names no vendor; DHS later says ICE \"has no relationship\" with Paragon; procurement notice closed out Jan. 2026; declined to say re third parties; Congress's domestic-targeting question unanswered",
+   "tier": 1,
+   "url": "https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b43",
+    "confidence": 1,
+    "endOffset": 1015,
+    "quote": "forensic researchers have confirmed Paragon's Graphite spyware on the phones of European journalists, and the earlier Pegasus Project traced NSO Group's comparable tool to more than 180 journalists in twenty countries",
+    "startOffset": 798
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted",
+   "note": "Fix: \"at least 180 journalists in twenty countries selected for potential targeting.\"\nFinding: Citizen Lab half confirmed: first forensic confirmation of Graphite on iPhones of a prominent European journalist and Italian journalist Ciro Pellegrino (June 12, 2025). Pegasus half slightly overstated in two small ways: Amnesty's figure is \"**at least** 180 journalists in 20 countries who were **selected for potential targeting**\" — not \"more than 180,\" and selection-for-targeting, not confirmed infection (\"traced... to\" blurs this).",
+   "ordinal": 24,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted",
+     "stance": "supports",
+     "url": "https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project",
+     "stance": "supports",
+     "url": "https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project/"
+    }
+   ],
+   "text": "\"forensic researchers have confirmed Paragon's Graphite spyware on the phones of European journalists, and the earlier Pegasus Project traced NSO Group's comparable tool to more than 180 journalists in twenty countries\"",
+   "tier": 2,
+   "url": "https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted/",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b46",
+    "confidence": 1,
+    "endOffset": 322,
+    "quote": "An individual has a legitimate expectation of privacy in his cellphone location data",
+    "startOffset": 238
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data",
+   "note": "Finding: Confirmed. Decided June 29, 2026 (6–3); holding: obtaining cell location data from a third-party company is a Fourth Amendment search; quoted sentence verbatim in coverage of the opinion; explicitly builds on *Carpenter* (2018); Court did not decide the geofence warrant's reasonableness or good faith — remanded to the Fourth Circuit.\nNote: Docket number \"No. 25-112\" in ref [17] not independently confirmed; minor.",
+   "ordinal": 25,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data",
+     "stance": "supports",
+     "url": "https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424",
+     "stance": "supports",
+     "url": "https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424"
+    }
+   ],
+   "text": "*Chatrie v. United States* (June 2026): app-generated location history is a Fourth Amendment search; \"An individual has a legitimate expectation of privacy in his cellphone location data\"; extends Carpenter; geofence questions remanded",
+   "tier": 1,
+   "url": "https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b51",
+    "confidence": 1,
+    "endOffset": 883,
+    "quote": "Common threads animating this violent conduct include anti-Americanism, anti-capitalism, and anti-Christianity; support for the overthrow of the United States Government; extremism on migration, race, and gender; and hostility towards those who hold traditional American views on family, religion, and morality.",
+    "startOffset": 572
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence",
+   "note": "Finding: Both long quotations verbatim at the primary source, including the \"Common threads animating this violent conduct include\" stem. Directives confirmed: national JTTFs coordinate the strategy; investigation of \"institutional and individual funders, and officers and employees of organizations\"; Treasury (TFI) tasked against funding streams; IRS Commissioner to ensure no tax-exempt entity finances political violence, with DOJ referrals.",
+   "ordinal": 26,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence",
+     "stance": "supports",
+     "url": "https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence/"
+    }
+   ],
+   "text": "NSPM-7 (Sept. 25, 2025): \"A new law enforcement strategy that investigates all participants in these criminal and terroristic conspiracies — including the organized structures, networks, entities, organizations, funding sources, and predicate actions behind them — is required.\"; \"Common threads animating this violent conduct include anti-Americanism, anti-capitalism, and anti-Christianity; support for the overthrow of the United States Government; extremism on migration, race, and gender; and hostility towards those who hold traditional American views on family, religion, and morality.\"; JTTF/funders/Treasury/IRS directives",
+   "tier": 1,
+   "url": "https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b60",
+    "confidence": 1,
+    "endOffset": 261,
+    "quote": "Existing federal law defines domestic terrorism but does not outlaw it by name",
+    "startOffset": 183
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf",
+   "note": "Finding: All verbatim in the CRS Legal Sidebar PDF (text extracted). §2331(5) definition and the §2339A (predicate-crime support) vs. §2339B (designated-FTO support) mapping confirmed in the same document.",
+   "ordinal": 27,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf",
+     "stance": "supports",
+     "url": "https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf"
+    }
+   ],
+   "text": "CRS: \"Existing federal law defines domestic terrorism but does not outlaw it by name\" (18 U.S.C. §2331(5)); material support to designated FTOs \"has no similarly captioned counterpart on the domestic side\"; \"Beneath the surface, co-conspirator and accomplice liability look much like providing material support.\"; §2339A/§2339B division",
+   "tier": 1,
+   "url": "https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b61",
+    "confidence": 0.85,
+    "endOffset": 628,
+    "quote": "the statute",
+    "startOffset": 617
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.law.cornell.edu/supct/html/08-1498.ZS.html",
+   "note": "Finding: All confirmed at the opinion. Syllabus: \"'service' to cover advocacy performed in coordination with, or at the direction of, a foreign terrorist organization\"; \"any independent advocacy in which plaintiffs wish to engage is not prohibited by §2339B.\" Opinion §V.C verbatim: \"We also do not suggest that Congress could extend the same prohibition on material support at issue here to domestic organizations.\" Facts (training in international law, coordinated advocacy; upheld as applied) confirmed.",
+   "ordinal": 28,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.law.cornell.edu/supct/html/08-1498.ZS.html",
+     "stance": "supports",
+     "url": "https://www.law.cornell.edu/supct/html/08-1498.ZS.html"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.law.cornell.edu/supct/html/08-1498.ZO.html",
+     "stance": "supports",
+     "url": "https://www.law.cornell.edu/supct/html/08-1498.ZO.html"
+    }
+   ],
+   "text": "*Holder v. HLP*: \"Service\" covers \"advocacy performed in coordination with, or at the direction of, a foreign terrorist organization\"; the statute \"does not prohibit independent advocacy\"; dictum: the Court did not suggest Congress could \"extend the same prohibition on material support at issue here to domestic organizations\"",
+   "tier": 1,
+   "url": "https://www.law.cornell.edu/supct/html/08-1498.ZS.html",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b63",
+    "confidence": 0.6737,
+    "endOffset": 200,
+    "quote": "To see what the completed mechanism looks like inside a functioning democracy, the useful comparison is not Russia or China. It is Britain, precisely because British institutions resemble ours enough ",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.legislation.gov.uk/uksi/2025/803/made",
+   "note": "Finding: Confirmed at primary sources. SI 2025/803 made July 4, 2025, in force July 5, adding Palestine Action to Schedule 2. Brize Norton (June 20, 2025): activists \"sprayed red paint in the engines of two military aircraft and damaged them with crowbars\" (UN communication's factual recital; the proscription decision was announced June 23 citing it). s.12(1A): expressing \"an opinion or belief that is supportive of a proscribed organisation\" while reckless as to encouragement. s.13: article displayed \"in such a way or in such circumstances as to arouse reasonable suspicion that he is a member or supporter of a proscribed organisation.\"",
+   "ordinal": 29,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.legislation.gov.uk/uksi/2025/803/made",
+     "stance": "supports",
+     "url": "https://www.legislation.gov.uk/uksi/2025/803/made"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.legislation.gov.uk/ukpga/2000/11/section/12",
+     "stance": "supports",
+     "url": "https://www.legislation.gov.uk/ukpga/2000/11/section/12"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.legislation.gov.uk/ukpga/2000/11/section/13",
+     "stance": "supports",
+     "url": "https://www.legislation.gov.uk/ukpga/2000/11/section/13"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://spcommreports.ohchr.org/TMResultsBase/DownLoadPublicCommunicationFile",
+     "stance": "supports",
+     "url": "https://spcommreports.ohchr.org/TMResultsBase/DownLoadPublicCommunicationFile?gId=30118"
+    }
+   ],
+   "text": "UK proscribed Palestine Action in July 2025 under the Terrorism Act 2000, after activists broke into an air base and sprayed paint into the engines of two military aircraft; s.12 reckless-expression offense; s.13 display offense",
+   "tier": 1,
+   "url": "https://www.legislation.gov.uk/uksi/2025/803/made",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b63",
+    "confidence": 1,
+    "endOffset": 971,
+    "quote": "In the year ending December 2025, Great Britain recorded 3,034 terrorism-related arrests, of which 2,779, ninety-two percent, were linked to supporting Palestine Action; 404 people were charged under section 13",
+    "startOffset": 761
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u",
+   "note": "Fix: Replace ref [22]'s generic gov.uk/government/statistics link with the URL above. (Micro-nuance, author's option: the 404 are s.13 charges arising from PA-linked arrests; \"404 people were charged under section 13\" is how the release itself frames it.)\nFinding: All three figures verified at the pinned primary release (published Mar. 12, 2026): \"3,034 arrests for terrorism-related activity in the year ending 31 December 2025\"; \"2,779 out of 3,034 arrests (92%) were linked to supporting Palestine Action\"; \"412 (18%) resulted in a charge, including 8 under Section 12 and 404 under Section 13.\" Recomputed: 2,779/3,034 = 91.59% — the release itself rounds to 92%, so the draft matches the source's own rounding. Coverage is Great Britain, as stated.",
+   "ordinal": 30,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u",
+     "stance": "supports",
+     "url": "https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u"
+    }
+   ],
+   "text": "\"In the year ending December 2025, Great Britain recorded 3,034 terrorism-related arrests, of which 2,779, ninety-two percent, were linked to supporting Palestine Action; 404 people were charged under section 13\"",
+   "tier": 1,
+   "url": "https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b63",
+    "confidence": 1,
+    "endOffset": 1155,
+    "quote": "mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism",
+    "startOffset": 1056
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.globalsecurity.org/security/library/news/2025/07/sec-250701-ohchr01.htm",
+   "note": "(flagged provenance)\nFinding: Both verbatim. Press release (July 1, 2025, Geneva): \"Mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism.\" and \"Protest actions that are not genuinely 'terrorist', but which involve alleged property damage, should be properly investigated as ordinary crimes or other security offences.\" The draft's second quote is a clean truncation that preserves meaning. Primary communication (AL GBR 9/2025, June 30, 2025; Saul, Romero, Katrougalos, Albanese) carries near-identical language (\"Accordingly, mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism.\"). ohchr.org itself blocks automated fetching (Cloudflare challenge confirmed by direct curl this session) — the mirror + primary PDF satisfy verification; eyeball the live page before publication as the drafting note asks.\nNote (timeline): the experts' statement urged the UK *not to proceed* (July 1; ban effective July 5). The draft's past-tense \"objected\" after describing the proscription reads fine but implies after-the-fact protest; harmless, author's option to add \"as the ban was affirmed.\"",
+   "ordinal": 31,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.globalsecurity.org/security/library/news/2025/07/sec-250701-ohchr01.htm",
+     "stance": "supports",
+     "url": "https://www.globalsecurity.org/security/library/news/2025/07/sec-250701-ohchr01.htm"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://spcommreports.ohchr.org/TMResultsBase/DownLoadPublicCommunicationFile",
+     "stance": "supports",
+     "url": "https://spcommreports.ohchr.org/TMResultsBase/DownLoadPublicCommunicationFile?gId=30118"
+    }
+   ],
+   "text": "UN experts: \"mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism\"; such acts \"should be properly investigated as ordinary crimes\"",
+   "tier": 1,
+   "url": "https://www.globalsecurity.org/security/library/news/2025/07/sec-250701-ohchr01.htm",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b63",
+    "confidence": 1,
+    "endOffset": 1558,
+    "quote": "the High Court found the proscription unlawful and disproportionate, observing that ordinary criminal law was available for the underlying conduct; the Court of Appeal reversed in June 2026, and the Supreme Court agreed in July to decide the question",
+    "startOffset": 1308
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.libertyhumanrights.org.uk/issue/breaking-down-the-court-of-appeal-judgment-on-palestine-actions-proscription",
+   "note": "Finding: Confirmed. High Court (Feb. 13, 2026): proscription unlawful and \"disproportionate\"; only three of the group's hundreds of activities met the statutory terrorism definition \"and the ordinary criminal law was available to deal with those incidents.\" Court of Appeal (June 15, 2026) reversed, holding the proscription lawful (reasoning ordinary criminal law \"insufficient\" because the group \"operated covertly\"). Supreme Court granted permission to appeal (Garden Court note, July 2026); no hearing or decision as of 2026-08-21.",
+   "ordinal": 32,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.libertyhumanrights.org.uk/issue/breaking-down-the-court-of-appeal-judgment-on-palestine-actions-proscription",
+     "stance": "supports",
+     "url": "https://www.libertyhumanrights.org.uk/issue/breaking-down-the-court-of-appeal-judgment-on-palestine-actions-proscription/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://gardencourtchambers.co.uk/supreme-court-grants-permission-to-appeal-palestine-action-terrorism-proscription",
+     "stance": "supports",
+     "url": "https://gardencourtchambers.co.uk/supreme-court-grants-permission-to-appeal-palestine-action-terrorism-proscription/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.npr.org/2026/02/13/nx-s1-5713346/britain-court-palestine-action-ban",
+     "stance": "supports",
+     "url": "https://www.npr.org/2026/02/13/nx-s1-5713346/britain-court-palestine-action-ban"
+    }
+   ],
+   "text": "\"the High Court found the proscription unlawful and disproportionate, observing that ordinary criminal law was available for the underlying conduct; the Court of Appeal reversed in June 2026, and the Supreme Court agreed in July to decide the question\"",
+   "tier": 1,
+   "url": "https://www.libertyhumanrights.org.uk/issue/breaking-down-the-court-of-appeal-judgment-on-palestine-actions-proscription/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b70",
+    "confidence": 0.7805,
+    "endOffset": 200,
+    "quote": "Immigration law sits closer than any other American field to prerogative logic: plenary power, executive discretion, civil detention, thin procedure, and a population whose rights turn on status. The ",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://clearinghouse.net/case/46209",
+   "note": "Finding: Confirmed. Detained Mar. 8, 2025, transferred to Louisiana; 8 U.S.C. §1227(a)(4)(C) (Rubio determination). Judge Farbiarz enjoined removal (June 11, 2025) and ordered release (June 20, 2025). Third Circuit (Jan. 15, 2026) vacated all district-court orders: the INA channels review into petitions for review, stripping habeas jurisdiction — merits not reached. Rehearing en banc denied May 22, 2026 (6–5); mandate stayed May 26 pending cert; Khalil remains free. Immigration side: BIA final removal order Apr. 9, 2026; Fifth Circuit petition filed May 9, 2026.\nCurrency: no cert grant/denial found as of 2026-08-21; \"seeking Supreme Court review\" remains accurate.",
+   "ordinal": 33,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://clearinghouse.net/case/46209",
+     "stance": "supports",
+     "url": "https://clearinghouse.net/case/46209/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org/press-releases/mahmoud-khalils-legal-team-will-seek-supreme-court-review-of-appeals-court-decision",
+     "stance": "supports",
+     "url": "https://www.aclu.org/press-releases/mahmoud-khalils-legal-team-will-seek-supreme-court-review-of-appeals-court-decision"
+    }
+   ],
+   "text": "Khalil: LPR arrested March 2025, moved to Louisiana under the foreign-policy provision; district judge enjoined and freed him; appeals panel vacated on jurisdictional grounds without reaching merits; lawyers seeking Supreme Court review; removal order stands affirmed on the immigration side",
+   "tier": 1,
+   "url": "https://clearinghouse.net/case/46209/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b70",
+    "confidence": 1,
+    "endOffset": 1113,
+    "quote": "acted in concert to misuse the sweeping powers of their respective offices to target noncitizen pro-Palestinians for deportation primarily on account of their First Amendment protected political speech",
+    "startOffset": 912
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech",
+   "note": "Finding: Verbatim. Judge William G. Young (D. Mass.), 161-page post-trial ruling, Sept. 30, 2025, in the case brought by AAUP and the Middle East Studies Association — correctly attributed to the associations' case, not Khalil's (the drafting-note correction held).",
+   "ordinal": 34,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech",
+     "stance": "supports",
+     "url": "https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech/"
+    }
+   ],
+   "text": "AAUP v. Rubio: post-trial finding that officials \"acted in concert to misuse the sweeping powers of their respective offices to target noncitizen pro-Palestinians for deportation primarily on account of their First Amendment protected political speech\"",
+   "tier": 1,
+   "url": "https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b72",
+    "confidence": 0.6316,
+    "endOffset": 200,
+    "quote": "Prerogative zones do not respect their nominal boundaries. ProPublica, counting cases the government does not count, documented more than 170 United States citizens held during immigration operations ",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will",
+   "note": "Finding: All five figures verbatim at source, plus \"The government does not track how often immigration agents hold Americans.\"",
+   "ordinal": 35,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will",
+     "stance": "supports",
+     "url": "https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will"
+    }
+   ],
+   "text": "ProPublica: >170 U.S. citizens held in nine months; >50 after citizenship questioned; ~130 accused of assaulting/impeding; two dozen held >1 day without a phone call; nearly 50 cases never charged or dismissed; government doesn't count",
+   "tier": 1,
+   "url": "https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b72",
+    "confidence": 1,
+    "endOffset": 1153,
+    "quote": "it does not matter that people are not getting convicted",
+    "startOffset": 1097
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions",
+   "note": "Finding: Confirmed. \"More than 300 protesters and bystanders\" arrested and accused of crimes like assaulting/interfering; \"In more than a third of the cases, prosecutors quickly dismissed charges that couldn't be substantiated, refused to file charges at all, or lost at trial\"; repeated video contradictions documented. The paraphrased quote is Jared Fishman (Justice Innovation Lab, ex-DOJ): \"If the goal... is to keep people out of the streets, then it doesn't matter if the people are getting convicted. I'm sure it's having a chilling effect.\" Draft's \"one observer quoted in that reporting\" is accurate.",
+   "ordinal": 36,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions",
+     "stance": "supports",
+     "url": "https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions"
+    }
+   ],
+   "text": "ProPublica/FRONTLINE: >300 protest-related arrests reviewed; over a third dropped/declined/defeated; officer accounts contradicted by video; \"it does not matter that people are not getting convicted\" paraphrase",
+   "tier": 2,
+   "url": "https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b73",
+    "confidence": 1,
+    "endOffset": 314,
+    "quote": "engaged in prohibited law enforcement activities",
+    "startOffset": 266
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://clearinghouse.net/case/46678",
+   "note": "Finding: Confirmed. ~4,000 CA National Guard federalized June 7–9, 2025; 700 Marines deployed (Pentagon order June 9). Sept. 2, 2025 (Judge Breyer): \"federalized National Guard units engaged in prohibited law enforcement activities in Los Angeles pursuant to a top-down directive,\" violating the Posse Comitatus Act. Parallel case: *Trump v. Illinois*, SCOTUS Dec. 23, 2025 (6–3, against the federalization authority); the government then filed voluntary dismissals of both Newsom appeals (Jan. 23, 2026). Sequence as drafted is right.",
+   "ordinal": 37,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://clearinghouse.net/case/46678",
+     "stance": "supports",
+     "url": "https://clearinghouse.net/case/46678/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.washingtonpost.com/nation/2025/06/09/marines-la-protests",
+     "stance": "supports",
+     "url": "https://www.washingtonpost.com/nation/2025/06/09/marines-la-protests/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.npr.org/2025/07/16/nx-s1-5469676/la-national-guard-deployment",
+     "stance": "supports",
+     "url": "https://www.npr.org/2025/07/16/nx-s1-5469676/la-national-guard-deployment"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.brennancenter.org/our-work/analysis-opinion/trump-v-illinois-narrow-supreme-court-decision-broad-implications-0",
+     "stance": "supports",
+     "url": "https://www.brennancenter.org/our-work/analysis-opinion/trump-v-illinois-narrow-supreme-court-decision-broad-implications-0"
+    }
+   ],
+   "text": "LA: ~4,000 Guard federalized + ~700 Marines, June 2025; September ruling: troops \"engaged in prohibited law enforcement activities\" (Posse Comitatus); after the Supreme Court's ruling in a parallel case, the government abandoned its appeals",
+   "tier": 1,
+   "url": "https://clearinghouse.net/case/46678/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b77",
+    "confidence": 0.8,
+    "endOffset": 200,
+    "quote": "In 1919 and 1920, after a real campaign of anarchist bombings, the Justice Department under A. Mitchell Palmer, with the young J. Edgar Hoover running its new radical-intelligence division, swept up t",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.fbi.gov/history/cases-and-criminals/palmer-raids",
+   "note": "Fix: Verify \"questionable\" against a physical/PDF copy of *The FBI: A Centennial History* p. 22, or quote the FBI web page's \"was questioned.\"\nFinding: The first quoted sentence is confirmed verbatim as the FBI's own language (indexed from fbi.gov's Palmer Raids history page). The final clause could not be checked against the cited book: fbi.gov blocks all fetching (Cloudflare challenge confirmed), and the reachable FBI history page reads \"The constitutionality of the entire operation was **questioned**, and Palmer and Hoover were roundly criticized...\" — one word off the draft's \"questionable,\" which the draft sources to the centennial book (p. 22). Context (1919–20 raids after anarchist bombings; Hoover heading the new Radical/General Intelligence Division; thousands of suspected radicals arrested for deportation) is standard history, corroborated at the sources below.",
+   "ordinal": 38,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.fbi.gov/history/cases-and-criminals/palmer-raids",
+     "stance": "supports",
+     "url": "https://www.fbi.gov/history/cases-and-criminals/palmer-raids"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://firstamendment.mtsu.edu/article/federal-bureau-of-investigation",
+     "stance": "supports",
+     "url": "https://firstamendment.mtsu.edu/article/federal-bureau-of-investigation/"
+    }
+   ],
+   "text": "Palmer raids: \"the raids 'turned into a nightmare, marked by poor communications, planning, and intelligence about who should be targeted and how many arrest warrants would be needed. The constitutionality of the entire operation was questionable.'\" — FBI centennial history, p. 22; Hoover ran the new radical-intelligence division; thousands swept up for deportation, after a real campaign of anarchist bombings",
+   "tier": 1,
+   "url": "https://www.fbi.gov/history/cases-and-criminals/palmer-raids",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b79",
+    "confidence": 1,
+    "endOffset": 784,
+    "quote": "intelligence excesses, at home and abroad, have been found in every administration. They are not the product of any single party, administration, or man.",
+    "startOffset": 631
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf",
+   "note": "Fix (optional): \"in which, in the words of the official in charge, no holds were barred.\"\nFinding: All confirmed at the primary source (Book II PDF, full text extracted). \"…covert action designed to disrupt and discredit the activities of groups and individuals deemed a threat to the social order\" — verbatim. \"…Martin Luther King, Jr., was the target of an intensive campaign by the Federal Bureau of Investigation to 'neutralize' him as an effective civil rights leader. In the words of the man in charge of the FBI's 'war' against Dr. King, 'No holds were barred.'\" — the draft's \"the Committee found, no holds were barred\" slightly reassigns a quote the Committee itself attributes to the FBI official in charge (Sullivan); meaning intact, attribution loose. Every-administration sentence verbatim. Program targets (CPUSA, SWP, white hate groups, Black nationalists, New Left/antiwar) match the draft's list in substance.",
+   "ordinal": 39,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf",
+     "stance": "supports",
+     "url": "https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf"
+    }
+   ],
+   "text": "Church Committee: COINTELPRO 1956–71, \"covert action designed to disrupt and discredit the activities of groups and individuals deemed a threat to the social order\"; campaign to \"neutralize\" King \"as an effective civil-rights leader,\" \"no holds were barred\"; \"intelligence excesses, at home and abroad, have been found in every administration. They are not the product of any single party, administration, or man.\"",
+   "tier": 1,
+   "url": "https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b81",
+    "confidence": 1,
+    "endOffset": 266,
+    "quote": "ancestries of interest",
+    "startOffset": 244
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program",
+   "note": "Finding: Confirmed. ACLU factsheet: unit \"mapped neighborhoods predominantly occupied by 28 so-called 'ancestries of interest'\"; NYPD \"taken pictures and video of those leaving and entering places of worship,\" \"recorded the license plate numbers of worshippers attending services,\" used \"mosque crawlers\" (informants). CIA help and the 2012 Pulitzer for Investigative Reporting (Apuzzo, Goldman, Sullivan, Hawley) confirmed via Pulitzer listing and contemporaneous coverage.",
+   "ordinal": 40,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program",
+     "stance": "supports",
+     "url": "https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.pulitzer.org/winners/matt-apuzzo-adam-goldman-eileen-sullivan-and-chris-hawley",
+     "stance": "supports",
+     "url": "https://www.pulitzer.org/winners/matt-apuzzo-adam-goldman-eileen-sullivan-and-chris-hawley"
+    }
+   ],
+   "text": "NYPD Demographics Unit: CIA assistance; mapped communities by 28 \"ancestries of interest\"; photographed mosques, seeded congregations with informants, logged worshippers' plates; AP investigation won the 2012 Pulitzer",
+   "tier": 1,
+   "url": "https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b81",
+    "confidence": 1,
+    "endOffset": 710,
+    "quote": "I never made a lead from rhetoric that came from a Demographics report, and I'm here since 2006.",
+    "startOffset": 614
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent",
+   "note": "Fix (minor): ref [34]'s bare \"https://www.aclu.org\" should be pinned to the press-release URL above.\nFinding: Confirmed. NYPD Assistant Chief Thomas Galati (commanding the Intelligence Division), Handschu deposition of June 28, 2012; sentence verbatim per ACLU. Draft's framing (\"commanding officer of the NYPD's Intelligence Division\") matches.",
+   "ordinal": 41,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent",
+     "stance": "supports",
+     "url": "https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.aclu.org\"/",
+     "stance": "supports",
+     "url": "https://www.aclu.org\""
+    }
+   ],
+   "text": "Galati, sworn deposition: \"I never made a lead from rhetoric that came from a Demographics report, and I'm here since 2006.\"",
+   "tier": 1,
+   "url": "https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b81",
+    "confidence": 0.5926,
+    "endOffset": 200,
+    "quote": "The nearest modern precedent is the one the Minnesota filings echo most closely. After September 11, the New York Police Department, with CIA assistance, built a Demographics Unit that mapped Muslim c",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www2.ca3.uscourts.gov/opinarch/141688p.pdf",
+   "note": "Finding: Confirmed. Bratton disbanded the Zone Assessment (formerly Demographics) Unit, announced Apr. 15, 2014. *Hassan* (opinion PDF read): \"We reverse and remand\"; the court invoked the internment precedents directly — \"we passively accepted the Government's representations... Hirabayashi... Korematsu... the discriminatory treatment of approximately 120,000 persons of Japanese ancestry was fueled not by military necessity but unfounded fears,\" and \"We have been down similar roads before... Japanese-Americans during World War II.\"",
+   "ordinal": 42,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www2.ca3.uscourts.gov/opinarch/141688p.pdf",
+     "stance": "supports",
+     "url": "https://www2.ca3.uscourts.gov/opinarch/141688p.pdf"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.cnn.com/2014/04/15/us/nypd-muslims-spying-ends/index.html",
+     "stance": "supports",
+     "url": "https://www.cnn.com/2014/04/15/us/nypd-muslims-spying-ends/index.html"
+    }
+   ],
+   "text": "Unit disbanded 2014; *Hassan v. City of New York* (3d Cir. 2015) compared the program's logic to the internment cases and let the constitutional claims proceed",
+   "tier": 1,
+   "url": "https://www2.ca3.uscourts.gov/opinarch/141688p.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b82",
+    "confidence": 1,
+    "endOffset": 194,
+    "quote": "Survey research on American Muslims has since found police-surveillance encounters, specifically, associated with decreased electoral participation",
+    "startOffset": 47
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.mdpi.com/2313-5778/10/2/50",
+   "note": "Finding: Confirmed. Rosenthal & Selod, \"Racialized Surveillance and Voting: Connecting Government Monitoring to American Muslim Electoral Participation,\" *Genealogy* 10(2):50 (2026). Survey of 1,000 American Muslims; police encounters linked to decreased turnout (2016 election), while airport screening showed no turnout change — supporting the draft's \"specifically.\" Correlational design; the draft scopes it as such.",
+   "ordinal": 43,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.mdpi.com/2313-5778/10/2/50",
+     "stance": "supports",
+     "url": "https://www.mdpi.com/2313-5778/10/2/50"
+    }
+   ],
+   "text": "\"Survey research on American Muslims has since found police-surveillance encounters, specifically, associated with decreased electoral participation... An association is not proof of cause.\"",
+   "tier": 2,
+   "url": "https://www.mdpi.com/2313-5778/10/2/50",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b89",
+    "confidence": 1,
+    "endOffset": 407,
+    "quote": "the 2025 budget reconciliation act granted ICE roughly $75 billion through 2029, $45 billion of it for detention, against a prior annual budget near $9 to $10 billion",
+    "startOffset": 241
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex",
+   "note": "Finding: Confirmed. Brennan Center: \"Congress gave ICE $75 billion over four years\" (act of July 2025 → through ~2029); \"$45 billion over four years – will be used to detain immigrants\" (two-thirds); prior regular appropriation ~$10B for FY2025 (FY24 ≈ $9–10B). Draft's range is fair.",
+   "ordinal": 44,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex",
+     "stance": "supports",
+     "url": "https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex"
+    }
+   ],
+   "text": "\"the 2025 budget reconciliation act granted ICE roughly $75 billion through 2029, $45 billion of it for detention, against a prior annual budget near $9 to $10 billion\"",
+   "tier": 1,
+   "url": "https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex",
+   "verdict": "verified"
+  },
+  {
+   "anchor": {
+    "blockId": "b84",
+    "confidence": 0.4,
+    "endOffset": 27,
+    "quote": "## IX. What Is Actually New",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "note": "Finding: Checked as factual predicates, not as the author's synthesis (which is Phase 3 material). Each predicate is carried by claims verified above: automatic collection (C17, C20), searchable histories (C17–C19; note Flock's own retention default is now 7 days — the retrospectivity point rests more on broker location data, Palantir integration, and agency-side retention than on ALPR defaults), integration (C23), automation (C19, C23), retrospective query (C19, C20, C26). Nothing found that contradicts a predicate.",
+   "ordinal": 45,
+   "text": "§IX's economic characterizations: automatic population-scale collection, searchable accumulating histories, cross-purpose integration, automated pattern-finding, retrospective search, near-zero marginal cost",
+   "tier": 1,
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b95",
+    "confidence": 1,
+    "endOffset": 591,
+    "quote": "in controlled experiments, found that perceived government surveillance deters not only intentions toward illegal acts but lawful political activity online, an effect that held across populations including American Muslims; her earlier work found perceived surveillance silencing the expression of minority political views",
+    "startOffset": 269
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://journals.sagepub.com/doi/abs/10.1177/1461444818801317",
+   "note": "Finding: Confirmed. \"Privacy and the Panopticon\" (New Media & Society, 2019; Stoycheff, Liu, Xu, Wibowo): two experimental studies; Study 1 — surveillance \"significantly deters intentions to engage in illegal offenses, an effect that extends to political... behaviors\"; Study 2 — replicated with a sample of U.S.-resident Muslims; chilling effects \"not specific to any one online population, experimental stimuli, or political context.\" Earlier work: \"Under Surveillance: Examining Facebook's Spiral of Silence Effects in the Wake of NSA Internet Monitoring\" (J&MC Quarterly, 2016) — perceived surveillance suppresses minority-opinion expression. \"Controlled experiments\" is a fair design description.",
+   "ordinal": 46,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://journals.sagepub.com/doi/abs/10.1177/1461444818801317",
+     "stance": "supports",
+     "url": "https://journals.sagepub.com/doi/abs/10.1177/1461444818801317"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://dblp.org/rec/journals/nms/StoycheffLXW19.html",
+     "stance": "supports",
+     "url": "https://dblp.org/rec/journals/nms/StoycheffLXW19.html"
+    }
+   ],
+   "text": "Stoycheff: \"in controlled experiments, found that perceived government surveillance deters not only intentions toward illegal acts but lawful political activity online, an effect that held across populations including American Muslims; her earlier work found perceived surveillance silencing the expression of minority political views\"",
+   "tier": 1,
+   "url": "https://journals.sagepub.com/doi/abs/10.1177/1461444818801317",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b96",
+    "confidence": 0.5333,
+    "endOffset": 200,
+    "quote": "Honesty requires reporting the complication. A 2026 article in the American Journal of Political Science, modeling surveillance in autocracies, argues the effect is not monotonic: surveillance creates",
+    "startOffset": 0
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://onlinelibrary.wiley.com/doi/10.1111/ajps.70057",
+   "note": "Finding: Confirmed. Gaétan Nandong, \"State surveillance and collective dissent,\" AJPS (2026): surveillance creates a climate of fear because citizens expect informed governments to repress; but it \"can also stimulate dissent when citizens have access to public information,\" gives citizens \"an opportunity to coordinate,\" and can amplify dissent via attention-seeking activism. Draft's rendering accurate and appropriately hedged.",
+   "ordinal": 47,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://onlinelibrary.wiley.com/doi/10.1111/ajps.70057",
+     "stance": "supports",
+     "url": "https://onlinelibrary.wiley.com/doi/10.1111/ajps.70057"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.wallis.rochester.edu/assets/pdf/conference32/nandong-gaetan-suppressing-dissent-with-limited-information.pdf",
+     "stance": "supports",
+     "url": "https://www.wallis.rochester.edu/assets/pdf/conference32/nandong-gaetan-suppressing-dissent-with-limited-information.pdf"
+    }
+   ],
+   "text": "Nandong (AJPS 2026): surveillance in autocracies non-monotonic — creates fear, but with shared public information can enable coordination and more dissent",
+   "tier": 2,
+   "url": "https://onlinelibrary.wiley.com/doi/10.1111/ajps.70057",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 1,
+    "endOffset": 449,
+    "quote": "the equivalent of leaving the government's fox in charge of the henhouse",
+    "startOffset": 377
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.rcfp.org/natanson-post-search-ruling",
+   "note": "Fix: Restore the full quote, or elide honestly: \"the government's fox in charge of the… henhouse.\"\nFinding: Events confirmed; quote truncated. Judge William B. Porter (E.D. Va.), Feb. 25, 2026: allowing the government's filter team to search a reporter's work product \"is the equivalent of leaving the government's fox in charge of the **Washington Post's** henhouse\" — the draft omits \"the Washington Post's\" inside quotation marks. The court, not DOJ, will conduct the review of Hannah Natanson's seized devices; judicial control affirmed.",
+   "ordinal": 48,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.rcfp.org/natanson-post-search-ruling",
+     "stance": "supports",
+     "url": "https://www.rcfp.org/natanson-post-search-ruling/"
+    }
+   ],
+   "text": "Natanson: FBI searched a Washington Post reporter's home and seized devices in a leak investigation; magistrate refused the government's filter team, \"the equivalent of leaving the government's fox in charge of the henhouse\"; district court affirmed judicial control",
+   "tier": 1,
+   "url": "https://www.rcfp.org/natanson-post-search-ruling/",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 1,
+    "endOffset": 608,
+    "quote": "Four federal judges struck down, in their entirety, the executive orders targeting law firms",
+    "startOffset": 516
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms",
+   "note": "Finding: Confirmed and current. Four district judges ruled for Perkins Coie, Jenner & Block, WilmerHale, and Susman Godfrey (First/Fifth/Sixth Amendment violations); \"None of the executive orders took effect as a result of the litigation.\" No reversal. Appeals: DOJ moved to voluntarily dismiss (Mar. 2, 2026), reversed course a day later, and the consolidated appeals were argued in the D.C. Circuit (spring 2026); still pending as of 2026-08-21.",
+   "ordinal": 49,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms",
+     "stance": "supports",
+     "url": "https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.acludc.org/cases/perkins-coie-llp-v-us-department-justice-jenner-block-llp-v-us-dept-justice-wilmerhale-v",
+     "stance": "supports",
+     "url": "https://www.acludc.org/cases/perkins-coie-llp-v-us-department-justice-jenner-block-llp-v-us-dept-justice-wilmerhale-v/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.law.com/nationallawjournal/2026/03/27/wilmer-jenner-blast-trump-eo-appeal",
+     "stance": "supports",
+     "url": "https://www.law.com/nationallawjournal/2026/03/27/wilmer-jenner-blast-trump-eo-appeal/"
+    }
+   ],
+   "text": "\"Four federal judges struck down, in their entirety, the executive orders targeting law firms...; none has been reversed, though the appeals remain pending.\"",
+   "tier": 1,
+   "url": "https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b108",
+    "confidence": 1,
+    "endOffset": 888,
+    "quote": "A federal court enjoined warrantless immigration enforcement at the plaintiff congregations' houses of worship, and the Fourth Circuit affirmed in August 2026.[46]",
+    "startOffset": 725
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.ca4.uscourts.gov/opinions/251512.P.pdf",
+   "note": "(reference error — see fix)\nFix: Point [46] at clearinghouse.net/case/45979 (and/or the CA4 opinion PDF above). Case name and description in the draft are correct.\nFinding: The claim is true; the citation URL is wrong. *Philadelphia Yearly Meeting of the Religious Society of Friends v. DHS* (D. Md., 8:25-cv-00243, Judge Chuang): preliminary injunction protecting the plaintiff Quaker meetings, Sikh Temple Sacramento, and Cooperative Baptist Fellowship; Fourth Circuit No. 25-1512, argued May 6, 2026, **decided Aug. 18, 2026** — \"Affirmed by published opinion\" (Keenan, joined by Agee and Harris; RFRA grounds; government waived strict-scrutiny argument). Scope limited to the plaintiff congregations, as the draft says. **But ref [46] links clearinghouse.net/case/46097 — that record is *Mennonite Church USA v. DHS* (D.D.C.), where the PI was denied** (the very case the drafting note says was swapped out). Correct record: clearinghouse.net/case/45979.",
+   "ordinal": 50,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.ca4.uscourts.gov/opinions/251512.P.pdf",
+     "stance": "supports",
+     "url": "https://www.ca4.uscourts.gov/opinions/251512.P.pdf"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://clearinghouse.net/case/46097",
+     "stance": "supports",
+     "url": "https://clearinghouse.net/case/46097/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://democracyforward.org/news/press-releases/fourth-circuit-upholds-order-protecting-houses-of-worship-from-unlawful-immigration-enforcement",
+     "stance": "supports",
+     "url": "https://democracyforward.org/news/press-releases/fourth-circuit-upholds-order-protecting-houses-of-worship-from-unlawful-immigration-enforcement/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.courthousenews.com/fourth-circuit-upholds-injunction-barring-immigration-arrests-at-some-houses-of-worship",
+     "stance": "supports",
+     "url": "https://www.courthousenews.com/fourth-circuit-upholds-injunction-barring-immigration-arrests-at-some-houses-of-worship/"
+    }
+   ],
+   "text": "\"A federal court enjoined warrantless immigration enforcement at the plaintiff congregations' houses of worship, and the Fourth Circuit affirmed in August 2026.[46]\"",
+   "tier": 1,
+   "url": "https://www.ca4.uscourts.gov/opinions/251512.P.pdf",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b109",
+    "confidence": 1,
+    "endOffset": 253,
+    "quote": "voted its government out in April 2026. By June 30 the new parliament had abolished the Sovereignty Protection Office",
+    "startOffset": 136
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished",
+   "note": "Finding: Confirmed. Tisza won a two-thirds majority in the April 2026 election, ending Orbán's 16-year rule. Parliament abolished the office June 30, 2026: 135 in favor, 44 against (6 abstaining), after the June 15 constitutional amendment removed its basis. The office (2023 law) investigated alleged foreign influence in civil society — description matches.",
+   "ordinal": 51,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished",
+     "stance": "supports",
+     "url": "https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://brusselssignal.eu/2026/07/hungarys-parliament-votes-to-abolish-orbans-sovereignty-office",
+     "stance": "supports",
+     "url": "https://brusselssignal.eu/2026/07/hungarys-parliament-votes-to-abolish-orbans-sovereignty-office/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://english.news.cn/20260630/5aa0d29d1ccb4d8380425df65a37c2c7/c.html",
+     "stance": "supports",
+     "url": "https://english.news.cn/20260630/5aa0d29d1ccb4d8380425df65a37c2c7/c.html"
+    }
+   ],
+   "text": "\"Hungary... voted its government out in April 2026. By June 30 the new parliament had abolished the Sovereignty Protection Office... by a vote of 135 to 44.\"",
+   "tier": 1,
+   "url": "https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b111",
+    "confidence": 1,
+    "endOffset": 592,
+    "quote": "The pending prosecution of James Comey over an Instagram post, which the defendant calls retaliatory and which First Amendment scholars such as Eugene Volokh expect to fail",
+    "startOffset": 420
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://firstamendment.mtsu.edu/article/indictment-against-james-comey-over-instagram-post",
+   "note": "Finding: Confirmed. Indicted Apr. 28, 2026, E.D.N.C., over the May 2025 \"8647\" seashell photo, charged as a threat against the president; Comey's dismissal motion argues retaliation for protected speech and selective/vindictive prosecution. Volokh (Apr. 28, 2026): \"I think this prosecution is unjustified, and will get thrown out\" (not a true threat under *Counterman*/*Watts*). Case live as of Aug. 19–21, 2026 (DOJ filings that week re: the prosecution team).",
+   "ordinal": 52,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://firstamendment.mtsu.edu/article/indictment-against-james-comey-over-instagram-post",
+     "stance": "supports",
+     "url": "https://firstamendment.mtsu.edu/article/indictment-against-james-comey-over-instagram-post/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://reason.com/volokh/2026/04/28/analyzing-indictment-of-james-comey-for-86-47-post",
+     "stance": "supports",
+     "url": "https://reason.com/volokh/2026/04/28/analyzing-indictment-of-james-comey-for-86-47-post/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.cnn.com/2026/08/19/politics/comey-seashell-indictment-prosecutor-justice-department",
+     "stance": "supports",
+     "url": "https://www.cnn.com/2026/08/19/politics/comey-seashell-indictment-prosecutor-justice-department"
+    }
+   ],
+   "text": "\"The pending prosecution of James Comey over an Instagram post, which the defendant calls retaliatory and which First Amendment scholars such as Eugene Volokh expect to fail\"",
+   "tier": 2,
+   "url": "https://firstamendment.mtsu.edu/article/indictment-against-james-comey-over-instagram-post/",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b121",
+    "confidence": 1,
+    "endOffset": 773,
+    "quote": "a phone at a protest reveals its presence at the protest by connecting to the network, Signal or no Signal",
+    "startOffset": 667
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://ssd.eff.org/module/your-security-plan",
+   "note": "Finding: Confirmed. \"Your Security Plan\" is organized around threat modeling (assets, adversaries, consequences, likelihood). Location module: \"at least four ways that an individual phone's location can be tracked... Towers... Cell Site Simulators, Wi-Fi and Bluetooth Tracking, Location Information Leaks from Apps\"; carrier tracking unavoidable \"as long as your mobile phone is powered on, with a registered SIM card, and transmitting signals\"; location data can reveal \"who was at a particular protest.\" Encryption-independence of network-level presence is exactly EFF's point.",
+   "ordinal": 53,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://ssd.eff.org/module/your-security-plan",
+     "stance": "supports",
+     "url": "https://ssd.eff.org/module/your-security-plan"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://ssd.eff.org/module/mobile-phones-location-tracking",
+     "stance": "supports",
+     "url": "https://ssd.eff.org/module/mobile-phones-location-tracking"
+    }
+   ],
+   "text": "EFF SSD threat-model framing; \"a phone at a protest reveals its presence at the protest by connecting to the network, Signal or no Signal\"; phones leak location through several independent channels",
+   "tier": 2,
+   "url": "https://ssd.eff.org/module/your-security-plan",
+   "verdict": "verified"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b122",
+    "confidence": 1,
+    "endOffset": 368,
+    "quote": "The case record of groups like Access Now's helpline, built over more than ten thousand incidents, shows attackers overwhelmingly targeting people (phishing, impersonation of trusted services) rather than cryptography.",
+    "startOffset": 150
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://www.accessnow.org/press-release/digital-security-helpline-cases-report",
+   "note": "Fix (optional): cite the 10,000-case report (\"what we learned from our first 10,000 cases\") alongside [51], or soften \"overwhelmingly\" to \"case records... show attackers targeting people far more often than cryptography.\"\nFinding: The 10,000+ figure is right (helpline surpassed 10,000 cases by mid-2021 and has more than doubled since). The cited \"Espionage for Repression\" report (read in full) illustrates the pattern precisely — spear-phishing impersonating Apple/Google services, OAuth consent phishing; no cryptanalysis anywhere. But \"overwhelmingly... rather than cryptography,\" as a claim about the whole 10,000-case record, is an inference the fetched sources support qualitatively (account-compromise and phishing dominate helpline reporting) without stating it in those terms.",
+   "ordinal": 54,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.accessnow.org/press-release/digital-security-helpline-cases-report",
+     "stance": "supports",
+     "url": "https://www.accessnow.org/press-release/digital-security-helpline-cases-report/"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf",
+     "stance": "supports",
+     "url": "https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf"
+    },
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://www.accessnow.org/help",
+     "stance": "supports",
+     "url": "https://www.accessnow.org/help/"
+    }
+   ],
+   "text": "\"The case record of groups like Access Now's helpline, built over more than ten thousand incidents, shows attackers overwhelmingly targeting people (phishing, impersonation of trusted services) rather than cryptography.\"",
+   "tier": 2,
+   "url": "https://www.accessnow.org/press-release/digital-security-helpline-cases-report/",
+   "verdict": "substantially_accurate"
+  },
+  {
+   "accessedAt": "2026-08-21T00:00:00Z",
+   "anchor": {
+    "blockId": "b139",
+    "confidence": 1,
+    "endOffset": 481,
+    "quote": "SecureDrop, maintained by the Freedom of the Press Foundation",
+    "startOffset": 420
+   },
+   "humanAdded": false,
+   "normalizedUrl": "https://securedrop.org/",
+   "note": "Finding: Confirmed: \"SecureDrop is an open source whistleblower submission system... a project of Freedom of the Press Foundation.\"",
+   "ordinal": 55,
+   "sources": [
+    {
+     "accessedAt": "2026-08-21T00:00:00Z",
+     "normalizedUrl": "https://securedrop.org/",
+     "stance": "supports",
+     "url": "https://securedrop.org"
+    }
+   ],
+   "text": "\"SecureDrop, maintained by the Freedom of the Press Foundation\"",
+   "tier": 3,
+   "url": "https://securedrop.org",
+   "verdict": "verified"
+  }
+ ],
+ "inventoryCount": 56,
+ "sidecar": "claim_ledger",
+ "version": 1
+}

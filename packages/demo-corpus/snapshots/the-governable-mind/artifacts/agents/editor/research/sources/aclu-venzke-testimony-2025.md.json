@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/aclu-venzke-testimony-2025.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a8b3855087ac4630",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/aclu-venzke-testimony-2025.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# aclu-venzke-testimony-2025\n- **URL:** https://docs.house.gov/meetings/JU/JU08/20250716/118467/HHRG-119-JU08-Wstate-VenzkeC-20250716-U11.pdf · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** ACLU (Venzke), House Judiciary, July 16, 2025 (PDF extracted): AI surveillance, FRT, chilling of First Amendment rights; nothing on open weights, compute, chatbot logs.\n- **Key passages:** \"Such surveillance threatens to chill the exercise of rights protected by the First Amendment, including the freedoms of speech, association, and of the press.\"\n- **Reliability:** Primary advocacy testimony.\n- **Relevance to this project:** Not a predecessor; ACLU frame is state AI surveillance of conduct.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 84
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "66a5a3844eaeb806b45674828a29c316d185d691640b48817331b6290356f67e",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/aclu-venzke-testimony-2025.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,6 @@
+# hooghe-marks-wilson-2002
+- **URL:** https://journals.sagepub.com/doi/10.1177/001041402236310 (PDF at garymarks.web.unc.edu fetched but text-extraction failed; bibliographic details verified via Sage page + search) · **Accessed:** 2026-07-31 · **For:** v1-response — MI2 GAL/TAN citation
+- **What it establishes:** Hooghe, Marks & Wilson, "Does Left/Right Structure Party Positions on European Integration?", *Comparative Political Studies* 35(8), 2002, 965–989. Introduces the "new politics" dimension running Green/Alternative/Libertarian (GAL) ↔ Traditionalism/Authority/Nationalism (TAN), conceptually distinct from economic left–right; TAN the strongest predictor of Euroscepticism. The Chapel Hill Expert Survey's galtan variable is built on this framework.
+- **Key passages:** (abstract-level) the most powerful source of variation in party support for integration is the new-politics GAL↔TAN dimension, not economic left/right.
+- **Reliability:** Primary (canonical article), read at abstract/bibliographic depth; full PDF not text-extracted this session — flag: cited for the dimension's definition and provenance only.
+- **Relevance:** v2 §IV (CHES section) must name GAL/TAN as the design dimension of the dataset and reframe the bundle finding accordingly.

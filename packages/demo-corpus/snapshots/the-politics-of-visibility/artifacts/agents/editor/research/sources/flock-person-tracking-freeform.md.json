@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/flock-person-tracking-freeform.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8d4d311f823dce37",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "1d82dde96bc7c952",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "0d99a381b7d94fe8",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/flock-person-tracking-freeform.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Flock person tracking — Condor + FreeForm (gait scoping check)\n\n- InvestigateTV: https://www.investigatetv.com/2026/06/15/flock-says-its-cameras-dont-track-people-its-own-training-videos-say-otherwise/\n- 404 Media (search-confirmed): https://www.404media.co/how-cops-use-flock-to-track-people-not-cars/ ; Flock FreeForm product page: https://www.flocksafety.com/products/flock-freeform\n- Gait survey: https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: Condor PTZ camera detects and follows walking people (\"it will actually\nacquire and track that person as they walk\"); FreeForm natural-language person searches\nused hundreds of times (\"heavy-set male with a black and white hat\"); gait recognition is\nan active research field with no documented US roadside/ALPR deployment. Supports the\ndraft's §III scoping paragraph exactly; the NL-person-search sentence needs the 404\nMedia/FreeForm citation added to ref [11].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 97
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2f69c951d5f907586ab96f5f54e0d340cb9bcadb175c50904d7e384551680812",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/flock-person-tracking-freeform.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/euronews-openai-u-turn.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "378335ccd2b497d4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/euronews-openai-u-turn.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# euronews-openai-u-turn\n- **URL:** https://www.euronews.com/next/2026/09/11/openai-makes-u-turn-and-calls-for-binding-national-ai-safety-rules · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C45\n- **What it establishes:** Euronews/AFP (Sept 11, 2026; Roselyne Min). Same proposal (common testing standards, independent third-party assessments, cybersecurity, mandatory serious-incident reporting; frontier developers only; act before December). Frames it as a \"U-turn\" from OpenAI's earlier resistance to regulation and to state rules; notes OpenAI now backs four California bills; links the shift to the Hugging Face intrusion.\n- **Key passages:**\n  - Lehane: \"We've reached a new chapter in AI capabilities, and that demands a new chapter for AI policy. No company, industry, or government can meet this challenge alone.\"\n- **Reliability:** Secondary, mainstream European press with AFP.\n- **Relevance to this project:** Adds the \"reversal\" context and the Hugging Face linkage for C45.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 121
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "289a9af42578da54eaebeb231360b66e0c2efeb41becf2808a07a1f8f2f9d435",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/euronews-openai-u-turn.md",
+ "kind": "artifact-page"
+}

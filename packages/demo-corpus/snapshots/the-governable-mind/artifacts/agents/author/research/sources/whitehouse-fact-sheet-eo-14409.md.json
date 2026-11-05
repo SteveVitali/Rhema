@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/whitehouse-fact-sheet-eo-14409.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a4940ad26b925ec8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/whitehouse-fact-sheet-eo-14409.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# whitehouse-fact-sheet-eo-14409\n- **URL:** https://www.whitehouse.gov/fact-sheets/2026/06/fact-sheet-president-donald-j-trump-promotes-advanced-artificial-intelligence-innovation-and-security/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C48\n- **What it establishes:** White House fact sheet (June 2, 2026) summarizing EO 14409: classified benchmarking against which \"industry may assess their models\"; voluntary framework giving the federal government \"secure early access for trusted partners\"; express statement of no mandatory licensing/pre-clearance/permitting.\n- **Key passages:**\n  - \"The Order calls for the development of a classified benchmarking process against which industry may assess their models for advanced AI cyber capabilities, identifying covered frontier models.\"\n  - \"The Order expressly states that nothing shall be construed to authorize creation of any mandatory governmental licensing, pre-clearance, or permitting requirement for the development, publication, release or distribution of AI models.\"\n- **Reliability:** Primary (White House); political summary of the order.\n- **Relevance to this project:** Verifies C48's \"expressly disclaim\" characterization; quote the EO text itself for precision.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 137
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ba722b3fa0d59929da3196fbfa57349a243c6966d118c0b9de7fcc66741c1f94",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/whitehouse-fact-sheet-eo-14409.md",
+ "kind": "artifact-page"
+}

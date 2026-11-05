@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/mn-reformer-metro-surge-spying.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3b27a8b4c32afd7d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/mn-reformer-metro-surge-spying.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mn-reformer-metro-surge-spying\n- **URL:** https://minnesotareformer.com/2026/08/13/feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/ (Reformer blocked to fetcher; full text read via licensed mirror: https://www.kvrr.com/news/minnesota-news/documents-show-how-feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/article_9e1e7681-7642-45bf-8907-06516691dd12.html) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C1, C3\n- **What it establishes:** The C1 elements the AP story does not: (1) conversations were secretly RECORDED; (2) license plates collected at a church meeting and dossiers compiled including photos, addresses, vehicle registrations, family/employment info; Clearview AI facial recognition used; (3) financial records obtained via ADMINISTRATIVE SUBPOENAS (agency-issued, not judge-issued) from SEIU, CWA, Voices for Racial Justice, and Sunrise Movement; (4) the diagram was shown to the GRAND JURY, centered on \"Direct Action MN,\" and its named organizations include SEIU, AFL-CIO, Minneapolis Federation of Educators, Monarca, Democratic Socialists of America, and MAPE; (5) surveillance went \"far beyond the 15 people indicted\"; (6) documents filed Thursday morning (Aug 13, 2026) by defense attorneys in the federal case against the 15. Caution: Sunrise Movement and CWA are confirmed as financial-records targets, NOT confirmed as names on the diagram.\n- **Key passages:** By Madison McVan, Minnesota Reformer, Aug. 13, 2026. — \"Homeland Security investigators secretly recorded conversations, infiltrated Signal chats and obtained financial records...\" — \"Agents collected the license plate numbers of attendees during a meeting of anti-ICE protesters at Prince of Peace Lutheran Church in Roseville to obtain the names of the attendees.\" — \"The agents then compiled a dossier including attendees' names, photos, addresses, vehicle registrations, family and employment information.\" — \"The feds also used Clearview AI, a facial recognition software, to compile photo dossiers of activists and protesters, including many who were not charged.\" — \"Homeland Security agents used administrative subpoenas — subpoenas issued by the federal agency rather than a judge — to obtain financial records from organizations including the labor unions Service Employees International Union and Communications Workers of America; Voices for Racial Justice...; and Sunrise Movement...\" — \"A diagram shown to the grand jury during the indictment process linked a number of organizations to the conspiracy — centered around an organization called 'Direct Action MN' — with no evidence, according to the defense attorneys. The organizations include SEIU, the AFL-CIO, the Minneapolis Federation of Educators, Monarca, Democratic Socialists of America and Minnesota Association of Professional Employees...\" — \"The feds' surveillance programs, dubbed 'Operation Puppet Master' and 'Operation Whipple Shield,' go far beyond the 15 people indicted.\" — Sunrise meeting at Minneapolis Public Library: one undercover agent said he worked in construction and \"could build items that might assist other groups with more 'direct action' protests,\" per an internal Homeland Security report; \"(The meeting, according to the undercover agent in attendance, centered on peaceful tactics, including noise protests and sit-ins.)\" — \"Fourteen of the defendants have pleaded not guilty.\"\n- **Reliability:** Secondary; nonprofit statehouse outlet (States Newsroom network) reading the court-filed DHS documents directly; independent of AP. Note it renders the second program \"Operation Whipple Shield\" where AP has \"Project Whipple Shield.\"\n- **Relevance to this project:** C1 (recording, dossiers/vehicles, administrative subpoenas, diagram composition and grand-jury context, undercover-agent provocation detail); context for C3.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 495
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "74184f4e4dc452b44c61db44443772478533057cdb7b3dc60a52ea8fee854254",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/mn-reformer-metro-surge-spying.md",
+ "kind": "artifact-page"
+}

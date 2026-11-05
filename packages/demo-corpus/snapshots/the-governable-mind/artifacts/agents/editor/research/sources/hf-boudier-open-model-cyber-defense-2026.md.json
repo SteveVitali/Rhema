@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hf-boudier-open-model-cyber-defense-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "4d0cf85144678b18",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hf-boudier-open-model-cyber-defense-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hf-boudier-open-model-cyber-defense-2026\n- **URL:** https://huggingface.co/blog/jeffboudier/open-model-cyber-defense · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Boudier & Hernández Calabrés, July 20, 2026 (community article): GLM-5.2, MIT license; self-hosted model as incident-response fallback; data stays in perimeter.\n- **Key passages:** \"A slightly lower benchmark score that you can actually run on your own hardware, against real attacker data, beats a higher score you get locked out of.\"\n- **Reliability:** Primary; interested party. Note: the essay's CEO quote (C8) is attributed to ref [3]; I did not find it on this page—verify against Fortune July 20 (not fetched).\n- **Relevance to this project:** C7–C8; l.12; §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 101
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ce927761477cac1048e0b9d9991d07edb8c61c3e4b2d53de3cf4a190c4011bb3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hf-boudier-open-model-cyber-defense-2026.md",
+ "kind": "artifact-page"
+}

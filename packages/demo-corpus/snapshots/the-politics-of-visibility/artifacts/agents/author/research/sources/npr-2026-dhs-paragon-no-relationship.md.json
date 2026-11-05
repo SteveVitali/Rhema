@@ -1,0 +1,35 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/npr-2026-dhs-paragon-no-relationship.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "254a9f4159dc64b5",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "30880105d11be0e7",
+    "ordinal": 2
+   }
+  },
+  "draftId": "agents/author/research/sources/npr-2026-dhs-paragon-no-relationship.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# npr-2026-dhs-paragon-no-relationship\n\n- **URL:** https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions (NPR story by Jude Joffe-Block, May 22, 2026; npr.org fetch timed out, GPB carries NPR content) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13\n- **What it establishes:** DHS statement: \"ICE has no relationship with Paragon Solutions, Inc. or with the company that acquired them\" and \"ICE has not entered another contract with Paragon Solutions, Inc.\" — while declining to say whether ICE retains access to Paragon tools through third parties. A federal procurement notice states the contract \"was closed out Jan. 20\" (2026). Recaps Lyons' April 1, 2026 letter: \"I approved HSI's procurement and operational use of cutting-edge technological tools,\" certified compliance with the 2023 executive order; Lyons referenced disrupting \"foreign terrorist organizations and fentanyl traffickers\" and did not name Paragon.\n- **Key passages:** As above. Contains no evidence Graphite targeted protesters or domestic dissent.\n- **Reliability:** Secondary; NPR national desk.\n- **Relevance to this project:** C12(a) — essential complication: ICE leadership confirmed operational use in April 2026, then DHS asserted \"no relationship\" in May 2026 and the contract was reportedly closed out Jan 20, 2026. The essay should say \"acknowledged operational use\" with the April letter, and note the later DHS denial of an ongoing relationship, rather than asserting continuing use.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 203
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9bb11bceb605d704a1671b82b54dbbf629e0622adb59e7dc408cc360a90294bb",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/npr-2026-dhs-paragon-no-relationship.md",
+ "kind": "artifact-page"
+}

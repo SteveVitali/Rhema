@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/deazley-commentary-humble-remonstrance-1643.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "66778d28f2088e69",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/deazley-commentary-humble-remonstrance-1643.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# deazley-commentary-humble-remonstrance-1643\n- **URL:** https://www.copyrighthistory.org/cam/tools/request/showRecord.php?id=commentary_uk_1643 · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C47: full title and April 1643 date of the Remonstrance; the 'no man can so effectually prosecute' line; the 14 June 1643 Ordinance as its sequel.\n- **Key passages:** '\"[I]n matters of the Presses\", they continued, \"no man can so effectually prosecute, as Stationers themselves\".'\n- **Reliability:** Secondary; scholarly commentary with transcription.\n- **Relevance to this project:** C47\n",
+  "meters": {
+   "readMin": 1,
+   "words": 71
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f168aa926e1592294ec94973a2b350127115f61cdd57950580b1a4b7f92995f7",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/deazley-commentary-humble-remonstrance-1643.md",
+ "kind": "artifact-page"
+}

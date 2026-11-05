@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/smart-clowes-clark-2025-chatgpt-extended-abstract.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "55f2a49c643dfa50",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/smart-clowes-clark-2025-chatgpt-extended-abstract.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# smart-clowes-clark-2025-chatgpt-extended-abstract\n- **URL:** https://eprints.soton.ac.uk/502110/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Abstract only (Springer wall): Synthese 205:242 (2025) is about retrieval-augmented generation and 'Digital Andy'; no privacy, surveillance, or governance content in the abstract.\n- **Key passages:** \"Applying this technique to the works of Andy Clark yields Digital Andy\"\n- **Reliability:** Primary scholarly abstract. Full text not read.\n- **Relevance to this project:** Report §3 item 12, §7; draft l.64 (C31).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 72
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4788d82d0112c8849cb013172fe7caba0954173e627ef22557bd579078939fd1",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/smart-clowes-clark-2025-chatgpt-extended-abstract.md",
+ "kind": "artifact-page"
+}

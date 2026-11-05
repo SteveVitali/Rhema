@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cybernews-kill-switch-editorial-2026-07-29.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "79303c368b83f333",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cybernews-kill-switch-editorial-2026-07-29.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cybernews-kill-switch-editorial-2026-07-29\n- **URL:** https://cybernews.com/editorial/ai-kill-switch/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Cybernews editorial, July 29, 2026 (read via text proxy): kill switches reactive not preventative; skepticism it would have caught the HF intrusion; Huang defending open models by citing HF's use of Chinese open weights. Nothing on scope, use-pattern clause, or judicial review.\n- **Key passages:** 'a kill switch is a reactive rather than preventative measure and wouldn't fix the real issue, which is a failure of containment and software infrastructure.'\n- **Reliability:** Secondary; trade press editorial.\n- **Relevance to this project:** Q2 commentary map (negative: no analysis of the provisions the draft relies on).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 107
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "9edf03d7a47a1367e78fe841a53f39b72549bce9f95b8ffa41ca84203c7bb74d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cybernews-kill-switch-editorial-2026-07-29.md",
+ "kind": "artifact-page"
+}

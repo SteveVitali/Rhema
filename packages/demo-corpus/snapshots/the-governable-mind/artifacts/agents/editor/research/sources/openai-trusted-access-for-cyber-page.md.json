@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-trusted-access-for-cyber-page.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8e916f0488e521a9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-trusted-access-for-cyber-page.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-trusted-access-for-cyber-page\n- **URL:** https://openai.com/index/trusted-access-for-cyber/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy)\n- **What it establishes:** OpenAI, \"Introducing Trusted Access for Cyber\" (undated on page). Identity verification at chatgpt.com/cyber; no vendor, documents, appeals, or country eligibility stated (X2).\n- **Key passages:** \"Users can verify their identity at chatgpt.com/cyber\"\n- **Reliability:** Primary; interested party; thin.\n- **Relevance to this project:** l.206; ref [69].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 64
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "29c549ed7f0afe32b9504a08b5fd9ba17521eefc0e9800d4f2166fcc0255e9b0",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-trusted-access-for-cyber-page.md",
+ "kind": "artifact-page"
+}

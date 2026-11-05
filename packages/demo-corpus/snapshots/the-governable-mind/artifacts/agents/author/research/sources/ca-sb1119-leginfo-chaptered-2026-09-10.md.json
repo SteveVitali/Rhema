@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/ca-sb1119-leginfo-chaptered-2026-09-10.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "14ed389772c59994",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/ca-sb1119-leginfo-chaptered-2026-09-10.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ca-sb1119-leginfo-chaptered-2026-09-10\n- **URL:** https://leginfo.legislature.ca.gov/faces/billStatusClient.xhtml?bill_id=202520260SB1119 ; history: https://leginfo.legislature.ca.gov/faces/billHistoryClient.xhtml?bill_id=202520260SB1119 ; chaptered text: https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202520260SB1119 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** PRIMARY. SB 1119 (Padilla; Bauer-Kahan, Wicks), \"Companion chatbots: children’s safety\" (\"Adam’s Law\") is ENACTED: Assembly passed Aug 31, 2026; Senate concurred Aug 31 (39–0); enrolled and presented Sept 9; \"Approved by the Governor\" and \"Chaptered by Secretary of State. Chapter 190, Statutes of 2026\" on Sept 10, 2026. Adds Bus. & Prof. Code ch. 11.6 (§ 21810 et seq.). Main duties operative July 1, 2027; audits from Jan 1, 2029. CHAPTERED TEXT: (a) the words \"ephemeral\" and \"48 hours\" DO NOT APPEAR (string search of the chaptered text: both absent); the child default is instead to \"Disable persistent conversational memory\", changeable only by a parent, with a carve-out for 16–17-year-olds' stored past conversations; (b) age: operator must EITHER determine age under Civil Code Title 1.81.9 (§ 1798.500 et seq., the Digital Age Assurance Act / AB 1043 signal; Legislative Counsel's digest calls it \"age bracket data\") with a Health & Safety Code § 27001 fallback, OR apply child protections to all users (§ 21811); (c) \"Companion chatbot\" takes the SB 243 definition (§ 22601); (d) the law contains a RETENTION mandate: § 21812.5(a)(2) requires preserving self-harm-indicating conversation records \"for at least three years\" and § 21812.5(b) bars deleting the child's account meanwhile.\n- **Key passages:**\n  - History: \"09/10/26 Chaptered by Secretary of State. Chapter 190, Statutes of 2026.\" / \"09/10/26 Approved by the Governor.\" / \"08/31/26 Assembly amendments concurred in. (Ayes 39. Noes 0.)\"\n  - § 21810.5(m)(1): \"“Persistent conversational memory” means a companion chatbot’s incorporation of prior conversations for use in future conversations.\"\n  - § 21812(d)(3)(A): \"Default settings that can be changed only by a parent that do all of the following: (i) (I) Disable persistent conversational memory.\"\n  - § 21811: \"An operator shall do either of the following: (a) (1) Determine the age of a user pursuant to Title 1.81.9 (commencing with Section 1798.500) of Part 4 of Division 3 of the Civil Code. ... (b) Apply the protections afforded to children under subdivision (d) of Section 21812 and Section 21813 to all users, except that the parental default settings ... shall not be changed unless the operator has actual knowledge the user is not a child.\"\n  - § 21812.5(a)(2): \"Preserve in a usable and exportable form any record of a conversation between the child user and the companion chatbot that indicates serious self-harm or risk of self-harm for at least three years.\"\n  - § 21812.5(b): \"An operator shall not delete a child user’s account during the time period in which that account is associated with any record preserved pursuant to this section or the rules of state or federal civil procedure.\"\n- **Reliability:** Primary (official California legislative information site), fetched directly 2026-09-16.\n- **Relevance to this project:** L6 CONFIRMED WITH CORRECTION. Status: signed and chaptered Sept 10, 2026 (Ch. 190) — safe to call enacted. But the essay must not attribute \"ephemeral mode\" / 48-hour deletion to the law as enacted. The three-year preservation duty in § 21812.5 is new material for the essay's retention argument and partly supersedes the zwillgen-state-chatbot-laws note's \"no retention mandate appears\" (that note pre-dates SB 1119's final text).\n",
+  "meters": {
+   "readMin": 2,
+   "words": 529
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "472f387ed4ab939ce0813017d6e17f8afbe32f8c2e452728818d1821f30b8c98",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/ca-sb1119-leginfo-chaptered-2026-09-10.md",
+ "kind": "artifact-page"
+}

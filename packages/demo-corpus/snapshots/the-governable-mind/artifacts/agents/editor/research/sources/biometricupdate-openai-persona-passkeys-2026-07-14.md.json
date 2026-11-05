@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/biometricupdate-openai-persona-passkeys-2026-07-14.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "09e3f3f4396916d0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/biometricupdate-openai-persona-passkeys-2026-07-14.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# biometricupdate-openai-persona-passkeys-2026-07-14\n- **URL:** https://www.biometricupdate.com/202607/openai-requires-hardware-backed-passkeys-for-trusted-cyber-access · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A\n- **What it establishes:** Biometric Update (Jadhav), July 14, 2026: OpenAI's Trusted Access for Cyber requires a government ID check and KYC checks; verification is conducted via Persona. No mention of Anthropic; nothing on appeals (X2 \"same verification vendor,\" OpenAI side).\n- **Key passages:** \"OpenAI says this includes a government ID check, know-your-customer (KYC) identity checks, and additional trust signals such as device health.\" · \"The verification process is conducted via Persona to help OpenAI determine whether an account belongs to a real user engaged in legitimate cybersecurity work.\"\n- **Reliability:** Secondary (trade press) reporting OpenAI's stated requirements.\n- **Relevance to this project:** l.206; ref [69].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 116
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "dc12e74184b8bf34403c2765c54b114ff68cf52272eafb68cc1e7d6ab46f7b65",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/biometricupdate-openai-persona-passkeys-2026-07-14.md",
+ "kind": "artifact-page"
+}

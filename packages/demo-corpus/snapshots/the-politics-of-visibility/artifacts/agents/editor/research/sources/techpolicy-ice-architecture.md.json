@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/techpolicy-ice-architecture.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "938849536ad6cc7f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "989078f8971af949",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "bc7f9663bb94d680",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/techpolicy-ice-architecture.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Jackson/Aizeki/Shah, \"ICE and the Architecture of Authoritarianism\" (TechPolicy.Press, 2026)\n\n- **URL:** https://www.techpolicy.press/ice-and-the-architecture-of-authoritarianism/\n- **Accessed:** 2026-08-21\n- **Author/date:** Dean Jackson interviewing Mizue Aizeki and Paromita Shah, July 19, 2026.\n\n**Establishes:** The 2026 advocacy discourse already speaks in the draft's vocabulary (\"architecture of authoritarianism\"): DHS as $170B apparatus; brokers (LexisNexis, Equifax), Palantir, Cellebrite, ALPRs, drones, interconnected federal databases. Divergence: this literature treats the threat as already-operative (\"The threat is DHS\"), where the draft holds the capacity/regime line. Sister pieces found in the same lane (search-level): POGO, \"Mass Deportations Will Rely on Authoritarian Surveillance\" (https://www.pogo.org/analyses/mass-deportations-will-rely-on-authoritarian-surveillance); Kocher, \"The Rise of Digital Authoritarianism\" (https://austinkocher.substack.com/p/the-rise-of-digital-authoritarianism); Prism, tech-oligarchs/DHS report (https://prismreports.org/2026/07/07/tech-oligarchs-dhs-surveillance-state/).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 100
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "94fdd0434c9504de206fff749441aa476b162ccdcd9364525a7b8c70aaa2312e",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/techpolicy-ice-architecture.md",
+ "kind": "artifact-page"
+}

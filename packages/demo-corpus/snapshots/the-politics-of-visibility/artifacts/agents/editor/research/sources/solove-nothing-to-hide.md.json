@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/solove-nothing-to-hide.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "efa2e0a62ec564ed",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "3c6ee1b9e62870cf",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "72d8aa759f410679",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/solove-nothing-to-hide.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Solove, \"'I've Got Nothing to Hide' and Other Misunderstandings of Privacy\" (2007)\n\n- **URLs:** canonical https://digital.sandiego.edu/sdlr/vol44/iss4/5/ (abstract read); full text read via mirror https://vdoc.pub/documents/ive-got-nothing-to-hide-and-other-misunderstandings-of-privacy-28f3qtmr8240\n- **Accessed:** 2026-08-21\n- **Cite:** Daniel J. Solove, 44 San Diego L. Rev. 745 (2007).\n\n**Establishes:** The standard refutation the draft's SXIII re-runs. Solove steelmans the argument (limited disclosure of innocuous data to officials/computers is no threat to the law-abiding), then answers with privacy's plurality: aggregation (\"when combined, the information becomes much more telling\"), exclusion, secondary use, distortion; structural rather than visceral harms (\"most privacy problems lack dead bodies\"); conclusion: \"the nothing to hide argument, in the end, has nothing to say.\" Draft's §XIII diverges by centering *political formation* and association rather than Solove's taxonomy — a genuine inflection — but the section is unciteably close to this famous essay to leave it unnamed.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 135
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "42d35a6f7df7390d73e10cff91c7e63924dac7b6fab56ca31e1cb6cc39201858",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/solove-nothing-to-hide.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mrkt30-pace-the-frontier-reactions-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3650a4bca06f4ea3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mrkt30-pace-the-frontier-reactions-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mrkt30-pace-the-frontier-reactions-2026\n- **URL:** https://mrkt30.com/we-must-pace-the-frontier/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** MRKT3.0 roundup (through Sept 14, 2026): supporters (Altman, Musk, Hassabis, Nadella with 'both closed and open'), opponents (Trump, Johnson, Sacks on antitrust waivers and METR oversight, Huang, Delangue conditional, Sinofsky).\n- **Key passages:** Altman: 'I agree with Dario that we need to pace the frontier.' · Musk: 'Dario is right.'\n- **Reliability:** Tertiary roundup; quotes cross-checked against Axios and Unite.ai where possible.\n- **Relevance to this project:** Q5 reception map.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 83
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "fb95a37667b5f98d41c7db3a78c72267b017cbf0553f5a6a0d7f4fcafc52519d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mrkt30-pace-the-frontier-reactions-2026.md",
+ "kind": "artifact-page"
+}

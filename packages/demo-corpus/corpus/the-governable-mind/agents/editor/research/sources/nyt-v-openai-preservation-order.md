@@ -1,0 +1,6 @@
+# nyt-v-openai-preservation-order
+- **URL:** https://openai.com/index/response-to-nyt-data-demands/ (via a reader proxy; updated Oct. 22, 2025) ; https://www.engadget.com/ai/openai-no-longer-has-to-preserve-all-of-its-chatgpt-data-with-some-exceptions-192422093.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1
+- **What it establishes:** A court order (May 2025) required OpenAI to retain consumer ChatGPT (Free/Plus/Pro/Team) and non-ZDR API logs indefinitely; lifted effective Sept. 26, 2025 by order of Oct. 9, 2025; a locked-down April–Sept. 2025 set remains. The closest liberal-state instance of court-mandated chat-log retention; litigation discovery, not regulation; no longer in force (C15).
+- **Key passages:** "we are no longer under a legal order to retain consumer ChatGPT and API content indefinitely. Our obligations under the earlier order ended on September 26, 2025." / Engadget: order freed OpenAI of the obligation to "preserve and segregate all output log data that would otherwise be deleted on a going forward basis."
+- **Reliability:** Primary (party statement) + secondary (tech press); the court order itself not opened.
+- **Relevance to this project:** C15; Phase 2 (the cognitive record as a litigated object).

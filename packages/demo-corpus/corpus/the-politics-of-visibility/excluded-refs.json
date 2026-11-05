@@ -1,0 +1,24 @@
+{
+  "refs": [
+    {
+      "file": "agents/author/drafting/v1/00-commissioning-brief.md",
+      "line": 4,
+      "excluded": "agents/author/outline/1_article_sketch_and_outline.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/04-draft-ledger.md",
+      "line": 3,
+      "excluded": "agents/author/outline/1_article_sketch_and_outline.md"
+    },
+    {
+      "file": "agents/author/drafting/v1/06-fidelity-audit.md",
+      "line": 5,
+      "excluded": "agents/author/outline/1_article_sketch_and_outline.md"
+    },
+    {
+      "file": "correspondence/v1-drafting-note.md",
+      "line": 5,
+      "excluded": "agents/author/outline/1_article_sketch_and_outline.md"
+    }
+  ]
+}

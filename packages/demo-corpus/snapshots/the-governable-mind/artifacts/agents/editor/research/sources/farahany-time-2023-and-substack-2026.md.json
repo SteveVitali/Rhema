@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/farahany-time-2023-and-substack-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a24f84489847a402",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/farahany-time-2023-and-substack-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# farahany-time-2023-and-substack-2026\n- **URL:** https://time.com/6289229/cognitive-liberty-human-right/ ; https://nitafarahany.substack.com/p/your-brain-everywhere-inside-my-advanced · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Time (June 26, 2023): cognitive liberty as an international right; neurotech focus. Substack (Mar. 2, 2026): AI inference of mental states in hiring/education; proposes EU-style categorical bans; does not discuss chatbot logs or LLM conversation as cognition.\n- **Key passages:** \"shielding the identifying information, automatic processes, memories, and silent images and utterances in our minds from others\" (Time) · \"If an AI system claims to know your mental state better than you do, and acts on that claim ... what should law do?\" (Substack)\n- **Reliability:** Primary essays by proponent.\n- **Relevance to this project:** Report §1.5: confirms the gap the draft fills.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 117
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "ac7a5052e38a6c4b9f3c4943aa988d520112203274514317d87804cd304d1872",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/farahany-time-2023-and-substack-2026.md",
+ "kind": "artifact-page"
+}

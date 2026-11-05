@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/bedi-2021-myth-of-the-chilling-effect.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "0a1249aa53aa485a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/bedi-2021-myth-of-the-chilling-effect.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bedi-2021-myth-of-the-chilling-effect\n- **URL:** https://jolt.law.harvard.edu/assets/articlePDFs/v35/Bedi-The-Myth-of-the-Chilling-Effect.pdf (journal PDF, 41 pp., text-extracted locally; PDF page n = journal p. 266+n) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice M (M5)\n- **Citation:** Suneal Bedi, \"The Myth of the Chilling Effect,\" 35 *Harvard Journal of Law & Technology* 267 (Vol. 35, No. 1, Fall 2021), pp. 267–307.\n- **What it establishes:** A randomized online experiment (n = 318, Amazon Mechanical Turk via CloudResearch) manipulating a *private platform content rule* on *negative online restaurant reviews* — three conditions: no censorship; specific-word ban; broad-category ban (\"NO Foul language, NO Racially charged language, NO Offensive language\"); sanction = withheld $2 payment. Finding: censored groups wrote more positively toned reviews, negativity did not change, and third-party readers were equally persuaded — so speech was \"chilled in the strict sense\" but \"the substance and communicative effect … did not change.\" It is a study of **expression under a content rule**, not of **surveillance** and not of **inquiry/reading/thinking**; it confirms the chilling effect exists while questioning its weight.\n- **Key passages:**\n  - Abstract (p. 267): \"It employs an empirical study using social media speech restrictions analyzed with text analysis to conclude that, in the social media context, the chilling effect has little to no impact on the content of the message; at most, it subtly alters the specific style or tone used. This study therefore confirms the existence of the phenomenon but simultaneously raises serious concerns about its usefulness as a guiding constitutional legal principle when assessing speech regulations.\"\n  - p. 270: \"It focuses on social media speech activity — online restaurant reviews — that has both fact and opinion components.\"\n  - p. 271: \"But, while users did change their speech, the overall message of the speech did not change at all. That is, users change the tone of what they say (in this case by making it more positive) in the face of restrictions, but ultimately communicate the same message.\" … \"the chilling effect can encourage more civil forms of speech that are less offensive.\"\n  - p. 284: \"Using three conditions — one with no censorship, one with specific censorship, and one with broad censorship — the study asked respondents to write Google/Yelp-like reviews of a recent dining experience.\"\n  - pp. 284–285: \"The group that created the most positively toned reviews … was the broad censorship group … However, notably, the negativity as measured by the number of negative words of each group's reviews did not change. In addition, further testing showed that third parties were equally persuaded by each group's reviews (i.e., the groups ended up sending the same message). That is, although the censored groups changed their speech, and hence were chilled in the strict sense of the effect, the substance and communicative effect of the speech did not change.\"\n  - p. 286: \"the study utilized private censorship.\" p. 288: sanction = withholding compensation; \"The respondents were paid $2\". p. 291: \"This study recruited 318 respondents, and each was randomly assigned to one of the three conditions.\"\n  - p. 285 (his own scope caveat): \"Of course, there are other forms of speech that are arguably more valuable in terms of the First Amendment. For example, political speech or speech in an academic setting…\"\n- **Reliability:** Primary; student-edited law review; single MTurk experiment; low-stakes speech (restaurant reviews), trivial sanction; author is a business-law/marketing scholar.\n- **Relevance to this project:** The fairest empirical counter-citation to the essay's chilling claim. Review's paraphrases (\"more positive and civil\"; \"overall communicative effect … did not change\") are accurate in substance; verbatim is \"the substance and communicative effect of the speech did not change\" (p. 285). The essay can concede Bedi and distinguish: he measures expressive *output* under a content rule with a $2 stake, not exploratory *inquiry* under observation (Penney 2016; Penney 2022's conformity account).\n",
+  "meters": {
+   "readMin": 3,
+   "words": 620
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "4b58d8deae940070a902bb9b5d843a38986f7347faacfd6af28173a5cafc9968",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/bedi-2021-myth-of-the-chilling-effect.md",
+ "kind": "artifact-page"
+}

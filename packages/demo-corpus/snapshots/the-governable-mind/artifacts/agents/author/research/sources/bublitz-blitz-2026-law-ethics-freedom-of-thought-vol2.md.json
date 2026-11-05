@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/bublitz-blitz-2026-law-ethics-freedom-of-thought-vol2.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "af5279bb57d4e54b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/bublitz-blitz-2026-law-ethics-freedom-of-thought-vol2.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bublitz-blitz-2026-law-ethics-freedom-of-thought-vol2\n- **URL:** https://link.springer.com/book/10.1007/978-3-031-91466-9 (read via the cookie-redirect variant of the same page) and https://api.crossref.org/works/10.1007/978-3-031-91466-9 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C23\n- **What it establishes:** Jan Christoph Bublitz & Marc Jonathan Blitz (eds), *The Law and Ethics of Freedom of Thought, Volume 2: Cognitive Liberty, Mental Privacy, and International Law* (Palgrave Studies in Law, Neuroscience, and Human Behavior; Palgrave Macmillan/Springer Nature Switzerland, 2026), doi 10.1007/978-3-031-91466-9; ISBN 978-3-031-91465-2 (hardcover), 978-3-031-91466-9 (e-book), 978-3-031-91468-3 (softcover); e-book dated 1 January 2026, hardcover 3 January 2026. Exists; full title includes the subtitle. Ten chapters, including \"What Is 'Thought'? Interpreting and Constructing Article 18 ICCPR in Light of the Vienna Convention\" and \"Mental Privacy as Part of the Human Right to Freedom of Thought?\"\n- **Key passages:** \"This book is the second volume of The Law and Ethics of Freedom of Thought. The first, published in 2021, explored conceptual questions regarding what a right to freedom of thought does or should protect, the history of that concept, and its implications in the twenty-first century. This volume looks more closely at the challenges raised for liberty and privacy of thought raised by emerging neurotechnologies.\"\n- **Reliability:** Publisher page + DOI registration; primary for existence and bibliographic detail. Not open access.\n- **Relevance to this project:** C23; a \"the field exists\" marker with C19. Cite with the subtitle.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 218
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f36cfdfa4c97537a06dca080890c75e86f0eaff8f0d7712f3e124fe608987a2c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/bublitz-blitz-2026-law-ethics-freedom-of-thought-vol2.md",
+ "kind": "artifact-page"
+}

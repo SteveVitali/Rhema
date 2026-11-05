@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/cnbc-zuckerberg-huang-slowdown-2026-09-15.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "697153d1653ea25e",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/cnbc-zuckerberg-huang-slowdown-2026-09-15.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# cnbc-zuckerberg-huang-slowdown-2026-09-15\n- **URL:** https://www.cnbc.com/2026/09/15/meta-mark-zuckerberg-with-nvidia-huang-ai-safety-slowdown.html · **Accessed:** 2026-09-16 (via a reader proxy) · **For:** v1 review, Phase 1\n- **What it establishes:** Published 2026-09-16T01:56Z (Sept. 15 ET). Confirms \"fall behind\" and \"liability\" claims are Zuckerberg's, the Tuesday X post, and Amodei's weekend essay and its URL. Does NOT contain the \"every lab has the responsibility…\" sentence (C12 citation precision).\n- **Key passages:** AI labs that fail to \"focus on alignment will fall behind.\" / \"significant liability if their models cause harm.\" / \"Amodei published an essay over the weekend in which he called for the tech industry to 'slow the pace at which we improve the capabilities of AI models.'\" / \"in a post on X and other social media platforms … on Tuesday.\"\n- **Reliability:** Secondary; independent.\n- **Relevance to this project:** C12; ref [45].\n",
+  "meters": {
+   "readMin": 1,
+   "words": 130
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e97d967f852e81fb8495658ca3bd095f497b80021e656ccb65d6b5a0230c1a9f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/cnbc-zuckerberg-huang-slowdown-2026-09-15.md",
+ "kind": "artifact-page"
+}

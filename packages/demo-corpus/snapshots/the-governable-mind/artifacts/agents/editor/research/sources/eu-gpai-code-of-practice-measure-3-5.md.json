@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/eu-gpai-code-of-practice-measure-3-5.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "3962e62933654a93",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/eu-gpai-code-of-practice-measure-3-5.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# eu-gpai-code-of-practice-measure-3-5\n- **URL:** https://artificialintelligenceact.eu/code-of-practice-overview/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** EU GPAI Code of Practice overview: Measure 3.5 requires independent external evaluators pre- and post-market unless the model is 'similarly safe or safer' or none found after a 20-business-day public call; evaluator qualifications (PhD or peer-reviewed work; 3 years); 'sufficient numbers of independent external evaluators'; access incl. minimal-safeguard variants; non-retaliation.\n- **Key passages:** 'sufficient numbers of independent external evaluators' · qualifications: 'a relevant PhD or peer-reviewed work, experience in developing model evaluation methods, [and] at least 3 years of relevant work or research experience.'\n- **Reliability:** Secondary summary of a primary code; annotated mirror.\n- **Relevance to this project:** Q1(e): plurality and qualification without accreditation; no sunset; the nearest existing regime to the draft's third condition.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 129
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3be09a11badf36d466509d04f34e0569aaaf7c273c46baf89274e310072787ad",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/eu-gpai-code-of-practice-measure-3-5.md",
+ "kind": "artifact-page"
+}

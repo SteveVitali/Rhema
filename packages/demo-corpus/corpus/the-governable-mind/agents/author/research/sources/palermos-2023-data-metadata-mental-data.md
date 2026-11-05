@@ -1,0 +1,9 @@
+# palermos-2023-data-metadata-mental-data
+- **URL:** https://pubmed.ncbi.nlm.nih.gov/36537997/ (abstract; T&F full text and PhilPapers 403) · **Accessed:** 2026-09-16 · **For:** v1 response round, repair material (mental privacy and the extended mind)
+- **Citation:** S. Orestis Palermos, "Data, Metadata, Mental Data? Privacy and the Extended Mind," *AJOB Neuroscience* 14:2 (2023): 84–96, doi:10.1080/21507740.2022.2148772 (epub Dec. 20, 2022), PMID 36537997.
+- **What it establishes:** The one prior paper that takes the EMT to a *privacy* (not integrity or prohibition) conclusion: if extended-mind data are mental data, mental privacy is threatened, and the remedy is technical (practical) inaccessibility, not merely legal protection.
+- **Key passages (abstract, verbatim):**
+  - "It has been recently suggested that if the Extended Mind thesis is true, mental privacy might be under serious threat. In this paper, I look into the details of this claim and propose that one way of dealing with this emerging threat requires that data ontology be enriched with an additional kind of data—viz., mental data."
+  - "mental data should not be merely legally protected. Rather, if we value mental privacy as we know it, technological measures should be employed to ensure that one's mental data are practically—not just legally—impossible for others to obtain."
+- **Reliability:** Primary abstract; peer-reviewed. Palermos is a philosopher of extended cognition (co-developer of the stricter "coupling" condition cited by Tesink et al.).
+- **Relevance to this project:** Closest philosophical precedent for the essay's privacy-side move. Differentiator: Palermos argues for an *engineering* guarantee (make the data unobtainable); the essay argues for a *legal* status (the record is forum internum). Cite and distinguish.

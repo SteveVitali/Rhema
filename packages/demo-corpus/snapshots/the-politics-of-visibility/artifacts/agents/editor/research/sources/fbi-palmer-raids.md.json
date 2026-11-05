@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/fbi-palmer-raids.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "78e47ab58ae75c9f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "4d8ed0ef0ad9ad49",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "39e6a874bae5b4ad",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/fbi-palmer-raids.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# FBI on the Palmer Raids (centennial history / history page)\n\n- Cited book (blocked, Cloudflare-confirmed): https://www.fbi.gov/file-repository/reports-and-publications/fbi100book.pdf\n- History page (blocked to fetch; exact phrases search-indexed): https://www.fbi.gov/history/cases-and-criminals/palmer-raids\n- Context: https://firstamendment.mtsu.edu/article/federal-bureau-of-investigation/\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: \"turned into a nightmare, marked by poor communications, planning, and\nintelligence about who should be targeted and how many arrest warrants would be needed\"\nis FBI's own language (search-verbatim). OPEN ITEM: draft's closing clause \"The\nconstitutionality of the entire operation was questionable\" vs. the web page's \"was\nquestioned\" — book p. 22 unverifiable this session. Thousands arrested for political\nactivities 1917–20 (MTSU).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 93
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "f0a99950128389b6f3630e5297fe18d59c9f6a3a6739b3394f889703c92ff0ed",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/fbi-palmer-raids.md",
+ "kind": "artifact-page"
+}

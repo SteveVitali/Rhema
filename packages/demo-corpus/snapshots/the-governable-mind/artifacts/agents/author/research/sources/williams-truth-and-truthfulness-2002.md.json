@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/williams-truth-and-truthfulness-2002.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2915af625d3b049f",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/williams-truth-and-truthfulness-2002.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# williams-truth-and-truthfulness-2002\n- **URL:** Primary page NOT seen (Google Books https://books.google.com/books?id=2iaFFE54fYkC returned a CAPTCHA/302 and a proxied fetch showed no snippet; Princeton sample chapter 403; no archive.org OCR). Secondary consulted: Thomas Szanto, \"Epistemically exploitative bullshit: A Sartrean account,\" *European Journal of Philosophy* 31, no. 3 (2023): 711–730, https://doi.org/10.1111/ejop.12810, open-access at https://pmc.ncbi.nlm.nih.gov/articles/PMC10947462/ ; NDPR review by Clancy W. Martin (2003-09-15), https://ndpr.nd.edu/reviews/truth-and-truthfulness-an-essay-in-genealogy/ · **Accessed:** 2026-09-16 · **For:** v1 response round, Williams p. 11 quotation\n- **What it establishes:** I could NOT verify the exact sentence \"which I shall call Accuracy and Sincerity: you do the best you can to acquire true beliefs, and what you say reveals what you believe\" against the printed page. The closest scholarly attestation is Szanto (2023), who cites p. 11 for the two virtues and renders the maxim as an imperative rather than quoting the sentence itself. Treat the essay's exact wording as unverified-but-plausible; the page-11 attribution is corroborated.\n- **Key passages:**\n  - Szanto 2023 (Sec. 2): \"Do your best to acquire true beliefs, and when you communicate your beliefs to others, reveal what you believe!\" (Williams, 2002, p. 11).\n  - Szanto 2023 (paraphrase): accuracy = \"diligence or care in the acquisition of true beliefs\"; sincerity = \"the disposition to say only what one believes to be true, or at least not to say what one believes to be false.\"\n  - Princeton UP description (via Google Books/PUP page): \"He identifies two basic virtues of truth, Accuracy and Sincerity, the first of which aims at finding out the truth and the second at telling it.\"\n- **Reliability:** Secondary only; Szanto is peer-reviewed and gives the page. The primary text was not opened.\n- **Relevance to this project:** If the essay quotes the sentence verbatim it should either check a print copy or soften to a paraphrase with \"(Williams 2002, 11)\". Reference: Bernard Williams, *Truth and Truthfulness: An Essay in Genealogy* (Princeton, NJ: Princeton University Press, 2002), 11.\n- **Cross-reference (added after writing):** an earlier slice's note, [williams-2002-truth-and-truthfulness](williams-2002-truth-and-truthfulness.md), reports the Google Books search-inside snippet for p. 11 reading \"basic virtues of truth, which I shall call Accuracy and Sincerity: you do the best you can to acquire true beliefs, and what you say reveals what you believe.\" I could not reproduce that fetch today (CAPTCHA), so this note records only the secondary attestation; taken together, the page-11 wording is adequately supported.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 382
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2cd66560996563b2cdba04d3364a57e646ff326c46a17957034c0514fb315cea",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/williams-truth-and-truthfulness-2002.md",
+ "kind": "artifact-page"
+}

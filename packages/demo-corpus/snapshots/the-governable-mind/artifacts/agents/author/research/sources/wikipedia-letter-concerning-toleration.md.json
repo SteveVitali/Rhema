@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/wikipedia-letter-concerning-toleration.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e4737d1683f628ea",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/wikipedia-letter-concerning-toleration.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# wikipedia-letter-concerning-toleration\n- **URL:** https://en.wikipedia.org/wiki/A_Letter_Concerning_Toleration · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C7 (attribution and interpretive caveat only)\n- **What it establishes:** That the *Letter* was composed in Latin and \"published in English translation in 1689 by William Popple, without Locke's knowledge\"; and that the Catholic reading of the \"another prince\" exclusion is standard but debated (Goldie, Sowerby argue Locke left room to tolerate Catholics who renounced political allegiance to the Pope).\n- **Key passages:**\n  - \"originally composed in Latin and was published in English translation in 1689 by William Popple, without Locke's knowledge.\"\n  - Summarized: scholars such as Mark Goldie and Scott Sowerby argue Locke may have allowed toleration of Catholics \"if Catholics could discard their uncivil beliefs\" or \"rejected political allegiance to the Pope.\"\n- **Reliability:** Tertiary; used only for translator attribution and to flag the interpretive debate. Do not cite in the essay.\n- **Relevance to this project:** C7 — supports phrasing \"read as Catholics\" rather than \"Locke excluded Catholics.\"\n",
+  "meters": {
+   "readMin": 1,
+   "words": 156
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "377dbb04df0f436c21989e69fdb4e2f1be53afa4107a99e42d7f3bc818fcf74f",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/wikipedia-letter-concerning-toleration.md",
+ "kind": "artifact-page"
+}

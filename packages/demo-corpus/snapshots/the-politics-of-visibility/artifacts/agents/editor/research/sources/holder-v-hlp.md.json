@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/holder-v-hlp.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "8c961bc1697f29f3",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "3cfb0be960e7f15e",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "2ced863440a65aef",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/holder-v-hlp.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Holder v. Humanitarian Law Project, 561 U.S. 1 (2010)\n\n- Syllabus: https://www.law.cornell.edu/supct/html/08-1498.ZS.html ; Opinion: https://www.law.cornell.edu/supct/html/08-1498.ZO.html\n- Accessed 2026-08-21 (Phase 1). PRIMARY.\n\nEstablishes: \"service\" covers \"advocacy performed in coordination with, or at the\ndirection of, a foreign terrorist organization\"; independent advocacy not prohibited;\n§V.C dictum verbatim: \"We also do not suggest that Congress could extend the same\nprohibition on material support at issue here to domestic organizations.\"; upheld §2339B\nas applied to training/coordinated advocacy for PKK/LTTE.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3564c74cdea66c565a2a5ec59449f2b23d5de6e59b5dd735666846bf680b2676",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/holder-v-hlp.md",
+ "kind": "artifact-page"
+}

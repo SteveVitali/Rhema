@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/hackernews-cyber-access-programs-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "49b32aadac7caea6",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/hackernews-cyber-access-programs-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# hackernews-cyber-access-programs-2026\n- **URL:** https://thehackernews.com/2026/09/google-anthropic-and-openai-unveil.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** The Hacker News, Sept 2026: OpenAI Daybreak Blue testers for Astra cyber features; Anthropic Mythos 5.1 only via trusted access programs; Google Fairwind for high-priority defenders; OpenAI safeguards to prevent a Hugging Face-like incident.\n- **Key passages:** Mythos 5.1 is \"only available through its trusted access programs and support work in cybersecurity and the life sciences.\"\n- **Reliability:** Secondary; security trade press.\n- **Relevance to this project:** Headline 2; verified-access tier as the industry's answer to the second revelation.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 91
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "075ed829f8e87e8d2ab834dc961a7361e5b151fedcd69224c6c4fc13c4dc74a2",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/hackernews-cyber-access-programs-2026.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,15 @@
+# spinoza-ttp-elwes-gutenberg-992
+- **URL:** https://www.gutenberg.org/cache/epub/992/pg992.txt (Part IV of the Gutenberg edition; the Wikisource chapter URL in the outline, /Theologico-Political_Treatise/Chapter_XX, returns 404) · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C6, C56
+- **What it establishes:** *A Theological-Political Treatise* [Part IV], translated by R. H. M. Elwes (1883; public domain), Project Gutenberg #992. Contains Chapter XX with its heading and the passages on the mind's immunity from state control, tyranny, actions vs. judgment, and the "true aim of government is liberty." Bracketed sentence numbers like "(20:20)" are Gutenberg's editorial apparatus, not Elwes's.
+- **Key passages:**
+  - Heading: "CHAPTER XX - That in a Free State every man may Think what he Likes, and Say what he Thinks."
+  - "no man's mind can possibly lie wholly at the disposition of another, for no one can willingly transfer his natural right of free reason and judgment, or be compelled so to do."
+  - "For this reason government which attempts to control minds is accounted tyrannical, and it is considered an abuse of sovereignty and a usurpation of the rights of subjects, to seek to prescribe what shall be accepted as true, or rejected as false"
+  - "the object of government is not to change men from rational beings into beasts or puppets, but to enable them to develope their minds and bodies in security, and to employ their reason unshackled"
+  - "In fact, the true aim of government is liberty."
+  - "a man's loyalty to the state should be judged, like his loyalty to God, from his actions only"
+  - "In a democracy ... everyone submits to the control of authority over his actions, but not over his judgment and reason"
+  - "In proportion as the power of free judgment is withheld we depart from the natural condition of mankind, and consequently the government becomes more tyrannical."
+  - Sedition qualifier: a man is "seditious, not so much from his actual opinions and judgment, as from the deeds which they involve"
+- **Reliability:** Primary text in a public-domain translation (Elwes, 1883). Elwes is dated but standard for public-domain quotation; modern translations (Curley, Silverthorne/Israel) render the heading differently (e.g., "freedom to philosophize").
+- **Relevance to this project:** C6 (all quoted wording), C56 background.

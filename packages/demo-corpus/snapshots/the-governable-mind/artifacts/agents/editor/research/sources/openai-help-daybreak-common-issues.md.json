@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-help-daybreak-common-issues.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "c4b03bca52e19d61",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-help-daybreak-common-issues.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-help-daybreak-common-issues\n- **URL:** https://help.openai.com/en/articles/20001259-trusted-access-for-cyber-common-issues-and-troubleshooting · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 1 slice A (via a reader proxy; direct 403)\n- **What it establishes:** The page is now titled \"OpenAI Daybreak - Common Issues and Troubleshooting\" (the program has been renamed since ref [69] was written). Carries the no-retries/no-appeals sentence; no vendor, no \"could not be verified,\" no country list (X2, XIII2).\n- **Key passages:** \"At this time, OpenAI Daybreak verification does not support retries or appeals.\"\n- **Reliability:** Primary; OpenAI help center.\n- **Relevance to this project:** l.206, l.276; ref [69] title.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 89
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "087bedab60174347a18e959b5deff27393f95069e5e6c1c0234e6aba8185c1ed",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-help-daybreak-common-issues.md",
+ "kind": "artifact-page"
+}

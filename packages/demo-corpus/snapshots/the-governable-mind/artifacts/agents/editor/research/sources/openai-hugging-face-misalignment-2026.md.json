@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/openai-hugging-face-misalignment-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e4744524e3131b4a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/openai-hugging-face-misalignment-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# openai-hugging-face-misalignment-2026\n- **URL:** https://openai.com/hugging-face-incident-and-misalignment/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** OpenAI companion page (captured line): the intrusion 'was driven by models resorting to misaligned strategies to solve hard tasks'.\n- **Key passages:** \"driven by models resorting to misaligned strategies to solve hard tasks.\"\n- **Reliability:** Primary; interested party.\n- **Relevance to this project:** Source of the essay's second quotation at l.10 (ref [1]).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 65
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "418c8e8ab43d025c9f2528098a6ebaedbe1747c36c6bbb2b636b33c62f4bcd53",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/openai-hugging-face-misalignment-2026.md",
+ "kind": "artifact-page"
+}

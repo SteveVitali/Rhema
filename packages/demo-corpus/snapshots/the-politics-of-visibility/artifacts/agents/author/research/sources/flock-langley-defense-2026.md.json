@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/flock-langley-defense-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7900e0c92f32d9a0",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/flock-langley-defense-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# flock-langley-defense-2026\n- **URL:** https://www.newsweek.com/flock-ceo-says-goal-isnt-a-dystopian-future-12316078 · **Accessed:** 2026-08-25 · **For:** v1→v2 response round, steelmanning Flock's own best public self-defense\n- **What it establishes:** Newsweek interview: \"Flock CEO Says 'Goal Isn't a Dystopian Future',\" by Mandy Taheri, published Aug. 13, 2026, 9:00 a.m. EDT (updated 10:11 a.m.). CEO Garrett Langley's own defense: data-minimization framing, an admission of error on case codes, a hard-deletion claim, and recovery statistics. Two of the task's expected items are NOT in this article (see below).\n- **Key passages (all Langley unless noted):**\n  - \"data is a liability, not an asset\" (VERIFIED, attributed to Langley in this interview).\n  - \"we got that one wrong. We should have required it out of the gate.\" (VERIFIED. Context: Flock's failure to require case codes for all searches from the beginning — i.e., officers could run lookups without logging an investigative reason.)\n  - Hard deletion: \"that data is deleted. It's a hard delete. And it's from all systems, unless it's a part of a criminal investigation\" (VERIFIED — note the built-in exception clause).\n  - Recovery figures (article's wording): \"the company's cameras helped detect over 1,000 missing people and more than 20,000 stolen cars in July\" (i.e., July 2026 — the month before publication; the article states the month without restating the year).\n  - NOT FOUND in this article: any count of favorable court rulings. (search-level; verify before print quotation — do not attribute a rulings count to this interview. Adjacent fact from other coverage: in Jan. 2026 a federal judge in E.D. Va. granted summary judgment for Norfolk against the Institute for Justice's Fourth Amendment challenge to its Flock ALPR network; Flock's own blog maintains a case-law page, https://www.flocksafety.com/blog/automated-license-plate-readers-and-the-fourth-amendment-a-public-safety-by-design-perspective-from-flock. Meanwhile the Supreme Court's 2026 Chatrie geofence ruling is widely read as undermining the Norfolk reasoning — Truthout, The Auto Wire, Independent Institute coverage.)\n- **Reliability:** Secondary outlet, but the quotes are primary self-statements by the interested party (CEO defending his company amid the Aug. 2026 WIRED disclosures — maximal spin incentive). The deletion and recovery claims are company assertions, not audited facts; the \"1,000 missing people\" figure is Flock's own count as relayed by Newsweek.\n- **Relevance to this project:** This is the strongest available regime/industry-side self-defense for the essay to engage fairly: liability framing, contrition on case codes, hard-delete policy, rescue statistics. The essay can note the deletion claim's own exception (\"unless it's a part of a criminal investigation\") and that the case-code admission concedes exactly the auditability gap critics alleged. Bears on the Flock/OS Investigate sections alongside wired-os-investigate-2026.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 408
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "245dad08dba94549df202e1db9bd11b6d2eb64d3219283cb11747c80aa05f936",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/flock-langley-defense-2026.md",
+ "kind": "artifact-page"
+}

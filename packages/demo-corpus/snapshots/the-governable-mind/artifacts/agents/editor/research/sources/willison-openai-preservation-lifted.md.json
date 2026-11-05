@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/willison-openai-preservation-lifted.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9d6e86afbe7aab2d",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/willison-openai-preservation-lifted.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# willison-openai-preservation-lifted\n- **URL:** https://simonwillison.net/2025/Oct/23/openai-no-longer-has-to-preserve/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Confirms the Oct. 9, 2025 modification and the two surviving preservation categories.\n- **Key passages:** freed OpenAI of the obligation to \"preserve and segregate all output log data that would otherwise be deleted on a going forward basis\"\n- **Reliability:** Secondary (expert blog quoting the order); independent.\n- **Relevance to this project:** Report §6.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 66
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "e412576b4b48509468ffc6d1733cb730c17233266fe72044dca5178dee888742",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/willison-openai-preservation-lifted.md",
+ "kind": "artifact-page"
+}

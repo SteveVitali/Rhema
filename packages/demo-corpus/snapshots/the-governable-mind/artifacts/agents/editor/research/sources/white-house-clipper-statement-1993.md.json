@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/white-house-clipper-statement-1993.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d426e469c02d13e8",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/white-house-clipper-statement-1993.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# white-house-clipper-statement-1993\n- **URL:** https://archive.epic.org/crypto/clipper/white_house_statement_4_93.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C49: April 16, 1993; 'two unique keys' 'deposited separately in two key-escrow data bases'; algorithm classified; escrow agents not yet named ('yet to determine which agencies').\n- **Key passages:** 'the two keys will be deposited separately in two \"key-escrow\" data bases' / 'the Department of Justice and the Administration have yet to determine which agencies will oversee the key-escrow data banks'\n- **Reliability:** Primary (White House press statement, EPIC archive copy).\n- **Relevance to this project:** C49\n",
+  "meters": {
+   "readMin": 1,
+   "words": 90
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "0f874d79e9b86816d04d726038785f85fe10f47aecc6172c89d2b6b49f6a22d5",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/white-house-clipper-statement-1993.md",
+ "kind": "artifact-page"
+}

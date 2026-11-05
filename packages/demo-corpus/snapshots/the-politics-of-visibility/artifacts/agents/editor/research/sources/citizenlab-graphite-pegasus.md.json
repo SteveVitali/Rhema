@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/citizenlab-graphite-pegasus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "810146cf7ca7ad7f",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "c65ca8b8dfca7815",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "f5677e972bf3d5ee",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/citizenlab-graphite-pegasus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Citizen Lab Graphite confirmation + Amnesty Pegasus Project\n\n- https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted/ (June 12, 2025)\n- https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project/\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: first forensic confirmation of Paragon Graphite on iPhones of a prominent\nEuropean journalist and Ciro Pellegrino (Fanpage.it); CVE-2025-43200 zero-click. Pegasus\nProject verbatim: \"at least 180 journalists in 20 countries who were selected for\npotential targeting\" 2016–June 2021 — note: *selected for targeting*, \"at least\" not\n\"more than\"; the draft's C25 wording should be tightened accordingly.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 73
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1a20bfb5007ec465dfe6ff6012ae8a6a0385308db2ed6c6ffe90eb83ea97f724",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/citizenlab-graphite-pegasus.md",
+ "kind": "artifact-page"
+}

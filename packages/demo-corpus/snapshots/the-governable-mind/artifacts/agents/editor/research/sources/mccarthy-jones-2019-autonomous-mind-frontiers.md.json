@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/mccarthy-jones-2019-autonomous-mind-frontiers.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "477a9db9663d1118",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/mccarthy-jones-2019-autonomous-mind-frontiers.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# mccarthy-jones-2019-autonomous-mind-frontiers\n- **URL:** https://www.frontiersin.org/articles/10.3389/frai.2019.00019/full · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical\n- **What it establishes:** Simon McCarthy-Jones, \"The Autonomous Mind: The Right to Freedom of Thought in the Twenty-First Century,\" Frontiers in AI (2019). Three elements of the right (not to reveal; not to be punished; not to be manipulated). Applies Clark & Chalmers to argue that external activities can be thought and that \"Internet searches have become thought\" for people who consult search engines habitually and trust the results; the legal stake is that what is classed as \"thought\" gets the right's absolute protection while what is classed as \"privacy\" gets qualified protection.\n- **Key passages:** \"the use of pen-and-paper to perform calculations or the re-arrangement of Scrabble tiles to make words, constitutes thinking.\" · \"Internet searches have become thought.\" · \"The right to FoT should protect thought wherever it is found, not just in the head.\"\n- **Reliability:** Primary; peer-reviewed; the author is a psychologist and advocate of a broad reading.\n- **Relevance to this project:** Agenda 4 (l.74-76). A published position stronger than the draft's: the record's protection does not merely descend from the interior, the record is thought and inherits absoluteness. The draft sits between this and De Cock and should say so.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 205
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "caadeecdedbe67ae21d7cb961af870ded55cf538694478903eb7047c3276f7f3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/mccarthy-jones-2019-autonomous-mind-frontiers.md",
+ "kind": "artifact-page"
+}

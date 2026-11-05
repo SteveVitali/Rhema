@@ -1,0 +1,7 @@
+# caramani-2017-will-vs-reason
+
+- **URL:** https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15 (abstract read) · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Caramani APSR 2017: populism and technocracy both hold "a unitary, nonpluralist, unmediated, and unaccountable vision of society's general interest"; technocracy "stresses responsibility and requires voters to entrust authority to experts who identify the general interest from rational speculation"; populism "stresses responsiveness and requires voters to delegate authority to leaders who equate the general interest with a putative will of the people." Both are critiques of party government/mediation.
+- **Key passages:** As quoted from abstract.
+- **Reliability:** Primary abstract; body not read (paywalled).
+- **Relevance to this project:** Misrepresentation check passes: the draft's §IV characterization ("both can imagine society's general interest as unitary, unmediated, and relatively unaccountable; they differ principally over whether that interest is discovered through popular will or expert reason") tracks the abstract closely — if anything the draft softens "unaccountable" to "relatively unaccountable." Also supports the draft's Legitimation facet (will vs reason vs law vs tradition).

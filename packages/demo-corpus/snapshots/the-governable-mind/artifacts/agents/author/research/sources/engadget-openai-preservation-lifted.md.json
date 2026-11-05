@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/engadget-openai-preservation-lifted.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "2ca4b539cc30c3c9",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/engadget-openai-preservation-lifted.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# engadget-openai-preservation-lifted\n- **URL:** https://www.engadget.com/ai/openai-no-longer-has-to-preserve-all-of-its-chatgpt-data-with-some-exceptions-192422093.html · **Accessed:** 2026-09-16 · **For:** v1 response round, item 1 (NYT v. OpenAI preservation order lifted)\n- **What it establishes:** Jackson Chen, Engadget, Oct. 11, 2025. Magistrate Judge Ona T. Wang filed an order on Oct. 9, 2025 ending OpenAI's forward-looking duty to \"preserve and segregate all output log data that would otherwise be deleted on a going forward basis.\" OpenAI \"no longer has to preserve chat logs as of September 26\" 2025. Two carve-outs: logs already saved under the prior order remain accessible, and OpenAI must retain data for ChatGPT accounts flagged by the NYT; the NYT may expand its flagged list as it reviews the preserved records. The original order was \"In May of this year\" (2025).\n- **Key passages:** \"Federal judge Ona T. Wang filed a new order on October 9 that frees OpenAI of an obligation to 'preserve and segregate all output log data that would otherwise be deleted on a going forward basis.'\" / \"any chat logs already saved under the previous order would still be accessible and that OpenAI is required to hold on to any data related to ChatGPT accounts that have been flagged by the NYT.\" / \"the NYT is allowed to expand the number of flagged users, as it continues to comb through OpenAI's preserved records.\"\n- **Reliability:** Secondary (tech press), quoting the order directly. Independent of the parties.\n- **Relevance to this project:** Confirms the editor's chronology for item 1 (Oct. 9 order; Sept. 26 cutoff; flagged accounts and already-preserved logs retained).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 251
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b550f438951a0ae4bcc5aa56c099a1cd002ab8b101015bebde61ad4994fd93bb",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/engadget-openai-preservation-lifted.md",
+ "kind": "artifact-page"
+}

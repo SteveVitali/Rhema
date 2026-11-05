@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/gutenberg-bell-comus.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "f901742edb422067",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/gutenberg-bell-comus.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# gutenberg-bell-comus\n- **URL:** https://www.gutenberg.org/files/19819/19819-h/19819-h.htm · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C65: modernized text (Bell ed.), margin line numbers (660 at 'Your nerves…', 670 at 'When the fresh blood…') placing the quoted lines at 663–665 with 'Fool, do not boast' at 662b; performance Sept 29, 1634.\n- **Key passages:** 'Fool, do not boast. / Thou canst not touch the freedom of my mind / With all thy charms, although this corporal rind / Thou hast immanacled while Heaven sees good.'\n- **Reliability:** Primary text in a school edition (1890s); reliable for line numbering.\n- **Relevance to this project:** C65; ref [50]\n",
+  "meters": {
+   "readMin": 1,
+   "words": 103
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8cf5a874dedc9718a4d555de23a2c091e5e42ebc2eb90e3c1ad2b3db78e5a140",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/gutenberg-bell-comus.md",
+ "kind": "artifact-page"
+}

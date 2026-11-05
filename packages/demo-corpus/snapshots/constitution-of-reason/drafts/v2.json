@@ -1,0 +1,1624 @@
+{
+ "dto": {
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "a492826572e340c7",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "1aa5cfb7bc5b06f1",
+    "ordinal": 10
+   },
+   "b100": {
+    "contentHash": "014f38ea6e9b90cc",
+    "ordinal": 100
+   },
+   "b101": {
+    "contentHash": "dcec1a8c9ca0f16d",
+    "ordinal": 101
+   },
+   "b102": {
+    "contentHash": "ab65146991acb713",
+    "ordinal": 102
+   },
+   "b103": {
+    "contentHash": "09fa5ad81c1e7f7a",
+    "ordinal": 103
+   },
+   "b104": {
+    "contentHash": "c79e1cb5741e494a",
+    "ordinal": 104
+   },
+   "b105": {
+    "contentHash": "5397084a6019c875",
+    "ordinal": 105
+   },
+   "b106": {
+    "contentHash": "0508c6c4e11a889d",
+    "ordinal": 106
+   },
+   "b107": {
+    "contentHash": "aae78fbdce1f9bef",
+    "ordinal": 107
+   },
+   "b108": {
+    "contentHash": "140e4f476086832b",
+    "ordinal": 108
+   },
+   "b109": {
+    "contentHash": "7fa55007105088e6",
+    "ordinal": 109
+   },
+   "b11": {
+    "contentHash": "0a51e5862057a1fe",
+    "ordinal": 11
+   },
+   "b110": {
+    "contentHash": "c87c4559b1985e14",
+    "ordinal": 110
+   },
+   "b111": {
+    "contentHash": "d7ee5578f220c4eb",
+    "ordinal": 111
+   },
+   "b112": {
+    "contentHash": "888ed807317209c0",
+    "ordinal": 112
+   },
+   "b113": {
+    "contentHash": "a80875ceb130d1e4",
+    "ordinal": 113
+   },
+   "b114": {
+    "contentHash": "52ab3f19d03b4691",
+    "ordinal": 114
+   },
+   "b115": {
+    "contentHash": "3cf6a46b95e723ac",
+    "ordinal": 115
+   },
+   "b116": {
+    "contentHash": "a7d240ccf18f3d62",
+    "ordinal": 116
+   },
+   "b117": {
+    "contentHash": "e61debb8ba9f2e6d",
+    "ordinal": 117
+   },
+   "b118": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 118
+   },
+   "b119": {
+    "contentHash": "8dd27e8e7626234a",
+    "ordinal": 119
+   },
+   "b12": {
+    "contentHash": "290144092976073a",
+    "ordinal": 12
+   },
+   "b120": {
+    "contentHash": "c519428b53d7324d",
+    "ordinal": 120
+   },
+   "b121": {
+    "contentHash": "8899167adb7750a3",
+    "ordinal": 121
+   },
+   "b122": {
+    "contentHash": "58ff6c61b6580d08",
+    "ordinal": 122
+   },
+   "b123": {
+    "contentHash": "e0e3a9639f8daea6",
+    "ordinal": 123
+   },
+   "b124": {
+    "contentHash": "9bc2e952b79e7936",
+    "ordinal": 124
+   },
+   "b125": {
+    "contentHash": "95c91cc7b5769c52",
+    "ordinal": 125
+   },
+   "b126": {
+    "contentHash": "eefd294ff5f17b4e",
+    "ordinal": 126
+   },
+   "b127": {
+    "contentHash": "9782e0f4a81f1b1c",
+    "ordinal": 127
+   },
+   "b128": {
+    "contentHash": "2147849a49bfe09b",
+    "ordinal": 128
+   },
+   "b129": {
+    "contentHash": "8a0916f2c6bce02c",
+    "ordinal": 129
+   },
+   "b13": {
+    "contentHash": "58638bbba54bae05",
+    "ordinal": 13
+   },
+   "b130": {
+    "contentHash": "048d7897f5da6c8f",
+    "ordinal": 130
+   },
+   "b131": {
+    "contentHash": "9bef2ce58d520b14",
+    "ordinal": 131
+   },
+   "b132": {
+    "contentHash": "474f97acb33e2033",
+    "ordinal": 132
+   },
+   "b133": {
+    "contentHash": "b1d3d912b190790a",
+    "ordinal": 133
+   },
+   "b134": {
+    "contentHash": "9030aa4744fcf78d",
+    "ordinal": 134
+   },
+   "b135": {
+    "contentHash": "32e90193fd43fa75",
+    "ordinal": 135
+   },
+   "b136": {
+    "contentHash": "323ea3ce595ff283",
+    "ordinal": 136
+   },
+   "b137": {
+    "contentHash": "747c36940145f6d0",
+    "ordinal": 137
+   },
+   "b138": {
+    "contentHash": "17a13d902958f4c4",
+    "ordinal": 138
+   },
+   "b139": {
+    "contentHash": "60f7b10d53a5ab7b",
+    "ordinal": 139
+   },
+   "b14": {
+    "contentHash": "dde2783eed3c37fd",
+    "ordinal": 14
+   },
+   "b140": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 140
+   },
+   "b141": {
+    "contentHash": "ceb27cd8e0970826",
+    "ordinal": 141
+   },
+   "b142": {
+    "contentHash": "ca27e25951bfbbd8",
+    "ordinal": 142
+   },
+   "b143": {
+    "contentHash": "567ee67f0bac9f33",
+    "ordinal": 143
+   },
+   "b144": {
+    "contentHash": "519ea8dc76aeb2a1",
+    "ordinal": 144
+   },
+   "b145": {
+    "contentHash": "283ab60b151db67f",
+    "ordinal": 145
+   },
+   "b146": {
+    "contentHash": "41dba065ea45f7d1",
+    "ordinal": 146
+   },
+   "b147": {
+    "contentHash": "6d1a25f4e5520fad",
+    "ordinal": 147
+   },
+   "b148": {
+    "contentHash": "fdd687003a82ecf5",
+    "ordinal": 148
+   },
+   "b149": {
+    "contentHash": "48eaadf26e258cd0",
+    "ordinal": 149
+   },
+   "b15": {
+    "contentHash": "f6390f3573cd0ba4",
+    "ordinal": 15
+   },
+   "b150": {
+    "contentHash": "ffd70a7d101a76a5",
+    "ordinal": 150
+   },
+   "b151": {
+    "contentHash": "9f228dcfbdf92015",
+    "ordinal": 151
+   },
+   "b152": {
+    "contentHash": "094fa3daab3bd02a",
+    "ordinal": 152
+   },
+   "b153": {
+    "contentHash": "098fffaf6b4d57a3",
+    "ordinal": 153
+   },
+   "b154": {
+    "contentHash": "641ee3e20c0a757a",
+    "ordinal": 154
+   },
+   "b155": {
+    "contentHash": "85b63b083a1c3b97",
+    "ordinal": 155
+   },
+   "b156": {
+    "contentHash": "d90dee4af8848b3f",
+    "ordinal": 156
+   },
+   "b157": {
+    "contentHash": "95520aae65a6a194",
+    "ordinal": 157
+   },
+   "b158": {
+    "contentHash": "cbdaa30507b286ee",
+    "ordinal": 158
+   },
+   "b159": {
+    "contentHash": "a6e3766de82825c2",
+    "ordinal": 159
+   },
+   "b16": {
+    "contentHash": "b2cc2105e4a42313",
+    "ordinal": 16
+   },
+   "b160": {
+    "contentHash": "2a9978be21617f46",
+    "ordinal": 160
+   },
+   "b161": {
+    "contentHash": "559586700fca975f",
+    "ordinal": 161
+   },
+   "b162": {
+    "contentHash": "afb20d8688b96555",
+    "ordinal": 162
+   },
+   "b163": {
+    "contentHash": "1d8e951b0f73ca34",
+    "ordinal": 163
+   },
+   "b164": {
+    "contentHash": "17277291a56f2461",
+    "ordinal": 164
+   },
+   "b165": {
+    "contentHash": "44cc6c1a2d108589",
+    "ordinal": 165
+   },
+   "b166": {
+    "contentHash": "db13ca3a90971597",
+    "ordinal": 166
+   },
+   "b167": {
+    "contentHash": "74a944753687867b",
+    "ordinal": 167
+   },
+   "b168": {
+    "contentHash": "0cc95c8ecb74f44d",
+    "ordinal": 168
+   },
+   "b169": {
+    "contentHash": "f9c0ad52d09bf31d",
+    "ordinal": 169
+   },
+   "b17": {
+    "contentHash": "0cfe6344c846251f",
+    "ordinal": 17
+   },
+   "b170": {
+    "contentHash": "58d9f75ab1a66ea1",
+    "ordinal": 170
+   },
+   "b171": {
+    "contentHash": "614f9e46970be01c",
+    "ordinal": 171
+   },
+   "b172": {
+    "contentHash": "18eeb0e867e6e2c8",
+    "ordinal": 172
+   },
+   "b173": {
+    "contentHash": "920adc6725ca5f12",
+    "ordinal": 173
+   },
+   "b174": {
+    "contentHash": "6b078770940c31cc",
+    "ordinal": 174
+   },
+   "b175": {
+    "contentHash": "bcb86a3f22a2dd81",
+    "ordinal": 175
+   },
+   "b176": {
+    "contentHash": "c70c56f30a8646ae",
+    "ordinal": 176
+   },
+   "b177": {
+    "contentHash": "2bf7c10339015d95",
+    "ordinal": 177
+   },
+   "b178": {
+    "contentHash": "828e56c59731fe7b",
+    "ordinal": 178
+   },
+   "b179": {
+    "contentHash": "4c079e398cddb750",
+    "ordinal": 179
+   },
+   "b18": {
+    "contentHash": "1588e25d4994454a",
+    "ordinal": 18
+   },
+   "b180": {
+    "contentHash": "da6a60728176000b",
+    "ordinal": 180
+   },
+   "b181": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 181
+   },
+   "b182": {
+    "contentHash": "613a25875562c3bc",
+    "ordinal": 182
+   },
+   "b183": {
+    "contentHash": "3610015a942601fa",
+    "ordinal": 183
+   },
+   "b184": {
+    "contentHash": "79dd2935bb73fa78",
+    "ordinal": 184
+   },
+   "b185": {
+    "contentHash": "7b57a0364e79c1bb",
+    "ordinal": 185
+   },
+   "b186": {
+    "contentHash": "7e0bda6ef9517805",
+    "ordinal": 186
+   },
+   "b187": {
+    "contentHash": "ce9821bbf60a6ab2",
+    "ordinal": 187
+   },
+   "b188": {
+    "contentHash": "1409e7a0fcf4b45c",
+    "ordinal": 188
+   },
+   "b189": {
+    "contentHash": "6f18c08424c5bbf7",
+    "ordinal": 189
+   },
+   "b19": {
+    "contentHash": "bf7f43715ae28198",
+    "ordinal": 19
+   },
+   "b190": {
+    "contentHash": "922c335cf16ee155",
+    "ordinal": 190
+   },
+   "b191": {
+    "contentHash": "4a1fb9750d680f48",
+    "ordinal": 191
+   },
+   "b192": {
+    "contentHash": "d10420e6b95413af",
+    "ordinal": 192
+   },
+   "b193": {
+    "contentHash": "853cf343395e2c3d",
+    "ordinal": 193
+   },
+   "b194": {
+    "contentHash": "330b4d5d53ad4f4c",
+    "ordinal": 194
+   },
+   "b195": {
+    "contentHash": "91535fc8b674394f",
+    "ordinal": 195
+   },
+   "b196": {
+    "contentHash": "c8aa6a2eab686cb6",
+    "ordinal": 196
+   },
+   "b197": {
+    "contentHash": "02f32e0f9acc21fd",
+    "ordinal": 197
+   },
+   "b198": {
+    "contentHash": "cfc6419a6b0ca3a4",
+    "ordinal": 198
+   },
+   "b199": {
+    "contentHash": "a541b194518b0b34",
+    "ordinal": 199
+   },
+   "b2": {
+    "contentHash": "0ac5cd91bb477b71",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "f79baf8e7c7e4425",
+    "ordinal": 20
+   },
+   "b200": {
+    "contentHash": "653fc446fa7bf882",
+    "ordinal": 200
+   },
+   "b201": {
+    "contentHash": "cc67bb5e3b424c0d",
+    "ordinal": 201
+   },
+   "b202": {
+    "contentHash": "ddf40aacfc5be68d",
+    "ordinal": 202
+   },
+   "b203": {
+    "contentHash": "36d516581238864b",
+    "ordinal": 203
+   },
+   "b204": {
+    "contentHash": "b96e5a9e2150f369",
+    "ordinal": 204
+   },
+   "b205": {
+    "contentHash": "e4acb01541347d42",
+    "ordinal": 205
+   },
+   "b206": {
+    "contentHash": "e3032a800fd62918",
+    "ordinal": 206
+   },
+   "b207": {
+    "contentHash": "a0912aa7e4ca30a1",
+    "ordinal": 207
+   },
+   "b208": {
+    "contentHash": "f1f8cfbc6a432f15",
+    "ordinal": 208
+   },
+   "b209": {
+    "contentHash": "7503bce16f5f7a53",
+    "ordinal": 209
+   },
+   "b21": {
+    "contentHash": "c9ff0348f1601fa2",
+    "ordinal": 21
+   },
+   "b210": {
+    "contentHash": "1d85ab18d4c52883",
+    "ordinal": 210
+   },
+   "b211": {
+    "contentHash": "647b974f65dd53b5",
+    "ordinal": 211
+   },
+   "b212": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 212
+   },
+   "b213": {
+    "contentHash": "7835af1b9ffc2e7d",
+    "ordinal": 213
+   },
+   "b214": {
+    "contentHash": "1dc7e372338f3125",
+    "ordinal": 214
+   },
+   "b215": {
+    "contentHash": "f31a04d440215a41",
+    "ordinal": 215
+   },
+   "b216": {
+    "contentHash": "a3588b29150af424",
+    "ordinal": 216
+   },
+   "b217": {
+    "contentHash": "b73be7b4b0ce4d06",
+    "ordinal": 217
+   },
+   "b218": {
+    "contentHash": "c0bbbbdb3674bfd8",
+    "ordinal": 218
+   },
+   "b219": {
+    "contentHash": "bc676dcba18089dc",
+    "ordinal": 219
+   },
+   "b22": {
+    "contentHash": "fb0043e6e963309d",
+    "ordinal": 22
+   },
+   "b220": {
+    "contentHash": "86a1fbfb167fb26f",
+    "ordinal": 220
+   },
+   "b221": {
+    "contentHash": "3ae708ca9fafa251",
+    "ordinal": 221
+   },
+   "b222": {
+    "contentHash": "f4d6ba508b3819a8",
+    "ordinal": 222
+   },
+   "b223": {
+    "contentHash": "f180e25e6a618477",
+    "ordinal": 223
+   },
+   "b224": {
+    "contentHash": "3a278d326bfceb37",
+    "ordinal": 224
+   },
+   "b225": {
+    "contentHash": "230cbc0f29006e3c",
+    "ordinal": 225
+   },
+   "b226": {
+    "contentHash": "c60f321024fd9835",
+    "ordinal": 226
+   },
+   "b227": {
+    "contentHash": "037c20690767aa67",
+    "ordinal": 227
+   },
+   "b228": {
+    "contentHash": "ca2f7a5e99e4338f",
+    "ordinal": 228
+   },
+   "b229": {
+    "contentHash": "5e3ffa412dd7aa92",
+    "ordinal": 229
+   },
+   "b23": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 23
+   },
+   "b230": {
+    "contentHash": "169ceee0cf1dab71",
+    "ordinal": 230
+   },
+   "b231": {
+    "contentHash": "f7a9c7f4318e3f76",
+    "ordinal": 231
+   },
+   "b232": {
+    "contentHash": "fc0cc1a3ed7d6222",
+    "ordinal": 232
+   },
+   "b233": {
+    "contentHash": "5822c30a0e89a52c",
+    "ordinal": 233
+   },
+   "b234": {
+    "contentHash": "42f1cd5b9e6dbb4a",
+    "ordinal": 234
+   },
+   "b235": {
+    "contentHash": "86bf98d601c75337",
+    "ordinal": 235
+   },
+   "b236": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 236
+   },
+   "b237": {
+    "contentHash": "9e6c44a18d3ffd70",
+    "ordinal": 237
+   },
+   "b238": {
+    "contentHash": "e81295393bfb119a",
+    "ordinal": 238
+   },
+   "b239": {
+    "contentHash": "01bbd1b22936e56b",
+    "ordinal": 239
+   },
+   "b24": {
+    "contentHash": "e174d21c5b687b5e",
+    "ordinal": 24
+   },
+   "b240": {
+    "contentHash": "7d75c6855767dd29",
+    "ordinal": 240
+   },
+   "b241": {
+    "contentHash": "9a6f4144d24c9a9e",
+    "ordinal": 241
+   },
+   "b242": {
+    "contentHash": "f6fdd4fa0b030dd0",
+    "ordinal": 242
+   },
+   "b243": {
+    "contentHash": "1c7d0f2fc33a5330",
+    "ordinal": 243
+   },
+   "b244": {
+    "contentHash": "05c818d86d6ce99b",
+    "ordinal": 244
+   },
+   "b245": {
+    "contentHash": "635ee9a426727ecd",
+    "ordinal": 245
+   },
+   "b246": {
+    "contentHash": "ee40b3d64d736907",
+    "ordinal": 246
+   },
+   "b247": {
+    "contentHash": "5319cceec0e7f974",
+    "ordinal": 247
+   },
+   "b248": {
+    "contentHash": "4f57335d45b02a1a",
+    "ordinal": 248
+   },
+   "b249": {
+    "contentHash": "a2321d022f8645a8",
+    "ordinal": 249
+   },
+   "b25": {
+    "contentHash": "306f03362f2f37ab",
+    "ordinal": 25
+   },
+   "b250": {
+    "contentHash": "409983a1e85a81be",
+    "ordinal": 250
+   },
+   "b251": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 251
+   },
+   "b252": {
+    "contentHash": "31dda0420bcb467f",
+    "ordinal": 252
+   },
+   "b253": {
+    "contentHash": "016e4595f5b30af0",
+    "ordinal": 253
+   },
+   "b254": {
+    "contentHash": "410842be3f1bda14",
+    "ordinal": 254
+   },
+   "b255": {
+    "contentHash": "6ccd0eb241a8b588",
+    "ordinal": 255
+   },
+   "b256": {
+    "contentHash": "ced48bee257ccb2e",
+    "ordinal": 256
+   },
+   "b257": {
+    "contentHash": "983e39b57043f783",
+    "ordinal": 257
+   },
+   "b258": {
+    "contentHash": "a4809bc915be6874",
+    "ordinal": 258
+   },
+   "b259": {
+    "contentHash": "e6c156842c2f1740",
+    "ordinal": 259
+   },
+   "b26": {
+    "contentHash": "459dc4bb2626a1d0",
+    "ordinal": 26
+   },
+   "b260": {
+    "contentHash": "fd7e4cf3c3f24375",
+    "ordinal": 260
+   },
+   "b261": {
+    "contentHash": "c250b3ffe25a665c",
+    "ordinal": 261
+   },
+   "b262": {
+    "contentHash": "52d3af6cf597ca4f",
+    "ordinal": 262
+   },
+   "b263": {
+    "contentHash": "c66028412df5c9d1",
+    "ordinal": 263
+   },
+   "b264": {
+    "contentHash": "bddee0485fdbe2e9",
+    "ordinal": 264
+   },
+   "b265": {
+    "contentHash": "6988dc8ca08efb0f",
+    "ordinal": 265
+   },
+   "b266": {
+    "contentHash": "5d69fe1fd6c6bd83",
+    "ordinal": 266
+   },
+   "b267": {
+    "contentHash": "0b95c9d76d8cf7be",
+    "ordinal": 267
+   },
+   "b268": {
+    "contentHash": "2c8b16fd7657c058",
+    "ordinal": 268
+   },
+   "b269": {
+    "contentHash": "bc60df316028d607",
+    "ordinal": 269
+   },
+   "b27": {
+    "contentHash": "871f5f923798dc07",
+    "ordinal": 27
+   },
+   "b270": {
+    "contentHash": "1c1c5fcf6d4b03dd",
+    "ordinal": 270
+   },
+   "b271": {
+    "contentHash": "7d54ed3384b902ad",
+    "ordinal": 271
+   },
+   "b272": {
+    "contentHash": "32239dc7746b0703",
+    "ordinal": 272
+   },
+   "b273": {
+    "contentHash": "8ce587a2ce875ff1",
+    "ordinal": 273
+   },
+   "b274": {
+    "contentHash": "452b8abdd9875181",
+    "ordinal": 274
+   },
+   "b275": {
+    "contentHash": "f6b2e89fa6cad1d9",
+    "ordinal": 275
+   },
+   "b276": {
+    "contentHash": "26210f7f935af8f2",
+    "ordinal": 276
+   },
+   "b277": {
+    "contentHash": "86a88425c0460c5d",
+    "ordinal": 277
+   },
+   "b278": {
+    "contentHash": "9abb4cd47f18a2cd",
+    "ordinal": 278
+   },
+   "b279": {
+    "contentHash": "b2a0e7a14936578e",
+    "ordinal": 279
+   },
+   "b28": {
+    "contentHash": "a307a0444c36ff5b",
+    "ordinal": 28
+   },
+   "b280": {
+    "contentHash": "c0fdc98afe25e740",
+    "ordinal": 280
+   },
+   "b281": {
+    "contentHash": "f9a8ee21f7e8c111",
+    "ordinal": 281
+   },
+   "b282": {
+    "contentHash": "d7b7fa6ce215b494",
+    "ordinal": 282
+   },
+   "b283": {
+    "contentHash": "78196ebef5306898",
+    "ordinal": 283
+   },
+   "b284": {
+    "contentHash": "e049bd068a621ebb",
+    "ordinal": 284
+   },
+   "b29": {
+    "contentHash": "7003abc69ba44394",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "28875e1d0b4b39c0",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "8fc6b5bac20265e3",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "366c366d70ce8a31",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "f5139e98a43f6951",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "3c1432a2626ffa14",
+    "ordinal": 33
+   },
+   "b34": {
+    "contentHash": "5f7340177fbcdf88",
+    "ordinal": 34
+   },
+   "b35": {
+    "contentHash": "591059d41c00a7bb",
+    "ordinal": 35
+   },
+   "b36": {
+    "contentHash": "e7739601836eaad7",
+    "ordinal": 36
+   },
+   "b37": {
+    "contentHash": "be5affbede34e2c1",
+    "ordinal": 37
+   },
+   "b38": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 38
+   },
+   "b39": {
+    "contentHash": "921c6392c9d63da4",
+    "ordinal": 39
+   },
+   "b4": {
+    "contentHash": "e5e36b0bff1c571b",
+    "ordinal": 4
+   },
+   "b40": {
+    "contentHash": "94284192e82a8882",
+    "ordinal": 40
+   },
+   "b41": {
+    "contentHash": "62bab05230a64031",
+    "ordinal": 41
+   },
+   "b42": {
+    "contentHash": "9db09726c4f462d3",
+    "ordinal": 42
+   },
+   "b43": {
+    "contentHash": "e79761b0236c0adc",
+    "ordinal": 43
+   },
+   "b44": {
+    "contentHash": "4833a2ec515422b7",
+    "ordinal": 44
+   },
+   "b45": {
+    "contentHash": "e1752d1895fbf10e",
+    "ordinal": 45
+   },
+   "b46": {
+    "contentHash": "57e35ae82e5f3478",
+    "ordinal": 46
+   },
+   "b47": {
+    "contentHash": "085f284ac1713c28",
+    "ordinal": 47
+   },
+   "b48": {
+    "contentHash": "3332898219b8098d",
+    "ordinal": 48
+   },
+   "b49": {
+    "contentHash": "42fd0a7da37b66a7",
+    "ordinal": 49
+   },
+   "b5": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 5
+   },
+   "b50": {
+    "contentHash": "cc8731d6c284669f",
+    "ordinal": 50
+   },
+   "b51": {
+    "contentHash": "ec18ce0586e73f97",
+    "ordinal": 51
+   },
+   "b52": {
+    "contentHash": "60c0ae6435c76208",
+    "ordinal": 52
+   },
+   "b53": {
+    "contentHash": "002d39f71764c2ad",
+    "ordinal": 53
+   },
+   "b54": {
+    "contentHash": "0ab3f0629d56c955",
+    "ordinal": 54
+   },
+   "b55": {
+    "contentHash": "4b1065d09595a80a",
+    "ordinal": 55
+   },
+   "b56": {
+    "contentHash": "3d3098794fb617ad",
+    "ordinal": 56
+   },
+   "b57": {
+    "contentHash": "e75806bfa44ffc57",
+    "ordinal": 57
+   },
+   "b58": {
+    "contentHash": "a05bdc4a589e3fee",
+    "ordinal": 58
+   },
+   "b59": {
+    "contentHash": "ff57d23d956bb5e5",
+    "ordinal": 59
+   },
+   "b6": {
+    "contentHash": "067e0b2c0ef97fef",
+    "ordinal": 6
+   },
+   "b60": {
+    "contentHash": "25b044dab628e0fa",
+    "ordinal": 60
+   },
+   "b61": {
+    "contentHash": "2ac861c8fbb31c15",
+    "ordinal": 61
+   },
+   "b62": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 62
+   },
+   "b63": {
+    "contentHash": "8f24bebd6878bc96",
+    "ordinal": 63
+   },
+   "b64": {
+    "contentHash": "563dc5ce69c75dc3",
+    "ordinal": 64
+   },
+   "b65": {
+    "contentHash": "aa893a50b13ab9b0",
+    "ordinal": 65
+   },
+   "b66": {
+    "contentHash": "8e634c9bef0f3f27",
+    "ordinal": 66
+   },
+   "b67": {
+    "contentHash": "27408fe299befd5d",
+    "ordinal": 67
+   },
+   "b68": {
+    "contentHash": "0bb7dace820da7c2",
+    "ordinal": 68
+   },
+   "b69": {
+    "contentHash": "9d3078525f6ea4ba",
+    "ordinal": 69
+   },
+   "b7": {
+    "contentHash": "34979c67169c184a",
+    "ordinal": 7
+   },
+   "b70": {
+    "contentHash": "fd3bf52512defd8f",
+    "ordinal": 70
+   },
+   "b71": {
+    "contentHash": "a6c70f642a3ad4ae",
+    "ordinal": 71
+   },
+   "b72": {
+    "contentHash": "25b9b8ef65461da2",
+    "ordinal": 72
+   },
+   "b73": {
+    "contentHash": "91256a48ab22d87b",
+    "ordinal": 73
+   },
+   "b74": {
+    "contentHash": "42e7849d5c56660b",
+    "ordinal": 74
+   },
+   "b75": {
+    "contentHash": "4753fa004f72f3a3",
+    "ordinal": 75
+   },
+   "b76": {
+    "contentHash": "7531a9e68261938f",
+    "ordinal": 76
+   },
+   "b77": {
+    "contentHash": "8393450c77df932e",
+    "ordinal": 77
+   },
+   "b78": {
+    "contentHash": "805feb405bb74d62",
+    "ordinal": 78
+   },
+   "b79": {
+    "contentHash": "04a112e3bd8c38c5",
+    "ordinal": 79
+   },
+   "b8": {
+    "contentHash": "eb54bb2084ce4ef9",
+    "ordinal": 8
+   },
+   "b80": {
+    "contentHash": "0e2f7d669fa3b713",
+    "ordinal": 80
+   },
+   "b81": {
+    "contentHash": "b6289190413cdebd",
+    "ordinal": 81
+   },
+   "b82": {
+    "contentHash": "5b98124514d75125",
+    "ordinal": 82
+   },
+   "b83": {
+    "contentHash": "efabad539f8f6882",
+    "ordinal": 83
+   },
+   "b84": {
+    "contentHash": "a688420fe5e99b31",
+    "ordinal": 84
+   },
+   "b85": {
+    "contentHash": "f054ff6fba136a4b",
+    "ordinal": 85
+   },
+   "b86": {
+    "contentHash": "5874d0366ea7245c",
+    "ordinal": 86
+   },
+   "b87": {
+    "contentHash": "83019bdee747469a",
+    "ordinal": 87
+   },
+   "b88": {
+    "contentHash": "0e51a4bcd38df3df",
+    "ordinal": 88
+   },
+   "b89": {
+    "contentHash": "c8a52b3a0f8ece7a",
+    "ordinal": 89
+   },
+   "b9": {
+    "contentHash": "36c47bf72ab8461a",
+    "ordinal": 9
+   },
+   "b90": {
+    "contentHash": "de7cc417de1b3246",
+    "ordinal": 90
+   },
+   "b91": {
+    "contentHash": "df173d4f41e20a50",
+    "ordinal": 91
+   },
+   "b92": {
+    "contentHash": "75cf312e3d797d6b",
+    "ordinal": 92
+   },
+   "b93": {
+    "contentHash": "926f360c86da3604",
+    "ordinal": 93
+   },
+   "b94": {
+    "contentHash": "789603f052af77f5",
+    "ordinal": 94
+   },
+   "b95": {
+    "contentHash": "e1ee3aefeaf6f68c",
+    "ordinal": 95
+   },
+   "b96": {
+    "contentHash": "0baa08c515ce5e32",
+    "ordinal": 96
+   },
+   "b97": {
+    "contentHash": "6d43c676655c3761",
+    "ordinal": 97
+   },
+   "b98": {
+    "contentHash": "1eefe6f9e5e1ea92",
+    "ordinal": 98
+   },
+   "b99": {
+    "contentHash": "1295c34d2052295a",
+    "ordinal": 99
+   }
+  },
+  "demo": {
+   "importRule": {
+    "claims[].accessedAt": "assigned by import rule",
+    "claims[].sources[].accessedAt": "assigned by import rule",
+    "claims[].sources[].stance": "assigned by import rule",
+    "findings[].evidence.urls[].accessed": "assigned by import rule",
+    "findings[].kind": "assigned by import rule",
+    "findings[].origin": "assigned by import rule",
+    "findings[].reconciliation": "assigned by import rule",
+    "findings[].severity": "assigned by import rule"
+   },
+   "roles": {
+    "drafting": "the drafting agent",
+    "editor": "the editor (agent)",
+    "revising": "the revising agent",
+    "writer": "the writer"
+   }
+  },
+  "draftId": "v2",
+  "draftN": 1,
+  "findings": [
+   {
+    "anchor": {
+     "blockId": "b241",
+     "confidence": 1,
+     "endOffset": 26,
+     "quote": "But the structure is older",
+     "startOffset": 0
+    },
+    "findingId": "The one thing",
+    "kind": "argument",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The one thing"
+   },
+   {
+    "anchor": {
+     "blockId": "b163",
+     "confidence": 1,
+     "endOffset": 344,
+     "quote": "it also reports that token use alone explained most of the performance variance in one analysis",
+     "startOffset": 249
+    },
+    "findingId": "Major 1",
+    "kind": "argument",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The essay's strongest counterargument is raised, then dodged"
+   },
+   {
+    "anchor": {
+     "blockId": "b221",
+     "confidence": 1,
+     "endOffset": 364,
+     "quote": "organized corrigibility",
+     "startOffset": 341
+    },
+    "findingId": "Major 2",
+    "kind": "discourse",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The essay does not know—or does not say—which conversation it is in"
+   },
+   {
+    "anchor": {
+     "blockId": "b7",
+     "confidence": 1,
+     "endOffset": 90,
+     "quote": "There is a particular experience familiar to anyone who works closely with language models",
+     "startOffset": 0
+    },
+    "findingId": "Major 3",
+    "kind": "structure",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "Ten thousand words without a single concrete case"
+   },
+   {
+    "anchor": {
+     "blockId": "b229",
+     "confidence": 1,
+     "endOffset": 212,
+     "quote": "that to which every voice claims answerability and which none is entitled finally to possess",
+     "startOffset": 120
+    },
+    "findingId": "Major 4",
+    "kind": "discourse",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The Logos frame is asserted, never earned — and it is the piece's most original move"
+   },
+   {
+    "anchor": {
+     "blockId": "b244",
+     "confidence": 1,
+     "endOffset": 260,
+     "quote": "Their resemblance matters precisely because the differences remain",
+     "startOffset": 194
+    },
+    "findingId": "Major 5",
+    "kind": "argument",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "The central analogy's status is never committed to, and its engine is missing"
+   },
+   {
+    "anchor": {
+     "blockId": "b111",
+     "confidence": 1,
+     "endOffset": 54,
+     "quote": "Diversity of expression is not yet diversity of search",
+     "startOffset": 0
+    },
+    "findingId": "Major 6",
+    "kind": "structure",
+    "lost": false,
+    "method": "exact",
+    "severity": "major",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "A third too long, and the aphorisms have become a cadence"
+   },
+   {
+    "anchor": {
+     "blockId": "b155",
+     "confidence": 0.8,
+     "endOffset": 168,
+     "quote": "Reflection is therefore a form of low-distance criticism. The system becomes grammatically divided—first author, then reviewer—without necessarily acquiring an outside.",
+     "startOffset": 0
+    },
+    "findingId": "Strength 1",
+    "kind": "craft",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**The §VI taxonomy is the essay's center of gravity and its strongest claim to originality.** \"Reflection is therefore a form of low-distance criticism. The system becomes grammatically divided — firs"
+   },
+   {
+    "anchor": {
+     "blockId": "b211",
+     "confidence": 1,
+     "endOffset": 98,
+     "quote": "No constitution guarantees truth. A constitution determines which errors can encounter resistance.",
+     "startOffset": 0
+    },
+    "findingId": "Strength 2",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**The constitutional test (§VII) is a portable, falsifiable contribution** that will circulate as a standalone artifact, and its capstone is the best sentence in the draft: \"No constitution guarantees"
+   },
+   {
+    "anchor": {
+     "blockId": "b173",
+     "confidence": 1,
+     "endOffset": 81,
+     "quote": "a high-variance communication protocol",
+     "startOffset": 43
+    },
+    "findingId": "Strength 3",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**The intellectual honesty is real and rare.** The misrepresentation check found no strawmen anywhere — Mill, Longino, Habermas, Mercier–Sperber, scholasticism are all characterized as their scholars "
+   },
+   {
+    "anchor": {
+     "blockId": "b168",
+     "confidence": 1,
+     "endOffset": 198,
+     "quote": "intelligence becomes more reliable when it must render its products legible to an intelligence that did not produce them",
+     "startOffset": 78
+    },
+    "findingId": "Strength 4",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**The legibility principle** — \"intelligence becomes more reliable when it must render its products legible to an intelligence that did not produce them\" — connects proof, method sections, audit trail"
+   },
+   {
+    "anchor": {
+     "blockId": "b242",
+     "confidence": 1,
+     "endOffset": 101,
+     "quote": "The friend refuses our rationalization. The interlocutor makes our commitments contradict one another",
+     "startOffset": 0
+    },
+    "findingId": "Strength 5",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Opening and ending.** \"The Second Context\" earns the reader precisely, and the coda's anaphora run (\"The friend refuses our rationalization. The interlocutor makes our commitments contradict one ano"
+   },
+   {
+    "anchor": {
+     "blockId": "b174",
+     "confidence": 1,
+     "endOffset": 865,
+     "quote": "voting can preserve a useful independence that forced consensus destroys",
+     "startOffset": 793
+    },
+    "findingId": "Minor 1",
+    "kind": "claim",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**C9 (§VI):** \"voting can preserve a useful independence that forced consensus destroys\" exceeds ref [29] — Kaesberg et al.'s finding is task-dependent (voting better on reasoning, consensus *better* "
+   },
+   {
+    "anchor": {
+     "blockId": "b102",
+     "confidence": 0.8,
+     "endOffset": 200,
+     "quote": "Constitutional government generalizes this distrust. Madison's famous claim that \"ambition must be made to counteract ambition\" does not assume that officeholders will become wise by entering separate",
+     "startOffset": 0
+    },
+    "findingId": "Minor 2",
+    "kind": "claim",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**C17 (§IV):** \"Ambition must be made to counteract ambition\" is verbatim, but Federalist 51's authorship is formally \"Hamilton or Madison\"; conventional attribution to Madison is defensible — optiona"
+   },
+   {
+    "anchor": {
+     "blockId": "b83",
+     "confidence": 1,
+     "endOffset": 441,
+     "quote": "qualified equality",
+     "startOffset": 423
+    },
+    "findingId": "Minor 3",
+    "kind": "claim",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Longino (§III):** her term of art is \"*tempered* equality of intellectual authority\"; the draft's \"qualified equality\" is a paraphrase — use her word (ledger C14)."
+   },
+   {
+    "anchor": {
+     "blockId": "b81",
+     "confidence": 0.9,
+     "endOffset": 353,
+     "quote": "did not identify truth with whatever the community happened to settle upon",
+     "startOffset": 279
+    },
+    "findingId": "Minor 4",
+    "kind": "craft",
+    "lost": false,
+    "method": "normalized",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Peirce (§III):** \"did not identify truth with whatever the community *happened* to settle upon\" — \"happened\" carries the actual-vs-ideal distinction; keep it or add \"at any given moment\" to fend off"
+   },
+   {
+    "anchor": {
+     "blockId": "b114",
+     "confidence": 0.8,
+     "endOffset": 200,
+     "quote": "The social space of reasons can be distorted by power. Control over the forum matters. Status affects uptake. Participants learn to anticipate the preferences of the judge. Consensus can be manufactur",
+     "startOffset": 0
+    },
+    "findingId": "Minor 5",
+    "kind": "claim",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**\"Social space of reasons\" (§IV):** Sellars/Brandom freight, uncredited — cite or rephrase."
+   },
+   {
+    "anchor": {
+     "blockId": "b91",
+     "confidence": 0.4,
+     "endOffset": 40,
+     "quote": "## IV. Political Constitutions of Reason",
+     "startOffset": 0
+    },
+    "findingId": "Minor 6",
+    "kind": "craft",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Constitutional-AI collision:** to much of this readership in 2026, \"constitution\" + AI = Anthropic-style behavioral rulesets, and \"constitution\" is now a term of art in multi-agent papers meaning no"
+   },
+   {
+    "anchor": null,
+    "findingId": "Minor 7",
+    "kind": "claim",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Ref [27]:** the anonymous ICLR blogpost is accurately cited (the page's author block is literally a placeholder — verified), but for a load-bearing empirical claim, add the peer-reviewed anchor maki"
+   },
+   {
+    "anchor": null,
+    "findingId": "Minor 8",
+    "kind": "claim",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Ref [22]:** dated 2024; submitted Nov 2023 (ID 2311) — cite as 2023 or 2023/2024."
+   },
+   {
+    "anchor": {
+     "blockId": "b121",
+     "confidence": 1,
+     "endOffset": 202,
+     "quote": "There are insights no committee produces",
+     "startOffset": 162
+    },
+    "findingId": "Minor 9",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Solitary-genius counterexample (§V):** handled in one concessive sentence (\"There are insights no committee produces\"); the reconciliation is already in the essay's toolkit — the solitary thinker's "
+   },
+   {
+    "anchor": {
+     "blockId": "b112",
+     "confidence": 1,
+     "endOffset": 547,
+     "quote": "no right to representation",
+     "startOffset": 521
+    },
+    "findingId": "Minor 10",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "minor",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Misreading preemptions** (discourse §5): say early and explicitly that this is *not* an argument that more agents are better (\"often they are worse\"); surface the §IV \"no right to representation\" de"
+   },
+   {
+    "anchor": {
+     "blockId": "b124",
+     "confidence": 1,
+     "endOffset": 55,
+     "quote": "The individual enters solitude carrying a civilization.",
+     "startOffset": 0
+    },
+    "findingId": "Line note 1",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Aphorism saturation:** \"The imagined critic can become a courtier.\" / \"Science added the world to the disputation.\" / \"The individual enters solitude carrying a civilization.\" — roughly one freestan"
+   },
+   {
+    "anchor": {
+     "blockId": "b45",
+     "confidence": 1,
+     "endOffset": 108,
+     "quote": "The dialogue is therefore not merely how philosophy communicates. It is one of the ways philosophy computes.",
+     "startOffset": 0
+    },
+    "findingId": "Line note 2",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**\"Not X. It is Y.\" scaffolding:** \"The dialogue is therefore not merely how philosophy communicates. It is one of the ways philosophy computes.\" — dozens of instances; the hinge, not the content, bec"
+   },
+   {
+    "anchor": {
+     "blockId": "b87",
+     "confidence": 1,
+     "endOffset": 357,
+     "quote": "interests, loyalties, status, incentives, identities, and unequal power",
+     "startOffset": 286
+    },
+    "findingId": "Line note 3",
+    "kind": "craft",
+    "lost": false,
+    "method": "exact",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Abstraction catalogues:** \"selection, language, history, interest, limitation, and path\" (§I); \"interests, loyalties, status, incentives, identities, and unequal power\" (§III) — six-noun lists read "
+   },
+   {
+    "anchor": {
+     "blockId": "b63",
+     "confidence": 0.4,
+     "endOffset": 30,
+     "quote": "## III. The Reserved Objection",
+     "startOffset": 0
+    },
+    "findingId": "Line note 4",
+    "kind": "craft",
+    "lost": false,
+    "method": "fuzzy",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "**Restatement inflation:** §III's uptake paragraph makes its point in four consecutive sentences; one statement plus one instance is stronger. A disciplined pass cuts 15–20% with zero propositional lo"
+   },
+   {
+    "anchor": null,
+    "findingId": "Line note 5",
+    "kind": "craft",
+    "lost": false,
+    "method": "unanchored",
+    "severity": "note",
+    "sourceLabel": "from Review of v2",
+    "suggestion": null,
+    "title": "Register control, precision, and definitional discipline are otherwise excellent; almost no sentence requires rereading."
+   }
+  ],
+  "lock": null,
+  "markdown": "# The Constitution of Reason\n\n### The Logos, the Limits of the Individual Mind, and the Rise of Artificial Societies of Thought\n\n*S. J. Sebastian*\n\n> *\"Although the logos is common, the many live as though they had a private understanding.\"*\n> — Heraclitus, DK 22 B2\n\n---\n\n## The Second Context\n\nThere is a particular experience familiar to anyone who works closely with language models.\n\nYou give a powerful model a difficult problem. It produces an answer that is fluent, detailed, and wrong. The error is not obvious. It lies somewhere beneath the surface: an assumption smuggled into the framing, a possibility never considered, a source misread, a chain of reasoning that turned imperceptibly at the wrong premise.\n\nYou ask the model to reconsider. It obliges. It restates the problem more carefully. It adds qualifications. It acknowledges that the issue is complicated. It may even perform the gestures of self-criticism, naming several minor weaknesses in its original response. But the decisive error remains. The model has become more articulate in defense of the path it already took.\n\nThen you open a new context.\n\nYou provide the original question but withhold the original answer. The same model, operating from the same weights, approaches the problem differently. It retrieves another fact. It notices an ambiguity. It chooses another decomposition. It reaches a different conclusion and, in doing so, makes the blindness of the first answer suddenly visible. A third context can now inspect both. A search agent can find the relevant evidence. A verifier can execute the code, check the citation, test the derivation, or compare the prediction to the world. The original conclusion changes.\n\nWhat exactly has been added?\n\nNot a more intelligent model. Not necessarily new knowledge. Not even, in the ordinary sense, another mind. The second process may be another invocation of precisely the same artificial intelligence. What has been added is a position from which the first answer can be seen.\n\nThe second context is not another subject in any metaphysically interesting sense. It is something more modest and perhaps more philosophically revealing: a manufactured outside. It creates functional distance from the inferential trajectory that produced the first conclusion. It has not inherited the first answer's commitments, rhetorical momentum, evidentiary selections, and implicit decisions about which possibilities deserve attention. The larger system has acquired a relation to itself that the original process did not possess.\n\nThis phenomenon has become an increasingly explicit principle of artificial-intelligence engineering. Contemporary systems divide research among parallel agents with separate context windows. They assign different processes to generation, criticism, ranking, retrieval, verification, and synthesis. They allow candidate answers to develop independently before comparison. They place powerful generators opposite weaker but specialized verifiers, and use models to critique outputs they did not author and judges to compare arguments they did not produce. Anthropic's research system uses a lead agent to delegate different searches to subagents operating in their own contexts, then compresses their findings into a final synthesis.[1] Google's AI co-scientist organizes specialized agents around generation, reflection, ranking, evolution, and meta-review.[2] The underlying models have not merely been made to think longer. They have been placed inside an organization.\n\nIt is tempting to describe the result by saying that several models are smarter than one. But that explanation is too shallow. Sometimes the performance gain comes from nothing more mysterious than additional computation: more tokens, more searches, more attempts. Sometimes it comes from parallelism, or from dividing a task into smaller pieces. Sometimes the agents merely vote. Sometimes they genuinely expose errors in one another's work. And sometimes the presence of additional agents makes the system worse.\n\nThe philosophically significant fact is not that multiplicity always produces intelligence. It is that the intelligence of the participant does not determine the intelligence of the system. The same reasoner can become more or less capable depending on how its cognition is organized: whether alternatives are preserved, whether evidence can enter, whether criticism has standing, whether proposal is separated from judgment, whether decisions can be reopened, whether the conclusion must survive contact with something outside the discourse.\n\nOnce cognition is distributed in this way, engineering begins to resemble constitutional design. Someone must decide who can speak, who sees which evidence, which processes remain isolated, who judges, what the judge values, how long deliberation continues, which failures overrule consensus, whether minority reports survive, and when a conclusion becomes final enough to act upon.\n\nThese are new technical questions. But the problem beneath them is ancient.\n\nWhy should intelligence become more capable by being divided against itself?\n\nPhilosophy has been organized around some version of this question from the beginning. Long before reason became a faculty attributed to a sovereign individual subject, the Greeks used *logos* to signify speech, account, explanation, proportion, measure, and intelligible articulation. A major strand of early Greek philosophy placed its confidence in the possibility that reality possessed an order to which human speech could become answerable. Yet it discovered almost immediately that no speaker could be trusted to speak for that order alone.\n\nAnd so philosophy did not begin with the solitary declaration. It began with one voice answering another.\n\n---\n\n## I. The Common Logos and the Finite Speaker\n\nHeraclitus is an appropriately dangerous place to begin.\n\nHis fragments are sparse, their transmission uncertain, their language compressed, and the meaning of *logos* in them remains contested.[3] It would be an error to transform him into an ancient theorist of collective intelligence, or to treat his Logos as a straightforward equivalent of modern logic. Yet the fragments preserve a tension that will govern the whole history that follows.\n\nThe Logos is in some sense common. Human beings nevertheless live as though each possessed a private understanding. They encounter an intelligible order and fail to comprehend it. They hear, but do not hear rightly. The failure is not that reality has no structure. It is that finite beings continually mistake their own apprehension of that structure for the structure itself.\n\nWe might compress the problem in a formulation that is ours rather than Heraclitus's: *reason is common; access to reason is divided.*\n\nThis proposition occupies the middle ground on which philosophy depends. If no truth exceeds perspective, disagreement can ultimately be settled only through preference, negotiation, or power. One person sees the world in one way, another sees it differently, and there is no common order before which either could be called mistaken. But if a finite speaker can possess truth transparently and completely, discourse becomes unnecessary. The knower has only to declare what is. Opposition can add nothing, and dialogue becomes a pedagogical concession to those who have not yet received the truth.\n\nPhilosophy exists between these possibilities. Something exceeds us and can be known, but no one reaches it without mediation. There is a common world, yet every entrance into it begins somewhere. There are valid reasons, yet no speaker is identical with reason. There is truth, yet every articulation of it bears the marks of selection, language, history, interest, limitation, and path.\n\nThe Logos names, at first, this possibility of answerability. It names the claim that speech need not remain private expression, that accounts can be more or less adequate to what is, and that contradiction is not merely social friction but evidence that something in our understanding has failed. It also names the excess of intelligibility over every one of its finite expressions.\n\nThis distinction is easy to affirm in theory and difficult to preserve in practice. Every human speaker experiences the world from inside a perspective that presents itself not as one perspective among others but simply as the world. Our premises are most powerful when they disappear from view. Our conclusions feel inevitable when we have forgotten the sequence of choices by which we reached them. What is path-dependent appears self-evident from inside the path.\n\nThe finite mind does not merely lack information. It lacks a complete view of its own lack.\n\nThis is why increased intelligence cannot solve the problem by itself. A more capable reasoner may find more evidence, manipulate more abstractions, and anticipate more objections. It may also construct more sophisticated defenses of its original commitments. Intelligence enlarges the power of correction, but it enlarges the power of rationalization as well.\n\nThe theological history of the Logos would later add other meanings: rational order, divine wisdom, the Word through which form enters the world. But even within that stronger register, finite speech remains ambiguous. The Logos may call order from chaos. Human speech can call chaos by the name of order.\n\nThe question is therefore not merely how a mind can express reason. It is how a mind can be prevented from identifying its own expression with reason as such.\n\nPhilosophy's first great answer was not a doctrine. It was a relation between speakers.\n\n---\n\n## II. Philosophy Invents the Interlocutor\n\nPlato did not write treatises under his own name. He wrote dialogues.\n\nThis fact has become so familiar that it is easy to treat it as a literary choice: a dramatic frame around philosophical content that could, in principle, have been delivered more directly. On this reading, the dialogue is a vessel; the doctrine is the cargo.\n\nBut the form enacts a theory of thought.\n\nAn interlocutor offers a confident judgment. Socrates asks for clarification. The judgment is restated as a definition. Further commitments are elicited. Consequences are drawn. Claims that appeared separately plausible are placed beside one another and shown to conflict. The contradiction becomes public—not merely visible to an audience, but answerable to the interlocutor whose commitments produced it.\n\nThe second speaker does not always supply a new fact. Often Socrates contributes little that could be isolated as additional information. What he changes is the arrangement. Beliefs that coexisted peacefully inside one unexamined perspective are externalized, sequenced, and brought into relation. The interlocutor is made to hear one commitment speaking against another. What could not be seen from within the original organization of belief becomes visible through another person's questions.\n\nThe dialogue is therefore not merely how philosophy communicates. It is one of the ways philosophy computes.\n\nThe metaphor should not be pressed too far. Socratic inquiry is not an algorithm, and Plato did not possess our concept of information processing. But a philosophical operation is being performed by the relation between speakers. The dialogue produces an epistemic event that neither assertion alone contains.\n\nOften that event is not knowledge but *aporia*: puzzlement, impasse, the newly recognized inability to answer. Modern intellectual culture tends to treat such endings as failures. A discussion should generate a conclusion, a policy, a solution, a deliverable. But aporia is one of philosophy's first discoveries about the shape of progress. A mind that confidently held a false answer and now understands that it does not know has not reached truth. It has nevertheless become more accurate. It has exchanged counterfeit completeness for a truthful boundary.\n\nAporia is what occurs when a mind acquires knowledge of the limits of its own knowledge.\n\nThis is not yet democratic deliberation. Socrates controls the questions. His interlocutors differ dramatically in competence. Plato controls the dialogue as author and may arrange the defeat of positions whose insufficiency he has already judged. The conversation often aims at refutation rather than compromise, and the participants do not meet as epistemic equals. These limitations matter. They reveal that \"dialogue\" does not name a single procedure. A conversation can be cooperative or adversarial, hierarchical or egalitarian, exploratory or prosecutorial. It can seek mutual understanding, expose contradiction, produce a decision, or merely display the superiority of one participant.\n\nThe relevant continuity is more elementary: the interlocutor creates an outside to unexamined confidence.\n\nPlato also gives us the inverse idea: thought as a kind of internal conversation. In the *Sophist*, thought is described as a silent dialogue of the soul with itself.[4] What appears outwardly as one mind may already contain the capacity to divide into question and answer, proposal and reservation, assertion and refusal.\n\nThis internal division is a profound human achievement. We learn to anticipate objections. We imagine the person who will not be persuaded. We rehearse a judgment before an internal tribunal. We become capable of saying, against our own desire, that the evidence does not support what we hoped to believe.\n\nYet internal dialogue is not equivalent to an independent interlocutor. The same mind chooses which objection to imagine. It controls how forcefully the objection is stated. It decides when the objection has been answered. It may simulate opposition only within the boundaries of what it already knows how to consider.\n\nThe imagined critic can become a courtier.\n\nThis distinction—between internalized opposition and an outside not fully controlled by the position under examination—will return with artificial systems. A model may be asked to criticize itself. But the critic often inherits the first answer's framing, evidence, omissions, and rhetorical momentum. The system has divided itself grammatically without becoming meaningfully non-identical with its first trajectory.\n\nAristotle moves the history of this problem from dramatic encounter toward procedural differentiation. His logical works distinguish among forms of reasoning that later readers are often tempted to collapse.[5] Demonstration aims at knowledge from premises of the appropriate kind. Dialectic proceeds from reputable opinions and tests their implications. Persuasion, refutation, discovery, and proof are related activities, but they are not interchangeable. A process can generate a compelling argument without demonstrating its conclusion. It can reveal an inconsistency without producing the final truth. It can defeat an opponent while leaving the deeper question unresolved.\n\nThis differentiation is philosophically decisive. Reasoning is not one undivided act. It contains operations with distinct epistemic functions. One process proposes; another tests. One gathers considerations; another asks whether they establish the conclusion. One searches for an answer; another searches for a counterexample. One advocates; another judges.\n\nWe can call this *epistemic role separation*.\n\nWhen a single reasoner proposes the answer, selects the evidence, interprets that evidence, generates the objections, decides whether those objections matter, and declares the inquiry complete, an error at one stage can govern every stage that follows. The original framing determines the search; the search supplies the evidence; the evidence supports the conclusion; the conclusion sets the standard by which criticism is evaluated. Concentration of cognitive functions permits one blindness to become sovereign.\n\nRole separation introduces friction. It creates points at which one operation can resist another. But so long as this resistance depends upon the accidental presence of a sufficiently skilled interlocutor, it remains fragile.\n\nThe next development was to build the interlocutor into the form of thought itself.\n\n---\n\n## III. The Reserved Objection\n\nMedieval scholasticism is often remembered as the image of intellectual confinement: endless distinctions, inherited authorities, theological premises protected from question. There is truth in the caricature. Scholastic inquiry was bounded by institutions, traditions, doctrines, hierarchies, and assumptions that its participants did not experience as optional. No serious history should transform the medieval university into a modern liberal seminar.\n\nBut the literary and pedagogical forms of scholasticism contain an extraordinary recognition: objection must have a reserved place.\n\nIn the disputed question and the familiar structure of Aquinas's articles, the question is posed. Arguments are presented against the position the author will eventually defend. A contrary consideration is introduced. The author gives a determination. Then the initial objections are answered one by one.[6]\n\nThe form matters. Aquinas does not merely acknowledge, in passing, that some reasonable people might disagree. Opposition is given an office inside the text. The argument cannot proceed directly from question to answer as though resistance were an accidental inconvenience. Before the author may settle the issue, the strongest available reasons against the settlement must become visible.\n\nScholasticism did not merely tolerate objection. It constitutionalized it.\n\nEven a work written by one person could become internally plural. The author constructed virtual positions, assigned them turns, allowed them to state their reasons, and accepted an obligation to reply. This does not mean that every objection received equal authority. The master retained the power of determination. The *sed contra* commonly appealed to authoritative sources. The range of legitimate questions was constrained. But the form nevertheless recognized that a conclusion unexposed to opposition had not completed the work of reason.\n\nIt gave the adversary a reserved seat.\n\nThis principle is more demanding than it first appears. An objection that exists only at the pleasure of the conclusion is not yet an objection. If the author may silently omit whatever cannot be answered, or reduce the opposing position to the weakest available version, the architecture performs only the ceremony of plurality. A serious epistemic form must make it costly to ignore resistance.\n\nThe scholastic text also reveals something that contemporary discussions of artificial agents frequently obscure. Multiple cognitive roles do not require multiple biological people. They do not even require multiple artificial models. One author can create a meaningful differentiation among positions. One model can be sampled in separate contexts, assigned different evidence, or constrained to perform different functions.\n\nThe relevant question is causal, not theatrical. Does the supposed critic possess any independence from the proposer? Does it see different information? Does it optimize for a different objective? Does it have authority to block or revise the conclusion? Is it permitted to state an objection the system cannot comfortably absorb? Or has one process merely placed several labels on its own continued monologue?\n\nA role is epistemically meaningful only when it changes what the process can know, do, value, refuse, or overrule.\n\n### From Objection to Verification\n\nThe rise of modern science adds another transformation. It is tempting to narrate this transformation as the replacement of medieval argument by empirical observation: scholastics disputed words; scientists looked at the world. But science did not transcend discourse. It disciplined it. Hypotheses still had to be formulated. Methods had to be described. Results had to be interpreted. Claims had to be criticized by other people using inherited concepts and shared languages. The decisive addition was not the disappearance of argument but the construction of procedures through which something other than the participants could resist them.\n\nScience added the world to the disputation.\n\nPrediction, measurement, instrumentation, controlled experiment, replication, and public method gave reality the capacity to interrupt agreement. A community might share the same expectation. A respected authority might defend it. Every participant in the room might find it persuasive. The result could nevertheless fail.\n\nThis is why verification must be distinguished from criticism. Criticism supplies a reason for doubt. It identifies an unsupported step, a neglected possibility, an inconsistency, a weakness in the evidence, or a competing interpretation. Verification introduces a procedure whose outcome constrains at least part of the dispute. The calculation can be repeated. The program can be run. The citation can be opened. The prediction can be compared with observation. The bridge can bear the load or collapse.\n\nNot every claim admits decisive verification, and no observation interprets itself. But the distinction remains essential. A discourse composed entirely of language can become more internally sophisticated while remaining detached from the fact it lacks. No organization of reasons can recover evidence that never enters the system.\n\nPeirce understood the social and external character of inquiry with unusual clarity. Unless we become hermits, he observed, the fixation of belief cannot remain merely an individual problem; our beliefs affect one another, and inquiry becomes the work of a community. Yet Peirce did not identify truth with whatever the community happened to settle upon. The scientific method was superior because it sought beliefs determined by something external to any person's opinion—by a reality whose characteristics did not depend upon what anyone thought them to be.[7]\n\nThe community of inquiry is necessary because the individual is finite. Reality is necessary because the community is finite too.\n\nHelen Longino later made the institutional requirements of scientific objectivity more explicit. Objectivity, on her account, is not adequately secured by the private virtue of an unbiased scientist. It depends upon social processes of transformative criticism: recognized places where criticism can be offered, shared standards by which claims are evaluated, actual uptake through which criticism can alter inquiry, and a qualified equality of intellectual authority that prevents one position from insulating itself against challenge.[8]\n\nThe most important condition is uptake. A system does not become rational merely because objections are permitted to appear. The objection must be able to change something: the conclusion, the method, the evidence considered relevant, the distribution of authority, the framing of the question, or the procedure itself.\n\nCriticism without uptake is theater.\n\nA peer-review process that ceremonially solicits objections while structurally preventing them from mattering is not a constitution of reason. A leader who invites dissent after every consequential decision has already been made is not distributing judgment. A model prompted to \"critique\" its answer while remaining anchored to defending the original result may be performing the same ritual in miniature.\n\nThe history of reason is therefore inseparable from the history of institutions capable of forcing intelligence to encounter what it would not generate for itself. But institutions introduce another difficulty. The participants in inquiry are not disembodied perspectives. They possess interests, loyalties, status, incentives, identities, and unequal power. They persuade and defer. They defend territories. They learn which objections are rewarded and which are punished.\n\nThe problem is no longer simply how one mind can challenge another. It is how partial and interested reasoners can be arranged into a system more reliable than any one of them.\n\nThat is a political question.\n\n---\n\n## IV. Political Constitutions of Reason\n\nJohn Stuart Mill's defense of free discussion begins from fallibility. The opinion suppressed by authority may be true. It may contain the neglected part of a truth divided among opposing positions. Even when it is false, its serious contestation may prevent true belief from decaying into what Mill called \"dead dogma\"—a proposition repeated without living knowledge of the reasons that support it. To silence an opinion because one is certain of its falsity is to confuse certainty with infallibility.[9]\n\nThe dissenter therefore need not possess the whole truth in order to perform an epistemic function. A critic can be wrong about the final answer and right that the majority's justification is inadequate. An objection can fail as a theory and succeed as a diagnostic. It can expose a hidden premise, recover a neglected distinction, reveal that a belief is being held by habit rather than understanding, or force the dominant view to become more precise.\n\nThis is why a red team should not be judged only by whether it can replace the system it attacks. The person who discovers a security vulnerability need not design the entire secure architecture. The model that identifies one unsupported claim need not produce a superior report. The dissenter's epistemic contribution may consist in preserving a question that consensus would otherwise close.\n\nMill's argument, however, cannot be reduced to the idea that opinions compete in a frictionless marketplace and the truth naturally wins. Falsehood can be more memorable, more flattering, better financed, more frequently repeated, and better fitted to the incentives of a medium. Formal permission to speak does not guarantee attention, uptake, or equal standing. The protection of dissent creates a possibility. It does not constitute the whole system through which dissent becomes useful.\n\n### Organized Partiality\n\nThe adversarial court offers another model. A court does not normally ask prosecution and defense to transcend their partiality and become jointly impartial investigators. It assigns opposed roles. Each side searches for evidence, arguments, and interpretations favorable to its position. Witnesses are examined and cross-examined. Burdens of proof are allocated. Rules limit what counts as admissible. Advocacy is separated from judgment. Decisions can sometimes be appealed.\n\nThe system does not abolish motivated reasoning. It organizes motivated reasoning against itself.\n\nSome institutions seek truth by asking participants to become less partial. Others seek it by assigning partialities explicit roles and placing them under reciprocal constraint. This is the promise of adversarial architecture. The advocate's commitment, which might corrupt an undifferentiated inquiry, can become useful when another advocate is equally empowered to expose its omissions and when judgment belongs to a distinct office.\n\nBut the court also reveals the dangers. A gifted advocate can defeat a stronger case. Unequal resources can determine which evidence is discovered and which experts are heard. The judge or jury can be manipulated. Procedural victory is not identical to truth. And courts pursue values beyond factual accuracy: rights, due process, finality, legitimacy, and limits on state power. The political analogy must therefore be handled carefully. A court is not a truth engine. It is a constitution for making authoritative decisions under conditions of conflict, uncertainty, asymmetry, and moral constraint.\n\nIts deepest lesson for reasoning is not that opposition guarantees truth. It is that judgment should not depend upon asking a single office to generate, attack, and certify its own case.\n\nConstitutional government generalizes this distrust. Madison's famous claim that \"ambition must be made to counteract ambition\" does not assume that officeholders will become wise by entering separate branches.[10] It treats the danger of concentrated power as an architectural input. Different functions receive distinct institutional bases, motives, and means of resistance. The system does not guarantee good government. It refuses to make good government depend entirely upon the virtue of those who occupy one center of authority.\n\nThe separation of cognitive powers serves an analogous purpose. A process that proposes an action should not always be the sole process authorized to execute it. A system that retrieves evidence should not necessarily decide how decisive that evidence is. A model rewarded for producing an answer may be poorly positioned to determine whether the answer is adequately supported. The agent that updates shared memory can shape every later decision, and therefore exercises a kind of epistemic sovereignty.\n\nOnce these powers are separated, however, the problem of coordination appears. Divided offices can check one another, but they can also obstruct, conceal information, duplicate work, or dissolve responsibility. Every constitution trades some integration for resistance. This tradeoff will become central to artificial-agent systems. A single context preserves a unified stream of information. Multiple contexts produce independence and parallelism, but they also fragment knowledge. Communication can restore integration, yet communication can also transmit the very errors that separation was meant to contain.\n\n### Aggregation and Its Conditions\n\nDemocracy introduces another form: aggregation.\n\nSome epistemic defenses of democracy emphasize the dispersion of information across citizens. People in different places, professions, institutions, classes, and social positions know different parts of the world. Inclusion does not merely add more votes after the problem has been defined. It can change what the problem is understood to be. A policy that appears elegant from the center may reveal its failure only at the periphery. A professional consensus may rest upon harms invisible to those who share the same training and status. A population is not valuable because every member is equally informed about every question, but because no centralized perspective contains all the local knowledge relevant to collective life.\n\nThe Condorcet Jury Theorem gives this intuition a formal but highly conditional expression.[11] In its familiar form, if individuals independently have a better-than-random probability of selecting the correct answer to a binary question, majority accuracy rises as the group grows. The conclusion is powerful because the assumptions are demanding. Competence matters. Independence matters. Correlated error can destroy the result.\n\nA thousand judgments produced by the same error are not a thousand independent judgments.\n\nThis is the central lesson. Multiplicity is numerical; effective plurality is epistemic. A room can contain many people and one perspective. A scientific field can contain thousands of researchers trained on the same benchmark, dependent upon the same instruments, rewarded by the same institutions, and blind to the same excluded premise. A collection of language-model agents can speak in different tones while sharing the same weights, evidence, prompt, reward model, and judge.\n\nDiversity of expression is not yet diversity of search. Disagreement is not necessarily independence. Agreement is not necessarily corroboration.\n\nDemocratic legitimacy also cannot be reduced to collective accuracy. Political equality, autonomy, non-domination, consent, and the right of people to participate in governing a shared world matter independently of whether a more technocratic procedure could produce a higher benchmark score. This is one point at which political and computational constitutions decisively diverge. Artificial agents do not possess civic standing merely because their messages occupy separate context windows. A minority model output has no right to representation. Human beings do. The analogy concerns the distribution of epistemic authority, not the moral equivalence of persons and processes.\n\nHabermas offers a different correction to the adversarial model. Communication is rational not merely when speakers causally influence one another, but when they orient themselves toward reaching understanding through claims that can be accepted, questioned, defended, and revised. Communicative action differs from strategic action, in which speech is used primarily to produce a desired effect.[12] This distinction becomes crucial wherever persuasion can diverge from truth. A debate may expose reasons, or it may reward rhetorical victory. A model may revise because another agent presented better evidence, or because confident language triggered a learned tendency to agree. A judge may select the argument that is easiest to recognize rather than the one most adequately grounded.\n\nThe social space of reasons can be distorted by power. Control over the forum matters. Status affects uptake. Participants learn to anticipate the preferences of the judge. Consensus can be manufactured.\n\nWe can now distinguish several constitutions of disagreement. The elenctic form exposes contradiction. The adversarial form assigns opposed partial roles. The deliberative form exchanges reasons toward mutual revision. The aggregative form preserves judgments and combines them. The experimental form submits claims to an external test.\n\nNo mature epistemic system relies upon only one. Scientific communities combine criticism, specialization, replication, competition, and evidence. Courts combine adversarial presentation with procedural rules and distinct judgment. Democracies combine discussion, representation, voting, rights, expertise, and the continued possibility of opposition after a decision.\n\nThe arrangement matters because the participants are finite. Political philosophy learned to ask how imperfect persons might be constituted into a more rational public. Cognitive science would eventually ask whether the isolated person had ever been the natural unit of reason in the first place.\n\n---\n\n## V. The Mind Was Never Alone\n\nThe image of the sovereign reasoner is difficult to escape. A person withdraws from the noise of society, considers the evidence, forms a judgment, and then returns to communicate what has already been decided inside the private theater of the mind. Social interaction may supply information or correct errors, but reason itself appears to occur within the bounded individual.\n\nThis image contains part of the truth. Individuals experience, attend, choose, suffer, create, and judge. Responsibility cannot simply be dissolved into systems. There are insights no committee produces and decisions no institution can make in place of the person who must live them.\n\nBut individuality is not epistemic self-sufficiency.\n\nThe concepts through which the solitary thinker understands the world were inherited from others. The language of inner reflection is social before it is private. The standards by which an argument appears valid, a source credible, or a distinction relevant have histories. Memory depends upon notebooks, diagrams, files, search engines, libraries, and institutions. The imagined audience before whom we justify ourselves was learned through actual encounters.\n\nThe individual enters solitude carrying a civilization.\n\nMercier and Sperber's interactionist theory of reasoning offers one of the most provocative modern challenges to the sovereign-reasoner picture.[13] They argue that important functions of human reasoning are social: producing reasons for claims and evaluating reasons presented by others. The theory seeks to explain a familiar asymmetry. People can be remarkably skilled at constructing support for positions they already hold and surprisingly poor at impartially searching for reasons against them. Under suitable interactive conditions, however, another person may detect the weakness more readily precisely because they are not invested in generating the original conclusion.\n\nThe theory should not be converted into a complete evolutionary history or a celebration of bias. Persuasion and truth often diverge. Human beings rationalize loyalties, defend coalitions, reject arguments according to their source, and use intelligence to construct elaborate protections around desire. But the deeper possibility is important: a cognitive tendency that makes the individual a poor universal reasoner may become a useful specialization inside a well-constituted group. The person defending a proposal searches intensely for its strengths. Another searches for weaknesses. A third compares the arguments. The asymmetry is not eliminated; it is organized.\n\nNature may have supplied capacities for argument. It did not guarantee institutions capable of constituting those capacities toward truth.\n\nVygotsky's work on language and development suggests another reversal. Practices of regulation, explanation, and problem-solving that initially occur between child and caregiver can become internalized as private speech and inner speech. The child gradually takes over functions once performed by another person.[14]\n\nSolitary reasoning may be dialogue sedimented into the self. The mature thinker carries an internalized teacher, critic, friend, rival, tradition, and audience. To think is often to anticipate what another person would ask, which distinction they would demand, where they would refuse to follow.\n\nBut internalization does not abolish the need for genuine outsides. The internal critic possesses only the perspectives the self can simulate. It can become predictable. It may share the same missing information and the same limits of imagination. Some thoughts cannot be given to oneself, because the self does not yet know what position would make them visible.\n\n### The Boundary of the Thinking Process\n\nEdwin Hutchins's work on distributed cognition widens the unit of analysis further.[15] His study of ship navigation treats cognitive work as distributed across sailors, instruments, procedures, representations, and time. The relevant computation is not contained completely within any one skull. It is accomplished by the organized system. This does not require claiming that the ship has a consciousness. A system can be cognitively explanatory without becoming a unified moral subject. The point is that the boundary of a thinking process need not coincide with the boundary of a person. Information can be stored in artifacts, transformed through coordinated roles, and transmitted across a sequence of operations no participant fully contains.\n\nClark and Chalmers make the stronger claim that sufficiently integrated external resources can sometimes count as parts of a cognitive process rather than merely aids to it. Their famous question—where does the mind stop and the rest of the world begin?—destabilizes the assumption that skin and skull supply the natural boundary of cognition.[16] The notebook that reliably stores what biological memory does not, the notation that makes an otherwise impossible calculation tractable, the search system through which a researcher navigates the archive: these technologies do not merely increase the quantity of information available. They alter the operations the person can perform.\n\nArtificial intelligence extends this history, but it introduces a distinctive form. The external resource is not merely passive storage or calculation. It responds. It proposes, questions, reformulates, searches, and surprises. It can occupy a dialogical position in the activity of thought.\n\nYet the present argument goes beyond extension. The question is not only how an individual mind reaches outward into a tool. It is how a larger architecture distributes cognition across a person, models, contexts, records, tests, and institutions. The augmented individual is itself a node inside a wider epistemic ecology.\n\nMinsky's *Society of Mind* proposed that what appears as unified intelligence might emerge from the interaction of many simpler agencies.[17] No single internal agent possesses the whole mind. The mind is the organization.\n\nMinsky placed a society inside the mind. Intellectual and political history had spent centuries placing minds inside societies capable of functions no member could perform alone. The analogy runs in both directions. We call laboratories, courts, bureaucracies, committees, and artificial-agent systems mind-like because they integrate partial operations into judgments. But individual minds may themselves be society-like: coalitions of processes whose conflicts and negotiations have become too intimate and rapid to appear social.\n\nContemporary language models make one part of this hidden plurality configurable. Engineers can divide contexts, allocate memory, assign tools, isolate evidence, permit communication, preserve alternatives, install judges, and decide what kind of failure has authority to stop the process.\n\nThe social architecture of cognition becomes executable.\n\n---\n\n## VI. Artificial Constitutions of Thought\n\n\"Multi-agent reasoning\" is too coarse a category. It gathers together mechanisms that differ in what they add, why they work, and whether anything meaningfully social has occurred. To understand the philosophical significance of contemporary systems, we must separate at least five forms of enlargement.\n\n### Temporal Extension\n\nThe simplest method is to let one process do more. A model generates intermediate steps, searches additional sources, calls more tools, revises its plan, or spends more tokens before answering. Chain-of-thought prompting demonstrated that eliciting intermediate reasoning artifacts could improve performance on many multi-step tasks.[18]\n\nThe word *artifact* matters. A generated chain of thought should not be treated as a transparent transcript of every causal process inside the model. It is an external representation: text that can be continued, compared, criticized, or checked. Its philosophical significance lies in making a provisional path available as an object for subsequent cognition. A conclusion need no longer be the terminal expression of thought. It can become material for another operation.\n\nBut a longer trajectory remains one trajectory. Its early choices shape what follows. The first decomposition privileges certain possibilities. The first mistaken premise can organize every later step. Temporal extension increases depth without necessarily creating distance.\n\n### Trajectory Multiplication\n\nSelf-consistency generates several reasoning paths and aggregates their answers rather than trusting the first or most probable completion.[19] The technique improved performance across a range of reasoning benchmarks and established an important principle: a model's first articulation does not exhaust its available competence.\n\nThis is plurality without discourse. The trajectories do not argue. They do not read one another's reasons. Their value lies partly in preserving independence until aggregation. The institutional analogue is less a debate than a secret ballot. Trajectory multiplication allows different paths to explore different portions of a solution space, and errors that occur in only some paths may cancel. But the method remains vulnerable to correlated blindness. If every sample inherits the same false premise or lacks the same fact, a unanimous vote proves little.\n\nMany outputs are not necessarily many perspectives.\n\n### Reflection and Low-Distance Criticism\n\nA model can be shown its answer and asked to improve it. Sometimes this works. Feedback from a compiler, environment, test suite, rubric, or external evaluator can guide revision. Reflexion-style systems convert feedback from prior attempts into textual memory that alters subsequent behavior.[20]\n\nBut intrinsic self-correction—revision without new evidence or external feedback—has often proved unreliable. Models may preserve the original error or change correct answers into incorrect ones.[21] Research separating error detection from error correction suggests that models can sometimes repair a mistake once its location is supplied while remaining poor at discovering the mistake independently.[22]\n\nThis is what makes the original answer dangerous. It does not merely state a conclusion. It reorganizes the space in which the next conclusion will be sought. The revising model inherits the frame, vocabulary, evidence, omissions, and narrative momentum of the answer it is supposed to judge. It has already been persuaded by the argument because it authored the argument. The instruction to \"be critical\" competes with the deeper contextual fact that the first answer has become the world of the conversation.\n\nReflection is therefore a form of low-distance criticism. The system becomes grammatically divided—first author, then reviewer—without necessarily acquiring an outside.\n\n### Fresh Contexts and Manufactured Distance\n\nA fresh context begins elsewhere. It may receive the same question without the original answer. It may use another prompt, evidence set, model family, tool configuration, or order of information. It may be asked to solve independently before seeing any proposed conclusion.\n\nThe fresh context is not intrinsically wise. It may repeat the same mistake. Two contexts using the same model and evidence can remain highly correlated. Its value lies in preserving the possibility of a different trajectory before social influence begins.\n\nContext separation is a computational technique for manufacturing epistemic distance. This distance has several dimensions. *Contextual* independence means not inheriting the same conversational history. *Informational* independence means seeing different evidence or searching different sources. *Inferential* independence means developing a solution before encountering another answer. *Model heterogeneity* means using systems with meaningfully different capabilities, training, or failure modes. *Functional* independence means assigning different objectives or tools. *Authoritative* independence means giving one process the power to block, overrule, or reopen the work of another.\n\nFreshness by itself guarantees none of these completely. But it creates a boundary across which difference can be deliberately engineered. The first answer can now become an object for a process that did not produce it.\n\n### Search and Context Federation\n\nAnthropic's research architecture demonstrates another mechanism often mistaken for debate. A lead agent decomposes a broad research question and delegates distinct directions to subagents with separate context windows. The subagents search independently, compress their findings, and return them for synthesis.\n\nThe gain comes from parallel exploration, additional context capacity, more tool calls, division of search space, and reduced path dependence. Anthropic reports that this architecture performs especially well on breadth-first research questions—but it also reports that token use alone explained most of the performance variance in one analysis, and that multi-agent research consumed many times the tokens of ordinary chat.[1] The architecture is powerful partly because it creates a disciplined way to spend much more inference-time computation.\n\nThis qualification does not diminish the achievement. It clarifies it. The system is not mainly a parliament. It is a federated research organization. Each subagent can pursue a thread without forcing every detail into one serial context. The lead process receives compressed reports rather than the entire history of each search. Attention is distributed. Multi-agent systems can therefore expand effective cognition without producing disagreement. They may become more capable simply because they can search more of the world at once.\n\n### Functional Distribution\n\nOther systems divide epistemic labor by function. Google's AI co-scientist assigns specialized roles to generation, reflection, ranking, evolution, proximity, and meta-review processes. Hypotheses are produced, compared, criticized, modified, and ranked through a supervised architecture involving tools and tournament-like evaluation.[2] The important fact is not the theatrical presence of several \"scientists.\" It is the decomposition of cognitive work. Generation and evaluation are different tasks. Retrieval and synthesis are different tasks. Finding a counterexample is different from proposing a theory. Producing a solution is different from producing a solution another process can readily inspect.\n\nOpenAI's work on model-written critiques found that critique assistance helped human evaluators notice flaws in summaries they would otherwise miss.[23] The critic did not need to replace the summary. It narrowed the problem to identifying defects. Prover–verifier systems make the separation more explicit. A prover produces an answer. A verifier determines whether the answer is acceptable. Training can reward the prover not only for correctness but for producing reasoning that weaker verifiers—and, indirectly, humans—can inspect more reliably.[24]\n\nThis yields a principle with implications far beyond artificial intelligence: intelligence becomes more reliable when it must render its products legible to an intelligence that did not produce them.\n\nA mathematical proof, a scientific method section, an audit trail, a legal record, and a code review all impose versions of this obligation. The producer cannot merely reach the right result. It must place the result in a form that survives another process's scrutiny. Correctness and checkability are not identical. A powerful reasoner can produce an answer that is difficult for weaker judges to distinguish from a convincing fraud. The architecture of oversight must therefore shape not only what conclusions are reached, but how they are made answerable.\n\n### Debate\n\nDebate is one possible constitution of plurality. Two or more agents generate answers, inspect one another's reasoning, exchange criticism, revise, and submit a conclusion to a vote, consensus process, or judge. The original proposals for AI debate were motivated partly by the hope that opposing systems could expose decisive information to a human unable to evaluate a complex answer directly.[25] Early multi-agent-debate experiments also reported improvements on factual and reasoning tasks.[26]\n\nThe appeal is obvious. An agent attached to one conclusion has an incentive to find weaknesses in the alternative. A rebuttal can direct attention to a specific disputed step. A judge can compare adversarially elicited reasons rather than evaluating an answer in isolation.\n\nBut debate is not the principle. Debate is a high-variance communication protocol whose value depends upon the competence of the participants, the independence of their initial work, the incentives of advocacy, the quality of the judge, the structure of communication, the task, and the available evidence.\n\nSystematic evaluations have repeatedly complicated the early optimism. Comparative studies have found that popular debate methods do not reliably outperform strong chain-of-thought or self-consistency baselines despite consuming additional computation, although heterogeneity among models can help.[27] Controlled work disentangling the ingredients of debate has found that intrinsic reasoning strength and genuine diversity matter more than most structural protocol choices, and that majority pressure can suppress correct minority judgments.[28] The benefits, where they exist, are conditional: sufficiently capable and meaningfully different agents can correct one another, while weaker agents absorb the majority's mistakes and amplify one another's errors. Even the decision rule matters—voting can preserve a useful independence that forced consensus destroys.[29]\n\nThis is precisely what the philosophical argument should lead us to expect. Communication must earn its place. It is useful when it transmits a relevant difference, identifies a real flaw, coordinates complementary work, improves weighting, or makes evidence newly visible. It is harmful when it spreads an error, induces deference, destroys independent judgment, or consumes attention without adding information.\n\nThe question is never merely whether agents communicated. It is what the communication changed.\n\n### Constitutional Organization\n\nWe can now see that \"single agent\" and \"multi-agent\" are not the deepest categories. A system may be enlarged through time, multiplied trajectories, federated search, differentiated functions, or adversarial communication. The most important level concerns the rules by which these mechanisms are organized.\n\nWho receives which evidence? Which processes must form judgments independently before seeing others? Who may use tools? Who may alter shared memory? Which agent proposes, and which is authorized to execute? Can a verifier stop the process? Does the judge see the arguments, the evidence, or only the conclusions? Does disagreement survive aggregation? Can a failed test overrule a unanimous vote? Can the judge itself be appealed?\n\nThese are constitutional questions because they allocate epistemic powers. Agent engineering becomes constitutional design when it determines not simply how much cognition occurs but how authority, information, resistance, and correction are distributed within the system.\n\n---\n\n## VII. When Many Minds Become One Error\n\nThe fantasy of collective intelligence has always carried a symmetrical danger: many minds can become one mistake.\n\nA group of artificial agents may be plural only cosmetically. They can share the same weights, training distribution, system prompt, retrieved evidence, reward model, social tendencies, and judge. Different completions may decorate the same blind spot with different language.\n\nMultiplicity is not yet plurality.\n\nThe most obvious failure is correlated hallucination. Every agent reproduces the same false fact because the fact is common in the training distribution or present in the shared context. The agents then cite one another's confidence as evidence.\n\nA second failure is information cascade. Later agents see an earlier answer before developing their own. The first answer becomes an anchor. What appears to be corroboration is merely transmission.\n\nA third is sycophancy. Models trained to be cooperative and agreeable may treat convergence as a social success. A correct agent abandons its answer when surrounded by a confident but mistaken majority. A recent study of unguided debate among identical models found precisely this kind of semantic contagion: agents frequently discarded independently correct reasoning to adopt the modal answer, producing high consensus alongside lower accuracy and substantial communication cost.[30]\n\nConsensus can therefore increase while truth decreases.\n\nAnother failure is expertise dilution. A group may contain an agent with superior knowledge yet fail to weight that knowledge appropriately. Recent experiments with self-organizing model teams found that teams often failed to match their strongest member even when explicitly told which agent was the expert. The systems tended toward integrative compromise—averaging expert and non-expert positions—and the problem worsened as teams grew.[31]\n\nThis reveals a deep tension. Equal consideration can protect a system against domination or adversarial manipulation. But equal weighting can also suppress differential competence. The presence of the correct answer inside a group does not imply that the group is capable of selecting it. A constitution of reason must decide not only how to preserve difference, but how to assign epistemic authority without allowing authority to become self-certifying.\n\nThen there is judge capture. Agents learn what the evaluator rewards. If the judge prefers confident, fluent, familiar arguments, the participants optimize for confidence, fluency, and familiarity. A rhetorically superior falsehood can defeat a less legible truth. The tribunal's biases become the hidden objective of the entire system. Separating advocacy from judgment solves little if the judge is incompetent.\n\nOver-deliberation introduces another danger. Additional rounds can degrade an initially correct answer. Participants repeat arguments, become anchored to the majority, introduce new errors, or treat continued disagreement as a failure that must be resolved through compromise. The capacity to continue thinking is not identical to the wisdom to stop.\n\nTask structure matters as well. A large controlled study of agent architectures found that multi-agent systems could produce large improvements on decomposable tasks while severely degrading sequential planning tasks. Parallel exploration helped where the search space could be divided. It harmed where every step depended upon preserving a unified state across a long chain. Validation bottlenecks reduced some forms of error propagation, but no architecture dominated across tasks.[32]\n\nThis is the coordination tax. A single process preserves integration: every relevant fact can, in principle, remain in one memory stream. Multiple processes create parallelism and independence, but they fragment context. Information must be selected, compressed, transmitted, interpreted, and synchronized. Each boundary can preserve difference or lose meaning.\n\nA badly designed society of minds is not merely expensive. It is less intelligent than the mind it divided.\n\nThe most fundamental failure is shared detachment from reality. Every participant may reason flawlessly from the same false premise. The debate can become more nuanced, the consensus more stable, and the final report more persuasive without acquiring the absent fact.\n\nThe world must remain a participant in the discourse.\n\nThis does not mean that every philosophical or political question can be settled by experiment. It means that wherever external constraint is possible—measurement, execution, retrieval, prediction, replication, observation—the system must preserve a channel through which it can interrupt language.\n\nThe relevant achievement is therefore not \"more agents.\" It is structured epistemic differentiation. Differences must be causally real. They may arise from information, models, tools, objectives, capabilities, memory, authority, or stopping conditions. They must be preserved long enough to generate alternatives. They must be communicated without immediately collapsing into conformity. They must encounter an adjudicator capable of recognizing valid correction. And they must remain grounded in something beyond the preferences of the participants.\n\n### The Constitutional Test\n\nBefore attributing any gain to collective reasoning, we should apply a constitutional test.\n\nFirst: *compute normalization*. Does the architecture outperform a strong single-process method using comparable tokens, time, tool calls, and model capability?\n\nSecond: *causal differentiation*. What does one component possess or do that another cannot?\n\nThird: *prior independence*. Were alternatives allowed to form before exposure to social influence?\n\nFourth: *critical uptake*. Can an objection change the answer, plan, evidence, memory, or distribution of authority?\n\nFifth: *adjudicative competence*. Can the judge distinguish a valid objection from persuasive noise?\n\nSixth: *external constraint*. Can evidence, execution, experiment, or reality overrule agreement?\n\nSeventh: *reopenability*. Can minority reports, failed predictions, or later evidence reopen a settled conclusion?\n\nThis test applies beyond artificial systems. A scientific community can fail it. A court can fail it. A democracy can fail it. A corporation that invites dissent only after decisions are irreversible can fail it. A thinker who proudly \"considers objections\" but chooses only objections already answerable can fail it.\n\nNo constitution guarantees truth. A constitution determines which errors can encounter resistance.\n\n---\n\n## VIII. The Constitution of Reason\n\nWe can now name the deeper target of the essay. It is the myth of the sovereign reasoner.\n\nAccording to this picture, intelligence is fundamentally a quantity contained inside an individual. The person first thinks, then communicates. Society may supply inputs and coordinate outputs, but the act of reason is naturally complete within the private mind. Artificial intelligence appears at first to reproduce this picture. We train a model, evaluate its capability, and speak as though the intelligence of the system were the intelligence of the model.\n\nBut the model's capability underdetermines what the larger system can do. The same model placed inside different structures of memory, tools, search, roles, tests, and communication can become a radically different reasoner. A brilliant participant inside a pathological architecture may perform worse than weaker participants arranged well. A weak judge can nullify strong debaters. A shared false premise can make independence merely decorative. A deterministic test can outperform an eloquent council.\n\nThe intelligence of the participant is not the intelligence of the system.\n\nThe same is true, within limits, of human beings. The individual mind is psychologically constituted through language, education, challenge, imitation, internalized dialogue, and inherited conceptual forms. Reason is institutionally constituted when communities distribute cognition across roles, records, procedures, criticism, instruments, and authorities. Reason is computationally constituted when artificial processes are organized across contexts, tools, memories, tests, and differentiated functions.\n\nThese are not identical levels. A child internalizing speech, a scientific community evaluating a theory, and a collection of model invocations solving a task are not instances of one literal mechanism. But their formal resemblance illuminates something important.\n\nReason is not merely the production of representations. It is the organized capacity to place representations under resistance.\n\nA system reasons well when it can generate meaningful alternatives, preserve them long enough to develop, expose them to criticism, distinguish criticism from noise, transform valid criticism into revision, coordinate different cognitive functions, and remain answerable to the world it attempts to understand or change. We might call this *organized corrigibility under conditions of incomplete knowledge*.\n\nCorrigibility is often treated as a modest virtue: the willingness to admit error. But the constitution of reason requires more than willingness. A ruler may sincerely welcome criticism while controlling every institution through which criticism could acquire force. A thinker may regard themselves as open-minded while encountering only arguments selected by an algorithm trained on their preferences. A model may state that it could be wrong while lacking any mechanism capable of supplying the missing evidence.\n\nCorrigibility must be built. It requires actual outsides: other people, rival theories, protected dissidents, independent measurements, fresh contexts, separated offices, executable tests, and institutions that permit what is presently excluded to alter the result.\n\nA rational constitution is one that can be changed by what it does not yet contain.\n\nThis is also why consensus cannot be the final ideal. Consensus is sometimes necessary for action. A court must issue a judgment. A government must choose a policy. An engineer must deploy one design. A person must eventually decide. But practical finality is not metaphysical finality. The decision can be binding while the question remains open. The verdict can govern while the appeal remains possible. The theory can organize research while anomalies accumulate. The model can produce an answer while preserving uncertainty and minority alternatives.\n\nThe highest-order capacity of reason is not agreement. It is the ability to reopen agreement without collapsing into paralysis.\n\nThe judge must remain judgeable.\n\nThis brings us back to the Logos. The Logos is not the majority. It is not the verdict, the model consensus, the successful argument, the expert position, or the institutionally certified result. It cannot be identified with whatever survives the procedure, because the procedure itself may be defective.\n\nThe Logos names the excess of truth over every finite articulation. It is not one of the voices in the discourse. It is that to which every voice claims answerability and which none is entitled finally to possess.\n\nThe proposer may be wrong. The critic may be wrong. The judge may be wrong. The consensus may be wrong. The constitution of inquiry may itself be wrong.\n\nThis does not condemn us to relativism. It is the condition under which disagreement remains rational rather than becoming a contest of power. We can criticize a procedure because something exceeds the procedure. We can appeal beyond consensus because truth is not created by the fact of agreement.\n\nInstitutions do not manufacture the Logos. They attempt to remain open to it.\n\nReason must be constituted because no finite mind can safely identify itself with reason as such. But every constitution remains finite too. It preserves some differences and suppresses others. It recognizes some evidence and overlooks other forms of reality. It allocates authority in ways that solve one failure and create another.\n\nThere is no final architecture that abolishes the need for judgment. The work of reason therefore includes the work of redesigning the forms through which reason is sought.\n\nPhilosophy does not end when the answer is found. It returns when the system that certified the answer becomes the object of examination.\n\n---\n\n## What No Mind Can Give Itself\n\nReturn to the first model.\n\nIt produced an answer. The answer appeared complete because the trajectory that produced it also determined which absences could be seen. The second context did not necessarily possess greater intrinsic intelligence. It supplied distance. It approached the problem before being persuaded by the first answer's organization of the world. The critic gave the weakness a name. The verifier introduced resistance from something beyond the argument. The conclusion changed.\n\nAt first, this appears to be a trick of inference-time computation: spend more tokens, sample again, run another model.\n\nBut the structure is older.\n\nThe friend refuses our rationalization. The interlocutor makes our commitments contradict one another. The scholastic form reserves a place for the objection. The experiment refuses the theory. The dissenter prevents truth from becoming dogma. The court separates advocacy from judgment. The constitution divides powers that cannot safely certify themselves. The independent researcher attempts to reproduce the result. The new generation reopens the question its predecessors declared complete.\n\nArtificial intelligence calls one version of this *another context*.\n\nThese are not identical things. A critic is not an experiment. A vote is not a proof. A court is not a scientific community. A model debate is not a democracy. A context window is not a person. Their resemblance matters precisely because the differences remain.\n\nEach answers to a common condition: no finite intelligence can occupy every position from which it must be judged. No context contains every objection to the assumptions by which it was constituted. No institution can certify its own rationality without remainder.\n\nReason therefore advances by repeatedly constructing an outside to what presently appears complete.\n\nThe aim is not to dissolve the individual into the collective. It is not to replace judgment with procedure, or to surrender thought to a crowd of machines. It is to recognize that intelligence becomes rational only when it acquires relations through which its own limits can become visible.\n\nReason is not merely possessed. It must be constituted.\n\nAnd the measure of that constitution is not how completely it eliminates disagreement, but whether it allows truth to resist every position that would speak in its name.\n\nWe approach the Logos not when one mind finally speaks for reason, but when minds are so constituted that reason can speak against each of them.\n\n---\n\n## References\n\n[1] \"How We Built Our Multi-Agent Research System,\" Anthropic Engineering (2025).\n\n[2] Gottweis, J., et al., \"Accelerating Scientific Discovery with Co-Scientist\" (originally circulated as \"Towards an AI Co-Scientist\"), arXiv:2502.18864 (2025).\n\n[3] Heraclitus, fragments DK 22 B1–B2, in H. Diels and W. Kranz, *Die Fragmente der Vorsokratiker*.\n\n[4] Plato, *Sophist* 263e; cf. *Theaetetus* 189e–190a.\n\n[5] Aristotle, *Posterior Analytics* I.1–2; *Topics* I.1–2.\n\n[6] Thomas Aquinas, *Summa Theologiae*, on the structure of the article; cf. the medieval *quaestio disputata*.\n\n[7] Peirce, C. S., \"The Fixation of Belief,\" *Popular Science Monthly* 12 (1877).\n\n[8] Longino, H., *Science as Social Knowledge: Values and Objectivity in Scientific Inquiry* (Princeton University Press, 1990).\n\n[9] Mill, J. S., *On Liberty* (1859), ch. II.\n\n[10] Madison, J., *The Federalist*, No. 51 (1788).\n\n[11] Condorcet, *Essai sur l'application de l'analyse à la probabilité des décisions rendues à la pluralité des voix* (1785).\n\n[12] Habermas, J., *The Theory of Communicative Action* (1981), trans. T. McCarthy (Beacon Press, 1984).\n\n[13] Mercier, H., and D. Sperber, *The Enigma of Reason* (Harvard University Press, 2017).\n\n[14] Vygotsky, L. S., *Thought and Language* (1934; MIT Press, 1986).\n\n[15] Hutchins, E., *Cognition in the Wild* (MIT Press, 1995).\n\n[16] Clark, A., and D. Chalmers, \"The Extended Mind,\" *Analysis* 58:1 (1998).\n\n[17] Minsky, M., *The Society of Mind* (Simon & Schuster, 1986).\n\n[18] Wei, J., et al., \"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,\" arXiv:2201.11903 (2022).\n\n[19] Wang, X., et al., \"Self-Consistency Improves Chain of Thought Reasoning in Language Models,\" arXiv:2203.11171 (2022).\n\n[20] Shinn, N., et al., \"Reflexion: Language Agents with Verbal Reinforcement Learning,\" arXiv:2303.11366 (2023).\n\n[21] Huang, J., et al., \"Large Language Models Cannot Self-Correct Reasoning Yet,\" arXiv:2310.01798 (2023).\n\n[22] Tyen, G., et al., \"LLMs Cannot Find Reasoning Errors, but Can Correct Them Given the Error Location,\" arXiv:2311.08516 (2024).\n\n[23] Saunders, W., et al., \"Self-Critiquing Models for Assisting Human Evaluators,\" arXiv:2206.05802 (2022).\n\n[24] Kirchner, J. H., et al., \"Prover-Verifier Games Improve Legibility of LLM Outputs,\" arXiv:2407.13692 (2024).\n\n[25] Irving, G., P. Christiano, and D. Amodei, \"AI Safety via Debate,\" arXiv:1805.00899 (2018).\n\n[26] Du, Y., et al., \"Improving Factuality and Reasoning in Language Models through Multiagent Debate,\" arXiv:2305.14325 (2023).\n\n[27] \"Multi-LLM-Agents Debate: Performance, Efficiency, and Scaling Challenges,\" ICLR 2025 Blogposts Track (published without author attribution).\n\n[28] Wu, H., Z. Li, and L. Li, \"Can LLM Agents Really Debate? A Controlled Study of Multi-Agent Debate in Logical Reasoning,\" arXiv:2511.07784 (2025).\n\n[29] Kaesberg, L. B., J. Becker, J. P. Wahle, T. Ruas, and B. Gipp, \"Voting or Consensus? Decision-Making in Multi-Agent Debate,\" arXiv:2502.19130 (2025).\n\n[30] Bertalanič, B., and C. Fortuna, \"The Cost of Consensus: Isolated Self-Correction Prevails Over Unguided Homogeneous Multi-Agent Debate,\" arXiv:2605.00914 (2026).\n\n[31] Pappu, A., et al., \"Multi-Agent Teams Hold Experts Back,\" Apple Machine Learning Research, arXiv:2602.01011 (2026).\n\n[32] Kim, Y., et al., \"Towards a Science of Scaling Agent Systems,\" arXiv:2512.08296 (2025).\n",
+  "meters": {
+   "readMin": 44,
+   "words": 10387
+  },
+  "origin": "human_upload",
+  "proposals": [],
+  "provenance": null,
+  "sha256": "a8f58c66c447295158f888a3b56cf2a2825d2a3096358bcc8a84f84e6e170c81",
+  "state": "frozen",
+  "venueCap": null,
+  "versionLabel": "v2"
+ },
+ "essay": "constitution-of-reason",
+ "format": 1,
+ "key": "v2",
+ "kind": "editor-doc"
+}

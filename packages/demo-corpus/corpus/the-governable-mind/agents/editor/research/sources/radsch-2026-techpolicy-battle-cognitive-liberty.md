@@ -1,0 +1,6 @@
+# radsch-2026-techpolicy-battle-cognitive-liberty
+- **URL:** https://www.techpolicy.press/the-battle-for-cognitive-liberty-in-the-age-of-corporate-ai/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical
+- **What it establishes:** Courtney C. Radsch, Tech Policy Press, Jan. 6, 2026. Corporate AI as "cognitive capture" rooted in market concentration and surveillance business models; notes OpenAI's ambition of an assistant that records "every conversation you've ever had in your life"; warns of "convergence of corporate extraction and state surveillance"; "opting out becomes functionally impossible"; remedies: enforceable anti-manipulation rights, fiduciary duties, structural separation, public foundation models, data minimization.
+- **Key passages:** "integration becomes inevitability when alternatives disappear." · "convergence of corporate extraction and state surveillance."
+- **Reliability:** Secondary/opinion; author is a policy advocate (CJL/Open Markets).
+- **Relevance to this project:** Agenda 4 and §V: the nearest 2026 statement of the exit problem from the corporate side; her remedy is public models, i.e., the republican reply the draft credits to OpenAI at l.122.

@@ -1,0 +1,13 @@
+# deazley-2008-humble-remonstrance-commentary
+- **URL:** https://www.copyrighthistory.org/cam/tools/request/showRecord.php?id=commentary_uk_1643 · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C55
+- **What it establishes:** Ronan Deazley (School of Law, University of Birmingham), "Commentary on the Humble Remonstrance of the Company of Stationers 1643," in *Primary Sources on Copyright (1450-1900)*, eds L. Bently and M. Kretschmer (2008). Establishes that the Stationers' Company petitioned Parliament in April 1643 (*The Humble Remonstrance of the Company of Stationers to the High Court of Parliament*) for renewed regulation of the press, and that the June 1643 Ordinance followed, with licensing, registration with the Company, and search-and-seize powers.
+- **Key passages:**
+  - Abstract: "A petition from the Company of Stationers to Parliament to introduce some form of legislative regulation of the press."
+  - "The response of the master stationers took the form of a pamphlet, of April 1643, petitioning Parliament to reintroduce some order into the trade: The Humble Remonstrance of the Company of Stationers."
+  - Quoting the Remonstrance: "'[I]n matters of the Presses', they continued, 'no man can so effectually prosecute, as Stationers themselves'."
+  - "'tis not possible', they continued, 'that the State should any way haue the steering of the Presse, when Stationers cannot assist them therein'."
+  - "it seems likely that the stationers' arguments as to the role which they could play in the 'suppressing of things harmfull' to the state proved most influential"
+  - "The Ordinance set out that no declaration or oath of Parliament was to be printed without the authority of one or other of the Houses, and no other book, pamphlet or paper was to be printed, published or sold, without both being approved by an appointed licensor, and registered with the Stationers' Company."
+  - "The search and seize provisions were renewed, but also now extended beyond the Master and Wardens of the Company, to include the Usher of the House of Lords, the Sergeant of the House of Commons"
+- **Reliability:** Secondary, scholarly (legal historian; peer-edited digital archive). Note Deazley's causal claim is hedged ("seems likely"). The petition's authorship is sometimes attributed to Henry Parker (not verified here).
+- **Relevance to this project:** C55 — the petition, its date, and the Company's enforcement role.

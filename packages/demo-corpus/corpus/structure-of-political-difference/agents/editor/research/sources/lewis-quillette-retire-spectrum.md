@@ -1,0 +1,7 @@
+# lewis-quillette-retire-spectrum
+
+- **URL:** https://quillette.com/2017/05/03/time-retire-political-spectrum/ · **Accessed:** 2026-07-30 · **For:** v1 review Phase 2
+- **What it establishes:** Hyrum Lewis's essay-length version of the Myth thesis. The spectrum creates confusion ("fascist Adolf Hitler and libertarian Milton Friedman are on the 'far right'"), hostility ("people identify with an ideological tribe *first* and only adopt and justify the views of that tribe afterward" — "ideologism"), and dogmatism. His remedy is eliminativist: "address specific problems and debate a wide range of approaches to those problems without encumbering them with ideological labels." He does not seriously engage multidimensional alternatives; he dismisses spectrum modifications (e.g., circular models) as equally meaningless.
+- **Key passages:** "liberals believe in free speech and conservatives believe in free markets, yet moving to the 'extreme left' means clamping down on free speech...and moving to the 'extreme right' means clamping down on free markets."
+- **Reliability:** Primary (the author's own argument).
+- **Relevance to this project:** Establishes that the draft's motivating observations (incoherent bundling, tribal inference) were published in nearly identical form in 2017. The draft's differentiator is constructive: where Lewis says "abolish labels," the draft says "decompress them." That contrast is a gift to the draft — if it cites Lewis and positions itself as the constructive alternative to eliminativism.

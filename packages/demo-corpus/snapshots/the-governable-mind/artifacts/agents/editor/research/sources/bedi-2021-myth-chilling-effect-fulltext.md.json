@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bedi-2021-myth-chilling-effect-fulltext.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9c131ce8d31f44da",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/bedi-2021-myth-chilling-effect-fulltext.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# bedi-2021-myth-chilling-effect-fulltext\n- **URL:** https://jolt.law.harvard.edu/assets/articlePDFs/v35/Bedi-The-Myth-of-the-Chilling-Effect.pdf (PDF downloaded and text-extracted; read in full for design and conclusions) · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 (agenda 4)\n- **What it establishes:** Suneal Bedi, \"The Myth of the Chilling Effect,\" 35 Harv. J.L. & Tech. 267 (2021). Experimental study of a private social-media speech restriction (online restaurant reviews), varying how broad the restriction is, with LIWC text analysis and third-party raters. Conclusion: \"in the context of social media, the chilling effect has little to no impact on the content of the message; at most, it slightly alters the specific style or tone used in speech. The study showed that speech did change in the face of social media censorship - it become more positive and civil. However, the overall communicative effect of the speech did not change - the reviews were just as negative as reviews with no censorship.\" Frames the doctrine as resting, in Schauer's words, on \"unpersuasive empirical guesswork.\" The object is public posting under a content rule (a speech restriction), not private inquiry under observation; the article does not study search, reading, or questioning behaviour.\n- **Key passages:** as quoted; Part IV argues chilling may \"promote speech rather than frustrate it\" by producing \"more civil speech.\"\n- **Reliability:** Primary scholarly; single experiment; independent.\n- **Relevance to this project:** Agenda 4 (l.86). Bedi cuts against the general chilling thesis but not against l.86's mechanism: his manipulation is a rule about what may be posted, and his outcome is the content of posts; the essay's mechanism is uncertainty about who may later read what one asked, and its outcome is what one asks. Penney 2022's conformity model (already cited) is the better-matched account, and Bedi's \"more civil\" finding is, for a medium of private inquiry, itself the injury (the draft's \"ask them less honestly,\" l.90).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 299
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c7b48f24ef269cdb1f0d213db983afa43d27c484b93d3e3b9dbae08e34872915",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/bedi-2021-myth-chilling-effect-fulltext.md",
+ "kind": "artifact-page"
+}

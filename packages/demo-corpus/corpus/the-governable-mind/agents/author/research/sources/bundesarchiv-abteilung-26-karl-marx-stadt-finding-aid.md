@@ -1,0 +1,6 @@
+# bundesarchiv-abteilung-26-karl-marx-stadt-finding-aid
+- **URL:** https://www.bundesarchiv.de/bestandsuebersichten/bestaende-und-teilbestaende-des-stasi-unterlagen-archivs/19215-abteilung-26-telefonueberwachung-1/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claims C36
+- **What it establishes:** Bundesarchiv finding aid (Bestandsübersicht) for Abteilung 26 (Telefonüberwachung) of the Karl-Marx-Stadt district administration, 1950–1990: lists telephone/telex surveillance, room surveillance and technical observation with microphones and cameras, and central computing/control systems.
+- **Key passages:** "Überwachung des Telefon- und Fernschreibverkehrs" [surveillance of telephone and telex traffic]; "Raumüberwachungen und technische Beobachtungen mit Mikrofonen und Kameras" [room surveillance and technical observation with microphones and cameras]; "Einsatz von Zentraler Rechentechnik, Umrüstung des Zentralen Kontrollsystems" [deployment of central computing technology, conversion of the central control system].
+- **Reliability:** Primary/official archival description (German).
+- **Relevance to this project:** C36: documents telephone, telex, room and technical surveillance in the archive's own words.

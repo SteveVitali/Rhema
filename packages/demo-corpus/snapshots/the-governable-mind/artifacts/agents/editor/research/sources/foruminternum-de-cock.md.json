@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/foruminternum-de-cock.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "9dac8ba0dfd77824",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/foruminternum-de-cock.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# foruminternum-de-cock\n- **URL:** https://foruminternum.org/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Caroline De Cock's project (2025–26): proposes a 'forum interstitiale' between forum internum and externum where AI presses via manipulation and moderation; links Teo 2024 and McCord et al. 2025.\n- **Key passages:** the \"forum interstitiale\" — \"the anteroom where thoughts develop before expression\"\n- **Reliability:** Secondary/advocacy-research site; independent individual.\n- **Relevance to this project:** Report §1.9, §2: competing coinage for the draft's object (l.82).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 76
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "7483236a47208bd9b9d18a8cb71c9112fd02df08beda481c54b6aff0b34eeaba",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/foruminternum-de-cock.md",
+ "kind": "artifact-page"
+}

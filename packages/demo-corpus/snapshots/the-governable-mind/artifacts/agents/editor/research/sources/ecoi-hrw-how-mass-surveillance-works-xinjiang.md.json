@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/ecoi-hrw-how-mass-surveillance-works-xinjiang.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "727d533b7da6b68a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/ecoi-hrw-how-mass-surveillance-works-xinjiang.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# ecoi-hrw-how-mass-surveillance-works-xinjiang\n- **URL:** https://www.ecoi.net/en/document/2007755.html · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Mirror of HRW's release 'China: How Mass Surveillance Works in Xinjiang'. Supports C57: 'stopped using smart phones'; 'socialize with neighbors'; 36 types; lists for detention. Gives the English hrw.org URL as /video-photos/interactive/2019/05/02/…, not the /news/2019/05/01/ URL in ref [37].\n- **Key passages:** 'the police platform targets 36 types of people for data collection. Those include people who have stopped using smart phones, those who fail to \"socialize with neighbors\"'\n- **Reliability:** Primary text via mirror.\n- **Relevance to this project:** C57; ref [37]\n",
+  "meters": {
+   "readMin": 1,
+   "words": 95
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "26b5585c329d729a19c63dd98373bc43c5d811d2fbc3494b61467253af2fd99a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/ecoi-hrw-how-mass-surveillance-works-xinjiang.md",
+ "kind": "artifact-page"
+}

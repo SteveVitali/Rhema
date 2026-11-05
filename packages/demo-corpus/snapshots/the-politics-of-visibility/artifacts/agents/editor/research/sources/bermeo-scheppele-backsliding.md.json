@@ -1,0 +1,39 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/bermeo-scheppele-backsliding.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "95b1bee4ec4f8170",
+    "ordinal": 1
+   },
+   "b2": {
+    "contentHash": "293fd64cb6270af7",
+    "ordinal": 2
+   },
+   "b3": {
+    "contentHash": "8ffaadb2043da3b8",
+    "ordinal": 3
+   }
+  },
+  "draftId": "agents/editor/research/sources/bermeo-scheppele-backsliding.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Bermeo (2016) + Scheppele (2018) — quotations\n\n- Bermeo: https://www.journalofdemocracy.org/articles/on-democratic-backsliding/ ; definition verbatim via https://www.cambridge.org/core/journals/ps-political-science-and-politics/article/measuring-democratic-backsliding/9EE2044CDA598BD815349912E61189D8 (Bermeo 2016, 5); aggrandizement via https://www.v-dem.net/media/publications/UWP_54.pdf (2016, 10)\n- Scheppele: https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf (PDF text-extracted)\n- Accessed 2026-08-21 (Phase 1).\n\nEstablishes: all three Bermeo quotes in the draft verbatim (note: the JoD landing page\nabridges the definition; the draft matches the article text). Scheppele: autocratic-\nlegalism definition, \"not with bullets but with laws,\" and the full \"shell of the prior\nliberal state... hollow out its moral core\" sentence, all verbatim; Hungary archetypal,\nTurkey/Venezuela principal cases.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 85
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "80f3dcddb70cd0b663515059d2e02f6bb91a3410d1060f58a63b6942b8ac6385",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/editor/research/sources/bermeo-scheppele-backsliding.md",
+ "kind": "artifact-page"
+}

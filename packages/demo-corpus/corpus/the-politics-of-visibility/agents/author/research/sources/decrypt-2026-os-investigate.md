@@ -1,0 +1,7 @@
+# decrypt-2026-os-investigate
+
+- **URL:** https://decrypt.co/375978/flock-ai-police-tool-track-drivers · **Accessed:** 2026-08-20 · **For:** v1 drafting, claims C5–C13
+- **What it establishes:** Second independent account of the WIRED OS Investigate report (Decrypt: Jose Antonio Lanz, Aug 20, 2026). WIRED extracted system code from files served by Flock's own login pages; Flock did not dispute the reporting's accuracy. Data sources: license plate reader data, police/arrest records, commercial databases "including Social Security numbers and family connections," plus agency-held records. The system ships with 69 prewritten prompts, including vehicles most frequently seen in a neighborhood over two weeks, people arrested multiple times in a timeframe, vehicles visiting multiple retail locations within days, and "associates" inferred from vehicle co-location patterns; 14 prompts require only location, time, and behavioral pattern — no plate, name, or description.
+- **Key passages:** Flock spokesperson Paris Lewbel: OS Investigate is a separate product "to help investigators work across records their agencies already hold," with capabilities potentially changing before wider release.
+- **Reliability:** Secondary (coverage of WIRED). Consistent with Gizmodo's account and multiple other outlets (Cybernews, TechTimes, TheNextWeb headlines seen in search).
+- **Relevance to this project:** C6 (behavioral/associational queries, recurring-visitor prompts, no-plate pattern searches — the exact interface features the essay characterizes).

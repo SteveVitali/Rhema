@@ -1,0 +1,11 @@
+# pymnts-stop-rogue-ai-act-2026-09-10
+- **URL:** https://www.pymnts.com/news/artificial-intelligence/2026/congress-pushes-ai-agents-into-the-audit-trail/ · **Accessed:** 2026-09-16 (direct curl, 200; full text present in HTML behind the sign-up overlay) · **For:** v2→v3 response round, slice N (item N7)
+- **What it establishes:** PYMNTS (dated September 10, 2026) reports that Reps. Josh Gottheimer (D-N.J.) and Mike Lawler (R-N.Y.) are introducing the Stop Rogue AI Act "Thursday (Sept. 10)" — NOT Sept. 3. The bill directs NIST to write agent-security standards within a year, including tamper-resistant logs. Nothing in the article ties logs to human operators or users; the record objects named are agents, permissions, tools and actions.
+- **Key passages:**
+  - "U.S. representatives are introducing the Stop Rogue AI Act in the U.S. House of Representatives Thursday (Sept. 10)"
+  - "Under the bill, NIST would have one year after enactment to develop standards, guidelines and best practices for AI agent security. The framework would address continuous verification of agent actions, security and reliability evaluations and tamper-resistant logs of agent activity. It also would encourage organizations to maintain continuously updated, machine-readable inventories of the AI agents operating across their systems."
+  - "A company could need to establish which agents are operating, what permissions they have, which tools they can use and what actions they have taken."
+  - "Open Data Science reported that the proposed standards could extend beyond conventional model monitoring. Organizations may need records covering tool calls, permissions, agent identities, interactions with other systems and communications among multiple agents."
+  - "It doesn't create a new private-sector mandate or a new enforcement agency, according to Forkast."
+- **Reliability:** Secondary trade press, itself relaying Open Data Science and Forkast; bill text NOT read. Treat the description of the bill as unverified against the primary.
+- **Relevance to this project:** Supports "action logs are what legislators are reaching for"; silent on human attribution (as reported). Correct the date to Sept. 10, 2026 if the essay or response letter uses Sept. 3.

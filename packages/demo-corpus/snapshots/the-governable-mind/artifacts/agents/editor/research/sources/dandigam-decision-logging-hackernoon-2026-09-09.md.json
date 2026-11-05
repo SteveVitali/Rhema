@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "95dee0369c942155",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# dandigam-decision-logging-hackernoon-2026-09-09\n- **URL:** https://hackernoon.com/decision-logging-the-observability-pattern-that-actually-helps-ai-agents · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** Raju Dandigam (Navan), HackerNoon, Sept 9, 2026: 'decision logging' as structured record of consequential choices; do not log raw prompts, completions, private chat history, or model reasoning by default.\n- **Key passages:** 'a structured record of consequential choices: which policy rule fired, which tool was proposed, why the runtime retried or refused' · 'Do not ask a model to dump its private reasoning into logs and treat that text as ground truth.' · 'Do not record raw prompts, full completions, email addresses, access tokens, payment details, or private chat history by default.'\n- **Reliability:** Secondary; practitioner essay.\n- **Relevance to this project:** Q3/Q7: the closest published statement of the draft's discipline, for engineering reasons.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 127
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "8fc64b66ef739d1decbb89258a747a329447f423bd4126d24e8a624cf62e14aa",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/dandigam-decision-logging-hackernoon-2026-09-09.md",
+ "kind": "artifact-page"
+}

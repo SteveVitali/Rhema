@@ -1,0 +1,1012 @@
+{
+ "dto": {
+  "baseDraftId": "v4",
+  "baseDraftN": 4,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6cb5e2e43cca79bf",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "0b0e056b327a2a3e",
+    "ordinal": 10
+   },
+   "b100": {
+    "contentHash": "3f56b869f7459d94",
+    "ordinal": 100
+   },
+   "b101": {
+    "contentHash": "480ac9cc9714a79d",
+    "ordinal": 101
+   },
+   "b102": {
+    "contentHash": "cea6241922748ee0",
+    "ordinal": 102
+   },
+   "b103": {
+    "contentHash": "9a14d895e42bc497",
+    "ordinal": 103
+   },
+   "b104": {
+    "contentHash": "dde5dab34ce070a1",
+    "ordinal": 104
+   },
+   "b105": {
+    "contentHash": "84f261aa41dd2e18",
+    "ordinal": 105
+   },
+   "b106": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 106
+   },
+   "b107": {
+    "contentHash": "c3e042bd2f52acd0",
+    "ordinal": 107
+   },
+   "b108": {
+    "contentHash": "85bef1c9e2a3c7d0",
+    "ordinal": 108
+   },
+   "b109": {
+    "contentHash": "7bb9c5c4354696d3",
+    "ordinal": 109
+   },
+   "b11": {
+    "contentHash": "a05f6dd5e76a8097",
+    "ordinal": 11
+   },
+   "b110": {
+    "contentHash": "b7ef1cdd02fecfcb",
+    "ordinal": 110
+   },
+   "b111": {
+    "contentHash": "59e3e6c9486711fd",
+    "ordinal": 111
+   },
+   "b112": {
+    "contentHash": "b77c2b184c996d4f",
+    "ordinal": 112
+   },
+   "b113": {
+    "contentHash": "885ac3a3b8426c58",
+    "ordinal": 113
+   },
+   "b114": {
+    "contentHash": "dc22400ed15d643c",
+    "ordinal": 114
+   },
+   "b115": {
+    "contentHash": "67d78746704839e0",
+    "ordinal": 115
+   },
+   "b116": {
+    "contentHash": "ff9ff82cdde4dbb5",
+    "ordinal": 116
+   },
+   "b117": {
+    "contentHash": "7a2427f714dfec1f",
+    "ordinal": 117
+   },
+   "b118": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 118
+   },
+   "b119": {
+    "contentHash": "f8db333c439d5a53",
+    "ordinal": 119
+   },
+   "b12": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 12
+   },
+   "b120": {
+    "contentHash": "c277b4110d2695c3",
+    "ordinal": 120
+   },
+   "b121": {
+    "contentHash": "030ea5b18abf7325",
+    "ordinal": 121
+   },
+   "b122": {
+    "contentHash": "b6370aed80273968",
+    "ordinal": 122
+   },
+   "b123": {
+    "contentHash": "ec2e17da936acfe0",
+    "ordinal": 123
+   },
+   "b124": {
+    "contentHash": "19e3546e06969aee",
+    "ordinal": 124
+   },
+   "b125": {
+    "contentHash": "a9752c7a7d8fe646",
+    "ordinal": 125
+   },
+   "b126": {
+    "contentHash": "98cf1d065072d649",
+    "ordinal": 126
+   },
+   "b127": {
+    "contentHash": "ffe4f9aeee0028c3",
+    "ordinal": 127
+   },
+   "b128": {
+    "contentHash": "71bc5b17f495e179",
+    "ordinal": 128
+   },
+   "b129": {
+    "contentHash": "f80be2e3135f7877",
+    "ordinal": 129
+   },
+   "b13": {
+    "contentHash": "283fd9f63e3cdf9b",
+    "ordinal": 13
+   },
+   "b130": {
+    "contentHash": "589e4fd64e7cf5a6",
+    "ordinal": 130
+   },
+   "b131": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 131
+   },
+   "b132": {
+    "contentHash": "16029cc9499ac0c4",
+    "ordinal": 132
+   },
+   "b133": {
+    "contentHash": "bea0f54cd9c50483",
+    "ordinal": 133
+   },
+   "b134": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 134
+   },
+   "b135": {
+    "contentHash": "17a791ba19eb0c05",
+    "ordinal": 135
+   },
+   "b136": {
+    "contentHash": "60d0592f892c5814",
+    "ordinal": 136
+   },
+   "b137": {
+    "contentHash": "cdfb9d4e70f77a14",
+    "ordinal": 137
+   },
+   "b138": {
+    "contentHash": "715eb1f820fb2e97",
+    "ordinal": 138
+   },
+   "b139": {
+    "contentHash": "c3f67236a2795163",
+    "ordinal": 139
+   },
+   "b14": {
+    "contentHash": "babc9cab9de0ec9c",
+    "ordinal": 14
+   },
+   "b140": {
+    "contentHash": "4ce14e081cae4344",
+    "ordinal": 140
+   },
+   "b141": {
+    "contentHash": "c67aa8be0f4284ca",
+    "ordinal": 141
+   },
+   "b142": {
+    "contentHash": "5c5d8ee84462b9f6",
+    "ordinal": 142
+   },
+   "b143": {
+    "contentHash": "69ee97819be8e47c",
+    "ordinal": 143
+   },
+   "b144": {
+    "contentHash": "dc810b7d7aadf746",
+    "ordinal": 144
+   },
+   "b145": {
+    "contentHash": "d77b41887c937edb",
+    "ordinal": 145
+   },
+   "b146": {
+    "contentHash": "516a72d53336b17a",
+    "ordinal": 146
+   },
+   "b147": {
+    "contentHash": "22c33cc61c690590",
+    "ordinal": 147
+   },
+   "b148": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 148
+   },
+   "b149": {
+    "contentHash": "14aedbb8013667cd",
+    "ordinal": 149
+   },
+   "b15": {
+    "contentHash": "4e4f22cacc38176f",
+    "ordinal": 15
+   },
+   "b150": {
+    "contentHash": "514e92c944bb14de",
+    "ordinal": 150
+   },
+   "b151": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 151
+   },
+   "b152": {
+    "contentHash": "7e3c9faf0e3bad17",
+    "ordinal": 152
+   },
+   "b153": {
+    "contentHash": "6c99a8fdbfb61a1e",
+    "ordinal": 153
+   },
+   "b154": {
+    "contentHash": "b6662cbaafa6d4e1",
+    "ordinal": 154
+   },
+   "b155": {
+    "contentHash": "66a6aff981d3374b",
+    "ordinal": 155
+   },
+   "b156": {
+    "contentHash": "019bf1d1aeadab07",
+    "ordinal": 156
+   },
+   "b157": {
+    "contentHash": "142b704adbfe8527",
+    "ordinal": 157
+   },
+   "b158": {
+    "contentHash": "1155b715145da473",
+    "ordinal": 158
+   },
+   "b159": {
+    "contentHash": "75ec4967e7f8becc",
+    "ordinal": 159
+   },
+   "b16": {
+    "contentHash": "9bbee25b29791faf",
+    "ordinal": 16
+   },
+   "b160": {
+    "contentHash": "6eca047b42d6874f",
+    "ordinal": 160
+   },
+   "b161": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 161
+   },
+   "b162": {
+    "contentHash": "161c9bd8e5477d2c",
+    "ordinal": 162
+   },
+   "b163": {
+    "contentHash": "deda1a979551a3f0",
+    "ordinal": 163
+   },
+   "b164": {
+    "contentHash": "614f5944b12f9796",
+    "ordinal": 164
+   },
+   "b165": {
+    "contentHash": "9ac51ab273ec7822",
+    "ordinal": 165
+   },
+   "b166": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 166
+   },
+   "b167": {
+    "contentHash": "a881ca745e00ea2c",
+    "ordinal": 167
+   },
+   "b168": {
+    "contentHash": "1b55c2b8176fffde",
+    "ordinal": 168
+   },
+   "b169": {
+    "contentHash": "2fb8a6f51cac1293",
+    "ordinal": 169
+   },
+   "b17": {
+    "contentHash": "722a135456234623",
+    "ordinal": 17
+   },
+   "b170": {
+    "contentHash": "bd073073be9dfae6",
+    "ordinal": 170
+   },
+   "b171": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 171
+   },
+   "b172": {
+    "contentHash": "411807614568dbfc",
+    "ordinal": 172
+   },
+   "b173": {
+    "contentHash": "6ec22ed9e4e41bbe",
+    "ordinal": 173
+   },
+   "b174": {
+    "contentHash": "ff261a1901d694f2",
+    "ordinal": 174
+   },
+   "b175": {
+    "contentHash": "ff91ebf495618555",
+    "ordinal": 175
+   },
+   "b176": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 176
+   },
+   "b177": {
+    "contentHash": "8a9b271b660e49c3",
+    "ordinal": 177
+   },
+   "b178": {
+    "contentHash": "c43393ea81ec5170",
+    "ordinal": 178
+   },
+   "b179": {
+    "contentHash": "e5f4ec0471ee86f2",
+    "ordinal": 179
+   },
+   "b18": {
+    "contentHash": "dfd86e47c7cf2fa2",
+    "ordinal": 18
+   },
+   "b180": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 180
+   },
+   "b181": {
+    "contentHash": "da96b2b984640f27",
+    "ordinal": 181
+   },
+   "b182": {
+    "contentHash": "cf76b1417decf673",
+    "ordinal": 182
+   },
+   "b183": {
+    "contentHash": "a07b936b0d076614",
+    "ordinal": 183
+   },
+   "b184": {
+    "contentHash": "01adfe5e635f221b",
+    "ordinal": 184
+   },
+   "b185": {
+    "contentHash": "09378318bf5a616e",
+    "ordinal": 185
+   },
+   "b186": {
+    "contentHash": "fdead6a06ff504eb",
+    "ordinal": 186
+   },
+   "b187": {
+    "contentHash": "a07b936b0d076614",
+    "ordinal": 187
+   },
+   "b188": {
+    "contentHash": "7df0ae8ffa4b3052",
+    "ordinal": 188
+   },
+   "b189": {
+    "contentHash": "09378318bf5a616e",
+    "ordinal": 189
+   },
+   "b19": {
+    "contentHash": "6eafb2da0cf454e6",
+    "ordinal": 19
+   },
+   "b190": {
+    "contentHash": "b0105b01b4729470",
+    "ordinal": 190
+   },
+   "b191": {
+    "contentHash": "a07b936b0d076614",
+    "ordinal": 191
+   },
+   "b192": {
+    "contentHash": "9d2ee43350d09573",
+    "ordinal": 192
+   },
+   "b193": {
+    "contentHash": "09378318bf5a616e",
+    "ordinal": 193
+   },
+   "b194": {
+    "contentHash": "563cfa0e6dde16c0",
+    "ordinal": 194
+   },
+   "b195": {
+    "contentHash": "a07b936b0d076614",
+    "ordinal": 195
+   },
+   "b196": {
+    "contentHash": "34843da98b225b38",
+    "ordinal": 196
+   },
+   "b197": {
+    "contentHash": "901e18844216da78",
+    "ordinal": 197
+   },
+   "b198": {
+    "contentHash": "84da37fa35d0dfe3",
+    "ordinal": 198
+   },
+   "b199": {
+    "contentHash": "a07b936b0d076614",
+    "ordinal": 199
+   },
+   "b2": {
+    "contentHash": "be959217a66bcff6",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "561ca5a339e94d13",
+    "ordinal": 20
+   },
+   "b200": {
+    "contentHash": "2573c9d12aff083a",
+    "ordinal": 200
+   },
+   "b201": {
+    "contentHash": "901e18844216da78",
+    "ordinal": 201
+   },
+   "b202": {
+    "contentHash": "c6b3a2cffe5684a7",
+    "ordinal": 202
+   },
+   "b203": {
+    "contentHash": "3260c00632a75ce5",
+    "ordinal": 203
+   },
+   "b204": {
+    "contentHash": "1c062c12972c4767",
+    "ordinal": 204
+   },
+   "b205": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 205
+   },
+   "b206": {
+    "contentHash": "be1a3484f1fa4512",
+    "ordinal": 206
+   },
+   "b207": {
+    "contentHash": "c8ff87d5481c9f57",
+    "ordinal": 207
+   },
+   "b208": {
+    "contentHash": "9d8b2df15358df2e",
+    "ordinal": 208
+   },
+   "b209": {
+    "contentHash": "5a5079861e78790c",
+    "ordinal": 209
+   },
+   "b21": {
+    "contentHash": "6252102ade5edb71",
+    "ordinal": 21
+   },
+   "b210": {
+    "contentHash": "c959d3bfe35721bf",
+    "ordinal": 210
+   },
+   "b211": {
+    "contentHash": "783e1640c94b9d44",
+    "ordinal": 211
+   },
+   "b212": {
+    "contentHash": "73c4873a4e41327c",
+    "ordinal": 212
+   },
+   "b213": {
+    "contentHash": "16443afa23594ff9",
+    "ordinal": 213
+   },
+   "b214": {
+    "contentHash": "26b4b58f1de42f4f",
+    "ordinal": 214
+   },
+   "b215": {
+    "contentHash": "4284a2606f4cf4f9",
+    "ordinal": 215
+   },
+   "b216": {
+    "contentHash": "2ccebc0aa1c3a259",
+    "ordinal": 216
+   },
+   "b217": {
+    "contentHash": "af1509d56eec24c5",
+    "ordinal": 217
+   },
+   "b218": {
+    "contentHash": "066a3e080c11ee14",
+    "ordinal": 218
+   },
+   "b219": {
+    "contentHash": "b646beca226e278f",
+    "ordinal": 219
+   },
+   "b22": {
+    "contentHash": "1b8c2c1646d24ed4",
+    "ordinal": 22
+   },
+   "b220": {
+    "contentHash": "8479c880a61cfcf7",
+    "ordinal": 220
+   },
+   "b221": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 221
+   },
+   "b222": {
+    "contentHash": "cb3503b70f5b6dbf",
+    "ordinal": 222
+   },
+   "b223": {
+    "contentHash": "8d55c6c30de8b9a6",
+    "ordinal": 223
+   },
+   "b224": {
+    "contentHash": "9b421bfbb22dc41e",
+    "ordinal": 224
+   },
+   "b225": {
+    "contentHash": "9e5865bc7103e3f6",
+    "ordinal": 225
+   },
+   "b226": {
+    "contentHash": "1a57006f678fbae6",
+    "ordinal": 226
+   },
+   "b227": {
+    "contentHash": "a43a4a0ea5e08303",
+    "ordinal": 227
+   },
+   "b228": {
+    "contentHash": "dc507f07ff8476d7",
+    "ordinal": 228
+   },
+   "b229": {
+    "contentHash": "2e39fb347e90577a",
+    "ordinal": 229
+   },
+   "b23": {
+    "contentHash": "1913768eec82cc44",
+    "ordinal": 23
+   },
+   "b230": {
+    "contentHash": "9bf39113b2fe7e92",
+    "ordinal": 230
+   },
+   "b231": {
+    "contentHash": "dfcf4e01f3694740",
+    "ordinal": 231
+   },
+   "b232": {
+    "contentHash": "0cb1e47ff301d08a",
+    "ordinal": 232
+   },
+   "b233": {
+    "contentHash": "1fca147d07944189",
+    "ordinal": 233
+   },
+   "b234": {
+    "contentHash": "6b386e55d1f131c4",
+    "ordinal": 234
+   },
+   "b235": {
+    "contentHash": "3fb8e8b3aee48021",
+    "ordinal": 235
+   },
+   "b236": {
+    "contentHash": "72c95810e37384d4",
+    "ordinal": 236
+   },
+   "b237": {
+    "contentHash": "e081504a8e2b878a",
+    "ordinal": 237
+   },
+   "b238": {
+    "contentHash": "88c770818ae9589b",
+    "ordinal": 238
+   },
+   "b239": {
+    "contentHash": "cac6ac8dce29c08c",
+    "ordinal": 239
+   },
+   "b24": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 24
+   },
+   "b240": {
+    "contentHash": "48201680b24716be",
+    "ordinal": 240
+   },
+   "b241": {
+    "contentHash": "f23d8af2710c8616",
+    "ordinal": 241
+   },
+   "b242": {
+    "contentHash": "c1f166a6f74fc6d2",
+    "ordinal": 242
+   },
+   "b243": {
+    "contentHash": "1ec82f8d3cb64f7d",
+    "ordinal": 243
+   },
+   "b244": {
+    "contentHash": "b301a22e3e2bfd05",
+    "ordinal": 244
+   },
+   "b245": {
+    "contentHash": "ef84a1917d79efa2",
+    "ordinal": 245
+   },
+   "b246": {
+    "contentHash": "8ef44eb061145938",
+    "ordinal": 246
+   },
+   "b25": {
+    "contentHash": "275fe649f84a6859",
+    "ordinal": 25
+   },
+   "b26": {
+    "contentHash": "7d668f4e6a75e9ed",
+    "ordinal": 26
+   },
+   "b27": {
+    "contentHash": "eb641af3167d0da2",
+    "ordinal": 27
+   },
+   "b28": {
+    "contentHash": "e06db5a55947a282",
+    "ordinal": 28
+   },
+   "b29": {
+    "contentHash": "d8c63774a67666cc",
+    "ordinal": 29
+   },
+   "b3": {
+    "contentHash": "26f9ede6e1348d48",
+    "ordinal": 3
+   },
+   "b30": {
+    "contentHash": "c4cf5bf897918763",
+    "ordinal": 30
+   },
+   "b31": {
+    "contentHash": "65717222b5e3a9b6",
+    "ordinal": 31
+   },
+   "b32": {
+    "contentHash": "26c8eaf42191ec50",
+    "ordinal": 32
+   },
+   "b33": {
+    "contentHash": "9b47e80e177bd3bb",
+    "ordinal": 33
+   },
+   "b34": {
+    "contentHash": "674b1816b2611d9c",
+    "ordinal": 34
+   },
+   "b35": {
+    "contentHash": "06ebb2a705ae4575",
+    "ordinal": 35
+   },
+   "b36": {
+    "contentHash": "4cb20ca65994cbf3",
+    "ordinal": 36
+   },
+   "b37": {
+    "contentHash": "9e3741de2a0cf6c8",
+    "ordinal": 37
+   },
+   "b38": {
+    "contentHash": "bfff49a7cac86223",
+    "ordinal": 38
+   },
+   "b39": {
+    "contentHash": "214b7401dc6404b2",
+    "ordinal": 39
+   },
+   "b4": {
+    "contentHash": "9112845b95504995",
+    "ordinal": 4
+   },
+   "b40": {
+    "contentHash": "659c74336b6fd5a8",
+    "ordinal": 40
+   },
+   "b41": {
+    "contentHash": "1eb7bed4cef7b66e",
+    "ordinal": 41
+   },
+   "b42": {
+    "contentHash": "cb2219473efbeb68",
+    "ordinal": 42
+   },
+   "b43": {
+    "contentHash": "15f63dbe3c6efbf4",
+    "ordinal": 43
+   },
+   "b44": {
+    "contentHash": "59264bf8a5871c99",
+    "ordinal": 44
+   },
+   "b45": {
+    "contentHash": "d6c76e5641b38e36",
+    "ordinal": 45
+   },
+   "b46": {
+    "contentHash": "690b29a295039657",
+    "ordinal": 46
+   },
+   "b47": {
+    "contentHash": "bfb1dcb7c0225e6c",
+    "ordinal": 47
+   },
+   "b48": {
+    "contentHash": "feed580cd842552a",
+    "ordinal": 48
+   },
+   "b49": {
+    "contentHash": "e9b3ac569af777c0",
+    "ordinal": 49
+   },
+   "b5": {
+    "contentHash": "5abd2a2563b0875f",
+    "ordinal": 5
+   },
+   "b50": {
+    "contentHash": "17c5a2a6222f2a63",
+    "ordinal": 50
+   },
+   "b51": {
+    "contentHash": "2959adb90d3d20bc",
+    "ordinal": 51
+   },
+   "b52": {
+    "contentHash": "853e4be2c8348959",
+    "ordinal": 52
+   },
+   "b53": {
+    "contentHash": "9e8109d02510f64b",
+    "ordinal": 53
+   },
+   "b54": {
+    "contentHash": "43a8e3e911a5d6ee",
+    "ordinal": 54
+   },
+   "b55": {
+    "contentHash": "4b80db2c084959cf",
+    "ordinal": 55
+   },
+   "b56": {
+    "contentHash": "6f32c8901e0fdc11",
+    "ordinal": 56
+   },
+   "b57": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 57
+   },
+   "b58": {
+    "contentHash": "5ed765502231a4a3",
+    "ordinal": 58
+   },
+   "b59": {
+    "contentHash": "730b14023853c394",
+    "ordinal": 59
+   },
+   "b6": {
+    "contentHash": "f019ce371b38e300",
+    "ordinal": 6
+   },
+   "b60": {
+    "contentHash": "54c05cd54794815a",
+    "ordinal": 60
+   },
+   "b61": {
+    "contentHash": "218242b86f4a8119",
+    "ordinal": 61
+   },
+   "b62": {
+    "contentHash": "36cd5ed9debdef88",
+    "ordinal": 62
+   },
+   "b63": {
+    "contentHash": "27852e1dd50a8a86",
+    "ordinal": 63
+   },
+   "b64": {
+    "contentHash": "4d85b98aff7c63af",
+    "ordinal": 64
+   },
+   "b65": {
+    "contentHash": "58829aab02ed74a7",
+    "ordinal": 65
+   },
+   "b66": {
+    "contentHash": "86ce952eaa82f34c",
+    "ordinal": 66
+   },
+   "b67": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 67
+   },
+   "b68": {
+    "contentHash": "12ebcc8220517880",
+    "ordinal": 68
+   },
+   "b69": {
+    "contentHash": "13338f6ca794d249",
+    "ordinal": 69
+   },
+   "b7": {
+    "contentHash": "df86ac11e14d1144",
+    "ordinal": 7
+   },
+   "b70": {
+    "contentHash": "bdd63578752e33b2",
+    "ordinal": 70
+   },
+   "b71": {
+    "contentHash": "0c9b3378dd2d702a",
+    "ordinal": 71
+   },
+   "b72": {
+    "contentHash": "d1111ceb4e21d7c8",
+    "ordinal": 72
+   },
+   "b73": {
+    "contentHash": "d41123e4bc2b0d21",
+    "ordinal": 73
+   },
+   "b74": {
+    "contentHash": "a3f25ba41637d4d9",
+    "ordinal": 74
+   },
+   "b75": {
+    "contentHash": "fd7faff75290f5d5",
+    "ordinal": 75
+   },
+   "b76": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 76
+   },
+   "b77": {
+    "contentHash": "a3f7ba835b2d1925",
+    "ordinal": 77
+   },
+   "b78": {
+    "contentHash": "9a428de72318fe02",
+    "ordinal": 78
+   },
+   "b79": {
+    "contentHash": "1a86a45631d2bc1c",
+    "ordinal": 79
+   },
+   "b8": {
+    "contentHash": "9f310fa08f07e33e",
+    "ordinal": 8
+   },
+   "b80": {
+    "contentHash": "9dc8503af4f0e2bd",
+    "ordinal": 80
+   },
+   "b81": {
+    "contentHash": "1ba2658f3c413534",
+    "ordinal": 81
+   },
+   "b82": {
+    "contentHash": "171af52853b4e24d",
+    "ordinal": 82
+   },
+   "b83": {
+    "contentHash": "c2da8edd0998b42b",
+    "ordinal": 83
+   },
+   "b84": {
+    "contentHash": "06019c8030b02d5a",
+    "ordinal": 84
+   },
+   "b85": {
+    "contentHash": "74a60bc2a70902ed",
+    "ordinal": 85
+   },
+   "b86": {
+    "contentHash": "ab7ecaa0ba3ad48b",
+    "ordinal": 86
+   },
+   "b87": {
+    "contentHash": "70e82cf7996c51ba",
+    "ordinal": 87
+   },
+   "b88": {
+    "contentHash": "0b6175b413f28c10",
+    "ordinal": 88
+   },
+   "b89": {
+    "contentHash": "8d4d3d493d51b73e",
+    "ordinal": 89
+   },
+   "b9": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 9
+   },
+   "b90": {
+    "contentHash": "7206bd1c23612437",
+    "ordinal": 90
+   },
+   "b91": {
+    "contentHash": "a042267c2d439b35",
+    "ordinal": 91
+   },
+   "b92": {
+    "contentHash": "d9f5ccb179c8d7b9",
+    "ordinal": 92
+   },
+   "b93": {
+    "contentHash": "b35a056f2a0daff1",
+    "ordinal": 93
+   },
+   "b94": {
+    "contentHash": "f4c24e9c8ec0c069",
+    "ordinal": 94
+   },
+   "b95": {
+    "contentHash": "a542c29b37811e1a",
+    "ordinal": 95
+   },
+   "b96": {
+    "contentHash": "2388db42c85e9b32",
+    "ordinal": 96
+   },
+   "b97": {
+    "contentHash": "af64164c86024f1a",
+    "ordinal": 97
+   },
+   "b98": {
+    "contentHash": "8fa032571edd0e35",
+    "ordinal": 98
+   },
+   "b99": {
+    "contentHash": "90aeee4d232cdc70",
+    "ordinal": 99
+   }
+  },
+  "draftId": "published",
+  "draftN": 5,
+  "findings": [],
+  "lock": null,
+  "markdown": "The left–right spectrum is not false. It is a compression. Its error begins when the compression is mistaken for the thing compressed.\n\nThe stranger fact is that American politics keeps producing alliances the line cannot parse. A democratic socialist from Vermont and a national-conservative Republican from Missouri co-sponsor a bill to cap credit-card interest rates. The progressive chair of the Federal Trade Commission draws her most conspicuous praise from the populist right. A decade earlier, libertarian Republicans and progressive Democrats came within a dozen votes of defunding the bulk collection of Americans’ phone records, against the unified opposition of both parties’ leaderships and the White House. In each case the spectrum’s farthest-apart actors converge, and its nearest neighbors, the institutional center-left and center-right, stand together against them. Commentators reach for horseshoe theory: the ends of the line bend until they touch. The metaphor concedes the failure while keeping the ruler.\n\nThe conventional spectrum registers these actors as opposites. It cannot say what they agree about, and so it files their agreement as paradox.\n\nThis is not a small defect. Our political vocabulary determines which similarities we can perceive, which disagreements we can name, and which alliances appear natural. To describe every movement as left, center, or right is to take several recurring conflicts (over economic power, coercion, social inheritance, political belonging, and the mediation of authority) and project them onto one line. The result is useful in the way a compressed image is useful. It is portable, recognizable, and rapidly transmitted. It is also lossy.\n\nThe task is not to abolish left and right. They are among the most durable and efficient heuristics in modern politics. Voters use them to infer large bundles of positions from a few cues, even though the cues and their meaning differ across people and countries.\\[1\\] The task is to build a vocabulary capable of decompressing them.\n\nWhat follows is an attempt: five questions, a coordinate system, and a small public lexicon for the ideological families that recur within it.\n\nThe aim is not political neutrality. It is political resolution.\n\n_Figure 1. The five questions and their poles._\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!-pvI!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F275ce77d-7ed3-4469-bf9b-799afdc7af8e_2048x1014.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!-pvI!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F275ce77d-7ed3-4469-bf9b-799afdc7af8e_2048x1014.png)\n\n* * *\n\n## **I. From Essences to Arrangements**\n\nPolitical ideologies are often treated as substances. Liberalism, socialism, conservatism, nationalism, and populism appear as bounded things, each possessing an essence that can be stated in a paragraph and applied to every historical instance.\n\nIn practice they behave more like arrangements.\n\nMichael Freeden’s morphological theory begins from this fact. Ideologies draw from a common field of contested political concepts (liberty, equality, authority, community, democracy, order) and give them determinate meaning by placing them into characteristic configurations.\\[2\\] Liberty means something different when equality is made its condition than when property is made its condition. Community means something different when organized around citizenship than when organized around ancestry. Democracy means something different when understood as plural contestation than when understood as the undivided will of a people.\n\nAn ideology, on this view, is not one answer. It is an arrangement of answers.\n\nThis also explains why ideological families have both reality and indeterminacy. Social democrats across countries share enough history and conceptual structure to constitute a recognizable family, but no checklist supplies necessary and sufficient conditions for every member. The party-family literature has long struggled with precisely this problem: parties can be classified by origin, by transnational affiliation, by policy and ideology, or by name, and the boundaries do not always coincide.\\[3\\] Even expert surveys that assign parties to standard families warn that some belong plausibly to more than one.\n\nThe correct metaphor is therefore not taxonomy in the biological sense. Ideologies are not species. They are neighborhoods in a space whose streets are themselves historically constructed.\n\nThat distinction matters for the naming problem. The first version of this framework made the classic taxonomist’s mistake: it optimized for exhaustive classification at the expense of language. Five binary dimensions yield thirty-two logical vertices. It is possible to give each one a precise name. It is also possible to make the result unusable. A phrase such as _universalist-institutional emancipatory egalitarianism_ identifies a point with admirable fidelity and no political life whatsoever.\n\nA vocabulary succeeds only when people can think with it.\n\nThe solution (and it, rather than the axes, is what this essay is actually proposing) is to separate two functions that ordinary ideological labels are forced to perform at once. **Coordinates describe a position. Family names identify a neighborhood.** Coordinates are exact enough for analysis. Names are short enough for speech. Ordinary labels fail because they are made to do both jobs with one word.\n\nWhat that separation buys will become concrete later, but a single sentence can serve as a promissory note: _Obama is a liberal—economically mixed, moderately authority-accepting, culturally progressive, universal, and strongly institutional._ The name places him in a tradition; the coordinates say where he sits in it. Neither could do the work alone.\n\n* * *\n\n## **II. The Five Questions**\n\nTwo warnings before the questions. First, these are not five natural dimensions discovered in politics. They are recurrent disagreements, and the framework that follows is a convention proposed, not a geometry uncovered. Second, and the essay owes this concession to its own first section, the pole-words below are themselves contested concepts. On Freeden’s account, “liberty” and “equality” have no ideology-independent meanings; a framework that fixes them, including this one, is performing a decontestation of its own. The axes are historical artifacts, revisable exactly as the family names are. What follows is a proposal about which fixings are useful, not a claim to have escaped the condition it describes.\n\n### **1\\. Economy: Equality ↔ Markets**\n\n_**How should production, risk, opportunity, and material security be organized?**_\n\nAt one pole, economic freedom is made meaningful through solidarity: redistribution, social insurance, public provision, labor power, and protection against domination by wealth. At the other, prosperity and freedom are made possible through markets: property, competition, enterprise, private choice, and differentiated reward.\n\nThe axis is not “government against freedom.” Government can create markets, protect monopolies, discipline labor, subsidize capital, or distribute wealth upward. Nor is it a measure of whether a system actually produces equality or competition. It records the governing ideal: whether economic coordination should lean toward public obligation and egalitarian protection or toward private choice and market allocation.\n\nThe words at the poles are necessarily imperfect. Equality and markets can coexist; solidarity can be voluntary; enterprise can be social. The scale identifies a recurrent tension, not a logical contradiction.\n\n### **2\\. Coercion: Liberty ↔ Authority**\n\n_**How much force, discretion, discipline, and paternalism may political order legitimately employ?**_\n\nThis includes policing, surveillance, punishment, public-health mandates, censorship, emergency power, judicial constraint, privacy, due process, decentralization, and the moral authority of the state.\n\nA large welfare state can remain strongly civil-libertarian. A state that privatizes its economy can expand prisons, borders, surveillance, military power, and executive discretion. Coercion, in other words, is not a disguised measure of government size: market liberalism and political liberty are historically associated, but neither logically entails the other.\n\nThe deepest dispute is over where domination is most feared. The liberty pole fears concentrated coercive power. The authority pole fears disorder, predation, fragmentation, and the incapacity to act.\n\n### **3\\. Culture: Progress ↔ Tradition**\n\n_**Should inherited social norms be revised in the name of autonomy and inclusion, or preserved as accumulated moral knowledge and social continuity?**_\n\nThis is the domain of family, religion, gender, sexuality, education, custom, symbolism, and the authority of inherited forms.\n\nNeither pole owns moral seriousness. Progressives treat emancipation, recognition, and self-authorship as moral imperatives. Traditionalists treat continuity, restraint, duty, family, and inherited wisdom as moral imperatives. Each side accuses the other of failing to perceive a form of harm: exclusion and domination on one side, dissolution and deracination on the other.\n\nCulture must also be separated from coercion. A traditionalist can oppose using the state to enforce traditional morality. A progressive can favor aggressive administrative, professional, or legal enforcement of progressive norms. What one believes society should honor is not identical to how one believes it may compel.\n\n### **4\\. Belonging: Universal ↔ Communal**\n\n_**How wide is the primary circle of political obligation?**_\n\nThe universal pole begins from equal moral standing across borders and inherited identities. It emphasizes human rights, plural citizenship, porous membership, and obligations that do not depend on nationality, religion, or descent.\n\nThe communal pole begins from special duties among members of bounded communities. It emphasizes reciprocity, shared history, social trust, sovereignty, and the proposition that solidarity requires a _we_ capable of sustaining it.\n\nThe academic literature often calls this the cosmopolitan–communitarian divide, especially in work on globalization, integration, borders, and sovereignty.\\[4\\] But communitarianism is not a synonym for ethnic nationalism. A bounded political community may be civic, constitutional, linguistic, religious, cultural, local, or ethnonational. These require secondary tags.\n\nUniversalism, for its part, is not simply kindness. Universal schemes can become abstract, imperial, or inattentive to the institutions that make solidarity possible. Communal schemes can become exclusionary, coercive, or racialized. The axis concerns the scope and basis of obligation, not the moral quality of the person holding it.\n\n### **5\\. System: Insurgent ↔ Institutional**\n\n_**Should political will pass primarily through inherited institutions and mediating organizations, or should those structures be disrupted in the name of a more direct mandate?**_\n\nThis is the most difficult axis, because ordinary political language bundles several different things into the word _populism_: a bundle Section V will take apart.\n\nAn insurgent orientation distrusts entrenched parties, professional gatekeepers, bureaucracies, media, experts, and incumbent elites. It values disruption, responsiveness, outsider status, direct mandate, and the recovery of power from a captured system.\n\nAn institutional orientation values durable parties, courts, civil services, legislatures, professional expertise, bargaining, procedure, and continuity. It treats mediation not simply as obstruction but as the form through which plural societies remain governable.\n\nFor public communication, the familiar gloss is:\n\n> **Populist ↔ Establishment**\n\nThat language should be retained. It already exists in the culture, it names a conflict people recognize, and it captures a real dimension that can cut across left and right. Research on anti-establishment orientations finds precisely such a cross-cutting structure, though it should be said that the dimension those researchers measure carries conspiracist and antisocial freight that the charitable pole definition used here deliberately strips away; that normative reconstruction is this essay’s, not theirs.\\[5\\] Contemporary expert surveys, meanwhile, separately measure anti-elite rhetoric and preferences for direct popular decision.\n\nNote, before going on, that being insurgent is not the same as being populist, and neither is a synonym for anti-democratic. The distinctions are the subject of Section V.\n\n* * *\n\n## **III. The Price of Speech**\n\nThe framework just proposed has a number, and the number is a claim the argument has so far only assumed. Why five questions—and why these five?\n\nMulti-axis correctives to the spectrum are nearly as old as the complaint against it. The lineage runs from the Nolan chart through the Political Compass to the open-source 8values test and its axis-multiplying successors. The convergence with 8values in particular should be stated plainly: it measures four axes (Equality against Markets, Liberty against Authority, Tradition against Progress, Nation against Globe), and three of them carry, verbatim, the pole names used here.\\[6\\] The convergence is better read as evidence than as embarrassment. Independent attempts to decompress the spectrum keep finding the same questions, because these are the questions politics keeps returning to.\n\nBut the overlap must be named, because the difference lies in what is done with the answers. A test scores people: it asks its taker a battery of questions and returns a self. That is the wrong form for a political vocabulary. The objects that need describing are claims, laws, manifestos, parties, and governments—things that argue and act in public—not the private souls of quiz-takers. And a test has no discipline for its names. 8values contains, in embryo, this essay’s central move: after computing your coordinates it names your “closest match” ideology (coordinates first, family second) and then disowns the naming layer as “much less accurate than the values and axes,” advising users not to take it too seriously.\\[6\\] The disclaimer is the tell. The naming layer is not noise to be apologized for; it is where political language actually lives. What the test tradition lacks is not axes. It is a semantics for the names, which is what the rest of this essay builds.\n\nThe deeper challenge comes from the positions flanking any such framework. On one side stands the pragmatic defense of the single line: Bryan Caplan’s argument that the spectrum earns its keep because it tracks the political identities and conflicts that actually exist. On the other stand the eliminativists: Hyrum and Verlan Lewis, whose _The Myth of Left and Right_ is the strongest published version of this essay’s own opening move (left and right are tribal bundles, not philosophies), and also its standing refutation.\\[7\\] If bundling is the sin, the Lewises ask, why re-bundle at any scale? “There is more than one issue in politics.” Keep issues unbundled, as biology keeps species: “Why not just say ‘anti-market’ instead of ‘left-wing’?”\n\nThe objection deserves its full strength: each of the five questions is itself a bundle. Economy compresses trade, taxation, redistribution, regulation, property, and labor. A protectionist tax-cutter has no true Economy score, only a lossy 3. Five axes, on this reading, is not decompression but a bigger, better-defended reification.\n\nThe answer is that compression is not the sin; compression is the price of speech. A vocabulary that refuses to bundle at all already exists: it is called a policy database, and no one can think in it. The choice is never whether to compress but where compression stops paying. One line pays for mass coordination and bankrupts analysis. Fifty issues pay for precision and bankrupt conversation. The claim of this essay is that five is roughly where the marginal distinction stops covering its cost in speech: a pragmatic optimum, not a fact of nature, and therefore a claim that owes its criteria.\n\nA question earns a core axis, on the account proposed here, when it passes three tests: it has recurred across polities and centuries rather than decades; its answers form and break coalitions rather than merely sorting opinions; and it cannot be inferred from the other axes. The five questions pass all three. The exclusions show the tests doing real work. Ecology is a genuine political question with its own theory of limits, time, and intergenerational obligation, and it cannot be reduced to economy or culture, but as mass politics it is two generations old, and its stable place in coalition-building is still being negotiated. It fails the first test, so it gets a module (Growth against Ecology), not because it matters less but because the historical record has not yet taught us where it settles. Foreign policy fails the second: restraint and intervention have divided every family from within (universalists split into doves and humanitarian hawks, nationalists into isolationists and expansionists), cutting across the families without ever forming durable ones of its own. It, too, is a module: Restraint against Intervention.\n\nFive, then, is a defended budget, not a discovery. Anyone who thinks a sixth question passes the three tests is invited to argue it in: that is what it means for a framework to be a convention rather than a geometry.\n\n* * *\n\n## **IV. Separable but Bound**\n\nIf the five questions are analytically separable, they are certainly not empirically independent. Political attitudes do not arrive in independent boxes. They form coalitions, inherit institutions, respond to events, and become socially sorted. The literature is clear on at least two points: one dimension is often insufficient, since economic and cultural attitudes can be separated both conceptually and empirically; and no universal factor structure settles politics once and for all.\\[8\\]\n\nA useful test of separability is counterfactual: can a person change their answer to one question without logically changing their answer to the others?\n\nA person can support redistribution while opposing censorship. Another can favor markets and a powerful police state. A third can be culturally traditional but universalist in religious obligation. A fourth can be economically egalitarian and intensely nationalist. A fifth can share the policies of an established party while believing that its institutions have become irredeemably corrupt.\n\nEach combination exists because each question asks about a different object.\n\nThe empirical bundles remain important, and here precision matters, because the data below were built by the tradition this essay is trying to decompress. The 2024 Chapel Hill Expert Survey, completed by 609 political scientists assessing 279 European parties, is organized around a two-dimensional model: economic left–right, plus the dimension Hooghe, Marks, and Wilson named GAL/TAN (green/alternative/libertarian against traditionalism/authority/nationalism).\\[9\\]\\[10\\] TAN welds together three of this essay’s questions by design: culture, coercion, and belonging. And Herbert Kitschelt supplied the standard explanation for why the weld holds: postindustrial party competition runs along a left-libertarian/right-authoritarian diagonal in that two-dimensional space.\\[11\\]\n\nI constructed exploratory composites from the 2024 survey corresponding to the five questions; the variables are listed with the references so that the exercise can be checked.\\[9\\] Among European parties, culture, coercion, and belonging correlate pairwise at .84 to .90. Economy is related but more independent, at .47 to .56. The anti-establishment measures cut across everything else, including a slight negative correlation with market economics.\n\n_Figure 2. Correlations among exploratory five-question composites, 2024 Chapel Hill Expert Survey. The composites are the author’s, not an official CHES construct; variable definitions are given in the references.\\[9\\]_\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!VfjK!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc845804c-2225-4f5c-b339-3d29d9f92ef4_1760x1440.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!VfjK!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc845804c-2225-4f5c-b339-3d29d9f92ef4_1760x1440.png)\n\nRead naively, the strong bundle is an argument that three of the five questions are one question. Read with the survey’s history in view, it is partly the dataset’s own architecture faithfully reflected back: an instrument built around GAL/TAN will find GAL/TAN. So the exercise cannot show what a naive reading would want it to show, and no such claim is made here. The questions did not arrive independent, and history binds their answers together.\n\nWhat the exercise can show is where the weld is failing. Milei joins radically market-oriented, anti-statist economics to cultural traditionalism and insurgency, off Kitschelt’s diagonal. The welfare nationalists of Europe are egalitarian toward members and exclusionary at the boundary, off the diagonal in the other direction. The framework’s empirical claim is not that politics secretly has five factor-analytic axes. It is that the reigning two-dimensional settlement welds together questions that current politics is visibly unwelding, and a vocabulary should be able to describe the unwelding while it happens.\n\nThat claim is falsifiable. If no politically consequential actors occupied the off-diagonal cells (if traditionalists were reliably authoritarian, nationalist, and anti-market; if egalitarians were reliably universalist and progressive), the extra questions would be idle machinery, and the two-dimensional compression would deserve to keep its monopoly. The cases just named, like the alliances of this essay’s opening, are the evidence that the cells are occupied, and increasingly by winners.\n\n* * *\n\n## **V. What Populism Contains**\n\nCas Mudde’s influential definition treats populism as a “thin-centred” ideology that divides society between a pure people and a corrupt elite and demands that politics express the people’s general will.\\[12\\] This contains at least three claims:\n\n1.  **Anti-establishment:** incumbent elites are corrupt or illegitimate.\n    \n2.  **Moral dualism:** the people and the elite form opposed moral camps.\n    \n3.  **Directism** (a term coined here for the purpose): legitimate rule should express an identifiable popular will.\n    \n\nA fourth claim often follows:\n\n4.  **Unitarism:** the legitimate people possess a coherent common interest, while durable opposition appears as obstruction, corruption, or betrayal.\n    \n\nThe sharpest development of this fourth claim belongs to Jan-Werner Müller, for whom anti-pluralism is populism’s defining criterion: populists claim that they, and they alone, represent the people, a moral monopoly of representation that survives every electoral arithmetic.\\[13\\]\n\nThese claims frequently travel together. They do not always.\n\nA movement can be anti-establishment without claiming exclusive representation of “the people.” It can demand referendums while accepting pluralism. It can be led by outsiders who favor strong constitutional constraints. It can enter government, construct an extensive party-state, and continue to speak in insurgent language. Conversely, a technocratic movement can be profoundly nonpluralist while despising populist rhetoric.\n\nThis is why **Pluralist ↔ Unitary** was an attractive candidate for the fifth axis. It names a genuine and deeper conflict. Daniele Caramani’s comparison of populism and technocracy shows that both can imagine society’s general interest as unitary, unmediated, and relatively unaccountable; they differ principally over whether that interest is discovered through popular will or expert reason.\\[14\\]\n\nBut pluralism and unitarism are not the best public replacement for populism and establishment. They are too abstract for first contact, and they sit too close to questions of regime type. A framework intended to clarify ordinary ideological disagreement should not require the reader to learn a specialist concept before recognizing the conflict under discussion.\n\nThe correct solution is hierarchical.\n\n_Figure 3. The System axis: a public gloss over four analytic facets._\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!WvqR!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F69501a86-5fa9-4417-bfae-b071469abcaf_1746x1127.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!WvqR!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F69501a86-5fa9-4417-bfae-b071469abcaf_1746x1127.png)\n\nThe public axis remains **Insurgent ↔ Institutional**, with **Populist ↔ Establishment** as its familiar, deliberately approximate gloss. Underneath it, a rigorous profile records four facets: anti-establishment orientation (how captured or illegitimate are incumbent elites?); directism (should citizens decide directly or through representatives?); pluralism (are opposition and competing interests permanently legitimate?); and legitimation (is authority justified by popular will, expertise, law, tradition, or some combination?). None of these facets is an invention (political science already measures populist, pluralist, and elitist attitudes as separate scales\\[15\\]), but assembling them under a public gloss, rather than a score, is the point of the architecture.\n\nIt preserves cultural legibility without confusing shorthand for analysis. And it forces three linguistic distinctions:\n\n-   **Populist** is a substantive tag: it should be used when pure-people, corrupt-elite, and general-will logic is actually present.\n    \n-   **Establishment** is a contextual status: it describes an actor’s location within an existing system.\n    \n-   **Institutional** is an ideological preference: it describes trust in political mediation, procedure, and durable organizations.\n    \n\nA president can remain populist. An outsider can be institutionalist. A bureaucracy can be insurgently reorganized. A technocrat can be anti-establishment. The facets explain what the single word conceals.\n\n* * *\n\n## **VI. Coordinates Before Categories**\n\nEach actor receives a five-number address in a fixed order:\n\n> **Economy · Coercion · Culture · Belonging · System**\n\nThe scale runs one to five: one and two toward the first pole, four and five toward the second, three for the mixed, conditional, divided, or unclear middle. Thus **2 · 4 · 1 · 2 · 5** means economically equality-leaning, authority-leaning, culturally progressive, universal-leaning, and institutional.\n\nOne rule of interpretation before anything else: coordinates describe commitments and conduct, not souls. The natural first question (_what’s my number?_) is the quiz tradition’s question, and it is the wrong one. The objects worth scoring are arguments, programs, parties, and governments; a person is scored, if at all, only as the author of positions taken in public.\n\nThe address is not complete without four pieces of metadata: **salience** (how central is each question to the actor?), **confidence** (how strong and consistent is the evidence?), **time** (what campaign, governing period, or historical moment is being scored?), and **object** (a person, party, government, electorate, manifesto, or argument?). These distinctions prevent category errors. A party may be moderate on immigration because its position is genuinely balanced, because its factions cancel one another, because it speaks ambiguously, or because the issue is irrelevant to its project. Those are politically different facts, and the Chapel Hill survey accordingly records position, salience, internal dissent, and deliberate blurring separately.\\[9\\]\n\nThe same actor may also require three profiles: **rhetoric**, **program**, and **practice**. A leader can campaign as an insurgent, govern through institutions, and use unitary rhetoric. A nominally market-oriented party can construct protectionist policy. A progressive institution can defend pluralism in law while enforcing conformity in professional life. An ideological address should describe what is being measured, not synthesize contradictions into false coherence.\n\nMost important: never compute a master score.\n\nThere is no meaningful arithmetic by which a 2 in Economy and a 4 in Culture average into a political 3. Such a number would recreate the left–right spectrum under a veneer of precision. Distance can be measured, but it must remain decomposable:\n\n> These actors are close on Culture and Belonging, moderately separated on System, and opposed on Economy and Coercion.\n\nThe purpose of the coordinates is not to decide who is “really” farther left or right. It is to make the object of disagreement visible.\n\n* * *\n\n## **VII. The Discipline of Names**\n\nA coordinate string cannot become an affiliation. People do not say that they are a 2 · 3 · 1 · 2 · 4. Political identities require names, histories, symbols, and communities.\n\nBut the names must be disciplined. The periodic-table fantasy (one unique label for every possible combination) should be abandoned. Some logical vertices correspond to durable ideological traditions; others are rare, unstable, internally contradictory, or simply unnamed. The public vocabulary should therefore consist of **prototype families**.\n\nA prototype is not a checklist. It is a recognizable center of gravity. An actor can sit near two prototypes, occupy the edge of one, or combine a family with a modifier. This is how ordinary ideological language already works, and political science has a name for the semantics: radial categories, organized around a central case, with members related by resemblance rather than by necessary and sufficient conditions.\\[16\\]\n\nConsider the families that do the most argumentative work.\n\nThe **socdem** and the **demsoc** are a minimal pair the single spectrum cannot even express. The socdem pursues an equality-leaning mixed economy through labor institutions, welfare states, parliamentary bargaining, and gradual reform; the characteristic wager is that markets can be politically embedded without abolishing either pluralism or enterprise. The demsoc insists that economic hierarchy itself limits effective freedom, while rejecting, against state socialism, any one-party or bureaucratic ownership of political life. The difference is a matter of depth on Economy and of destination; on a left–right line the two names collapse into a smear.\n\nThe **welfare nationalist** demonstrates why left and right fail. Economic protection and social provision, bounded primarily by national membership: egalitarian within the community, exclusionary at its boundary, frequently paternalist in government, traditional in culture, and insurgent in rhetoric. Political science has studied the phenomenon for three decades under the name welfare chauvinism;\\[17\\] the family name used here is chosen to say what the position is for rather than only what it is against. Viktor Orbán’s Hungary sat near this neighborhood for sixteen years, with the caveat that its provision was workfare-flavored and flat-taxed: “welfare” in this family means provision bounded by membership, not redistributive generosity.\n\nThe **natcon** (national conservative) names the contemporary synthesis of bounded political identity, inherited moral order, authority, and national restoration, and is useful precisely because it distinguishes that synthesis from generic conservatism. The family can be market-oriented or protectionist, populist or increasingly institutional, civic or ethnocultural. Donald Trump, Giorgia Meloni, Jair Bolsonaro, and Narendra Modi are not interchangeable (Modi’s Hindu-nationalist project has a religious specificity the label flattens, which is what the secondary tags are for), but the label identifies a real shared neighborhood.\n\nThe **libertarian** joins market coordination to strong limits on coercive authority, leaving culture and belonging open: a libertarian may be cosmopolitan or nationalist, culturally progressive or traditional, constitutionalist or populist. Javier Milei is best understood not as the essence of libertarianism but as a populist, culturally mixed or traditionalist variant.\n\nTwo more families will be needed for the profiles below. The **liberal** combines civil rights, pluralism, universal citizenship, institutional restraint, and a mixed or market-leaning economy—a word that means center-left economics in the United States and stronger market orientation in Europe; the coordinates make the ambiguity manageable rather than eliminating it. The **technocrat** grounds legitimacy in expertise, administrative competence, and the capacity to execute—more a mode of legitimation than a complete ideology, and best used as a modifier: _technocratic liberal_, _technocratic developmentalist_.\n\nThe fuller lexicon (left populist, progressive, green, Christian democrat, conservative, developmentalist, state socialist) is drawn in the figure and defined in a companion reference sheet; the essay needs only the families that argue in it.\n\n_Figure 4. The prototype families as neighborhoods in the five-question space._\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!5Zvn!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F906d1738-a86e-4307-a947-eadacf7bfb5b_1906x1484.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!5Zvn!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F906d1738-a86e-4307-a947-eadacf7bfb5b_1906x1484.png)\n\n* * *\n\n## **VIII. A Grammar, Not a Catalogue**\n\nThe lexicon becomes expressive through a small set of modifiers (populist, technocratic, progressive, traditionalist, welfare, market, civic, ethnonational, heterodox), used at most one at a time in ordinary prose: _populist libertarian_, _technocratic liberal_, _civic natcon_, _welfare nationalist_. When a third word seems necessary, stop naming and show the coordinates. This rule is more important than it appears. Labels gain explanatory power by excluding detail. Once a label attempts to encode all five dimensions, it becomes a coordinate string written in Latin.\n\nThe three layers divide the labor. The family name answers: what tradition or neighborhood is this actor nearest? The coordinates answer: where, exactly, does the actor depart from the prototype? The tags answer: what politically decisive feature is not captured by either?\n\nThe profiles that follow are illustrations of the grammar, not verdicts. Each is dated, each is disputable, and one of them (deliberately, because his case is the hardest) gets the full treatment the rules of use demand.\n\n**Sanders** (in the Senate, 2007–; presidential campaigns 2016 and 2020) gives Section VII’s minimal pair a live case: a demsoc in self-description and a socdem in program, strongly egalitarian in economy, liberty-leaning on coercion, culturally progressive, universal-leaning in belonging, and insurgent toward the establishments of both parties. The word _socialist_ files him with the last profile on this list; the coordinates make them adjacent on one question and opposed on the other four.\n\n**Obama** (in office 2009–2017) is a liberal: economically mixed, moderately authority-accepting, culturally progressive, universal, and strongly institutional.\n\n**Macron** (in office 2017–) is a technocratic liberal: market-leaning in economy, authority-leaning in coercion (emergency powers folded into ordinary law), culturally progressive with a republican inflection, universalist in belonging (Europe, not the nation, as the operative project), and maximally institutional in preference despite an insurgent route to power that left neither of France’s governing parties in the 2017 runoff. Section V’s aside (an outsider can be institutionalist) governs a nuclear state.\n\n**Milei** (in office 2023–) is a populist libertarian: radically market-oriented, comparatively anti-statist, culturally traditional in important respects, neither fully universal nor nationalist, and highly insurgent.\n\n**Trump** (second term, 2025–2026) is a populist natcon: authority-oriented, culturally traditional, strongly communal, and insurgent, with unitary and personalist features—and, on Economy, the best current argument for splitting rhetoric from practice. The rhetoric is market: deregulation, tax cuts, the language of enterprise. The practice is protectionist and state-directive: after the Supreme Court struck down the IEEPA tariffs in February 2026, the tariff program continued under other statutory authorities, with sectoral rates of 10 to 50 percent across metals, autos, lumber, and furniture (up to 100 percent on patented pharmaceuticals), a weighted average applied rate near 12 percent, and an estimated tax increase of roughly $900 per household in a single year.\\[18\\] _Market-rhetorical, protectionist-statist in practice_ is not a complication the framework tolerates; it is what the framework is for.\n\n**Orbán** (in office 2010–2026) was a welfare nationalist: economically mixed, authority-oriented, traditional, strongly communal, and populist in legitimation even while governing through a consolidated institutional apparatus—until April 2026, when an insurgent opposition won a two-thirds parliamentary majority and ended the sixteen-year system at the ballot box.\\[19\\] The fall carries its own System-axis lesson: institutional consolidation is a preference and a practice, not a guarantee, and insurgency is a position available against any incumbent, including a formerly insurgent one.\n\n**Xi Jinping** (general secretary 2012–) is a state socialist in lineage and a party-state technocrat in operation: state-directive in economy, strongly authority-oriented, increasingly traditionalist in culture, communal-nationalist in belonging, and maximally institutional. The profile shows why Section XI’s regime tag is non-negotiable: institutional describes the depth of mediation, not its democratic character.\n\nEach sentence says more than a position on a line while remaining possible to remember. And each now carries a date, because one of them had to be rewritten within months of its first drafting. The rules of use below are not ornaments.\n\n_Figure 5. The seven illustrative three-layer profiles, dated as of mid-2026._\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!mQXu!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1604fef4-33dc-4997-8a06-7843cef0f19e_2048x1406.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!mQXu!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1604fef4-33dc-4997-8a06-7843cef0f19e_2048x1406.png)\n\n* * *\n\n## **IX. The Persistence of Left and Right**\n\nA multidimensional framework is tempted to declare victory over left and right. That would be premature.\n\nLeft and right persist because they solve a real coordination problem. Citizens cannot independently reconstruct every party’s position on every dispute. Coalitions need names. Media need contrasts. Political identities need inherited narratives. A one-word cue compresses policies, values, social groups, historical loyalties, and expectations about alliance. Recent research describes left–right inference in exactly these terms: people use a small number of predictive cues to place parties, though more politically sophisticated voters draw from a broader set of policies, values, and constituencies.\\[1\\] The spectrum is therefore not merely a philosophical error imposed on politics. It is an adaptation to limited attention.\n\nThere is also a deeper defense than coordination, and it deserves a named opponent rather than silence. Norberto Bobbio argued that left and right endure because they track a real and permanent divide: attitudes toward equality (a horizontal, egalitarian conception of society against a vertical, inegalitarian one).\\[20\\] If Bobbio is right, the five questions are one question wearing five masks, and this essay has multiplied entities without necessity. The framework’s answer is its cases. Equality-monism cannot score the welfare nationalist without remainder: egalitarian toward members, inegalitarian at the boundary is not a point on an equality line but an answer to two different questions—how much equality, and among whom. It cannot place Milei, whose radical anti-egalitarianism in economics arrives fused with an insurgent, anti-elite politics that speaks in the register Bobbio assigns to the left. The difficulty is not that Bobbio’s divide is unreal. It is that “equality” decomposes on contact: equality of what (economy), enforced how (coercion), against which inheritances (culture), among whom (belonging), decided by whom (system). Bobbio’s one question was five questions all along.\n\nThe spectrum’s weakness is historical contingency. The bundles move. Free trade has migrated between coalitions. Opposition to centralized state power has moved between left and right depending on which institutions hold power. Nationalism has appeared in anti-colonial, socialist, liberal, fascist, and conservative forms. Left and right tell us which bundle currently travels together. The five questions tell us what is inside it.\n\nThis is why the new vocabulary should not compete with the old at the same level. It should sit beneath it.\n\n_**Left and right are coalition names. The five questions are explanatory coordinates.**_\n\nThe distinction is analogous to the difference between a file name and its contents. The file name is useful. The mistake is believing that opening it will reveal only one thing.\n\nAnd this settles who the vocabulary is for. Not, primarily, voters: mass publics show little stable ideological structure of any dimensionality (the same survey research this essay leans on finds citizens’ attitudes far less constrained than elites’\\[8\\]), and a five-number address with metadata is no folk instrument. Pretending otherwise would repeat the quiz tradition’s mistake in a more demanding key, and it is part of why two decades of multi-axis tests have decorated the internet without displacing the spectrum: they addressed the wrong user. The vocabulary is for the people who produce political language (writers, analysts, editors, the arguing class), whose distinctions reach everyone else through the same cue-giving mechanism by which party positions reach voters in the first place.\\[1\\] The spectrum keeps the coordination job. The grammar works upstream, where the cues are written.\n\n* * *\n\n## **X. The Historicity of Families**\n\nPew Research Center’s 2026 American political typology illustrates both the promise and the limit of cluster-based naming. Using responses to thirty questions, Pew identified nine groups with memorable names such as _Leftward Progressives_, _Loyal Liberals_, _Order and Opportunity Left_, _Unconventional Right_, and _Faith First Conservatives_.\\[21\\] These groups are valuable because they describe actual clusters in a particular electorate at a particular time. They are not universal ideological species. A typology rerun in another country (or after a war, recession, migration crisis, religious revival, or technological transformation) would find different coalitions and require different names.\n\nThe same is true of party families. Christian democracy arose from a specific relation among Catholic social thought, mass organization, class conflict, democracy, and the modern state. Social democracy was transformed by labor movements, industrialization, parliamentary incorporation, and the experience of governing capitalism. Natcon is not simply conservatism with a higher nationalism score; it is a contemporary project formed against globalization, migration, supranational institutions, and progressive cultural power.\n\nNames contain history. Coordinates abstract from it. A rigorous vocabulary needs both: without coordinates, historical labels become ambiguous and tribal; without historical labels, coordinates become sterile and socially unintelligible.\n\n* * *\n\n## **XI. What the Framework Does Not Solve**\n\nA taxonomy becomes untrustworthy when it hides its exclusions.\n\nThe most important exclusion is regime type. The five questions do not by themselves tell us whether an actor accepts competitive elections, opposition rights, independent courts, press freedom, civil society, or peaceful transfer of power. That commitment should be recorded as a separate, non-negotiable tag (liberal-democratic, majoritarian-democratic, competitive-authoritarian, closed-authoritarian), because an institutional actor can be authoritarian and an insurgent actor democratic; a party-state may possess formidable institutions; a constitutional reformer may oppose the incumbent establishment. The System axis describes political mediation, not democratic virtue.\n\nThe remaining exclusions have already appeared or can be stated briefly. Ecology and foreign policy are modules, for the reasons Section III gave. Centralization (federalism, subsidiarity, municipalism, separatism) needs its own institutional tag, as does the basis of belonging (civic, religious, linguistic, ethnonational: not morally or politically equivalent). And a preference for authority is not the possession of capacity: governments can be coercive and incompetent, ambitious and hollow, pluralist and effective. Capability is an empirical property, not an ideological coordinate. The five questions are a core language, not a theory of everything.\n\n* * *\n\n## **XII. The Use and Abuse of a Vocabulary**\n\nA public taxonomy must govern its own application, and most of its discipline fits in one paragraph. Classify commitments and conduct, not aesthetics: enacted policy and governing practice outrank manifestos, manifestos outrank repeated commitments, and isolated quotations, vibes, and cultural association rank last. Separate position from salience: two parties can hold the same position while one organizes its identity around it and the other barely mentions it. Permit uncertainty: a 3 can mean moderation, conditionality, internal division, strategic ambiguity, or insufficient evidence; say which. Date every profile: ideologies move, parties transform, insurgents become incumbents, and the Orbán profile above had to be rewritten within months. And classify arguments, not only identities: a single person can make an equality-oriented economic argument, a liberty-oriented speech argument, a traditional cultural argument, a universal moral argument, and an institutional constitutional argument. The taxonomy is at its best when it illuminates the claim under dispute rather than merely assigning a type to the claimant.\n\nOne rule deserves its own paragraph. **Do not infer one axis from another.** Traditional does not entail authoritarian. Market does not entail libertarian. Communal does not entail ethnonational. Progressive does not entail universal. Populist does not entail anti-democratic. The entire framework exists to prevent those inferences.\n\nFinally, use charitable pole definitions. Every pole names a political good and a characteristic fear:\n\n[\n\n![](https://substackcdn.com/image/fetch/$s_!53pr!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F02a42076-0b89-47f6-b211-b4546ba1ad5a_1052x826.png)\n\n\n\n](https://substackcdn.com/image/fetch/$s_!53pr!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F02a42076-0b89-47f6-b211-b4546ba1ad5a_1052x826.png)\n\nThe symmetry is not an assertion that every application is morally equal, nor that each fear is equally well founded in every decade. It is the minimum charity required to understand why intelligent people can be drawn toward either pole, and it is a precondition of the whole exercise, because a taxonomy whose poles are compliments and insults is a weapon, not a vocabulary.\\[22\\]\n\n* * *\n\n## **XIII. A Better Grammar of Disagreement**\n\nThe test of the framework is whether it changes ordinary sentences.\n\nInstead of:\n\n> The party moved to the right.\n\nsay:\n\n> The party became more authority-oriented and communal while remaining economically centrist.\n\nInstead of:\n\n> Sanders and Trump are both populists.\n\nsay:\n\n> Sanders and Trump share an insurgent account of elite failure, but construct different peoples and oppose one another on economy, culture, belonging, and coercion.\n\nInstead of:\n\n> She is socially liberal but fiscally conservative.\n\nsay:\n\n> She is market-oriented, culturally progressive, civil-libertarian, universal, and institutional.\n\nInstead of:\n\n> The movement is authoritarian.\n\nask:\n\n> Is it culturally traditional, coercively authority-oriented, politically unitary, institutionally centralized, or hostile to democratic competition? These can reinforce one another, but they are not the same claim.\n\nInstead of:\n\n> The center is disappearing.\n\nask:\n\n> On which questions? Economic moderation can coexist with cultural polarization, institutional consensus with anti-establishment revolt, or cross-cutting positions that no major party represents.\n\nPolitical coalitions are built and broken by the differences that blurred language conceals. A welfare nationalist and a market nationalist may agree on borders and culture while disagreeing about the economic obligations of membership. A progressive liberal and a progressive statist may agree on social ends while disagreeing over coercive means. A libertarian and a conservative may share an economic program while opposing one another on state power. A socdem and a Christian democrat may support similar social provision from different moral premises.\n\nOnce named, these disagreements become available for argument rather than tribal inference.\n\n* * *\n\n## **XIV. An Instrument of Perception**\n\nA political vocabulary is an instrument of perception.\n\nThe left–right spectrum allowed mass democratic politics to compress conflict into a form ordinary citizens, parties, and institutions could carry. Its survival is evidence of its utility. But the same compression now obscures the combinations that increasingly decide elections: market radicals allied with cultural traditionalists; welfare states bounded by nationalism; technocrats and populists united in their impatience with mediation.\n\nWe do not need a more complicated compass. We need a grammar.\n\nThe five questions are not a final map of political reality. They are a disciplined refusal to confuse one disagreement with another:\n\n-   Who should control economic life?\n    \n-   When may order override autonomy?\n    \n-   Which inherited norms deserve continuity?\n    \n-   To whom do we owe special political obligation?\n    \n-   Through what structures should collective will become power?\n    \n\nThe family names make the answers speakable. The coordinates keep the names honest. The modifiers identify what neither can contain. Regime tags preserve the difference between ideology and the rules under which ideology is allowed to compete.\n\nLeft and right will remain. They should remain. They name the coalitions history has given us. But a coalition is not a principle, and a label is not an explanation.\n\nThe purpose of the taxonomy is therefore not to place every person into the correct box. It is to make it harder for us to argue about five different things while pretending that there is only one.\n\n> **Coordinates before categories. Questions before camps.**\n\nNot political neutrality. Political precision.\n\n* * *\n\n## **References**\n\n\\[1\\] Seonghui Lee, Lie Philip Santoso, and Randolph Stevenson, _Heuristic Inference and the Left-Right: An Experimental Analysis of How Voters Form Their Left-Right Images of Parties_, Cambridge Elements in Experimental Political Science (Cambridge University Press, 2026). [https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340](https://www.cambridge.org/core/elements/heuristic-inference-and-the-leftright/39EF6253D53389377D079AE9AD0D0340)\n\n\\[2\\] Michael Freeden, _Ideologies and Political Theory: A Conceptual Approach_ (Oxford: Clarendon Press); and “The Morphological Analysis of Ideology,” in _The Oxford Handbook of Political Ideologies_. [https://academic.oup.com/book/3196](https://academic.oup.com/book/3196) and [https://academic.oup.com/edited-volume/34324/chapter-abstract/291329165](https://academic.oup.com/edited-volume/34324/chapter-abstract/291329165)\n\n\\[3\\] Peter Mair and Cas Mudde, “The Party Family and Its Study,” _Annual Review of Political Science_ 1 (1998): 211–229. [https://www.annualreviews.org/content/journals/10.1146/annurev.polisci.1.1.211](https://www.annualreviews.org/content/journals/10.1146/annurev.polisci.1.1.211)\n\n\\[4\\] Pieter de Wilde, Peter Egge Langsæther, and colleagues, “Critical junctures and the crystallization of cosmopolitanism and communitarianism,” _European Political Science Review_ 15, no. 2 (2023): 157–176. [https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA](https://www.cambridge.org/core/journals/european-political-science-review/article/critical-junctures-and-the-crystallization-of-cosmopolitanism-and-communitarianism/57A4E048277B7259CD4C046E89ECACBA)\n\n\\[5\\] Joseph Uscinski et al., “American Politics in Two Dimensions: Partisan and Ideological Identities versus Anti-Establishment Orientations,” _American Journal of Political Science_ 65, no. 4 (2021). [https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976](https://scholarship.miami.edu/esploro/outputs/journalArticle/American-Politics-in-Two-Dimensions-Partisan/991031660574802976)\n\n\\[6\\] 8values, an open-source four-axis political survey.\n\nhttps://8values.github.io/\n\n— axes: Economic (Equality–Markets), Diplomatic (Nation–Globe), Civil (Liberty–Authority), Society (Tradition–Progress); the “closest match” disclaimer quoted in the text appears on the results page.\n\n\\[7\\] Hyrum Lewis and Verlan Lewis, _The Myth of Left and Right: How the Political Spectrum Misleads and Harms America_ (Oxford University Press, 2023); the quotations in the text are from the Caplan–Lewis exchange, “The Myth of Left and Right: The Last Word,” Bet On It.\n\n\\[8\\] Stanley Feldman and Leonie Huddy, “Not so simple: The multidimensional nature and diverse origins of political ideology,” _Behavioral and Brain Sciences_ (2014), [https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462](https://www.cambridge.org/core/product/51695765E8D4425D429BED2D6F48C462); and Philippe Mongrain and Stefaan Walgrave, “One-dimensional, multidimensional, or non-dimensional? Ideological structure in mass and elite opinion,” _European Journal of Political Research_ (2026), [https://www.cambridge.org/core/journals/european-journal-of-political-research/article/onedimensional-multidimensional-or-nondimensional-ideological-structure-in-mass-and-elite-opinion/78C953E1B5CC289B183AC549621DB14D](https://www.cambridge.org/core/journals/european-journal-of-political-research/article/onedimensional-multidimensional-or-nondimensional-ideological-structure-in-mass-and-elite-opinion/78C953E1B5CC289B183AC549621DB14D)\n\n\\[9\\] Chapel Hill Expert Survey, 2024 dataset and codebook. [https://www.chesdata.eu/ches-europe](https://www.chesdata.eu/ches-europe) and [https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf](https://www.chesdata.eu/s/CHES-2024-Codebook-er9d.pdf). The exploratory composites in Section IV are z-scored means of the following variables, with pairwise Pearson correlations computed over all 279 parties: Economy = lrecon, redistribution, deregulation, spendvtax; Coercion = civlib\\_laworder, executive\\_power; Culture = galtan, womens\\_rights, lgbtq\\_rights, samesex\\_marriage, religious\\_principles; Belonging = nationalism, immigrate\\_policy, multiculturalism, ethnic\\_minorities; System = anti\\_elite\\_salience, people\\_v\\_elite.\n\n\\[10\\] Liesbet Hooghe, Gary Marks, and Carole J. Wilson, “Does Left/Right Structure Party Positions on European Integration?,” _Comparative Political Studies_ 35, no. 8 (2002): 965–989. [https://journals.sagepub.com/doi/10.1177/001041402236310](https://journals.sagepub.com/doi/10.1177/001041402236310)\n\n\\[11\\] Herbert Kitschelt, _The Transformation of European Social Democracy_ (Cambridge University Press, 1994).\n\n\\[12\\] Cas Mudde, “The Populist Zeitgeist,” _Government and Opposition_ 39, no. 4 (2004): 541–563, [https://www.cambridge.org/core/journals/government-and-opposition/article/populist-zeitgeist/2CD34F8B25C4FFF4F322316833DB94B7](https://www.cambridge.org/core/journals/government-and-opposition/article/populist-zeitgeist/2CD34F8B25C4FFF4F322316833DB94B7); the definition is restated in Mudde, “Populism in the Twenty-First Century,” [https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century](https://amc.sas.upenn.edu/cas-mudde-populism-twenty-first-century)\n\n\\[13\\] Jan-Werner Müller, _What Is Populism?_ (University of Pennsylvania Press, 2016).\n\n\\[14\\] Daniele Caramani, “Will vs. Reason: The Populist and Technocratic Forms of Political Representation and Their Critique to Party Government,” _American Political Science Review_ 111, no. 1 (2017). [https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15](https://www.cambridge.org/core/journals/american-political-science-review/article/abs/will-vs-reason-the-populist-and-technocratic-forms-of-political-representation-and-their-critique-to-party-government/58444AC41CD6B6A4116F12CFF2585E15)\n\n\\[15\\] Agnes Akkerman, Cas Mudde, and Andrej Zaslove, “How Populist Are the People? Measuring Populist Attitudes in Voters,” _Comparative Political Studies_ 47, no. 9 (2014). [https://journals.sagepub.com/doi/10.1177/0010414013512600](https://journals.sagepub.com/doi/10.1177/0010414013512600)\n\n\\[16\\] David Collier and James E. Mahon Jr., “Conceptual ‘Stretching’ Revisited: Adapting Categories in Comparative Analysis,” _American Political Science Review_ 87, no. 4 (1993): 845–855. [https://www.cambridge.org/core/journals/american-political-science-review/article/abs/conceptual-stretching-revisited-adapting-categories-in-comparative-analysis/52A5DA1F2B8A9516A45C04F5B165E1C5](https://www.cambridge.org/core/journals/american-political-science-review/article/abs/conceptual-stretching-revisited-adapting-categories-in-comparative-analysis/52A5DA1F2B8A9516A45C04F5B165E1C5)\n\n\\[17\\] Jørgen Goul Andersen and Tor Bjørklund, “Structural Changes and New Cleavages: The Progress Parties in Denmark and Norway,” _Acta Sociologica_ 33, no. 3 (1990): 195–217. [https://journals.sagepub.com/doi/10.1177/000169939003300303](https://journals.sagepub.com/doi/10.1177/000169939003300303)\n\n\\[18\\] Tax Foundation, “Tariff Tracker: 2026 Trump Tariffs & Trade War by the Numbers” (accessed July 2026). [https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/](https://taxfoundation.org/research/all/federal/trump-tariffs-trade-war/)\n\n\\[19\\] Al Jazeera, “Peter Magyar wins Hungary election, unseating Viktor Orban after 16 years,” April 12, 2026. [https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz](https://www.aljazeera.com/news/2026/4/12/hungary-election-early-results-show-magyars-tisza-ahead-of-orbans-fidesz)\n\n\\[20\\] Norberto Bobbio, _Left and Right: The Significance of a Political Distinction_, trans. Allan Cameron (Cambridge: Polity Press, 1996).\n\n\\[21\\] Pew Research Center, “Beyond Red vs. Blue: The Political Typology,” June 10, 2026. [https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology/](https://www.pewresearch.org/politics/2026/06/10/beyond-red-vs-blue-the-political-typology/)\n\n\\[22\\] The charitable-poles method—stating each position as a good pursued and a failure feared—is indebted to Arnold Kling, _The Three Languages of Politics: Talking Across the Political Divides_ (Cato Institute, 2017), whose three “languages” are rhetorical heuristics of tribes; the poles here are positional coordinates of claims, but the steelmanning posture is his.\n",
+  "meters": {
+   "readMin": 32,
+   "words": 7711
+  },
+  "origin": "imported",
+  "proposals": [],
+  "provenance": null,
+  "sha256": "9ff463ed3d50951dd198c89b24d3923aa52434cd3e741a03efb62b2d9a450afc",
+  "state": "working",
+  "venueCap": null,
+  "versionLabel": "Published · sjsebastian.substack.com · fetched 2026-11-04"
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "published",
+ "kind": "editor-doc"
+}

@@ -1,0 +1,6 @@
+# hf-agent-intrusion-technical-timeline-2026-07-27
+- **URL:** https://huggingface.co/blog/agent-intrusion-technical-timeline · **Accessed:** 2026-09-16 (HTML downloaded) · **For:** v1 review, Phase 1
+- **What it establishes:** Published July 27, 2026; ~17,600 actions over July 9–13 (C3). Names Anthropic's Claude Opus and Fable as the refusing models, verbatim (C6). Says the model actually deployed was Nvidia's NVFP4 quantization of GLM-5.2 (C7 wrinkle). Independent corroboration of OpenAI's account (C1, C4).
+- **Key passages:** "Our forensic reconstruction covers ~17,600 attacker actions … grouped into ~6,280 clusters, between 2026-07-09 02:28 UTC and 2026-07-13 14:14 UTC." / "The models we reached for first, Claude Opus and Fable, refused a large part of that work: their safety guardrails treated reverse-engineering an exploit the same as launching one. Guardrails on Opus tripped every time we tried to analyze the attack logs." / "We stood up the quantized version of ZAI's GLM-5.2 by Nvidia (nvidia/GLM-5.2-NVFP4) on our own infrastructure … keeping the attacker data on-prem." / "from the agent's point of view, an attempt to cheat the evaluation."
+- **Reliability:** Primary; interested party; authors Hugo Larcher, Adrien Carreira, raphael g, Christophe Rannou.
+- **Relevance to this project:** C1, C3, C4, C6, C7, C76; ref [2].

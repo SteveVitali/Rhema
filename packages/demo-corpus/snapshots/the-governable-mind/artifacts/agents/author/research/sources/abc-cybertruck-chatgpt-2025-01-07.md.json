@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/abc-cybertruck-chatgpt-2025-01-07.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "e0c6972466cf5459",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/abc-cybertruck-chatgpt-2025-01-07.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# abc-cybertruck-chatgpt-2025-01-07\n- **URL:** https://abcnews.com/US/las-vegas-cybertruck-explosion-suspect-chatgpt-plan-attack/story?id=117428523 · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice L\n- **What it establishes:** ABC News account of the same Jan 7, 2025 LVMPD briefing. Assistant Sheriff Dori Koren described the queries; OpenAI's statement includes the extra sentence \"We're working with law enforcement to support their investigation.\" A six-page document was recovered \"on a phone found in the Cybertruck.\" The article does not state the source of the ChatGPT history.\n- **Key passages:**\n  - McMahill: police have \"clear evidence\" that Livelsberger used the tool to \"help plan his attack\"; calls it a \"concerning moment\" and a \"game changer.\"\n  - Koren: the suspect looked at \"trying to figure out the amount of explosives needed in order to conduct the explosion he was looking to cause\"; an \"important component\" was bullet velocity and \"determining whether that would ignite the explosives.\"\n  - OpenAI: \"We're working with law enforcement to support their investigation.\"\n- **Reliability:** Mainstream secondary.\n- **Relevance to this project:** L2(a). OpenAI's \"working with law enforcement\" sentence means one cannot assert the history came ONLY from his devices; no source read says OpenAI produced it either.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 180
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "3596c3a7386495d4c7b55421e5572be49c19c578daf8552cb9aa5c6e40bc53cd",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/abc-cybertruck-chatgpt-2025-01-07.md",
+ "kind": "artifact-page"
+}

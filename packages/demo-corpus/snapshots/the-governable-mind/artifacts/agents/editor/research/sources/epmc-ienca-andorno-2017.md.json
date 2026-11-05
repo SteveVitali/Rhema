@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/epmc-ienca-andorno-2017.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "edbd5a9fe84f9a08",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/epmc-ienca-andorno-2017.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# epmc-ienca-andorno-2017\n- **URL:** https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5447561/fullTextXML (metadata https://api.crossref.org/works/10.1186/s40504-017-0050-1) · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Epigraph is Milton's \"Thou canst not touch the freedom of my mind\"; \"last refuge\" and \"unassailable fortress\" verbatim; the four rights; LSSP 13, art. 5, 2017 (C37).\n- **Key passages:** \"the mind is a kind of last refuge of personal freedom and self-determination\"; \"the mind might no longer be such unassailable fortress.\"\n- **Reliability:** Primary (open-access full text via Europe PMC).\n- **Relevance to this project:** C37; §III.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 82
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "2415b18ad58c717fabc0096d2a48e63162714afa015480d59d9e2396a5e0725a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/epmc-ienca-andorno-2017.md",
+ "kind": "artifact-page"
+}

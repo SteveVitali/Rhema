@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/csa-caisi-testing-agreements-2026.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6fa5eea204cc9fc3",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/csa-caisi-testing-agreements-2026.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# csa-caisi-testing-agreements-2026\n- **URL:** https://labs.cloudsecurityalliance.org/research/csa-research-note-caisi-frontier-ai-testing-agreements-20260/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 policy\n- **What it establishes:** CSA research note, 2026: CAISI pre-deployment agreements with OpenAI, Anthropic, Google DeepMind, Microsoft, xAI (May 5, 2026); voluntary; CAISI evaluated DeepSeek V4 Pro without cooperation; no accreditation, appeal, or published standard; tension that models may deploy in national-security contexts with altered safety configurations.\n- **Key passages:** CAISI's authority 'rests entirely on voluntary participation. Unlike regulatory bodies with compulsory examination powers, the center can only assess models that developers choose to share.'\n- **Reliability:** Secondary; industry research note.\n- **Relevance to this project:** Q1(b)/(e): the single government tester; no procedure.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 102
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "5a8ec472ffb8cca98aca06b96cc3dc742709b9efa5ae143a4a7191acd1574302",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/csa-caisi-testing-agreements-2026.md",
+ "kind": "artifact-page"
+}

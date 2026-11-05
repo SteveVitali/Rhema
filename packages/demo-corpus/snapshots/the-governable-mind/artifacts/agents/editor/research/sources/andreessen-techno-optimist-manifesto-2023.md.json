@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/andreessen-techno-optimist-manifesto-2023.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "06a7ccfa8c2a1a7a",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/andreessen-techno-optimist-manifesto-2023.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# andreessen-techno-optimist-manifesto-2023\n- **URL:** https://a16z.com/the-techno-optimist-manifesto/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Andreessen, Oct 16, 2023: enemy list including existential risk, trust and safety, tech ethics, risk management; centralization vs decentralization; no open-source passage; no AI-regulation-as-control passage.\n- **Key passages:** \"Our enemy is…'existential risk'…'trust and safety', 'tech ethics', 'risk management'.\" · \"Centralization will starve you to death; decentralization harnesses complexity.\"\n- **Reliability:** Primary; manifesto.\n- **Relevance to this project:** What the essay is not (l.218–220); §7 e/acc forecast.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 78
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "129ca46316093cbb4dbd14f3afa3a8c055f6e0fcd17802d6d6982472359a044d",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/andreessen-techno-optimist-manifesto-2023.md",
+ "kind": "artifact-page"
+}

@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/foucault-panopticism-foucault-info.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "55f9ed699d32fb10",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/foucault-panopticism-foucault-info.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# foucault-panopticism-foucault-info\n- **URL:** https://foucault.info/documents/foucault.disciplineAndPunish.panOpticism/ · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 2\n- **What it establishes:** Verified: 'visible and unverifiable'; 'surveillance is permanent in its effects, even if it is discontinuous in its action'; 'becomes the principle of his own subjection'.\n- **Key passages:** \"Unverifiable: the inmate must never know whether he is being looked at at any one moment\"\n- **Reliability:** Primary text (Sheridan translation online).\n- **Relevance to this project:** Report §5 item 9; draft l.160 (C53).\n",
+  "meters": {
+   "readMin": 1,
+   "words": 75
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1e9b708320a94eb5f0055717d53168aa24bbaa98d88f8aeb97a837ab0f131470",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/foucault-panopticism-foucault-info.md",
+ "kind": "artifact-page"
+}

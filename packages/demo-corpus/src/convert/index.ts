@@ -319,6 +319,7 @@ export function convertProject(input: ConvertProjectInput): ConvertProjectResult
       findingLabels: labels,
       ...(nextMd !== undefined ? { nextDraftMarkdown: nextMd } : {}),
       overrides: book,
+      file: p,
     });
     if (!rl.ok) {
       diagnostics.push(...rl.diagnostics);

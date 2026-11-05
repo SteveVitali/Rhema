@@ -1,0 +1,13 @@
+# axios-trump-ai-framework-open-models-2026-08-04
+- **URL:** https://www.axios.com/2026/08/04/trump-ai-framework-open-models (direct: HTTP 403 to curl and WebFetch; sentence confirmed via a reader proxy) — full text read in the Yahoo News syndication https://www.yahoo.com/news/politics/articles/scoop-inside-trumps-ai-framework-211424484.html (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K5)
+- **What it establishes:** Maria Curi, "Scoop: Inside Trump's AI framework" (Axios; Yahoo stamp "Updated Tue, August 4, 2026 at 9:14 PM UTC"; axios.com page title "Trump AI framework excludes open AI models"). As of Aug 4 the framework, per sources briefed on White House meetings, defined a covered frontier model as closed-source and excluded open models. Everything is sourced to "sources familiar"/"multiple sources briefed"; Axios does not quote the framework's text. The non-restriction clause is about open models "once they've been released" — it is not a promise never to test open models pre-release.
+- **Key passages:**
+  - "The White House is excluding open models from its framework to test advanced AI capabilities, sources familiar with the matter told Axios."
+  - "The AI framework reviewed on Tuesday defines a covered frontier model as closed-source with state-of-the-art capabilities and national security risks, multiple sources briefed on meetings held at the White House said."
+  - "There is no clear definition of what is considered state-of-the-art or a national security risk."
+  - "Open models are excluded, and the framework explicitly says nothing in it should be interpreted as restricting open models once they've been released."
+  - "During the 30-day pre-release government review period, employees would be limited from accessing models. The models would be stored in high-security environments, and there would need to be detailed logs on who is accessing the models."
+  - "The White House does not plan to publicly release the framework, Axios previously reported." · "There is no requirement in the order to publicly release the voluntary framework."
+  - "It's also unclear which 'trusted partners' will get early access to advanced models under the framework".
+- **Reliability:** Secondary; well-sourced trade/political press; anonymous sources; the framework text itself is unpublished, so no one outside can check the paraphrase.
+- **Relevance to this project:** Verifies the review's Axios sentence verbatim. Pair with WIRED Aug 12 (reversal expected "in the coming months").

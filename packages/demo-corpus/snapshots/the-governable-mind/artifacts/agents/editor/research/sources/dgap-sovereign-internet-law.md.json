@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/editor/research/sources/dgap-sovereign-internet-law.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "61659dfc0fc31779",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/editor/research/sources/dgap-sovereign-internet-law.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# dgap-sovereign-internet-law\n- **URL:** https://dgap.org/en/research/publications/deciphering-russias-sovereign-internet-law · **Accessed:** 2026-09-16 · **For:** v1 review, Phase 1\n- **What it establishes:** Supports C56 (Epifanova, Jan 16, 2020): most provisions in force Nov 1, 2019; TSPU as 'technical equipment for counteracting threats'; DPI 'black boxes'; Roskomnadzor supplies and controls.\n- **Key passages:** 'most of which came into force on November 1, 2019' / 'technical equipment for counteracting threats to stability, security, and the functional integrity of the internet'\n- **Reliability:** Secondary (think-tank analysis).\n- **Relevance to this project:** C56\n",
+  "meters": {
+   "readMin": 1,
+   "words": 79
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "b56f8e80fc13f33ccac8b69c015ca1d586626269a5804696439d098b738ab5a3",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/editor/research/sources/dgap-sovereign-internet-law.md",
+ "kind": "artifact-page"
+}

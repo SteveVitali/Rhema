@@ -1,0 +1,6 @@
+# sep-liberty-positive-negative
+- **URL:** https://plato.stanford.edu/entries/liberty-positive-negative/ · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C24
+- **What it establishes:** SEP "Positive and Negative Liberty" (Ian Carter and Ilkin Huseynli; substantive revision June 28, 2026) quotes Berlin's 1969 *Four Essays* wording of both key passages, with page numbers, and frames the "paradox" by which positive liberty can license coercion in the name of the "true self."
+- **Key passages:** Berlin (1969, pp. 121–22): "What is the area within which the subject—a person or group of persons—is or should be left to do or be what he is able to do or be, without interference by other persons?" · Berlin (1969, pp. 132–33): "Once I take this view, I am in a position to ignore the actual wishes of men or societies, to bully, oppress, torture in the name, and on behalf, of their ‘real’ selves". · SEP gloss: negative liberty as "the absence of obstacles, barriers or constraints."
+- **Reliability:** Secondary, peer-reviewed reference; independent; standard scholarly framing.
+- **Relevance to this project:** C24 — use for the 1969 wording and pagination; pair with the Oxford 1958 text.

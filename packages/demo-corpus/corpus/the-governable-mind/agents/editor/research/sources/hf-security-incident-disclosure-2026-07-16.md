@@ -1,0 +1,6 @@
+# hf-security-incident-disclosure-2026-07-16
+- **URL:** https://huggingface.co/blog/security-incident-july-2026 · **Accessed:** 2026-09-16 (HTML downloaded) · **For:** v1 review, Phase 1
+- **What it establishes:** Published July 16, 2026 (C9). Exact wording of the C5 quotation (draft splices it). C7 locality and data-containment claims. C76 "more than 17,000." Does not name any provider.
+- **Key passages:** "When we started the log analysis, we first used frontier models behind commercial APIs. This did not work: the analysis requires submitting large volumes of real attack commands, exploit payloads, and C2 artifacts, and these requests were blocked by the providers' safety guardrails, which cannot distinguish an incident responder from an attacker." / "We ran the forensic analysis instead on zai-org/GLM-5.2, an open-weight model, on our own infrastructure. This had a second benefit: no attacker data, and none of the credentials it referenced, left our environment." / "the full attacker action log, comprised of more than 17,000 recorded events."
+- **Reliability:** Primary; interested party (open-model platform), as the draft discloses.
+- **Relevance to this project:** C5, C7, C9, C76; ref [2].

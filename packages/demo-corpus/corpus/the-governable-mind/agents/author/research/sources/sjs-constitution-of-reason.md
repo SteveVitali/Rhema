@@ -1,0 +1,11 @@
+# sjs-constitution-of-reason
+- **URL:** https://sjsebastian.substack.com/p/the-constitution-of-reason · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C51(b)
+- **What it establishes:** Live. S. J. Sebastian, "The Constitution of Reason: Multi-Agent AI as Institutional Design," subtitle "The Logos, the Limits of the Individual Mind, and the Rise of Artificial Societies of Thought," displayed date Aug 21, 2026. Section VII introduces a "constitutional test" (the essay uses that phrase) with seven named criteria: compute normalization; causal differentiation; prior independence; critical uptake; adjudicative competence; external constraint; reopenability. The sentence closest to "no finite reasoner can safely identify itself with reason" is actually "no finite mind can safely identify itself with reason as such." "The judge must remain judgeable." appears verbatim in Section VIII. The final sentence of the main body (before References) is the Logos sentence; "Philosophy does not end when the answer is found..." is in the final section but is NOT the closing sentence. Does not explicitly cite or link any other essay by the author.
+- **Key passages:**
+  - "Before attributing any gain to collective reasoning, we should apply a constitutional test."
+  - "First: compute normalization. Does the architecture outperform a strong single-process method using comparable tokens, time, tool calls, and model capability? Second: causal differentiation. What does one component possess or do that another cannot?"
+  - "Reason must be constituted because no finite mind can safely identify itself with reason as such."
+  - "But practical finality is not metaphysical finality: the decision can be binding while the question remains open, the verdict can govern while the appeal remains possible. The judge must remain judgeable."
+  - (closing) "We approach the Logos not when one mind finally speaks for reason, but when minds are so constituted that reason can speak against each of them."
+- **Reliability:** Primary (author's own prior publication). Self-citation.
+- **Relevance to this project:** C51(b). Correct the paraphrase "finite reasoner" to "finite mind" if quoting. Cross-reference check: no explicit citation of the other two essays found.

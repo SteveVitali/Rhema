@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/venturebeat-thomason-amodei-open-weights-2026-09-14.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "49db5457297ccbda",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/venturebeat-thomason-amodei-open-weights-2026-09-14.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# venturebeat-thomason-amodei-open-weights-2026-09-14\n- **URL:** https://venturebeat.com/technology/amodeis-ai-slowdown-plan-never-says-open-weights-it-doesnt-have-to (raw HTML via curl) · **Accessed:** 2026-09-16 · **For:** v2→v3 response round, slice K (K4)\n- **What it establishes:** James Thomason, \"Amodei's AI slowdown plan never says open weights. It doesn't have to.\", VentureBeat, \"12:59 pm, PT, September 14, 2026\". Guest opinion (bio: Managing Partner at Next Wave Partners; he opposed SB 1047 in VentureBeat two years earlier). Argues Amodei's \"Pace the Frontier\" (Sept 12) checkpoint-certification scheme excludes open weights de facto; invokes Stigler, the Stationers' Company, and Bernstein. Does NOT mention the Kill Switch Act, the Senate draft, or the August White House framework.\n- **Key passages:**\n  - \"That is why Amodei never has to ask Washington to outlaw open weights. A compliance regime that closed models can meet and open models cannot does the same work, and a certification that must travel with the model is exactly that. Publication stays legal in the same sense that owning a tiger stays legal. The paperwork does the hunting.\"\n  - Preceding para: \"For Claude, this costs nothing. Claude is under house arrest by design. Every prompt reports to Anthropic's servers ... An open-weight model has no ankle. It is a file.\"\n  - He flags his own reading as an inference: \"Accompanied. I read that as a certification the model carries, not one it clears once at the door and leaves behind. If Amodei means the narrower thing, he should say so\".\n  - Bernstein: \"The United States tried to control strong cryptography through export licenses and publication restraints. A district court and a Ninth Circuit panel in the Bernstein case ruled that source code used to communicate scientific ideas received First Amendment protection and that the licensing system imposed an unconstitutional prior restraint.\" · \"Model weights raise distinct legal questions, yet a permission system for computational research carries the same odor of prior restraint.\"\n  - Capture: \"George Stigler described the mechanism decades ago. Industries acquire regulation and often operate it for their own benefit.\" · \"Competitors coordinating the pace of output form a cartel. 'Safety' supplies the lab coat.\"\n  - Stationers: \"The English Crown licensed printing through the Stationers' Company. The arrangement gave the government censorship and established printers a monopoly.\"\n  - Concession: \"Credit where it is due: the first prong costs Anthropic something real.\"\n  - Quotes Amodei, July 27: \"Anthropic has never advocated for a ban on open-weights models.\"\n- **Reliability:** Secondary opinion; interested (investor, long-time opponent of frontier regulation). \"Ninth Circuit panel\" is accurate phrasing (the 1999 panel opinion was later withdrawn for en banc rehearing; he does not say so).\n- **Relevance to this project:** The quoted sentence is verbatim. NB: Thomason also uses the Stationers' Company analogy, so the essay's use of it is not unique in the current discourse.\n",
+  "meters": {
+   "readMin": 2,
+   "words": 443
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "c01c6af522e0c44e2ab046057b0f536e266f15f559d08985951083677504cc35",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/venturebeat-thomason-amodei-open-weights-2026-09-14.md",
+ "kind": "artifact-page"
+}

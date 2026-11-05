@@ -1,0 +1,1273 @@
+{
+ "dto": {
+  "afterN": 2,
+  "beforeN": 1,
+  "ok": true,
+  "responseId": "v1-v2",
+  "reviewId": "v1-review",
+  "view": {
+   "moves": [],
+   "rebutted": [
+    {
+     "findingId": "Minor 5",
+     "findingOrdinal": 16,
+     "rationale": "rebut with evidence (`fbi-centennial-history-2008`: Wayback capture of the book PDF reads \"was questionable\" verbatim; web page differs) — no change",
+     "severity": "minor",
+     "title": "**§VIII Palmer quote:** the reachable FBI page reads \"was questioned\"; the draft's \"was questionable\" rests on the fetch-blocked centennial book — verify the book's wording before publication. (Ledger"
+    },
+    {
+     "findingId": "Minor 12",
+     "findingOrdinal": 23,
+     "rationale": "rebut with evidence (`fraenkel-dual-state-oup-2017-preview`: publisher preview confirms p. xxiii, Introduction to the 1941 Edition) + ref tweak",
+     "severity": "minor",
+     "title": "**Fraenkel page cite (§VII)** is edition-dependent; pin to the Meierhenrich/OUP edition explicitly."
+    }
+   ],
+   "strip": {
+    "addressed": 22,
+    "hunks": 30,
+    "moves": 0,
+    "rebutted": 2,
+    "stillOpen": 0
+   },
+   "unlinked": {
+    "entries": [
+     {
+      "findingOrdinal": 1,
+      "kind": "adapt",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 2,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 3,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 4,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 5,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 6,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 12,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 13,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 14,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 15,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 17,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 18,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 19,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 20,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 21,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 22,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 24,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 25,
+      "kind": "adapt",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 26,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 27,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 28,
+      "kind": "accept",
+      "status": "done"
+     },
+     {
+      "findingOrdinal": 29,
+      "kind": "accept",
+      "status": "done"
+     }
+    ],
+    "hunks": [
+     {
+      "after": [
+       {
+        "blockId": "b5",
+        "endOffset": 871,
+        "index": 5,
+        "startOffset": 196,
+        "text": "On the last day of January 2026, a federal undercover officer attended a meeting at a public library in Minneapolis. The report of the officer, identified in the filings only as UCA 9833, records what the agent heard: supporters of the Sunrise Movement, a youth climate organization, discussing sit-ins, de-escalation tactics, and \"having a police liaison and safety marshal present during events.\" The report's summary sentence contains one small, telling piece of punctuation. \"During the Action meeting, it was made clear that the Sunrise Movement organization focused on 'peaceful' protests,\" the agent wrote.[1] The quotation marks around *peaceful* are the agent's own."
+       },
+       {
+        "blockId": "b6",
+        "endOffset": 1862,
+        "index": 6,
+        "startOffset": 873,
+        "text": "That meeting was one node in a pair of federal investigations, Operation Puppet Master and Project Whipple Shield, whose internal documents became public on August 13, 2026, in a defense motion filed in federal court.[1] The filings describe undercover officers of Homeland Security Investigations attending gatherings in churches, schools, parks, libraries, and union halls. They describe agents collecting the license-plate numbers of attendees and compiling dossiers of names, photographs, addresses, and vehicle registrations.[1][2] By one account, agents also secretly recorded conversations and joined encrypted group chats.[2] They describe administrative subpoenas (instruments issued by the agency itself, with no judge involved) that obtained years of financial records from the Service Employees International Union, the Communications Workers of America, the Sunrise Movement, and other organizations, together with the request that the summonses remain secret indefinitely.[1]"
+       },
+       {
+        "blockId": "b7",
+        "endOffset": 2273,
+        "index": 7,
+        "startOffset": 1864,
+        "text": "And they include a slide, prepared by the investigative branch of the Department of Homeland Security, titled \"The Conspiracy.\" It maps eighteen organizations, from a small Minneapolis bicycle repair collective to the AFL-CIO; a diagram linking organizations to the alleged conspiracy was shown to the grand jury, by the Minnesota Reformer's account.[2] None of the eighteen has been charged with anything.[1]"
+       },
+       {
+        "blockId": "b8",
+        "endOffset": 3286,
+        "index": 8,
+        "startOffset": 2275,
+        "text": "Fifteen people have been charged. They are alleged members and associates of a group called Direct Action Minnesota, indicted in June 2026 for conspiracy to impede a federal officer, with some facing additional counts including assault on a federal officer and destruction of government property; fourteen have pleaded not guilty.[3] The alleged conduct (blockading a federal building, throwing ice at federal vehicles, assaulting officers) is plainly prosecutable if proved, and nothing in this essay suggests otherwise. The question the documents raise is not whether the government may investigate crimes. It is how an investigation of fifteen people's alleged crimes became a financial dragnet through a state's labor movement and an intelligence diagram of a city's civic life. Everything the filings describe is, for now, allegation in an unresolved case. The account is the defense's, the government has yet to answer it, and the documents are treated here as exhibits in a live dispute, not as findings."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b5",
+        "endOffset": 852,
+        "index": 5,
+        "startOffset": 196,
+        "text": "On the last day of January 2026, a federal undercover officer attended a meeting at a public library in Minneapolis. The report of the officer, identified in the filings only as UCA 9833, records what he heard: supporters of the Sunrise Movement, a youth climate organization, discussing sit-ins, de-escalation tactics, and \"having a police liaison and safety marshal present during events.\" The report's summary sentence contains one small, telling piece of punctuation. \"During the Action meeting, it was made clear that the Sunrise Movement organization focused on 'peaceful' protests,\" the agent wrote.[1] The quotation marks around *peaceful* are his."
+       },
+       {
+        "blockId": "b6",
+        "endOffset": 1837,
+        "index": 6,
+        "startOffset": 854,
+        "text": "That meeting was one node in a pair of federal investigations, Operation Puppet Master and Project Whipple Shield, whose internal documents became public on August 13, 2026, in a defense motion filed in federal court.[1] The filings describe undercover officers of Homeland Security Investigations attending gatherings in churches, schools, parks, libraries, and union halls. They describe agents collecting the license-plate numbers of attendees and compiling dossiers of names, photographs, addresses, and vehicle registrations. By one account, agents also secretly recorded conversations and joined encrypted group chats.[2] They describe administrative subpoenas (instruments issued by the agency itself, with no judge involved) that obtained years of financial records from the Service Employees International Union, the Communications Workers of America, the Sunrise Movement, and other organizations, together with the request that the summonses remain secret indefinitely.[1]"
+       },
+       {
+        "blockId": "b7",
+        "endOffset": 2147,
+        "index": 7,
+        "startOffset": 1839,
+        "text": "And they include a slide, prepared by the investigative branch of the Department of Homeland Security and shown to a grand jury, titled \"The Conspiracy.\" It maps eighteen organizations, from a small Minneapolis bicycle repair collective to the AFL-CIO. None of the eighteen has been charged with anything.[1]"
+       },
+       {
+        "blockId": "b8",
+        "endOffset": 2931,
+        "index": 8,
+        "startOffset": 2149,
+        "text": "Fifteen people have been charged. They are alleged members and associates of a group called Direct Action Minnesota, indicted in June 2026 for conspiracy to impede a federal officer, with some facing additional counts including assault on a federal officer and destruction of government property; fourteen have pleaded not guilty.[3] The alleged conduct (blockading a federal building, throwing ice at federal vehicles, assaulting officers) is plainly prosecutable if proved, and nothing in this essay suggests otherwise. The question the documents raise is not whether the government may investigate crimes. It is how an investigation of fifteen people's alleged crimes became a financial dragnet through a state's labor movement and an intelligence diagram of a city's civic life."
+       }
+      ],
+      "charsChanged": 5813,
+      "id": "h1",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b11",
+        "endOffset": 6310,
+        "index": 11,
+        "startOffset": 5109,
+        "text": "The distinction has ancestors, and naming them locates the claim. Edward Snowden compressed the whole thesis into a warning in 2013: a future leader, he said, would \"find the switch,\" and \"it will be turnkey tyranny.\" A year earlier the NSA's William Binney, holding two fingers nearly together, had put the country \"that far from a turnkey totalitarian state.\"[52] Jack Balkin had already argued in 2008 that the National Surveillance State was \"neither the product of emergency nor the product of war\" but \"a permanent feature of governance,\" and that the live question was whether it would be an authoritarian information state or a democratic one.[53] Balkin took the surveillance state as inevitable and asked how to constitutionalize it; this essay treats one subset of it, the legibility of political association, as something to prevent. Political science keeps a related ledger under the name of coercive capacity, though it studies that stock almost entirely inside states that are already autocracies.[54] Authoritarian capacity, as the term is used here, is the general case those accounts point at, watched where it is hardest to see: accumulating inside a regime that remains democratic."
+       },
+       {
+        "blockId": "b12",
+        "endOffset": 6844,
+        "index": 12,
+        "startOffset": 6312,
+        "text": "The serious question is therefore not whether America has crossed some line between democracy and dictatorship. It has not. Readers braced for the announcement that fascism has arrived can stand down; readers comforted by that assurance should not. The serious question is what machinery an American authoritarian state would require, how much of that machinery already exists, and under what conditions institutions built for immigration, terrorism, policing, and ordinary administration can be redirected toward political control."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b11",
+        "endOffset": 5161,
+        "index": 11,
+        "startOffset": 4754,
+        "text": "The serious question is therefore not whether America has crossed some line between democracy and dictatorship. It has not. The serious question is what machinery an American authoritarian state would require, how much of that machinery already exists, and under what conditions institutions built for immigration, terrorism, policing, and ordinary administration can be redirected toward political control."
+       }
+      ],
+      "charsChanged": 2140,
+      "id": "h2",
+      "kind": "mixed"
+     },
+     {
+      "after": [],
+      "before": [
+       {
+        "blockId": "b19",
+        "endOffset": 8075,
+        "index": 19,
+        "startOffset": 7980,
+        "text": "That is a claim about architecture, and it is why the argument must now turn to the technology."
+       }
+      ],
+      "charsChanged": 95,
+      "id": "h3",
+      "kind": "removed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b21",
+        "endOffset": 10410,
+        "index": 21,
+        "startOffset": 9697,
+        "text": "James C. Scott spent a career studying what he called legibility. The term names \"a state's attempt to make a society legible, to arrange the population in ways that simplified the classic state functions of taxation, conscription, and prevention of rebellion\"; having noticed it, Scott \"began to see legibility as a central problem in statecraft.\"[6] Permanent surnames, standardized weights and measures, cadastral surveys, population registers, the census: the premodern state was blind to its own society, and the modern state is the project of curing that blindness. Legibility precedes everything else a state does, benevolent or otherwise. To tax, conscript, vaccinate, or arrest, the state must first see."
+       },
+       {
+        "blockId": "b22",
+        "endOffset": 11508,
+        "index": 22,
+        "startOffset": 10412,
+        "text": "The twentieth-century administrative state perfected legibility of a particular kind. It made subjects identifiable: fixed to a name, an address, a file. What the twenty-first-century state acquires is different in kind, not merely in degree. It makes subjects patternable. Call this behavioral legibility, an extension of Scott's term: the state's capacity to know not just who a person is but where they have been, who repeatedly appears beside them, which places they frequent, which devices travel together, and which cars recur outside which meetings. The coinage names a junction the existing vocabulary keeps apart. What the intelligence trade calls \"pattern of life\" analysis is this capability's operational name. Shoshana Zuboff's \"behavioral surplus\" is its market-facing sibling, the data exhaust harvested for prediction and profit, and Lisa Austin has already carried Scott's legibility into privacy law as a question of governance.[55] Behavioral legibility names what the state specifically acquires when it taps that stream: retrieval for control rather than prediction for sale."
+       },
+       {
+        "blockId": "b23",
+        "endOffset": 12011,
+        "index": 23,
+        "startOffset": 11510,
+        "text": "The distinction matters because of what each kind of knowledge is good for. Identity answers the question the old state asked: who are you? Behavior answers the questions a political investigation asks: whom do you know, what do you do, where do you belong, and what collective are you part of? Association, the thing hardest to observe in the analog world and most protected in the constitutional one, is exactly what behavioral data renders best. A file could hold a name; a pattern holds a network."
+       },
+       {
+        "blockId": "b24",
+        "endOffset": 12194,
+        "index": 24,
+        "startOffset": 12013,
+        "text": "The machinery that produces such patterns has one property worth stating in advance: almost none of it was built for political surveillance, and almost all of it can be used for it."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b21",
+        "endOffset": 8757,
+        "index": 21,
+        "startOffset": 8111,
+        "text": "James C. Scott spent a career studying what he called legibility. The term names \"a state's attempt to make a society legible, to arrange the population in ways that simplified the classic state functions of taxation, conscription, and prevention of rebellion\"; having noticed it, Scott \"began to see legibility as a central problem in statecraft.\"[6] Permanent surnames, standardized weights and measures, cadastral surveys, population registers, the census: the premodern state was blind to its own society, and the modern state is the project of curing that blindness. Legibility precedes everything else a state does, benevolent or otherwise."
+       },
+       {
+        "blockId": "b22",
+        "endOffset": 8825,
+        "index": 22,
+        "startOffset": 8759,
+        "text": "To tax, conscript, vaccinate, or arrest, the state must first see."
+       },
+       {
+        "blockId": "b23",
+        "endOffset": 9411,
+        "index": 23,
+        "startOffset": 8827,
+        "text": "The twentieth-century administrative state perfected legibility of a particular kind. It made subjects identifiable: fixed to a name, an address, a file. What the twenty-first-century state acquires is different in kind, not merely in degree. It makes subjects patternable. Call this behavioral legibility, an extension of Scott's term coined here for the purpose: the state's capacity to know not just who a person is but where they have been, who repeatedly appears beside them, which places they frequent, which devices travel together, and which cars recur outside which meetings."
+       },
+       {
+        "blockId": "b24",
+        "endOffset": 9861,
+        "index": 24,
+        "startOffset": 9413,
+        "text": "The distinction matters because of what each kind of knowledge is good for. Identity answers the question the old state asked: who are you? Behavior answers the questions a political investigation asks: whom do you know, what do you do, where do you belong, and what collective are you part of? Association, the thing hardest to observe in the analog world and most protected in the constitutional one, is exactly what behavioral data renders best."
+       },
+       {
+        "blockId": "b25",
+        "endOffset": 9915,
+        "index": 25,
+        "startOffset": 9863,
+        "text": "A file could hold a name. A pattern holds a network."
+       },
+       {
+        "blockId": "b26",
+        "endOffset": 10140,
+        "index": 26,
+        "startOffset": 9917,
+        "text": "The next two sections concern the machinery that produces such patterns. Its most important property can be stated in advance: almost none of it was built for political surveillance, and almost all of it can be used for it."
+       }
+      ],
+      "charsChanged": 4510,
+      "id": "h4",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b28",
+        "endOffset": 14081,
+        "index": 28,
+        "startOffset": 12632,
+        "text": "Begin with the roads. Flock Safety, the largest of the automated license-plate-reader companies, operates more than 120,000 cameras across some 6,000 communities in forty-nine states, serving thousands of law-enforcement agencies.[7] Each camera records plate, vehicle make and model, color, timestamp, and distinguishing features down to roof racks and damaged taillights.[7] One such camera is a parking utility. A national, searchable network of them is a ledger of movement: a queryable history of which cars appeared where, and when, held by a private company and sold to government as a service. The scale is new, and so is the contestation of it. In 2026, after more than fifty communities canceled contracts and roughly fifty officers were accused of misusing searches, Flock cut its default retention from thirty days to seven and restricted cross-agency queries.[7] The company's own defense deserves quoting: \"data is a liability, not an asset,\" its chief executive told Newsweek, describing deletion as policy (a hard delete, \"unless it's a part of a criminal investigation\") and pointing to more than a thousand missing persons located by the cameras in a single month. On the searches officers had been able to run without logging a reason, he conceded, \"we got that one wrong.\"[58] The defense is quoted because its first clause is true. It is also the argument's premise. The infrastructure is real, and so, for now, is the pushback."
+       },
+       {
+        "blockId": "b29",
+        "endOffset": 14957,
+        "index": 29,
+        "startOffset": 14083,
+        "text": "What the infrastructure is becoming is visible in the company's own code. In August 2026, WIRED reported, on the basis of files exposed through Flock's own login pages, on a product in testing called OS Investigate: an interface that joins vehicle observations to police records, 911 dispatch logs, identity information, and commercial databases, and offers investigators sixty-nine prewritten prompts.[8] Fourteen of them require no plate, no name, and no physical description. They ask, for instance, for the vehicles most seen in a neighborhood over the last fourteen days, or for a vehicle's \"associates,\" inferred from co-location.[8] The politically significant query is no longer \"what is this person's license plate?\" It is \"which vehicles repeatedly appeared near this building?\" A plate reader becomes political at the moment movement data becomes relational data."
+       },
+       {
+        "blockId": "b30",
+        "endOffset": 15737,
+        "index": 30,
+        "startOffset": 14959,
+        "text": "Notice who built all of this. Police departments did not construct the camera network, the cloud databases, the search interfaces, or the analytics; a company did, and government purchases access. The old mental partition between state surveillance and corporate surveillance dissolves on contact with this arrangement. The better description is a public-private assemblage: private infrastructure, spanning jurisdictions, incorporating commercial data, upgraded by software release rather than by statute, with the state as subscribing customer. Shoshana Zuboff, who named the private half of this economy, insisted that the power it births is \"completely distinct from totalitarianism\"; the state as subscribing customer is the junction her distinction did not anticipate.[55]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b30",
+        "endOffset": 11453,
+        "index": 30,
+        "startOffset": 10578,
+        "text": "Begin with the roads. Flock Safety, the largest of the automated license-plate-reader companies, operates more than 120,000 cameras across some 6,000 communities in forty-nine states, serving thousands of law-enforcement agencies.[7] Each camera records plate, vehicle make and model, color, timestamp, and distinguishing features down to roof racks and damaged taillights.[7] One such camera is a parking utility. A national, searchable network of them is a ledger of movement: a queryable history of which cars appeared where, and when, held by a private company and sold to government as a service. The scale is new, and so is the contestation of it. In 2026, after more than fifty communities canceled contracts and roughly fifty officers were accused of misusing searches, Flock cut its default retention from thirty days to seven and restricted cross-agency queries.[7]"
+       },
+       {
+        "blockId": "b31",
+        "endOffset": 11516,
+        "index": 31,
+        "startOffset": 11455,
+        "text": "The infrastructure is real, and so, for now, is the pushback."
+       },
+       {
+        "blockId": "b32",
+        "endOffset": 12310,
+        "index": 32,
+        "startOffset": 11518,
+        "text": "What the infrastructure is becoming is visible in the company's own code. In August 2026, WIRED reported, on the basis of files exposed through Flock's own login pages, on a product in testing called OS Investigate: an interface that joins vehicle observations to police records, 911 dispatch logs, identity information, and commercial databases, and offers investigators sixty-nine prewritten queries.[8] Fourteen of them require no plate, no name, and no description of a suspect. They ask, for instance, for the vehicles most seen in a neighborhood over the last fourteen days, or for a vehicle's \"associates,\" inferred from co-location.[8] The politically significant query is no longer \"what is this person's license plate?\" It is \"which vehicles repeatedly appeared near this building?\""
+       },
+       {
+        "blockId": "b33",
+        "endOffset": 12397,
+        "index": 33,
+        "startOffset": 12312,
+        "text": "A plate reader becomes political at the moment movement data becomes relational data."
+       },
+       {
+        "blockId": "b34",
+        "endOffset": 12945,
+        "index": 34,
+        "startOffset": 12399,
+        "text": "Notice who built all of this. Police departments did not construct the camera network, the cloud databases, the search interfaces, or the analytics; a company did, and government purchases access. The old mental partition between state surveillance and corporate surveillance dissolves on contact with this arrangement. The better description is a public-private assemblage: private infrastructure, spanning jurisdictions, incorporating commercial data, upgraded by software release rather than by statute, with the state as subscribing customer."
+       }
+      ],
+      "charsChanged": 5460,
+      "id": "h5",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b32",
+        "endOffset": 17218,
+        "index": 32,
+        "startOffset": 16617,
+        "text": "Face closes identity's side of the ledger. The Government Accountability Office found seven federal law-enforcement agencies, the FBI and ICE's investigative arm among them, using commercial facial-recognition services, and counted roughly 60,000 searches in a two-and-a-half-year period during which none of the agencies had training requirements in place.[10] The significance is not a science-fiction future of universal recognition. It is one more join key: a face links a protest photograph to a driver's license, a license to an address, an address to a vehicle, a vehicle to a movement history."
+       },
+       {
+        "blockId": "b33",
+        "endOffset": 17899,
+        "index": 33,
+        "startOffset": 17220,
+        "text": "What this ecosystem is not matters as much as what it is. Gait recognition, the identification of people by how they walk, is a live research field, not a documented feature of American roadside cameras; there is no good public evidence that ordinary Flock deployments identify pedestrians by gait or by Bluetooth signature.[11] (Flock does sell a camera that can optically follow a walking person, and a search tool that accepts natural-language descriptions of people; that is documented, and it is a different fact.[11]) Phones do leak location through several independent channels: the cellular network's own records, Wi-Fi and Bluetooth beacons, and the apps themselves.[12]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b36",
+        "endOffset": 14429,
+        "index": 36,
+        "startOffset": 13825,
+        "text": "Face completes identity's side of the ledger. The Government Accountability Office found seven federal law-enforcement agencies, the FBI and ICE's investigative arm among them, using commercial facial-recognition services, and counted roughly 60,000 searches in a two-and-a-half-year period during which none of the agencies had training requirements in place.[10] The significance is not a science-fiction future of universal recognition. It is one more join key: a face links a protest photograph to a driver's license, a license to an address, an address to a vehicle, a vehicle to a movement history."
+       },
+       {
+        "blockId": "b37",
+        "endOffset": 15178,
+        "index": 37,
+        "startOffset": 14431,
+        "text": "Precision requires saying what this ecosystem is not. Gait recognition, the identification of people by how they walk, is a live research field, not a documented feature of American roadside cameras; there is no good public evidence that ordinary Flock deployments identify pedestrians by gait or by Bluetooth signature.[11] (Flock does sell a camera that can optically follow a walking person, and a search tool that accepts natural-language descriptions of people; that is documented, and it is a different fact.[11]) Phones do leak location through several independent channels: the cellular network's own records, Wi-Fi and Bluetooth beacons, and the apps themselves.[12] The correction is worth a paragraph because the argument depends on it."
+       }
+      ],
+      "charsChanged": 2631,
+      "id": "h6",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b38",
+        "endOffset": 19791,
+        "index": 38,
+        "startOffset": 19257,
+        "text": "Authoritarian capacity grows combinatorially. Ten disconnected datasets are ten kinds of knowledge; ten interoperable ones are a map of relationships that none of them contained alone. American law has a name for that arithmetic. The mosaic theory entered the case law when the D.C. Circuit held that a month of continuous location tracking was a search though no single trip was, \"because that whole reveals far more than the individual movements it comprises\"; the difference, the court said, \"is not one of degree but of kind.\"[56]"
+       },
+       {
+        "blockId": "b39",
+        "endOffset": 21067,
+        "index": 39,
+        "startOffset": 19793,
+        "text": "At the far end of the fusion layer sits the endpoint. In April 2026, ICE's acting director acknowledged in a letter to Congress that he had approved his investigative division's \"procurement and operational use of cutting-edge technological tools\" against what he described as foreign terrorist organizations and fentanyl traffickers exploiting encrypted platforms. The letter, the first on-record acknowledgment of use under the agency's contract with the spyware maker Paragon, named no vendor. Weeks later the Department of Homeland Security said that ICE \"has no relationship\" with the company (a procurement notice recorded the contract as closed out in January 2026), declining to say whether it reaches the same capability through third parties.[14] What such tools do is documented abroad: forensic researchers have confirmed Paragon's Graphite spyware on the phones of European journalists, and the earlier Pegasus Project identified at least 180 journalists in twenty countries as selected for potential targeting with NSO Group's comparable tool.[15][16] No public evidence establishes American use of such tools against domestic political dissent. What can be said is narrower and worse: Congress asked about domestic targeting and did not receive an answer.[14]"
+       },
+       {
+        "blockId": "b40",
+        "endOffset": 21417,
+        "index": 40,
+        "startOffset": 21069,
+        "text": "The capability, not the demonstrated use, is the analytical point. The twentieth-century political police needed wiretaps, bugs, physical searches, and informants, each an operation. A compromised smartphone is the wiretap, the diary, the photo archive, the address book, the location history, and the key ring at once: the person carries the file."
+       },
+       {
+        "blockId": "b41",
+        "endOffset": 22167,
+        "index": 41,
+        "startOffset": 21419,
+        "text": "Law is not absent from this story; it is behind, which is different. In June 2026 the Supreme Court held in *Chatrie v. United States* that obtaining app-generated location history is a search within the meaning of the Fourth Amendment (\"An individual has a legitimate expectation of privacy in his cellphone location data\"), extending its earlier carrier-records reasoning to the data economy just described, while remanding the harder questions about geofence warrants unresolved.[17] Read one way, the case confirms how intimate the new data is; read the other, it proves the constitutional order still adapting rather than capitulating. Technology creates capacities faster than doctrine settles their constraints. Lag is a race, not a verdict."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b42",
+        "endOffset": 16720,
+        "index": 42,
+        "startOffset": 16536,
+        "text": "Authoritarian capacity grows combinatorially. Ten disconnected datasets are ten kinds of knowledge; ten interoperable ones are a map of relationships that none of them contained alone."
+       },
+       {
+        "blockId": "b43",
+        "endOffset": 17968,
+        "index": 43,
+        "startOffset": 16722,
+        "text": "At the far end of the fusion layer sits the endpoint. In April 2026, ICE's acting director acknowledged in a letter to Congress that he had approved his investigative division's \"procurement and operational use of cutting-edge technological tools\" against what he described as foreign terrorist organizations and fentanyl traffickers exploiting encrypted platforms. The letter, the first on-record acknowledgment of use under the agency's contract with the spyware maker Paragon, named no vendor. Weeks later the Department of Homeland Security said that ICE \"has no relationship\" with the company (a procurement notice recorded the contract as closed out in January 2026), declining to say whether it reaches the same capability through third parties.[14] What such tools do is documented abroad: forensic researchers have confirmed Paragon's Graphite spyware on the phones of European journalists, and the earlier Pegasus Project traced NSO Group's comparable tool to more than 180 journalists in twenty countries.[15][16] No public evidence establishes American use of such tools against domestic political dissent, and that sentence must be written exactly as scoped: Congress asked about domestic targeting and did not receive an answer.[14]"
+       },
+       {
+        "blockId": "b44",
+        "endOffset": 18289,
+        "index": 44,
+        "startOffset": 17970,
+        "text": "The capability, not the demonstrated use, is the analytical point. The twentieth-century political police needed wiretaps, bugs, physical searches, and informants, each an operation. A compromised smartphone is the wiretap, the diary, the photo archive, the address book, the location history, and the key ring at once."
+       },
+       {
+        "blockId": "b45",
+        "endOffset": 18319,
+        "index": 45,
+        "startOffset": 18291,
+        "text": "The person carries the file."
+       },
+       {
+        "blockId": "b46",
+        "endOffset": 19039,
+        "index": 46,
+        "startOffset": 18321,
+        "text": "Law is not absent from this story; it is behind, which is different. In June 2026 the Supreme Court held in *Chatrie v. United States* that obtaining app-generated location history is a search within the meaning of the Fourth Amendment (\"An individual has a legitimate expectation of privacy in his cellphone location data\"), extending its earlier carrier-records reasoning to the data economy just described, while remanding the harder questions about geofence warrants unresolved.[17] Read one way, the case confirms how intimate the new data is; read the other, it proves the constitutional order still adapting rather than capitulating. Technology creates capacities faster than doctrine settles their constraints."
+       },
+       {
+        "blockId": "b47",
+        "endOffset": 19070,
+        "index": 47,
+        "startOffset": 19041,
+        "text": "Lag is a race, not a verdict."
+       }
+      ],
+      "charsChanged": 5428,
+      "id": "h7",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b45",
+        "endOffset": 24343,
+        "index": 45,
+        "startOffset": 22748,
+        "text": "On September 25, 2025, the White House issued National Security Presidential Memorandum 7, \"Countering Domestic Terrorism and Organized Political Violence.\" It arrived fifteen days after the assassination of Charlie Kirk and three days after an executive order designating antifa a domestic terrorist organization, in a season of real political violence: whatever else is said of the memorandum below, it was an answer to an actual killing.[57] Its premise is that political violence is produced by infrastructure. The prescription follows: \"A new law enforcement strategy that investigates all participants in these criminal and terroristic conspiracies — including the organized structures, networks, entities, organizations, funding sources, and predicate actions behind them — is required.\"[18] It then names the signs by which the danger is to be known. \"Common threads animating this violent conduct include anti-Americanism, anti-capitalism, and anti-Christianity; support for the overthrow of the United States Government; extremism on migration, race, and gender; and hostility towards those who hold traditional American views on family, religion, and morality.\"[18] The memorandum directs the FBI's Joint Terrorism Task Forces to coordinate a national strategy of investigation and disruption, instructs investigators to pursue the \"institutional and individual funders, and officers and employees of organizations\" that aid the principal actors, tasks the Treasury with disrupting financial networks, and orders the IRS to ensure no tax-exempt entity finances political violence.[18]"
+       },
+       {
+        "blockId": "b46",
+        "endOffset": 24878,
+        "index": 46,
+        "startOffset": 24345,
+        "text": "The right question about this document is not the indignant one. Anti-capitalism is not now illegal, and the memorandum does not say it is. The question that matters is operational: what happens when constitutionally protected ideology becomes an indicator, a thread by which investigators infer the existence of an underlying violent network? An indicator does not prohibit; it directs attention. It is built to tell the fusion layer what to retrieve, the task force which meetings matter, the Treasury which donors are interesting."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b51",
+        "endOffset": 20958,
+        "index": 51,
+        "startOffset": 19651,
+        "text": "On September 25, 2025, the White House issued National Security Presidential Memorandum 7, \"Countering Domestic Terrorism and Organized Political Violence.\" Its premise is that political violence is produced by infrastructure. The prescription follows: \"A new law enforcement strategy that investigates all participants in these criminal and terroristic conspiracies — including the organized structures, networks, entities, organizations, funding sources, and predicate actions behind them — is required.\"[18] It then names the signs by which the danger is to be known. \"Common threads animating this violent conduct include anti-Americanism, anti-capitalism, and anti-Christianity; support for the overthrow of the United States Government; extremism on migration, race, and gender; and hostility towards those who hold traditional American views on family, religion, and morality.\"[18] The memorandum directs the FBI's Joint Terrorism Task Forces to coordinate a national strategy of investigation and disruption, instructs investigators to pursue the \"institutional and individual funders, and officers and employees of organizations\" that aid the principal actors, tasks the Treasury with disrupting financial networks, and orders the IRS to ensure no tax-exempt entity finances political violence.[18]"
+       },
+       {
+        "blockId": "b52",
+        "endOffset": 21487,
+        "index": 52,
+        "startOffset": 20960,
+        "text": "The right question about this document is not the indignant one. Anti-capitalism is not now illegal, and the memorandum does not say it is. The right question is operational: what happens when constitutionally protected ideology becomes an indicator, a thread by which investigators infer the existence of an underlying violent network? An indicator does not prohibit; it directs attention. It tells the fusion layer what to retrieve, tells the task force which meetings matter, tells the Treasury which donors are interesting."
+       }
+      ],
+      "charsChanged": 3962,
+      "id": "h8",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b49",
+        "endOffset": 26687,
+        "index": 49,
+        "startOffset": 25700,
+        "text": "The country has already run one network investigation at national scale this decade, and the case is clarifying precisely because most readers alarmed by this essay approved of it. The January 6 investigation obtained a geofence warrant for every Google-tracked device in and immediately around the Capitol during the attack (5,723 devices, winnowed under judicial supervision to 1,498), used facial recognition and social-media identification at scale, and became what the attorney general called one of the largest and most resource-intensive investigations in the department's history. A federal court upheld the geofence.[59] What made that lawful, and rightly so, was the shape of the predicate: a specific crime, at a specific place, in a specific four-hour window, with the network mapped outward from the act. Remove the predicate and keep the tools, and the same machinery maps outward from an ideology instead. The distinction cuts in both directions or it does not cut at all."
+       },
+       {
+        "blockId": "b50",
+        "endOffset": 27447,
+        "index": 50,
+        "startOffset": 26689,
+        "text": "Which returns the argument to Minnesota, because Operation Puppet Master is the network logic made operational. Reporting has asserted a connection (Democracy Now told its audience the operation \"arose from\" the memorandum), but no public document establishes one, and this essay asserts none; what the two share is the logic, and the logic is the point.[74] An investigation that began around alleged criminal interference with immigration enforcement produced a financial canvass of unions and a diagram of eighteen civic organizations under the heading \"The Conspiracy.\"[1] The defense motion that surfaced the documents calls the investigation broad, irrational, and politically driven. The government will answer in court, and no court has yet ruled.[1]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b55",
+        "endOffset": 22985,
+        "index": 55,
+        "startOffset": 22309,
+        "text": "Which returns the argument to Minnesota, because Operation Puppet Master is the network logic made operational. No public document connects the Minnesota investigation to NSPM-7, and this essay asserts no such link; what the two share is the logic, and the logic is the point. An investigation that began around alleged criminal interference with immigration enforcement produced a financial canvass of unions and a diagram of eighteen civic organizations under the heading \"The Conspiracy.\"[1] The defense motion that surfaced the documents calls the investigation broad, irrational, and politically driven. The government will answer in court, and no court has yet ruled.[1]"
+       }
+      ],
+      "charsChanged": 2421,
+      "id": "h9",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b52",
+        "endOffset": 28308,
+        "index": 52,
+        "startOffset": 27813,
+        "text": "Note what the pending ruling can and cannot change. If the court finds the investigation unlawful, the checks worked and a capacity was abused. If the court finds it lawful, then a financial canvass of a state's labor movement and a diagram of its civic life fit within American law as it stands, which is section I's autocratic-legalism point delivered by a federal judge. The argument here survives either outcome, because it is an argument about what was built, not about who wins the motion."
+       },
+       {
+        "blockId": "b53",
+        "endOffset": 28488,
+        "index": 53,
+        "startOffset": 28310,
+        "text": "A memorandum supplies the categories. An investigation supplies the graph. What converts the two into legal consequence is a word, and American law is unusually precise about it."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b57",
+        "endOffset": 23591,
+        "index": 57,
+        "startOffset": 23351,
+        "text": "A memorandum supplies the categories. An investigation supplies the graph. What converts the two into legal consequence is a word, and American law is unusually precise about that word in ways the next section must be equally precise about."
+       }
+      ],
+      "charsChanged": 913,
+      "id": "h10",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b59",
+        "endOffset": 33886,
+        "index": 59,
+        "startOffset": 31639,
+        "text": "To see what the completed mechanism looks like inside a functioning democracy, the useful comparison is not Russia or China. It is Britain, precisely because British institutions resemble ours enough for the difference to be legible. In July 2025 the United Kingdom proscribed Palestine Action under the Terrorism Act 2000, after activists broke into an air base and sprayed paint into the engines of two military aircraft.[21][23] The Home Secretary's statement to Parliament made a fuller case than the paint: a \"nationwide campaign of direct criminal action\" running since 2020, members \"demonstrating a willingness to use violence,\" more than a million pounds of damage at a Glasgow defence factory where staff feared for their safety, and an \"Underground Manual\" advising members on cells and targets. The statement also carried an assurance, made in two separate passages: the decision was \"specific to Palestine Action,\" and the right to peaceful protest, \"a cornerstone of our democracy,\" would be unaffected.[60] Proscription made membership an offense, made it an offense to recklessly express \"an opinion or belief that is supportive of a proscribed organisation,\" and made it a crime, under section 13, to display an article arousing reasonable suspicion of support: the sign-arrest provision.[21] The results were immediate and official. In the year ending December 2025, Great Britain recorded 3,034 terrorism-related arrests, of which 2,779, ninety-two percent, were linked to supporting Palestine Action; 404 people were charged under section 13, the provision reached by holding a sign.[22] The assurance and the arrest ledger are the same year's documents. United Nations experts objected that \"mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism,\" and that such acts \"should be properly investigated as ordinary crimes or other security offences.\"[24] British courts split along exactly the line this essay has been drawing: the High Court found the proscription unlawful and disproportionate, observing that ordinary criminal law was available for the underlying conduct; the Court of Appeal reversed in June 2026, and the Supreme Court agreed in July to decide the question.[23]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b63",
+        "endOffset": 28305,
+        "index": 63,
+        "startOffset": 26742,
+        "text": "To see what the completed mechanism looks like inside a functioning democracy, the useful comparison is not Russia or China. It is Britain, precisely because British institutions resemble ours enough for the difference to be legible. In July 2025 the United Kingdom proscribed Palestine Action under the Terrorism Act 2000, after activists broke into an air base and sprayed paint into the engines of two military aircraft.[21][23] Proscription made membership an offense, made it an offense to recklessly express \"an opinion or belief that is supportive of a proscribed organisation,\" and made it a crime, under section 13, to display an article arousing reasonable suspicion of support: the sign-arrest provision.[21] The results were immediate and official. In the year ending December 2025, Great Britain recorded 3,034 terrorism-related arrests, of which 2,779, ninety-two percent, were linked to supporting Palestine Action; 404 people were charged under section 13, the provision reached by holding a sign.[22] United Nations experts objected that \"mere property damage, without endangering life, is not sufficiently serious to qualify as terrorism,\" and that such acts \"should be properly investigated as ordinary crimes.\"[24] British courts split along exactly the line this essay has been drawing: the High Court found the proscription unlawful and disproportionate, observing that ordinary criminal law was available for the underlying conduct; the Court of Appeal reversed in June 2026, and the Supreme Court agreed in July to decide the question.[23]"
+       }
+      ],
+      "charsChanged": 3810,
+      "id": "h11",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b62",
+        "endOffset": 35133,
+        "index": 62,
+        "startOffset": 34454,
+        "text": "The step is guarded here by doctrine as well as by a statute's absence. An American designation regime would have to survive *Brandenburg*, under which advocacy is protected up to incitement of imminent lawless action, and *NAACP v. Claiborne Hardware*, under which liability may not be imposed for association with a movement absent intent to further its unlawful aims. *Holder* itself rested on a deference to foreign-affairs judgment that has no domestic counterpart.[61] But doctrines are made of judges, and the dictum quoted above already reads differently each year. The boundary is doctrinal as well as statutory, which is another way of saying it is personnel-dependent."
+       }
+      ],
+      "before": [],
+      "charsChanged": 679,
+      "id": "h12",
+      "kind": "added"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b67",
+        "endOffset": 38338,
+        "index": 67,
+        "startOffset": 36969,
+        "text": "Immigration law sits closer than any other American field to prerogative logic: plenary power, executive discretion, civil detention, thin procedure, and a population whose rights turn on status. The past eighteen months have run the experiment. Mahmoud Khalil, a lawful permanent resident and a prominent pro-Palestinian voice at Columbia, was arrested in March 2025 and moved to detention in Louisiana under a rarely used provision letting the Secretary of State declare a noncitizen's presence adverse to foreign policy. A district judge enjoined the effort and freed him. An appeals panel then vacated those orders on jurisdictional grounds without reaching the merits, and his lawyers are seeking Supreme Court review while a removal order stands affirmed on the immigration side.[26] In a separate case brought by academic associations, a federal judge found after trial that administration officials had \"acted in concert to misuse the sweeping powers of their respective offices to target noncitizen pro-Palestinians for deportation primarily on account of their First Amendment protected political speech.\"[27] Whatever the appellate courts finally hold, the structural fact is already visible: the same sentence, spoken at the same rally, carries different risks depending on the speaker's papers. Citizenship has become a gradient of political vulnerability."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b70",
+        "endOffset": 32014,
+        "index": 70,
+        "startOffset": 30707,
+        "text": "Immigration law sits closer than any other American field to prerogative logic: plenary power, executive discretion, civil detention, thin procedure, and a population whose rights turn on status. The past eighteen months have run the experiment. Mahmoud Khalil, a lawful permanent resident and a prominent pro-Palestinian voice at Columbia, was arrested in March 2025 and moved to detention in Louisiana under a rarely used provision letting the Secretary of State declare a noncitizen's presence adverse to foreign policy. A district judge enjoined the effort and freed him. An appeals panel then vacated those orders on jurisdictional grounds without reaching the merits, and his lawyers are seeking Supreme Court review while a removal order stands affirmed on the immigration side.[26] In a separate case brought by academic associations, a federal judge found after trial that administration officials had \"acted in concert to misuse the sweeping powers of their respective offices to target noncitizen pro-Palestinians for deportation primarily on account of their First Amendment protected political speech.\"[27] Whatever the appellate courts finally hold, the structural fact is already visible: the same sentence, spoken at the same rally, carries different risks depending on the speaker's papers."
+       },
+       {
+        "blockId": "b71",
+        "endOffset": 32077,
+        "index": 71,
+        "startOffset": 32016,
+        "text": "Citizenship has become a gradient of political vulnerability."
+       }
+      ],
+      "charsChanged": 2737,
+      "id": "h13",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b70",
+        "endOffset": 40353,
+        "index": 70,
+        "startOffset": 40147,
+        "text": "That duality, machinery reaching and institutions catching, is real, and it is not an equilibrium. Checks operate on episodes; capacity is a stock. The court stopped a deployment; it decommissioned nothing."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b74",
+        "endOffset": 34009,
+        "index": 74,
+        "startOffset": 33886,
+        "text": "That duality, machinery reaching and institutions catching, is not a complication of this essay's thesis. It is the thesis."
+       }
+      ],
+      "charsChanged": 329,
+      "id": "h14",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b72",
+        "endOffset": 40611,
+        "index": 72,
+        "startOffset": 40399,
+        "text": "Before reaching abroad for precedents, an American should consult the domestic archive, which is thick. The instructive precedents for the present machinery are not foreign; they are ours, and their shape recurs."
+       },
+       {
+        "blockId": "b73",
+        "endOffset": 41434,
+        "index": 73,
+        "startOffset": 40613,
+        "text": "In 1919 and 1920, after a real campaign of anarchist bombings, the Justice Department under A. Mitchell Palmer, with the young J. Edgar Hoover running its new radical-intelligence division, swept up thousands of suspected radicals for deportation. The FBI's own centennial history renders the verdict: the raids \"turned into a nightmare, marked by poor communications, planning, and intelligence about who should be targeted and how many arrest warrants would be needed. The constitutionality of the entire operation was questionable.\"[31] The sequence deserves attention because it is a formula: real violence, then ideological generalization, then network intelligence, then mass enforcement. Each step felt like the last one's logical continuation. The formula is a century old, and NSPM-7's authors did not invent it."
+       },
+       {
+        "blockId": "b74",
+        "endOffset": 42482,
+        "index": 74,
+        "startOffset": 41436,
+        "text": "The mature version was COINTELPRO. From 1956 to 1971 the FBI ran what the Church Committee later described as \"covert action designed to disrupt and discredit the activities of groups and individuals deemed a threat to the social order\": programs against communists, the New Left, white-hate groups, Black liberation movements, and the antiwar movement, extending to a years-long campaign to \"neutralize\" Martin Luther King Jr. as an effective civil-rights leader in which, in the words of the FBI official who ran it, \"no holds were barred.\"[32] The Committee's most important finding was not about any single program but about the distribution of blame: \"intelligence excesses, at home and abroad, have been found in every administration. They are not the product of any single party, administration, or man.\"[32] Whoever tells this story as the invention of one president is telling it wrong, and the error is load-bearing: a machine believed to be one man's creation is expected to leave with him. Inherited capacity does not leave; it waits."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b76",
+        "endOffset": 34267,
+        "index": 76,
+        "startOffset": 34055,
+        "text": "Before reaching abroad for precedents, an American should consult the domestic archive, which is thick. The instructive precedents for the present machinery are not foreign. They are ours, and their shape recurs."
+       },
+       {
+        "blockId": "b77",
+        "endOffset": 35020,
+        "index": 77,
+        "startOffset": 34269,
+        "text": "In 1919 and 1920, after a real campaign of anarchist bombings, the Justice Department under A. Mitchell Palmer, with the young J. Edgar Hoover running its new radical-intelligence division, swept up thousands of suspected radicals for deportation. The FBI's own centennial history renders the verdict: the raids \"turned into a nightmare, marked by poor communications, planning, and intelligence about who should be targeted and how many arrest warrants would be needed. The constitutionality of the entire operation was questionable.\"[31] The sequence deserves attention because it is a formula: real violence, then ideological generalization, then network intelligence, then mass enforcement. Each step felt like the last one's logical continuation."
+       },
+       {
+        "blockId": "b78",
+        "endOffset": 35091,
+        "index": 78,
+        "startOffset": 35022,
+        "text": "The formula is a century old, and NSPM-7's authors did not invent it."
+       },
+       {
+        "blockId": "b79",
+        "endOffset": 36068,
+        "index": 79,
+        "startOffset": 35093,
+        "text": "The mature version was COINTELPRO. From 1956 to 1971 the FBI ran what the Church Committee later described as \"covert action designed to disrupt and discredit the activities of groups and individuals deemed a threat to the social order\": programs against communists, the New Left, white-hate groups, Black liberation movements, and the antiwar movement, extending to a years-long campaign to \"neutralize\" Martin Luther King Jr. as an effective civil-rights leader in which, the Committee found, no holds were barred.[32] The Committee's most important finding was not about any single program but about the distribution of blame: \"intelligence excesses, at home and abroad, have been found in every administration. They are not the product of any single party, administration, or man.\"[32] Whoever tells this story as the invention of one president is telling it wrong, and the error is load-bearing: a machine believed to be one man's creation is expected to leave with him."
+       },
+       {
+        "blockId": "b80",
+        "endOffset": 36114,
+        "index": 80,
+        "startOffset": 36070,
+        "text": "Inherited capacity does not leave. It waits."
+       }
+      ],
+      "charsChanged": 4130,
+      "id": "h15",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b76",
+        "endOffset": 43852,
+        "index": 76,
+        "startOffset": 43410,
+        "text": "The harms did not need convictions to be real. Survey research on American Muslims has since found encounters with police surveillance, specifically, associated with decreased voter registration and turnout, while airport screening showed no such effect.[36] An association is not proof of cause. But its shape is exactly the mechanism this essay has been assembling — a watched community, voting less — observed at home, within twenty years."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b82",
+        "endOffset": 37425,
+        "index": 82,
+        "startOffset": 37042,
+        "text": "The harms did not need convictions to be real. Survey research on American Muslims has since found police-surveillance encounters, specifically, associated with decreased electoral participation.[36] An association is not proof of cause. But its shape is exactly the mechanism this essay has been assembling — a watched community, voting less — observed at home, within twenty years."
+       }
+      ],
+      "charsChanged": 825,
+      "id": "h16",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b81",
+        "endOffset": 45937,
+        "index": 81,
+        "startOffset": 44923,
+        "text": "Consider what COINTELPRO cost. Every informant recruited, every wiretap installed, every meeting infiltrated was a separate operation with a separate budget of agents and hours; surveillance was labor, and labor rationed it. The apparatus described in sections III and IV inverts that arithmetic. Scale: collection happens across whole populations, automatically, as a side effect of driving and carrying a phone. Persistence: observations accumulate into searchable histories rather than expiring with an agent's memory. Integration: databases built for separate purposes join. Automation: software performs the pattern-finding that once consumed careers. Retrospectivity, the strangest of the new properties: the state no longer needs to suspect a person before surveilling them, because the record was made before the suspicion, and investigation becomes retrieval. And the marginal cost of adding one more person to the watched approaches zero. Surveillance that once required armies of agents becomes a query."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b87",
+        "endOffset": 39444,
+        "index": 87,
+        "startOffset": 38496,
+        "text": "Consider what COINTELPRO cost. Every informant recruited, every wiretap installed, every meeting infiltrated was a separate operation with a separate budget of agents and hours; surveillance was labor, and labor rationed it. The apparatus described in sections III and IV inverts that arithmetic. Scale: collection happens across whole populations, automatically, as a side effect of driving and carrying a phone. Persistence: observations accumulate into searchable histories rather than expiring with an agent's memory. Integration: databases built for separate purposes join. Automation: software performs the pattern-finding that once consumed careers. Retrospectivity, the strangest of the new properties: the state no longer needs to suspect a person before surveilling them, because the record was made before the suspicion, and investigation becomes retrieval. And the marginal cost of adding one more person to the watched approaches zero."
+       },
+       {
+        "blockId": "b88",
+        "endOffset": 39511,
+        "index": 88,
+        "startOffset": 39446,
+        "text": "Surveillance that once required armies of agents becomes a query."
+       }
+      ],
+      "charsChanged": 2027,
+      "id": "h17",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b87",
+        "endOffset": 48139,
+        "index": 87,
+        "startOffset": 47405,
+        "text": "Foucault's panopticon is the most cited and most misread image in the literature of surveillance. The point of Bentham's design, as Foucault read it, was never that someone watches every cell at every moment. It was that the inmate cannot know when he is watched: \"He is seen, but he does not see; he is the object of information, never a subject in communication.\" The design's purpose was \"to induce in the inmate a state of conscious and permanent visibility that assures the automatic functioning of power,\" arranging things so that surveillance is \"permanent in its effects, even if it is discontinuous in its action.\"[38] The mechanism is not observation but uncertainty about observation, doing the work that observation would."
+       },
+       {
+        "blockId": "b88",
+        "endOffset": 49386,
+        "index": 88,
+        "startOffset": 48141,
+        "text": "Strip the architecture away and the insight becomes an empirical claim about citizens: people who believe they may be watched behave differently, including when the behavior in question is entirely lawful. The claim has been tested in two registers. In survey experiments, Elizabeth Stoycheff and colleagues found that perceived government surveillance deters stated intentions toward lawful political activity online as well as illegal acts, across populations including American Muslims; her earlier work found it pushing holders of minority views toward silence, most strongly among those who accept the monitoring as justified.[39] And in the strongest behavioral test on record, Jonathon Penney found that views of Wikipedia articles on terrorism-related topics fell by roughly a fifth immediately after the June 2013 surveillance revelations, with the underlying traffic trend flipping from growth to decline: reading that was equally lawful on both sides of the revelation, measured rather than self-reported.[63] The one-word summary of that literature is chilling, and the Minnesota agent's report is its field specimen: the meetings the officer attended will be attended a little differently once it is known that an officer was there."
+       },
+       {
+        "blockId": "b89",
+        "endOffset": 49985,
+        "index": 89,
+        "startOffset": 49388,
+        "text": "The literature has serious internal critics, and they belong in the record. Frederick Schauer, who built the chilling-effect doctrine's theory in 1978, conceded that its behavioral assumptions were \"most likely unprovable.\" Leslie Kendrick has called the empirical basis of the courts' chilling assessments \"flimsy\" while allowing that the phenomenon is real, and Jonathon Penney himself has since written that conventional fear-based accounts are \"narrow, empirically weak.\"[64] The behavioral turn his Wikipedia study represents is the field's answer to its own critics, and it is a partial one."
+       },
+       {
+        "blockId": "b90",
+        "endOffset": 50756,
+        "index": 90,
+        "startOffset": 49987,
+        "text": "There is also a complication from theory. A 2026 article in the American Journal of Political Science, modeling surveillance in autocracies, argues the effect is not monotonic: surveillance creates fear, but where citizens share access to public information it can also help them coordinate, and coordinated citizens sometimes dissent more, not less.[40] There is no iron law by which watching pacifies. The defensible claim is narrower and sufficient: surveillance changes the strategic environment of dissent. It alters the expected cost of attending, donating, signing, and associating; it degrades trust inside movements; it moves the calculation from \"do I agree?\" to \"who will know?\" Sometimes people defy the calculation. The point is that they must now make it."
+       },
+       {
+        "blockId": "b91",
+        "endOffset": 51748,
+        "index": 91,
+        "startOffset": 50758,
+        "text": "And this is why the most efficient political surveillance may never produce an arrest. Consider the person who, having read about the library meetings, decides not to attend one; not to donate to the legal fund; not to meet the reporter; not to join the Signal group. No officer acted. No prosecutor filed. No court will ever see the case, because there is no case: nothing happened, which is precisely the outcome. The perfect chilling effect leaves no defendant, and therefore produces no civil-liberties litigation, no appellate record, no scandal. The constitutional order's alarms are wired to state action, and that wiring is doctrine, not metaphor: in *Laird v. Tatum* the Supreme Court held that \"[a]llegations of a subjective 'chill' are not an adequate substitute for a claim of specific present objective harm or a threat of specific future harm,\" and *Clapper v. Amnesty* requires that a feared interception be \"certainly impending\" before a court will hear the fear at all.[65]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b94",
+        "endOffset": 41716,
+        "index": 94,
+        "startOffset": 40979,
+        "text": "Foucault's panopticon is the most cited and most misread image in the literature of surveillance. The point of Bentham's design, as Foucault read it, was never that someone watches every cell at every moment. It was that the inmate cannot know when he is watched: \"He is seen, but he does not see; he is the object of information, never a subject in communication.\" The design's purpose was \"to induce in the inmate a state of conscious and permanent visibility that assures the automatic functioning of power,\" arranging things so that surveillance is \"permanent in its effects, even if it is discontinuous in its action.\"[38] The mechanism is not observation. It is uncertainty about observation, doing the work that observation would."
+       },
+       {
+        "blockId": "b95",
+        "endOffset": 42522,
+        "index": 95,
+        "startOffset": 41718,
+        "text": "Strip the architecture away and the insight becomes an empirical claim about citizens: people who believe they may be watched behave differently, including when the behavior in question is entirely lawful. The claim has been tested. Elizabeth Stoycheff and colleagues, in controlled experiments, found that perceived government surveillance deters not only intentions toward illegal acts but lawful political activity online, an effect that held across populations including American Muslims; her earlier work found perceived surveillance silencing the expression of minority political views.[39] The one-word summary of that literature is chilling, and the Minnesota agent's report is its field specimen: the meetings he attended will be attended a little differently once it is known that he was there."
+       },
+       {
+        "blockId": "b96",
+        "endOffset": 43296,
+        "index": 96,
+        "startOffset": 42524,
+        "text": "Honesty requires reporting the complication. A 2026 article in the American Journal of Political Science, modeling surveillance in autocracies, argues the effect is not monotonic: surveillance creates fear, but where citizens share access to public information it can also help them coordinate, and coordinated citizens sometimes dissent more, not less.[40] There is no iron law by which watching pacifies. The defensible claim is narrower and sufficient: surveillance changes the strategic environment of dissent. It alters the expected cost of attending, donating, signing, and associating; it degrades trust inside movements; it moves the calculation from \"do I agree?\" to \"who will know?\" Sometimes people defy the calculation. The point is that they must now make it."
+       },
+       {
+        "blockId": "b97",
+        "endOffset": 43910,
+        "index": 97,
+        "startOffset": 43298,
+        "text": "And this is why the most efficient political surveillance may never produce an arrest. Consider the person who, having read about the library meetings, decides not to attend one; not to donate to the legal fund; not to meet the reporter; not to join the Signal group. No officer acted. No prosecutor filed. No court will ever see the case, because there is no case: nothing happened, which is precisely the outcome. The perfect chilling effect leaves no defendant, and therefore produces no civil-liberties litigation, no appellate record, no scandal. The constitutional order's alarms are wired to state action."
+       }
+      ],
+      "charsChanged": 7260,
+      "id": "h18",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b93",
+        "endOffset": 51832,
+        "index": 93,
+        "startOffset": 51784,
+        "text": "What, exactly, is lost when the meeting shrinks?"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b99",
+        "endOffset": 44075,
+        "index": 99,
+        "startOffset": 43946,
+        "text": "What, exactly, is lost when the meeting shrinks? The next section is the answer, and it is the philosophical center of the essay."
+       }
+      ],
+      "charsChanged": 177,
+      "id": "h19",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b99",
+        "endOffset": 56097,
+        "index": 99,
+        "startOffset": 55022,
+        "text": "The formulation is not an invention of this essay; it is a tradition with a proper name. Republican political theory, in Philip Pettit's and Quentin Skinner's hands, calls freedom non-domination: a person is unfree not only when interfered with but when subject to another's standing capacity for arbitrary interference, the way the slave of a gentle master, never struck, is a slave still.[62] Shklar arrives from fear, Pettit from status, and the two roads meet at the same place: the injury completes itself before any interference occurs. What makes a fear reasonable, on this account, is neither temperament nor probability. It is the visible existence of the capacity, joined to the thinness of whatever stands between the capacity and oneself. A citizen who has read the memorandum's list of threads, and who knows her bank records are one administrative summons away, is not imagining things; she is reading the architecture correctly. That is why the capacity itself, and not its exercise, is the political fact, a point that will matter again two sections from now."
+       },
+       {
+        "blockId": "b100",
+        "endOffset": 56893,
+        "index": 100,
+        "startOffset": 56099,
+        "text": "What the tradition has not needed until now is a collective version of itself. Non-domination, in its canonical form, is a property of individual lives: master and slave, state and citizen, one at a time. Arendt moves the object. If power springs up between people acting together, then a standing capacity to map, sort, and disrupt what lies between citizens dominates something no individual owns: plurality, the shared capacity to begin. The two-questions formulation should therefore be read in the plural. It is not only \"what must I fear if I speak?\" but \"what must we fear if we assemble?\" The second question is the one the machinery of sections III and IV answers best, because association is what behavioral data renders best, and no individualist account of privacy quite reaches it."
+       },
+       {
+        "blockId": "b101",
+        "endOffset": 57389,
+        "index": 101,
+        "startOffset": 56895,
+        "text": "The five thinkers assembled here do not entirely agree, and the disagreement is instructive. Foucault's panopticon individualizes: it makes each inmate the warden of himself. Arendt's totalitarianism works on the opposite object: it closes the spaces between persons where action begins. The machinery described above is disturbing precisely because it does both at once, a file per person and a graph per movement, and an account adequate to it has to hold both harms in view at the same time."
+       }
+      ],
+      "before": [],
+      "charsChanged": 2363,
+      "id": "h20",
+      "kind": "added"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b105",
+        "endOffset": 59557,
+        "index": 105,
+        "startOffset": 58463,
+        "text": "The record of the past two years, honestly read, shows the checks imposing real costs. The Supreme Court extended constitutional protection to location data.[17] When the FBI searched the home of a Washington Post reporter and seized her devices in a leak investigation, a federal magistrate refused to let the government's own filter team read them, calling that arrangement \"the equivalent of leaving the government's fox in charge of the Washington Post's henhouse.\" The district court affirmed judicial control of the review.[44] Four federal judges struck down, in their entirety, the executive orders targeting law firms that had represented the administration's opponents; none has been reversed, though the appeals remain pending.[45] A federal court enjoined warrantless immigration enforcement at the plaintiff congregations' houses of worship, and the Fourth Circuit affirmed in August 2026.[46] The military deployment in Los Angeles was held unlawful and the government abandoned its appeals.[30] The Minnesota documents themselves are public because the adversarial system worked."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b108",
+        "endOffset": 49413,
+        "index": 108,
+        "startOffset": 48337,
+        "text": "The record of the past two years, honestly read, shows the checks imposing real costs. The Supreme Court extended constitutional protection to location data.[17] When the FBI searched the home of a Washington Post reporter and seized her devices in a leak investigation, a federal magistrate refused to let the government's own filter team read them, calling that arrangement \"the equivalent of leaving the government's fox in charge of the henhouse.\" The district court affirmed judicial control of the review.[44] Four federal judges struck down, in their entirety, the executive orders targeting law firms that had represented the administration's opponents; none has been reversed, though the appeals remain pending.[45] A federal court enjoined warrantless immigration enforcement at the plaintiff congregations' houses of worship, and the Fourth Circuit affirmed in August 2026.[46] The military deployment in Los Angeles was held unlawful and the government abandoned its appeals.[30] The Minnesota documents themselves are public because the adversarial system worked."
+       }
+      ],
+      "charsChanged": 2170,
+      "id": "h21",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b107",
+        "endOffset": 61658,
+        "index": 107,
+        "startOffset": 60172,
+        "text": "Two qualifications keep that comfort honest. The first is that the leading scholars of democratic breakdown have already made the opposite regime call about this country. Steven Levitsky and Lucan Way wrote in early 2025 that the United States was entering competitive authoritarianism, in which \"competition is real but unfair.\" By December, with Daniel Ziblatt, they judged that it had \"ceased to be a full democracy.\" Their mechanism, self-sidelining (the editors, donors, and university presidents who conclude that opposition \"is not worth the risk\"), is the mechanism of section X transposed to elites.[72] The disagreement is about the line, not the machinery, and the list below exists to make this side of it checkable: a country whose courts still bind, whose elections still transfer power, and whose surveillance files still surface in discovery has not yet changed regime type. The second qualification is about what reversal reverses. Hungary abolished an office; Palmer was curbed, COINTELPRO exposed, the Demographics Unit disbanded: every correction in section VIII's archive is the correction of a program. Whether surveillance infrastructure, as opposed to a program that uses it, has ever been decommissioned is a question with almost no record, and the nearest American datum is Flock under pressure cutting default retention from thirty days to seven, which is not decommissioning but a database instructed to remember less. Checks end episodes. The stock remains."
+       }
+      ],
+      "before": [],
+      "charsChanged": 1486,
+      "id": "h22",
+      "kind": "added"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b110",
+        "endOffset": 64420,
+        "index": 110,
+        "startOffset": 63551,
+        "text": "None of these has been crossed. Several are being probed, and the second is the closest call: the load-bearing word in it is *systematically*, and the Minnesota litigation is precisely a dispute over whether one investigation crossed that word. The list is the essay's own falsification condition, and it runs in three directions. If the thresholds fall and nothing here has changed, the warning was understated. If they hold while the capabilities persist, it was calibrated. And if they hold while the capabilities recede (retention windows shrinking as Flock's did, purchased data brought under warrant as *Chatrie* began to require, the archive bounded by statute), then the warning was overblown, and this essay will have described a danger that democratic politics metabolized. That is the outcome it argues for, and the reader is invited to hold it to all three."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b112",
+        "endOffset": 52186,
+        "index": 112,
+        "startOffset": 51919,
+        "text": "None of these has been crossed. Several are being probed. The list is the essay's own falsification condition, in both directions: if the thresholds hold over the coming years, the warning was calibrated; if they fall and nothing here has changed, it was understated."
+       }
+      ],
+      "charsChanged": 1136,
+      "id": "h23",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b113",
+        "endOffset": 66727,
+        "index": 113,
+        "startOffset": 65004,
+        "text": "It fails because it models privacy as concealment, and the failure was diagnosed in print long before this essay. Daniel Solove gave the argument its canonical autopsy in 2007: assembled data becomes \"much more telling\" than its parts, the harms of collection are structural rather than gory (\"Most privacy problems lack dead bodies\"), and the argument, confronted with the actual plurality of privacy harms, \"in the end, has nothing to say.\"[66] Neil Richards carried the diagnosis to thought, showing that surveillance of people \"thinking, reading, and communicating\" deters experiments with \"new, controversial, or deviant ideas\"; Julie Cohen carried it to the self, whose watched version is pressed toward becoming \"fixed, transparent, and predictable\" in a society that, so arranged, \"cannot hope to remain a liberal democracy.\"[67] What this essay adds to that canon is the object. The privacy that matters most politically belongs neither to the thinking individual nor to the emergent self alone; it is a condition of formation for the associating group. Opposition does not arrive in public fully grown. It begins as a doubt entertained, an unpopular article read, a conversation with a journalist, a meeting attended out of curiosity, a small donation, an organization joined before anyone can say where it is going. Every one of those acts is lawful, and every one of them is an act a reasonable person performs differently, or not at all, under an indefinite audience. What the \"nothing to hide\" argument treats as innocuous data is, assembled, precisely the record of political formation: who is beginning to associate with whom, around what. The machinery of sections III and IV collects nothing else so well."
+       },
+       {
+        "blockId": "b114",
+        "endOffset": 68012,
+        "index": 114,
+        "startOffset": 66729,
+        "text": "The serious version of the reply concedes all of this and narrows the ground. Collection, it says, is not the harm. \"Machine collection and processing of data cannot, as such, invade privacy,\" as Richard Posner put it, because \"a computer is not a sentient being.\" Harm, if it ever comes, comes at the point of human use, and use can be regulated and audited.[68] The answer to Posner is the last year of American policy. An archive is not an inert store awaiting a warrant; it is standing retrievability, and what retrievability means politically is decided by whoever writes the query. NSPM-7 demonstrated the mechanism in writing: nothing in the nation's databases changed in September 2025; the classifier changed, and with it what every record already collected was liable to mean. Data gathered under one description waits to be retrieved under another. A citizen who knows this must govern her conduct by the queries of governments that do not yet exist, which is the republican point of section XI in operational form: the domination is in the standing capacity, and the audit Posner trusts arrives only after the query has run. The harms of sections X and XI do not begin at use. They begin at the knowledge of collection, in the citizen, before any official reads anything."
+       },
+       {
+        "blockId": "b115",
+        "endOffset": 69004,
+        "index": 115,
+        "startOffset": 68014,
+        "text": "The essay's five thinkers converge on this point from five directions, and what they converge on is not a right to be invisible. It is narrower and harder to dismiss: some practical opacity between citizen and state is not a defect of governance to be engineered away. It is a load-bearing element of democratic architecture, the condition under which a society retains the capacity to generate opposition to its own government. The phrase \"right to opacity\" carries a debt: it is Édouard Glissant's, claimed for colonized peoples against a different demand for transparency (the demand that the other be made fully understandable on the understander's scale), and the transposition to citizen and state is deliberate.[70] American law, for its part, once named the humbler domestic version: \"practical obscurity,\" the privacy interest in records scattered rather than compiled, recognized by the Supreme Court in a case about rap sheets three decades before section III's compilations.[69]"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b115",
+        "endOffset": 53552,
+        "index": 115,
+        "startOffset": 52770,
+        "text": "It fails because it models privacy as concealment, when the privacy that matters politically is a condition of formation. Opposition does not arrive in public fully grown. It begins as a doubt entertained, an unpopular article read, a conversation with a journalist, a meeting attended out of curiosity, a small donation, an organization joined before anyone can say where it is going. Every one of those acts is lawful, and every one of them is an act a reasonable person performs differently, or not at all, under an indefinite audience. What the \"nothing to hide\" argument treats as innocuous data is, assembled, precisely the record of political formation: who is beginning to associate with whom, around what. The machinery of sections III and IV collects nothing else so well."
+       },
+       {
+        "blockId": "b116",
+        "endOffset": 54349,
+        "index": 116,
+        "startOffset": 53554,
+        "text": "The essay's five thinkers converge on this point from five directions: Scott, because legibility is where state power begins; Foucault, because visibility disciplines whether or not force follows; Tocqueville, because association is where democratic power is generated; Arendt, because plurality and beginning are what total power must destroy; and Shklar, because the anticipation of arbitrary power is already the political harm. The conclusion they converge on is not a right to be invisible. It is narrower and harder to dismiss: some practical opacity between citizen and state is not a defect of governance to be engineered away. It is a load-bearing element of democratic architecture, the condition under which a society retains the capacity to generate opposition to its own government."
+       }
+      ],
+      "charsChanged": 5573,
+      "id": "h24",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b117",
+        "endOffset": 69516,
+        "index": 117,
+        "startOffset": 69484,
+        "text": "## XIV. What Must Power Not Know"
+       },
+       {
+        "blockId": "b118",
+        "endOffset": 70146,
+        "index": 118,
+        "startOffset": 69518,
+        "text": "There remains the hard problem, which the civil-libertarian literature too often waves past. A democracy needs a state capable of investigating terrorism, prosecuting political violence, securing elections and officials, and catching spies; several of the capabilities this essay has described exist because of failures that killed people. \"Abolish surveillance\" is not an answer available to a serious person. The real problem is a design problem: how to maintain the state capacity that protects democratic life without building a machine that can be cheaply repurposed against democratic opposition, by whoever next holds it."
+       },
+       {
+        "blockId": "b119",
+        "endOffset": 71519,
+        "index": 119,
+        "startOffset": 70148,
+        "text": "Stated that way, the answer has a familiar shape, because American constitutionalism has solved a version of it before. Readers will recognize what follows as the Church Committee's lessons, and as Jack Balkin's rules for a democratic information state, restated for the fusion layer; Balkin's version of the retention principle has not been improved on since 2008: \"if the information state is unable to forget, it is imperative that it be able to forgive.\"[53] Intrusive investigation follows particularized evidence of wrongdoing, not ideological affinity. Data collected for one purpose does not silently become searchable for every other, and collection and retention are bounded, because a movement database grows more dangerous with every year it remembers. Sensitive searches of location and association face independent authorization, leave an auditable trail visible to oversight, and end with eventual notice to the person searched where no case follows. Political, journalistic, religious, and legal association get heightened protection, and constitutional limits do not evaporate merely because the database is privately owned. Above all, the institutions able to impose costs on abuse — courts, inspectors general, legislatures, states, the press — are themselves kept strong, because every prior correction in this essay's history ran through one of them."
+       },
+       {
+        "blockId": "b120",
+        "endOffset": 73090,
+        "index": 120,
+        "startOffset": 71521,
+        "text": "Beneath the particulars lies one organizing idea. Constitutional government is friction, on purpose. Brandeis said it a century ago, dissenting in *Myers v. United States*: the separation of powers was adopted \"not to promote efficiency but to preclude the exercise of arbitrary power,\" its purpose \"not to avoid friction, but, by means of the inevitable friction incident to the distribution of the governmental powers among three departments, to save the people from autocracy.\"[71] Warrants, probable cause, separated powers, federalism, trials, appeals: each is a deliberate delay inserted between the state's desire and the state's act, and the delays are where liberty actually lives. The surveillance industry sells the opposite. Frictionless search, seamless integration, instant identity resolution, natural-language queries across a nation's records: every product promise in sections III and IV is a promise to remove time and effort from the exercise of state power. The technological ideal is frictionless power. The constitutional ideal is power subjected to friction. The distinction worth holding is between frictions: among citizens coordinating, friction is a cost, and removing it is a service; between the state's desire and the state's act, friction is architecture, and removing it is a constitutional event. Those two ideals are now in open competition, and most of the policy fights of the coming decade (retention limits, purpose limits, warrant requirements for purchased data, audit trails) are that one competition wearing different clothes."
+       },
+       {
+        "blockId": "b121",
+        "endOffset": 74002,
+        "index": 121,
+        "startOffset": 73092,
+        "text": "The competition also reframes what a constitution is for. The classical questions are about authority: what may government do, and who decides? Digital surveillance forces an additional question the eighteenth century never had to ask, because knowledge then could not be accumulated at scale: what should government be structurally prevented from knowing without cause? The question sounds novel and is not, quite; the warrant requirement was always an answer to it in miniature. What is new is the scale of the stakes. To identify is to make targetable. To map association is to make networks disruptable. To retain history is to make the past searchable. To integrate databases is to make facts politically intelligible that were harmless apart. In an age of behavioral legibility, information architecture is constitutional architecture, and it is being designed right now, mostly in procurement documents."
+       },
+       {
+        "blockId": "b122",
+        "endOffset": 74049,
+        "index": 122,
+        "startOffset": 74004,
+        "text": "## XV. A Security Culture for Democratic Life"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b118",
+        "endOffset": 54875,
+        "index": 118,
+        "startOffset": 54829,
+        "text": "## XIV. A Security Culture for Democratic Life"
+       }
+      ],
+      "charsChanged": 4601,
+      "id": "h25",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b125",
+        "endOffset": 75444,
+        "index": 125,
+        "startOffset": 74692,
+        "text": "Protect the endpoint before the channel: the lesson of the spyware record is that encryption in transit cannot protect what a compromised phone displays after decryption, so the unglamorous hygiene of the device precedes everything clever.[15] Minimize: the politically serious question about any device is not \"can someone read my messages?\" but \"if this were seized tomorrow, whom besides me would it expose?\" Data not retained cannot be subpoenaed, and storage being free is not a reason to keep an archive of other people. Compartmentalize, so that no single failure surrenders a whole network. Understand what encryption does not hide: a phone at a protest reveals its presence at the protest by connecting to the network, Signal or no Signal.[49]"
+       },
+       {
+        "blockId": "b126",
+        "endOffset": 76056,
+        "index": 126,
+        "startOffset": 75446,
+        "text": "And treat security as organizational rather than individual, because one careful person among twenty careless ones enjoys the security of the twenty. The case records of groups like Access Now's helpline, built over more than ten thousand incidents, show attackers targeting people (phishing, impersonation of trusted services) far more often than cryptography.[51] Surveillance also corrodes movements from inside, converting citizen-to-state fear into citizen-to-citizen suspicion: an infiltrated meeting is not merely observed but changed, because everyone at the next one must wonder who else is listening."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b121",
+        "endOffset": 56296,
+        "index": 121,
+        "startOffset": 55518,
+        "text": "Protect the endpoint before the channel: the lesson of the spyware record is that encryption in transit cannot protect what a compromised phone displays after decryption, so updates, strong passcodes, and phishing-resistant authentication precede everything clever.[15] Minimize: the politically serious question about any device is not \"can someone read my messages?\" but \"if this were seized tomorrow, whom besides me would it expose?\" Data not retained cannot be subpoenaed, and storage being free is not a reason to keep an archive of other people. Compartmentalize, so that no single failure surrenders a whole network. Understand what encryption does not hide: a phone at a protest reveals its presence at the protest by connecting to the network, Signal or no Signal.[49]"
+       },
+       {
+        "blockId": "b122",
+        "endOffset": 56915,
+        "index": 122,
+        "startOffset": 56298,
+        "text": "And treat security as organizational rather than individual, because one careful person among twenty careless ones enjoys the security of the twenty. The case record of groups like Access Now's helpline, built over more than ten thousand incidents, shows attackers overwhelmingly targeting people (phishing, impersonation of trusted services) rather than cryptography.[51] Surveillance also corrodes movements from inside, converting citizen-to-state fear into citizen-to-citizen suspicion: an infiltrated meeting is not merely observed but changed, because everyone at the next one must wonder who else is listening."
+       }
+      ],
+      "charsChanged": 2757,
+      "id": "h26",
+      "kind": "mixed"
+     },
+     {
+      "after": [],
+      "before": [
+       {
+        "blockId": "b124",
+        "endOffset": 57509,
+        "index": 124,
+        "startOffset": 57478,
+        "text": "## XV. What Must Power Not Know"
+       },
+       {
+        "blockId": "b125",
+        "endOffset": 58139,
+        "index": 125,
+        "startOffset": 57511,
+        "text": "There remains the hard problem, which the civil-libertarian literature too often waves past. A democracy needs a state capable of investigating terrorism, prosecuting political violence, securing elections and officials, and catching spies; several of the capabilities this essay has described exist because of failures that killed people. \"Abolish surveillance\" is not an answer available to a serious person. The real problem is a design problem: how to maintain the state capacity that protects democratic life without building a machine that can be cheaply repurposed against democratic opposition, by whoever next holds it."
+       },
+       {
+        "blockId": "b126",
+        "endOffset": 59271,
+        "index": 126,
+        "startOffset": 58141,
+        "text": "Stated that way, the answer has a familiar shape, because American constitutionalism has solved a version of it before. Readers will recognize what follows as the Church Committee's lessons, restated for the fusion layer. Intrusive investigation follows particularized evidence of wrongdoing, not ideological affinity. Data collected for one purpose does not silently become searchable for every other, and collection and retention are bounded, because a movement database grows more dangerous with every year it remembers. Sensitive searches of location and association face independent authorization, leave an auditable trail visible to oversight, and end with eventual notice to the person searched where no case follows. Political, journalistic, religious, and legal association get heightened protection, and constitutional limits do not evaporate merely because the database is privately owned. Above all, the institutions able to impose costs on abuse — courts, inspectors general, legislatures, states, the press — are themselves kept strong, because every prior correction in this essay's history ran through one of them."
+       },
+       {
+        "blockId": "b127",
+        "endOffset": 60210,
+        "index": 127,
+        "startOffset": 59273,
+        "text": "Beneath the particulars lies one organizing idea. Constitutional government is friction, on purpose. Warrants, probable cause, separated powers, federalism, trials, appeals: each is a deliberate delay inserted between the state's desire and the state's act, and the delays are where liberty actually lives. The surveillance industry sells the opposite. Frictionless search, seamless integration, instant identity resolution, natural-language queries across a nation's records: every product promise in sections III and IV is a promise to remove time and effort from the exercise of state power. The technological ideal is frictionless power. The constitutional ideal is power subjected to friction. Those two ideals are now in open competition, and most of the policy fights of the coming decade (retention limits, purpose limits, warrant requirements for purchased data, audit trails) are that one competition wearing different clothes."
+       },
+       {
+        "blockId": "b128",
+        "endOffset": 61122,
+        "index": 128,
+        "startOffset": 60212,
+        "text": "The competition also reframes what a constitution is for. The classical questions are about authority: what may government do, and who decides? Digital surveillance forces an additional question the eighteenth century never had to ask, because knowledge then could not be accumulated at scale: what should government be structurally prevented from knowing without cause? The question sounds novel and is not, quite; the warrant requirement was always an answer to it in miniature. What is new is the scale of the stakes. To identify is to make targetable. To map association is to make networks disruptable. To retain history is to make the past searchable. To integrate databases is to make facts politically intelligible that were harmless apart. In an age of behavioral legibility, information architecture is constitutional architecture, and it is being designed right now, mostly in procurement documents."
+       }
+      ],
+      "charsChanged": 3636,
+      "id": "h27",
+      "kind": "removed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b131",
+        "endOffset": 77840,
+        "index": 131,
+        "startOffset": 77504,
+        "text": "She is a construction, and that should be said plainly: the mechanism the theory predicts and the Minnesota filings instantiate, not a measured national quantity. Whether the meetings of next year are smaller than the meetings of last year is an empirical question no one has yet answered, and an honest warning states its own unknowns."
+       }
+      ],
+      "before": [],
+      "charsChanged": 336,
+      "id": "h28",
+      "kind": "added"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b133",
+        "endOffset": 78721,
+        "index": 133,
+        "startOffset": 78117,
+        "text": "Shklar named the injury: the fear of arbitrary power governs before power moves, and it governs the weak first. Timothy Snyder named the behavior, anticipatory obedience: \"most of the power of authoritarianism is freely given.\"[73] Tocqueville and Arendt named what the injury falls on: the associating, appearing, beginning-together from which democratic power is generated at all. The machinery this essay has described does not need to be turned against American democracy to change it. Operating exactly as designed, lawfully, it changes the conditions under which citizens decide whether to show up."
+       },
+       {
+        "blockId": "b134",
+        "endOffset": 79405,
+        "index": 134,
+        "startOffset": 78723,
+        "text": "The question, then, is not whether the United States has become the dictatorship its surveillance machinery could someday serve. It has not, and this essay has been at pains to say so. The question is whether a free society should wait until the machinery is turned before deciding that its construction mattered. The institutions of freedom are not only elections, courts, and constitutions. They are also the spaces, physical and mental, in which citizens can think, speak, associate, and organize without first imagining themselves through the eyes of the state. Legibility is a condition of manipulation. Its limits are a condition of freedom, and they do not defend themselves."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b133",
+        "endOffset": 62768,
+        "index": 133,
+        "startOffset": 62284,
+        "text": "Shklar named the injury: the fear of arbitrary power governs before power moves, and it governs the weak first. Tocqueville and Arendt named what the injury falls on: the associating, appearing, beginning-together from which democratic power is generated at all. The machinery this essay has described does not need to be turned against American democracy to change it. Operating exactly as designed, lawfully, it changes the conditions under which citizens decide whether to show up."
+       },
+       {
+        "blockId": "b134",
+        "endOffset": 63448,
+        "index": 134,
+        "startOffset": 62770,
+        "text": "The question, then, is not whether the United States has become the dictatorship its surveillance machinery could someday serve. It has not, and this essay has been at pains to say so. The question is whether a free society should wait until the machinery is turned before deciding that its construction mattered. The institutions of freedom are not only elections, courts, and constitutions. They are also the spaces, physical and mental, in which citizens can think, speak, associate, and organize without first imagining themselves through the eyes of the state. Legibility is a condition of manipulation. Its absence is a condition of freedom, and it does not defend itself."
+       }
+      ],
+      "charsChanged": 2448,
+      "id": "h29",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b144",
+        "endOffset": 100119,
+        "index": 144,
+        "startOffset": 81423,
+        "text": "1. Tim Sullivan and Jennifer Sinco Kelleher, \"Documents show federal surveillance operation in Minnesota targeted progressive groups, unions,\" Associated Press, Aug. 13, 2026. https://apnews.com/article/5e6e554e79980553c3a02ca199593a7d\n2. Madison McVan, \"Feds spied on protesters, left-wing organizations and unions during metro surge,\" Minnesota Reformer, Aug. 13, 2026. https://minnesotareformer.com/2026/08/13/feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/\n3. U.S. Attorney's Office, District of Minnesota, \"15 Members of Direct Action Minnesota... Indicted,\" June 16, 2026 (https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties); for the pleas: Minnesota Reformer, \"14 Minnesota anti-ICE protesters plead not guilty to federal charges,\" July 1, 2026 (https://minnesotareformer.com/2026/07/01/14-minnesota-anti-ice-protesters-plead-not-guilty-to-federal-charges/).\n4. Nancy Bermeo, \"On Democratic Backsliding,\" Journal of Democracy 27:1 (2016). https://www.journalofdemocracy.org/articles/on-democratic-backsliding/\n5. Kim Lane Scheppele, \"Autocratic Legalism,\" University of Chicago Law Review 85:2 (2018). https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf\n6. James C. Scott, Seeing Like a State (Yale University Press, 1998), Introduction and Part 3.\n7. \"Flock Safety tightens safeguards as states, cities question surveillance network,\" Stateline, Aug. 17, 2026 (https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network); Flock Safety, \"Frequently Asked Questions.\" https://www.flocksafety.com/faq\n8. Dhruv Mehrotra and Dell Cameron, WIRED investigation of Flock's OS Investigate, Aug. 19, 2026 (https://www.wired.com/story/flock-safety-os-investigate/); secondary coverage: Gizmodo, \"Flock's New AI Tool Does Much More Than Track License Plates\" (https://gizmodo.com/flocks-new-ai-tool-does-much-more-than-track-license-plates-2000800372); Decrypt (https://decrypt.co/375978/flock-ai-police-tool-track-drivers).\n9. American Civil Liberties Union, \"New Records Detail DHS Purchase and Use of Vast Quantities of Cell Phone Location Data,\" July 18, 2022 (https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data); ACLU, \"DHS Is Circumventing the Constitution by Buying Data...,\" Jan. 12, 2026 (https://www.aclu.org/news/privacy-technology/dhs-is-circumventing-constitution-by-buying-data-it-would-normally-need-a-warrant-to-access).\n10. U.S. Government Accountability Office, GAO-23-105607 and GAO-24-107372 (facial recognition services use by federal law enforcement). https://www.gao.gov/products/gao-23-105607; https://www.gao.gov/products/gao-24-107372\n11. Survey: \"Gait recognition: a survey of highlights and trends,\" PeerJ Computer Science (2024), https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/; InvestigateTV, \"Flock says its cameras don't track people. Its own training videos say otherwise,\" June 15, 2026, https://www.investigatetv.com/2026/06/15/flock-says-its-cameras-dont-track-people-its-own-training-videos-say-otherwise/\n12. Electronic Frontier Foundation, Surveillance Self-Defense: \"Mobile Phones: Location Tracking.\" https://ssd.eff.org/module/mobile-phones-location-tracking\n13. ACLU, \"Palantir's Deportation Roundup\" (2026), with underlying reporting cited therein. https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup\n14. Lorenzo Franceschi-Bicchierai, \"ICE says it bought Paragon's spyware to use in drug trafficking cases,\" TechCrunch, Apr. 2, 2026 (https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases/); NPR, \"DHS says ICE has 'no relationship' with spyware maker Paragon Solutions,\" May 22, 2026 (https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions).\n15. The Citizen Lab, \"First Forensic Confirmation of Paragon's iOS Mercenary Spyware Finds Journalists Targeted,\" June 12, 2025. https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted/\n16. Amnesty International, \"The Pegasus Project,\" July 2021. https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project/\n17. Chatrie v. United States, No. 25-112 (U.S. June 29, 2026). Analyses: EFF, \"Victory! Supreme Court Says Constitution Protects People's Location Data\" (https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data); Venable LLP client alert (https://www.venable.com/insights/publications/2026/07/supreme-court-holds-geofence-warrant-access); The Conversation (https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424).\n18. National Security Presidential Memorandum/NSPM-7, \"Countering Domestic Terrorism and Organized Political Violence,\" Sept. 25, 2025. https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence/\n19. Congressional Research Service, \"Domestic Terrorism: Some Considerations,\" LSB10340 (https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf); CRS, \"Domestic Terrorism and the Federal Criminal Law,\" R46829 (https://www.congress.gov/crs_external_products/R/PDF/R46829/R46829.2.pdf).\n20. Holder v. Humanitarian Law Project, 561 U.S. 1 (2010). https://www.law.cornell.edu/supct/html/08-1498.ZS.html\n21. The Terrorism Act 2000 (Proscribed Organisations) (Amendment) Order 2025, SI 2025/803 (https://www.legislation.gov.uk/uksi/2025/803/made); Terrorism Act 2000, ss. 11–13 (https://www.legislation.gov.uk/ukpga/2000/11/section/13).\n22. Home Office, \"Operation of police powers under the Terrorism Act 2000... quarterly update to December 2025,\" Mar. 12, 2026. https://www.gov.uk/government/statistics/operation-of-police-powers-under-tact-2000-to-december-2025/operation-of-police-powers-under-the-terrorism-act-2000-and-subsequent-legislation-arrests-outcomes-and-stop-and-search-great-britain-quarterly-u\n23. Human Rights Watch, \"UK: Court Upholds Terrorism Ban on Palestine Action,\" June 15, 2026 (https://www.hrw.org/news/2026/06/15/uk-court-upholds-terrorism-ban-on-palestine-action); Liberty, judgment analysis (https://www.libertyhumanrights.org.uk); Garden Court Chambers, Supreme Court permission note, July 31, 2026; The Aviationist, \"RAF Brize Norton\" incident report, June 20, 2025 (https://theaviationist.com/2025/06/20/raf-brize-norton-protesters/).\n24. UN experts, \"UN experts urge United Kingdom not to misuse terrorism laws against protest,\" July 1, 2025 (https://www.ohchr.org/en/press-releases/2025/07/un-experts-urge-united-kingdom-not-misuse-terrorism-laws-against-protest); UN High Commissioner for Human Rights on the Palestine Action ban, July 2025 (https://www.ohchr.org/en/press-releases/2025/07/uk-palestine-action-ban-disturbing-misuse-uk-counter-terrorism-legislation).\n25. Ernst Fraenkel, The Dual State: A Contribution to the Theory of Dictatorship (1941), trans. E. A. Shils, ed. Jens Meierhenrich (Oxford University Press, 2017), Introduction to the 1941 Edition, p. xxiii.\n26. Khalil v. Joyce, litigation record via Civil Rights Litigation Clearinghouse (https://clearinghouse.net/case/46209/); ACLU, \"Mahmoud Khalil's Legal Team Will Seek Supreme Court Review,\" 2026 (https://www.aclu.org/press-releases/mahmoud-khalils-legal-team-will-seek-supreme-court-review-of-appeals-court-decision).\n27. AAUP v. Rubio (D. Mass., Sept. 30, 2025); The Intercept, \"Judge rules Rubio and Noem violated First Amendment,\" Sept. 30, 2025. https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech/\n28. Nicole Foy, \"American Citizens Arrested and Detained by Immigration Agents,\" ProPublica, Oct. 16, 2025. https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will\n29. ProPublica and FRONTLINE, \"Caught in the Crackdown,\" Apr. 14, 2026. https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions\n30. Newsom v. Trump, litigation record via Civil Rights Litigation Clearinghouse (https://clearinghouse.net/case/46678/); Stars and Stripes, deployment figures, June 9, 2025 (https://www.stripes.com/branches/marine_corps/2025-06-09/marines-national-guard-la-protest-18068110.html).\n31. Federal Bureau of Investigation, The FBI: A Centennial History, 1908–2008, p. 22. https://www.fbi.gov/file-repository/reports-and-publications/fbi100book.pdf\n32. Select Committee to Study Governmental Operations with Respect to Intelligence Activities (Church Committee), Final Report, Book II, S. Rep. 94-755 (1976), pp. 2, 5, 9–11. https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf\n33. Associated Press investigative series on NYPD intelligence operations (2011–12; 2012 Pulitzer Prize for Investigative Reporting to Matt Apuzzo, Adam Goldman, Eileen Sullivan, and Chris Hawley); ACLU, \"Factsheet: The NYPD Muslim Surveillance Program.\" https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program\n34. ACLU, on the sworn Handschu deposition of NYPD Assistant Chief Thomas Galati, June 28, 2012. https://www.aclu.org/press-releases/nypd-testimony-muslim-surveillance-operation-highlights-futility-spying-innocent\n35. Hassan v. City of New York, 804 F.3d 277 (3d Cir. 2015). https://www2.ca3.uscourts.gov/opinarch/141688p.pdf\n36. Aaron Rosenthal and Saher Selod, \"Racialized Surveillance and Voting: Connecting Government Monitoring to American Muslim Electoral Participation,\" Genealogy 10:2 (2026). https://www.mdpi.com/2313-5778/10/2/50\n37. Brennan Center for Justice, \"Big Budget Act Creates Deportation-Industrial Complex\" (2025). https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex\n38. Michel Foucault, Discipline and Punish, trans. Alan Sheridan (Vintage, 1995), \"Panopticism,\" pp. 195–228.\n39. Elizabeth Stoycheff et al., \"Privacy and the Panopticon: Online mass surveillance's deterrence and chilling effects,\" New Media & Society (2018), https://doi.org/10.1177/1461444818801317; Elizabeth Stoycheff, \"Under Surveillance,\" Journalism & Mass Communication Quarterly (2016), https://doi.org/10.1177/1077699016630255.\n40. Gaétan Nandong, \"State surveillance and collective dissent,\" American Journal of Political Science (2026). https://doi.org/10.1111/ajps.70057\n41. Alexis de Tocqueville, Democracy in America, vol. 2 (1840), trans. Henry Reeve, Second Book, ch. V. https://www.gutenberg.org/ebooks/816\n42. Hannah Arendt, The Human Condition (1958), p. 200; The Origins of Totalitarianism (1951; Harcourt 1979 ed.), pp. 438, 455.\n43. Judith N. Shklar, \"The Liberalism of Fear,\" in Liberalism and the Moral Life, ed. Nancy L. Rosenblum (Harvard University Press, 1989), pp. 21–38.\n44. Reporters Committee for Freedom of the Press, \"Natanson post-search ruling\" (2026). https://www.rcfp.org/natanson-post-search-ruling/\n45. CBS News, coverage of the law-firm executive-order litigation and appeals (2025–26). https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms/\n46. Philadelphia Yearly Meeting of the Religious Society of Friends v. DHS, No. 25-1512 (4th Cir. Aug. 18, 2026), opinion at https://www.ca4.uscourts.gov/opinions/251512.P.pdf; case record via Civil Rights Litigation Clearinghouse. https://clearinghouse.net/case/45979/\n47. Human Rights Watch, \"Hungary's Sovereignty Protection Office Abolished,\" July 2, 2026 (https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished); Reuters, June 3, 2026, on the abolition bill; Brussels Signal, June 30, 2026, on the 135–44 vote.\n48. United States v. Comey (E.D.N.C., indicted Apr. 28, 2026); Eugene Volokh, \"Analyzing the Indictment of James Comey for '86 47' Post,\" Reason, Apr. 28, 2026 (https://reason.com/volokh/2026/04/28/analyzing-indictment-of-james-comey-for-86-47-post/); Reuters, Aug. 19, 2026, on DOJ's opposition filing.\n49. Electronic Frontier Foundation, Surveillance Self-Defense: \"Your Security Plan\" (https://ssd.eff.org/module/your-security-plan); \"Attending a Protest\" (https://ssd.eff.org/module/attending-protest).\n50. Freedom of the Press Foundation, SecureDrop. https://securedrop.org\n51. Access Now, Digital Security Helpline (https://www.accessnow.org/help/); Access Now, on the helpline's first 10,000 cases (2021), https://www.accessnow.org/press-release/digital-security-helpline-cases-report/; \"Espionage for Repression\" (Apr. 2026), https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf\n52. Edward Snowden, interview with Glenn Greenwald and Laura Poitras, The Guardian, June 9, 2013, transcript via Mic (https://www.mic.com/articles/47355/edward-snowden-interview-transcript-full-text-read-the-guardian-s-entire-interview-with-the-man-who-leaked-prism); William Binney, quoted in James Bamford, \"The NSA Is Building the Country's Biggest Spy Center,\" WIRED, Mar. 15, 2012 (https://www.wired.com/2012/03/ff-nsadatacenter/).\n53. Jack M. Balkin, \"The Constitution in the National Surveillance State,\" 93 Minnesota Law Review 1 (2008). https://www.minnesotalawreview.org/wp-content/uploads/2012/01/Balkin_MLR.pdf\n54. Lucan A. Way and Steven Levitsky, \"The Dynamics of Autocratic Coercive Capacity After the Cold War,\" Communist and Post-Communist Studies 39:3 (2006); the adjacent magazine-scale statement of the capacity argument is Ian Bogost and Charlie Warzel, \"American Panopticon,\" The Atlantic, Apr. 28, 2025 (https://www.theatlantic.com/technology/archive/2025/04/american-panopticon/682616/), centered on intra-governmental consolidation where this essay is centered on private infrastructure and classification.\n55. Shoshana Zuboff, \"Surveillance Capitalism,\" in Nesta, Finding ctrl (2019). https://findingctrl.nesta.org.uk/text/shoshana-zuboff/; Lisa M. Austin, \"From Privacy to Social Legibility,\" Surveillance & Society 20:3 (2022). https://ojs.library.queensu.ca/index.php/surveillance-and-society/article/view/15762\n56. United States v. Maynard, 615 F.3d 544, 561–63 (D.C. Cir. 2010), aff'd in part sub nom. United States v. Jones, 565 U.S. 400 (2012) (https://media.cadc.uscourts.gov/opinions/docs/2010/08/08-3030-1259298.pdf); Orin S. Kerr, \"The Mosaic Theory of the Fourth Amendment,\" 111 Michigan Law Review 311 (2012). https://repository.law.umich.edu/mlr/vol111/iss3/1/\n57. On the assassination of Charlie Kirk (Sept. 10, 2025, Utah Valley University): contemporaneous national coverage and the FBI's case page; Executive Order, \"Designating Antifa as a Domestic Terrorist Organization,\" Sept. 22, 2025, whitehouse.gov.\n58. Mandy Taheri, \"Flock CEO Says 'Goal Isn't a Dystopian Future',\" Newsweek, Aug. 13, 2026. https://www.newsweek.com/flock-ceo-says-goal-isnt-a-dystopian-future-12316078\n59. United States v. Rhine (D.D.C. Jan. 25, 2023), analyzed in Saraphin Dhanani, \"D.C. District Court Upholds the Government's Geofence Warrant Used to Identify Jan. 6 Rioters,\" Lawfare, Mar. 9, 2023 (https://www.lawfaremedia.org/article/dc-district-court-upholds-governments-geofence-warrant-used-identify-jan-6-rioters); Mark Harris, \"A Peek Inside the FBI's Unprecedented January 6 Geofence Dragnet,\" WIRED, Nov. 28, 2022 (https://www.wired.com/story/fbi-google-geofence-warrant-january-6/); Attorney General Merrick Garland, remarks of Jan. 5, 2022, justice.gov.\n60. Home Secretary Yvette Cooper, written ministerial statement HCWS729, June 23, 2025. https://questions-statements.parliament.uk/written-statements/detail/2025-06-23/hcws729\n61. Brandenburg v. Ohio, 395 U.S. 444 (1969); NAACP v. Claiborne Hardware Co., 458 U.S. 886 (1982).\n62. Philip Pettit, Republicanism: A Theory of Freedom and Government (Oxford University Press, 1997); Quentin Skinner, Liberty before Liberalism (Cambridge University Press, 1998); Frank Lovett, \"Republicanism,\" Stanford Encyclopedia of Philosophy (rev. 2026). https://plato.stanford.edu/entries/republicanism/\n63. Jonathon W. Penney, \"Chilling Effects: Online Surveillance and Wikipedia Use,\" 31 Berkeley Technology Law Journal 117 (2016). https://btlj.org/data/articles2016/vol31/31_1/0117_0182_Penney_ChillingEffects_WEB.pdf\n64. Frederick Schauer, \"Fear, Risk and the First Amendment: Unraveling the Chilling Effect,\" 58 Boston University Law Review 685, 730 (1978); Leslie Kendrick, \"Speech, Intent, and the Chilling Effect,\" 54 William & Mary Law Review 1633, 1656–57 (2013) (https://scholarship.law.wm.edu/wmlr/vol54/iss5/4/); Jonathon W. Penney, \"Understanding Chilling Effects,\" 106 Minnesota Law Review 1451 (2022).\n65. Laird v. Tatum, 408 U.S. 1, 13–14 (1972); Clapper v. Amnesty International USA, 568 U.S. 398, 409–11, 416 (2013).\n66. Daniel J. Solove, \"'I've Got Nothing to Hide' and Other Misunderstandings of Privacy,\" 44 San Diego Law Review 745 (2007). https://digital.sandiego.edu/sdlr/vol44/iss4/5/\n67. Neil M. Richards, \"The Dangers of Surveillance,\" 126 Harvard Law Review 1934 (2013) (https://harvardlawreview.org/wp-content/uploads/2013/05/vol126_richards.pdf); Julie E. Cohen, \"What Privacy Is For,\" 126 Harvard Law Review 1904 (2013) (https://www.juliecohen.com/attachments/File/CohenWhatPrivacyIsFor.pdf).\n68. Richard A. Posner, \"Our Domestic Intelligence Crisis,\" Washington Post, Dec. 21, 2005; his conference remarks of Dec. 2014 as reported in Reason, Dec. 8, 2014. https://reason.com/2014/12/08/richard-posner-privacy-is-mainly-about-c/\n69. U.S. Department of Justice v. Reporters Committee for Freedom of the Press, 489 U.S. 749, 764, 780 (1989).\n70. Édouard Glissant, \"For Opacity,\" in Poetics of Relation, trans. Betsy Wing (University of Michigan Press, 1997), pp. 189–194.\n71. Myers v. United States, 272 U.S. 52, 293 (1926) (Brandeis, J., dissenting).\n72. Steven Levitsky and Lucan A. Way, \"The Path to American Authoritarianism,\" Foreign Affairs, Feb. 11, 2025 (https://www.foreignaffairs.com/united-states/path-american-authoritarianism-trump); Steven Levitsky, Lucan A. Way, and Daniel Ziblatt, \"The Price of American Authoritarianism,\" Foreign Affairs, Dec. 2025 (https://www.foreignaffairs.com/united-states/american-authoritarianism-levitsky-way-ziblatt).\n73. Timothy Snyder, On Tyranny: Twenty Lessons from the Twentieth Century (Tim Duggan Books, 2017), Lesson 1.\n74. Democracy Now, \"'Operation Puppet Master': Trump Admin Spied on Minnesota Activists & Unions After ICE Killings,\" Aug. 17, 2026. https://www.democracynow.org/2026/8/17/operation_puppet_master"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b144",
+        "endOffset": 77143,
+        "index": 144,
+        "startOffset": 65466,
+        "text": "1. Tim Sullivan and Jennifer Sinco Kelleher, \"Documents show federal surveillance operation in Minnesota targeted progressive groups, unions,\" Associated Press, Aug. 13, 2026. https://apnews.com/article/5e6e554e79980553c3a02ca199593a7d\n2. Madison McVan, \"Feds spied on protesters, left-wing organizations and unions during metro surge,\" Minnesota Reformer, Aug. 13, 2026. https://minnesotareformer.com/2026/08/13/feds-spied-on-protesters-left-wing-organizations-and-unions-during-metro-surge/\n3. U.S. Attorney's Office, District of Minnesota, \"15 Members of Direct Action Minnesota... Indicted,\" June 16, 2026. https://www.justice.gov/usao-mn/pr/15-members-direct-action-minnesota-minneapolis-based-direct-action-group-antifa-ties\n4. Nancy Bermeo, \"On Democratic Backsliding,\" Journal of Democracy 27:1 (2016). https://www.journalofdemocracy.org/articles/on-democratic-backsliding/\n5. Kim Lane Scheppele, \"Autocratic Legalism,\" University of Chicago Law Review 85:2 (2018). https://lawreview.uchicago.edu/sites/default/files/11%20Scheppele_SYMP_Online.pdf\n6. James C. Scott, Seeing Like a State (Yale University Press, 1998), Introduction and Part 3.\n7. \"Flock Safety tightens safeguards as states, cities question surveillance network,\" Stateline, Aug. 17, 2026 (https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network); Flock Safety, \"Frequently Asked Questions.\" https://www.flocksafety.com/faq\n8. Reporting on WIRED's investigation of Flock's OS Investigate (Aug. 19, 2026): Gizmodo, \"Flock's New AI Tool Does Much More Than Track License Plates\" (https://gizmodo.com/flocks-new-ai-tool-does-much-more-than-track-license-plates-2000800372); Decrypt (https://decrypt.co/375978/flock-ai-police-tool-track-drivers).\n9. American Civil Liberties Union, \"New Records Detail DHS Purchase and Use of Vast Quantities of Cell Phone Location Data,\" July 18, 2022 (https://www.aclu.org/news/privacy-technology/new-records-detail-dhs-purchase-and-use-of-vast-quantities-of-cell-phone-location-data); ACLU, \"DHS Is Circumventing the Constitution by Buying Data...,\" Jan. 12, 2026 (https://www.aclu.org/news/privacy-technology/dhs-is-circumventing-constitution-by-buying-data-it-would-normally-need-a-warrant-to-access).\n10. U.S. Government Accountability Office, GAO-23-105607 and GAO-24-107372 (facial recognition services use by federal law enforcement). https://www.gao.gov/products/gao-23-105607; https://www.gao.gov/products/gao-24-107372\n11. Survey: \"Gait recognition: a survey of highlights and trends,\" PeerJ Computer Science (2024), https://pmc.ncbi.nlm.nih.gov/articles/PMC11323174/; InvestigateTV, \"Flock says its cameras don't track people. Its own training videos say otherwise,\" June 15, 2026, https://www.investigatetv.com/2026/06/15/flock-says-its-cameras-dont-track-people-its-own-training-videos-say-otherwise/\n12. Electronic Frontier Foundation, Surveillance Self-Defense: \"Mobile Phones: Location Tracking.\" https://ssd.eff.org/module/mobile-phones-location-tracking\n13. ACLU, \"Palantir's Deportation Roundup\" (2026), with underlying reporting cited therein. https://www.aclu.org/news/privacy-technology/palantir-deportation-roundup\n14. Lorenzo Franceschi-Bicchierai, \"ICE says it bought Paragon's spyware to use in drug trafficking cases,\" TechCrunch, Apr. 2, 2026 (https://techcrunch.com/2026/04/02/ice-says-it-bought-paragons-spyware-to-use-in-drug-trafficking-cases/); NPR, \"DHS says ICE has 'no relationship' with spyware maker Paragon Solutions,\" May 22, 2026 (https://www.gpb.org/news/2026/05/22/dhs-says-ice-has-no-relationship-spyware-maker-paragon-solutions).\n15. The Citizen Lab, \"First Forensic Confirmation of Paragon's iOS Mercenary Spyware Finds Journalists Targeted,\" June 12, 2025. https://citizenlab.ca/research/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finds-journalists-targeted/\n16. Amnesty International, \"The Pegasus Project,\" July 2021. https://www.amnesty.org/en/latest/news/2021/07/the-pegasus-project/\n17. Chatrie v. United States, No. 25-112 (U.S. June 29, 2026). Analyses: EFF, \"Victory! Supreme Court Says Constitution Protects People's Location Data\" (https://www.eff.org/deeplinks/2026/06/victory-supreme-court-says-constitution-protects-peoples-location-data); Venable LLP client alert (https://www.venable.com/insights/publications/2026/07/supreme-court-holds-geofence-warrant-access); The Conversation (https://theconversation.com/supreme-court-rules-your-cellphone-location-data-is-protected-by-the-fourth-amendment-286424).\n18. National Security Presidential Memorandum/NSPM-7, \"Countering Domestic Terrorism and Organized Political Violence,\" Sept. 25, 2025. https://www.whitehouse.gov/presidential-actions/2025/09/countering-domestic-terrorism-and-organized-political-violence/\n19. Congressional Research Service, \"Domestic Terrorism: Some Considerations,\" LSB10340 (https://www.congress.gov/crs_external_products/LSB/PDF/LSB10340/LSB10340.2.pdf); CRS, \"Domestic Terrorism and the Federal Criminal Law,\" R46829 (https://www.congress.gov/crs_external_products/R/PDF/R46829/R46829.2.pdf).\n20. Holder v. Humanitarian Law Project, 561 U.S. 1 (2010). https://www.law.cornell.edu/supct/html/08-1498.ZS.html\n21. The Terrorism Act 2000 (Proscribed Organisations) (Amendment) Order 2025, SI 2025/803 (https://www.legislation.gov.uk/uksi/2025/803/made); Terrorism Act 2000, ss. 11–13 (https://www.legislation.gov.uk/ukpga/2000/11/section/13).\n22. Home Office, \"Operation of police powers under the Terrorism Act 2000... quarterly update to December 2025,\" Mar. 12, 2026. https://www.gov.uk/government/statistics\n23. Human Rights Watch, \"UK: Court Upholds Terrorism Ban on Palestine Action,\" June 15, 2026 (https://www.hrw.org/news/2026/06/15/uk-court-upholds-terrorism-ban-on-palestine-action); Liberty, judgment analysis (https://www.libertyhumanrights.org.uk); Garden Court Chambers, Supreme Court permission note, July 31, 2026; The Aviationist, \"RAF Brize Norton\" incident report, June 20, 2025 (https://theaviationist.com/2025/06/20/raf-brize-norton-protesters/).\n24. UN Office of the High Commissioner for Human Rights, statements of July 1 and July 2025 on the proscription of Palestine Action. https://www.ohchr.org\n25. Ernst Fraenkel, The Dual State: A Contribution to the Theory of Dictatorship (1941), trans. E. A. Shils, ed. Jens Meierhenrich (Oxford University Press, 2017), p. xxiii.\n26. Khalil v. Joyce, litigation record via Civil Rights Litigation Clearinghouse (https://clearinghouse.net/case/46209/); ACLU, \"Mahmoud Khalil's Legal Team Will Seek Supreme Court Review,\" 2026 (https://www.aclu.org/press-releases/mahmoud-khalils-legal-team-will-seek-supreme-court-review-of-appeals-court-decision).\n27. AAUP v. Rubio (D. Mass., Sept. 30, 2025); The Intercept, \"Judge rules Rubio and Noem violated First Amendment,\" Sept. 30, 2025. https://theintercept.com/2025/09/30/rubio-noem-deport-aaup-ruling-free-speech/\n28. Nicole Foy, \"American Citizens Arrested and Detained by Immigration Agents,\" ProPublica, Oct. 16, 2025. https://www.propublica.org/article/immigration-dhs-american-citizens-arrested-detained-against-will\n29. ProPublica and FRONTLINE, \"Caught in the Crackdown,\" Apr. 14, 2026. https://www.propublica.org/article/caught-in-crackdown-ice-cbp-doj-trump-arrests-convictions\n30. Newsom v. Trump, litigation record via Civil Rights Litigation Clearinghouse (https://clearinghouse.net/case/46678/); Stars and Stripes, deployment figures, June 9, 2025 (https://www.stripes.com/branches/marine_corps/2025-06-09/marines-national-guard-la-protest-18068110.html).\n31. Federal Bureau of Investigation, The FBI: A Centennial History, 1908–2008, p. 22. https://www.fbi.gov/file-repository/reports-and-publications/fbi100book.pdf\n32. Select Committee to Study Governmental Operations with Respect to Intelligence Activities (Church Committee), Final Report, Book II, S. Rep. 94-755 (1976), pp. 2, 5, 9–11. https://www.intelligence.senate.gov/sites/default/files/94755_II.pdf\n33. Associated Press investigative series on NYPD intelligence operations (2011–12; 2012 Pulitzer Prize for Investigative Reporting to Matt Apuzzo, Adam Goldman, Eileen Sullivan, and Chris Hawley); ACLU, \"Factsheet: The NYPD Muslim Surveillance Program.\" https://www.aclu.org/documents/factsheet-nypd-muslim-surveillance-program\n34. ACLU, on the sworn Handschu deposition of NYPD Assistant Chief Thomas Galati, June 28, 2012. https://www.aclu.org\n35. Hassan v. City of New York, 804 F.3d 277 (3d Cir. 2015). https://www2.ca3.uscourts.gov/opinarch/141688p.pdf\n36. Aaron Rosenthal and Saher Selod, \"Racialized Surveillance and Voting: Connecting Government Monitoring to American Muslim Electoral Participation,\" Genealogy 10:2 (2026). https://www.mdpi.com/2313-5778/10/2/50\n37. Brennan Center for Justice, \"Big Budget Act Creates Deportation-Industrial Complex\" (2025). https://www.brennancenter.org/our-work/analysis-opinion/big-budget-act-creates-deportation-industrial-complex\n38. Michel Foucault, Discipline and Punish, trans. Alan Sheridan (Vintage, 1995), \"Panopticism,\" pp. 195–228.\n39. Elizabeth Stoycheff et al., \"Privacy and the Panopticon: Online mass surveillance's deterrence and chilling effects,\" New Media & Society (2018), https://doi.org/10.1177/1461444818801317; Elizabeth Stoycheff, \"Under Surveillance,\" Journalism & Mass Communication Quarterly (2016), https://doi.org/10.1177/1077699016630255.\n40. Gaétan Nandong, \"State surveillance and collective dissent,\" American Journal of Political Science (2026). https://doi.org/10.1111/ajps.70057\n41. Alexis de Tocqueville, Democracy in America, vol. 2 (1840), trans. Henry Reeve, Second Book, ch. V. https://www.gutenberg.org/ebooks/816\n42. Hannah Arendt, The Human Condition (1958), p. 200; The Origins of Totalitarianism (1951; Harcourt 1979 ed.), pp. 438, 455.\n43. Judith N. Shklar, \"The Liberalism of Fear,\" in Liberalism and the Moral Life, ed. Nancy L. Rosenblum (Harvard University Press, 1989), pp. 21–38.\n44. Reporters Committee for Freedom of the Press, \"Natanson post-search ruling\" (2026). https://www.rcfp.org/natanson-post-search-ruling/\n45. CBS News, coverage of the law-firm executive-order litigation and appeals (2025–26). https://www.cbsnews.com/news/justice-department-drop-defense-trumps-executive-orders-targeting-law-firms/\n46. Philadelphia Yearly Meeting of the Religious Society of Friends v. DHS, No. 25-1512 (4th Cir. Aug. 18, 2026); case record via Civil Rights Litigation Clearinghouse. https://clearinghouse.net/case/46097/\n47. Human Rights Watch, \"Hungary's Sovereignty Protection Office Abolished,\" July 2, 2026 (https://www.hrw.org/news/2026/07/02/hungarys-sovereignty-protection-office-abolished); Reuters, June 3, 2026, on the abolition bill; Brussels Signal, June 30, 2026, on the 135–44 vote.\n48. United States v. Comey (E.D.N.C., indicted Apr. 28, 2026); Eugene Volokh, \"Analyzing the Indictment of James Comey for '86 47' Post,\" Reason, Apr. 28, 2026 (https://reason.com/volokh/2026/04/28/analyzing-indictment-of-james-comey-for-86-47-post/); Reuters, Aug. 19, 2026, on DOJ's opposition filing.\n49. Electronic Frontier Foundation, Surveillance Self-Defense: \"Your Security Plan\" (https://ssd.eff.org/module/your-security-plan); \"Attending a Protest\" (https://ssd.eff.org/module/attending-protest).\n50. Freedom of the Press Foundation, SecureDrop. https://securedrop.org\n51. Access Now, Digital Security Helpline (https://www.accessnow.org/help/); \"Espionage for Repression\" (Apr. 2026), https://www.accessnow.org/wp-content/uploads/2026/04/Espionage-for-repression-forensic-analysis-of-a-cross-border-hack-for-hire-campaign-targeting-civil-society-in-MENA-2026.pdf"
+       }
+      ],
+      "charsChanged": 30373,
+      "id": "h30",
+      "kind": "edited"
+     }
+    ]
+   }
+  }
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "v1-v2",
+ "kind": "what-changed"
+}

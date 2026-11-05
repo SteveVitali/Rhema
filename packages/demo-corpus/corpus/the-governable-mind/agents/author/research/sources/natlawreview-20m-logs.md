@@ -1,0 +1,6 @@
+# natlawreview-20m-logs
+- **URL:** https://natlawreview.com/article/openai-loses-privacy-gambit-20-million-chatgpt-logs-likely-headed-copyright · **Accessed:** 2026-09-16 (read via WebFetch extraction; a reader proxy returned an ad redirect) · **For:** v1 response round, item 2
+- **What it establishes:** Andrew R. Lee (Jones Walker LLP), Jan. 6, 2026. Wang's order (Nov. 2025) and Stein's affirmance (Jan. 5, 2026); 20 million logs described as about 0.5% of preserved logs; de-identification by OpenAI; existing protective order; Stein distinguished the securities/wiretap precedent; "unrelated" logs discoverable because they bear on fair use. This is the likely origin of the editor's phrasing: the article says ChatGPT users, unlike wiretap subjects, "voluntarily submitted their communications" to OpenAI. The primary order (see stein-order note) actually says "voluntarily disclosed."
+- **Key passages:** (as extracted) "ChatGPT users, unlike wiretap subjects, 'voluntarily submitted their communications' to OpenAI." — treat as the law firm's paraphrase; cite the order's own words instead.
+- **Reliability:** Secondary (law-firm client alert, syndicated on NatLawReview/Mondaq/JD Supra). Independent of the parties.
+- **Relevance to this project:** Corroborates item 2 dates and the 0.5% figure; flags a quotation drift the author should not reproduce.

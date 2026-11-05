@@ -1,0 +1,10 @@
+# arendt-origins-total-domination-scan
+- **URL:** https://ia800609.us.archive.org/27/items/clark-99olympiaschoice/HUM%20220/Arendt1979TotalDomination.pdf · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C36(b)
+- **What it establishes:** Scan of "Total Domination" (from ch. 12, "Totalitarianism in Power"), *The Origins of Totalitarianism*, new edition with added prefaces (Harcourt Brace Jovanovich / Harvest, 1979), running heads and page numbers visible (pp. 437–457). Primary text for the destruction-of-plurality-and-spontaneity claim.
+- **Key passages (verbatim, page numbers from running heads):**
+  - p. 438: "Total domination, which strives to organize the infinite plurality and differentiation of human beings as if all of humanity were just one individual, is possible only if each and every person can be reduced to a never-changing identity of reactions, so that each of these bundles of reactions can be exchanged at random for any other."
+  - p. 440: "The extraordinarily bloody terror during the initial stage of totalitarian rule serves indeed the exclusive purpose of defeating the opponent and rendering all further opposition impossible; but total terror is launched only after this initial stage has been overcome and the regime no longer has anything to fear from the opposition."
+  - p. 455: "For to destroy individuality is to destroy spontaneity, man's power to begin something new out of his own resources, something that cannot be explained on the basis of reactions to environment and events."
+  - p. 456: "Those who aspire to total domination must liquidate all spontaneity, such as the mere existence of individuality will always engender, and track it down in its most private forms, regardless of how unpolitical and harmless these may seem."
+- **Reliability:** Primary (scan of the standard 1979 edition; course-hosted copy on archive.org).
+- **Relevance to this project:** C36(b): totalitarianism as the destruction of plurality and spontaneity, backed by terror — all quotable with page numbers.

@@ -1,0 +1,301 @@
+{
+ "dto": {
+  "afterN": 3,
+  "beforeN": 2,
+  "ok": true,
+  "responseId": "v2-v3",
+  "reviewId": null,
+  "view": {
+   "moves": [],
+   "rebutted": [],
+   "strip": {
+    "addressed": 0,
+    "hunks": 10,
+    "moves": 0,
+    "rebutted": 0,
+    "stillOpen": 0
+   },
+   "unlinked": {
+    "entries": [],
+    "hunks": [
+     {
+      "after": [
+       {
+        "blockId": "b1",
+        "endOffset": 39,
+        "index": 1,
+        "startOffset": 0,
+        "text": "# The Structure of Political Difference"
+       },
+       {
+        "blockId": "b2",
+        "endOffset": 110,
+        "index": 2,
+        "startOffset": 41,
+        "text": "## Toward a grammar of ideological disagreement beyond left and right"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b1",
+        "endOffset": 29,
+        "index": 1,
+        "startOffset": 0,
+        "text": "# Politics Has Five Questions"
+       },
+       {
+        "blockId": "b2",
+        "endOffset": 103,
+        "index": 2,
+        "startOffset": 31,
+        "text": "## Toward a vocabulary of ideological disagreement beyond left and right"
+       }
+      ],
+      "charsChanged": 209,
+      "id": "h1",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b4",
+        "endOffset": 1138,
+        "index": 4,
+        "startOffset": 248,
+        "text": "The stranger fact is that American politics keeps producing alliances the line cannot parse. A democratic socialist from Vermont and a national-conservative Republican from Missouri co-sponsor a bill to cap credit-card interest rates. The progressive chair of the Federal Trade Commission draws her most conspicuous praise from the populist right. A decade earlier, libertarian Republicans and progressive Democrats came within a dozen votes of defunding the bulk collection of Americans’ phone records, against the unified opposition of both parties’ leaderships and the White House. In each case the spectrum’s farthest-apart actors converge, and its nearest neighbors—the institutional center-left and center-right—stand together against them. Commentators reach for horseshoe theory: the ends of the line bend until they touch. The metaphor concedes the failure while keeping the ruler."
+       },
+       {
+        "blockId": "b5",
+        "endOffset": 1283,
+        "index": 5,
+        "startOffset": 1140,
+        "text": "The conventional spectrum registers these actors as opposites. It cannot say what they agree about, and so it files their agreement as paradox."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b4",
+        "endOffset": 922,
+        "index": 4,
+        "startOffset": 241,
+        "text": "Donald Trump and Javier Milei are both called right-wing populists. Yet one offers national restoration through executive force, border control, tariffs, and state protection; the other came to power promising to take a chainsaw to the state. Bernie Sanders and Trump can both speak of a betrayed people ruled by a corrupt elite, but almost every substantive answer they give—to property, hierarchy, identity, punishment, religion, labor, and membership—pulls in another direction. Barack Obama and Emmanuel Macron are easily grouped together as establishment liberals, though they differ significantly in their relation to markets, administrative authority, and the welfare state."
+       },
+       {
+        "blockId": "b5",
+        "endOffset": 1059,
+        "index": 5,
+        "startOffset": 924,
+        "text": "The conventional spectrum notices that these people belong to opposing coalitions. It does not tell us what the coalitions are made of."
+       }
+      ],
+      "charsChanged": 1849,
+      "id": "h2",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b57",
+        "endOffset": 12517,
+        "index": 57,
+        "startOffset": 12490,
+        "text": "## III. The Price of Speech"
+       },
+       {
+        "blockId": "b58",
+        "endOffset": 12663,
+        "index": 58,
+        "startOffset": 12519,
+        "text": "The framework just proposed has a number, and the number is a claim the argument has so far only assumed. Why five questions—and why these five?"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b57",
+        "endOffset": 12297,
+        "index": 57,
+        "startOffset": 12266,
+        "text": "## III. Why Five, and Not Fifty"
+       },
+       {
+        "blockId": "b58",
+        "endOffset": 12413,
+        "index": 58,
+        "startOffset": 12299,
+        "text": "The title of this essay makes a claim the argument has so far only assumed. Why five questions—and why these five?"
+       }
+      ],
+      "charsChanged": 316,
+      "id": "h3",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b67",
+        "endOffset": 17394,
+        "index": 67,
+        "startOffset": 17368,
+        "text": "## IV. Separable but Bound"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b67",
+        "endOffset": 17152,
+        "index": 67,
+        "startOffset": 17118,
+        "text": "## IV. Not Five Natural Dimensions"
+       }
+      ],
+      "charsChanged": 60,
+      "id": "h4",
+      "kind": "mixed"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b77",
+        "endOffset": 21583,
+        "index": 77,
+        "startOffset": 21091,
+        "text": "That claim is falsifiable. If no politically consequential actors occupied the off-diagonal cells—if traditionalists were reliably authoritarian, nationalist, and anti-market; if egalitarians were reliably universalist and progressive—the extra questions would be idle machinery, and the two-dimensional compression would deserve to keep its monopoly. The cases just named, like the alliances of this essay’s opening, are the evidence that the cells are occupied, and increasingly by winners."
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b77",
+        "endOffset": 21324,
+        "index": 77,
+        "startOffset": 20849,
+        "text": "That claim is falsifiable. If no politically consequential actors occupied the off-diagonal cells—if traditionalists were reliably authoritarian, nationalist, and anti-market; if egalitarians were reliably universalist and progressive—the extra questions would be idle machinery, and the two-dimensional compression would deserve to keep its monopoly. The actors named in this essay’s first paragraph are the evidence that the cells are occupied, and increasingly by winners."
+       }
+      ],
+      "charsChanged": 967,
+      "id": "h5",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b108",
+        "endOffset": 28151,
+        "index": 108,
+        "startOffset": 28120,
+        "text": "## VII. The Discipline of Names"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b108",
+        "endOffset": 27886,
+        "index": 108,
+        "startOffset": 27861,
+        "text": "## VII. The Names We Need"
+       }
+      ],
+      "charsChanged": 56,
+      "id": "h6",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b132",
+        "endOffset": 35992,
+        "index": 132,
+        "startOffset": 35952,
+        "text": "## IX. The Persistence of Left and Right"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b132",
+        "endOffset": 35722,
+        "index": 132,
+        "startOffset": 35687,
+        "text": "## IX. What Left and Right Still Do"
+       }
+      ],
+      "charsChanged": 75,
+      "id": "h7",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b142",
+        "endOffset": 39782,
+        "index": 142,
+        "startOffset": 39749,
+        "text": "## X. The Historicity of Families"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b142",
+        "endOffset": 39534,
+        "index": 142,
+        "startOffset": 39479,
+        "text": "## X. Families Are Historical; Coordinates Are Portable"
+       }
+      ],
+      "charsChanged": 88,
+      "id": "h8",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b152",
+        "endOffset": 42746,
+        "index": 152,
+        "startOffset": 42705,
+        "text": "## XII. The Use and Abuse of a Vocabulary"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b152",
+        "endOffset": 42477,
+        "index": 152,
+        "startOffset": 42457,
+        "text": "## XII. Rules of Use"
+       }
+      ],
+      "charsChanged": 61,
+      "id": "h9",
+      "kind": "edited"
+     },
+     {
+      "after": [
+       {
+        "blockId": "b184",
+        "endOffset": 47296,
+        "index": 184,
+        "startOffset": 47261,
+        "text": "## XIV. An Instrument of Perception"
+       }
+      ],
+      "before": [
+       {
+        "blockId": "b184",
+        "endOffset": 47009,
+        "index": 184,
+        "startOffset": 46992,
+        "text": "## XIV. The Wager"
+       }
+      ],
+      "charsChanged": 52,
+      "id": "h10",
+      "kind": "edited"
+     }
+    ]
+   }
+  }
+ },
+ "essay": "structure-of-political-difference",
+ "format": 1,
+ "key": "v2-v3",
+ "kind": "what-changed"
+}

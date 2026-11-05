@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/techtarget-ai-kill-switch-act-cios-2026-08-13.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "7cec252f6ab56b2b",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/techtarget-ai-kill-switch-act-cios-2026-08-13.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# techtarget-ai-kill-switch-act-cios-2026-08-13\n- **URL:** https://www.techtarget.com/it-strategy/feature/AI-Kill-Switch-Act-raises-questions-for-CIOs · **Accessed:** 2026-09-16 · **For:** v1 response round, Finding H (who it covers, per practitioners)\n- **What it establishes:** Tim Murphy, Aug 13, 2026. Confirms the $500M revenue threshold and \"graduated intervention, including throttling, suspension and shutdown\"; DHS may order such actions \"in certain circumstances.\" Practitioner reading: the bill targets \"frontier model developers and then the initial systems builders,\" not \"end-user deployers who are just bringing in the system with something like ChatGPT built into it.\"\n- **Key passages:**\n  - \"the entity must have derived at least $500 million in gross revenue from the covered technology in the preceding calendar year.\"\n  - \"end-user deployers ... don't have the same technical capabilities to reach into those systems.\"\n- **Reliability:** Secondary, trade press with analyst quotes.\n- **Relevance to this project:** Corroborates that enterprise deployers and consumers are outside the bill's direct obligations.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 138
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "54d92919dea912834a50a9911f0bbf7b0b0982dcec2bbe0ceb842aeb7482ac2c",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/techtarget-ai-kill-switch-act-cios-2026-08-13.md",
+ "kind": "artifact-page"
+}

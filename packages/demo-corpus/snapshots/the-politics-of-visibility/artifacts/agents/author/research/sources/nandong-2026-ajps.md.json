@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/nandong-2026-ajps.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "00d7ec03cfc213e1",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/nandong-2026-ajps.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# nandong-2026-ajps\n- **URL:** https://onlinelibrary.wiley.com/doi/full/10.1111/ajps.70057 (page blocks fetchers; metadata + publisher-deposited abstract verified verbatim via https://api.crossref.org/works/10.1111/ajps.70057) · **Accessed:** 2026-08-20 · **For:** v1 drafting, claim C34\n- **What it establishes:** Gaétan Nandong, \"State surveillance and collective dissent,\" *American Journal of Political Science*, published 2026-07-01. Formal model: surveillance both informs an uninformed government (creating fear via expected repression) and, when citizens have public information, provides a coordination device that can stimulate dissent.\n- **Key passages (abstract, verbatim from Crossref deposit):**\n  - \"State surveillance facilitates the collection of intelligence on dissidents while simultaneously providing information about the value of the status quo. I study this trade‐off in a context where an uninformed government must decide whether to repress.\"\n  - \"Because citizens expect more informed governments to enact greater repression, autocratic surveillance can create a climate of fear. However, surveillance can also stimulate dissent when citizens have access to public information. State surveillance gives citizens an opportunity to coordinate, even in the absence of a preference for such coordination.\"\n  - \"Surveillance can amplify dissent by enhancing citizens' motivations for political activism aimed at drawing the government's attention to political and economic issues. Coordination distorts government learning, resulting in lower expected levels of repression.\"\n  - \"...the effectiveness of advanced surveillance technology depends on expectations regarding repression, thereby underscoring a psychological aspect of state control.\"\n- **Reliability:** Secondary (peer-reviewed, top political-science journal); author single-named Gaétan Nandong — outline's \"Nandong\" is correct (surname).\n- **Relevance to this project:** C34 — the conditional/dual-effect model of surveillance and dissent.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 240
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "1f73ff0a08d5654f3743dce1de66c9bd3102071061328343e2eb65e6eb0f0545",
+  "state": "frozen"
+ },
+ "essay": "the-politics-of-visibility",
+ "format": 1,
+ "key": "agents/author/research/sources/nandong-2026-ajps.md",
+ "kind": "artifact-page"
+}

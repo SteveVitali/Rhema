@@ -1,0 +1,31 @@
+{
+ "dto": {
+  "artifactKind": "source_note",
+  "artifactPath": "agents/author/research/sources/tnw-zuckerberg-incentive-build-safely.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "d005f56c3b692dd4",
+    "ordinal": 1
+   }
+  },
+  "draftId": "agents/author/research/sources/tnw-zuckerberg-incentive-build-safely.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# tnw-zuckerberg-incentive-build-safely\n- **URL:** https://thenextweb.com/news/zuckerberg-ai-labs-incentive-build-safely · **Accessed:** 2026-09-16 · **For:** v1 drafting, claim C46\n- **What it establishes:** TNW (Sept 16, 2026; Ana-Maria Stanciuc). Additional sentences from the same X post, including the Muse delay and \"balance of power\" lines; notes Meta did not commit to independent safety evaluations as OpenAI proposed.\n- **Key passages:**\n  - \"Every lab has the responsibility and incentive to move at the pace required to train its models safely\"\n  - \"Meta delayed shipping Muse for several months to focus on safety and security. We didn't call for everyone else to do this before we would.\"\n  - \"I believe the key to building a positive future for everyone is maintaining the right balance of power. This is within our power to do\"\n- **Reliability:** Secondary tech press quoting the post; consistent with CNBC and RTÉ.\n- **Relevance to this project:** Supplies the \"we didn't call for everyone else to do this\" line, which is the closest thing to an explicit rejection of coordinated slowdowns.\n",
+  "meters": {
+   "readMin": 1,
+   "words": 159
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "d3898984cf54c7715a7e5c0c0bc674368169a3cf82d09e0e2d8e133cb1b8aa5b",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/research/sources/tnw-zuckerberg-incentive-build-safely.md",
+ "kind": "artifact-page"
+}

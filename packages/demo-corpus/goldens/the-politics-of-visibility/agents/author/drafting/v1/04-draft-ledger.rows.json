@@ -1,0 +1,149 @@
+{
+ "rows": [
+  {
+   "actual": 770,
+   "budget": 600,
+   "hash": "0",
+   "note": "verified",
+   "ordinal": 0,
+   "title": "The Conspiracy (opening)"
+  },
+  {
+   "actual": 400,
+   "budget": 550,
+   "hash": "I",
+   "note": "verified",
+   "ordinal": 1,
+   "title": "The Wrong Picture of How Democracy Dies"
+  },
+  {
+   "actual": 340,
+   "budget": 450,
+   "hash": "II",
+   "note": "verified",
+   "ordinal": 2,
+   "title": "To Govern Is First to See"
+  },
+  {
+   "actual": 790,
+   "budget": 800,
+   "hash": "III",
+   "note": "verified",
+   "ordinal": 3,
+   "title": "The Distributed Panopticon"
+  },
+  {
+   "actual": 590,
+   "budget": 600,
+   "hash": "IV",
+   "note": "verified",
+   "ordinal": 4,
+   "title": "The Fusion Layer"
+  },
+  {
+   "actual": 620,
+   "budget": 650,
+   "hash": "V",
+   "note": "verified",
+   "ordinal": 5,
+   "title": "From Seeing to Naming"
+  },
+  {
+   "actual": 830,
+   "budget": 700,
+   "hash": "VI",
+   "note": "verified",
+   "ordinal": 6,
+   "title": "The Most Powerful Word"
+  },
+  {
+   "actual": 740,
+   "budget": 700,
+   "hash": "VII",
+   "note": "verified",
+   "ordinal": 7,
+   "title": "The Dual State and Its Laboratory"
+  },
+  {
+   "actual": 580,
+   "budget": 600,
+   "hash": "VIII",
+   "note": "verified",
+   "ordinal": 8,
+   "title": "The American Precedent Is America"
+  },
+  {
+   "actual": 370,
+   "budget": 450,
+   "hash": "IX",
+   "note": "verified",
+   "ordinal": 9,
+   "title": "What Is Actually New"
+  },
+  {
+   "actual": 490,
+   "budget": 550,
+   "hash": "X",
+   "note": "verified",
+   "ordinal": 10,
+   "title": "Surveillance Without Arrest"
+  },
+  {
+   "actual": 490,
+   "budget": 600,
+   "hash": "XI",
+   "note": "verified",
+   "ordinal": 11,
+   "title": "The Politics of Association"
+  },
+  {
+   "actual": 740,
+   "budget": 700,
+   "hash": "XII",
+   "note": "verified",
+   "ordinal": 12,
+   "title": "The Distance Between Danger and Dictatorship"
+  },
+  {
+   "actual": 410,
+   "budget": 500,
+   "hash": "XIII",
+   "note": "verified",
+   "ordinal": 13,
+   "title": "The Democratic Right to Opacity"
+  },
+  {
+   "actual": 420,
+   "budget": 550,
+   "hash": "XIV",
+   "note": "verified",
+   "ordinal": 14,
+   "title": "A Security Culture for Democratic Life"
+  },
+  {
+   "actual": 530,
+   "budget": 650,
+   "hash": "XV",
+   "note": "verified",
+   "ordinal": 15,
+   "title": "What Must Power Not Know"
+  },
+  {
+   "actual": 390,
+   "budget": 450,
+   "hash": "C",
+   "note": "verified",
+   "ordinal": 16,
+   "title": "Freedom Before the Knock (coda)"
+  },
+  {
+   "actual": 280,
+   "budget": 350,
+   "hash": "A",
+   "note": "verified",
+   "ordinal": 17,
+   "title": "Appendix — A Democratic Security Baseline"
+  }
+ ],
+ "version": 1
+}

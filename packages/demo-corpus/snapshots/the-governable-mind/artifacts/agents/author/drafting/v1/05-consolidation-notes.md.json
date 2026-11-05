@@ -1,0 +1,115 @@
+{
+ "dto": {
+  "artifactKind": "consolidation_notes",
+  "artifactPath": "agents/author/drafting/v1/05-consolidation-notes.md",
+  "baseDraftId": null,
+  "baseDraftN": null,
+  "blockIdMap": {
+   "b1": {
+    "contentHash": "6d81be053c503c97",
+    "ordinal": 1
+   },
+   "b10": {
+    "contentHash": "c6e15fa7688ec8df",
+    "ordinal": 10
+   },
+   "b11": {
+    "contentHash": "770bb166ff4e8df9",
+    "ordinal": 11
+   },
+   "b12": {
+    "contentHash": "aee6ca94901f579b",
+    "ordinal": 12
+   },
+   "b13": {
+    "contentHash": "4ce7c0da7b113498",
+    "ordinal": 13
+   },
+   "b14": {
+    "contentHash": "ea9fb18d13837492",
+    "ordinal": 14
+   },
+   "b15": {
+    "contentHash": "40b3312efe4c1917",
+    "ordinal": 15
+   },
+   "b16": {
+    "contentHash": "59b59bdce1ac4686",
+    "ordinal": 16
+   },
+   "b17": {
+    "contentHash": "81c1603e2054d4be",
+    "ordinal": 17
+   },
+   "b18": {
+    "contentHash": "4290731aa8d406b6",
+    "ordinal": 18
+   },
+   "b19": {
+    "contentHash": "713610952c463889",
+    "ordinal": 19
+   },
+   "b2": {
+    "contentHash": "2a6222de24818a86",
+    "ordinal": 2
+   },
+   "b20": {
+    "contentHash": "651603b6b1707ad2",
+    "ordinal": 20
+   },
+   "b21": {
+    "contentHash": "776b3f4fadfe6d1e",
+    "ordinal": 21
+   },
+   "b22": {
+    "contentHash": "162980fee63f6e30",
+    "ordinal": 22
+   },
+   "b3": {
+    "contentHash": "ab846867cde6a731",
+    "ordinal": 3
+   },
+   "b4": {
+    "contentHash": "570cf35b72e75dec",
+    "ordinal": 4
+   },
+   "b5": {
+    "contentHash": "c4f2845a6c93080a",
+    "ordinal": 5
+   },
+   "b6": {
+    "contentHash": "8838b5e97dadefd4",
+    "ordinal": 6
+   },
+   "b7": {
+    "contentHash": "f49a044548fbdd89",
+    "ordinal": 7
+   },
+   "b8": {
+    "contentHash": "bbbdb8a2d9441570",
+    "ordinal": 8
+   },
+   "b9": {
+    "contentHash": "08dad696f94b7261",
+    "ordinal": 9
+   }
+  },
+  "draftId": "agents/author/drafting/v1/05-consolidation-notes.md",
+  "draftN": 1,
+  "findings": [],
+  "lock": null,
+  "markdown": "# Consolidation notes — The Governable Mind v1\n\nRead end-to-end once from disk (2026-09-16) as the venue's reader, after assembly.\n\n## Coherence\n\n- Seams: every section's first sentence connects by content to the previous exit (checked at each of the 17 boundaries). Two seams were weak and fixed: §III → §IV (added the closing sentence \"the argument needs a vocabulary for freedom exact enough to say what is lost\"); §VII → §VIII (added \"The next asks what the form has done where nothing constrained it\").\n- Terms defined before use: *externalized forum internum* (§III), *epistemic exit* (§V, after two paragraphs of use, announced as such), *cognitive legibility* (§VII), *probability shaping* (§IX), *permissioned cognition* (§XIV), *public-private cognitive-security complex* (§XIII). *Behavioral legibility* and *authoritarian capacity* are inherited from the previous essay and credited to it.\n- Repetition: the Hugging Face incident appears in the prologue, §V (one sentence), §X, and §XIII (one clause). Each use does different work (paradox; exit example; evidence for the objection; exclusion from the complex). Kept.\n- One asserted relation checked for warrant: \"the same guardrail that would have stopped the attack, had it been in place, stopped the defense\" (prologue ¶3). The warrant is that the refusing guardrails treat exploit reverse-engineering and exploit launching alike (HF's own words); the counterfactual \"had it been in place\" is marked as counterfactual. Kept.\n\n## Promise and payoff\n\nAll twelve promises paid (table in 04-draft-ledger.md). No unpaid promise; no orphan payoff.\n\n## Thesis discipline\n\n- Thesis at the end (two losses of control; make power governable without making thought governable) matches the prologue's prior question and the commissioning brief's thesis.\n- Refusals checked: R1/R2 explicit in §§II–III (\"does not need the third proposition\"; \"a prompt is not literally a thought\"); R3 in §V (the concession); R4 in the prologue and §X (EO 14409's disclaimer quoted; \"anticipatory rather than accusatory\"); R5 in §X (\"criticizes institutional structures, not motives\"); R6 in §X (the report's open-weight risks quoted); R7 in §IX (Orwell's own hedge); R8 in §VIII (\"It does not come\"); R9 in §IX (\"truth outruns every institution\"); R10 in the coda; R11 in §XV; R12 in §XIV.\n\n## Budget reconciliation\n\n| Section | Budget | Actual | Δ |\n|---|---|---|---|\n| Prologue | 800 | 731 | −9% |\n| I | 1,150 | 1,292 | +12% |\n| II | 700 | 728 | +4% |\n| III | 1,000 | 1,085 | +8% |\n| IV | 650 | 711 | +9% |\n| V | 800 | 701 | −12% |\n| VI | 900 | 987 | +10% |\n| VII | 700 | 676 | −3% |\n| VIII | 650 | 697 | +7% |\n| IX | 850 | 771 | −9% |\n| X | 850 | 835 | −2% |\n| XI | 550 | 532 | −3% |\n| XII | 750 | 690 | −8% |\n| XIII | 450 | 328 | −27% |\n| XIV | 500 | 382 | −24% |\n| XV | 400 | 301 | −25% |\n| Coda | 400 | 347 | −13% |\n| **Total** | 12,100 | **11,849** | −2% (target 11,500; tolerance 12,000) |\n\nTotal is inside tolerance; no section exceeds the 40% re-plan threshold. The pattern (history long, climax short) is the outline's own weighting made slightly more pronounced. §§XIII–XV run lean by design (the outline asks that XIII be \"precise,\" XIV be a single imagined system, XV \"not a manifesto\"); flagged for the audit's judgment rather than padded.\n\n## Voice audit (measured on body text, references excluded)\n\n| Feature | Target (voice brief) | Measured | Verdict |\n|---|---|---|---|\n| Body words | 11,500 (≤12,000) | 11,849 | in |\n| Sentence median | 13–18 | 17 | in |\n| Sentence mean | 17–22 | 22.4 | edge |\n| Sentence p90 | 36–45 | 46 | edge (Visibility: 50) |\n| Short sentences ≤10 | 30–40% | 28% | slightly under |\n| Long sentences ≥40 | ≤10% | 13.4% | over (Visibility: 13.9%) |\n| Paragraph median | 55–85 | 85 | in (was 108 before splits) |\n| Single-sentence paragraphs | 14–20% | 13% | edge (was 3%) |\n| Em dash /1k | ≤1.4 | 0.51 (6; 3 inside quotations) | in |\n| Parenthetical asides /1k | 1.5–3 | 0.25 | under (Constitution 2.7) |\n| Semicolon /1k | ≤8 | 5.2 | in |\n| Colon /1k | 9–12 | 6.8 | under |\n| Question marks /1k | ≤2.2 | 1.6 (19; 7 are §XII's test questions) | in |\n| Exclamation | 0 | 0 | in |\n| Authorial first person singular | 0 | 0 (6 regex hits, all inside quotations: Milton, Williams, the Lady) | in |\n| Authorial *we* | ≤2/1k | 3 authorial (\"We are building machines…\"; \"our\" ×2) of 16 hits; rest quoted | in |\n| Authorial second person | 0 | 0 (11 hits: the legibility ladder's voiced institutional questions ×4; Williams and Kant quotations) | in |\n| \"This essay\" as agent | 1–2/1k | 13 (1.1/1k) | in |\n| Contractions | 0 | 0 authorial (regex hits are possessives, Milton's elisions, and \"don't\" inside quotations) | in |\n| Marker vocabulary | 0 | 0 (one \"fostering\" inside the UN quotation) | in |\n| \"This is why\" | ≤3 | 2 | in |\n| Triads (x, y, and z) | ≤4/1k | ~1.6/1k | in |\n| Negation-then-correction | 4–8/1k | ~3.4/1k by crude regex (hand count in the prologue: 4 in 730 words) | in or slightly under |\n| Aphoristic closers | ~1/section | 1 per section; none consecutive | in |\n| Apparatus | epigraph; 17 headers; [n] refs; 0 lists/tables/bold | as budgeted; 50 refs (corpus ceiling 74) | in |\n\nResidual misses, reported rather than forced: sentence length at the top of the distribution (mean 22.4, 13.4% long) sits at the Visibility high rather than the Constitution target; parenthetical asides and colons are below the register-2 model piece. Neither was forced, because inserting parentheses to hit a rate is the imitation failure the calibration file warns about.\n\n## Register-hazard sweep\n\nZero marker words. No \"not only… but also\" filler (three \"not only\" instances are real contrasts or quoted). No summary paragraphs. No both-sides throat-clearing. Aphorisms rationed. Em dashes at 0.5/1k.\n\n## Provenance sweep\n\n- All 50 `[n]` markers resolve to a reference entry; each entry rests on a claim-ledger row with a Verified or Substantially-accurate verdict (the rescoped rows are used at their rescoped strength).\n- **Unverified marks in the text: none.** No claim ships marked `[unverified]`.\n- New claims introduced while drafting: eight, all verified (table in 04-draft-ledger.md); the one that failed on first check (\"OpenAI, which spent years arguing for voluntary commitments\") was rewritten to the verified quotation.\n- Narrative material: the prologue is a documented miniature, every sentence cited to OpenAI's or Hugging Face's own publications; no invented scene; no first-person experience; no composite. The coda's \"captive woman\" is Milton's Lady, per the 1645 stage direction.\n- Attribution hygiene: the FT is not cited (unopened); the inversion is attributed to Hugging Face and its CEO. The refusing models are named as Hugging Face's timeline names them.\n\n## Fixes applied in this pass\n\n1. Eighteen paragraph splits and ten one-sentence pivots (paragraph median 108 → 85; single-sentence share 3% → 13%).\n2. Four authorial second-person instances in §IV recast as third-person restrictions; the Kant paraphrase recast to \"one's own.\"\n3. §IX: the Newspeak sentence now quotes Orwell's own qualification (\"at least so far as thought is dependent on words\").\n4. §X: the unsupported \"spent years arguing for voluntary commitments\" replaced with the verified \"demands more than voluntary commitments.\"\n5. Prologue \"over four days\" → \"over several days in July\"; §II \"forty years\" → \"decades\"; §I two sentences tightened.\n\n## Carried to the audit\n\n- Whether §§XIII–XV are too lean for the climax they carry.\n- Whether the legibility ladder's \"who you are / where you are\" is read as authorial second person.\n- The sentence-length distribution at the long end.\n",
+  "meters": {
+   "readMin": 5,
+   "words": 1104
+  },
+  "origin": "artifact",
+  "proposals": [],
+  "sha256": "87361729956cb115b15484f3b67fe7255c49d6ba8c7f62de12ce88d1cd1f291a",
+  "state": "frozen"
+ },
+ "essay": "the-governable-mind",
+ "format": 1,
+ "key": "agents/author/drafting/v1/05-consolidation-notes.md",
+ "kind": "artifact-page"
+}

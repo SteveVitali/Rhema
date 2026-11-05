@@ -1,0 +1,6 @@
+# berkeley-hrc-llm-report-press-release-2026-09-09
+- **URL:** https://humanrights.berkeley.edu/press-release/berkeley-human-rights-center-finds-threats-to-freedom-of-thought-access-to-information-and-right-to-equality-in-human-rights-evaluation-of-llms/ · **Accessed:** 2026-09-16 · **For:** v2 review, Phase 2 legal/philosophical
+- **What it establishes:** Berkeley Human Rights Center, "An International Analysis of the Human Rights Impacts of Large Language Models" (Popken, Raman, Chabot), Sept. 9, 2026. 56 interviews, 24 countries, 2023-2025, UNGP framework. Freedom-of-thought finding: "overreliance on LLMs can stifle higher-level critical thinking"; also "cultural and ideological homogenization." Recommendations include "Design refusal mechanisms based on human rights risk severity" and lifecycle human-rights risk assessments. Nothing on records, retention, or state access.
+- **Key passages:** as quoted.
+- **Reliability:** Primary (institutional press release for the report; report itself not opened).
+- **Relevance to this project:** Agenda 4: adds a citation for §IX probability shaping (homogenization) and a refusal-design recommendation with no identity component; subtracts nothing.
