@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaticRouter } from "react-router";
 import { themeCss, ideCss } from "@rhema/tokens";
+import { uiCss } from "@rhema/ui";
 import { themeBootScript, resolveAppTheme } from "@rhema/ide";
 import { spaRouteFor } from "@rhema/contracts";
 import { PageDataContext, type PageData } from "./page-data.js";
@@ -24,6 +25,8 @@ export { docMetaFor } from "./doc-meta.js";
 const THEME_CSS = themeCss();
 /** The IDE chrome stylesheet (§5.1 panes), computed once; only IDE documents carry it. */
 const IDE_CSS = ideCss();
+/** The component-kit stylesheet (R7KIT.2, REQ-KIT-2/5; ADR-129) — every document carries it. */
+const UI_CSS = uiCss();
 /** The inline pre-paint theme boot (dark|light|auto + per-project paper + font preset + reader step). */
 const BOOT = themeBootScript();
 
@@ -116,7 +119,9 @@ export function renderDocument(
         `<meta name="twitter:card" content="summary">` +
         `<meta name="twitter:title" content="${escapeHtml(doc.title)}">` +
         `<meta name="twitter:description" content="${escapeHtml(doc.description)}">` +
-        (canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}"><meta property="og:url" content="${escapeHtml(canonical)}">` : "")
+        (canonical
+          ? `<link rel="canonical" href="${escapeHtml(canonical)}"><meta property="og:url" content="${escapeHtml(canonical)}">`
+          : "")
       : "";
   return (
     `<!doctype html><html ${htmlAttrs}>` +
@@ -125,7 +130,7 @@ export function renderDocument(
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `${refresh}<title>${escapeHtml(doc.title)}</title>${social}` +
     `<script>${BOOT}</script>` +
-    `<style>${THEME_CSS}</style>${isIde ? `<style>${IDE_CSS}</style>` : ""}</head>` +
+    `<style>${THEME_CSS}</style>${isIde ? `<style>${IDE_CSS}</style>` : ""}<style>${UI_CSS}</style></head>` +
     `<body>${body}${island}${data.dwellSurface ? dwellBeacon(data.dwellSurface) : ""}</body></html>`
   );
 }
@@ -135,5 +140,9 @@ export function renderDocument(
  * SPA.3's shell, which shares the interpolation discipline).
  */
 export function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

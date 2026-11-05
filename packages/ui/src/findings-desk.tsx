@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import { canDispose, type FindingGroup, type TriageQueueView } from "@rhema/findings-core";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 import { ObligationChip, type ObligationStateKind } from "./chips.js";
 
 // The Desk's Findings tab (§5.7; REQ-IDE-23/24): the screen-reader landmark — a REAL <table> — fed by the
@@ -10,7 +10,13 @@ import { ObligationChip, type ObligationStateKind } from "./chips.js";
 // one consolidated preview. Everything renders what findings-core derived — no rules here.
 
 export interface FindingsDeskLabels {
-  readonly table: { finding: string; severity: string; kind: string; status: string; actions: string };
+  readonly table: {
+    finding: string;
+    severity: string;
+    kind: string;
+    status: string;
+    actions: string;
+  };
   readonly empty: string;
   /** the filter bar's control labels (GET form). */
   readonly filters: {
@@ -41,7 +47,9 @@ export interface FindingsDeskProps {
   readonly severityOptions?: readonly { value: string; label: string }[];
   readonly kindOptions?: readonly { value: string; label: string }[];
   readonly statusOptions?: readonly { value: string; label: string }[];
-  readonly obligationFor?: (view: FindingView) => { state: ObligationStateKind; label: string } | undefined;
+  readonly obligationFor?: (
+    view: FindingView,
+  ) => { state: ObligationStateKind; label: string } | undefined;
   /** per-row action slot (a disposition form mini / Apply button — caller-owned). */
   readonly actionsFor?: (view: FindingView) => ReactNode;
   /** linked selection: the focused finding id (the island syncs Margin ↔ Desk ↔ passage). */
@@ -89,10 +97,19 @@ function DeskRow({
       <td>{labels.kindLabel(view.kind)}</td>
       <td>
         {labels.statusLabel(view)}
-        {obligation ? <> <ObligationChip state={obligation.state} label={obligation.label} /></> : null}
+        {obligation ? (
+          <>
+            {" "}
+            <ObligationChip state={obligation.state} label={obligation.label} />
+          </>
+        ) : null}
       </td>
       {/* the action cell obeys the same disposal gate as the card — provisional/frozen rows show none. */}
-      <td>{canDispose({ provisional: view.provisional, disposition: view.disposition ?? null }) ? actionsFor?.(view) : null}</td>
+      <td>
+        {canDispose({ provisional: view.provisional, disposition: view.disposition ?? null })
+          ? actionsFor?.(view)
+          : null}
+      </td>
     </tr>
   );
 }
@@ -104,14 +121,26 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
   return (
     <div data-findings-desk="true">
       {props.filterAction ? (
-        <form method="get" action={props.filterAction} data-findings-filters="true"
-              style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <form
+          method="get"
+          action={props.filterAction}
+          data-findings-filters="true"
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
           <label style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
             {L.filters.severity}{" "}
             <select name="sev" defaultValue={props.filters?.severity ?? ""}>
               <option value="">{L.filters.allLabel}</option>
               {(props.severityOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </label>
@@ -120,7 +149,9 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
             <select name="kind" defaultValue={props.filters?.kind ?? ""}>
               <option value="">{L.filters.allLabel}</option>
               {(props.kindOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </label>
@@ -129,25 +160,43 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
             <select name="disp" defaultValue={props.filters?.status ?? ""}>
               <option value="">{L.filters.allLabel}</option>
               {(props.statusOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </label>
-          <button type="submit" style={{ fontSize: 12 }}>{L.filters.apply}</button>
-          <a href={props.filterAction} style={{ fontSize: 12 }}>{L.filters.clear}</a>
+          <button type="submit" style={{ fontSize: 12 }}>
+            {L.filters.apply}
+          </button>
+          <a href={props.filterAction} style={{ fontSize: 12 }}>
+            {L.filters.clear}
+          </a>
         </form>
       ) : null}
 
       {props.triage ? (
         <div data-triage-mode="true">
-          <p data-triage-progress="true" role="status" style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
+          <p
+            data-triage-progress="true"
+            role="status"
+            style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}
+          >
             {L.progressFmt(props.triage.decided, props.triage.total)}
             {" · "}
             <a href="?">{L.triageExit}</a>
           </p>
           {props.triage.sections.map((s) => (
             <section key={s.key} data-triage-section={s.key} style={{ marginBottom: 14 }}>
-              <h4 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", margin: "8px 0 4px" }}>
+              <h4
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--shell-fg-muted)",
+                  margin: "8px 0 4px",
+                }}
+              >
                 {L.sectionLabels?.[s.key] ?? s.label}
               </h4>
               <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
@@ -162,10 +211,14 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
                 </thead>
                 <tbody>
                   {s.rows.map((v) => (
-                    <DeskRow key={v.id} view={v} labels={L}
+                    <DeskRow
+                      key={v.id}
+                      view={v}
+                      labels={L}
                       {...(props.obligationFor ? { obligationFor: props.obligationFor } : {})}
                       {...(props.actionsFor ? { actionsFor: props.actionsFor } : {})}
-                      {...(props.selectedId ? { selectedId: props.selectedId } : {})} />
+                      {...(props.selectedId ? { selectedId: props.selectedId } : {})}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -173,7 +226,9 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
           ))}
         </div>
       ) : total === 0 ? (
-        <p data-findings-empty="true" style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>{L.empty}</p>
+        <p data-findings-empty="true" style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>
+          {L.empty}
+        </p>
       ) : (
         <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
           <thead>
@@ -190,16 +245,29 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
               <Fragment key={g.key}>
                 {groups.length > 1 ? (
                   <tr key={`h-${g.key}`} data-desk-group={g.key}>
-                    <td colSpan={5} style={{ paddingTop: 8, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>
+                    <td
+                      colSpan={5}
+                      style={{
+                        paddingTop: 8,
+                        fontSize: 12,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "var(--shell-fg-muted)",
+                      }}
+                    >
                       {g.label}
                     </td>
                   </tr>
                 ) : null}
                 {g.findings.map((v) => (
-                  <DeskRow key={v.id} view={v} labels={L}
+                  <DeskRow
+                    key={v.id}
+                    view={v}
+                    labels={L}
                     {...(props.obligationFor ? { obligationFor: props.obligationFor } : {})}
                     {...(props.actionsFor ? { actionsFor: props.actionsFor } : {})}
-                    {...(props.selectedId ? { selectedId: props.selectedId } : {})} />
+                    {...(props.selectedId ? { selectedId: props.selectedId } : {})}
+                  />
                 ))}
               </Fragment>
             ))}
@@ -207,7 +275,11 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
         </table>
       )}
 
-      {props.bulkActions ? <div data-bulk-actions="true" style={{ marginTop: 10 }}>{props.bulkActions}</div> : null}
+      {props.bulkActions ? (
+        <div data-bulk-actions="true" style={{ marginTop: 10 }}>
+          {props.bulkActions}
+        </div>
+      ) : null}
     </div>
   );
 }

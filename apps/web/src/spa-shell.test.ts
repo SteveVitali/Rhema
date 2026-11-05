@@ -68,12 +68,16 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
     surfaces: { "/app": "ssr", "/p/$project/run": "spa" },
     project: { slug: "acme" },
   };
-  const entry = { moduleScripts: ["assets/main-abc.js"], preloads: ["assets/shared-def.js"], stylesheets: [] };
+  const entry = {
+    moduleScripts: ["assets/main-abc.js"],
+    preloads: ["assets/shared-def.js"],
+    stylesheets: [],
+  };
 
   it("emits the SSR-parity head: charset, viewport, favicon enumeration, docMetaFor title", () => {
     const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry });
     expect(html).toContain('<meta charset="utf-8">');
-    expect(html).toContain('width=device-width, initial-scale=1, viewport-fit=cover');
+    expect(html).toContain("width=device-width, initial-scale=1, viewport-fit=cover");
     expect(html).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml">');
     expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="any">');
     expect(html).toContain("<title>Run · Rhēma</title>"); // docMetaFor("/p/…/run") — never reimplemented
@@ -131,10 +135,25 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
   });
 
   it("an empty entry (missing build) still serves a complete shell — the degrade posture", () => {
-    const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry: { moduleScripts: [], preloads: [], stylesheets: [] } });
+    const html = renderSpaShell(ctx, {
+      path: "/p/acme/run",
+      boot,
+      entry: { moduleScripts: [], preloads: [], stylesheets: [] },
+    });
     expect(html).toContain('data-renderer="spa"');
     expect(html).toContain('<div id="spa-root"');
     expect(html).not.toContain('type="module"');
+  });
+
+  it("inlines the kit stylesheet (REQ-KIT-2/5) — uiCss() beside theme/ide, ≤ 24 kB raw per document", () => {
+    const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry });
+    expect(html).toContain(".ui-btn");
+    expect(html).toContain(".ui-tooltip");
+    // The bound is asserted on the DOCUMENT: the inlined <style> block carrying the kit rules.
+    const blocks = [...html.matchAll(/<style>([^]*?)<\/style>/g)].map((m) => m[1]);
+    const uiBlock = blocks.find((b) => b.includes(".ui-btn"))!;
+    expect(uiBlock.length).toBeLessThanOrEqual(24 * 1024);
+    expect(blocks.length).toBeGreaterThanOrEqual(3); // theme + ide + ui
   });
 });
 
@@ -270,7 +289,7 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-renderer="spa"');
-    expect(html).toContain('data-spa-boot');
+    expect(html).toContain("data-spa-boot");
     expect(html).not.toContain("data-mounted");
   });
 
@@ -282,7 +301,7 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(html).toContain('data-renderer="spa"');
     expect(html).toContain('data-project="acme"');
     expect(html).toContain('<div id="spa-root" data-spa-root></div>');
-    expect(html).toContain('data-spa-boot');
+    expect(html).toContain("data-spa-boot");
     expect(html).not.toContain("data-mounted");
   });
 
@@ -307,19 +326,13 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     // Removal-detecting: the shell served anyway, so a spa-pin can't widen anything — and the
     // session gate still runs first, so it can't open the shell for an anonymous request.
     const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
-    for (const init of [
-      {},
-      { headers: { "x-rhema-renderer": "spa" } },
-    ]) {
+    for (const init of [{}, { headers: { "x-rhema-renderer": "spa" } }]) {
       const res = await app.request("/app/future?renderer=spa", init);
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('data-renderer="spa"');
     }
     const anon = createWebApp(spaDeps({ session: () => null }));
-    for (const init of [
-      {},
-      { headers: { "x-rhema-renderer": "spa" } },
-    ]) {
+    for (const init of [{}, { headers: { "x-rhema-renderer": "spa" } }]) {
       const denied = await anon.request("/app/future?renderer=spa", init);
       expect(denied.status).toBe(302);
       expect(denied.headers.get("location")).toBe("/login");
@@ -346,8 +359,12 @@ describe("the registered-handler shell serve (spec §4 fixed order)", () => {
     expect(html).toContain('<div id="spa-root" data-spa-root></div>');
     expect(html).toContain("<noscript>");
     // the manifest-resolved tags, nonce-stamped by the CSP middleware
-    expect(html).toMatch(/<script nonce="[^"]+" type="module" src="\/assets\/spa\/assets\/main-abc123\.js">/);
-    expect(html).toContain('<link rel="modulepreload" href="/assets/spa/assets/chunks/shared-def456.js">');
+    expect(html).toMatch(
+      /<script nonce="[^"]+" type="module" src="\/assets\/spa\/assets\/main-abc123\.js">/,
+    );
+    expect(html).toContain(
+      '<link rel="modulepreload" href="/assets/spa/assets/chunks/shared-def456.js">',
+    );
     // REQ-BND-10 — the boot embed. SPA.28: the renderer map is static truth — every
     // surface-keyed document route serves the shell unconditionally (the consult is gone). The
     // structural exceptions stay "ssr": server-owned rows (`surfaces: null`), the public funnel,
@@ -401,11 +418,31 @@ describe("the registered-handler shell serve (spec §4 fixed order)", () => {
         dataSource: {
           checkSession: async () => true,
           listProjects: async () => [
-            { id: "p_show", slug: "the-showcase", title: "Showcase", showcase: true, state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "review", label: "Review" } } },
+            {
+              id: "p_show",
+              slug: "the-showcase",
+              title: "Showcase",
+              showcase: true,
+              state: {
+                key: "draft",
+                pill: "Draft",
+                overlay: null,
+                suggested: { action: "review", label: "Review" },
+              },
+            },
           ],
-          getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+          getBillingBalance: async () => ({
+            spendableCredits: 200_000,
+            suspended: false,
+            clawbackDebt: 0,
+          }),
           getShowcaseEntry: async () => ({
-            showcase: { slug: "the-showcase", reviewRunId: "run_1", opened: false, archived: false },
+            showcase: {
+              slug: "the-showcase",
+              reviewRunId: "run_1",
+              opened: false,
+              archived: false,
+            },
             intent: {},
           }),
         } as unknown as DataSource,
@@ -422,13 +459,25 @@ describe("the registered-handler shell serve (spec §4 fixed order)", () => {
         dataSource: {
           checkSession: async () => true,
           listProjects: async () => [
-            { id: "p_1", slug: "acme", title: "Acme", state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "review", label: "Review" } } },
+            {
+              id: "p_1",
+              slug: "acme",
+              title: "Acme",
+              state: {
+                key: "draft",
+                pill: "Draft",
+                overlay: null,
+                suggested: { action: "review", label: "Review" },
+              },
+            },
           ],
           getWhatChanged: async () => null, // the SSR path then answers the not-found document
         } as unknown as DataSource,
       }),
     );
-    const res = await app.request("/p/acme/revisions/c_1", { headers: { "user-agent": "Mobi iPhone" } });
+    const res = await app.request("/p/acme/revisions/c_1", {
+      headers: { "user-agent": "Mobi iPhone" },
+    });
     const html = await res.text();
     expect(res.status).toBe(404);
     expect(html).toContain('data-renderer="ssr"'); // forced-SSR — never the shell on phone

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import type { MarginItem } from "@rhema/findings-core";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 import { FindingCard, type FindingCardLabels, type FindingCardProps } from "./findings.js";
 import type { ObligationStateKind } from "./chips.js";
 
@@ -25,7 +25,9 @@ export interface MarginLabels extends FindingCardLabels {
 export interface MarginSurfaceProps {
   readonly items: readonly MarginItem[];
   readonly labels: MarginLabels;
-  readonly obligationFor?: (view: FindingView) => { state: ObligationStateKind; label: string } | undefined;
+  readonly obligationFor?: (
+    view: FindingView,
+  ) => { state: ObligationStateKind; label: string } | undefined;
   /** per-card action slot (the disposition form / Apply button — caller-owned, form-POST progressive). */
   readonly controlsFor?: (view: FindingView) => ReactNode;
   /** the claim-finding evidence block per card (verdict chip + fetched-stamped URLs; REQ-IDE-25). */
@@ -106,7 +108,13 @@ function MarginChip({
     >
       <summary
         aria-label={labels.chipAria(item.count)}
-        style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", color: "var(--paper-fg)", listStyle: "none" }}
+        style={{
+          padding: "8px 12px",
+          fontSize: "12px",
+          cursor: "pointer",
+          color: "var(--paper-fg)",
+          listStyle: "none",
+        }}
       >
         <span style={{ fontWeight: 600, color: severityColor(item.topSeverity) }}>
           {labels.chipLabel(item.counts, topLabel, item.topCount)}
@@ -130,7 +138,14 @@ function MarginChip({
 }
 
 /** The Margin — ONE MarginItem[] from `marginItems(views)`: cards beside passages, chips for crowds. */
-export function MarginSurface({ items, labels, obligationFor, controlsFor, evidenceFor, selectedId }: MarginSurfaceProps): ReactNode {
+export function MarginSurface({
+  items,
+  labels,
+  obligationFor,
+  controlsFor,
+  evidenceFor,
+  selectedId,
+}: MarginSurfaceProps): ReactNode {
   return (
     <div data-margin-surface="true" role="list" aria-label={labels.chipAria(items.length)}>
       {items.map((item) =>

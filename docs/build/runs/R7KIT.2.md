@@ -90,15 +90,64 @@ Tracked in the ticket file; the gap table below carries one row per AC + the ope
   (`@rhema/tokens`, `@rhema/ide`, `@rhema/run-sheet`, `@rhema/findings-core`, `@rhema/contracts`)
   — the ticket's "only runtime dependency is react" reads as the only *external* runtime dep, which
   holds. `pnpm-lock.yaml` confirmed free of `@radix-ui/*`, `lucide-react`, `cmdk`.
+- 2026-11-05T02:56Z — **baseline measured before any dep**: `pnpm turbo build --filter=@rhema/web...`
+  + `pnpm check:spa-budget` at `04a4e98b` → entry **216,153 B gz (211.1 kB)** of the 250 kB ceiling,
+  total JS 566,807 B gz, total CSS 0 B. Committed as `apps/web/spa-budget-baseline.json` +
+  the delta report in `scripts/check-spa-budget.mjs` (commit `31374ccb`, precedes every dep).
+- 2026-11-05T02:57Z — **deps** (commit `8e68b467`): the whole ADR-129 stack declared once in
+  `packages/ui/package.json` at exact pins (`@radix-ui/react-{dialog 1.3.1, popover 1.3.1,
+  dropdown-menu 2.2.1, context-menu 2.4.1, select 2.4.1, tabs 1.2.1, tooltip 1.4.1, checkbox 1.4.1,
+  radio-group 1.5.1, switch 1.4.1}`, `lucide-react 1.68.0` ISC, `cmdk 1.1.1` MIT — all ≥7 days
+  old per `npm view` time stamps); `@testing-library/{dom,react,user-event}` + `happy-dom` devDeps
+  for the DOM legs. `check:licenses` green (873 pkgs, no exception rows).
+- 2026-11-05T03:20Z — **kit + guards + ADR-129** (uncommitted→committed): `primitives/` directory
+  (the moved Pill/Chip/FetchedUrlChip/ActionLink into `chips.tsx` verbatim-styled; Button/IconButton,
+  Badge/Kbd/Skeleton, Toast queue, Tooltip, DropdownMenu, Dialog+Sheet wrappers; `type-contracts.ts`
+  type-level legs), `ui-css.ts` `uiCss()` inlined in `spa-shell.ts` + `render.tsx`, the sourcemap-keyed
+  `check-spa-entry-graph.mjs` guard wired into `package.json` + `ci.yml` public-safe job, the
+  per-package import lint in `eslint.config.js`, `data-highlighted` declared in `dom-contract.ts`,
+  ADR-129 filled + accepted, `"sideEffects": false` declared on `@rhema/ui` (makes the ADR's
+  tree-shaking claim true — and measurably: it dropped the entry chunk 37.7 kB gz).
+- 2026-11-05T04:13Z — **self-review fixes**: `sideEffects:false` added (ADR-129 consequence made
+  true); `prettier --write` on the changed set (13 files reformatted). Re-verified: entry delta now
+  **−37.7 kB gz** vs the `04a4e98b` baseline (entry 177.6 kB / 250 kB ceiling; the flag let the
+  bundler drop previously-pinned `@rhema/ui` module bodies from the shared entry chunk).
 
 ## Gap table
 
-_(filled at Phase 4)_
+| item (spec §) | required layer | achieved layer | status | evidence |
+|---|---|---|---|---|
+| Fresh tip budget measured first; baseline committed pre-deps; delta report ≤15 kB (AC1; REQ-KIT-5) | engineered | engineered | **met** | `apps/web/spa-budget-baseline.json` @`04a4e98b` (commit `31374ccb`, precedes dep commit `8e68b467`); `check:spa-budget` prints `entry delta vs baseline 04a4e98b … −37.7 kB of the ≤ 15.0 kB per-ticket allowance`; `scripts/check-spa-budget.test.mjs` (12 legs incl. planted-baseline delta legs); no `spa-budget.json` ceiling touched |
+| Every added package pinned exactly, ADR-129 lists pkg+version+licence, `check:licenses` green (AC2; REQ-DOPS-8) | engineered | engineered | **met** | `packages/ui/package.json` deps block — 10 Radix + `cmdk` + `lucide-react` all exact; ADR-129 Decision table (pin + licence per row); `Licence policy OK — 873 package(s)` |
+| Per-primitive DOM tests: render/keyboard/ref-`data-*`-ARIA/theme classes + the 3 pinned cases (AC3; REQ-KIT-2) | engineered | engineered | **met** | `primitives/primitives.dom.test.tsx` 16 legs (hover/focus tooltip, arrow-key menu, Escape dialog, auto/manual toast dismiss, non-modal Sheet outside-focusable, moved-exports unchanged); `type-contracts.ts` `@ts-expect-error` legs = the IconButton `aria-label` typecheck-failure AC |
+| `uiCss()` generated, ≤24 kB raw asserted per shell document, style-literal scan fails (AC4) | engineered | engineered | **met** | `ui-css.test.ts` (bound + var-driven + moved-value pins); `spa-shell.test.ts` asserts the inlined `<style>` block ≤ 24 kB on the rendered document; `no-inline-literals.test.ts` source-scans `primitives/` |
+| Entry-graph guard fails on planted Dialog, passes at head; barrel lint fails planted (AC5; REQ-KIT-5) | engineered | engineered | **met** | `check-spa-entry-graph.test.mjs` 8 legs (planted `react-dialog` source fails; traversal via `imports`; allowance exactly tooltip+dropdown-menu); `check:spa-entry-graph` green at head (7 entry chunks, none denied); `radix-import-policy.test.mjs` 6 legs via the real ESLint API |
+| `check:spa-budget`/`spa-env`/`dom-contract`/`protocol-markers` green, no ceiling raised (AC6) | engineered | engineered | **met** | all four run at head — outputs in the evidence log; `git diff apps/web/spa-budget.json` empty |
+| ADR-129 shell filled (deliverable 6) | engineered | engineered | **met** | `docs/adr/ADR-129-…md` — stack table, per-package import policy, ≤15 kB delta rule + reporting, `uiCss()` ≤24 kB bound, RV-36 native-fallback doctrine; SplitPane left open for 229; GUARD-1 deferred to 225a (stated) |
+| Out-of-scope honoured (no form/menu primitives, no GUARD-1 rule, no surface migration, no AppShell) | engineered | engineered | **met** | `git status`/`diff` — no Popover/ContextMenu/Select/Tabs/Checkbox/RadioGroup/Switch/cmdk/TextField wrappers; no `no-raw-controls` rule; no app-surface JSX touched beyond the stylesheet `<style>` line + one `dom-contract.ts` selector declaration |
+| Universal phase-gate AC | engineered | engineered | **met** | this ledger + PR body `docs/build/pr/R7KIT.2.md` + BUILD_INDEX row + LEDGER advance; dates from `date -u`; AC layers stated; append-only honoured |
 
 ## Evidence log
 
-_(filled through Phase 5)_
+- `pnpm turbo build --filter=@rhema/ui... --filter=@rhema/web` → 13/13 tasks green; Vite SPA build emitted with `.map` provenance.
+- `pnpm --filter @rhema/ui typecheck|lint`, `pnpm --filter @rhema/web typecheck|lint` → all clean.
+- `pnpm exec vitest run` (touched): `primitives.dom.test.tsx` 16/16, `ui-css.test.ts` 5/5,
+  `no-inline-literals.test.ts` 2/2, `check-spa-entry-graph.test.mjs` 8/8, `check-spa-budget.test.mjs`
+  12/12, `radix-import-policy.test.mjs` 6/6, `spa-shell.test.ts` 36/36, `render.test.tsx` 9/9 — plus
+  the rest of `packages/ui` + `apps/web` touched files; full `pnpm test` green (see below).
+- `pnpm check:spa-budget` → `entry graph: 173.4 kB / 250.0 kB · total JS: 554.4 kB / 800.0 kB ·
+  total CSS: 0.0 kB` — **entry delta vs baseline `04a4e98b`: −37.7 kB of the ≤ 15.0 kB allowance**
+  (report-only flag; hard ceiling untouched). `SPA bundle budget OK`.
+- `pnpm check:spa-entry-graph` → `entry-graph chunks scanned: 7 · denied Radix primitives in entry:
+  none (shell allowance: react-tooltip, react-dropdown-menu)` — OK.
+- `pnpm check:spa-env` → `OK — 127 client sources, 158 artifacts`; `check:dom-contract` → OK
+  (journey ⊆ manifest ⊆ emitted+asserted, `data-highlighted` declared); `check:protocol-markers` →
+  OK; `pnpm check:licenses` → `OK — 873 package(s)`.
+- Self-review: 2 findings (ADR's `sideEffects:false` claim unbacked → flag added, entry −37.7 kB;
+  13 files needed prettier). Re-verified green after both.
+- No Stage-B leg (GD-PREVIEW.R7; $0; Stage A only per ticket header) — nothing deferred by it.
 
 ## Evidence report
 
-_(filled at Phase 6)_
+_(see `docs/build/pr/R7KIT.2.md` — same table, stamped REQ-KIT-2 (shell-critical part), REQ-KIT-5,
+REQ-DOPS-8; entry delta **−37.7 kB gz** vs the committed `04a4e98b` baseline)_

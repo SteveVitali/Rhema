@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Shared UI primitives (React) for the beta shell.",
   "license": "MIT",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

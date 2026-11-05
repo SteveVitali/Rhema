@@ -4,8 +4,58 @@
 
 export const PACKAGE_NAME = "@rhema/ui" as const;
 
-export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor } from "./primitives.js";
-export type { Tone, Severity } from "./primitives.js";
+// R7KIT.2 (REQ-KIT-2; ADR-129) — the component-kit directory: the moved Pill/Chip/FetchedUrlChip/
+// ActionLink exports plus the shell-critical primitives (Button/IconButton, Badge, Kbd, Skeleton,
+// Toast queue, Tooltip, DropdownMenu, Dialog + Sheet) and the generated `uiCss()` stylesheet the
+// shell inlines beside `themeCss()`/`ideCss()`. The form/menu primitives land in 225a.
+export {
+  Pill,
+  Chip,
+  FetchedUrlChip,
+  ActionLink,
+  severityColor,
+  Button,
+  IconButton,
+  Badge,
+  Kbd,
+  Skeleton,
+  Tooltip,
+  TooltipProvider,
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  Dialog,
+  DialogClose,
+  Sheet,
+  ToastProvider,
+  useToast,
+} from "./primitives/index.js";
+export type {
+  Tone,
+  Severity,
+  ButtonProps,
+  ButtonVariant,
+  ButtonSize,
+  IconButtonProps,
+  BadgeProps,
+  BadgeTone,
+  KbdProps,
+  SkeletonProps,
+  TooltipProps,
+  DropdownMenuProps,
+  DropdownMenuItemProps,
+  DropdownMenuLabelProps,
+  DropdownMenuSeparatorProps,
+  DialogProps,
+  SheetProps,
+  SheetSide,
+  ToastProviderProps,
+  ToastQueue,
+  ToastInput,
+  ToastTone,
+} from "./primitives/index.js";
+export { uiCss } from "./ui-css.js";
 export { Shell, PageTitle, SectionTitle } from "./shell.js";
 export { ProjectList, ProjectRow, ProjectGroupList, VoiceGroupList } from "./project-list.js";
 export type {
@@ -21,7 +71,12 @@ export type {
 export { ConversionPreview, ConversionNotesCard } from "./conversion.js";
 export type { ConversionPreviewProps, PreviewWarning } from "./conversion.js";
 export { RunSheet, RunButton, AskButton, Paywall } from "./run-sheet.js";
-export type { RunSheetProps, RunSheetLabels, RunButtonProps, RunButtonEstimate } from "./run-sheet.js";
+export type {
+  RunSheetProps,
+  RunSheetLabels,
+  RunButtonProps,
+  RunButtonEstimate,
+} from "./run-sheet.js";
 export { DossierView, honorsContradictedTierOneRule } from "./dossier.js";
 export type {
   DossierViewProps,
@@ -39,11 +94,22 @@ export { RunCard, LiveFeed } from "./run-card.js";
 export type { RunCardLabels, RunCardHrefs, LiveFeedLabels, FeedRow } from "./run-card.js";
 // P1.05 — the Timeline pane's round log (§5.5) + the Level-3/4 run report (§14.5).
 export { TimelinePane } from "./timeline.js";
-export type { TimelineViewWire, TimelineRoundWire, TimelineLabels, TimelineHrefs } from "./timeline.js";
+export type {
+  TimelineViewWire,
+  TimelineRoundWire,
+  TimelineLabels,
+  TimelineHrefs,
+} from "./timeline.js";
 export { RunReport } from "./run-report.js";
 export type { RunReportLabels } from "./run-report.js";
 export { FindingCard, FindingsList, ConflictRow } from "./findings.js";
-export type { FindingCardProps, FindingCardLabels, FindingsListProps, FindingsListLabels, ConflictRowLabels } from "./findings.js";
+export type {
+  FindingCardProps,
+  FindingCardLabels,
+  FindingsListProps,
+  FindingsListLabels,
+  ConflictRowLabels,
+} from "./findings.js";
 // P1.07 — the Margin surface + the Desk's findings table (§5.7's "three surfaces, one list").
 export { MarginSurface, MarginTicks } from "./margin.js";
 export type { MarginSurfaceProps, MarginLabels } from "./margin.js";
@@ -71,14 +137,24 @@ export type { RubricLabels } from "./rubric.js";
 export { SecondReadView } from "./second-read.js";
 export type { SecondReadLabels, SecondReadViewProps } from "./second-read.js";
 export { LetterView } from "./letter.js";
-export type { LetterViewProps, LetterViewLabels, LetterSection, LetterFindingRef } from "./letter.js";
+export type {
+  LetterViewProps,
+  LetterViewLabels,
+  LetterSection,
+  LetterFindingRef,
+} from "./letter.js";
 
 // The triage write surfaces (PRB.05, §5.7/§6.4/§10.1). Same components on desktop and phone widths
 // (REQ-SPEC-20): `compact` renders the §10.1 input set.
 export { DispositionControls, DEFER_PREFILL } from "./dispositions.js";
 export type { DispositionControlsProps, DispositionControlsLabels } from "./dispositions.js";
 export { GateCard, TriageLedger, remainingLabel } from "./gate-card.js";
-export type { GateCardProps, GateCardLabels, TriageLedgerRow, TriageLedgerLabels } from "./gate-card.js";
+export type {
+  GateCardProps,
+  GateCardLabels,
+  TriageLedgerRow,
+  TriageLedgerLabels,
+} from "./gate-card.js";
 export { DecisionsList } from "./decisions.js";
 export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";
 // P1.09 — the §5.11 approval row (Needs-you/Inbox): read-before-approve side sheet over the same card.
@@ -142,4 +218,9 @@ export type {
 export { CompareView } from "./compare.js";
 export type { CompareProps, CompareLabels, CompareLayout } from "./compare.js";
 export { FilesPane } from "./files-pane.js";
-export type { FilesPaneProps, FilesPaneLabels, FileRowView, FileSectionView } from "./files-pane.js";
+export type {
+  FilesPaneProps,
+  FilesPaneLabels,
+  FileRowView,
+  FileSectionView,
+} from "./files-pane.js";

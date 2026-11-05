@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FetchedUrlChip, severityColor } from "./primitives.js";
+import { FetchedUrlChip, severityColor } from "./primitives/chips.js";
 
 // The read-only sample dossier (REQ-POS-3): an Editor's letter, a claim ledger, and the findings — rendered
 // with NO triage/disposition controls (the public invite page is read-only). Its point is the 60-second proof
@@ -65,8 +65,22 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
         borderLeft: contradicted ? "3px solid var(--sev-blocking)" : "3px solid transparent",
       }}
     >
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-        <span style={{ color: "var(--paper-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: "4px",
+        }}
+      >
+        <span
+          style={{
+            color: "var(--paper-fg-muted)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: "12px",
+          }}
+        >
           [{claim.ordinal}]
         </span>
         <span
@@ -83,7 +97,8 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
         <span
           style={{
             fontSize: "12px",
-            color: claim.verdict === "contradicted" ? "var(--sev-blocking)" : "var(--paper-fg-muted)",
+            color:
+              claim.verdict === "contradicted" ? "var(--sev-blocking)" : "var(--paper-fg-muted)",
             fontWeight: contradicted ? 600 : 400,
           }}
         >
@@ -104,14 +119,23 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
           </span>
         ) : null}
       </div>
-      <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>{claim.text}</div>
+      <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>
+        {claim.text}
+      </div>
       {claim.note ? (
-        <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>{claim.note}</div>
+        <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>
+          {claim.note}
+        </div>
       ) : null}
       {claim.fetched.length > 0 ? (
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "8px" }}>
           {claim.fetched.map((s) => (
-            <FetchedUrlChip key={s.url} url={s.url} host={s.host} fetchedLabel={labels.fetchedLabel} />
+            <FetchedUrlChip
+              key={s.url}
+              url={s.url}
+              host={s.host}
+              fetchedLabel={labels.fetchedLabel}
+            />
           ))}
         </div>
       ) : null}
@@ -119,7 +143,13 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
   );
 }
 
-export function DossierView({ title, letter, claims, findings, labels }: DossierViewProps): ReactNode {
+export function DossierView({
+  title,
+  letter,
+  claims,
+  findings,
+  labels,
+}: DossierViewProps): ReactNode {
   return (
     <article
       data-dossier="true"
@@ -148,21 +178,46 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
       <h2 style={{ fontSize: "22px", fontWeight: 600, margin: "0 0 16px" }}>{title}</h2>
 
       <section aria-label={labels.letterHeading}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
+        <h3
+          style={{
+            fontSize: "13px",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--paper-fg-muted)",
+          }}
+        >
           {labels.letterHeading}
         </h3>
         {letter.map((p, i) => (
-          <p key={i} style={{ fontSize: "16px", lineHeight: 1.55, margin: "0 0 12px", maxWidth: "68ch" }}>
+          <p
+            key={i}
+            style={{ fontSize: "16px", lineHeight: 1.55, margin: "0 0 12px", maxWidth: "68ch" }}
+          >
             {p}
           </p>
         ))}
       </section>
 
       <section aria-label={labels.claimsHeading} style={{ marginTop: "24px" }}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
+        <h3
+          style={{
+            fontSize: "13px",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--paper-fg-muted)",
+          }}
+        >
           {labels.claimsHeading}
         </h3>
-        <ul style={{ margin: "8px 0 0", padding: 0, border: "1px solid var(--paper-rule)", borderRadius: "8px", overflow: "hidden" }}>
+        <ul
+          style={{
+            margin: "8px 0 0",
+            padding: 0,
+            border: "1px solid var(--paper-rule)",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
           {claims.map((c) => (
             <ClaimRow key={c.ordinal} claim={c} labels={labels} />
           ))}
@@ -170,16 +225,43 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
       </section>
 
       <section aria-label={labels.findingsHeading} style={{ marginTop: "24px" }}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
+        <h3
+          style={{
+            fontSize: "13px",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--paper-fg-muted)",
+          }}
+        >
           {labels.findingsHeading}
         </h3>
         <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
           {findings.map((f, i) => (
-            <li key={i} style={{ display: "flex", gap: "10px", padding: "12px 0", borderBottom: "1px solid var(--paper-rule)" }}>
-              <span aria-hidden="true" style={{ marginTop: "6px", width: "8px", height: "8px", borderRadius: "999px", background: severityColor(f.severity), flexShrink: 0 }} />
+            <li
+              key={i}
+              style={{
+                display: "flex",
+                gap: "10px",
+                padding: "12px 0",
+                borderBottom: "1px solid var(--paper-rule)",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  marginTop: "6px",
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "999px",
+                  background: severityColor(f.severity),
+                  flexShrink: 0,
+                }}
+              />
               <div>
                 <div style={{ fontWeight: 600, fontSize: "14px" }}>{f.title}</div>
-                <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>{f.body}</div>
+                <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>
+                  {f.body}
+                </div>
               </div>
             </li>
           ))}

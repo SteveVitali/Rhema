@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { ClaimUrlView } from "@rhema/findings-core";
-import { Chip, FetchedUrlChip } from "./primitives.js";
+import { Chip, FetchedUrlChip } from "./primitives/chips.js";
 
 // The claim ledger table (§5.7; REQ-IDE-25, REQ-OBJ-18/19). Tier, the ClaimVerdict chip, URL + accessed date,
 // a per-URL "fetched ✓" chip from the proxy fetch log, and multi-source stance rows. A non-checkable
@@ -54,20 +54,33 @@ function UrlChip({ view, labels }: { view: ClaimUrlView; labels: ClaimsTableLabe
   const host = hostOf(view.url);
   const stance = view.stance && labels.stanceLabel ? labels.stanceLabel(view.stance) : view.stance;
   return (
-    <span data-claim-url={view.normalizedUrl} data-stance={view.stance ?? undefined} data-url-in-log={view.fetched ? "true" : "false"} style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+    <span
+      data-claim-url={view.normalizedUrl}
+      data-stance={view.stance ?? undefined}
+      data-url-in-log={view.fetched ? "true" : "false"}
+      style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+    >
       {view.fetched ? (
         <FetchedUrlChip
           url={view.url}
           host={host}
-          fetchedLabel={view.retrievedBy === "search" ? (labels.searchResultLabel ?? labels.fetchedLabel) : labels.fetchedLabel}
+          fetchedLabel={
+            view.retrievedBy === "search"
+              ? (labels.searchResultLabel ?? labels.fetchedLabel)
+              : labels.fetchedLabel
+          }
           retrievedBy={view.retrievedBy}
         />
       ) : (
         <Chip label={host} href={view.url} title={view.url} />
       )}
-      {stance ? <span style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>{stance}</span> : null}
+      {stance ? (
+        <span style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>{stance}</span>
+      ) : null}
       {view.accessedAt && labels.accessedLabel ? (
-        <span style={{ fontSize: "11px", color: "var(--paper-fg-faint)" }}>{labels.accessedLabel(view.accessedAt)}</span>
+        <span style={{ fontSize: "11px", color: "var(--paper-fg-faint)" }}>
+          {labels.accessedLabel(view.accessedAt)}
+        </span>
       ) : null}
     </span>
   );
@@ -90,22 +103,64 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
         borderLeft: contradicted ? "3px solid var(--sev-blocking)" : "3px solid transparent",
       }}
     >
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-        <span style={{ color: "var(--paper-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>[{row.ordinal}]</span>
-        <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "var(--shell-raised)", color: "var(--shell-fg-muted)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: "4px",
+        }}
+      >
+        <span
+          style={{
+            color: "var(--paper-fg-muted)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: "12px",
+          }}
+        >
+          [{row.ordinal}]
+        </span>
+        <span
+          style={{
+            fontSize: "11px",
+            padding: "1px 6px",
+            borderRadius: "4px",
+            background: "var(--shell-raised)",
+            color: "var(--shell-fg-muted)",
+          }}
+        >
           {labels.tierLabel(row.tier)}
         </span>
         {nonCheckable ? (
-          <span data-not-checkable="true" style={{ fontSize: "12px", color: "var(--paper-fg-muted)", fontStyle: "italic" }}>
+          <span
+            data-not-checkable="true"
+            style={{ fontSize: "12px", color: "var(--paper-fg-muted)", fontStyle: "italic" }}
+          >
             {labels.notCheckableLabel ? labels.notCheckableLabel(row.kind) : row.kind}
           </span>
         ) : (
-          <span style={{ fontSize: "12px", fontWeight: contradicted ? 600 : 400, color: contradicted ? "var(--sev-blocking)" : "var(--paper-fg-muted)" }}>
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: contradicted ? 600 : 400,
+              color: contradicted ? "var(--sev-blocking)" : "var(--paper-fg-muted)",
+            }}
+          >
             {row.verdictLabel}
           </span>
         )}
         {contradicted && labels.contradictedTierOneLabel ? (
-          <span style={{ fontSize: "11px", fontWeight: 600, padding: "1px 6px", borderRadius: "4px", background: "var(--sev-blocking)", color: "var(--shell-bg)" }}>
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              padding: "1px 6px",
+              borderRadius: "4px",
+              background: "var(--sev-blocking)",
+              color: "var(--shell-bg)",
+            }}
+          >
             {labels.contradictedTierOneLabel}
           </span>
         ) : null}
@@ -113,14 +168,25 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
           <a
             data-figure-claim="true"
             href={row.figureHref}
-            style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "var(--shell-raised)", color: "var(--accent)", textDecoration: "none" }}
+            style={{
+              fontSize: "11px",
+              padding: "1px 6px",
+              borderRadius: "4px",
+              background: "var(--shell-raised)",
+              color: "var(--accent)",
+              textDecoration: "none",
+            }}
           >
             {row.figureLabel}
           </a>
         ) : null}
       </div>
       <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>{row.text}</div>
-      {row.note ? <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>{row.note}</div> : null}
+      {row.note ? (
+        <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>
+          {row.note}
+        </div>
+      ) : null}
       {row.urls.length > 0 ? (
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
           {row.urls.map((u) => (
@@ -133,11 +199,34 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
 }
 
 /** The claim ledger table (§5.7). */
-export function ClaimsTable({ rows, labels }: { rows: readonly ClaimTableRow[]; labels: ClaimsTableLabels }): ReactNode {
+export function ClaimsTable({
+  rows,
+  labels,
+}: {
+  rows: readonly ClaimTableRow[];
+  labels: ClaimsTableLabels;
+}): ReactNode {
   return (
     <section data-claims-table="true" aria-label={labels.heading}>
-      <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{labels.heading}</h3>
-      <ul style={{ margin: "8px 0 0", padding: 0, border: "1px solid var(--paper-rule)", borderRadius: "8px", overflow: "hidden" }}>
+      <h3
+        style={{
+          fontSize: "13px",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--paper-fg-muted)",
+        }}
+      >
+        {labels.heading}
+      </h3>
+      <ul
+        style={{
+          margin: "8px 0 0",
+          padding: 0,
+          border: "1px solid var(--paper-rule)",
+          borderRadius: "8px",
+          overflow: "hidden",
+        }}
+      >
         {rows.map((r) => (
           <ClaimRow key={r.ordinal} row={r} labels={labels} />
         ))}

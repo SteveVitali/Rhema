@@ -400,6 +400,11 @@ jobs:
       - name: SPA bundle budget (REQ-SAFE-7)
         if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:spa-budget
+      # REQ-KIT-5 (R7KIT.2): Dialog/Select/Popover/ContextMenu-class Radix primitives load in leaf
+      # chunks only — the sourcemap-keyed guard keeps the shell's entry graph to Tooltip+DropdownMenu.
+      - name: SPA entry-graph guard (REQ-KIT-5)
+        if: needs.fast-path.outputs.mode == 'full'
+        run: pnpm check:spa-entry-graph
       # REQ-SAFE-8 (SPA.8): env-leak tripwire — server env names / process.env reads / secret-shaped
       # VITE_* names must not reach client artifacts; runs last so every emitted artifact exists.
       - name: SPA env-leak tripwire (REQ-SAFE-8)
