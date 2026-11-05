@@ -8,8 +8,11 @@
   OPERATOR).
 - **Branch:** `stevevitali/r7shell-1b-headers` · **Harness:** devin-desktop/swe-2-high/subagent
   · **Skills:** implement-spec + build-memory + self-review @ `~/agent-skills` (`e981ec5`)
-- **Started:** 2026-11-05T08:53Z · **Closed:** (pending)
-- **ci:** (pending)
+- **Started:** 2026-11-05T08:53Z · **Closed:** 2026-11-05T14:04:15Z
+- **ci:** pass #265@04343de (ci-pass anchor 42001171390; integration 42001171390; images (build +
+  scan, pin digests) 42001171390; public-safe (gitleaks / markers / licence policy) 42001171390;
+  contracts 42001171390; typecheck / lint / unit 42001171390; fast-path 42001171390 —
+  `logs/ci-R7SHELL.1b.json`)
 - **Production mutations:** none.
 
 ## Deferrals read
@@ -91,15 +94,18 @@ Tracked in the ticket file; the gap table below carries one row per AC + operati
   in `r7legs.ts` — workspace leaves (title row, no crumb) + project outline/figures/usage/
   settings (crumb + first crumb → `/p/:slug`), held `expected:"red"`. All 626 `spa/` tests
   green. Removed dead `fmt` in project-home (last lint red).
-- TODO: re-run `pnpm turbo build lint typecheck` + `pnpm test` full; `check:dom-contract`,
-  `check:spa-budget` (ENTRY DELTA — must report in PR), `check:spa-env`,
-  `check:protocol-markers`, `check:no-cookies`, append-only vs `stevevitali/r7shell-1a-sidebar`,
-  check-build-memory. Records: DEFERRALS row `D-R7SHELL.1b-1` (owner 250, date from `date -u`),
-  BUILD_INDEX row 266, LEDGER `lastCompleted: R7SHELL.1b` / `nextTicket: 228_R7PAL.1` /
-  `chainTip: stevevitali/r7shell-1b-headers` + PHASE LOG entry under `## PHASE LOG — Round 7`.
-  PR body `docs/build/pr/R7SHELL.1b.md`, `gh pr create --base stevevitali/r7shell-1a-sidebar`,
-  then `ci-boundary.sh --ledger docs/build/LEDGER.md --ticket R7SHELL.1b --json
-  docs/build/logs/ci-R7SHELL.1b.json`. Report: verdict + entry delta FIRST LINE.
+- Phase 5/6 — resumed session re-verified at `04343de`: `pnpm turbo build lint typecheck`
+  138/138 (FULL TURBO), `vitest apps/web/src/spa/` 626/626, `vitest packages/journeys/` 212/212,
+  `check:dom-contract` (shell 18/18), `check:spa-env`, `check:protocol-markers`,
+  `check:no-cookies`, `check:spa-entry-graph` (Tooltip+DropdownMenu allowance only),
+  `check:spa-budget` — **entry +9.7 kB vs baseline `04a4e98b`** (≤15 kB), append-only vs
+  `stevevitali/r7shell-1a-sidebar` OK, `check-build-memory.sh` 0 violations (16 legacy
+  warnings). PR #265 created `gh pr create --base stevevitali/r7shell-1a-sidebar` (body
+  `docs/build/pr/R7SHELL.1b.md`); `ci-boundary --pr 265` → **pass** run 42001171390.
+  DEFERRALS `D-R7SHELL.1b-1` OPEN (owner 250_R7DEP.2). Records: BUILD_INDEX row 266,
+  LEDGER `lastCompleted: R7SHELL.1b` / `nextTicket: 228_R7SHELL.1c` /
+  `chainTip: stevevitali/r7shell-1b-headers` + PHASE LOG entry under
+  `## PHASE LOG — Round 7`.
 
 ## Gap table
 
@@ -137,4 +143,38 @@ Tracked in the ticket file; the gap table below carries one row per AC + operati
 
 ## Evidence report
 
-(verdict + entry delta + commit SHAs filled at close below.)
+**Verdict: DONE — engineered, $0, Stage A only (GD-PREVIEW.R7). Entry delta +9.7 kB gz vs
+`spa-budget-baseline.json` @`04a4e98b` (≤15 kB allowance; ≈ +0.1 kB marginal over R7SHELL.1a's
++9.6 kB head).**
+
+- **Commits:** `04343deb` (implementation + records) · closeout `docs(build)` commit at push.
+- **PR:** #265 → `stevevitali/r7shell-1a-sidebar` (unmerged, OPERATOR; body `pr/R7SHELL.1b.md`).
+- **Requirement IDs stamped:** REQ-SHELL-3, REQ-SHELL-5, REQ-KIT-5.
+
+| AC | Required layer | Achieved layer | Status | Evidence |
+|---|---|---|---|---|
+| No `<Shell` under `spa/surfaces/**` / `states.tsx` (named exemption list) | engineered | engineered | met | `page-header.test.tsx` census leg; `SHELL_EXEMPTIONS: []`; grep zero |
+| Framed surfaces inside AppShell + title row + crumb (one DOM test per family) | engineered | engineered | met | usage/figures/outline/inbox/voices/dossier `*.dom.test.tsx`; `page-header.tsx` |
+| No body-level back link on outline/figures; UXC-12 labels pinned | engineered | engineered | met | `outline.dom.test.tsx`, `figures.dom.test.tsx`, `voices.dom.test.tsx`, `settings.tsx` `data-settings-unavailable="project"`, `inbox.dom.test.tsx` |
+| SSR/no-JS documents sharing a body keep a working nav | engineered | engineered | met (vacuous) | census leg 2 — no `pages`/`marketing`/`legal` import of `spa/surfaces/*`; SSR specs unchanged+green |
+| `check:dom-contract` green; journeys typecheck; `public-ssr-baseline` unchanged | engineered | engineered | met | shell 18/18 emitted+asserted; `r7legs.ts` compiles; zero public-route edits |
+| Stage-B staging-verified at 250 (`D-R7SHELL.1b-n` row opened) | staging-verified | engineered | met-engineered(D-R7SHELL.1b-1) | `DEFERRALS.md` row, owner 250_R7DEP.2, `U1.shell` held `expected:"red"` |
+| Universal phase-gate AC | — | — | met | this ledger + BUILD_INDEX 266 + LEDGER advance + CI read below |
+
+- **Gap-analysis:** every gap-table row above is `met` with cited evidence except the Stage-B
+  AC, engineered here and staging-verified at 250 under `D-R7SHELL.1b-1` (compensating control:
+  the Stage-A census + per-family DOM legs). Drift noted vs ticket's counts: `states.tsx`
+  carries no `<Shell>` (its `SurfaceShell` is a `<main>` skeleton) — recorded, adapted, not a
+  spec-invalidating drift.
+- **Verification:** `pnpm turbo build lint typecheck` 138/138 · `vitest apps/web/src/spa/`
+  626/626 · `vitest packages/journeys/` 212/212 · `check:dom-contract` green (shell 18/18) ·
+  `check:spa-budget` +9.7 kB · `check:spa-env`/`protocol-markers`/`no-cookies`/`spa-entry-graph`
+  green · `check-build-memory.sh` 0 violations (16 legacy warnings) · `check-append-only.mjs
+  --base stevevitali/r7shell-1a-sidebar` OK. Not run: any preview/deploy leg (GD-PREVIEW.R7 —
+  $0, none owned this ticket; owed leg is `D-R7SHELL.1b-1`).
+- **CI:** `ci: pass #265@04343de` (run 42001171390 — all seven legs + `ci-pass` anchor;
+  `docs/build/logs/ci-R7SHELL.1b.json`).
+- **Deferrals:** opened `D-R7SHELL.1b-1` (owner 250) · closed none · no prior OPEN row
+  unblocked by this ticket.
+- **Deviations:** none vs spec; owned decisions (page-header component + hook names, crumb
+  format) recorded in `pr/R7SHELL.1b.md`; ADR-131 gained a Revisit-trigger section.

@@ -4,7 +4,7 @@
 
 # Demo side-effect table (regenerated)
 
-- Generated: 2026-11-05T09:12:29.486Z against http://127.0.0.1:43937
+- Generated: 2026-11-05T14:00:36.089Z against http://127.0.0.1:43636
 - Walks: 4 (essay × {logged out, cookie} × {desktop, phone})
 - Violations: 0
 
