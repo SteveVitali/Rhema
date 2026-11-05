@@ -426,6 +426,7 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 222 | `222_R7DEM.6a__guided-tour.md` | R7a demo | guided tour on SPD + entry points + honesty copy (REQ-TOUR-2/4/5) | — |
 | 223 | `223_R7DEM.6b__demo-metrics-carve-out.md` | R7a demo | anonymous metrics carve-out + reused-surface analytics suppression (REQ-TOUR-9, REQ-DOPS-5) | — |
 | 223a | `223a_HUMAN-H15__demo-copy-sign-off.md` | R7a marker | **human** — demo/tour copy sign-off on the R7a preview | — |
+| 223c | `223c_R7FIX.2__demo-leg-defects.md` | R7a insert | fix the two owed legs (D-R7DEP.1-1/-2) on pr-259 before Part B (operator 'fix first') | — |
 | 223b | `223b_R7DEM.6c__demo-events-owner-portability.md` | R7a demo | **run-time insert** (found by 224 Part A on pr-259): `0061` `OWNER TO` fails on AlloyDB POSTGRES_18 — two checks proven via IAP-tunnel repro: `postgres` needs membership in `rhema_demo_writer` (granted at `CREATE ROLE`, lint-clean) AND the new owner needs CREATE on `public` (transient `GRANT CREATE`/`REVOKE` around `OWNER TO`; durable surface stays usage+insert) | — |
 | 224 | `224_R7DEP.1__r7a-deploy.md` | R7a deploy | the ONE R7a preview (walk all R7a legs; H15 sign-off) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → provenance → teardown (REQ-DOPS-6, REQ-DACC-1…6) | pre-auth (GD-DEPLOY.R7, GD-GOLDEN.R7, GD-PREVIEW.R7); H15 |
 | 225 | `225_R7KIT.2__ui-primitives.md` | R7b foundations | baseline/budget, deps, `uiCss()`, entry guard, ADR-129, shell-critical primitives (REQ-KIT-2 part, REQ-KIT-5, REQ-DOPS-8) | — |
