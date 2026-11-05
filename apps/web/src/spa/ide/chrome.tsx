@@ -15,7 +15,6 @@ import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
 import { IdeShell } from "@rhema/ui";
 import { COPY, IDE_CHROME_LABELS, IDE_FEED_LABELS } from "../../copy.js";
 import { getSpaBoot, isSpaEnabled } from "../boot.js";
-import { DemoBanner } from "../demo-banner.js";
 import { DemoEffects } from "../demo-effects.js";
 import { feedLabelsQuery, sessionQuery } from "../queries.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
@@ -39,16 +38,14 @@ export function IdeProjectLayout({ project }: { project: string }): ReactNode {
   return (
     <IdeChromeDataProvider>
       {framed ? (
-        <IdeChrome slug={project} banner={demo != null ? <DemoBanner demo={demo} /> : undefined}>
-          {/* R7DEM.5 — the write backstop + lazy tour seam mount once per demo document. */}
+        <IdeChrome slug={project}>
+          {/* R7DEM.5 — the write backstop + lazy tour seam mount once per demo document.
+              R7SHELL.1a — the demo banner now lives in the AppShell's demo top bar. */}
           {demo != null ? <DemoEffects /> : null}
           <Outlet />
         </IdeChrome>
       ) : (
         <>
-          {/* R7DEM.4b — the unframed demo leaves (figures) carry the banner in flow; framed
-              leaves receive it through IdeShell's `banner` slot inside `.ide`. */}
-          {demo != null ? <DemoBanner demo={demo} /> : null}
           {demo != null ? <DemoEffects /> : null}
           <Outlet />
         </>
@@ -62,7 +59,7 @@ export function IdeProjectLayout({ project }: { project: string }): ReactNode {
  * shell + the controller/feed effects. `slug` is the route param; the surface-published bag
  * supplies everything else.
  */
-export function IdeChrome({ slug, children, banner }: { slug: string; children?: ReactNode; banner?: ReactNode }): ReactNode {
+export function IdeChrome({ slug, children }: { slug: string; children?: ReactNode }): ReactNode {
   const hostRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -141,6 +138,7 @@ export function IdeChrome({ slug, children, banner }: { slug: string; children?:
       </a>
       <div ref={hostRef} style={{ display: "contents" }}>
         <IdeShell
+          hosted
           project={{
             slug,
             title: data.projectTitle ?? slug,
@@ -176,7 +174,6 @@ export function IdeChrome({ slug, children, banner }: { slug: string; children?:
           paperThemeUrl={`/p/${slug}/paper-theme`}
           {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}
           {...(data.status != null ? { status: data.status } : {})}
-          {...(banner != null ? { banner } : {})}
           labels={IDE_CHROME_LABELS}
         >
           {children}

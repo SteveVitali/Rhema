@@ -1095,6 +1095,12 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           else if (action.pane === "timeline") togglePane("timeline");
           else commit({ deskOpen: !stateRef.current.deskOpen });
           break;
+        case "sidebar":
+          // R7SHELL.1a (REQ-KEYS-1) — `[` toggles the AppShell sidebar; the shell listens for
+          // this event (the IDE controller owns the chord while `.ide` is mounted).
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent("rhema:sidebar-toggle"));
+          break;
         case "focus-mode":
           e.preventDefault();
           commit({ view: stateRef.current.view === "focus" ? "write" : "focus" });

@@ -3480,6 +3480,12 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!deps.session(c)) return c.redirect("/login");
     return c.redirect("/app/settings/account", 302);
   });
+  // R7SHELL.1a (REQ-SHELL-1; R5 D6) — `/billing` resolves to the billing section on a document
+  // load too (the SPA's `billing.index` route owns the in-router leg).
+  app.get("/billing", async (c) => {
+    if (!deps.session(c)) return c.redirect("/login");
+    return c.redirect("/app/settings/billing", 302);
+  });
 
   // ---- Account ----
   app.get("/app/settings/account", async (c) => {

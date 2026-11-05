@@ -14,6 +14,7 @@ import { spaRouteFor } from "@rhema/contracts";
 import { ShellSkeleton } from "@rhema/ui";
 import { COPY } from "../copy.js";
 import { docMetaFor } from "../doc-meta.js";
+import { AppShell, useInAppShell } from "./app-shell.js";
 import { getSpaBoot, isSpaEnabled } from "./boot.js";
 import { replaceDocument } from "./dom.js";
 
@@ -96,21 +97,30 @@ export function SpaNotFound(): ReactNode {
   const pathname = useLocation({ select: (l) => l.pathname });
   const { surfaces } = spaRouteFor(pathname);
   if (surfaces === null) return <SsrHandoff />;
-  return (
+  // R7SHELL.1a (REQ-SHELL-1; UXC-29, D6) — the 404 renders inside the AppShell whenever the path
+  // is SPA space: at leaf position the layout's shell already wraps it (InShell), at a position
+  // with no mounted layout (the fuzzy root boundary) this component mounts the shell itself.
+  const inShell = useInAppShell();
+  const body = (
     <main data-spa-surface>
       <h1>{COPY.notFound.heading}</h1>
       <p>{COPY.notFound.body}</p>
       <p>
-        <a href="/">{COPY.notFound.home}</a>
+        <a href="/app">{COPY.notFound.home}</a>
       </p>
     </main>
   );
+  return inShell ? body : <AppShell>{body}</AppShell>;
 }
 
 /** The route `errorComponent` — a designed state, not a stack trace (REQ-UX-6; §5.9). */
 export function SpaRouteError(): ReactNode {
   const pathname = useLocation({ select: (l) => l.pathname });
-  return (
+  // R7SHELL.1a — the error state renders inside the shell too (same InShell rule as the 404),
+  // on SPA-space paths only — a non-SPA path keeps the bare boundary.
+  const inShell = useInAppShell();
+  const { surfaces } = spaRouteFor(pathname);
+  const body = (
     <main data-spa-surface data-spa-error>
       <h1>{COPY.spaError.heading}</h1>
       <p>{COPY.spaError.body}</p>
@@ -119,4 +129,5 @@ export function SpaRouteError(): ReactNode {
       </p>
     </main>
   );
+  return inShell || surfaces === null ? body : <AppShell>{body}</AppShell>;
 }

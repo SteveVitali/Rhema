@@ -20,6 +20,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChatDesk } from "@rhema/ui";
 import { DOM_CONTRACT_ENTRIES, domContractMatch } from "../dom-contract.js";
 import { COPY } from "../copy.js";
@@ -33,7 +34,14 @@ describe("manifest → SPA markers (REQ-VFY-2, REQ-TST-2)", () => {
       routeTree: rootRoute,
       history: createMemoryHistory({ initialEntries: ["/p/demo"] }),
     });
-    render(<RouterProvider router={router} />);
+    // R7SHELL.1a — the error state mounts the AppShell on SPA-space paths; the shell's workspace
+    // reads need a QueryClient the way the real root route provides one.
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
 
     // jest-dom matchers + the settle-flank markers, read from the manifest rather than
     // hand-duplicated literals: every entry whose emitter is spa/states.tsx must be in the DOM.

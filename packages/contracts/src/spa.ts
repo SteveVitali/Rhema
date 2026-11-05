@@ -152,6 +152,7 @@ export const SPA_DOCUMENT_ROUTES: readonly SpaDocumentRoute[] = [
   { routeId: "/app/inbox", surfaces: ["inbox"] },
   { routeId: "/app/usage/r/$runId", surfaces: null }, // server-owned → API passthrough (REQ-BND-3)
   { routeId: "/usage", surfaces: ["usage"] },
+  { routeId: "/billing", surfaces: null }, // R7SHELL.1a (REQ-SHELL-1) — server 302 → /app/settings/billing
   { routeId: "/billing/return", surfaces: ["billing"] },
   { routeId: "/app/settings", surfaces: null }, // bare → server 302 to /app/settings/account
   { routeId: "/app/settings/account", surfaces: ["settings"] },

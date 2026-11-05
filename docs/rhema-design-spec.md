@@ -367,6 +367,12 @@ Workspace (app shell, dark)                       IDE (project scope)
 └───────────────────────────────┘                  └──────────────────────────────────┘
 ```
 
+> **ADR-128 (2026-11-05, R7SHELL.1a)** — the Rail's items moved into the AppShell sidebar: Home is
+> the sidebar wordmark, the Inbox item carries the badge (approvals + decisions only — unchanged),
+> Settings is a sidebar item, and the View menu lives on the status bar. The rail DOM is suppressed
+> while the shell hosts the IDE and is deleted by 230_R7PANE.2; REQ-IDE-2's *identical-chrome* and
+> *badge-visibility* rules carry onto the sidebar.
+
 - The **Rail** (56 px icon column) is the only persistent global chrome and is identical in both scopes; the Inbox badge (approvals waiting + unread finished runs) is always visible (REQ-IDE-2).
 - Workspace pages are lists and detail pages; the IDE is a pane layout. Nothing else exists.
 - The persona library is labeled **Voices** everywhere in the product (REQ-PROD-7); its route is `/app/voices` (design/2's `/app/personas` is renamed accordingly).
@@ -3145,7 +3151,7 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | ID | One line | Spec § | Status | AC |
 |---|---|---|---|---|
 | REQ-IDE-1 | Stable deep-linkable URL for every project, version, run, approval, finding, artifact; restores layout | 4.2 | kept | to write (O6) |
-| REQ-IDE-2 | Rail identical in workspace and IDE scope; carries the Inbox badge | 4.1, 5.11 | amended (badge counts approvals and decisions only) | to write (O6) |
+| REQ-IDE-2 | Rail identical in workspace and IDE scope; carries the Inbox badge | 4.1, 5.11 | amended (badge counts approvals and decisions only); **ADR-128 2026-11-05 (R7SHELL.1a): the rail's items moved into the AppShell sidebar + status bar — the identical-chrome and badge rules carry over; the rail DOM is suppressed while hosted and deleted by 230** | to write (O6) |
 | REQ-IDE-3 | Project rows: state, version, ≤120-char summary, voice chip, one primary action; state derived | 5.2 | kept | to write (O6) |
 | REQ-IDE-4 | Quiet projects collapsed by default; Needs-you rows sort by soonest deadline | 5.2 | kept | to write (O6) |
 | REQ-IDE-5 | New-project dialog: exactly three entry points + title, protocol/venue, voice (default Unfiled); lands on the right next-step card | 5.3 | kept | to write (O6) |

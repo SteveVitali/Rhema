@@ -816,8 +816,94 @@ const D2_TOUR: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/** R7SHELL.1a (REQ-SHELL-1/2/6, REQ-DACC-7/8) — the real `U1.shell` body: the AppShell wraps every
+ *  authenticated leaf (the IDE hosted — its rail is suppressed), the sidebar carries the ADR-128
+ *  set minus the Demo item (248's), collapse persists across a reload, the in-shell 404 keeps the
+ *  sidebar, `/billing` resolves to `/app/settings/billing`, and a narrow DESKTOP window (700 px)
+ *  gets the top bar + drawer (the CSS-phone hiding no longer applies to the hosted IDE). Held
+ *  `ready-to-flip` — the registry keeps `expected:"red"`; 250_R7DEP.2 flips it with the staged
+ *  walk + screenshots (D-R7SHELL.1a-1). */
+const U1_SHELL: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  const shell = page.locator("[data-app-shell]").first();
+  await shell.waitFor({ timeout: 30_000 });
+  const sidebar = page.locator("[data-app-sidebar]").first();
+  for (const hook of [
+    "data-shell-wordmark",
+    "data-shell-new-project",
+    "data-shell-inbox",
+    "data-shell-voices",
+    "data-shell-usage",
+    "data-shell-settings",
+    "data-shell-all-projects",
+    "data-shell-account",
+    "data-shell-toggle",
+  ]) {
+    if ((await page.locator(`[${hook}]`).count()) === 0) {
+      throw new Error(`the AppShell sidebar is missing [${hook}]`);
+    }
+  }
+  if ((await page.locator("[data-shell-wordmark]").getAttribute("href")) !== "/app") {
+    throw new Error("the sidebar wordmark must SPA-link to /app (never / — UXC-3)");
+  }
+  // the collapse pref is remembered per user across a reload.
+  await page.locator("[data-shell-toggle]").click();
+  if ((await shell.getAttribute("data-sidebar")) !== "collapsed") {
+    throw new Error("the collapse toggle did not flip data-sidebar");
+  }
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await shell.waitFor({ timeout: 30_000 });
+  if ((await shell.getAttribute("data-sidebar")) !== "collapsed") {
+    throw new Error("the collapsed pref did not survive a reload (rhema:sidebar:v1:<user>)");
+  }
+  await page.locator("[data-shell-toggle]").click();
+  if ((await shell.getAttribute("data-sidebar")) !== "expanded") {
+    throw new Error("the sidebar did not re-expand");
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u1-shell-1440.png"), fullPage: true });
+  // the in-shell 404 keeps the sidebar.
+  await gotoOk(page, `${ctx.webBaseUrl}/app/definitely-not-a-route?src=jrn`, ctx);
+  await sidebar.waitFor({ timeout: 30_000 });
+  // `/billing` resolves to `/app/settings/billing` (the server 302 leg lands on the SPA leaf).
+  await gotoOk(page, `${ctx.webBaseUrl}/billing?src=jrn`, ctx);
+  if (!page.url().endsWith("/app/settings/billing")) {
+    throw new Error(`/billing landed on ${page.url()} (want /app/settings/billing)`);
+  }
+  // the hosted IDE: a project leaf mounts `.ide` inside the shell with the rail suppressed.
+  const recent = page.locator("[data-shell-recent]").first();
+  if ((await recent.count()) === 0) throw new Error("no recent project row to walk into");
+  const project = recent;
+  await project.click();
+  await page.locator("[data-ide-hosted]").first().waitFor({ timeout: 30_000 });
+  if ((await page.locator(".ide-rail").count()) > 0) {
+    throw new Error("the hosted IDE still mounts the rail");
+  }
+  if ((await shell.count()) !== 1 || (await sidebar.count()) !== 1) {
+    throw new Error("the shell/sidebar is not singular inside the project leaf");
+  }
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.screenshot({ path: join(ctx.outDir, "u1-shell-1024.png"), fullPage: true });
+  // narrow desktop (700 px): the top bar + drawer replace the hidden panes.
+  await page.setViewportSize({ width: 700, height: 900 });
+  const bar = page.locator("[data-shell-topbar]").first();
+  await bar.waitFor({ timeout: 30_000 });
+  if ((await bar.isVisible()) !== true) throw new Error("the <768 top bar is not visible");
+  await page.locator("[data-shell-drawer-toggle]").click();
+  if ((await shell.getAttribute("data-drawer")) !== "open") {
+    throw new Error("the top-bar menu button did not open the sidebar drawer");
+  }
+  if ((await page.locator("[data-shell-pane-toggle]").count()) === 0) {
+    throw new Error("the <768 pane-sheet toggle is missing in IDE scope");
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u1-shell-700.png"), fullPage: true });
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
+  "U1.shell": U1_SHELL,
   "D2.tour": D2_TOUR,
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,

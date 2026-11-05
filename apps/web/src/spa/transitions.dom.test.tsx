@@ -462,6 +462,8 @@ describe("REQ-NAVC-22 — listeners, timers, and the one EventSource", () => {
     await nav(router, "/app/new");
     const afterLeave = netSince(baseline);
     expect(afterLeave).toEqual({
+      "window:keydown": 1,        // R7SHELL.1a — the AppShell's `[`/`]` arm — per-boot lifetime
+      "document:keydown": 1,      // R7SHELL.1a — the shell's toggle/listen seam — per-boot lifetime
       "window:pagehide": 1,       // the router's scrollRestoration — per-document lifetime
       "window:visibilitychange": 1, // the QueryClient FocusManager — per-boot lifetime
     });

@@ -16,6 +16,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppInboxRouteImport } from './routes/_authenticated/app.inbox'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
+import { Route as AuthenticatedBillingIndexRouteImport } from './routes/_authenticated/billing.index'
 import { Route as AuthenticatedBillingReturnRouteImport } from './routes/_authenticated/billing.return'
 import { Route as AuthenticatedPProjectRouteImport } from './routes/_authenticated/p.$project'
 import { Route as AuthenticatedSettingsBillingRouteImport } from './routes/_authenticated/settings_.billing'
@@ -87,6 +88,12 @@ const AuthenticatedAppSettingsRoute =
   AuthenticatedAppSettingsRouteImport.update({
     id: '/app/settings',
     path: '/app/settings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBillingIndexRoute =
+  AuthenticatedBillingIndexRouteImport.update({
+    id: '/billing/',
+    path: '/billing/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedBillingReturnRoute =
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/v/$persona': typeof AuthenticatedVPersonaRoute
   '/voices/new': typeof AuthenticatedVoicesNewRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/billing/': typeof AuthenticatedBillingIndexRoute
   '/voices/': typeof AuthenticatedVoicesIndexRoute
   '/app/new/preview': typeof AuthenticatedAppNewPreviewRoute
   '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
@@ -365,6 +373,7 @@ export interface FileRoutesByTo {
   '/v/$persona': typeof AuthenticatedVPersonaRoute
   '/voices/new': typeof AuthenticatedVoicesNewRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/billing': typeof AuthenticatedBillingIndexRoute
   '/voices': typeof AuthenticatedVoicesIndexRoute
   '/app/new/preview': typeof AuthenticatedAppNewPreviewRoute
   '/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
@@ -412,6 +421,7 @@ export interface FileRoutesById {
   '/_authenticated/v/$persona': typeof AuthenticatedVPersonaRoute
   '/_authenticated/voices_/new': typeof AuthenticatedVoicesNewRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/billing/': typeof AuthenticatedBillingIndexRoute
   '/_authenticated/voices/': typeof AuthenticatedVoicesIndexRoute
   '/_authenticated/app/new_/preview': typeof AuthenticatedAppNewPreviewRoute
   '/_authenticated/app/settings/account': typeof AuthenticatedAppSettingsAccountRoute
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/v/$persona'
     | '/voices/new'
     | '/app/'
+    | '/billing/'
     | '/voices/'
     | '/app/new/preview'
     | '/app/settings/account'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/v/$persona'
     | '/voices/new'
     | '/app'
+    | '/billing'
     | '/voices'
     | '/app/new/preview'
     | '/app/settings/account'
@@ -550,6 +562,7 @@ export interface FileRouteTypes {
     | '/_authenticated/v/$persona'
     | '/_authenticated/voices_/new'
     | '/_authenticated/app/'
+    | '/_authenticated/billing/'
     | '/_authenticated/voices/'
     | '/_authenticated/app/new_/preview'
     | '/_authenticated/app/settings/account'
@@ -637,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/app/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/billing/': {
+      id: '/_authenticated/billing/'
+      path: '/billing'
+      fullPath: '/billing/'
+      preLoaderRoute: typeof AuthenticatedBillingIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/billing/return': {
@@ -1002,6 +1022,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedVPersonaRoute: typeof AuthenticatedVPersonaRoute
   AuthenticatedVoicesNewRoute: typeof AuthenticatedVoicesNewRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedBillingIndexRoute: typeof AuthenticatedBillingIndexRoute
   AuthenticatedVoicesIndexRoute: typeof AuthenticatedVoicesIndexRoute
   AuthenticatedAppNewPreviewRoute: typeof AuthenticatedAppNewPreviewRoute
   AuthenticatedAppUsageRRunIdRoute: typeof AuthenticatedAppUsageRRunIdRoute
@@ -1019,6 +1040,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedVPersonaRoute: AuthenticatedVPersonaRoute,
   AuthenticatedVoicesNewRoute: AuthenticatedVoicesNewRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedBillingIndexRoute: AuthenticatedBillingIndexRoute,
   AuthenticatedVoicesIndexRoute: AuthenticatedVoicesIndexRoute,
   AuthenticatedAppNewPreviewRoute: AuthenticatedAppNewPreviewRoute,
   AuthenticatedAppUsageRRunIdRoute: AuthenticatedAppUsageRRunIdRoute,

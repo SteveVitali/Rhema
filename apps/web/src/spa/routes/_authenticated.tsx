@@ -6,9 +6,11 @@
 // the route's error boundary — a lie that says "signed out" is worse than a designed error state.
 
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { AppShell } from "../app-shell.js";
 import { BffError } from "../bff.js";
 import { isDemoGateSkip } from "../demo.js";
 import { sessionQuery } from "../queries.js";
+import { SpaNotFound, SpaRouteError } from "../states.js";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ context, location }) => {
@@ -28,5 +30,20 @@ export const Route = createFileRoute("/_authenticated")({
       throw e;
     }
   },
-  component: Outlet,
+  // R7SHELL.1a (REQ-SHELL-1) — the ONE layout: every `/_authenticated` leaf renders inside the
+  // persistent AppShell, so workspace↔project navigation never unmounts the chrome. The error
+  // and not-found boundaries wrap the same shell — pending, error and 404 all render in-shell
+  // (UXC-29/35, D6/D7). Leaves' own pendingComponent/error render at leaf position, inside it.
+  component: function AuthenticatedLayout() {
+    return (
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    );
+  },
+  // R7SHELL.1a — the boundaries stay the shared states: each mounts the AppShell itself when it
+  // renders at a position with no shell, and stays bare at leaf position inside it (the InShell
+  // guard in states.tsx).
+  errorComponent: SpaRouteError,
+  notFoundComponent: SpaNotFound,
 });

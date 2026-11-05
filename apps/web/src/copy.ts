@@ -2597,6 +2597,35 @@ export const COPY = {
     noJs: "This app surface needs JavaScript — the Rhēma shell mounts it on top of your session.",
   },
 
+  // R7SHELL.1a (REQ-SHELL-1/2; ADR-128) — the AppShell sidebar + account menu's chrome strings.
+  appShell: {
+    frameLabel: "Workspace navigation",
+    newProject: "New project",
+    search: "Search",
+    recents: "Recent projects",
+    allProjects: "All projects",
+    inbox: "Inbox",
+    voices: "Voices",
+    usage: "Usage",
+    settings: "Settings",
+    account: "Account",
+    billing: "Billing",
+    pricing: "Pricing",
+    themeLabel: "Theme",
+    signOut: "Sign out",
+    creditsFmt: "{n} credits",
+    collapseTip: "Collapse the sidebar",
+    expandTip: "Expand the sidebar",
+    menuTip: "Open the menu",
+    paneTip: "Toggle the pane",
+    closeMenu: "Close the menu",
+  },
+  appShellThemes: {
+    dark: "Dark",
+    light: "Light",
+    auto: "Auto",
+  },
+
   // SPA.4 — the client route-error boundary's generic strings (the §5.9 "a banner, never a stack
   // trace" posture; per-surface error copy lands with the surface tickets).
   spaError: {
