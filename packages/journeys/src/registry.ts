@@ -277,7 +277,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "R10",
     journey: "returning",
     asserts:
-      "/app → click the project link → click a[data-project-item="versions"] → /p/:slug/v/working → Back is one document: every hop commits client-side (monotone data-nav-count, zero added document loads) and the warm return re-issues no /bff/p/:slug twin GET inside NAVC.3's freshness window",
+      "/app → click the project link → click a[data-project-item='versions'] → /p/:slug/v/working → Back is one document: every hop commits client-side (monotone data-nav-count, zero added document loads) and the warm return re-issues no /bff/p/:slug twin GET inside NAVC.3's freshness window",
     owner: "NAVC.4",
     // NAVC.4 — flips green on the first live leg over a deployed build carrying the NAVC.1–3 machinery.
     // VERIF.2 — flipped green 2026-10-16 on pr-186 @ e7b21aecb (ready-to-flip on two legs:
