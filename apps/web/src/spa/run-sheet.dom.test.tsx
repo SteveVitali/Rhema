@@ -16,6 +16,7 @@ import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildRunSheetView, type RunSheetView } from "@rhema/run-sheet";
 import { COPY } from "../copy.js";
@@ -151,6 +152,18 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
+/** R7KIT.3b — the visible rigor/format control is the primitive's role=radio; its hidden
+ *  `input[name]` carrier posts the field but does not drive state — drive the radio itself. */
+const radioFor = (display: string): HTMLElement => {
+  const radio = [...document.querySelectorAll<HTMLElement>('[role="radio"]')].find(
+    (r) => r.closest("label")?.textContent?.includes(display),
+  );
+  expect(radio, `role=radio labelled ${display}`).toBeTruthy();
+  return radio!;
+};
+
+
+
 
 async function submit(form: Element) {
   await act(async () => {
@@ -218,23 +231,24 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     expect(main.querySelector('input[name="dontAskUnder"]')).not.toBeNull();
     expect(main.querySelector('select[name="approval"]')).not.toBeNull();
     expect(main.querySelector('select[name="modelTier"]')).not.toBeNull();
-    expect(main.querySelector('input[name="protocol"]')).not.toBeNull();
+    expect(main.querySelector('[name="protocol"]')).not.toBeNull();
     expect(main.querySelector('input[name="venue"]')).not.toBeNull();
     expect(main.querySelector('input[name="stage"]')).not.toBeNull();
     expect((await settled<HTMLInputElement>('input[name="workflow"]')).value).toBe("review");
     expect((await settled<HTMLInputElement>('input[name="idempotencyKey"]')).value).toBe("idem_1");
     expect(main.querySelectorAll('input[name="rigor"]').length).toBe(3);
     expect((await settled<HTMLInputElement>('input[name="rigor"]:checked')).value).toBe("standard");
+    expect(main.querySelectorAll('[role="radio"]').length).toBe(3);
     // the collapsed-row fields + Advanced toggles.
     expect(main.querySelector("[data-sheet-fields]")).not.toBeNull();
-    expect(main.querySelector("select[data-tier-select]")).not.toBeNull();
+    expect(main.querySelector("[data-tier-select]")).not.toBeNull();
     expect(main.querySelector('input[name="capCredits"][data-cap-input]')).not.toBeNull();
     expect(main.querySelector('input[name="dontAskUnder"]')).not.toBeNull();
     expect(main.querySelector('textarea[name="guidance"]')).not.toBeNull();
     expect(main.querySelector('input[name="autoRun"]')).not.toBeNull();
     expect(main.querySelector("[data-auto-run]")).not.toBeNull();
     expect(main.querySelector('select[name="approval"]')).not.toBeNull();
-    expect(main.querySelector('input[name="protocol"]')).not.toBeNull();
+    expect(main.querySelector('[name="protocol"]')).not.toBeNull();
     expect(main.querySelector('input[name="venue"]')).not.toBeNull();
     expect(main.querySelector('input[name="stage"]')).not.toBeNull();
     expect(main.querySelectorAll('input[name^="toggle."]').length).toBeGreaterThan(0);
@@ -259,9 +273,11 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const view = BASE_TWIN.runSheet.view;
     const callsBefore = f.impl.mock.calls.length;
-    const fb = (await settled<HTMLInputElement>('input[name="rigor"][value="full_board"]'));
+    // R7KIT.3b — drive the primitive's role=radio by its label; the hidden
+    // `input[name="rigor"]` carrier stays for the form post.
+    const display = view.rigorOptions.find((o) => o.rigor === "full_board")!.display;
     await act(async () => {
-      fireEvent.click(fb);
+      fireEvent.click(radioFor(display));
     });
     const cell = view.recompute.cells[`full_board|${view.modelTier}|`];
     // full_board at this fixture has no enabled-toggle change — the key is `rigor|tier|`
@@ -297,10 +313,25 @@ describe("GET /p/:slug/run mounted (SPA.20)", () => {
     const [key] = target!;
     const [rigor, tier] = key.split("|");
     await act(async () => {
-      fireEvent.click((await settled(`input[name="rigor"][value="${rigor}"]`)));
+      fireEvent.click(radioFor(view.rigorOptions.find((o) => o.rigor === rigor)!.display));
     });
+    // R7KIT.3b — the model-tier control is a Radix Select: focus the trigger, Enter opens the
+    // listbox on the current item, arrow to the target, Enter selects (the verified pattern).
+    const user = userEvent.setup();
+    const trigger = (await settled<HTMLElement>("[data-tier-select]"));
+    const targetIdx = view.modelTierOptions.findIndex((o) => o.tier === tier);
+    const curIdx = view.modelTierOptions.findIndex((o) => o.tier === view.modelTier);
     await act(async () => {
-      fireEvent.change((await settled("select[data-tier-select]")), { target: { value: tier } });
+      trigger.focus();
+      await user.keyboard("{Enter}");
+    });
+    for (let i = 0; i < Math.abs(targetIdx - curIdx); i++) {
+      await act(async () => {
+        await user.keyboard(targetIdx > curIdx ? "{ArrowDown}" : "{ArrowUp}");
+      });
+    }
+    await act(async () => {
+      await user.keyboard("{Enter}");
     });
     const btn = (await settled<HTMLButtonElement>("button[data-run-button]"));
     expect(btn.getAttribute("data-needs-consent")).toBe("true");
@@ -442,7 +473,7 @@ describe("the §5.6/§14 arms (SPA.20)", () => {
     const f = makeFetch({ twin: twinFor(view) });
     await mountAt(`/p/${SLUG}/run`, BOOT, f.impl);
     const main = el()!;
-    expect(main.querySelector("select[data-protocol-select]")).not.toBeNull();
+    expect(main.querySelector("[data-protocol-select]")).not.toBeNull();
     expect(main.querySelector("[data-memo-confidentiality]")).not.toBeNull();
     expect(main.querySelector("[data-user-sources-field] textarea[name='userSources']")?.textContent).toContain(
       "Q3 forecast",

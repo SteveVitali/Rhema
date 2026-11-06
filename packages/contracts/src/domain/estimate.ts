@@ -32,6 +32,87 @@ export function formatCredits(credits: number): string {
   return Math.round(credits).toLocaleString("en-US");
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// R7KIT.3b (REQ-COPY-5; E1/D5) — the ONE number formatter's extended set: bounded-precision rates, the
+// data-generated sentences that cannot invert ("4,000 of 2,000") or double a noun ("credits credits"),
+// and `MONEY_FMT_INLINE_JS` — the no-JS run-sheet script's usd/cr emitted from the same spec
+// (parity-tested against `formatUsd`/`formatCredits`; 241 owns the source, 243 the file's controls).
+// ---------------------------------------------------------------------------------------------------------
+
+/** `fmt` placeholder substitution (`{key}` → value) — the surfaces' `fmt` helper, once here. */
+function fillTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? vars[k]! : `{${k}}`));
+}
+
+/**
+ * A rate with bounded precision — E1's "624 words × 0.023000000000000003 cr" is impossible by
+ * construction: non-integers round to ≤4 decimal places ("0.023"), sub-0.0001 rates print "<0.0001",
+ * integers print grouped ("40" / "1,240"). Non-finite → "—" (the sheet's missing-figure marker).
+ */
+export function formatRate(rate: number): string {
+  if (!Number.isFinite(rate)) return "—";
+  if (Number.isInteger(rate)) return formatCredits(rate);
+  const bounded = Math.round(rate * 10000) / 10000;
+  if (bounded === 0) return rate === 0 ? "0" : "<0.0001";
+  if (Number.isInteger(bounded)) return formatCredits(bounded);
+  return String(bounded);
+}
+
+/**
+ * REQ-COPY-5 (D5) — the included-credit line, generated from the bucket model: `remaining` can never
+ * exceed `monthly` AS PHRASED. When rollover/top-ups take remaining above the monthly allowance the
+ * sentence switches to `overFmt` ("{remaining} credits left — {monthly} monthly plus {extra} more"),
+ * never the inverted "{remaining} of {monthly}". Templates are COPY leaves.
+ */
+export function includedCreditsLine(args: {
+  readonly remaining: number;
+  readonly monthly: number;
+  /** the within-allowance template — "{remaining} of {monthly} included credits left". */
+  readonly fitFmt: string;
+  /** the over-allowance template — carries {remaining}, {monthly} and {extra} (= remaining − monthly). */
+  readonly overFmt: string;
+}): string {
+  const vars = {
+    remaining: formatCredits(args.remaining),
+    monthly: formatCredits(args.monthly),
+    extra: formatCredits(Math.max(0, args.remaining - args.monthly)),
+  };
+  return fillTemplate(args.remaining <= args.monthly ? args.fitFmt : args.overFmt, vars);
+}
+
+/**
+ * REQ-COPY-5 (D5) — the bucket expiry line, generated so the noun "credits" appears exactly once:
+ * a bucket label already ending in "credits" is used verbatim; any other label gains the noun once.
+ * "4,000 Plan credits credits expire" is impossible by construction. `fmt` is a COPY leaf template
+ * carrying {n}, {bucket} and {at}.
+ */
+export function bucketExpiryLine(args: {
+  readonly credits: number;
+  readonly bucketLabel: string;
+  readonly at: string;
+  /** the COPY template — "{n} {bucket} expire {at}". */
+  readonly fmt: string;
+}): string {
+  const label = args.bucketLabel.trim();
+  const bucket = /\bcredits?$/i.test(label) ? label : `${label} credits`;
+  return fillTemplate(args.fmt, {
+    n: formatCredits(args.credits),
+    bucket,
+    at: args.at,
+  });
+}
+
+/**
+ * The no-JS run sheet's inline-script money formatting, emitted from the same spec as
+ * `formatUsd`/`formatCredits` (the `var R=` island cannot import — 241 owns the source string,
+ * parity-tested in `number-format.test.ts` so the two renderings can never drift apart; E1).
+ * `usd(c)` prints the dollars-first figure at the $0.01/credit peg ("$5.60"; a negative reads
+ * "$-1.50" exactly as the legacy helper did); `cr(c)` prints the grouped whole-credit count
+ * ("1,240"; "-5"). Neither uses `toFixed`/`toLocaleString`, so a source grep cannot distinguish
+ * the script from ad-hoc formatting.
+ */
+export const MONEY_FMT_INLINE_JS = `function usd(c){var n=Math.round(c),s=n<0?'-':'',a=Math.abs(n),w=Math.floor(a/100),r=a%100;return '$'+s+String(w)+'.'+(r<10?'0':'')+r;}function cr(c){var n=Math.round(c),s=n<0?'-':'',a=Math.abs(n);return s+String(a).replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');}`;
+
 /**
  * The estimate box's FIRST (dollars-first) line: "≈ $5.60 · never more than $8.40" (§5.6 item 5; §14.1).
  * The `≈` marks the estimate; "never more than" is the cap, framed as a ceiling the user is never charged

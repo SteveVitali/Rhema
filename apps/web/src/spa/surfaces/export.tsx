@@ -16,7 +16,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import type { FormEvent, ReactNode } from "react";
-import { PageTitle } from "@rhema/ui";
+import { Button, Checkbox, PageTitle, RadioGroup, RadioGroupItem, Select, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { bffFetch } from "../bff.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -42,10 +42,7 @@ function setFormBusy(form: HTMLFormElement, busy: boolean): void {
 /** P1.19's phone-width note — verbatim from pages.tsx `PhoneBlockedNote`. */
 function PhoneBlockedNote(): ReactNode {
   return (
-    <p
-      data-phone-blocked="true"
-      style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}
-    >
+    <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
       {COPY.phoneBlocked.note}
     </p>
   );
@@ -107,42 +104,24 @@ export function ExportSurface({
   return (
     <div data-spa-surface>
       <PageTitle>{COPY.export.heading}</PageTitle>
-      <p
-        style={{
-          fontSize: "14px",
-          lineHeight: 1.6,
-          color: "var(--shell-fg-muted)",
-          maxWidth: "68ch",
-        }}
-      >
+      <p className="ui-set-t ui-set-t--m ui-set-t--meas">
         {COPY.export.lede}
       </p>
       {/* P1.19 — §10.1 ✗: export never renders its form on phone width. */}
       {compact === true ? <PhoneBlockedNote /> : null}
       {failed === true ? (
-        <p data-export-error="true" style={{ color: "var(--shell-fg)", fontSize: "13px" }}>
+        <p data-export-error="true" className="ui-set-t">
           {COPY.export.exportFailed}
         </p>
       ) : null}
       {compact !== true ? (
         <>
           {/* the §11.7 obligation line — informational, with links; export never blocks on it. */}
-          <p
-            data-obligation-line="true"
-            style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "12px 0 4px" }}
-          >
+          <p data-obligation-line="true" className="ui-set-t ui-rs-mt">
             {dialog.obligations.line} — {COPY.export.obligationsNote}
           </p>
           {dialog.obligations.items.length > 0 ? (
-            <ul
-              data-obligation-items="true"
-              style={{
-                fontSize: "13px",
-                color: "var(--shell-fg-muted)",
-                margin: "0 0 8px",
-                paddingLeft: "18px",
-              }}
-            >
+            <ul data-obligation-items="true" className="ui-set-list ui-set-t--m">
               {dialog.obligations.items.map((o) => (
                 <li
                   key={o.id}
@@ -166,119 +145,71 @@ export function ExportSurface({
             method="post"
             action={`/p/${slug}/export`}
             data-export-form="true"
-            style={{ marginTop: "16px", maxWidth: "68ch" }}
+            className="ui-set-sec ui-set-t--meas"
           >
-            <fieldset
-              style={{
-                border: "1px solid var(--shell-border)",
-                borderRadius: "8px",
-                padding: "10px 14px",
-              }}
-            >
-              <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)" }}>
-                {COPY.export.formatLegend}
-              </legend>
-              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                {dialog.formats.map((f, i) => (
-                  <label
-                    key={f.id}
-                    title={f.blurb}
-                    style={{
-                      display: "flex",
-                      gap: "6px",
-                      alignItems: "center",
-                      fontSize: "13px",
-                      color: "var(--shell-fg-muted)",
-                    }}
-                  >
-                    <input type="radio" name="format" value={f.id} defaultChecked={i === 0} />
+            <fieldset className="ui-set-card">
+              <legend className="ui-set-h3">{COPY.export.formatLegend}</legend>
+              <RadioGroup
+                name="format"
+                defaultValue={dialog.formats[0]?.id}
+                aria-label={COPY.export.formatLegend}
+                className="ui-set-form"
+              >
+                {dialog.formats.map((f) => (
+                  <label key={f.id} title={f.blurb} className="ui-rs-radio ui-set-t--m">
+                    <RadioGroupItem value={f.id} aria-label={f.label} />
                     {f.label}
                   </label>
                 ))}
-              </div>
+              </RadioGroup>
             </fieldset>
             {/* P1.18 — the .md-only profile (Substack). The web POST drops it for any other
                 format, and the api enforces the same rule — a profile is never an eighth format. */}
             {dialog.mdProfiles.length > 0 ? (
-              <label
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "center",
-                  marginTop: "12px",
-                  fontSize: "13px",
-                  color: "var(--shell-fg)",
-                }}
-              >
+              <label className="ui-set-row ui-set-t ui-rs-mt">
                 {COPY.export.profileLegend}:{" "}
-                <select name="profile" data-md-profile="true" style={{ fontSize: "13px" }}>
-                  <option value="">{COPY.export.profileCanonical}</option>
-                  {dialog.mdProfiles.map((p) => (
-                    <option key={p.id} value={p.id} title={p.blurb}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-                <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                <Select
+                  name="profile"
+                  defaultValue=""
+                  data-md-profile="true"
+                  aria-label={COPY.export.profileLegend}
+                  items={[
+                    { value: "", label: COPY.export.profileCanonical },
+                    ...dialog.mdProfiles.map((p) => ({ value: p.id, label: p.label })),
+                  ]}
+                />
+                <span className="ui-set-note ui-set-t--f">
                   {COPY.export.profileNote}
                 </span>
               </label>
             ) : null}
             {/* the citation-style select only exists while a bibliography artifact exports. */}
             {dialog.citations.hasBibliography ? (
-              <label
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "center",
-                  marginTop: "12px",
-                  fontSize: "13px",
-                  color: "var(--shell-fg)",
-                }}
-              >
+              <label className="ui-set-row ui-set-t ui-rs-mt">
                 {COPY.export.citationLegend}:{" "}
-                <select name="cslStyle" data-csl-style="true" style={{ fontSize: "13px" }}>
-                  {dialog.citations.styles.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                <Select
+                  name="cslStyle"
+                  defaultValue={dialog.citations.styles[0]?.id}
+                  data-csl-style="true"
+                  aria-label={COPY.export.citationLegend}
+                  items={dialog.citations.styles.map((s) => ({ value: s.id, label: s.label }))}
+                />
+                <span className="ui-set-note ui-set-t--f">
                   {COPY.export.citationNote}
                 </span>
               </label>
             ) : null}
-            <label
-              style={{
-                display: "flex",
-                gap: "8px",
-                alignItems: "flex-start",
-                marginTop: "12px",
-                fontSize: "13px",
-                color: "var(--shell-fg)",
-              }}
-            >
-              <input
-                type="checkbox"
-                name="attachAiUse"
-                defaultChecked
-                style={{ marginTop: "2px" }}
-              />
+            <label className="ui-set-row ui-set-t ui-rs-mt">
+              <Checkbox name="attachAiUse" defaultChecked aria-label={COPY.export.attachLabel} />
               <span>
                 {COPY.export.attachLabel}
-                <span
-                  style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}
-                >
+                <span className="ui-set-note ui-set-t--f ui-ob-sub">
                   {COPY.export.attachNote}
                 </span>
                 {/* §6.7 — the Academic surface: the disclosure toggle copy (the ICMJE template
                     registers at P1.21; until then the general statement ships). */}
                 {dialog.surfaces.disclosure ? (
-                  <span
-                    data-disclosure-note="true"
-                    style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}
-                  >
+                  <span data-disclosure-note="true" className="ui-set-note ui-set-t--f ui-ob-sub">
                     {COPY.export.disclosureNote}
                   </span>
                 ) : null}
@@ -287,27 +218,17 @@ export function ExportSurface({
             {/* §8.4 — the block-level provenance appendix (off by default; greyed without a map). */}
             <label
               data-provenance-toggle={dialog.provenance.available ? "available" : "unavailable"}
-              style={{
-                display: "flex",
-                gap: "8px",
-                alignItems: "flex-start",
-                marginTop: "12px",
-                fontSize: "13px",
-                color: dialog.provenance.available ? "var(--shell-fg)" : "var(--shell-fg-faint)",
-              }}
+              className={`ui-set-row ui-set-t ui-rs-mt${dialog.provenance.available ? "" : " ui-set-t--f"}`}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 name="attachProvenance"
                 disabled={!dialog.provenance.available}
                 defaultChecked={dialog.provenance.defaultOn && dialog.provenance.available}
-                style={{ marginTop: "2px" }}
+                aria-label={COPY.export.provenanceLabel}
               />
               <span>
                 {COPY.export.provenanceLabel}
-                <span
-                  style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}
-                >
+                <span className="ui-set-note ui-set-t--f ui-ob-sub">
                   {dialog.provenance.available
                     ? dialog.provenance.label
                     : COPY.export.provenanceUnavailable}
@@ -316,52 +237,30 @@ export function ExportSurface({
             </label>
             {/* §6.7 — the op-ed exclusivity reminder: a reminder line, never a gate. */}
             {dialog.surfaces.exclusivityReminder ? (
-              <p
-                data-exclusivity-reminder="true"
-                style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "12px" }}
-              >
+              <p data-exclusivity-reminder="true" className="ui-set-note ui-set-t--m ui-rs-mt">
                 {dialog.surfaces.exclusivityReminder}
               </p>
             ) : null}
-            <button type="submit" style={{ marginTop: "12px", fontSize: "13px" }}>
+            <Button type="submit" variant="primary" className="ui-rs-mt">
               {COPY.export.exportCta}
-            </button>
+            </Button>
           </form>
 
           {/* the statement preview — generated sentences (recomputed from run rows) + the author's
               append-only additions. */}
           {statement ? (
-            <section data-ai-use="true" style={{ marginTop: "20px", maxWidth: "68ch" }}>
-              <h2
-                style={{
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "var(--shell-fg)",
-                  margin: "0 0 6px",
-                }}
-              >
+            <section data-ai-use="true" className="ui-set-sec ui-set-t--meas">
+              <h2 className="ui-set-h2">
                 {COPY.export.statementHeading}
               </h2>
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 8px" }}>
+              <p className="ui-set-note ui-set-t--f">
                 {COPY.export.statementNote}
               </p>
-              <p
-                data-generated="true"
-                style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--shell-fg)" }}
-              >
+              <p data-generated="true" className="ui-set-t">
                 {statement.generated.join(" ")}
               </p>
               {statement.additions.map((a) => (
-                <p
-                  key={a.id}
-                  data-addition={a.id}
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: 1.6,
-                    color: "var(--shell-fg-muted)",
-                    margin: "6px 0 0",
-                  }}
-                >
+                <p key={a.id} data-addition={a.id} className="ui-set-t ui-set-t--m ui-rs-mt">
                   {a.sentence}
                 </p>
               ))}
@@ -370,36 +269,23 @@ export function ExportSurface({
                 method="post"
                 action={`/p/${slug}/export/addition`}
                 onSubmit={onAdditionSubmit}
-                style={{ marginTop: "10px" }}
+                className="ui-rs-mt"
               >
-                <label
-                  htmlFor="ai-use-addition"
-                  style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}
-                >
+                <label htmlFor="ai-use-addition" className="ui-vc-lab">
                   {COPY.export.additionLabel}
                 </label>
-                <input
+                <TextField
                   id="ai-use-addition"
                   type="text"
                   name="sentence"
                   placeholder={COPY.export.additionPlaceholder}
-                  style={{
-                    width: "100%",
-                    marginTop: "4px",
-                    padding: "6px 10px",
-                    fontSize: "13px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--shell-border)",
-                    background: "var(--shell-bg)",
-                    color: "var(--shell-fg)",
-                    boxSizing: "border-box",
-                  }}
+                  className="ui-rs-mt"
                 />
-                <button type="submit" style={{ marginTop: "6px", fontSize: "12px" }}>
+                <Button type="submit" size="sm" className="ui-rs-mt">
                   {COPY.export.additionCta}
-                </button>
+                </Button>
               </form>
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "10px" }}>
+              <p className="ui-set-note ui-set-t--f ui-rs-mt">
                 {COPY.export.standaloneHeading}:{" "}
                 <a href={`/p/${slug}/export/ai-use/md`} data-spa-native>{COPY.export.standaloneMdLabel}</a>
                 {" · "}

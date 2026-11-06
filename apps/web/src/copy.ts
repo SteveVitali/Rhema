@@ -255,7 +255,9 @@ export const COPY = {
 
   runSheet: {
     heading: "Run the Editor",
-    lede: "Choose how thorough the read is. The estimate updates as you change it; you are never charged more than the cap.",
+    // R7KIT.3b (E1 dedup, P2) — lede + meteredNote render as ONE paragraph; the "never more than
+    // the cap" claim lives once, in meteredNote.
+    lede: "Choose how thorough the read is — the estimate updates as you change it.",
     // R6MNY.1 (REQ-LCH-5a) — the new-user charge explanation, the SAME claim the paid-account
     // notice makes (packages/ledger metered-notice.ts): a run is charged for what it actually did,
     // never the flat estimate, and the cap is the ceiling. The wording is true under BOTH debit
@@ -1638,6 +1640,10 @@ export const COPY = {
     periodFmt: "Period {start} → {end}",
     monthToDateFmt: "{n} cr this period",
     includedFmt: "{remaining} of {monthly} included credits left",
+    // R7KIT.3b (REQ-COPY-5; D5) — the over-allowance arm: rollover/top-ups take remaining above
+    // monthly, and the generated line stays truthful ("4,000 credits left — 2,000 monthly plus
+    // 2,000 more") instead of the inverted "4,000 of 2,000". `includedCreditsLine` picks the arm.
+    includedOverFmt: "{remaining} credits left — {monthly} monthly plus {extra} more",
     bucketsHeading: "Balance",
     bucketLabels: {
       included: "Plan credits",
@@ -1682,7 +1688,17 @@ export const COPY = {
       delivered: "Delivered",
     } as Record<string, string>,
     warningsHeading: "Heads up",
-    nextExpiryFmt: "{n} {bucket} credits expire {at}",
+    // R7KIT.3b (REQ-COPY-5; D5) — the expiry line's bucket labels each carry the "credits" noun;
+    // `bucketExpiryLine` normalizes so the noun prints exactly once ("4,000 Plan credits expire",
+    // never "Plan credits credits").
+    expiryBucketLabels: {
+      included: "Plan credits",
+      topup: "Top-up credits",
+      trial_pocket: "Trial credits",
+      daily: "Daily credits",
+      promo: "Promo credits",
+    } as Record<string, string>,
+    nextExpiryFmt: "{n} {bucket} expire {at}",
     csvCta: "Download CSV",
     projectUsageCta: "Project usage",
     // SPA.10 — the recent-runs table's column heads (SSR's literals, COPY-fied for the SPA's
