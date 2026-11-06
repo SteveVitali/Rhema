@@ -82,4 +82,4 @@
 - **REQ-KIT-5** — entry delta +15.5 kB vs `04a4e98b` (increment +0.2 kB over the 240a head; cumulative >15.0 WARN honestly declared, parent's `GD-KIT3A-BUDGET` deficit unchanged); `uiCss()` 23,887 ≤ 24,576 B. **Layer:** `check:spa-budget` + `ui-css.test.ts`.
 - **E1 dedup** — lede+meteredNote render as one paragraph; the cap claim once.
 - **Stage B** — `D-R7KIT.3b-1` OPEN → `250_R7DEP.2` (screenshots/provenance/computed-style at the R7b preview). Reported as owed, never green.
-- **Spend:** $0. **CI:** **pass #280@`43970d9`** — run 42280836089, all seven legs + `ci-pass` anchor green at exact head `43970d925eb089c527b11d1e8a6f310bedc6ceff` (`docs/build/logs/ci-R7KIT.3b.json`).
+- **Spend:** $0. **CI:** **pass #280@`e1365c9`** — run 42286506051 all legs + `ci-pass` anchor green at exact head `e1365c9b` (first green read `43970d92`, run 42280836089; `docs/build/logs/ci-R7KIT.3b.json`).
