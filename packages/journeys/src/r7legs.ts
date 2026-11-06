@@ -229,7 +229,7 @@ const CONTRACTS: Readonly<Record<string, string>> = {
   "R11.demo":
     "returningUser('a') signed in: /demo renders the same content as the logged-out walk — same cards, same banner — with the account chrome added, never a session-only variant",
   "U1.shell":
-    "every authenticated leaf renders inside the one AppShell: the sidebar carries wordmark/New project/Search/recent projects/Inbox(badge)/Voices/Usage/Settings/Demo/account menu, collapses to the icon rail and back with the state remembered, pending/error/404 states render in-shell",
+    "every authenticated leaf renders inside the one AppShell: the sidebar carries wordmark/New project/Search/recent projects/Inbox(badge)/Voices/Usage/Settings/Demo/account menu, collapses to the icon rail and back with the state remembered, pending/error/404 states render in-shell; the framed surfaces (usage/settings/voices/inbox + project outline/figures/usage/settings) show the page-header title row and, in project scope, the Project › Surface breadcrumb",
   "U2.noreload":
     "the scripted walk (list → project → dossier → compare → export → settings → inbox → chat send → gate approve → Showcase → back): performance navigation entries stay 1 and the window marker persists — zero document loads, S-14's named document navigations excepted by name",
   "U3.occlusion":
@@ -822,7 +822,9 @@ const D2_TOUR: StepFn = async (ctx) => {
  *  sidebar, `/billing` resolves to `/app/settings/billing`, and a narrow DESKTOP window (700 px)
  *  gets the top bar + drawer (the CSS-phone hiding no longer applies to the hosted IDE). Held
  *  `ready-to-flip` — the registry keeps `expected:"red"`; 250_R7DEP.2 flips it with the staged
- *  walk + screenshots (D-R7SHELL.1a-1). */
+ *  walk + screenshots (D-R7SHELL.1a-1). R7SHELL.1b extends the walk over the framed surfaces
+ *  (workspace leaves: title row, no crumb; project leaves: the Project › Surface breadcrumb),
+ *  still held `ready-to-flip` under the same deferral (D-R7SHELL.1b-1 names this leg's walk). */
 const U1_SHELL: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -863,6 +865,39 @@ const U1_SHELL: StepFn = async (ctx) => {
     throw new Error("the sidebar did not re-expand");
   }
   await page.screenshot({ path: join(ctx.outDir, "u1-shell-1440.png"), fullPage: true });
+  // R7SHELL.1b — the framed-surfaces walk (REQ-SHELL-3/5): every leaf renders inside the one
+  // AppShell, the page header is a content row, and project scope carries the Project ›
+  // Surface breadcrumb. Workspace leaves get the title row with NO crumb; no leaf mounts a
+  // legacy <Shell> header (its own <header> above the title row would mean the per-leaf
+  // chrome came back).
+  for (const path of ["/usage", "/app/settings/account", "/voices", "/app/inbox"]) {
+    await gotoOk(page, `${ctx.webBaseUrl}${path}?src=jrn`, ctx);
+    await page.locator("[data-page-header]").first().waitFor({ timeout: 30_000 });
+    if ((await page.locator("[data-page-breadcrumb]").count()) !== 0) {
+      throw new Error(`${path} shows a breadcrumb outside project scope`);
+    }
+    if ((await shell.count()) !== 1 || (await sidebar.count()) !== 1) {
+      throw new Error(`${path} is not framed inside the one AppShell`);
+    }
+  }
+  const recent2 = page.locator("[data-shell-recent]").first();
+  if ((await recent2.count()) === 0) throw new Error("no recent project row to walk into");
+  const slug = (await recent2.getAttribute("data-shell-recent")) ?? "";
+  for (const path of [`/p/${slug}/outline`, `/p/${slug}/figures`, `/p/${slug}/usage`, `/p/${slug}/settings`]) {
+    await gotoOk(page, `${ctx.webBaseUrl}${path}?src=jrn`, ctx);
+    await page.locator("[data-page-header], [data-ide-hosted]").first().waitFor({ timeout: 30_000 });
+    if ((await page.locator("[data-page-breadcrumb]").count()) === 0) {
+      throw new Error(`${path} lost the Project › Surface breadcrumb (or the route 404'd)`);
+    }
+    const crumb = page.locator('[data-breadcrumb-link][href^="/p/"]').first();
+    if ((await crumb.getAttribute("href")) !== `/p/${slug}`) {
+      throw new Error(`${path}'s first crumb does not link back to the project`);
+    }
+    if ((await shell.count()) !== 1 || (await sidebar.count()) !== 1) {
+      throw new Error(`${path} is not framed inside the one AppShell`);
+    }
+    await page.screenshot({ path: join(ctx.outDir, `u1-shell-${path.split("/").pop()}.png`), fullPage: true });
+  }
   // the in-shell 404 keeps the sidebar.
   await gotoOk(page, `${ctx.webBaseUrl}/app/definitely-not-a-route?src=jrn`, ctx);
   await sidebar.waitFor({ timeout: 30_000 });

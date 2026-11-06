@@ -208,6 +208,10 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.inbox.heading);
     expect(document.title).toBe("Inbox · Rhēma");
+    // R7SHELL.1b / UXC-12 — the title row is present; Inbox carries no Billing link and no crumb.
+    expect(main.querySelector("[data-page-header]")).not.toBeNull();
+    expect(main.querySelector("[data-page-breadcrumb]")).toBeNull();
+    expect(main.querySelector('a[href="/app/settings/billing"]')).toBeNull();
     // Section order is the SSR's: blocked → unread → read → voices.
     const order = [...main.querySelectorAll("[data-inbox-section]")].map(
       (s) => s.getAttribute("data-inbox-section"),

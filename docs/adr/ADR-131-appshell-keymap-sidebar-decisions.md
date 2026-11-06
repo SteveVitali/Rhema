@@ -42,3 +42,11 @@ ticket-owned and needed a home:
 - 239's final keymap edits exactly the JSON's `transitional`/`conventionalAvoid` sets and the
   table — the checker keeps the drift channel closed in CI.
 - ⌥[`/`⌥]` version stepping is explicitly provisional (marked in the table's comment) until 239.
+
+## Revisit trigger
+
+Revisit when 239_R7WRITE.2 finalizes the IDE keymap — the `transitional`/`conventionalAvoid`
+sets and the provisional `⌥[`/`⌥]` version-stepping binding are designed to be edited then —
+or when sidebar preferences need cross-device persistence (the per-user `localStorage` key is
+intentionally device-local), or if a second authenticated-shell variant needs to share the
+collapse seam with the workspace AppShell.

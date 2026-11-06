@@ -29,25 +29,18 @@ import { useMemo, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import {
-  BalanceChip,
   Chip,
-  PageTitle,
   ProjectGroupList,
   ProjectRow,
-  Shell,
   VoiceGroupList,
 } from "@rhema/ui";
 import type { ProjectRow as ApiProjectRow } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { groupByAttention, groupByVoice, toProjectRowView } from "../../state-map.js";
 import { bffFetch } from "../bff.js";
+import { PageBody, PageHeader } from "../page-header.js";
 import type { BffAppHomeTwin } from "../queries.js";
 
-
-/** `{key}`-template substitution — the local twin of pages.tsx's `fmt` (one helper, both renderers). */
-function fmt(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
-}
 
 // ---- the shared mutation plumbing (the voices/onboarding grammar, verbatim) -------------------
 
@@ -136,7 +129,7 @@ export function ProjectHomeSurface({
   const sort = params.sort === "title" ? ("title" as const) : ("recent" as const);
   const showArchived = params.archived === "1";
   const showDeleted = params.deleted === "1";
-  const { rows, voices, groupBy, balance, protocols, deletedRows } = twin;
+  const { rows, voices, groupBy, protocols, deletedRows } = twin;
   const search = twin.search;
 
   /**
@@ -242,32 +235,10 @@ export function ProjectHomeSurface({
 
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell
-        brand={COPY.brand}
-        nav={
-          <span style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-            {/* PRB.12 — the §14.5 level-0 balance chip (held rides the tooltip). */}
-            {balance ? (
-              <BalanceChip
-                spendableCredits={balance.spendableCredits}
-                heldCredits={balance.heldCredits}
-                label={fmt(COPY.balance.labelFmt, { n: balance.spendableCredits.toLocaleString() })}
-                heldTitle={fmt(COPY.balance.heldTitleFmt, { n: balance.heldCredits.toLocaleString() })}
-              />
-            ) : null}
-            <a href="/voices" style={{ fontSize: "13px" }}>{COPY.voice.nav}</a>
-            <a href="/app/settings/account" style={{ fontSize: "13px" }}>{COPY.settings.nav}</a>
-            {/* the session teardown stays a native document POST — never a fetch (design/22 §1). */}
-            <form method="post" action="/logout" style={{ margin: 0 }}>
-              <button type="submit" style={{ background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", fontSize: "13px" }}>
-                {COPY.projects.signOut}
-              </button>
-            </form>
-          </span>
-        }
-        footer={<span>{COPY.footer}</span>}
-      >
-        <PageTitle>{COPY.projects.heading}</PageTitle>
+      <PageBody>
+        {/* R7SHELL.1b — the leaf header (balance chip, Voices/Settings links, Sign out) is
+            gone: the sidebar's items + account menu carry all of it (REQ-SHELL-2/3). */}
+        <PageHeader title={COPY.projects.heading} />
         {/* the controls bar: search, Group-by (persisted), the Voice filter chips, the Archived
             affordance — the SSR markup verbatim; submits ride the delegated handler. */}
         <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "14px" }}>
@@ -417,7 +388,7 @@ export function ProjectHomeSurface({
             ) : null}
           </section>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }

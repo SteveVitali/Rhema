@@ -989,6 +989,12 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, f);
     const main = el()!;
+    // R7SHELL.1b / UXC-12 — the reseed's nav is the crumb: the project target + its own label,
+    // never "All voices" pointing at /p/:slug.
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.textContent).toBe(SLUG);
+    expect(crumb?.querySelector('[aria-current="page"]')?.textContent).toBe(VC.detail.reseedPreviewCta);
     const diff = (await settled("[data-reseed-diff]"));
     expect(diff.querySelector('[data-diff-kind="added"]')?.textContent).toContain("new guidance");
     expect(diff.querySelector('[data-diff-kind="removed"]')?.textContent).toContain("old guidance");

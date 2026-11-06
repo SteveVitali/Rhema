@@ -1558,6 +1558,8 @@ export const COPY = {
       guidanceHeading: "Standing guidance",
       saveCta: "Save settings",
       saved: "Saved.",
+      /** UXC-12 — the degraded-twin note: this page's own outage copy, never billing's. */
+      unavailable: "Project settings are temporarily unavailable — try again in a moment.",
     },
   },
   usage: {
@@ -2595,6 +2597,15 @@ export const COPY = {
   // SSR document exists to link (the `?ssr=1` machinery is gone with the flag it escaped).
   spaShell: {
     noJs: "This app surface needs JavaScript — the Rhēma shell mounts it on top of your session.",
+  },
+
+  // R7SHELL.1b (REQ-SHELL-3) — the page-header content row's breadcrumb strings. The
+  // `Project › Surface` trail replaces the four hand-picked back-link idioms (R6 §3).
+  pageHeader: {
+    /** The `<nav>` landmark label — the trail is generic, not "settings sections". */
+    breadcrumbAria: "Breadcrumb",
+    /** The visual separator between crumbs (aria-hidden — never read aloud). */
+    separator: "›",
   },
 
   // R7SHELL.1a (REQ-SHELL-1/2; ADR-128) — the AppShell sidebar + account menu's chrome strings.

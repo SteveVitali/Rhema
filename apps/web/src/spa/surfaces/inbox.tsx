@@ -19,12 +19,13 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DecisionsList, PageTitle, Shell } from "@rhema/ui";
+import { DecisionsList } from "@rhema/ui";
 import type { GateCardDto, InboxItemDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { decisionsLabels, gateCardFor, gateCardModel } from "../../gate-card.js";
 import { bffFetch } from "../bff.js";
 import { useGatePresence } from "../gate-presence.js";
+import { PageBody, PageHeader } from "../page-header.js";
 import { inboxQuery, type BffInboxTwin } from "../queries.js";
 
 const { inbox: IN } = COPY;
@@ -161,17 +162,10 @@ export function InboxSurface({
   const voices = items.filter((i) => i.kind === "voice");
   return (
     <div data-spa-surface>
-      <Shell
-        brand={COPY.brand}
-        nav={
-          <>
-            <a href="/app">{COPY.project.backToList}</a>
-            <a href="/app/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
-          </>
-        }
-        footer={<span>{COPY.footer}</span>}
-      >
-        <PageTitle>{IN.heading}</PageTitle>
+      <PageBody>
+        {/* R7SHELL.1b / UXC-12 — the leaf header (and its stray Billing link) is gone; the
+            sidebar carries every nav item now. */}
+        <PageHeader title={IN.heading} />
         {/* UX.1 — the count IS the rendered waiting rows. The api's badge count stays the nav
             badge's semantics; it can never disagree with this line because this line IS
             `blocked.length`. */}
@@ -314,7 +308,7 @@ export function InboxSurface({
             ))}
           </section>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }

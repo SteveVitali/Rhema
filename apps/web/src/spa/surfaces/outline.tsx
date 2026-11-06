@@ -24,18 +24,15 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { OutlineSections, PageTitle, Shell } from "@rhema/ui";
+import { OutlineSections } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { outlineLabels } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
 import type { BffOutlinePromoteTwin, BffOutlineTwin } from "../queries.js";
+import { PageBody, PageHeader } from "../page-header.js";
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals.
 const { outlinePage: O, promote: P } = COPY;
-
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
 
 /** Replace `{key}` placeholders in a copy template with string/number values. */
 function fmt(template: string, vars: Record<string, string | number>): string {
@@ -215,20 +212,22 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
   if (!data) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{O.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={O.heading} />
           <p style={{ color: "var(--shell-fg-muted)" }}>{O.notFound}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
   const editable = data.editable && compact !== true;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{O.heading}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={O.heading}
+          crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: O.heading }]}
+        />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${data.slug}`} style={{ color: "var(--accent)" }}>{O.backToProject}</a>
           {data.draftEstimateCredits != null ? (
             <span data-draft-estimate="true" style={{ marginLeft: "12px" }}>
               {fmt(O.draftEstimateFmt, { n: data.draftEstimateCredits.toLocaleString("en-US") })}
@@ -275,7 +274,7 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
         {data.cited ? (
           <p data-cited-note="true" style={{ marginTop: "16px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{O.citedNote}</p>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -327,21 +326,21 @@ export function OutlinePromoteSurface({ data }: OutlinePromoteSurfaceProps): Rea
   if (!data) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{P.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={P.heading} />
           <p style={{ color: "var(--shell-fg-muted)" }}>{P.notFound}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
   const { promotion: f } = data;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{P.heading}</PageTitle>
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${data.slug}`} style={{ color: "var(--accent)" }}>{P.backToProject}</a>
-        </p>
+      <PageBody>
+        <PageHeader
+          title={P.heading}
+          crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: P.heading }]}
+        />
         {data.started ? (
           <p data-started="true" style={{ fontSize: "13px", color: "var(--shell-fg)" }}>{P.startedFmt}</p>
         ) : (
@@ -372,7 +371,7 @@ export function OutlinePromoteSurface({ data }: OutlinePromoteSurfaceProps): Rea
             </div>
           </form>
         )}
-      </Shell>
+      </PageBody>
     </div>
   );
 }

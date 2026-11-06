@@ -749,6 +749,10 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
     const { router } = await mountAt(`/p/${SLUG}/obligations/new`, BOOT, f.impl);
     const root = el()!;
     expect(root.querySelector("h1")?.textContent).toBe(COPY.obligation.heading);
+    // R7SHELL.1b — the project-title nav idiom is the crumb now.
+    const crumb = root.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector('[data-breadcrumb-link]')?.textContent).toBe(DOSSIER.projectTitle);
     const form = await settled<HTMLFormElement>("form[data-obligation-form]");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/obligations`);
     const title = form.querySelector<HTMLInputElement>('input[name="title"]')!;

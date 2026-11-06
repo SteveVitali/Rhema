@@ -36,7 +36,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import type { FormEvent, ReactNode } from "react";
-import { PageTitle, Shell } from "@rhema/ui";
+import { PageBody, PageHeader } from "../page-header.js";
 import type { BillingPlanDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { billingNoticeFor } from "../../billing-copy.js";
@@ -46,11 +46,7 @@ import type { BffBillingReturnTwin, BffBillingSettingsTwin } from "../queries.js
 import { SettingsNav } from "./settings.js";
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals.
-const { billing: B, project: PRJ, phoneBlocked: PB } = COPY;
-
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
+const { billing: B, phoneBlocked: PB } = COPY;
 
 /** P1.19's phone-width note — verbatim from pages.tsx `PhoneBlockedNote`. */
 function PhoneBlockedNote(): ReactNode {
@@ -207,11 +203,11 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
   if (!billing) {
     return (
       <div data-spa-surface onSubmit={onSubmit}>
-        <Shell brand={COPY.brand} nav={<a href="/app">{PRJ.backToList}</a>} footer={footer()}>
-          <PageTitle>{B.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={B.heading} />
           <SettingsNav active="billing" />
           <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-billing-down="true">{B.stripeDownNote}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
@@ -226,8 +222,8 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
   const noticeCopy = notice != null && notice !== "" ? billingNoticeFor(notice) : null;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} nav={<a href="/app">{PRJ.backToList}</a>} footer={footer()}>
-        <PageTitle>{B.heading}</PageTitle>
+      <PageBody>
+        <PageHeader title={B.heading} />
         <SettingsNav active="billing" />
         {/* `key` = the leaf's flash state: an envelope-nav lands on the same path with a new
             flash, and the key remounts the uncontrolled forms so they re-read the
@@ -432,7 +428,7 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
         </>
         )}
         </div>
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -455,8 +451,8 @@ export function BillingReturnSurface({ twin }: { readonly twin: BffBillingReturn
     : "/app/settings/billing";
   return (
     <div data-spa-surface>
-      <Shell brand={COPY.brand} nav={<a href="/app/settings/billing">{B.nav}</a>} footer={footer()}>
-        <PageTitle>{B.returnHeading}</PageTitle>
+      <PageBody>
+        <PageHeader title={B.returnHeading} />
         <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
           {state === "completed"
             ? B.returnDone
@@ -471,7 +467,7 @@ export function BillingReturnSurface({ twin }: { readonly twin: BffBillingReturn
             {state === "completed" ? B.returnContinue : B.returnBack}
           </a>
         </p>
-      </Shell>
+      </PageBody>
     </div>
   );
 }

@@ -23,9 +23,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { Fragment, useState, type FormEvent, type ReactNode } from "react";
-import { Chip, PageTitle, Shell } from "@rhema/ui";
+import { Chip } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { BffError, bffFetch } from "../bff.js";
+import { PageBody, PageHeader } from "../page-header.js";
 import type {
   BffFigureCardTwin,
   BffFiguresTwin,
@@ -34,10 +35,6 @@ import type {
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals.
 const { figuresPage: F, figureCard: FC, visualize: V } = COPY;
-
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
 
 /** Replace `{key}` placeholders in a copy template with string/number values. */
 function fmt(template: string, vars: Record<string, string | number>): string {
@@ -111,20 +108,22 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
   if (!data) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{F.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={F.heading} />
           <p style={{ color: "var(--shell-fg-muted)" }}>{F.empty}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
   return (
     <div data-spa-surface>
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{F.heading}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={F.heading}
+          crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: F.heading }]}
+        />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${data.slug}`} style={{ color: "var(--accent)" }}>{F.backToProject}</a>
-          <a href={`/p/${data.slug}/visualize`} data-new-figure="true" style={{ color: "var(--accent)", marginLeft: "12px" }}>{F.newLabel}</a>
+          <a href={`/p/${data.slug}/visualize`} data-new-figure="true" style={{ color: "var(--accent)" }}>{F.newLabel}</a>
         </p>
         {data.items.length === 0 ? (
           <p data-figures-empty="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{F.empty}</p>
@@ -159,7 +158,7 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
             ))}
           </ul>
         )}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -230,10 +229,10 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
   if (!data) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{F.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={F.heading} />
           <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
@@ -247,11 +246,15 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
     const img = card;
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{img.title || FC.untitled}</PageTitle>
-          <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-            <a href={`/p/${slug}/figures`} style={{ color: "var(--accent)" }}>{FC.backToFigures}</a>
-          </p>
+        <PageBody>
+          <PageHeader
+            title={img.title || FC.untitled}
+            crumbs={[
+              { label: slug, href: `/p/${slug}` },
+              { label: F.heading, href: `/p/${slug}/figures` },
+              { label: img.title || FC.untitled },
+            ]}
+          />
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
             <Chip label={FC.imageKindChip} />
             <Chip label={FC.importedChip} />
@@ -275,7 +278,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
               ))}
             </ul>
           </details>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
@@ -284,11 +287,17 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
   const shownNotice = postError ?? notice;
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{card.title || FC.untitled}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={card.title || FC.untitled}
+          crumbs={[
+            { label: slug, href: `/p/${slug}` },
+            { label: F.heading, href: `/p/${slug}/figures` },
+            { label: card.title || FC.untitled },
+          ]}
+        />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${slug}/figures`} style={{ color: "var(--accent)" }}>{FC.backToFigures}</a>
-          {saved ? <span data-saved-note="true" style={{ marginLeft: "12px" }}>{COPY.outlinePage.savedNote}</span> : null}
+          {saved ? <span data-saved-note="true">{COPY.outlinePage.savedNote}</span> : null}
           {shownNotice ? <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{shownNotice}</span> : null}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
@@ -453,7 +462,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
             </Fragment>
           )}
         </section>
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -528,20 +537,20 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
   if (!data) {
     return (
       <div data-spa-surface>
-        <Shell brand={COPY.brand} footer={footer()}>
-          <PageTitle>{V.heading}</PageTitle>
+        <PageBody>
+          <PageHeader title={V.heading} />
           <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
-        </Shell>
+        </PageBody>
       </div>
     );
   }
   return (
     <div data-spa-surface onSubmit={onSubmit}>
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{V.heading}</PageTitle>
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${data.slug}`} style={{ color: "var(--accent)" }}>{V.backToProject}</a>
-        </p>
+      <PageBody>
+        <PageHeader
+          title={V.heading}
+          crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: V.heading }]}
+        />
         <form key={contentKey} method="post" action={`/p/${data.slug}/visualize`} data-visualize-form="true" style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "560px" }}>
           {data.figureId ? <input type="hidden" name="figureId" value={data.figureId} /> : null}
           {data.priorVersion != null ? <input type="hidden" name="priorVersion" value={String(data.priorVersion)} /> : null}
@@ -585,7 +594,7 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
             </button>
           </div>
         </form>
-      </Shell>
+      </PageBody>
     </div>
   );
 }

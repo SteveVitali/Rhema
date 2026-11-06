@@ -30,7 +30,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
 import type { TimelineRun } from "@rhema/findings-core";
-import { PageTitle, RunReport } from "@rhema/ui";
+import { RunReport } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { chatPanel } from "../../chat-pane.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
@@ -40,6 +40,7 @@ import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
+import { PageHeader } from "../page-header.js";
 import type { BffRunReportTwin } from "../queries.js";
 import { TimelineGateCard } from "./dossier.js";
 
@@ -248,7 +249,11 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={busy || undefined}>
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
-      <PageTitle>{COPY.report.heading}</PageTitle>
+      {/* R7SHELL.1b — the title row carries the Project › Surface crumb (REQ-SHELL-3/5). */}
+      <PageHeader
+        title={COPY.report.heading}
+        crumbs={[{ label: runReport.slug, href: `/p/${slug}` }, { label: COPY.report.heading }]}
+      />
       <div style={{ margin: "16px 0" }}>
         <RunReport
           view={runReport.report.report}

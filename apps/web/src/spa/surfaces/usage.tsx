@@ -11,19 +11,15 @@
 // `/app/usage/r/:runId` rows link to the server-owned 302 surface verbatim.
 
 import type { ReactNode } from "react";
-import { Shell, PageTitle } from "@rhema/ui";
 import type { UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { useDwell } from "../dwell.js";
+import { PageBody, PageHeader } from "../page-header.js";
 
 // Destructure the two COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>`
 // literals and every leaf it cites must be a string; the branch handles keep the same leaves
 // without walking a non-leaf path in JSX.
 const { usage: U, projectUsage: P } = COPY;
-
-function footer(): ReactNode {
-  return <span>{COPY.footer}</span>;
-}
 
 /** `/usage` — the §14.5 level-1 glance + the level-1 account read (buckets, MTD, warnings, CSV). */
 export function UsageSurface({
@@ -39,8 +35,8 @@ export function UsageSurface({
   const credits = (n: number) => `${n.toLocaleString()} ${U.creditsSuffix}`;
   return (
     <div data-spa-surface>
-      <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-        <PageTitle>{U.heading}</PageTitle>
+      <PageBody>
+        <PageHeader title={U.heading} />
         {account ? (
           <section data-usage-account="true">
             <p style={{ fontSize: "14px", margin: "12px 0" }} data-usage-plan="true">
@@ -146,7 +142,7 @@ export function UsageSurface({
             )}
           </>
         ) : null}
-      </Shell>
+      </PageBody>
     </div>
   );
 }
@@ -160,12 +156,14 @@ export function ProjectUsageSurface({
 }): ReactNode {
   return (
     <div data-spa-surface>
-      <Shell
-        brand={COPY.brand}
-        nav={<a href={`/p/${encodeURIComponent(usageProject.slug)}`}>{P.backToProject}</a>}
-        footer={footer()}
-      >
-        <PageTitle>{P.heading} — {usageProject.projectName}</PageTitle>
+      <PageBody>
+        <PageHeader
+          title={P.heading}
+          crumbs={[
+            { label: usageProject.projectName, href: `/p/${encodeURIComponent(usageProject.slug)}` },
+            { label: P.heading },
+          ]}
+        />
         <p style={{ fontSize: "14px", margin: "12px 0" }} data-project-usage-total="true">
           {P.totalFmt
             .replace("{n}", usageProject.totalCredits.toLocaleString())
@@ -203,7 +201,7 @@ export function ProjectUsageSurface({
             </tbody>
           </table>
         )}
-      </Shell>
+      </PageBody>
     </div>
   );
 }

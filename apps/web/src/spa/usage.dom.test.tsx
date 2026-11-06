@@ -261,7 +261,7 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     await mountAt(`/p/${SLUG}/usage`, BOOT, makeFetch());
     expect(document.documentElement.getAttribute("data-route")).toBe("/p/$project/usage");
     const main = el()!;
-    expect(main.querySelector("h1")?.textContent).toBe("Usage — Alpha Essay");
+    expect(main.querySelector("h1")?.textContent).toBe(COPY.projectUsage.heading);
     expect(main.querySelector("[data-project-usage-total]")?.textContent).toBe("88 cr across 2 runs");
     expect(main.querySelector("[data-project-usage-runs]")).not.toBeNull();
     expect(main.querySelector('[data-project-usage-run="run_1"]')).not.toBeNull();
@@ -270,9 +270,11 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     );
     expect(report?.getAttribute("href")).toBe("/app/usage/r/run_1");
     expect(report?.textContent).toBe(COPY.projectUsage.runReportCta);
-    const back = main.querySelector<HTMLAnchorElement>("nav a");
-    expect(back?.getAttribute("href")).toBe(`/p/${SLUG}`);
-    expect(back?.textContent).toBe(COPY.projectUsage.backToProject);
+    // R7SHELL.1b — the "Back to the project" nav idiom is now the Project › Surface crumb.
+    const crumb = main.querySelector("[data-page-breadcrumb]");
+    expect(crumb?.querySelector<HTMLAnchorElement>('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector<HTMLAnchorElement>('[data-breadcrumb-link]')?.textContent).toBe("Alpha Essay");
+    expect(crumb?.querySelector('[aria-current="page"]')?.textContent).toBe(COPY.projectUsage.heading);
     await axeCheck((await settled("[data-spa-surface]")));
   });
 
