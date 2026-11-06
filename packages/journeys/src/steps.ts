@@ -1214,17 +1214,10 @@ const R1: StepFn = async (ctx) => {
   const heading = page.locator('h1, h2, [role="heading"]', { hasText: "Your projects" });
   if ((await heading.count()) === 0) throw new Error('project list heading "Your projects" absent');
   const rowHit = page.locator(`text=${title}`);
+  // R7HOME.1 — the list is always expanded (no collapsed group to open); the row is either
+  // present or the leg fails.
   if ((await rowHit.count()) === 0) {
-    // maybe it landed under the collapsed Quiet group — expand and re-check.
-    const quiet = page.locator('details[data-collapsed-group="quiet"] > summary');
-    if ((await quiet.count()) > 0) {
-      await clickActionable(quiet.first(), "Quiet group");
-      if ((await rowHit.count()) === 0) {
-        throw new Error(`project "${title}" not listed (even under Quiet)`);
-      }
-    } else {
-      throw new Error(`project "${title}" not listed and no Quiet group to expand`);
-    }
+    throw new Error(`project "${title}" not listed`);
   }
   assertBundleParity(ctx);
 };
@@ -2333,15 +2326,7 @@ async function x1Fixture(ctx: StepCtx): Promise<X1Fixture> {
       await gotoOk(a.page, `${ctx.webBaseUrl}/app`, ctx);
       const aBody = (await a.page.textContent("body")) ?? "";
       if (!aBody.includes(aMarker)) {
-        const quiet = a.page.locator('details[data-collapsed-group="quiet"] > summary');
-        if ((await quiet.count()) > 0) {
-          await quiet.first().click();
-          const again = (await a.page.textContent("body")) ?? "";
-          if (!again.includes(aMarker))
-            throw new Error("tenant A cannot see its own marker (vacuous check)");
-        } else {
-          throw new Error("tenant A cannot see its own marker (vacuous check)");
-        }
+        throw new Error("tenant A cannot see its own marker (vacuous check)");
       }
       return { aMarker, aVoice, aSlug };
     })();

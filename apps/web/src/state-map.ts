@@ -1,16 +1,18 @@
-import type { ProjectRow, ProjectStateDto, VoiceListRowDto } from "@rhema/api-client";
+import type { ProjectRow, ProjectStateDto, VoiceListRowDto, ProtocolCardDto } from "@rhema/api-client";
 import type {
   ProjectRowView,
   RowActionView,
   RowIndicator,
-  SecondaryChipView,
   Tone,
 } from "@rhema/ui";
 import { COPY } from "./copy.js";
 
-// Map the api's derived §6.3 state DTO onto the presentational row view (P1.04 — the §5.2 home). The
-// pill/action/attention group come straight from the state function + assembler (no re-derivation, no
-// stored status): this file maps facts → view, never computes state.
+// Map the api's derived §6.3 state DTO onto the presentational row view (P1.04 — the §5.2 home;
+// R7HOME.1 — REQ-HOME-1's flat recent list). The state facts come straight from the state function
+// + assembler (no re-derivation, no stored status): this file maps facts → view, never computes
+// state. ADR-128: the QUIET group is retired — every row renders in the flat list sorted by last
+// edit; "Waiting on you" and "Running" pin above it only when non-empty; attention grouping is
+// the opt-in Group-by, and "Quiet"/"Unfiled"/"Sheet" never render as labels.
 
 function tone(state: ProjectStateDto): Tone {
   if (state.overlay === "running") return "running";
@@ -27,7 +29,7 @@ function tone(state: ProjectStateDto): Tone {
   }
 }
 
-/** The §5.2 state icon for a row: running/needs-you/ready/quiet, red when the latest run failed. */
+/** The status dot's five indicators: running / needs-you / ready / quiet(neutral) / failed. */
 function indicatorFor(row: ProjectRow): RowIndicator {
   if (row.state.overlay === "running") return "running";
   if (row.state.overlay === "needs_you") return "needs_you";
@@ -36,130 +38,163 @@ function indicatorFor(row: ProjectRow): RowIndicator {
   return "quiet";
 }
 
-/** The row's "…" menu — all seven §5.2 actions; disabled items carry their reason. */
+/** The est. label a paid menu item carries ("est. 4,095 cr"); null figure ⇒ the bare verb. */
+function estLabel(credits: number | null | undefined): string | undefined {
+  return credits != null ? COPY.projectHome.estimateFmt.replace("{n}", credits.toLocaleString("en-US")) : undefined;
+}
+
+/**
+ * The row's ⋯ menu (R7HOME.1). One hover action (Open) lives on the row itself; the menu holds
+ * the navigation items, the paid verbs (each showing the shared estimator's figure and opening
+ * the run sheet — the sheet stays the only run creator), and the lifecycle actions. A disabled
+ * no-op item is NOT shown (a verb the row can never run simply isn't listed).
+ */
 function rowActions(row: ProjectRow): RowActionView[] {
   const slugHref = `/p/${row.slug}`;
   const archived = row.archivedAt != null;
   const hasDrafts = row.headDraftId != null;
-  const actions: RowActionView[] = [
-    { key: "open", label: COPY.projectHome.actionOpen, href: slugHref },
+  const items: RowActionView[] = [
     { key: "rename", label: COPY.projectHome.actionRename, href: `${slugHref}?rename=1` },
+    { key: "settings", label: COPY.projectHome.actionSettings, href: `${slugHref}/settings` },
+    { key: "export", label: COPY.projectHome.actionExport, href: `${slugHref}/export` },
+  ];
+  // The paid verbs — the run sheet is the only run creator; the menu item opens it.
+  if (hasDrafts) {
+    items.push({
+      key: "wf_review",
+      label: COPY.runSheet.runReview,
+      href: `${slugHref}/run?workflow=review`,
+      paid: true,
+      ...(estLabel(row.estimates?.review) != null ? { estimateLabel: estLabel(row.estimates?.review) } : {}),
+    });
+    if (row.state.key === "reviewed" || row.state.key === "edited_by_you") {
+      items.push({
+        key: "wf_revise",
+        label: COPY.runSheet.runRevise,
+        href: `${slugHref}/run?workflow=revise`,
+        paid: true,
+        ...(estLabel(row.estimates?.revise) != null ? { estimateLabel: estLabel(row.estimates?.revise) } : {}),
+      });
+    }
+    items.push({
+      key: "wf_fact_check",
+      label: COPY.runSheet.runFactCheck,
+      href: `${slugHref}/run?workflow=fact_check`,
+      paid: true,
+      ...(estLabel(row.estimates?.factCheck) != null ? { estimateLabel: estLabel(row.estimates?.factCheck) } : {}),
+    });
+  }
+  items.push(
     archived
       ? { key: "unarchive", label: COPY.projectHome.actionUnarchive, formAction: `/p/${row.slug}/unarchive` }
       : { key: "archive", label: COPY.projectHome.actionArchive, formAction: `/p/${row.slug}/archive` },
     { key: "duplicate", label: COPY.projectHome.actionDuplicate, formAction: `/p/${row.slug}/duplicate` },
-    {
-      key: "change_voice",
-      label: COPY.projectHome.actionChangeVoice,
-      // REQ-PERSONA-20 / §9.6 — Voice is soft-locked once drafts exist; afterwards it is a
-      // Voice-settings action, not a list-row action. Disabled items say why.
-      ...(hasDrafts ? { disabledReason: COPY.projectHome.voiceLockedReason } : {}),
-    },
-    { key: "export", label: COPY.projectHome.actionExport, href: `${slugHref}/export` },
     { key: "delete", label: COPY.projectHome.actionDelete, formAction: `/p/${row.slug}/delete` },
-  ];
-  return actions;
-}
-
-/** The secondary workflow chips under a row — derived from the SAME suggested action. */
-function secondaryChips(row: ProjectRow): SecondaryChipView[] {
-  const chips: SecondaryChipView[] = [];
-  const slugHref = `/p/${row.slug}`;
-  if (row.activeRun) {
-    chips.push({ key: "run", label: COPY.projectHome.chipRun, href: `${slugHref}/run` });
-  }
-  if (row.state.suggested.action === "review" || row.state.suggested.action === "revise") {
-    chips.push({ key: "sheet", label: COPY.projectHome.chipSheet, href: `${slugHref}/run` });
-  }
-  return chips;
-}
-
-/** The all-workflows menu entries — every workflow link with its disabled reason (§5.2). */
-function workflowEntries(row: ProjectRow): RowActionView[] {
-  const slugHref = `/p/${row.slug}`;
-  const noDrafts = row.headDraftId == null;
-  return [
-    {
-      key: "wf_review",
-      label: COPY.runSheet.runReview,
-      ...(noDrafts ? { disabledReason: COPY.projectHome.needsDraftReason } : { href: `${slugHref}/run?workflow=review` }),
-    },
-    {
-      key: "wf_revise",
-      label: COPY.runSheet.runRevise,
-      ...(row.state.key !== "reviewed" && row.state.key !== "edited_by_you"
-        ? { disabledReason: COPY.projectHome.needsReviewReason }
-        : { href: `${slugHref}/run?workflow=revise` }),
-    },
-    {
-      key: "wf_fact_check",
-      label: COPY.runSheet.runFactCheck,
-      ...(noDrafts ? { disabledReason: COPY.projectHome.needsDraftReason } : { href: `${slugHref}/run?workflow=fact_check` }),
-    },
-  ];
+  );
+  return items;
 }
 
 export interface ToRowViewCtx {
-  /** the voice picker's options for the enabled "Change voice" action. */
+  /** the protocol pick labels (protocolId → display name). */
+  readonly protocols?: readonly ProtocolCardDto[];
+  /** voices are kept for the Group-by headers' pills (never a row chip). */
   readonly voices?: readonly VoiceListRowDto[];
+  /** the "Edited …" label source — injectable for deterministic tests. */
+  readonly nowMs?: number;
+}
+
+/**
+ * The "Edited …" label (R7HOME.1's row anatomy). Relative inside a week ("Edited 3d ago"),
+ * absolute past it ("Edited 2026-03-05") — deterministic given `nowMs`.
+ */
+export function editedLabel(iso: string, nowMs: number): string {
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then)) return COPY.projectHome.editedAt.replace("{t}", iso.slice(0, 10));
+  const days = Math.floor((nowMs - then) / 86_400_000);
+  if (days <= 0) return COPY.projectHome.editedToday;
+  if (days === 1) return COPY.projectHome.editedYesterday;
+  if (days < 7) return COPY.projectHome.editedDaysAgo.replace("{n}", String(days));
+  return COPY.projectHome.editedAt.replace("{t}", iso.slice(0, 10));
 }
 
 export function toProjectRowView(row: ProjectRow, ctx: ToRowViewCtx = {}): ProjectRowView {
   const href = `/p/${row.slug}`;
-  const label = row.state.suggested.label;
-  // PRB.07 — "Revise using your edits" lands in the source editor on the draft head (the manual-revision
-  // surface IS the action); every other action routes into the project view like before.
-  const actionHref =
-    row.state.suggested.action === "revise_using_edits" && row.headDraftId
-      ? `${href}/edit/${row.headDraftId}`
-      : href;
-  const action = row.state.suggested.action !== "none" && label ? { label, href: actionHref } : undefined;
-  const voiceLocked = row.headDraftId != null;
+  const protocol = ctx.protocols?.find((p) => p.id === row.protocolId);
   return {
     id: row.id,
     title: row.title,
     href,
-    pill: { label: row.state.pill, tone: tone(row.state) },
-    action,
-    versionLabel: row.headDraftN != null ? `v${row.headDraftN}` : null,
-    statusLine: row.statusLine,
     indicator: indicatorFor(row),
-    voiceChip: row.voice
-      ? {
-          label: row.voice.name ?? COPY.projectHome.unfiledVoice,
-          href: `/v/${row.voice.personaId}`,
-          statusLabel: row.voice.status.pill.label,
-          statusTone: row.voice.status.pill.tone as Tone,
-        }
-      : null,
-    unfiledLabel: COPY.projectHome.unfiled,
-    actions: [...rowActions(row), ...workflowEntries(row)],
-    secondaryChips: secondaryChips(row),
-    voiceOptions: !voiceLocked
-      ? (ctx.voices ?? []).map((v) => ({
-          personaId: v.personaId,
-          name: v.name ?? COPY.projectHome.unfiledVoice,
-          statusLabel: v.status.pill.label,
-        }))
-      : [],
-    voiceFormAction: !voiceLocked ? `/p/${row.slug}/voice` : undefined,
-    currentPersonaId: row.voice?.personaId ?? null,
-    noVoiceLabel: COPY.voice.picker.noVoice,
+    stateLabel: row.state.pill,
+    stateTone: tone(row.state),
+    versionLabel: row.headDraftN != null ? `v${row.headDraftN}` : null,
+    protocolLabel: protocol?.name ?? null,
+    // REQ-HOME-1 — the Voice name renders ONLY when set; "Unfiled" is never a row chip.
+    voiceLabel: row.voice?.name ?? null,
+    statusLine: row.statusLine,
+    editedLabel: row.lastEditedAt != null ? editedLabel(row.lastEditedAt, ctx.nowMs ?? Date.now()) : null,
+    openLabel: COPY.projectHome.actionOpen,
+    menu: rowActions(row),
+    menuTriggerLabel: COPY.projectHome.menuTrigger,
+    statusDotLegend: {
+      running: COPY.projectHome.legendRunning,
+      needs_you: COPY.projectHome.legendNeedsYou,
+      ready: COPY.projectHome.legendReady,
+      quiet: COPY.projectHome.legendQuiet,
+      failed: COPY.projectHome.legendFailed,
+    },
   };
 }
 
-// ---- §5.2 grouping (the assembled row's `group` field drives both modes) ----
+// ---- REQ-HOME-1's flat list + non-empty attention sections ----
 
-/** An attention bucket of api rows — mapped to views at render. */
-export interface AttentionGroup {
-  readonly key: "needs_you" | "running" | "ready_to_read" | "quiet";
+/** An attention section pinned above the flat list — rendered only when non-empty. */
+export interface AttentionSection {
+  readonly key: "needs_you" | "running";
   readonly label: string;
   readonly rows: readonly ProjectRow[];
-  readonly collapsed?: boolean;
-  readonly summary?: string;
 }
 
-/** A voice bucket of api rows — Unfiled first; `olderProfileCount` feeds the header's count. */
+/** Sort the flat list by last edit (freshest first); a missing stamp sorts last, ties by title. */
+export function sortByLastEdit(rows: readonly ProjectRow[]): ProjectRow[] {
+  return [...rows].sort((a, b) => {
+    const at = a.lastEditedAt != null ? Date.parse(a.lastEditedAt) : Number.NEGATIVE_INFINITY;
+    const bt = b.lastEditedAt != null ? Date.parse(b.lastEditedAt) : Number.NEGATIVE_INFINITY;
+    if (at !== bt) return bt - at;
+    const t = a.title.localeCompare(b.title);
+    return t !== 0 ? t : a.id.localeCompare(b.id);
+  });
+}
+
+/**
+ * The non-empty attention sections (ADR-128): "Waiting on you" (needs_you, soonest deadline
+ * first) then "Running". `ready_to_read` rows stay IN the flat list (their green dot + status
+ * line carry the signal — the amendment names exactly two pinned sections). Archived rows are
+ * excluded here; the caller splits them into the Archived section.
+ */
+export function attentionSections(rows: readonly ProjectRow[]): AttentionSection[] {
+  const needsYou = rows
+    .filter((r) => r.group === "needs_you" && r.archivedAt == null)
+    .sort((a, b) => {
+      const at = a.needsYouDeadlineAt != null ? Date.parse(a.needsYouDeadlineAt) : Number.POSITIVE_INFINITY;
+      const bt = b.needsYouDeadlineAt != null ? Date.parse(b.needsYouDeadlineAt) : Number.POSITIVE_INFINITY;
+      return at - bt;
+    });
+  const running = rows.filter((r) => r.group === "running" && r.archivedAt == null);
+  const out: AttentionSection[] = [];
+  if (needsYou.length > 0) out.push({ key: "needs_you", label: COPY.projectHome.waitingOnYou, rows: needsYou });
+  if (running.length > 0) out.push({ key: "running", label: COPY.projectHome.runningSection, rows: running });
+  return out;
+}
+
+/** The flat list's members — every non-attention row (attention rows never repeat below). */
+export function flatRows(rows: readonly ProjectRow[]): ProjectRow[] {
+  return sortByLastEdit(
+    rows.filter((r) => r.archivedAt == null && r.group !== "needs_you" && r.group !== "running"),
+  );
+}
+
+/** A voice bucket of api rows — Unfiled first (the opt-in Group-by; ADR-128 keeps the taxonomy). */
 export interface VoiceGroup {
   readonly key: string;
   readonly label: string;
@@ -171,49 +206,7 @@ export interface VoiceGroup {
   readonly rows: readonly ProjectRow[];
 }
 
-const GROUP_LABELS: Record<AttentionGroup["key"], string> = {
-  needs_you: "Needs you",
-  running: "Running",
-  ready_to_read: "Ready to read",
-  quiet: "Quiet",
-};
-const GROUP_ORDER: readonly AttentionGroup["key"][] = ["needs_you", "running", "ready_to_read", "quiet"];
-
-/** Group rows into the four §5.2 attention groups; Needs-you sorts by soonest deadline; Quiet collapses
- *  with its Unfiled/Voice sub-counts. Archived rows are excluded unless the caller pre-included them. */
-export function groupByAttention(rows: readonly ProjectRow[]): AttentionGroup[] {
-  const needsYou = rows
-    .filter((r) => r.group === "needs_you" && r.archivedAt == null)
-    .sort((a, b) => {
-      const at = a.needsYouDeadlineAt != null ? Date.parse(a.needsYouDeadlineAt) : Number.POSITIVE_INFINITY;
-      const bt = b.needsYouDeadlineAt != null ? Date.parse(b.needsYouDeadlineAt) : Number.POSITIVE_INFINITY;
-      return at - bt;
-    });
-  const running = rows.filter((r) => r.group === "running" && r.archivedAt == null);
-  const ready = rows.filter((r) => r.group === "ready_to_read" && r.archivedAt == null);
-  // a row without a server-derived group (older api, partial fixture) lands Quiet — never dropped.
-  const quiet = rows.filter((r) => (r.group ?? "quiet") === "quiet" && r.archivedAt == null);
-  const quietUnfiled = quiet.filter((r) => r.voice == null).length;
-  const summary =
-    quiet.length > 0
-      ? `${quietUnfiled} ${COPY.projectHome.unfiled} · ${quiet.length - quietUnfiled} with a ${COPY.projectHome.voiceNoun}`
-      : undefined;
-  const buckets: Record<AttentionGroup["key"], readonly ProjectRow[]> = {
-    needs_you: needsYou,
-    running,
-    ready_to_read: ready,
-    quiet,
-  };
-  return GROUP_ORDER.map((key) => ({
-    key,
-    label: GROUP_LABELS[key],
-    rows: buckets[key],
-    collapsed: key === "quiet",
-    ...(key === "quiet" && summary ? { summary } : {}),
-  }));
-}
-
-/** The alternate §5.2 grouping — by Voice, Unfiled first, headers count older profiles. */
+/** The alternate grouping — by Voice, Unfiled first, headers count older profiles (opt-in). */
 export function groupByVoice(rows: readonly ProjectRow[]): VoiceGroup[] {
   const byVoice = new Map<string, { label: string; statusLabel?: string; statusTone?: Tone; older: number; rows: ProjectRow[] }>();
   const unfiled: ProjectRow[] = [];
@@ -237,7 +230,7 @@ export function groupByVoice(rows: readonly ProjectRow[]): VoiceGroup[] {
   }
   const groups: VoiceGroup[] = [];
   if (unfiled.length > 0) {
-    groups.push({ key: "unfiled", label: COPY.projectHome.unfiled, olderProfileCount: 0, rows: unfiled });
+    groups.push({ key: "unfiled", label: COPY.projectHome.unfiled, olderProfileCount: 0, rows: sortByLastEdit(unfiled) });
   }
   for (const [personaId, g] of [...byVoice.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label))) {
     groups.push({
@@ -247,7 +240,7 @@ export function groupByVoice(rows: readonly ProjectRow[]): VoiceGroup[] {
       ...(g.statusLabel ? { statusLabel: g.statusLabel } : {}),
       ...(g.statusTone ? { statusTone: g.statusTone } : {}),
       olderProfileCount: g.older,
-      rows: g.rows,
+      rows: sortByLastEdit(g.rows),
     });
   }
   return groups;

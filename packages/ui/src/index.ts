@@ -14,15 +14,13 @@ export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor, Button, IconButt
 export type { Tone, Severity, ButtonProps, ButtonVariant, ButtonSize, IconButtonProps, BadgeProps, BadgeTone, KbdProps, SkeletonProps, TooltipProps, DropdownMenuProps, DropdownMenuItemProps, DropdownMenuLabelProps, DropdownMenuSeparatorProps, DialogProps, SheetProps, SheetSide, ToastProviderProps, ToastQueue, ToastInput, ToastTone, ChipProps, PopoverProps, ContextMenuProps, ContextMenuItemProps, ContextMenuLabelProps, ContextMenuSeparatorProps, SelectProps, SelectItemView, TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps, CheckboxProps, RadioGroupProps, RadioGroupItemProps, SwitchProps, ComboboxProps, PaletteListProps, CommandItemView, CommandGroupView, TextFieldProps, TextAreaProps, RadioCardsProps, RadioCardsOption, EmptyStateProps, AccordionProps, AccordionItemView } from "./primitives/index.js";
 export { uiCss } from "./ui-css.js";
 export { Shell, PageTitle, SectionTitle } from "./shell.js";
-export { ProjectList, ProjectRow, ProjectGroupList, VoiceGroupList } from "./project-list.js";
+export { ProjectRow, ProjectHomeList, VoiceGroupList } from "./project-list.js";
 export type {
   ProjectRowView,
-  ProjectGroupView,
-  ProjectGroupKey,
+  AttentionSectionView,
   VoiceGroupView,
   RowActionView,
-  SecondaryChipView,
-  VoiceOptionView,
+  StatusDotLegend,
   RowIndicator,
 } from "./project-list.js";
 export { ConversionPreview, ConversionNotesCard } from "./conversion.js";

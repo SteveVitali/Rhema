@@ -273,22 +273,16 @@ async function assertDossierParts(page: Page, where: string): Promise<void> {
   await need("[data-version-obligations]", "version obligation summary");
 }
 
-/** The /app row's ⋯ menu: the row's group may render as a collapsed <details> (the "Quiet"
- *  bucket) — open it first so the row is visible, then click the menu summary. */
+/** The /app row's ⋯ menu (R7HOME.1 — the Radix DropdownMenu; its items portal to the document,
+ *  so the caller locates them on `page`, not the row). The flat list is always expanded — no
+ *  group disclosure to open. */
 async function openProjectRowMenu(page: Page, title: string) {
   const row = page.locator(`li[data-project-row]:has-text("${title}")`).first();
-  await row.waitFor({ state: "attached", timeout: 15_000 });
-  if (!(await row.isVisible().catch(() => false))) {
-    const groupSummary = page
-      .locator(`details:has(li[data-project-row]:has-text("${title}")) > summary`)
-      .first();
-    if ((await groupSummary.count()) > 0) await groupSummary.click();
-  }
-  await row.waitFor({ state: "visible", timeout: 10_000 });
-  const summary = row.locator('summary[aria-label="Project actions"]');
-  await assertClick(summary, "the row's actions menu");
-  await summary.click();
-  return row;
+  await row.waitFor({ state: "visible", timeout: 15_000 });
+  const trigger = row.locator("[data-row-menu]");
+  await assertClick(trigger, "the row's actions menu");
+  await trigger.click();
+  return page;
 }
 
 /** Create a persona with intent=save (never the build button — $0). Returns the persona id. */
@@ -766,8 +760,8 @@ const T6: StepFn = async (ctx) => {
 
   // the delete control rides the /app row's ⋯ menu (a formAction item labelled Delete).
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const row = await openProjectRowMenu(page, title);
-  const del = row.locator('form[data-menu-form="delete"] button');
+  await openProjectRowMenu(page, title);
+  const del = page.locator('[data-menu-form="delete"], [data-menu-action="delete"]');
   await assertClick(del, "the row's Delete menu item");
   await del.click();
   await settleNav(page, ctx);
@@ -806,8 +800,8 @@ const T7: StepFn = async (ctx) => {
   const projectId = await apiProjectId(ctx, context, slug);
 
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const row = await openProjectRowMenu(page, title);
-  const del = row.locator('form[data-menu-form="delete"] button');
+  await openProjectRowMenu(page, title);
+  const del = page.locator('[data-menu-form="delete"], [data-menu-action="delete"]');
   await assertClick(del, "the row's Delete menu item");
   await del.click();
   await settleNav(page, ctx);

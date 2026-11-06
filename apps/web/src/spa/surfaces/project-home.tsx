@@ -1,104 +1,48 @@
-// SPA.15 — the `project-home` surface's React twin (REQ-SEQ-9, REQ-BFF-1/2/9, REQ-DAT-4,
-// REQ-TST-2, REQ-UX-6/16; design/22 §2 `app` row; §5.2). `ProjectHomeSurface` ports pages.tsx
-// `ProjectsPage` verbatim — the same `<Shell>`/`<PageTitle>` chrome, the same controls bar
-// (New project / search / Group-by / Protocol / Sort / Archived / Deleted toggles), the same
-// Voice chips, the same group/search/archived/deleted sections — on data read through
-// `projectHomeQuery` instead of `usePageData()`. Every hook literal resolves to dom-contract.ts.
+// R7HOME.1 (REQ-HOME-1; ADR-128; REQ-KIT-3 batch c1; REQ-GUARD-1; REQ-BFF-1/2/9, REQ-DAT-4,
+// REQ-UX-6/16). `/app` is the flat, always-expanded projects list sorted by last edit: "Waiting
+// on you" and "Running" pin above it only when non-empty; "QUIET", "Unfiled" and "Sheet" never
+// render. One compact toolbar applies filters instantly (search TextField + Filter/Sort/Group-by
+// DropdownMenus — no Apply buttons; the no-JS submits stay inside <noscript>); only non-default
+// params reach the URL. Row actions: one hover Open + a ⋯ DropdownMenu; paid items show the
+// shared estimator's figure and open the run sheet (the only run creator); lifecycle actions
+// are optimistic with an Undo toast, and invalidation is scoped to `["bff","app"]`.
 //
-// Port notes (the places a React mount CANNOT be a byte-copy):
-//   • the twin ships RAW DTOs (`rows`, `voices`, `groupBy`, `balance`, `protocols`,
-//     `deletedRows`, `search`) — the filter/sort/split/map/group derivation runs client-side
-//     off the SHARED `state-map.ts` seam (`toProjectRowView`/`groupByAttention`/`groupByVoice`),
-//     so the row anatomy can never drift from the SSR's (design/22 F10: one mapper, both
-//     renderers; the api's derived state is mapped, never recomputed).
-//   • GET forms (search + the filter bar) keep their SSR markup verbatim but `onSubmit` builds
-//     the same `/app?…` URL and in-router `navigate`s — the display filters never hit the BFF;
-//     `?q=`/`?deleted=1` ride the twin's key and refetch.
-//   • POST forms (`/app/grouping`, the row-menu `/p/:slug/{archive,unarchive,duplicate,delete}`,
-//     the deleted section's `/restore`, the menu's `/p/:slug/voice` select) ride the delegated
-//     submit + the JSON envelope: `redirect` navigates in-router (an unflipped target — the
-//     `/p/:slug` editor family — takes `SsrHandoff`'s document nav by itself); the settle
-//     invalidates `["bff"]` so the list repaints from the server, never optimistic mirroring.
-//     `aria-busy` + disabled controls mark the in-flight form (REQ-UX-16) and release on settle.
-//   • `/logout` is deliberately NOT intercepted — the session teardown stays a native document
-//     POST (design/22 §1: `/logout` is never a fetch).
-//   • `?verified=1`/showcase/held precedence never reaches this component — the document's fixed
-//     handler order consumed them before the shell was served (REQ-BFF-20).
+// Port notes:
+//   • the twin ships RAW DTOs — filter/sort/group/attention derivation runs client-side off the
+//     SHARED `state-map.ts` seam (`toProjectRowView`/`attentionSections`/`flatRows`/`groupByVoice`),
+//     the same source of truth as the api's derived state.
+//   • lifecycle posts ride `bffFetch`'s JSON branch with optimistic cache updates on every
+//     `["bff","app"]` query entry; a failure rolls the snapshot back and raises an error toast;
+//     Undo posts the inverse verb through the same seam.
+//   • `data-*` hooks resolve to dom-contract.ts — `data-menu-action`/`data-menu-form` survive on
+//     the Radix menu items verbatim.
 
-import { useMemo, type FormEvent, type ReactNode } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, type ReactNode } from "react";
+import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import {
-  Chip,
-  ProjectGroupList,
+  Button,
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  EmptyState,
+  ProjectHomeList,
   ProjectRow,
+  TextField,
+  ToastProvider,
+  useToast,
   VoiceGroupList,
+  type RowActionView,
 } from "@rhema/ui";
 import type { ProjectRow as ApiProjectRow } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
-import { groupByAttention, groupByVoice, toProjectRowView } from "../../state-map.js";
+import { attentionSections, groupByVoice, sortByLastEdit, toProjectRowView } from "../../state-map.js";
 import { bffFetch } from "../bff.js";
 import { PageBody, PageHeader } from "../page-header.js";
 import type { BffAppHomeTwin } from "../queries.js";
 
-
-// ---- the shared mutation plumbing (the voices/onboarding grammar, verbatim) -------------------
-
-interface FormField {
-  readonly name: string;
-  readonly value: string;
-}
-
-/** `new FormData(form)`'s field grammar, collected explicitly BEFORE the busy pass. */
-function collectFields(form: HTMLFormElement): FormField[] {
-  const out: FormField[] = [];
-  for (const el of form.querySelectorAll("input, select, textarea")) {
-    const name = el.getAttribute("name");
-    if (name == null || name === "") continue;
-    if (el instanceof HTMLInputElement) {
-      if (el.disabled) continue;
-      if (el.type === "checkbox" || el.type === "radio") {
-        if (el.checked) out.push({ name, value: el.value === "" ? "on" : el.value });
-        continue;
-      }
-      out.push({ name, value: el.value });
-      continue;
-    }
-    if ((el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) && !el.disabled) {
-      out.push({ name, value: el.value });
-    }
-  }
-  return out;
-}
-
-/** REQ-UX-16's in-flight affordance — `aria-busy` on the form + disabled controls. */
-function setFormBusy(form: HTMLFormElement, busy: boolean): void {
-  if (busy) form.setAttribute("aria-busy", "true");
-  else form.removeAttribute("aria-busy");
-  for (const el of form.querySelectorAll("button, input, select, textarea")) {
-    if (el instanceof HTMLElement && "disabled" in el) {
-      (el as HTMLButtonElement).disabled = busy;
-    }
-  }
-}
-
-/** The mutation success envelope the JSON branches answer (`{ok:true, redirect}`). */
-interface MutationReply {
-  readonly ok: true;
-  readonly redirect?: string;
-}
-
-interface FormPost {
-  readonly form: HTMLFormElement;
-  readonly action: string;
-  readonly fields: readonly FormField[];
-}
-
-/**
- * The §5.2 list's live search params — the leaf's validated search (`?voice`/`?protocol`/`?sort`
- * are display filters; `?archived`/`?deleted` toggle the two sections; `?q` selects the search
- * read). All optional; `undefined`/absent is the SSR's unset semantic.
- */
+/** The §5.2 list's live search params — display filters only; `?q`/`?deleted` ride the twin's key. */
 export interface ProjectHomeParams {
   readonly q?: string;
   readonly voice?: string;
@@ -108,12 +52,60 @@ export interface ProjectHomeParams {
   readonly deleted?: string;
 }
 
-/**
- * `/app` — the §5.2 workspace home: the controls bar, the Voice chips, then the attention or
- * voice groups (or the `?q=` search hits), then the archived/deleted sections — verbatim from
- * `ProjectsPage`. `compact` is the §10.1 phone verdict (new-project affordance withheld).
- */
-export function ProjectHomeSurface({
+type LifecycleVerb = "archive" | "unarchive" | "duplicate" | "delete" | "restore";
+
+const UNDO_OF: Record<LifecycleVerb, LifecycleVerb> = {
+  archive: "unarchive",
+  unarchive: "archive",
+  duplicate: "delete",
+  delete: "restore",
+  restore: "delete",
+};
+
+const TOAST_OF: Record<LifecycleVerb, string> = {
+  get archive() {
+    return COPY.projectHome.toastArchived;
+  },
+  get unarchive() {
+    return COPY.projectHome.toastUnarchived;
+  },
+  get duplicate() {
+    return COPY.projectHome.toastDuplicated;
+  },
+  get delete() {
+    return COPY.projectHome.toastDeleted;
+  },
+  get restore() {
+    return COPY.projectHome.toastRestored;
+  },
+};
+
+interface MutationReply {
+  readonly ok: true;
+  readonly redirect?: string;
+}
+
+interface LifecycleVars {
+  readonly verb: LifecycleVerb;
+  readonly slug: string;
+  /** the duplicate undo target — the new slug the envelope's redirect names. */
+  undoSlug?: string;
+}
+
+/** `/app` — REQ-HOME-1's flat home. `compact` is the §10.1 phone verdict. */
+export function ProjectHomeSurface(props: {
+  readonly twin: BffAppHomeTwin;
+  readonly params: ProjectHomeParams;
+  readonly compact: boolean;
+}): ReactNode {
+  return (
+    <ToastProvider dismissLabel={COPY.projectHome.undoLabel} viewportLabel={COPY.projects.heading}>
+      <ProjectHomeInner {...props} />
+    </ToastProvider>
+  );
+}
+
+function ProjectHomeInner({
   twin,
   params,
   compact,
@@ -124,264 +116,334 @@ export function ProjectHomeSurface({
 }): ReactNode {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const voiceFilter = params.voice || null;
   const protocolFilter = params.protocol || null;
   const sort = params.sort === "title" ? ("title" as const) : ("recent" as const);
-  const showArchived = params.archived === "1";
-  const showDeleted = params.deleted === "1";
+  const showArchived = String(params.archived ?? "") === "1";
+  const showDeleted = String(params.deleted ?? "") === "1";
   const { rows, voices, groupBy, protocols, deletedRows } = twin;
   const search = twin.search;
 
-  /**
-   * The SSR handler's filter → split → map → group derivation (server.ts's /app compose), run
-   * client-side off the same `state-map.ts` helpers — Needs-you keeps its deadline order under
-   * `sort=title` because the sort happens on the flat list before grouping (§5.2).
-   */
   const view = useMemo(() => {
     let filtered = voiceFilter
       ? rows.filter((r) => (voiceFilter === "unfiled" ? r.voice == null : r.voice?.personaId === voiceFilter))
       : rows;
     if (protocolFilter) filtered = filtered.filter((r) => r.protocolId === protocolFilter);
-    if (sort === "title") filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-    const activeRows = filtered.filter((r) => r.archivedAt == null);
-    const ctx = { voices };
+    const active = filtered.filter((r) => r.archivedAt == null);
+    const ctx = { protocols, voices };
     const toViews = (list: readonly ApiProjectRow[]) => list.map((r) => toProjectRowView(r, ctx));
+    const flat = active.filter((r) => r.group !== "needs_you" && r.group !== "running");
     return {
-      attentionGroups: groupByAttention(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
-      voiceGroups: groupByVoice(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
+      sections: attentionSections(active).map((s) => ({ ...s, rows: toViews(s.rows) })),
+      flat: toViews(sort === "title" ? [...flat].sort((a, b) => a.title.localeCompare(b.title)) : sortByLastEdit(flat)),
+      voiceGroups: groupByVoice(active).map((g) => ({ ...g, rows: toViews(g.rows) })),
       archivedRows: toViews(filtered.filter((r) => r.archivedAt != null)),
       deletedRows: toViews(deletedRows),
     };
-  }, [rows, voices, deletedRows, voiceFilter, protocolFilter, sort]);
+  }, [rows, voices, protocols, deletedRows, voiceFilter, protocolFilter, sort]);
 
-  /** the controls' hrefs keep the live query while swapping one facet (the SSR builder verbatim). */
-  const homeHref = (opts: {
+  /** Only non-default params reach the URL — `?archived`/`?deleted` encode as clean `=1` flags. */
+  const navigateHome = (opts: {
+    q?: string | null;
     voice?: string | null;
     protocol?: string | null;
     sort?: "recent" | "title";
     archived?: boolean;
     deleted?: boolean;
-    q?: string | null;
+    groupBy?: string;
   }) => {
     const p = new URLSearchParams();
-    const q = opts.q === undefined ? search?.q : opts.q;
+    const q = opts.q === undefined ? params.q : opts.q;
     const voice = opts.voice === undefined ? voiceFilter : opts.voice;
     const protocol = opts.protocol === undefined ? protocolFilter : opts.protocol;
-    const s2 = opts.sort === undefined ? sort : opts.sort;
+    const s = opts.sort === undefined ? sort : opts.sort;
     const archived = opts.archived === undefined ? showArchived : opts.archived;
     const deleted = opts.deleted === undefined ? showDeleted : opts.deleted;
     if (q) p.set("q", q);
     if (voice) p.set("voice", voice);
     if (protocol) p.set("protocol", protocol);
-    if (s2 === "title") p.set("sort", "title");
+    if (s === "title") p.set("sort", "title");
     if (archived) p.set("archived", "1");
     if (deleted) p.set("deleted", "1");
-    const s = p.toString();
-    return s ? `/app?${s}` : "/app";
+    const qs = p.toString();
+    void router.navigate({ href: qs ? `/app?${qs}` : "/app" });
   };
-  const filterHref = (voice: string | null) => homeHref({ voice });
 
-  const mutation = useMutation<MutationReply, unknown, FormPost>({
-    mutationFn: ({ action, fields }) => {
-      const json: Record<string, string | string[]> = {};
-      for (const f of fields) {
-        const prev = json[f.name];
-        if (prev === undefined) json[f.name] = f.value;
-        else if (Array.isArray(prev)) prev.push(f.value);
-        else json[f.name] = [prev, f.value];
-      }
-      return bffFetch(action, { method: "POST", json });
+  // ---- optimistic lifecycle mutations (scoped `["bff","app"]` invalidation, never `["bff"]`) ----
+
+  const patchTwinRows = (slug: string, patch: (row: ApiProjectRow) => ApiProjectRow | null) => {
+    for (const [key, data] of queryClient.getQueriesData<BffAppHomeTwin>({ queryKey: ["bff", "app"] })) {
+      if (data == null) continue;
+      queryClient.setQueryData(key as QueryKey, {
+        ...data,
+        rows: data.rows.map((r) => (r.slug === slug ? patch(r) : r)).filter((r): r is ApiProjectRow => r != null),
+        deletedRows: data.deletedRows
+          .map((r) => (r.slug === slug ? patch(r) : r))
+          .filter((r): r is ApiProjectRow => r != null),
+      });
+    }
+  };
+
+  const lifecycle = useMutation<MutationReply, unknown, LifecycleVars, Map<QueryKey, BffAppHomeTwin | undefined>>({
+    mutationFn: ({ verb, slug }) =>
+      bffFetch(`/p/${slug}/${verb}`, { method: "POST", json: {} }) as Promise<MutationReply>,
+    onMutate: (vars) => {
+      const snapshot = new Map(queryClient.getQueriesData<BffAppHomeTwin>({ queryKey: ["bff", "app"] }));
+      const now = new Date().toISOString();
+      if (vars.verb === "archive") patchTwinRows(vars.slug, (r) => ({ ...r, archivedAt: now }));
+      else if (vars.verb === "unarchive") patchTwinRows(vars.slug, (r) => ({ ...r, archivedAt: null }));
+      else if (vars.verb === "delete") patchTwinRows(vars.slug, (r) => (r.archivedAt == null ? null : r));
+      else if (vars.verb === "restore")
+        patchTwinRows(vars.slug, (r) => (r.deletedAt != null ? null : r));
+      return snapshot;
     },
-    onMutate: ({ form }) => setFormBusy(form, true),
-    onSuccess: (env) => {
-      // The envelope's redirect is the 302's target verbatim. In-router navigate: a same-surface
-      // target (`/app…`) refetches through the leaf; an unflipped `/p/…` target resolves through
-      // SsrHandoff's document nav on its own.
-      if (env.redirect != null) void router.navigate({ href: env.redirect });
+    onError: (_err, vars, ctx) => {
+      // Failed mutation → roll the snapshot back and say so; the list shows the truth.
+      if (ctx) for (const [key, data] of ctx) queryClient.setQueryData(key, data);
+      toast.push({ title: COPY.projectHome.toastFailed, tone: "danger" });
     },
-    onSettled: (_env, _err, vars) => {
-      setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+    onSuccess: (env, vars) => {
+      const undoSlug = vars.verb === "duplicate" && env.redirect != null
+        ? /^\/p\/([^/?]+)/.exec(env.redirect)?.[1]
+        : vars.slug;
+      const title = TOAST_OF[vars.verb];
+      toast.push({
+        title,
+        tone: "ok",
+        durationMs: 8000,
+        action: (
+          <Button
+            size="sm"
+            variant="ghost"
+            data-undo={vars.verb}
+            onClick={() => lifecycle.mutate({ verb: UNDO_OF[vars.verb], slug: undoSlug ?? vars.slug })}
+          >
+            {COPY.projectHome.undoLabel}
+          </Button>
+        ),
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["bff", "app"] });
     },
   });
 
-  /**
-   * Delegated submit on the surface root — the forms keep their SSR markup (the no-JS post is
-   * the same element) but the SPA intercepts: GET forms (search + the filter bar) become an
-   * in-router navigate to the same `/app?…` URL the form would have built; POST forms on the
-   * surface's mutation paths ride the JSON branch. Anything else (`/logout`) submits natively.
-   */
-  const onSubmit = (e: FormEvent<HTMLElement>) => {
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
-    const action = form.getAttribute("action") ?? "";
-    const method = (form.getAttribute("method") ?? "get").toLowerCase();
-    if (method === "get") {
-      if (action !== "/app") return;
-      e.preventDefault();
-      const p = new URLSearchParams();
-      for (const f of collectFields(form)) p.set(f.name, f.value);
-      const s = p.toString();
-      void router.navigate({ href: s ? `/app?${s}` : "/app" });
-      return;
-    }
-    // The surface's POST paths: /app/grouping + the row-menu /p/:slug/* actions. `/logout` (and
-    // anything else) keeps its native document POST.
-    if (!action.startsWith("/app") && !action.startsWith("/p/")) return;
-    e.preventDefault();
-    if (form.getAttribute("aria-busy") === "true") return;
-    mutation.mutate({ form, action, fields: collectFields(form) });
+  /** The remembered Group-by preference — POSTs `/app/grouping` (the same JSON branch the old
+   *  form used) then repaints; the pick persists server-side. */
+  const setGrouping = useMutation({
+    mutationFn: (groupBy: "attention" | "voice") =>
+      bffFetch("/app/grouping", { method: "POST", json: { groupBy } }) as Promise<MutationReply>,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["bff", "app"] });
+    },
+  });
+
+  /** The ⋯ menu's post items — href items navigate through the link itself. */
+  const onMenuAction = (item: RowActionView, _row: unknown): void => {
+    if (item.formAction == null) return;
+    const m = /^\/p\/([^/]+)\/(archive|unarchive|duplicate|delete|restore)$/.exec(item.formAction);
+    if (m == null) return;
+    lifecycle.mutate({ verb: m[2] as LifecycleVerb, slug: m[1]! });
   };
 
+  const filtersActive =
+    voiceFilter != null || protocolFilter != null || sort === "title" || showArchived || showDeleted;
+
   return (
-    <div data-spa-surface onSubmit={onSubmit}>
+    <div data-spa-surface>
       <PageBody>
-        {/* R7SHELL.1b — the leaf header (balance chip, Voices/Settings links, Sign out) is
-            gone: the sidebar's items + account menu carry all of it (REQ-SHELL-2/3). */}
         <PageHeader title={COPY.projects.heading} />
-        {/* the controls bar: search, Group-by (persisted), the Voice filter chips, the Archived
-            affordance — the SSR markup verbatim; submits ride the delegated handler. */}
-        <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "14px" }}>
-          {/* P1.19 — §10.1 ✗: new project is never offered on phone width. */}
+        {/* the one compact toolbar — instant apply; only non-default params reach the URL. */}
+        <div className="ui-toolbar" data-home-toolbar="true">
           {compact === true ? null : (
-            <a
-              href="/app/new"
+            <Button
+              variant="primary"
+              size="sm"
               data-new-project="true"
-              style={{ padding: "6px 14px", borderRadius: "8px", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
+              onClick={() => void router.navigate({ href: "/app/new" })}
             >
               {COPY.projectHome.newProject}
-            </a>
+            </Button>
           )}
-          <form method="get" action="/app" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }}>
-            {voiceFilter ? <input type="hidden" name="voice" value={voiceFilter} /> : null}
-            {protocolFilter ? <input type="hidden" name="protocol" value={protocolFilter} /> : null}
-            {sort === "title" ? <input type="hidden" name="sort" value="title" /> : null}
-            {showArchived ? <input type="hidden" name="archived" value="1" /> : null}
-            {showDeleted ? <input type="hidden" name="deleted" value="1" /> : null}
-            <input
+          <form
+            method="get"
+            action="/app"
+            className="ui-toolbar-search"
+            data-search-form="true"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const q = typeof fd.get("q") === "string" ? String(fd.get("q")).trim() : "";
+              navigateHome({ q: q === "" ? null : q });
+            }}
+          >
+            <TextField
               type="search"
               name="q"
               key={search?.q ?? ""}
               defaultValue={search?.q ?? ""}
               placeholder={COPY.projectHome.searchPlaceholder}
               aria-label={COPY.projectHome.searchPlaceholder}
-              style={{ padding: "5px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-surface)", color: "var(--shell-fg)", fontSize: "13px", minWidth: "220px" }}
+              data-search-field="true"
             />
-            <button type="submit" style={{ fontSize: "13px" }}>{COPY.projectHome.searchSubmit}</button>
+            <noscript>
+              <button type="submit">{COPY.projectHome.searchSubmit}</button>
+            </noscript>
           </form>
-          <form method="post" action="/app/grouping" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }} data-group-by="true">
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.groupByLabel}</label>
-            <select name="groupBy" key={groupBy} defaultValue={groupBy} aria-label={COPY.projectHome.groupByLabel} style={{ fontSize: "12px" }}>
-              <option value="attention">{COPY.projectHome.groupAttention}</option>
-              <option value="voice">{COPY.projectHome.groupVoice}</option>
-            </select>
-            <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.applyLabel}</button>
-          </form>
-          {/* the Protocol filter + Sort dropdowns (§5.2's bar) — a GET keeps every other live param. */}
-          <form method="get" action="/app" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }} data-filter-form="true">
-            {search?.q ? <input type="hidden" name="q" value={search.q} /> : null}
-            {voiceFilter ? <input type="hidden" name="voice" value={voiceFilter} /> : null}
-            {showArchived ? <input type="hidden" name="archived" value="1" /> : null}
-            {showDeleted ? <input type="hidden" name="deleted" value="1" /> : null}
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.protocolFilterLabel}</label>
-            <select name="protocol" key={protocolFilter ?? ""} defaultValue={protocolFilter ?? ""} aria-label={COPY.projectHome.protocolFilterLabel} style={{ fontSize: "12px" }}>
-              <option value="">{COPY.projectHome.protocolAll}</option>
-              {protocols.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.sortLabel}</label>
-            <select name="sort" key={sort} defaultValue={sort} aria-label={COPY.projectHome.sortLabel} style={{ fontSize: "12px" }}>
-              <option value="recent">{COPY.projectHome.sortRecent}</option>
-              <option value="title">{COPY.projectHome.sortTitle}</option>
-            </select>
-            <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.applyLabel}</button>
-          </form>
-          {/* the Archived + Recently-deleted affordances — links keep the other live params. */}
-          <a href={homeHref({ archived: !showArchived })}
-             data-archived-toggle="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-            {showArchived ? COPY.projectHome.archivedHide : COPY.projectHome.archivedShow}
-          </a>
-          <a href={homeHref({ deleted: !showDeleted })}
-             data-deleted-toggle="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-            {showDeleted ? COPY.projectHome.deletedHide : COPY.projectHome.deletedShow}
-          </a>
-        </div>
-        {/* the Voice filter chips — All, each voice, then Unfiled. */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }} data-voice-filters="true">
-          <Chip label={COPY.projectHome.filterAll} href={filterHref(null)} />
-          {voices.map((v) => (
-            <Chip
-              key={v.personaId}
-              label={`${v.name ?? v.personaId}${voiceFilter === v.personaId ? " ✓" : ""}`}
-              href={filterHref(v.personaId)}
-            />
-          ))}
-          <Chip
-            label={`${COPY.projectHome.unfiled}${voiceFilter === "unfiled" ? " ✓" : ""}`}
-            href={filterHref("unfiled")}
-          />
+          <DropdownMenu
+            trigger={
+              <Button variant="secondary" size="sm" data-filter-menu="true">
+                {COPY.projectHome.filterMenu}
+                {filtersActive ? " ●" : ""}
+              </Button>
+            }
+          >
+            <DropdownMenuLabel>{COPY.projectHome.protocolFilterLabel}</DropdownMenuLabel>
+            <DropdownMenuItem data-filter-choice="protocol:" onSelect={() => navigateHome({ protocol: null })}>
+              {COPY.projectHome.protocolAll}
+            </DropdownMenuItem>
+            {protocols.map((p) => (
+              <DropdownMenuItem
+                key={p.id}
+                data-filter-choice={`protocol:${p.id}`}
+                onSelect={() => navigateHome({ protocol: p.id })}
+              >
+                {p.name}
+                {protocolFilter === p.id ? " ✓" : ""}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>{COPY.projectHome.voiceFilterLabel}</DropdownMenuLabel>
+            <DropdownMenuItem data-filter-choice="voice:" onSelect={() => navigateHome({ voice: null })}>
+              {COPY.projectHome.filterAll}
+            </DropdownMenuItem>
+            {voices.map((v) => (
+              <DropdownMenuItem
+                key={v.personaId}
+                data-filter-choice={`voice:${v.personaId}`}
+                onSelect={() => navigateHome({ voice: v.personaId })}
+              >
+                {v.name ?? v.personaId}
+                {voiceFilter === v.personaId ? " ✓" : ""}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem data-filter-choice="voice:unfiled" onSelect={() => navigateHome({ voice: "unfiled" })}>
+              {COPY.projectHome.unfiled}
+              {voiceFilter === "unfiled" ? " ✓" : ""}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem data-filter-choice="archived" data-archived-toggle="true" onSelect={() => navigateHome({ archived: !showArchived })}>
+              {showArchived ? COPY.projectHome.archivedHide : COPY.projectHome.archivedShow}
+            </DropdownMenuItem>
+            <DropdownMenuItem data-filter-choice="deleted" data-deleted-toggle="true" onSelect={() => navigateHome({ deleted: !showDeleted })}>
+              {showDeleted ? COPY.projectHome.deletedHide : COPY.projectHome.deletedShow}
+            </DropdownMenuItem>
+            {filtersActive ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem data-filter-choice="clear" onSelect={() => navigateHome({ voice: null, protocol: null, sort: "recent", archived: false, deleted: false })}>
+                  {COPY.projectHome.clearFilters}
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenu>
+          <DropdownMenu
+            trigger={
+              <Button variant="secondary" size="sm" data-sort-menu="true">
+                {COPY.projectHome.sortMenu}: {sort === "title" ? COPY.projectHome.sortTitle : COPY.projectHome.sortRecent}
+              </Button>
+            }
+          >
+            <DropdownMenuItem data-sort-choice="recent" onSelect={() => navigateHome({ sort: "recent" })}>
+              {COPY.projectHome.sortRecent}
+              {sort === "recent" ? " ✓" : ""}
+            </DropdownMenuItem>
+            <DropdownMenuItem data-sort-choice="title" onSelect={() => navigateHome({ sort: "title" })}>
+              {COPY.projectHome.sortTitle}
+              {sort === "title" ? " ✓" : ""}
+            </DropdownMenuItem>
+          </DropdownMenu>
+          <DropdownMenu
+            trigger={
+              <Button variant="secondary" size="sm" data-group-by="true">
+                {COPY.projectHome.groupByMenu}: {groupBy === "voice" ? COPY.projectHome.groupVoice : COPY.projectHome.groupNone}
+              </Button>
+            }
+          >
+            <DropdownMenuItem data-group-choice="attention" onSelect={() => setGrouping.mutate("attention")}>
+              {COPY.projectHome.groupNone}
+              {groupBy !== "voice" ? " ✓" : ""}
+            </DropdownMenuItem>
+            <DropdownMenuItem data-group-choice="voice" onSelect={() => setGrouping.mutate("voice")}>
+              {COPY.projectHome.groupVoice}
+              {groupBy === "voice" ? " ✓" : ""}
+            </DropdownMenuItem>
+          </DropdownMenu>
         </div>
         {search ? (
-          // the server-side hits replace the groups while `?q=` is live (§5.2's interim search).
           <section data-search-results="true">
-            <h2 style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+            <h2 className="ui-prow-heading">
               {COPY.projectHome.searchResults} · {search.results.length}
             </h2>
             {search.results.length === 0 ? (
-              <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{COPY.projects.empty}</p>
+              <EmptyState title={COPY.projects.empty} data-project-empty="true" />
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+              <ul className="ui-prow-list">
                 {search.results.map((h) => (
-                  <li key={`${h.kind}:${h.projectId}`} style={{ padding: "10px 16px", borderBottom: "1px solid var(--shell-border)" }}>
-                    <a href={`/p/${h.slug}`} style={{ color: "var(--shell-fg)", fontWeight: 500, fontSize: "14px", textDecoration: "none" }}>
-                      {h.title}
-                    </a>
-                    <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }}>{h.kind}</span>
-                    <div style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px" }}>{h.snippet}</div>
+                  <li key={`${h.kind}:${h.projectId}`} className="ui-prow">
+                    <span className="ui-prow-main">
+                      <a href={`/p/${h.slug}`} className="ui-prow-title">
+                        {h.title}
+                      </a>
+                      <span className="ui-prow-version">{h.kind}</span>
+                      <span className="ui-prow-status">{h.snippet}</span>
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
           </section>
         ) : groupBy === "voice" ? (
-          <VoiceGroupList groups={view.voiceGroups} emptyLabel={COPY.projects.empty} />
+          <VoiceGroupList groups={view.voiceGroups} emptyTitle={COPY.projects.empty} onMenuAction={onMenuAction} />
         ) : (
-          <ProjectGroupList groups={view.attentionGroups} emptyLabel={COPY.projects.empty} />
+          <ProjectHomeList
+            sections={view.sections}
+            rows={view.flat}
+            emptyTitle={COPY.projects.empty}
+            onMenuAction={onMenuAction}
+          />
         )}
         {showArchived && view.archivedRows.length > 0 ? (
-          <details data-archived-section="true" style={{ marginTop: "18px" }} open>
-            <summary style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", cursor: "pointer", listStyle: "none" }}>
+          <section data-archived-section="true" className="ui-prow-section">
+            <h2 className="ui-prow-heading">
               {COPY.projectHome.archivedHeading} · {view.archivedRows.length}
-            </summary>
-            <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+            </h2>
+            <ul className="ui-prow-list">
               {view.archivedRows.map((row) => (
-                <ProjectRow key={row.id} row={row} />
+                <ProjectRow key={row.id} row={row} onMenuAction={onMenuAction} />
               ))}
             </ul>
-          </details>
+          </section>
         ) : null}
-        {/* the 30-day restore window (§5.2's soft delete) — the ONLY surface that reads deleted rows. */}
         {showDeleted ? (
-          <section data-deleted-section="true" style={{ marginTop: "18px" }}>
-            <h2 style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+          <section data-deleted-section="true" className="ui-prow-section">
+            <h2 className="ui-prow-heading">
               {COPY.projectHome.deletedHeading} · {view.deletedRows.length}
             </h2>
-            <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{COPY.projectHome.deletedNote}</p>
+            <p className="ui-inbox-meta">{COPY.projectHome.deletedNote}</p>
             {view.deletedRows.length > 0 ? (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+              <ul className="ui-prow-list">
                 {view.deletedRows.map((row) => (
-                  <li
-                    key={row.id}
-                    data-deleted-row={row.id}
-                    style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", borderBottom: "1px solid var(--shell-border)" }}
-                  >
-                    <span style={{ flex: "1 1 auto", color: "var(--shell-fg)", fontSize: "14px" }}>{row.title}</span>
-                    <form method="post" action={`${row.href}/restore`} data-restore-form="true" style={{ margin: 0 }}>
-                      <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.actionRestore}</button>
-                    </form>
+                  <li key={row.id} data-deleted-row={row.id} className="ui-prow">
+                    <span className="ui-prow-title">{row.title}</span>
+                    <Button
+                      size="sm"
+                      data-restore-form="true"
+                      onClick={() => lifecycle.mutate({ verb: "restore", slug: row.href.replace("/p/", "") })}
+                    >
+                      {COPY.projectHome.actionRestore}
+                    </Button>
                   </li>
                 ))}
               </ul>

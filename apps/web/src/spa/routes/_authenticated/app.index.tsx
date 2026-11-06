@@ -13,7 +13,7 @@ import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { projectHomeQuery } from "../../queries.js";
 import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
 import { ProjectHomeSurface } from "../../surfaces/project-home.js";
-import { flagParam, oneParam, strParam, validateSearchParams } from "../../search.js";
+import { flagIntParam, flagParam, oneParam, strParam, validateSearchParams } from "../../search.js";
 
 export const Route = createFileRoute("/_authenticated/app/")({
   validateSearch: validateSearchParams({
@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/app/")({
     sort: oneParam("title"),
     // `=1` flags reach the router parsed as the NUMBER 1 — flagParam normalizes to "1" so the
     // leaf's `=== "1"` checks match the document's `c.req.query("x") === "1"` semantics.
-    archived: flagParam,
-    deleted: flagParam,
+    archived: flagIntParam,
+    deleted: flagIntParam,
     verified: flagParam,
     entry: strParam,
     held: flagParam,
@@ -35,10 +35,11 @@ export const Route = createFileRoute("/_authenticated/app/")({
     // `location.search` is the PARSED (pre-validation) object — `deleted` may arrive as the
     // number 1; normalize exactly like flagParam so the warm key equals the leaf's useQuery key.
     const s = location.search as { q?: unknown; deleted?: unknown };
+    const deletedOn = s.deleted === "1" || s.deleted === 1;
     return context.queryClient.ensureQueryData(
       projectHomeQuery({
         q: typeof s.q === "string" ? s.q : undefined,
-        deleted: s.deleted === "1" || s.deleted === 1 ? "1" : undefined,
+        deleted: deletedOn ? "1" : undefined,
       }),
     );
   },
@@ -46,8 +47,9 @@ export const Route = createFileRoute("/_authenticated/app/")({
     const boot = getSpaBoot();
     if (!isSpaEnabled(boot, "/app")) return <SsrHandoff />;
     const search = Route.useSearch();
+    const deletedOn = search.deleted === "1" || (search.deleted as unknown) === 1;
     const q = useQuery(
-      projectHomeQuery({ q: search.q as string | undefined, deleted: search.deleted as string | undefined }),
+      projectHomeQuery({ q: search.q as string | undefined, deleted: deletedOn ? "1" : undefined }),
     );
     if (q.isPending) return <SurfaceShell />;
     // A non-401 read failure is the route's designed error state (REQ-UX-6); a 401 already

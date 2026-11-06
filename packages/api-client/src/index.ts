@@ -166,6 +166,16 @@ export interface ProjectRow {
   readonly showcase?: boolean;
   /** P1.17 — the latest review correspondence's delivering run (the dossier href). */
   readonly latestReviewRunId?: string | null;
+  /** R7HOME.1 (REQ-HOME-1) — the flat list's "last edited" stamp (project/draft create +
+   *  live-doc materialized). */
+  readonly lastEditedAt?: string | null;
+  /** R7HOME.1 (REQ-HOME-1) — the row menu's paid verbs priced by the shared surface estimator at
+   *  the sheet's resolved rigor/tier; a null field ⇒ no figure (the menu shows the bare verb). */
+  readonly estimates?: {
+    readonly review: number | null;
+    readonly revise: number | null;
+    readonly factCheck: number | null;
+  } | null;
 }
 
 // ---------------------------------------------------------------------------------------------------------

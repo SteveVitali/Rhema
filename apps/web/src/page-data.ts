@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ProjectGroupView, ProjectRowView, VoiceGroupView, FeedRow } from "@rhema/ui";
+import type { AttentionSectionView, ProjectRowView, VoiceGroupView, FeedRow } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
@@ -68,7 +68,7 @@ export interface PageData {
    */
   readonly home?: {
     readonly groupBy: ProjectGroupByDto;
-    readonly attentionGroups: readonly ProjectGroupView[];
+    readonly attentionGroups: readonly AttentionSectionView[];
     readonly voiceGroups: readonly VoiceGroupView[];
     /** the filter chips' voices (Your voices + House styles upstream). */
     readonly voices: readonly VoiceListRowDto[];
