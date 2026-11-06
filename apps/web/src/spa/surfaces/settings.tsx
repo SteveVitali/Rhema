@@ -1,32 +1,20 @@
 // SPA.12 — the `settings` surface's React twins (REQ-SEQ-9, REQ-BFF-1/9/16, REQ-DAT-4, REQ-TST-2,
 // REQ-VFY-2; design/22 §2 settings rows). `SettingsFrame` + the five section components port
-// pages.tsx `SettingsPage`'s sections verbatim — the same `<Shell>`/`<PageTitle>`/nav chrome, the
-// same `data-*` vocabulary — on data read through the `settings*Query` twins instead of
-// `usePageData()`. `ProjectSettingsSurface` ports `ProjectSettingsPage`. Every hook literal
-// resolves to dom-contract.ts; nothing unmanifested is invented.
+// pages.tsx `SettingsPage`'s sections — the same `data-*` vocabulary — on data read through the
+// `settings*Query` twins instead of `usePageData()`. `ProjectSettingsSurface` ports
+// `ProjectSettingsPage`. Every hook literal resolves to dom-contract.ts; nothing unmanifested is
+// invented.
 //
-// Port notes (the places a React mount CANNOT be a byte-copy):
-//   • section headings are promoted one level (`h3`→`h2`, `h4`→`h3`) — the usage surface's
-//     heading-order precedent: PageTitle is the h1 and axe's `heading-order` is part of the
-//     component leg. Hooks + copy are unchanged.
-//   • forms keep their SSR markup verbatim (`method="post"`, the action path, the field
-//     vocabulary — the no-JS fallback is the same element) but a delegated `onSubmit` on the
-//     `data-spa-surface` wrapper intercepts every settings form: `bffFetch` posts the flat
-//     fields (the same vocabulary `wantsJson`'s server branch decodes), follows the
-//     `{ok, redirect|url}` envelope — `redirect` is an in-router nav so the `?saved`/`?notice`
-//     flash renders, `url` is a document nav (server-validated external hand-off) — and
-//     `["bff"]` invalidates on settle so the repaint is server-truth, never optimistic
-//     mirroring (a refused write leaves the controls on their persisted values — the leaf's
-//     search-key remount re-initializes the uncontrolled inputs). The in-flight form carries
-//     `aria-busy` + disabled controls (REQ-UX-16); the import form stays `FormData`
-//     (`init.form` — multipart never becomes a JSON field, REQ-BFF-17).
-//   • `data-settings-unavailable` renders when the twin degraded a seam to `null` — the SSR's
-//     `if (!acct)` branch verbatim, never a fabricated default.
-//   • flash params (`saved`/`notice`/`p`/`v`/`f`) arrive as props from the leaf's validated
-//     search — URL state, never payload — with the SAME mapping the document's PageData
-//     composition ran (`notice→accountExport.notice`, `p,v,f→imported`).
-//   • `Edit` copy in the approvals grid lives in ../../approval-settings.js — the shared
-//     composition both renderers call (gate-card precedent).
+// R7KIT.3a (REQ-KIT-3 batch a, REQ-KIT-4, REQ-GUARD-1; UXC-16): every visible control is a 225a
+// primitive — Button/TextField/Select/Checkbox/RadioGroup — and every spacing/type/colour/radius
+// value rides `uiCss()` classes. The forms stay SSR-verbatim (`method="post"`, the action path,
+// the field NAMES): the primitives' form carriers (Radix's hidden select/radio/checkbox inputs)
+// keep the exact post grammar `collectFormFields` and the server's `bodyFields` decode rely on,
+// and the no-JS fallback stays the KIT-1-styled native markup pages.tsx still serves (RV-36).
+// `HiddenField` is the one named GUARD-1 exemption — the hidden carriers Radix does not own
+// (sessionId/personaId). REQ-KIT-4: sessions render the parsed "Chrome on macOS · this device"
+// label (ua-label.ts), and enum keys render through COPY-owned label maps with a humanized
+// fallback so a raw snake_case key can never reach the page.
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
@@ -52,11 +40,13 @@ import {
   RIGOR_DISPLAY,
   USER_LAUNCHED_WORKFLOW_KEYS,
 } from "@rhema/contracts";
+import { Button, Checkbox, RadioGroup, RadioGroupItem, Select, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { ApprovalSettingsSection } from "../../approval-settings.js";
 import { bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
 import { PageBody, PageHeader } from "../page-header.js";
+import { sessionAgentLabel } from "../ua-label.js";
 import type { BffProjectSettingsTwin, BffSettingsNotificationsTwin } from "../queries.js";
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals;
@@ -68,31 +58,30 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-// ---- The SSR's shared settings micro-styles, verbatim (pages.tsx 4026-4043) -------------------
-
-const settingsRowStyle = { display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)", margin: "8px 0" } as const;
-const settingsNoteStyle = { fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" } as const;
-const settingsInputStyle = {
-  fontSize: "13px",
-  padding: "6px 10px",
-  borderRadius: "7px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-} as const;
-const settingsSectionStyle = { marginTop: "22px" } as const;
-/** The h3 → h2 promotion (the heading-order note above) — same style object, one level up. */
-const settingsH2 = { fontSize: "14px", margin: "0 0 8px" } as const;
-const settingsCardStyle = {
-  padding: "10px 14px",
-  border: "1px solid var(--shell-border)",
-  borderRadius: "8px",
-  margin: "8px 0",
-} as const;
-
+/** "run_progress" → "Run progress" — the humanized fallback an unlisted enum key degrades to. */
 function humanizeKey(key: string): string {
   const s = key.replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** REQ-KIT-4 (D4) — an enum key renders its COPY label; an unlisted key humanizes, never leaks. */
+function enumLabel(map: Record<string, string> | undefined, key: string): string {
+  return map?.[key] ?? humanizeKey(key);
+}
+
+/**
+ * The no-JS form grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (Radix's own hidden select/radio/checkbox inputs carry the named fields; the id carriers it
+ * does not own — sessionId/personaId — ride this).
+ */
+function HiddenField({
+  name,
+  value,
+}: {
+  readonly name: string;
+  readonly value: string;
+}): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
 }
 
 // ---- The delegated mutation leg (one hook per surface mount) -----------------------------------
@@ -159,13 +148,6 @@ function setFormBusy(form: HTMLFormElement, busy: boolean): void {
   }
 }
 
-/**
- * The one settings-form submit handler — a delegation the `data-spa-surface` wrapper attaches so
- * every section's verbatim form rides the JSON branch without prop-threading. `e.target` IS the
- * form (submit events target it; the handler sits on the wrapper for the bubble). A form already
- * `aria-busy` is an in-flight POST — REQ-BFF-30's no-retry rule makes a second dispatch a lie, so
- * the guard swallows the click.
- */
 /** What a submit hands the mutation — the fields are collected BEFORE the busy pass (see above). */
 interface SettingsFormPost {
   readonly form: HTMLFormElement;
@@ -174,6 +156,13 @@ interface SettingsFormPost {
   readonly body?: FormData;
 }
 
+/**
+ * The one settings-form submit handler — a delegation the `data-spa-surface` wrapper attaches so
+ * every section's verbatim form rides the JSON branch without prop-threading. `e.target` IS the
+ * form (submit events target it; the handler sits on the wrapper for the bubble). A form already
+ * `aria-busy` is an in-flight POST — REQ-BFF-30's no-retry rule makes a second dispatch a lie, so
+ * the guard swallows the click.
+ */
 function useSettingsFormSubmit(): (e: FormEvent<HTMLElement>) => void {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -232,21 +221,15 @@ function useSettingsFormSubmit(): (e: FormEvent<HTMLElement>) => void {
  *  the billing surface (SPA.16) — the strip's `billing` entry links INTO the other flag's leaf. */
 export function SettingsNav({ active }: { readonly active: string }): ReactNode {
   return (
-    <nav
-      aria-label={S.sectionsAria}
-      data-settings-nav="true"
-      style={{ display: "flex", gap: "14px", flexWrap: "wrap", margin: "10px 0 20px", fontSize: "13px" }}
-    >
-      {(["account", "preferences", "notifications", "integrations", "billing", "data"] as const).map((s) => (
+    <nav aria-label={S.sectionsAria} data-settings-nav="true" className="ui-set-nav">
+      {(
+        ["account", "preferences", "notifications", "integrations", "billing", "data"] as const
+      ).map((s) => (
         <a
           key={s}
           href={`/app/settings/${s}`}
           data-section={s}
           aria-current={active === s ? "page" : undefined}
-          style={{
-            color: active === s ? "var(--shell-fg)" : "var(--shell-fg-muted)",
-            fontWeight: active === s ? 600 : 400,
-          }}
         >
           {S.sectionLabels[s]}
         </a>
@@ -256,7 +239,7 @@ export function SettingsNav({ active }: { readonly active: string }): ReactNode 
 }
 
 /**
- * The settings page chrome — `Shell` + `PageTitle` + the section strip + the `?saved` flash line,
+ * The settings page chrome — `PageTitle` + the section strip + the `?saved` flash line,
  * verbatim from `SettingsPage`. `contentKey` is the leaf's search state: an envelope-nav lands on
  * the same path with a new flash, and the key remounts the uncontrolled forms so they re-read the
  * (already-invalidated) server truth — a refused write reverts the controls like the SSR 302 did.
@@ -279,9 +262,11 @@ export function SettingsFrame({
         <PageHeader title={S.heading} />
         {/* R7SHELL.1b — the section strip stays an in-content row (its styling is 240's). */}
         <SettingsNav active={section} />
-        <div key={contentKey} style={{ maxWidth: "640px" }}>
+        <div key={contentKey} className="ui-set-main">
           {saved ? (
-            <p data-settings-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "4px 0 10px" }}>{S.saved}</p>
+            <p data-settings-saved="true" className="ui-set-t ui-set-t--ok">
+              {S.saved}
+            </p>
           ) : null}
           {children}
         </div>
@@ -294,84 +279,110 @@ export function SettingsFrame({
 
 /** §14.7 Account — name/byline/avatar, the magic-link email change, sign-in methods, sessions with
  *  revoke, and the delete-account pointer (the control itself lives in Data). Verbatim port. */
-export function AccountSection({ account }: { readonly account: AccountSettingsDto | null }): ReactNode {
+export function AccountSection({
+  account,
+}: {
+  readonly account: AccountSettingsDto | null;
+}): ReactNode {
   const acct = account;
   if (!acct) {
-    return <p data-settings-unavailable="account" style={settingsNoteStyle}>{B.stripeDownNote}</p>;
+    return (
+      <p data-settings-unavailable="account" className="ui-set-note">
+        {B.stripeDownNote}
+      </p>
+    );
   }
   return (
     <>
       {/* the deletion grace banner — the 14-day clock shows on every section's top surface. */}
       {acct.deletion ? <DeletionBanner deletion={acct.deletion} /> : null}
-      <section aria-label={S.profileHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.profileHeading}</h2>
+      <section aria-label={S.profileHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.profileHeading}</h2>
         <form method="post" action="/app/settings/account">
-          <label style={settingsRowStyle}>
+          <label className="ui-set-row">
             {S.nameLabel}:{" "}
-            <input type="text" name="name" defaultValue={acct.user.name ?? ""} required style={settingsInputStyle} />
+            <TextField type="text" name="name" defaultValue={acct.user.name ?? ""} required />
           </label>
-          <label style={settingsRowStyle}>
+          <label className="ui-set-row">
             {S.bylineLabel}:{" "}
-            <input type="text" name="byline" defaultValue={acct.user.byline ?? ""} style={settingsInputStyle} />
+            <TextField type="text" name="byline" defaultValue={acct.user.byline ?? ""} />
           </label>
-          <p style={settingsNoteStyle}>{S.bylineNote}</p>
-          <label style={settingsRowStyle}>
+          <p className="ui-set-note">{S.bylineNote}</p>
+          <label className="ui-set-row">
             {S.avatarLabel}:{" "}
-            <input type="url" name="image" defaultValue={acct.user.image ?? ""} style={settingsInputStyle} />
+            <TextField type="url" name="image" defaultValue={acct.user.image ?? ""} />
           </label>
-          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+          <Button type="submit" size="sm">
+            {S.saveCta}
+          </Button>
         </form>
       </section>
-      <section aria-label={S.emailLabel} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.emailLabel}</h2>
-        <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
+      <section aria-label={S.emailLabel} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.emailLabel}</h2>
+        <p className="ui-set-t">
           {acct.user.email}{" "}
-          <span style={{ fontSize: "11px", color: acct.user.emailVerified ? "var(--state-ready)" : "var(--shell-fg-faint)" }}>
+          <span
+            className={
+              acct.user.emailVerified ? "ui-set-t--xs ui-set-t--ok" : "ui-set-t--xs ui-set-t--f"
+            }
+          >
             {acct.user.emailVerified ? S.emailVerified : S.emailUnverified}
           </span>
         </p>
         {acct.user.pendingEmail ? (
-          <p data-email-pending="true" style={settingsNoteStyle}>
+          <p data-email-pending="true" className="ui-set-note">
             {fmt(S.emailPendingFmt, { email: acct.user.pendingEmail })}
           </p>
         ) : null}
         <form method="post" action="/app/settings/account/email">
-          <label style={settingsRowStyle}>
-            {S.emailChangeLabel}:{" "}
-            <input type="email" name="email" required style={settingsInputStyle} />
+          <label className="ui-set-row">
+            {S.emailChangeLabel}: <TextField type="email" name="email" required />
           </label>
-          <p style={settingsNoteStyle}>{S.emailChangeNote}</p>
-          <button type="submit" style={{ fontSize: "13px" }}>{S.emailChangeCta}</button>
+          <p className="ui-set-note">{S.emailChangeNote}</p>
+          <Button type="submit" size="sm">
+            {S.emailChangeCta}
+          </Button>
         </form>
       </section>
-      <section aria-label={S.signInHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.signInHeading}</h2>
-        <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg)" }}>
+      <section aria-label={S.signInHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.signInHeading}</h2>
+        <ul className="ui-set-list">
           {acct.signInMethods.map((m) => (
             <li key={m.kind} data-signin-method={m.kind}>
               {m.label}
-              {m.detail ? <span style={{ color: "var(--shell-fg-faint)" }}>{" — "}{m.detail}</span> : null}
+              {m.detail ? (
+                <span className="ui-set-t--f">
+                  {" — "}
+                  {m.detail}
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>
       </section>
-      <section aria-label={S.sessionsHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.sessionsHeading}</h2>
-        <p style={settingsNoteStyle}>{S.sessionsNote}</p>
-        <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+      <section aria-label={S.sessionsHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.sessionsHeading}</h2>
+        <p className="ui-set-note">{S.sessionsNote}</p>
+        <ul className="ui-set-list">
           {acct.sessions.map((s) => (
             <li key={s.id} data-session={s.id}>
-              {s.userAgent ?? s.ipAddress ?? s.id}
-              {s.current ? (
-                <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--state-ready)" }}>{S.sessionThisDevice}</span>
-              ) : null}
-              <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+              {/* REQ-KIT-4 (D3) — "Chrome on macOS · this device", never the raw UA string;
+                  an absent UA falls back to the ip/id the SSR printed. */}
+              {sessionAgentLabel(s.userAgent) ?? s.ipAddress ?? s.id}
+              {s.current ? ` · ${S.sessionThisDeviceInline}` : null}
+              <span className="ui-set-t--xs ui-set-t--f ui-set-inline">
                 {fmt(S.sessionExpiresFmt, { at: s.expiresAt.slice(0, 10) })}
               </span>
               {!s.current ? (
-                <form method="post" action="/app/settings/sessions/revoke" style={{ display: "inline", marginLeft: "8px" }}>
-                  <input type="hidden" name="sessionId" value={s.id} />
-                  <button type="submit" data-revoke-session="true" style={{ fontSize: "11px" }}>{S.sessionRevokeCta}</button>
+                <form
+                  method="post"
+                  action="/app/settings/sessions/revoke"
+                  className="ui-set-inline"
+                >
+                  <HiddenField name="sessionId" value={s.id} />
+                  <Button type="submit" size="sm" data-revoke-session="true">
+                    {S.sessionRevokeCta}
+                  </Button>
                 </form>
               ) : null}
             </li>
@@ -380,10 +391,13 @@ export function AccountSection({ account }: { readonly account: AccountSettingsD
       </section>
       {/* §14.7 lists "delete account" under Account; the typed-confirmation control lives in Data —
           the link keeps the section's contents honest without two destructive forms. */}
-      <section aria-label={S.deletionHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.deletionHeading}</h2>
-        <p style={{ fontSize: "13px", margin: "4px 0" }}>
-          <a href="/app/settings/data#delete" style={{ color: "var(--sev-major)" }}>{S.deletionHeading}{" →"}</a>
+      <section aria-label={S.deletionHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.deletionHeading}</h2>
+        <p className="ui-set-t">
+          <a href="/app/settings/data#delete" className="ui-set-t--warn">
+            {S.deletionHeading}
+            {" →"}
+          </a>
         </p>
       </section>
     </>
@@ -394,127 +408,178 @@ export function AccountSection({ account }: { readonly account: AccountSettingsD
 
 /** §14.7 Preferences — account defaults (a project's own settings always win); no raw model names.
  *  Verbatim port; `""` selects carry the null-unset semantics the server decodes. */
-export function PreferencesSection({ preferences }: { readonly preferences: PreferencesSettingsDto | null }): ReactNode {
+export function PreferencesSection({
+  preferences,
+}: {
+  readonly preferences: PreferencesSettingsDto | null;
+}): ReactNode {
   if (!preferences) {
-    return <p data-settings-unavailable="preferences" style={settingsNoteStyle}>{B.stripeDownNote}</p>;
+    return (
+      <p data-settings-unavailable="preferences" className="ui-set-note">
+        {B.stripeDownNote}
+      </p>
+    );
   }
   const p = preferences.prefs;
   return (
-    <form method="post" action="/app/settings/preferences" style={{ marginTop: "8px" }}>
-      <section aria-label={S.tierHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.tierHeading}</h2>
-        <label style={settingsRowStyle}>
-          <input type="radio" name="defaultModelTier" value="" defaultChecked={p.defaultModelTier == null} />{" "}
-          {S.tierAutoLabel}
-        </label>
-        <p style={settingsNoteStyle}>{S.tierAutoNote}</p>
-        {MODEL_TIERS.map((t) => (
-          <label key={t} style={settingsRowStyle} data-tier={t}>
-            <input type="radio" name="defaultModelTier" value={t} defaultChecked={p.defaultModelTier === t} />{" "}
-            {S.tierWhen[t] ?? MODEL_TIER_DISPLAY[t]}
+    <form method="post" action="/app/settings/preferences">
+      <section aria-label={S.tierHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.tierHeading}</h2>
+        <RadioGroup
+          name="defaultModelTier"
+          defaultValue={p.defaultModelTier ?? ""}
+          aria-label={S.tierHeading}
+        >
+          <label className="ui-set-row">
+            <RadioGroupItem value="" aria-label={S.tierAutoLabel} /> {S.tierAutoLabel}
           </label>
-        ))}
+          <p className="ui-set-note">{S.tierAutoNote}</p>
+          {MODEL_TIERS.map((t) => (
+            <label key={t} className="ui-set-row" data-tier={t}>
+              <RadioGroupItem value={t} aria-label={S.tierWhen[t] ?? MODEL_TIER_DISPLAY[t]} />{" "}
+              {S.tierWhen[t] ?? MODEL_TIER_DISPLAY[t]}
+            </label>
+          ))}
+        </RadioGroup>
       </section>
-      <section aria-label={S.rigorHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.rigorHeading}</h2>
-        <label style={settingsRowStyle}>
+      <section aria-label={S.rigorHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.rigorHeading}</h2>
+        <label className="ui-set-row">
           {/* REQ-VFY-6 — the SSR's textless label wrapper leaves this select nameless; the SPA's
               component-axe leg requires the programmatic name (adds `aria-label`, changes no hook). */}
-          <select name="defaultRigor" defaultValue={p.defaultRigor ?? ""} aria-label={S.rigorHeading} style={{ fontSize: "13px" }}>
-            <option value="">{RIGOR_DISPLAY.standard} ({S.rigorDefaultOpt.toLowerCase()})</option>
-            {RIGORS.map((r) => (
-              <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
-            ))}
-          </select>
+          <Select
+            name="defaultRigor"
+            defaultValue={p.defaultRigor ?? ""}
+            aria-label={S.rigorHeading}
+            items={[
+              {
+                value: "",
+                label: `${RIGOR_DISPLAY.standard} (${S.rigorDefaultOpt.toLowerCase()})`,
+              },
+              ...RIGORS.map((r) => ({ value: r, label: RIGOR_DISPLAY[r] })),
+            ]}
+          />
         </label>
-        <p style={settingsNoteStyle}>{S.rigorNote}</p>
-        <fieldset style={{ border: "none", margin: "10px 0 0", padding: 0 }}>
-          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{S.rigorByWorkflowHeading}</legend>
-          <p style={settingsNoteStyle}>{S.rigorByWorkflowNote}</p>
-          <div data-rigor-by-workflow="true" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <p className="ui-set-note">{S.rigorNote}</p>
+        <fieldset className="ui-set-fs">
+          <legend>{S.rigorByWorkflowHeading}</legend>
+          <p className="ui-set-note">{S.rigorByWorkflowNote}</p>
+          <div data-rigor-by-workflow="true" className="ui-set-stack">
             {USER_LAUNCHED_WORKFLOW_KEYS.map((w) => (
-              <label key={w} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
+              <label key={w} className="ui-set-row ui-set-row--split">
                 <span>{humanizeKey(w)}</span>
-                <select name={`rigor_${w}`} defaultValue={p.rigorByWorkflow?.[w] ?? ""} style={{ fontSize: "12px" }}>
-                  <option value="">{S.rigorDefaultOpt}</option>
-                  {RIGORS.map((r) => (
-                    <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
-                  ))}
-                </select>
+                <Select
+                  name={`rigor_${w}`}
+                  defaultValue={p.rigorByWorkflow?.[w] ?? ""}
+                  aria-label={humanizeKey(w)}
+                  items={[
+                    { value: "", label: S.rigorDefaultOpt },
+                    ...RIGORS.map((r) => ({ value: r, label: RIGOR_DISPLAY[r] })),
+                  ]}
+                />
               </label>
             ))}
           </div>
         </fieldset>
       </section>
-      <section aria-label={S.approvalHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.approvalHeading}</h2>
-        <p style={settingsNoteStyle}>{S.approvalNote}</p>
+      <section aria-label={S.approvalHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.approvalHeading}</h2>
+        <p className="ui-set-note">{S.approvalNote}</p>
         {/* an absent account pref means Named approvals (§5.6's default) — picking it stores the
             explicit value, which is equivalent. */}
-        {APPROVAL_POLICIES.map((a) => (
-          <label key={a} style={settingsRowStyle} data-approval-policy={a}>
-            <input type="radio" name="approvalPolicy" value={a} defaultChecked={(p.approvalPolicy ?? "named") === a} />{" "}
-            {S.approvalPolicies[a]}
-          </label>
-        ))}
+        <RadioGroup
+          name="approvalPolicy"
+          defaultValue={p.approvalPolicy ?? "named"}
+          aria-label={S.approvalHeading}
+        >
+          {APPROVAL_POLICIES.map((a) => (
+            <label key={a} className="ui-set-row" data-approval-policy={a}>
+              <RadioGroupItem value={a} aria-label={S.approvalPolicies[a]} />{" "}
+              {S.approvalPolicies[a]}
+            </label>
+          ))}
+        </RadioGroup>
       </section>
-      <section aria-label={S.consentHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.consentHeading}</h2>
-        <label style={settingsRowStyle}>
+      <section aria-label={S.consentHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.consentHeading}</h2>
+        <label className="ui-set-row">
           {S.consentLabel}:{" "}
-          <input
+          <TextField
             type="number"
             name="consentUnder"
             min={0}
             max={1000}
             defaultValue={preferences.consentDontAskUnder}
-            style={{ ...settingsInputStyle, width: "110px" }}
+            className="ui-field--w"
           />
         </label>
-        <p style={settingsNoteStyle}>{S.consentNote}</p>
+        <p className="ui-set-note">{S.consentNote}</p>
       </section>
-      <section aria-label={S.editorHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.editorHeading}</h2>
-        <label style={settingsRowStyle}>
+      <section aria-label={S.editorHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.editorHeading}</h2>
+        <label className="ui-set-row">
           {S.paperThemeLabel}:{" "}
-          <select name="paperTheme" defaultValue={p.editor?.paperTheme ?? ""} style={{ fontSize: "13px" }}>
-            <option value="">{S.rigorDefaultOpt}</option>
-            <option value="light">{S.paperThemeLight}</option>
-            <option value="dark">{S.paperThemeDark}</option>
-            <option value="follow">{S.paperThemeFollow}</option>
-          </select>
+          <Select
+            name="paperTheme"
+            defaultValue={p.editor?.paperTheme ?? ""}
+            aria-label={S.paperThemeLabel}
+            items={[
+              { value: "", label: S.rigorDefaultOpt },
+              { value: "light", label: S.paperThemeLight },
+              { value: "dark", label: S.paperThemeDark },
+              { value: "follow", label: S.paperThemeFollow },
+            ]}
+          />
         </label>
-        <label style={settingsRowStyle}>
+        <label className="ui-set-row">
           {S.fontPresetLabel}:{" "}
-          <select name="fontPreset" defaultValue={p.editor?.fontPreset ?? ""} style={{ fontSize: "13px" }}>
-            <option value="">{S.rigorDefaultOpt}</option>
-            <option value="serif">{S.fontSerif}</option>
-            <option value="sans">{S.fontSans}</option>
-            <option value="mono">{S.fontMono}</option>
-          </select>
+          <Select
+            name="fontPreset"
+            defaultValue={p.editor?.fontPreset ?? ""}
+            aria-label={S.fontPresetLabel}
+            items={[
+              { value: "", label: S.rigorDefaultOpt },
+              { value: "serif", label: S.fontSerif },
+              { value: "sans", label: S.fontSans },
+              { value: "mono", label: S.fontMono },
+            ]}
+          />
         </label>
-        <label style={settingsRowStyle}>
+        <label className="ui-set-row">
           {S.fontSizeLabel}:{" "}
-          <select name="fontSizeStep" defaultValue={p.editor?.fontSizeStep != null ? String(p.editor.fontSizeStep) : ""} style={{ fontSize: "13px" }}>
-            <option value="">{S.rigorDefaultOpt}</option>
-            {[-2, -1, 0, 1, 2].map((n) => (
-              <option key={n} value={String(n)}>{n > 0 ? `+${n}` : String(n)}</option>
-            ))}
-          </select>
+          <Select
+            name="fontSizeStep"
+            defaultValue={p.editor?.fontSizeStep != null ? String(p.editor.fontSizeStep) : ""}
+            aria-label={S.fontSizeLabel}
+            items={[
+              { value: "", label: S.rigorDefaultOpt },
+              ...[-2, -1, 0, 1, 2].map((n) => ({
+                value: String(n),
+                label: n > 0 ? `+${n}` : String(n),
+              })),
+            ]}
+          />
         </label>
-        <p style={settingsNoteStyle}>{S.fontSizeNote}</p>
-        <label style={settingsRowStyle}>
+        <p className="ui-set-note">{S.fontSizeNote}</p>
+        <label className="ui-set-row">
           {S.themeHeading}:{" "}
-          <select name="appTheme" defaultValue={preferences.appTheme} style={{ fontSize: "13px" }}>
-            <option value="dark">{S.themeDark}</option>
-            <option value="light">{S.themeLight}</option>
-            <option value="auto">{S.themeAuto}</option>
-          </select>
+          <Select
+            name="appTheme"
+            defaultValue={preferences.appTheme}
+            aria-label={S.themeHeading}
+            items={[
+              { value: "dark", label: S.themeDark },
+              { value: "light", label: S.themeLight },
+              { value: "auto", label: S.themeAuto },
+            ]}
+          />
         </label>
-        <p style={settingsNoteStyle}>{S.themeNote}</p>
+        <p className="ui-set-note">{S.themeNote}</p>
       </section>
-      <p style={settingsNoteStyle}>{S.perProjectNote}</p>
-      <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+      <p className="ui-set-note">{S.perProjectNote}</p>
+      <Button type="submit" size="sm">
+        {S.saveCta}
+      </Button>
     </form>
   );
 }
@@ -531,20 +596,24 @@ export function NotificationsSection({
 }): ReactNode {
   const data = notifications;
   if (!data) {
-    return <p data-settings-unavailable="notifications" style={settingsNoteStyle}>{B.stripeDownNote}</p>;
+    return (
+      <p data-settings-unavailable="notifications" className="ui-set-note">
+        {B.stripeDownNote}
+      </p>
+    );
   }
   const prefs: NotificationPrefsDto["prefs"] = data.prefs;
   const qh = data.quietHours;
   const toHHMM = (mins: number) =>
     `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
   return (
-    <form method="post" action="/app/settings/notifications" data-notifications-form="true" style={{ marginTop: "8px" }}>
-      <table data-notification-matrix="true" style={{ borderCollapse: "collapse", fontSize: "13px", width: "100%" }}>
+    <form method="post" action="/app/settings/notifications" data-notifications-form="true">
+      <table data-notification-matrix="true" className="ui-matrix">
         <thead>
           <tr>
-            <th style={{ textAlign: "left", padding: "4px 14px 4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixEventCol}</th>
-            <th style={{ textAlign: "left", padding: "4px 14px 4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixEmailCol}</th>
-            <th style={{ textAlign: "left", padding: "4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixInAppCol}</th>
+            <th>{S.matrixEventCol}</th>
+            <th>{S.matrixEmailCol}</th>
+            <th>{S.matrixInAppCol}</th>
           </tr>
         </thead>
         <tbody>
@@ -557,100 +626,139 @@ export function NotificationsSection({
             // would read as an unowned string to the REQ-SAFE-10 containment scan.
             let emailCell: ReactNode;
             if (emailArm === "none") {
-              emailCell = <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{S.emailNoneNote}</span>;
+              emailCell = <span className="ui-set-t--sm ui-set-t--f">{S.emailNoneNote}</span>;
             } else if (locked) {
-              emailCell = <span data-locked="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{S.optOn}</span>;
+              emailCell = (
+                <span data-locked="true" className="ui-set-t--sm ui-set-t--m">
+                  {S.optOn}
+                </span>
+              );
             } else {
               emailCell = (
-                <select name={`email_${t}`} defaultValue={emailEnabled(prefs, t) ? "on" : "off"} aria-label={`${S.notificationEvents[t] ?? humanizeKey(t)} — ${S.matrixEmailCol}`} style={{ fontSize: "12px" }}>
-                  <option value="on">{S.optOn}</option>
-                  <option value="off">{S.optOff}</option>
-                  {emailArm === "digest" ? <option value="digest">{S.optDigest}</option> : null}
-                </select>
+                <Select
+                  name={`email_${t}`}
+                  defaultValue={emailEnabled(prefs, t) ? "on" : "off"}
+                  aria-label={`${S.notificationEvents[t] ?? humanizeKey(t)} — ${S.matrixEmailCol}`}
+                  items={[
+                    { value: "on", label: S.optOn },
+                    { value: "off", label: S.optOff },
+                    ...(emailArm === "digest" ? [{ value: "digest", label: S.optDigest }] : []),
+                  ]}
+                />
               );
             }
             let inAppCell: ReactNode;
             if (inAppArm === "none") {
-              inAppCell = <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{S.emailNoneNote}</span>;
+              inAppCell = <span className="ui-set-t--sm ui-set-t--f">{S.emailNoneNote}</span>;
             } else if (locked) {
-              inAppCell = <span data-locked="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{S.optOn}</span>;
+              inAppCell = (
+                <span data-locked="true" className="ui-set-t--sm ui-set-t--m">
+                  {S.optOn}
+                </span>
+              );
             } else if (t === "run_progress") {
               inAppCell = (
-                <span data-per-project="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                <span data-per-project="true" className="ui-set-t--sm ui-set-t--m">
                   {S.runProgressNote}
                 </span>
               );
             } else {
               inAppCell = (
-                <select name={`inapp_${t}`} defaultValue={(prefs.inApp?.[t] ?? row.defaultOn) ? "on" : "off"} aria-label={`${S.notificationEvents[t] ?? humanizeKey(t)} — ${S.matrixInAppCol}`} style={{ fontSize: "12px" }}>
-                  <option value="on">{S.optOn}</option>
-                  <option value="off">{S.optOff}</option>
-                </select>
+                <Select
+                  name={`inapp_${t}`}
+                  defaultValue={(prefs.inApp?.[t] ?? row.defaultOn) ? "on" : "off"}
+                  aria-label={`${S.notificationEvents[t] ?? humanizeKey(t)} — ${S.matrixInAppCol}`}
+                  items={[
+                    { value: "on", label: S.optOn },
+                    { value: "off", label: S.optOff },
+                  ]}
+                />
               );
             }
             return (
               <tr key={t} data-notification-row={t}>
-                <td style={{ padding: "5px 14px 5px 0", color: "var(--shell-fg)" }}>
+                <td>
                   {S.notificationEvents[t] ?? humanizeKey(t)}
-                  {locked ? (
-                    <span style={{ display: "block", fontSize: "11px", color: "var(--shell-fg-faint)" }}>{S.lockedNote}</span>
-                  ) : null}
+                  {locked ? <span className="ui-set-t--xs ui-set-t--f">{S.lockedNote}</span> : null}
                 </td>
-                <td style={{ padding: "5px 14px 5px 0" }}>{emailCell}</td>
-                <td style={{ padding: "5px 0" }}>{inAppCell}</td>
+                <td>{emailCell}</td>
+                <td>{inAppCell}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <section aria-label={S.digestHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.digestHeading}</h2>
-        <label style={settingsRowStyle}>
-          <select name="digest_run_finished" defaultValue={prefs.digest?.run_finished === "hourly" ? "hourly" : "off"} style={{ fontSize: "13px" }}>
-            <option value="off">{S.optOff}</option>
-            <option value="hourly">{S.optHourly}</option>
-          </select>{" "}
+      <section aria-label={S.digestHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.digestHeading}</h2>
+        <label className="ui-set-row">
+          <Select
+            name="digest_run_finished"
+            defaultValue={prefs.digest?.run_finished === "hourly" ? "hourly" : "off"}
+            aria-label={S.digestRunFinishedLabel}
+            items={[
+              { value: "off", label: S.optOff },
+              { value: "hourly", label: S.optHourly },
+            ]}
+          />{" "}
           {S.digestRunFinishedLabel}
         </label>
       </section>
-      <section aria-label={S.quietHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.quietHeading}</h2>
-        <p style={settingsNoteStyle}>{S.quietNote}</p>
-        <label style={settingsRowStyle}>
+      <section aria-label={S.quietHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.quietHeading}</h2>
+        <p className="ui-set-note">{S.quietNote}</p>
+        <label className="ui-set-row">
           {/* REQ-VFY-6 — the SSR's textless label gives this select no accessible name. */}
-          <select name="qh_enabled" defaultValue={qh ? "on" : "off"} aria-label={S.quietEnable} style={{ fontSize: "13px" }}>
-            <option value="off">{S.optOff}</option>
-            <option value="on">{S.quietEnable}</option>
-          </select>
+          <Select
+            name="qh_enabled"
+            defaultValue={qh ? "on" : "off"}
+            aria-label={S.quietEnable}
+            items={[
+              { value: "off", label: S.optOff },
+              { value: "on", label: S.quietEnable },
+            ]}
+          />
         </label>
-        <label style={settingsRowStyle}>
+        <label className="ui-set-row">
           {/* REQ-VFY-6 — one label wraps two inputs; aria-label names each control explicitly. */}
           {S.quietStartLabel}:{" "}
-          <input type="time" name="qh_start" defaultValue={qh ? toHHMM(qh.startMinutesUtc) : "21:00"} aria-label={S.quietStartLabel} style={settingsInputStyle} />
+          <TextField
+            type="time"
+            name="qh_start"
+            defaultValue={qh ? toHHMM(qh.startMinutesUtc) : "21:00"}
+            aria-label={S.quietStartLabel}
+          />
           {S.quietEndLabel}:{" "}
-          <input type="time" name="qh_end" defaultValue={qh ? toHHMM(qh.endMinutesUtc) : "07:00"} aria-label={S.quietEndLabel} style={settingsInputStyle} />
+          <TextField
+            type="time"
+            name="qh_end"
+            defaultValue={qh ? toHHMM(qh.endMinutesUtc) : "07:00"}
+            aria-label={S.quietEndLabel}
+          />
         </label>
       </section>
       {data.projects && data.projects.length > 0 ? (
-        <section aria-label={S.runProgressHeading} style={settingsSectionStyle}>
-          <h2 style={settingsH2}>{S.runProgressHeading}</h2>
-          <p style={settingsNoteStyle}>{S.runProgressNote}</p>
+        <section aria-label={S.runProgressHeading} className="ui-set-sec">
+          <h2 className="ui-set-h2">{S.runProgressHeading}</h2>
+          <p className="ui-set-note">{S.runProgressNote}</p>
           {data.projects.map((proj) => (
-            <label key={proj.id} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
+            <label key={proj.id} className="ui-set-row ui-set-row--split">
               <span>{fmt(S.runProgressProjectFmt, { title: proj.title })}</span>
-              <select
+              <Select
                 name={`rp_${proj.id}`}
                 defaultValue={prefs.project?.[proj.id]?.run_progress === true ? "on" : "off"}
-                style={{ fontSize: "12px" }}
-              >
-                <option value="off">{S.optOff}</option>
-                <option value="on">{S.optOn}</option>
-              </select>
+                aria-label={fmt(S.runProgressProjectFmt, { title: proj.title })}
+                items={[
+                  { value: "off", label: S.optOff },
+                  { value: "on", label: S.optOn },
+                ]}
+              />
             </label>
           ))}
         </section>
       ) : null}
-      <button type="submit" style={{ marginTop: "14px", fontSize: "13px" }}>{S.saveCta}</button>
+      <Button type="submit" size="sm">
+        {S.saveCta}
+      </Button>
     </form>
   );
 }
@@ -659,27 +767,37 @@ export function NotificationsSection({
 
 /** §14.7 Integrations (REQ-ACCT-2) — one card component per provider: connect / status / items /
  *  disconnect; disconnect removes the credential now and keeps samples. Verbatim port. */
-export function IntegrationsSection({ integrations }: { readonly integrations: IntegrationsSettingsDto | null }): ReactNode {
+export function IntegrationsSection({
+  integrations,
+}: {
+  readonly integrations: IntegrationsSettingsDto | null;
+}): ReactNode {
   const data = integrations;
   if (!data) {
-    return <p data-settings-unavailable="integrations" style={settingsNoteStyle}>{B.stripeDownNote}</p>;
+    return (
+      <p data-settings-unavailable="integrations" className="ui-set-note">
+        {B.stripeDownNote}
+      </p>
+    );
   }
   const providers = ["substack", "medium", "gdrive"] as const;
   return (
     <>
-      <p style={{ ...settingsNoteStyle, marginTop: "8px" }}>{S.integrationsNote}</p>
+      <p className="ui-set-note ui-set-sec">{S.integrationsNote}</p>
       {providers.map((provider) => {
         const prov = S.integrationProviders[provider] ?? { title: provider, reads: "", never: "" };
         const conns = data.connections.filter((conn) => conn.provider === provider);
         return (
-          <div key={provider} data-integration-card={provider} style={settingsCardStyle}>
-            <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px", color: "var(--shell-fg)" }}>{prov.title}</h2>
-            <p style={settingsNoteStyle}>{prov.reads}</p>
-            <p data-integration-never="true" style={{ ...settingsNoteStyle, color: "var(--shell-fg-muted)" }}>{prov.never}</p>
+          <div key={provider} data-integration-card={provider} className="ui-set-card">
+            <h2 className="ui-set-h3 ui-set-t">{prov.title}</h2>
+            <p className="ui-set-note">{prov.reads}</p>
+            <p data-integration-never="true" className="ui-set-note ui-set-t--m">
+              {prov.never}
+            </p>
             {conns.length === 0 ? (
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0" }}>
+              <p className="ui-set-t--sm ui-set-t--f">
                 {data.voices.length > 0 ? (
-                  <a href={`/v/${data.voices[0]!.slug ?? data.voices[0]!.id}?tab=samples`} style={{ color: "var(--accent)" }}>
+                  <a href={`/v/${data.voices[0]!.slug ?? data.voices[0]!.id}?tab=samples`}>
                     {S.integrationConnectCta}
                   </a>
                 ) : (
@@ -687,31 +805,51 @@ export function IntegrationsSection({ integrations }: { readonly integrations: I
                 )}
               </p>
             ) : (
-              <ul style={{ margin: "6px 0", paddingLeft: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <ul className="ui-set-list ui-set-list--plain">
                 {conns.map((conn) => (
-                  <li key={conn.id} data-connection={conn.id} style={{ fontSize: "12px", color: "var(--shell-fg)" }}>
-                    <span data-conn-status={conn.status} style={{ fontWeight: 600 }}>
-                      {S.integrationStatusLabels[conn.status] ?? conn.status}
+                  <li key={conn.id} data-connection={conn.id} className="ui-set-t--sm">
+                    <span data-conn-status={conn.status}>
+                      {enumLabel(S.integrationStatusLabels, conn.status)}
                     </span>
-                    {conn.handle ? <span style={{ color: "var(--shell-fg-muted)" }}>{" · "}{conn.handle}</span> : null}
-                    {conn.persona.name ? (
-                      <span style={{ color: "var(--shell-fg-faint)" }}>
-                        {" · "}{fmt(S.integrationPersonaFmt, { name: conn.persona.name })}
+                    {conn.handle ? (
+                      <span className="ui-set-t--m">
+                        {" · "}
+                        {conn.handle}
                       </span>
                     ) : null}
-                    <span style={{ color: "var(--shell-fg-faint)" }}>
-                      {" · "}{fmt(S.integrationItemsFmt, { items: conn.items, included: conn.includedItems })}
+                    {conn.persona.name ? (
+                      <span className="ui-set-t--f">
+                        {" · "}
+                        {fmt(S.integrationPersonaFmt, { name: conn.persona.name })}
+                      </span>
+                    ) : null}
+                    <span className="ui-set-t--f">
+                      {" · "}
+                      {fmt(S.integrationItemsFmt, {
+                        items: conn.items,
+                        included: conn.includedItems,
+                      })}
                     </span>
                     {conn.lastSyncAt ? (
-                      <span style={{ color: "var(--shell-fg-faint)" }}>
-                        {" · "}{fmt(S.integrationLastSyncFmt, { at: conn.lastSyncAt.slice(0, 10) })}
+                      <span className="ui-set-t--f">
+                        {" · "}
+                        {fmt(S.integrationLastSyncFmt, { at: conn.lastSyncAt.slice(0, 10) })}
                       </span>
                     ) : null}
                     {conn.error ? (
-                      <span data-conn-error="true" style={{ color: "var(--sev-major)" }}>{" · "}{conn.error}</span>
+                      <span data-conn-error="true" className="ui-set-t--warn">
+                        {" · "}
+                        {conn.error}
+                      </span>
                     ) : null}
-                    <form method="post" action={`/app/settings/integrations/${conn.id}/disconnect`} style={{ display: "inline", marginLeft: "10px" }}>
-                      <button type="submit" data-disconnect="true" style={{ fontSize: "11px" }}>{S.integrationDisconnectCta}</button>
+                    <form
+                      method="post"
+                      action={`/app/settings/integrations/${conn.id}/disconnect`}
+                      className="ui-set-inline"
+                    >
+                      <Button type="submit" size="sm" data-disconnect="true">
+                        {S.integrationDisconnectCta}
+                      </Button>
                     </form>
                   </li>
                 ))}
@@ -728,14 +866,20 @@ export function IntegrationsSection({ integrations }: { readonly integrations: I
 
 /** REQ-ACCT-4 — the grace banner + the cancel form; shared by Account's pointer state and Data's
  *  control. Verbatim port. */
-function DeletionBanner({ deletion }: { readonly deletion: { requestedAt: string; graceEndsAt: string } }): ReactNode {
+function DeletionBanner({
+  deletion,
+}: {
+  readonly deletion: { requestedAt: string; graceEndsAt: string };
+}): ReactNode {
   return (
-    <div data-deletion-banner="true" style={{ ...settingsCardStyle, borderColor: "var(--sev-major)" }}>
-      <p style={{ fontSize: "13px", color: "var(--sev-major)", margin: "0 0 8px" }}>
+    <div data-deletion-banner="true" className="ui-set-card ui-set-card--warn">
+      <p className="ui-set-t ui-set-t--warn">
         {fmt(S.deletionScheduledFmt, { date: deletion.graceEndsAt.slice(0, 10) })}
       </p>
       <form method="post" action="/app/settings/account/delete/cancel">
-        <button type="submit" data-deletion-cancel="true" style={{ fontSize: "12px" }}>{S.deletionCancelCta}</button>
+        <Button type="submit" size="sm" data-deletion-cancel="true">
+          {S.deletionCancelCta}
+        </Button>
       </form>
     </div>
   );
@@ -770,55 +914,75 @@ export function DataSection({
   return (
     <>
       {data?.deletion ? <DeletionBanner deletion={data.deletion} /> : null}
-      <section aria-label={S.privacyHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.privacyHeading}</h2>
+      <section aria-label={S.privacyHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.privacyHeading}</h2>
         <form method="post" action="/app/settings/data/privacy" data-privacy-form="true">
-          <label style={settingsRowStyle}>
-            <input
-              type="checkbox"
+          <label className="ui-set-row">
+            <Checkbox
               name="analyticsOptOut"
               defaultChecked={privacy.analyticsOptOut || (data?.analyticsOptOut ?? false)}
               data-analytics-toggle="true"
+              aria-label={S.analyticsLabel}
             />
             {S.analyticsLabel}
           </label>
-          <p style={settingsNoteStyle}>{S.analyticsNote}</p>
-          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+          <p className="ui-set-note">{S.analyticsNote}</p>
+          <Button type="submit" size="sm">
+            {S.saveCta}
+          </Button>
           {privacy.saved ? (
-            <span data-privacy-saved="true" style={{ marginLeft: "10px", fontSize: "12px", color: "var(--state-ready)" }}>{S.saved}</span>
+            <span data-privacy-saved="true" className="ui-set-t--sm ui-set-t--ok ui-set-inline">
+              {S.saved}
+            </span>
           ) : null}
         </form>
         {data ? (
-          <form method="post" action="/app/settings/data/support-access" data-support-access-form="true" style={{ marginTop: "14px" }}>
-            <label style={settingsRowStyle}>
-              <input
-                type="checkbox"
+          <form
+            method="post"
+            action="/app/settings/data/support-access"
+            data-support-access-form="true"
+            className="ui-set-sec"
+          >
+            <label className="ui-set-row">
+              <Checkbox
                 name="enabled"
                 defaultChecked={data.supportAccess.active}
                 data-support-access-toggle="true"
+                aria-label={S.supportAccessLabel}
               />
               {S.supportAccessLabel}
             </label>
-            <p style={settingsNoteStyle}>{S.supportAccessNote}</p>
+            <p className="ui-set-note">{S.supportAccessNote}</p>
             {data.supportAccess.active && data.supportAccess.grant ? (
-              <p data-support-active="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "4px 0" }}>
-                {fmt(S.supportAccessActiveFmt, { at: data.supportAccess.grant.expiresAt.replace("T", " ").slice(0, 16) })}
+              <p data-support-active="true" className="ui-set-t--sm ui-set-t--ok">
+                {fmt(S.supportAccessActiveFmt, {
+                  at: data.supportAccess.grant.expiresAt.replace("T", " ").slice(0, 16),
+                })}
               </p>
             ) : null}
-            <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+            <Button type="submit" size="sm">
+              {S.saveCta}
+            </Button>
           </form>
         ) : null}
         {data ? (
-          <div data-support-log="true" style={{ marginTop: "12px" }}>
-            <h3 style={{ fontSize: "13px", margin: "0 0 6px", color: "var(--shell-fg-muted)" }}>{S.supportAccessLogHeading}</h3>
+          <div data-support-log="true" className="ui-set-sec">
+            <h3 className="ui-set-h3">{S.supportAccessLogHeading}</h3>
             {data.supportAccess.log.length === 0 ? (
-              <p style={settingsNoteStyle}>{S.supportAccessLogEmpty}</p>
+              <p className="ui-set-note">{S.supportAccessLogEmpty}</p>
             ) : (
-              <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <ul className="ui-set-list ui-set-list--faint">
                 {data.supportAccess.log.map((l) => (
                   <li key={l.id} data-support-log-row={l.action}>
-                    {l.at.slice(0, 16).replace("T", " ")}{" UTC — "}{S.supportAccessActions[l.action] ?? l.action}
-                    {l.detail ? <span style={{ color: "var(--shell-fg-faint)" }}>{" · "}{l.detail}</span> : null}
+                    {l.at.slice(0, 16).replace("T", " ")}
+                    {" UTC — "}
+                    {enumLabel(S.supportAccessActions, l.action)}
+                    {l.detail ? (
+                      <span className="ui-set-t--f">
+                        {" · "}
+                        {l.detail}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -826,74 +990,107 @@ export function DataSection({
           </div>
         ) : null}
       </section>
-      <section aria-label={S.postureHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.postureHeading}</h2>
-        <p data-training-posture="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0 8px", maxWidth: "68ch" }}>
+      <section aria-label={S.postureHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.postureHeading}</h2>
+        <p data-training-posture="true" className="ui-set-t ui-set-t--meas">
           {S.trainingPosture}
         </p>
-        <p style={settingsNoteStyle}>{S.dpaLine}</p>
+        <p className="ui-set-note">{S.dpaLine}</p>
       </section>
-      <section aria-label={S.preferenceHeading} style={settingsSectionStyle}>
-        <h2 style={settingsH2}>{S.preferenceHeading}</h2>
+      <section aria-label={S.preferenceHeading} className="ui-set-sec">
+        <h2 className="ui-set-h2">{S.preferenceHeading}</h2>
         {/* §11.7's Q-26 copy verbatim — capture-only at MVP; the Editor never sees it. */}
-        <p data-preference-copy="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0 8px", maxWidth: "68ch" }}>
+        <p data-preference-copy="true" className="ui-set-t ui-set-t--meas">
           {S.preferenceCopy}
         </p>
-        <form method="post" action="/app/settings/data/preference-learning" data-preference-form="true">
-          <label style={settingsRowStyle}>
-            <input
-              type="checkbox"
+        <form
+          method="post"
+          action="/app/settings/data/preference-learning"
+          data-preference-form="true"
+        >
+          <label className="ui-set-row">
+            <Checkbox
               name="learning"
               defaultChecked={!(data?.preferenceOptOut ?? false)}
               data-preference-toggle="true"
+              aria-label={S.preferenceToggleLabel}
             />
             {S.preferenceToggleLabel}
           </label>
-          <p style={settingsNoteStyle}>{S.preferenceOffNote}</p>
-          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+          <p className="ui-set-note">{S.preferenceOffNote}</p>
+          <Button type="submit" size="sm">
+            {S.saveCta}
+          </Button>
         </form>
       </section>
       {/* P1.18 — the whole-account zip (REQ-ACCT-3): "Export everything" queues the build and the
           download link arrives by email (7-day expiry); the restore half replays an export zip
           into this account — a re-import is a no-op. The download link is a document navigation
           (REQ-BFF-17 — binary bytes never ride fetch). */}
-      <section aria-label={S.exportHeading} style={settingsSectionStyle} data-account-export="true">
-        <h2 style={settingsH2}>{AX.heading}</h2>
-        <p style={settingsNoteStyle}>{AX.lede}</p>
+      <section aria-label={S.exportHeading} className="ui-set-sec" data-account-export="true">
+        <h2 className="ui-set-h2">{AX.heading}</h2>
+        <p className="ui-set-note">{AX.lede}</p>
         {acct?.status === "building" ? (
-          <p data-export-status="building" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{AX.building}</p>
+          <p data-export-status="building" className="ui-set-t ui-set-t--m">
+            {AX.building}
+          </p>
         ) : null}
         {acct?.status === "ready" && !acct.expired ? (
-          <p data-export-status="ready" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+          <p data-export-status="ready" className="ui-set-t ui-set-t--m">
             {AX.readyFmt.replace("{date}", (acct.expiresAt ?? "").slice(0, 10))}{" "}
-            <a href={`/app/settings/data/export/download?id=${acct.id}`} data-export-download="true" data-spa-native>{AX.downloadCta}</a>
+            <a
+              href={`/app/settings/data/export/download?id=${acct.id}`}
+              data-export-download="true"
+              data-spa-native
+            >
+              {AX.downloadCta}
+            </a>
           </p>
         ) : null}
         {acct?.status === "ready" && acct.expired ? (
-          <p data-export-status="expired" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{AX.expired}</p>
+          <p data-export-status="expired" className="ui-set-t ui-set-t--m">
+            {AX.expired}
+          </p>
         ) : null}
         {acct?.status === "failed" ? (
-          <p data-export-status="failed" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+          <p data-export-status="failed" className="ui-set-t ui-set-t--m">
             {AX.failedFmt.replace("{error}", acct.error ?? "unknown")}
           </p>
         ) : null}
         {notice === "requested" ? (
-          <p data-export-notice="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 8px" }}>{AX.building}</p>
+          <p data-export-notice="true" className="ui-set-t--sm ui-set-t--ok">
+            {AX.building}
+          </p>
         ) : null}
         <form method="post" action="/app/settings/data/export" data-export-request-form="true">
-          <button type="submit" style={{ fontSize: "13px" }}>{AX.cta}</button>
+          <Button type="submit" size="sm">
+            {AX.cta}
+          </Button>
         </form>
-        <h3 style={{ fontSize: "13px", margin: "16px 0 6px" }}>{AX.importHeading}</h3>
-        <p style={settingsNoteStyle}>{AX.importNote}</p>
-        <form method="post" action="/app/settings/data/import" encType="multipart/form-data" data-account-import="true">
-          <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg)" }}>
+        <h3 className="ui-set-h3 ui-set-sec">{AX.importHeading}</h3>
+        <p className="ui-set-note">{AX.importNote}</p>
+        <form
+          method="post"
+          action="/app/settings/data/import"
+          encType="multipart/form-data"
+          data-account-import="true"
+        >
+          <label className="ui-set-row">
             {AX.importLabel}:{" "}
-            <input type="file" name="archive" accept=".zip,application/zip" required style={{ fontSize: "12px" }} />
+            <TextField
+              type="file"
+              name="archive"
+              accept=".zip,application/zip"
+              required
+              aria-label={AX.importLabel}
+            />
           </label>
-          <button type="submit" style={{ marginTop: "8px", fontSize: "13px" }}>{AX.importCta}</button>
+          <Button type="submit" size="sm">
+            {AX.importCta}
+          </Button>
         </form>
         {notice === "imported" && imported ? (
-          <p data-import-notice="imported" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "8px" }}>
+          <p data-import-notice="imported" className="ui-set-t--sm ui-set-t--ok">
             {AX.importDoneFmt
               .replace("{projects}", String(imported.projects))
               .replace("{voices}", String(imported.voices))
@@ -901,31 +1098,36 @@ export function DataSection({
           </p>
         ) : null}
         {notice === "deduped" ? (
-          <p data-import-notice="deduped" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>{AX.importDeduped}</p>
+          <p data-import-notice="deduped" className="ui-set-t--sm ui-set-t--m">
+            {AX.importDeduped}
+          </p>
         ) : null}
         {notice === "importFailed" ? (
-          <p data-import-notice="failed" style={{ fontSize: "12px", color: "var(--shell-fg)", marginTop: "8px" }}>{AX.importFailed}</p>
+          <p data-import-notice="failed" className="ui-set-t--sm">
+            {AX.importFailed}
+          </p>
         ) : null}
       </section>
       {/* REQ-ACCT-4 — typed confirmation → the 14-day grace → the worker's hard-delete; cancel inside
           the window. The banner at the section top mirrors the status while the grace runs. */}
-      <section aria-label={S.deletionHeading} style={settingsSectionStyle} id="delete">
-        <h2 style={settingsH2}>{S.deletionHeading}</h2>
-        <p style={{ ...settingsNoteStyle, maxWidth: "68ch" }}>{S.deletionLede}</p>
+      <section aria-label={S.deletionHeading} className="ui-set-sec" id="delete">
+        <h2 className="ui-set-h2">{S.deletionHeading}</h2>
+        <p className="ui-set-note ui-set-t--meas">{S.deletionLede}</p>
         {data?.deletion ? null : (
           <form method="post" action="/app/settings/account/delete" data-delete-account-form="true">
-            <label style={settingsRowStyle}>
+            <label className="ui-set-row">
               {S.deletionConfirmLabel}:{" "}
-              <input
+              <TextField
                 type="text"
                 name="confirmation"
                 required
                 pattern={ACCOUNT_DELETION_CONFIRMATION}
                 autoComplete="off"
-                style={settingsInputStyle}
               />
             </label>
-            <button type="submit" style={{ fontSize: "13px", color: "var(--sev-major)" }}>{S.deletionCta}</button>
+            <Button type="submit" size="sm" variant="danger">
+              {S.deletionCta}
+            </Button>
           </form>
         )}
       </section>
@@ -965,7 +1167,9 @@ export function ProjectSettingsBody({
         <PageBody>
           <PageHeader title={PS.heading} />
           {/* UXC-12 — the outage note is this page's own key, never billing's stripeDownNote. */}
-          <p style={settingsNoteStyle} data-settings-unavailable="project">{PS.unavailable}</p>
+          <p className="ui-set-note" data-settings-unavailable="project">
+            {PS.unavailable}
+          </p>
         </PageBody>
       </div>
     );
@@ -979,45 +1183,52 @@ export function ProjectSettingsBody({
       <PageBody>
         <PageHeader
           title={PS.heading}
-          crumbs={[
-            { label: p.title ?? slug, href: `/p/${slug}` },
-            { label: PS.heading },
-          ]}
+          crumbs={[{ label: p.title ?? slug, href: `/p/${slug}` }, { label: PS.heading }]}
         />
         {p.protocolChangedAt ? (
-          <p data-protocol-changed="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
+          <p data-protocol-changed="true" className="ui-set-t ui-set-t--warn">
             {PS.changedNote}
           </p>
         ) : null}
         {saved ? (
-          <p data-settings-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "4px 0" }}>{PS.saved}</p>
+          <p data-settings-saved="true" className="ui-set-t ui-set-t--ok">
+            {PS.saved}
+          </p>
         ) : null}
         {notice ? (
-          <p data-settings-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "4px 0" }}>{notice}</p>
+          <p data-settings-notice="true" className="ui-set-t ui-set-t--warn">
+            {notice}
+          </p>
         ) : null}
-        <div key={contentKey} style={{ maxWidth: "640px" }}>
+        <div key={contentKey} className="ui-set-main">
           {/* R7HOME.2b (REQ-HOME-2, I5) — the voice PICKER moved here from the overview verbatim
               (§9.6; REQ-DATA-32): persona select + the one register pick + the pin hatches, each
               posting the same /p/:slug/voice* writes the overview issued. */}
-          <section aria-label={PS.voiceHeading} style={settingsSectionStyle} data-voice-picker="true">
-            <h2 style={settingsH2}>{PS.voiceHeading}</h2>
+          <section aria-label={PS.voiceHeading} className="ui-set-sec" data-voice-picker="true">
+            <h2 className="ui-set-h2">{PS.voiceHeading}</h2>
             {p.persona ? (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
-                <a href={`/v/${p.persona.slug ?? p.persona.id}`} style={{ color: "var(--accent)" }}>{p.persona.name ?? p.persona.id}</a>
+              <p className="ui-set-t">
+                <a href={`/v/${p.persona.slug ?? p.persona.id}`}>
+                  {p.persona.name ?? p.persona.id}
+                </a>
               </p>
             ) : null}
             {projectSettings.projectVoice ? (
               <>
-                <form method="post" action={`/p/${slug}/voice`} style={{ marginTop: "6px" }}>
-                  <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
-                    <select name="personaId" defaultValue={projectSettings.projectVoice.current.personaId ?? ""} style={{ fontSize: "13px" }}>
-                      <option value="">{COPY.voice.picker.noVoice}</option>
-                      {projectSettings.projectVoice.options.map((o) => (
-                        <option key={o.personaId} value={o.personaId}>
-                          {o.name ?? o.personaId}
-                        </option>
-                      ))}
-                    </select>
+                <form method="post" action={`/p/${slug}/voice`}>
+                  <label className="ui-set-row ui-set-t--m">
+                    <Select
+                      name="personaId"
+                      defaultValue={projectSettings.projectVoice.current.personaId ?? ""}
+                      aria-label={PS.voiceHeading}
+                      items={[
+                        { value: "", label: COPY.voice.picker.noVoice },
+                        ...projectSettings.projectVoice.options.map((o) => ({
+                          value: o.personaId,
+                          label: o.name ?? o.personaId,
+                        })),
+                      ]}
+                    />
                     {/* P1.14 — ONE register pick on a multi-register voice (§9.6): a run input, never a pin. */}
                     {(() => {
                       const cur = projectSettings.projectVoice.options.find(
@@ -1025,144 +1236,193 @@ export function ProjectSettingsBody({
                       );
                       const regs = cur?.registers ?? [];
                       return regs.length > 1 ? (
-                        <select name="register" data-register-pick="true" defaultValue="" style={{ fontSize: "13px" }}>
-                          <option value="">{COPY.voice.picker.registerDefault}</option>
-                          {regs.map((r) => (
-                            <option key={r} value={r}>
-                              {r}
-                            </option>
-                          ))}
-                        </select>
+                        <Select
+                          name="register"
+                          defaultValue=""
+                          aria-label={COPY.voice.picker.registerDefault}
+                          data-register-pick="true"
+                          items={[
+                            { value: "", label: COPY.voice.picker.registerDefault },
+                            ...regs.map((r) => ({ value: r, label: r })),
+                          ]}
+                        />
                       ) : null;
                     })()}
                     {projectSettings.projectVoice.current.voiceMode === "linked" &&
                     projectSettings.projectVoice.current.status ? (
-                      <span data-voice-pill={projectSettings.projectVoice.current.status.pill.tone} style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                      <span
+                        data-voice-pill={projectSettings.projectVoice.current.status.pill.tone}
+                        className="ui-set-t--sm ui-set-t--f"
+                      >
                         {projectSettings.projectVoice.current.status.pill.label}
                       </span>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.voice.picker.noVoiceNote}</span>
+                      <span className="ui-set-t--sm ui-set-t--f">
+                        {COPY.voice.picker.noVoiceNote}
+                      </span>
                     )}
                   </label>
-                  <button type="submit" style={{ fontSize: "12px", marginTop: "6px" }}>{COPY.voice.picker.save}</button>
+                  <Button type="submit" size="sm">
+                    {COPY.voice.picker.save}
+                  </Button>
                 </form>
                 {voiceLocked === true ? (
-                  <p data-voice-locked="true" role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "8px 0 0" }}>
+                  <p data-voice-locked="true" role="alert" className="ui-set-t--sm ui-set-t--warn">
                     {COPY.voice.detail.voiceLockedNotice}
                   </p>
                 ) : null}
                 {projectSettings.projectVoice.current.pinnedStale ? (
-                  <div data-pinned-stale="true" style={{ marginTop: "8px", fontSize: "12px" }}>
-                    <p style={{ color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{COPY.voice.detail.pinnedStaleNotice}</p>
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-                      <form method="post" action={`/p/${slug}/voice/adopt`} style={{ margin: 0 }}>
-                        <button type="submit" data-adopt-voice="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                  <div data-pinned-stale="true" className="ui-set-t--sm ui-set-sec">
+                    <p className="ui-set-t--m">{COPY.voice.detail.pinnedStaleNotice}</p>
+                    <div className="ui-set-form">
+                      <form method="post" action={`/p/${slug}/voice/adopt`}>
+                        <Button type="submit" variant="ghost" size="sm" data-adopt-voice="true">
                           {COPY.voice.detail.adoptCta}
-                        </button>
+                        </Button>
                       </form>
-                      <a href={`/p/${slug}/voice/reseed`} style={{ fontSize: "12px", color: "var(--accent)" }}>
+                      <a href={`/p/${slug}/voice/reseed`} className="ui-set-t--sm">
                         {COPY.voice.detail.reseedPreviewCta}
                       </a>
-                      <form method="post" action={`/p/${slug}/voice/fork`} style={{ margin: 0 }}>
-                        <input type="hidden" name="personaId" value={projectSettings.projectVoice.current.personaId ?? ""} />
-                        <button type="submit" data-fork-project="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                      <form method="post" action={`/p/${slug}/voice/fork`}>
+                        <HiddenField
+                          name="personaId"
+                          value={projectSettings.projectVoice.current.personaId ?? ""}
+                        />
+                        <Button type="submit" variant="ghost" size="sm" data-fork-project="true">
                           {COPY.voice.detail.forkProjectCta}
-                        </button>
+                        </Button>
                       </form>
                     </div>
                   </div>
                 ) : null}
               </>
             ) : (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "4px 0" }}>{PS.voiceNone}</p>
+              <p className="ui-set-t ui-set-t--f">{PS.voiceNone}</p>
             )}
           </section>
-          <form method="post" action={`/p/${slug}/settings`} style={{ marginTop: "8px" }}>
-            <section aria-label={PS.protocolHeading} style={settingsSectionStyle}>
-              <h2 style={settingsH2}>{PS.protocolHeading}</h2>
-              <label style={settingsRowStyle}>
-                {PS.venueLabel}:{" "}
-                <input type="text" name="venue" defaultValue={p.venue ?? ""} style={settingsInputStyle} />
+          <form method="post" action={`/p/${slug}/settings`}>
+            <section aria-label={PS.protocolHeading} className="ui-set-sec">
+              <h2 className="ui-set-h2">{PS.protocolHeading}</h2>
+              <label className="ui-set-row">
+                {PS.venueLabel}: <TextField type="text" name="venue" defaultValue={p.venue ?? ""} />
               </label>
               {ps.settings.protocols.length > 0 ? (
-                <label style={settingsRowStyle}>
+                <label className="ui-set-row">
                   {PS.protocolLabel}:{" "}
-                  <select name="protocolId" defaultValue={p.protocolId ?? ""} style={{ fontSize: "13px" }}>
-                    {ps.settings.protocols.map((proto) => (
-                      <option key={proto.id} value={proto.id}>{proto.name}</option>
-                    ))}
-                  </select>
+                  <Select
+                    name="protocolId"
+                    defaultValue={p.protocolId ?? ""}
+                    aria-label={PS.protocolLabel}
+                    items={ps.settings.protocols.map((proto) => ({
+                      value: proto.id,
+                      label: proto.name,
+                    }))}
+                  />
                 </label>
               ) : null}
-              <label style={settingsRowStyle}>
+              <label className="ui-set-row">
                 {PS.rigorLabel}:{" "}
-                <select name="rigorDefault" defaultValue={p.rigorDefault ?? ""} style={{ fontSize: "13px" }}>
-                  <option value="">{PS.rigorInherit}</option>
-                  {RIGORS.map((r) => (
-                    <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
-                  ))}
-                </select>
+                <Select
+                  name="rigorDefault"
+                  defaultValue={p.rigorDefault ?? ""}
+                  aria-label={PS.rigorLabel}
+                  items={[
+                    { value: "", label: PS.rigorInherit },
+                    ...RIGORS.map((r) => ({ value: r, label: RIGOR_DISPLAY[r] })),
+                  ]}
+                />
               </label>
-              <label style={settingsRowStyle}>
+              <label className="ui-set-row">
                 {PS.tierLabel}:{" "}
-                <select name="modelTierDefault" defaultValue={p.modelTierDefault ?? ""} style={{ fontSize: "13px" }}>
-                  <option value="">{PS.rigorInherit}</option>
-                  {MODEL_TIERS.map((t) => (
-                    <option key={t} value={t}>{MODEL_TIER_DISPLAY[t]}</option>
-                  ))}
-                </select>
+                <Select
+                  name="modelTierDefault"
+                  defaultValue={p.modelTierDefault ?? ""}
+                  aria-label={PS.tierLabel}
+                  items={[
+                    { value: "", label: PS.rigorInherit },
+                    ...MODEL_TIERS.map((t) => ({ value: t, label: MODEL_TIER_DISPLAY[t] })),
+                  ]}
+                />
               </label>
-              <label style={settingsRowStyle}>
+              <label className="ui-set-row">
                 {PS.paperThemeLabel}:{" "}
-                <select name="paperTheme" defaultValue={p.paperTheme} style={{ fontSize: "13px" }}>
-                  <option value="follow">{S.paperThemeFollow}</option>
-                  <option value="light">{S.paperThemeLight}</option>
-                  <option value="dark">{S.paperThemeDark}</option>
-                </select>
+                <Select
+                  name="paperTheme"
+                  defaultValue={p.paperTheme}
+                  aria-label={PS.paperThemeLabel}
+                  items={[
+                    { value: "follow", label: S.paperThemeFollow },
+                    { value: "light", label: S.paperThemeLight },
+                    { value: "dark", label: S.paperThemeDark },
+                  ]}
+                />
               </label>
-              <label style={settingsRowStyle}>
+              <label className="ui-set-row">
                 {PS.stageLabel}:{" "}
-                <select name="stage" defaultValue={ov.stage ?? ""} style={{ fontSize: "13px" }}>
-                  <option value="">{PS.stages.infer}</option>
-                  <option value="early">{PS.stages.early}</option>
-                  <option value="near_final">{PS.stages.near_final}</option>
-                </select>
+                <Select
+                  name="stage"
+                  defaultValue={ov.stage ?? ""}
+                  aria-label={PS.stageLabel}
+                  items={[
+                    { value: "", label: PS.stages.infer },
+                    { value: "early", label: PS.stages.early },
+                    { value: "near_final", label: PS.stages.near_final },
+                  ]}
+                />
               </label>
-              <p style={settingsNoteStyle}>{PS.stageNote}</p>
-              <label style={settingsRowStyle}>
+              <p className="ui-set-note">{PS.stageNote}</p>
+              <label className="ui-set-row">
                 {PS.lengthLabel}:{" "}
-                <input type="number" name="ov_length" min={1} defaultValue={ov.length ?? undefined} style={{ ...settingsInputStyle, width: "110px" }} />
+                <TextField
+                  type="number"
+                  name="ov_length"
+                  min={1}
+                  defaultValue={ov.length ?? undefined}
+                  className="ui-field--w"
+                />
               </label>
-              <p style={settingsNoteStyle}>{PS.lengthNote}</p>
-              <fieldset style={{ border: "none", margin: "10px 0 0", padding: 0 }}>
-                <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{PS.phaseDefaultsHeading}</legend>
-                {(Object.keys(PS.phaseDefaults) as Array<keyof typeof PS.phaseDefaults>).map((phase) => {
-                  const phaseDefault = (ov.phaseDefaults as Record<string, boolean | undefined> | undefined)?.[phase];
-                  return (
-                  <label key={phase} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
-                    <span>{PS.phaseDefaults[phase]}</span>
-                    <select
-                      name={`pd_${phase}`}
-                      defaultValue={
-                        phaseDefault === true ? "on" : phaseDefault === false ? "off" : ""
-                      }
-                      style={{ fontSize: "12px" }}
-                    >
-                      <option value="">{PS.phaseOptDefault}</option>
-                      <option value="on">{PS.phaseOptOn}</option>
-                      <option value="off">{PS.phaseOptOff}</option>
-                    </select>
-                  </label>
-                  );
-                })}
+              <p className="ui-set-note">{PS.lengthNote}</p>
+              <fieldset className="ui-set-fs">
+                <legend>{PS.phaseDefaultsHeading}</legend>
+                {(Object.keys(PS.phaseDefaults) as Array<keyof typeof PS.phaseDefaults>).map(
+                  (phase) => {
+                    const phaseDefault = (
+                      ov.phaseDefaults as Record<string, boolean | undefined> | undefined
+                    )?.[phase];
+                    return (
+                      <label key={phase} className="ui-set-row ui-set-row--split">
+                        <span>{PS.phaseDefaults[phase]}</span>
+                        <Select
+                          name={`pd_${phase}`}
+                          defaultValue={
+                            phaseDefault === true ? "on" : phaseDefault === false ? "off" : ""
+                          }
+                          aria-label={PS.phaseDefaults[phase]}
+                          items={[
+                            { value: "", label: PS.phaseOptDefault },
+                            { value: "on", label: PS.phaseOptOn },
+                            { value: "off", label: PS.phaseOptOff },
+                          ]}
+                        />
+                      </label>
+                    );
+                  },
+                )}
               </fieldset>
             </section>
-            <button type="submit" style={{ marginTop: "14px", fontSize: "13px" }}>{PS.saveCta}</button>
+            <Button type="submit" size="sm">
+              {PS.saveCta}
+            </Button>
           </form>
           {/* REQ-GATE-3/10 — P1.09's approval-policy + standing-guidance surface. Changing the policy
               never alters an open card; guidance edits route through the settings POSTs. */}
           {ps.approvalSettings ? (
-            <ApprovalSettingsSection slug={slug} settings={ps.approvalSettings} returnTo={`/p/${slug}/settings`} editable />
+            <ApprovalSettingsSection
+              slug={slug}
+              settings={ps.approvalSettings}
+              returnTo={`/p/${slug}/settings`}
+              editable
+            />
           ) : (
             // R7HOME.2b — the PRB.05 opt-in fallback moved here with the admin block (was the
             // overview's): without a settings read the 24h triage approve still has a home.
@@ -1170,25 +1430,29 @@ export function ProjectSettingsBody({
               method="post"
               action={`/p/${slug}/approval-overrides`}
               data-approval-opt-in="true"
-              style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
+              className="ui-set-card ui-set-sec ui-set-t--meas"
             >
-              <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
-                {COPY.gates.optInHeading}
-              </h2>
-              <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
-                <input type="checkbox" name="approve_triage_24h" defaultChecked={typeof ps.approvalOverrides?.approve_triage === "number"} />
+              <h2 className="ui-set-h3 ui-set-t">{COPY.gates.optInHeading}</h2>
+              <label className="ui-set-row ui-set-t--m">
+                <Checkbox
+                  name="approve_triage_24h"
+                  defaultChecked={typeof ps.approvalOverrides?.approve_triage === "number"}
+                  aria-label={COPY.gates.optInLabel}
+                />
                 {COPY.gates.optInLabel}
               </label>
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" }}>{COPY.gates.optInNote}</p>
-              <button type="submit" style={{ fontSize: "12px" }}>{COPY.gates.optInSave}</button>
+              <p className="ui-set-note">{COPY.gates.optInNote}</p>
+              <Button type="submit" size="sm">
+                {COPY.gates.optInSave}
+              </Button>
             </form>
           )}
-          <section aria-label={PS.tagsHeading} style={settingsSectionStyle}>
-            <h2 style={settingsH2}>{PS.tagsHeading}</h2>
+          <section aria-label={PS.tagsHeading} className="ui-set-sec">
+            <h2 className="ui-set-h2">{PS.tagsHeading}</h2>
             {p.tags.length > 0 ? (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>{p.tags.join(", ")}</p>
+              <p className="ui-set-t">{p.tags.join(", ")}</p>
             ) : (
-              <p style={settingsNoteStyle}>{PS.tagsPlaceholder}</p>
+              <p className="ui-set-note">{PS.tagsPlaceholder}</p>
             )}
           </section>
         </div>

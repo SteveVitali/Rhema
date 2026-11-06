@@ -1098,6 +1098,18 @@ export const COPY = {
     detail: {
       backToList: "All voices",
       statusHeading: "Status",
+      // R7KIT.3a (REQ-KIT-4; R5 D4) — the voice source-kind label map: the list's meta line
+      // renders "Substack export", never the `substack_export` enum key. Authored here for
+      // 240a_R7KIT.3a2, which consumes it on the voices surface.
+      sourceKind: {
+        paste: "Paste",
+        upload: "Upload",
+        url: "URL",
+        substack: "Substack",
+        substack_export: "Substack export",
+        medium: "Medium",
+        gdrive: "Google Drive",
+      } as Record<string, string>,
       // P1.14 — the five tabs (§9.5).
       tabs: {
         overview: "Overview",
@@ -1415,6 +1427,9 @@ export const COPY = {
     sessionsNote:
       "Revoking kills the token server-side — the shared session contract the mobile app uses too.",
     sessionThisDevice: "This device",
+    // R7KIT.3a (REQ-KIT-4; D3) — the inline marker after the parsed label:
+    // "Chrome on macOS · this device".
+    sessionThisDeviceInline: "this device",
     sessionRevokeCta: "Revoke",
     sessionExpiresFmt: "expires {at}",
     // ---- P1.20 — Preferences (§14.7; REQ-BILL-4's threshold, REQ-PROD-6's tier vocabulary) ----
@@ -1632,6 +1647,40 @@ export const COPY = {
       promo: "Promo",
     } as Record<string, string>,
     expiresFmt: "expires {at}",
+    // R7KIT.3a (REQ-KIT-4; D4) — the runs table's enum keys render as labels, never raw
+    // workflow/state keys ("completed_partial" → "Partially completed"). Unlisted keys fall
+    // back to a humanized form, so a new enum value can never leak snake_case to the page.
+    workflowLabels: {
+      review: "Review",
+      draft: "Draft",
+      revise: "Revise",
+      fact_check: "Fact check",
+      profile_voice: "Voice profile",
+      refresh_voice: "Voice refresh",
+      calibrate_voice: "Voice calibration",
+      research_burst: "Research",
+      chat_turn: "Chat",
+      chat: "Chat",
+      outline: "Outline",
+      figure: "Figure",
+      reseed_charter: "Voice reseed",
+    } as Record<string, string>,
+    stateLabels: {
+      created: "Created",
+      awaiting_consent: "Waiting for you",
+      queued: "Queued",
+      provisioning: "Starting",
+      running: "Running",
+      waiting_gate: "Waiting on approval",
+      cancelling: "Cancelling",
+      orphaned: "Orphaned",
+      finalizing: "Finishing",
+      completed: "Completed",
+      completed_partial: "Partially completed",
+      failed: "Failed",
+      cancelled: "Cancelled",
+      delivered: "Delivered",
+    } as Record<string, string>,
     warningsHeading: "Heads up",
     nextExpiryFmt: "{n} {bucket} credits expire {at}",
     csvCta: "Download CSV",
@@ -2308,9 +2357,11 @@ export const COPY = {
   //      REQ-GROWTH-5 amended, REQ-EVAL-19). ----
   demo: {
     hubTitle: "The demo",
-    hubLede: "A read-only walk through a real essay's editorial record — its drafts, the dossiers each review delivered, and what changed between rounds.",
+    hubLede:
+      "A read-only walk through a real essay's editorial record — its drafts, the dossiers each review delivered, and what changed between rounds.",
     readOnlyTitle: "Read-only demo",
-    readOnlyBody: "This is a read-only demo of a real essay's editorial record. Start your own project to use these tools.",
+    readOnlyBody:
+      "This is a read-only demo of a real essay's editorial record. Start your own project to use these tools.",
     // 220a (REQ-DWEB-11/14; S-3/S-14) — the demo surface banner + its exits (document
     // navigations, never client navs — every exit rebuilds a real boot).
     bannerText: "A read-only demo of a real essay's editorial record.",
@@ -2335,7 +2386,8 @@ export const COPY = {
       readOnSubstack: "Read on Substack ↗",
       lookAtHeading: "What to look at",
       byline: "S. J. Sebastian",
-      countsFmt: "{major} major · {minor} minor · {strengths} strengths · {claimsChecked} claims checked",
+      countsFmt:
+        "{major} major · {minor} minor · {strengths} strengths · {claimsChecked} claims checked",
       wordsFmt: "{n} words",
       retitleFmt: "Retitled from “{from}” ({atLabel})",
       arcReview: "Review of v{n}",
@@ -2343,8 +2395,7 @@ export const COPY = {
       // provenanceLead + agentDiscourseLink + provenanceMid render as
       // "{lead}<a>agent-discourse</a>{mid}" — the repo link IS the named mention (S-11).
       provenanceLead: "These essays were drafted and reviewed with ",
-      provenanceMid:
-        " — open-source editorial protocols that Rhēma's own protocols port.",
+      provenanceMid: " — open-source editorial protocols that Rhēma's own protocols port.",
       provenanceRoles:
         "The record's roles: the writer, the editor (agent), the revising agent and the drafting agent. Edits the writer made outside a review are marked writer-directed.",
       agentDiscourseLink: "agent-discourse",

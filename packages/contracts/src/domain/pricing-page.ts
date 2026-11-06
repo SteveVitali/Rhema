@@ -296,8 +296,10 @@ export interface PlanCard {
 /**
  * One decimal place, FLOORED, strip a trailing ".0" — the coverage figure's convention.
  * R6MNY.1 (GD-BL13.R6; REQ-LCH-5b) — the "≈N" figure never promises more runs than the credits
- * buy: a true 0.79 prints "0.7", never the nearest-rounded "0.8". Under one honest loop the line
- * hides (`null`) rather than print a figure a full run would contradict.
+ * buy: a true 0.79 prints "0.7", never the nearest-rounded "0.8".
+ * R7KIT.3a (REQ-KIT-4; D8, RV-28; spec §8.2) — every figure ROUNDS DOWN and a figure below ONE
+ * honest loop prints "less than 1 …", not a cryptic "≈0.7" — a literal truth the reader can
+ * parse, still floored, never rounded up.
  */
 function coverageFigure(loops: number): string | null {
   if (!(loops > 0)) return null;
@@ -326,7 +328,18 @@ export function planCoverageLine(tier: PlanTier, price: SurfacePricer | undefine
       inputs: { words: essay.words, claims: essay.claims },
     });
     if (raw == null || raw <= 0) return null;
-    const loops = coverageFigure(p.includedCreditsMonthly / raw);
+    const ratio = p.includedCreditsMonthly / raw;
+    // REQ-KIT-4 (D8, RV-28; spec §8.2) — below one honest loop the part says so in words
+    // ("less than 1 …"), never an "≈0.x" the reader mistakes for a usable run.
+    if (ratio < 1) {
+      parts.push(
+        modelTier === p.modelTiers[0]
+          ? `less than 1 essay review a month on ${MODEL_TIER_LABELS[modelTier]}`
+          : `less than 1 a month on ${MODEL_TIER_LABELS[modelTier]}`,
+      );
+      continue;
+    }
+    const loops = coverageFigure(ratio);
     if (loops == null) return null;
     parts.push(
       modelTier === p.modelTiers[0]
@@ -394,7 +407,10 @@ export function visiblePlansPublication(
   claims: PublicClaimsConfig = PUBLIC_CLAIMS,
   price?: SurfacePricer,
 ): {
-  readonly plans: Record<PlanTier, Omit<PlanSpec, "whatItCovers"> & { readonly whatItCovers: string | null }>;
+  readonly plans: Record<
+    PlanTier,
+    Omit<PlanSpec, "whatItCovers"> & { readonly whatItCovers: string | null }
+  >;
   readonly trial: Omit<TrialSpec, "includedNote"> & { readonly includedNote: string | null };
 } {
   const plans = Object.fromEntries(
@@ -407,7 +423,9 @@ export function visiblePlansPublication(
     plans,
     trial: {
       ...PRICING.trial,
-      includedNote: publicClaimEnabled("trial.firstReviewIncluded", claims) ? PRICING.trial.includedNote : null,
+      includedNote: publicClaimEnabled("trial.firstReviewIncluded", claims)
+        ? PRICING.trial.includedNote
+        : null,
     },
   };
 }
@@ -423,9 +441,10 @@ export interface MatrixRow {
  * while `trial.firstReviewIncluded` renders for the viewer's audience (the Free column IS the
  * trial column, §14.2); a row whose every cell is "—" is omitted — no all-dash rows.
  */
-export function pricingMatrix(
-  claims: PublicClaimsConfig = PUBLIC_CLAIMS,
-): { readonly columns: readonly string[]; readonly rows: readonly MatrixRow[] } {
+export function pricingMatrix(claims: PublicClaimsConfig = PUBLIC_CLAIMS): {
+  readonly columns: readonly string[];
+  readonly rows: readonly MatrixRow[];
+} {
   const tiers: readonly PlanTier[] = ["free", "writer", "studio", "studio_max", "team"];
   const plans = tiers.map(planOf);
   const cell = (fn: (p: ReturnType<typeof planOf>) => string) => plans.map(fn);
@@ -434,36 +453,57 @@ export function pricingMatrix(
     ? PRICING.trial.entitlement.wordCap.toLocaleString("en-US")
     : "—";
   const rows: MatrixRow[] = [
-    { label: "Price (monthly)", cells: cell((p) => (p.monthlyUsd === 0 ? "$0" : `$${p.monthlyUsd}${p.perSeat ? "/seat" : ""}/mo`)) },
+    {
+      label: "Price (monthly)",
+      cells: cell((p) =>
+        p.monthlyUsd === 0 ? "$0" : `$${p.monthlyUsd}${p.perSeat ? "/seat" : ""}/mo`,
+      ),
+    },
     {
       label: "Price (annual, per month)",
       cells: cell((p) => (p.annualMonthlyUsd != null ? `$${p.annualMonthlyUsd}/mo` : "—")),
     },
     { label: "Included credits / mo", cells: cell((p) => credits(p.includedCreditsMonthly)) },
-    { label: "Model tiers", cells: cell((p) => p.modelTiers.map((t) => MODEL_TIER_LABELS[t]).join(" · ")) },
+    {
+      label: "Model tiers",
+      cells: cell((p) => p.modelTiers.map((t) => MODEL_TIER_LABELS[t]).join(" · ")),
+    },
     {
       label: "Concurrency",
-      cells: cell((p) => (p.concurrency === 0 ? "—" : `${p.concurrency}${p.concurrencyPerSeat ? "/seat" : ""}`)),
+      cells: cell((p) =>
+        p.concurrency === 0 ? "—" : `${p.concurrency}${p.concurrencyPerSeat ? "/seat" : ""}`,
+      ),
     },
-    { label: "Daily chat credits", cells: cell((p) => (p.dailyChatCredits != null ? String(p.dailyChatCredits) : "—")) },
-    { label: "Top-ups", cells: cell((p) => (p.topUps === true ? "Yes" : p.topUps === "admin" ? "Admin" : "—")) },
+    {
+      label: "Daily chat credits",
+      cells: cell((p) => (p.dailyChatCredits != null ? String(p.dailyChatCredits) : "—")),
+    },
+    {
+      label: "Top-ups",
+      cells: cell((p) => (p.topUps === true ? "Yes" : p.topUps === "admin" ? "Admin" : "—")),
+    },
     {
       label: "Rollover",
-      cells: cell(() =>
-        `≤${PRICING.rollover.balanceCapMultiple}× monthly · expires at reset`,
-      ),
+      cells: cell(() => `≤${PRICING.rollover.balanceCapMultiple}× monthly · expires at reset`),
     },
     {
       label: "Run word cap",
       cells: plans.map((p) =>
-        p === planOf("free") ? trialWordCapCell : p.runWordCap != null ? p.runWordCap.toLocaleString("en-US") : "—",
+        p === planOf("free")
+          ? trialWordCapCell
+          : p.runWordCap != null
+            ? p.runWordCap.toLocaleString("en-US")
+            : "—",
       ),
     },
-    { label: "Daily run ceiling", cells: cell((p) => (p.dailyRunCeiling != null ? String(p.dailyRunCeiling) : "—")) },
+    {
+      label: "Daily run ceiling",
+      cells: cell((p) => (p.dailyRunCeiling != null ? String(p.dailyRunCeiling) : "—")),
+    },
     {
       label: "Research tools",
       cells: cell((p) => (p.researchTools ? "Yes" : "—")),
-      },
+    },
     {
       label: "Support",
       cells: cell((p) => (p.priorityQueue ? "Priority" : "Standard")),

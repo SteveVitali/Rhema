@@ -37,7 +37,13 @@ import { ACCOUNT_DELETION_CONFIRMATION, NOTIFICATION_EVENT_TYPES } from "@rhema/
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
-import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
+import {
+  axeCheck,
+  restoreDocumentNav,
+  SETTLE_TIMEOUT,
+  settled,
+  stubDocumentNav,
+} from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -66,7 +72,8 @@ const ACCOUNT: AccountSettingsDto = {
   sessions: [
     {
       id: "s1",
-      userAgent: "Test Browser",
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       ipAddress: "127.0.0.1",
       createdAt: "2026-09-19T00:00:00Z",
       expiresAt: "2026-10-19T00:00:00Z",
@@ -135,8 +142,22 @@ const DATA: DataSettingsDto = {
     active: true,
     grant: { grantedAt: "2026-09-20T00:00:00Z", expiresAt: "2026-09-23T00:00:00Z" },
     log: [
-      { id: "l1", grantId: "g1", actor: "user", action: "granted", detail: null, at: "2026-09-20T00:00:00Z" },
-      { id: "l2", grantId: "g1", actor: "op_1", action: "accessed", detail: "triaged ticket 41", at: "2026-09-20T06:00:00Z" },
+      {
+        id: "l1",
+        grantId: "g1",
+        actor: "user",
+        action: "granted",
+        detail: null,
+        at: "2026-09-20T00:00:00Z",
+      },
+      {
+        id: "l2",
+        grantId: "g1",
+        actor: "op_1",
+        action: "accessed",
+        detail: "triaged ticket 41",
+        at: "2026-09-20T06:00:00Z",
+      },
     ],
   },
   deletion: null,
@@ -183,14 +204,31 @@ const APPROVALS: ApprovalSettingsDto = {
   overrides: { approve_scope: 24 * 60 * 60 * 1000 },
   defaults: [
     { kind: "approve_scope", deadlineMs: null, onExpiry: "wait", overridable: true },
-    { kind: "approve_plan", deadlineMs: 48 * 60 * 60 * 1000, onExpiry: "proceed_as_proposed", overridable: true },
+    {
+      kind: "approve_plan",
+      deadlineMs: 48 * 60 * 60 * 1000,
+      onExpiry: "proceed_as_proposed",
+      overridable: true,
+    },
     { kind: "spend", deadlineMs: null, onExpiry: "wait", overridable: false },
   ],
   standing: [
-    { id: "g1", body: "Keep openings under 700 words.", workflows: ["review"], active: true, createdAt: "2026-09-01T00:00:00Z" },
+    {
+      id: "g1",
+      body: "Keep openings under 700 words.",
+      workflows: ["review"],
+      active: true,
+      createdAt: "2026-09-01T00:00:00Z",
+    },
   ],
   retired: [
-    { id: "g0", body: "Old note.", workflows: [], active: false, createdAt: "2026-08-01T00:00:00Z" },
+    {
+      id: "g0",
+      body: "Old note.",
+      workflows: [],
+      active: false,
+      createdAt: "2026-08-01T00:00:00Z",
+    },
   ],
 };
 
@@ -232,7 +270,8 @@ function makeFetch(opts: FetchOpts = {}) {
     }
     if (url === "/bff/settings/preferences") return jsonResponse(200, { preferences: PREFS });
     if (url === "/bff/settings/notifications") return jsonResponse(200, { notifications: NOTIF });
-    if (url === "/bff/settings/integrations") return jsonResponse(200, { integrations: INTEGRATIONS });
+    if (url === "/bff/settings/integrations")
+      return jsonResponse(200, { integrations: INTEGRATIONS });
     if (url === "/bff/settings/data") {
       return jsonResponse(200, {
         privacy: { analyticsOptOut: false },
@@ -246,7 +285,11 @@ function makeFetch(opts: FetchOpts = {}) {
         : jsonResponse(
             200,
             opts.project ?? {
-              projectSettings: { slug: SLUG, settings: PROJECT_SETTINGS, approvalSettings: APPROVALS },
+              projectSettings: {
+                slug: SLUG,
+                settings: PROJECT_SETTINGS,
+                approvalSettings: APPROVALS,
+              },
             },
           );
     }
@@ -259,14 +302,24 @@ function makeFetch(opts: FetchOpts = {}) {
     if (opts.hold?.[url] != null) return opts.hold[url]!;
     if (opts.mutations?.[url] != null) return jsonResponse(200, opts.mutations[url]!);
     // The settings mutation grammar — the SSR action paths answer the JSON envelope.
-    if (url === "/app/settings/account" || url === "/app/settings/sessions/revoke" || url === "/app/settings/account/delete/cancel") {
+    if (
+      url === "/app/settings/account" ||
+      url === "/app/settings/sessions/revoke" ||
+      url === "/app/settings/account/delete/cancel"
+    ) {
       return jsonResponse(200, { ok: true, redirect: "/app/settings/account?saved=1" });
     }
     if (url === "/app/settings/account/email") {
-      return jsonResponse(200, { ok: true, redirect: "/app/settings/account?notice=email-pending" });
+      return jsonResponse(200, {
+        ok: true,
+        redirect: "/app/settings/account?notice=email-pending",
+      });
     }
     if (url === "/app/settings/account/delete") {
-      return jsonResponse(200, { ok: true, redirect: "/app/settings/data?notice=deletion-scheduled" });
+      return jsonResponse(200, {
+        ok: true,
+        redirect: "/app/settings/data?notice=deletion-scheduled",
+      });
     }
     if (url === "/app/settings/preferences") {
       return jsonResponse(200, { ok: true, redirect: "/app/settings/preferences?saved=1" });
@@ -277,14 +330,21 @@ function makeFetch(opts: FetchOpts = {}) {
     if (url === "/app/settings/integrations/cn1/disconnect") {
       return jsonResponse(200, { ok: true, redirect: "/app/settings/integrations?saved=1" });
     }
-    if (url === "/app/settings/data/privacy" || url === "/app/settings/data/support-access" || url === "/app/settings/data/preference-learning") {
+    if (
+      url === "/app/settings/data/privacy" ||
+      url === "/app/settings/data/support-access" ||
+      url === "/app/settings/data/preference-learning"
+    ) {
       return jsonResponse(200, { ok: true, redirect: "/app/settings/data?saved=1" });
     }
     if (url === "/app/settings/data/export") {
       return jsonResponse(200, { ok: true, redirect: "/app/settings/data?notice=requested" });
     }
     if (url === "/app/settings/data/import") {
-      return jsonResponse(200, { ok: true, redirect: "/app/settings/data?notice=imported&p=1&v=1&f=2" });
+      return jsonResponse(200, {
+        ok: true,
+        redirect: "/app/settings/data?notice=imported&p=1&v=1&f=2",
+      });
     }
     if (url === `/p/${SLUG}/settings`) {
       return jsonResponse(200, { ok: true, redirect: `/p/${SLUG}/settings?saved=1` });
@@ -292,7 +352,11 @@ function makeFetch(opts: FetchOpts = {}) {
     if (url === `/p/${SLUG}/settings/approvals`) {
       return jsonResponse(200, { ok: true, redirect: `/p/${SLUG}/settings?approvals=saved` });
     }
-    if (url === `/p/${SLUG}/settings/guidance/g1` || url === `/p/${SLUG}/guidance` || url === `/p/${SLUG}/guidance/g1/retire`) {
+    if (
+      url === `/p/${SLUG}/settings/guidance/g1` ||
+      url === `/p/${SLUG}/guidance` ||
+      url === `/p/${SLUG}/guidance/g1/retire`
+    ) {
       return jsonResponse(200, { ok: true, redirect: `/p/${SLUG}/settings` });
     }
     return jsonResponse(500, { error: "unstubbed_path" });
@@ -328,9 +392,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
   // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
   // commit — the BL-87 mount-settle flake class.
-  await vi.waitFor(() => {
-    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
-    }, { timeout: SETTLE_TIMEOUT });
+  await vi.waitFor(
+    () => {
+      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    },
+    { timeout: SETTLE_TIMEOUT },
+  );
   return { router, queryClient, el };
 }
 
@@ -379,7 +446,9 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     // The shared strip — six visible sections, active = account (REQ-NAV-6 deep links stay <a>).
     const nav = main.querySelector("[data-settings-nav]");
     expect(nav).not.toBeNull();
-    const links = [...nav!.querySelectorAll<HTMLAnchorElement>("a")].map((a) => a.getAttribute("href"));
+    const links = [...nav!.querySelectorAll<HTMLAnchorElement>("a")].map((a) =>
+      a.getAttribute("href"),
+    );
     expect(links).toEqual([
       "/app/settings/account",
       "/app/settings/preferences",
@@ -401,6 +470,13 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     expect(main.querySelector('[data-session="s2"]')).not.toBeNull();
     expect(main.querySelector<HTMLInputElement>('[name="sessionId"]')?.value).toBe("s2");
     expect(main.querySelector("[data-revoke-session]")).not.toBeNull();
+    // REQ-KIT-4 (D3) — the current session reads the parsed "Chrome on macOS · this device",
+    // never the raw UA string; the mark lands only on the current row.
+    expect(main.querySelector('[data-session="s1"]')?.textContent).toContain(
+      "Chrome on macOS · this device",
+    );
+    expect(main.textContent).not.toContain("Mozilla/5.0");
+    expect(main.querySelector('[data-session="s2"]')?.textContent).not.toContain("this device");
     // The grace banner + cancel (deletion fixture set).
     expect(main.querySelector("[data-deletion-banner]")?.textContent).toContain("2026-10-15");
     expect(main.querySelector("[data-deletion-cancel]")).not.toBeNull();
@@ -415,14 +491,17 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     const reads = () => f.mock.calls.filter(([u]) => String(u) === "/bff/settings/account").length;
     const baseline = reads();
     expect(baseline).toBeGreaterThanOrEqual(1);
-    const form = (await settled('form[action="/app/settings/account"]'));
+    const form = await settled('form[action="/app/settings/account"]');
     expect(form.getAttribute("method")).toBe("post");
     await submit(form);
     const post = f.mock.calls.find(([u, i]) => String(u) === "/app/settings/account" && i != null);
     expect(post).toBeDefined();
     const init = post![1] as RequestInit;
     expect(init.method).toBe("POST");
-    expect(init.headers).toMatchObject({ "content-type": "application/json", accept: "application/json" });
+    expect(init.headers).toMatchObject({
+      "content-type": "application/json",
+      accept: "application/json",
+    });
     expect(JSON.parse(String(init.body))).toMatchObject({ name: "Seed User", byline: "S. Seed" });
     // The envelope's redirect is an IN-ROUTER nav — the ?saved=1 flash renders, no document nav.
     await vi.waitFor(() => {
@@ -438,16 +517,20 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
   it("the email-change and session-revoke forms post their own JSON branches", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/account", BOOT, f);
-    const emailForm = (await settled('form[action="/app/settings/account/email"]'));
+    const emailForm = await settled('form[action="/app/settings/account/email"]');
     const input = emailForm.querySelector<HTMLInputElement>('[name="email"]')!;
     input.value = "n@x.test";
     await submit(emailForm);
-    const emailPost = f.mock.calls.find(([u]) => String(u) === "/app/settings/account/email" && u[1] != null);
+    const emailPost = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/account/email" && u[1] != null,
+    );
     expect(emailPost).toBeDefined();
     expect(JSON.parse(String((emailPost![1] as RequestInit).body))).toEqual({ email: "n@x.test" });
-    const revoke = (await settled('form[action="/app/settings/sessions/revoke"]'));
+    const revoke = await settled('form[action="/app/settings/sessions/revoke"]');
     await submit(revoke);
-    const revPost = f.mock.calls.find(([u]) => String(u) === "/app/settings/sessions/revoke" && u[1] != null);
+    const revPost = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/sessions/revoke" && u[1] != null,
+    );
     expect(JSON.parse(String((revPost![1] as RequestInit).body))).toEqual({ sessionId: "s2" });
     expect(docNavSpy).not.toHaveBeenCalled();
   });
@@ -464,9 +547,7 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     expect(router.state.location.href).toContain("notice=email-confirmed");
     expect(router.state.location.href).not.toContain("confirmEmail");
     // The account twin still warms for the landed leaf.
-    await vi.waitFor(() =>
-      expect(el()!.querySelector("[data-settings-nav]")).not.toBeNull(),
-    );
+    await vi.waitFor(() => expect(el()!.querySelector("[data-settings-nav]")).not.toBeNull());
   });
 
   it("a degraded twin (account: null) renders the section's honest-empty state", async () => {
@@ -475,10 +556,9 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     expect(el()!.querySelector('[name="name"]')).toBeNull();
   });
 
-
   it("component axe on the mounted account section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/account", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
   it("a non-401 twin failure renders the designed error state — not a /login lie", async () => {
@@ -535,9 +615,11 @@ describe("GET /app/settings/preferences mounted", () => {
   it("the prefs form posts the flat vocabulary as JSON and lands ?saved=1", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/preferences", BOOT, f);
-    const form = (await settled('form[action="/app/settings/preferences"]'));
+    const form = await settled('form[action="/app/settings/preferences"]');
     await submit(form);
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/preferences" && u[1] != null);
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/preferences" && u[1] != null,
+    );
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
     expect(body["defaultModelTier"]).toBe("balanced");
@@ -548,10 +630,9 @@ describe("GET /app/settings/preferences mounted", () => {
     expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-
   it("component axe on the mounted preferences section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/preferences", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 });
 
@@ -566,7 +647,9 @@ describe("GET /app/settings/notifications mounted", () => {
     expect(main.querySelector("[data-notification-matrix]")).not.toBeNull();
     expect(main.querySelector("[data-notifications-form]")).not.toBeNull();
     const rows = [...main.querySelectorAll("[data-notification-row]")];
-    expect(rows.map((r) => r.getAttribute("data-notification-row"))).toEqual([...NOTIFICATION_EVENT_TYPES]);
+    expect(rows.map((r) => r.getAttribute("data-notification-row"))).toEqual([
+      ...NOTIFICATION_EVENT_TYPES,
+    ]);
     // The two non-configurable rows are locked (no select) — REQ-ACCT-1.
     expect(rows.length).toBeGreaterThanOrEqual(5);
     expect(main.querySelectorAll("[data-locked]").length).toBeGreaterThanOrEqual(2);
@@ -587,9 +670,11 @@ describe("GET /app/settings/notifications mounted", () => {
   it("the matrix form posts the flat vocabulary as JSON and lands ?saved=1", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/notifications", BOOT, f);
-    const form = (await settled('form[action="/app/settings/notifications"]'));
+    const form = await settled('form[action="/app/settings/notifications"]');
     await submit(form);
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/notifications" && u[1] != null);
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/notifications" && u[1] != null,
+    );
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
     // run_finished email was toggled off in the fixture → "off" posts verbatim.
@@ -600,10 +685,9 @@ describe("GET /app/settings/notifications mounted", () => {
     expect(docNavSpy).not.toHaveBeenCalled();
   });
 
-
   it("component axe on the mounted matrix (REQ-VFY-6 — the select-name additions carry)", async () => {
     await mountAt("/app/settings/notifications", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 });
 
@@ -621,11 +705,13 @@ describe("GET /app/settings/integrations mounted", () => {
     // Every card carries its "what we never do" line (§14.7).
     expect(main.querySelectorAll("[data-integration-never]").length).toBe(3);
     // The degraded connection row: status, handle, persona, items, error, disconnect form.
-    const conn = (await settled('[data-connection="cn1"]'));
+    const conn = await settled('[data-connection="cn1"]');
     expect(conn).not.toBeNull();
     expect(conn.querySelector('[data-conn-status="degraded"]')).not.toBeNull();
     expect(conn.querySelector("[data-conn-error]")?.textContent).toContain("token expired");
-    const form = conn.querySelector<HTMLFormElement>('form[action="/app/settings/integrations/cn1/disconnect"]');
+    const form = conn.querySelector<HTMLFormElement>(
+      'form[action="/app/settings/integrations/cn1/disconnect"]',
+    );
     expect(form).not.toBeNull();
     expect(form!.querySelector("[data-disconnect]")).not.toBeNull();
     // The empty cards link to the first voice's samples tab (P1.15's connect path).
@@ -635,15 +721,16 @@ describe("GET /app/settings/integrations mounted", () => {
   it("disconnect posts the JSON branch to the connection's own path", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/integrations", BOOT, f);
-    const form = (await settled('form[action="/app/settings/integrations/cn1/disconnect"]'));
+    const form = await settled('form[action="/app/settings/integrations/cn1/disconnect"]');
     await submit(form);
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/integrations/cn1/disconnect" && u[1] != null);
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/integrations/cn1/disconnect" && u[1] != null,
+    );
     expect(post).toBeDefined();
     expect((post![1] as RequestInit).method).toBe("POST");
     await vi.waitFor(() => expect(el()!.querySelector("[data-settings-saved]")).not.toBeNull());
     expect(docNavSpy).not.toHaveBeenCalled();
   });
-
 });
 
 // ---- /app/settings/data -------------------------------------------------------------------------
@@ -682,14 +769,14 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     expect(importForm!.enctype).toBe("multipart/form-data");
     const del = main.querySelector<HTMLFormElement>("[data-delete-account-form]");
     expect(del).not.toBeNull();
-    expect(del!.querySelector<HTMLInputElement>('[name="confirmation"]')?.getAttribute("pattern")).toBe(
-      ACCOUNT_DELETION_CONFIRMATION,
-    );
+    expect(
+      del!.querySelector<HTMLInputElement>('[name="confirmation"]')?.getAttribute("pattern"),
+    ).toBe(ACCOUNT_DELETION_CONFIRMATION);
   });
 
   it("the export download stays a document <a> — never an intercepted fetch (REQ-BFF-17)", async () => {
     await mountAt("/app/settings/data", BOOT, makeFetch());
-    const dl = (await settled<HTMLAnchorElement>("[data-export-download]"));
+    const dl = await settled<HTMLAnchorElement>("[data-export-download]");
     // A plain href the browser navigates — no form, no button role.
     expect(dl.tagName).toBe("A");
     expect(dl.closest("form")).toBeNull();
@@ -703,16 +790,22 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
       "/app/settings/data/support-access",
       "/app/settings/data/preference-learning",
     ]) {
-      await submit((await settled(`form[action="${action}"]`)));
+      await submit(await settled(`form[action="${action}"]`));
       const post = f.mock.calls.find(([u]) => String(u) === action && u[1] != null);
       expect(post, action).toBeDefined();
-      expect((post![1] as RequestInit).headers).toMatchObject({ "content-type": "application/json" });
+      expect((post![1] as RequestInit).headers).toMatchObject({
+        "content-type": "application/json",
+      });
     }
     // The unchecked analytics checkbox posts nothing — the flat vocabulary's absent-means-off
     // semantics (the server's bodyFields decode relies on it).
-    const privacy = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/privacy" && u[1] != null);
+    const privacy = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/data/privacy" && u[1] != null,
+    );
     expect(JSON.parse(String((privacy![1] as RequestInit).body))).toEqual({});
-    const pref = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/preference-learning" && u[1] != null);
+    const pref = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/data/preference-learning" && u[1] != null,
+    );
     // preferenceOptOut=false ⇒ the learning checkbox is checked ⇒ "learning":"on" rides the body.
     expect(JSON.parse(String((pref![1] as RequestInit).body))).toEqual({ learning: "on" });
     expect(docNavSpy).not.toHaveBeenCalled();
@@ -721,8 +814,10 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the export-request POST lands ?notice=requested → data-export-notice", async () => {
     const f = makeFetch();
     const { router } = await mountAt("/app/settings/data", BOOT, f);
-    await submit((await settled('form[action="/app/settings/data/export"]')));
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/export" && u[1] != null);
+    await submit(await settled('form[action="/app/settings/data/export"]'));
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/data/export" && u[1] != null,
+    );
     expect(post).toBeDefined();
     await vi.waitFor(() => {
       expect(router.state.location.href).toContain("notice=requested");
@@ -733,12 +828,17 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the import POST rides multipart FormData — never a JSON field (REQ-BFF-17)", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/data", BOOT, f);
-    const form = (await settled<HTMLFormElement>("[data-account-import]"));
+    const form = await settled<HTMLFormElement>("[data-account-import]");
     const file = form.querySelector<HTMLInputElement>('[name="archive"]')!;
     // happy-dom's DataTransfer is unavailable — assign the file list directly.
-    Object.defineProperty(file, "files", { value: [new File(["zip"], "backup.zip", { type: "application/zip" })], configurable: true });
+    Object.defineProperty(file, "files", {
+      value: [new File(["zip"], "backup.zip", { type: "application/zip" })],
+      configurable: true,
+    });
     await submit(form);
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/data/import" && u[1] != null);
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/data/import" && u[1] != null,
+    );
     expect(post).toBeDefined();
     const init = post![1] as RequestInit;
     expect(init.body instanceof FormData).toBe(true);
@@ -753,33 +853,46 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
   it("the delete form posts the typed confirmation; the cancel form posts inside the grace", async () => {
     const f = makeFetch();
     await mountAt("/app/settings/data", BOOT, f);
-    const del = (await settled<HTMLFormElement>("[data-delete-account-form]"));
+    const del = await settled<HTMLFormElement>("[data-delete-account-form]");
     const confirmation = del.querySelector<HTMLInputElement>('[name="confirmation"]')!;
     confirmation.value = "delete";
     await submit(del);
-    const post = f.mock.calls.find(([u]) => String(u) === "/app/settings/account/delete" && u[1] != null);
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === "/app/settings/account/delete" && u[1] != null,
+    );
     expect(post).toBeDefined();
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ confirmation: "delete" });
   });
 
   it("a deletion fixture renders the banner + cancel and hides the delete form", async () => {
     // The data twin carries the pending deletion — the banner mirrors it, the form is absent.
-    const dataWithDeletion = { ...DATA, deletion: { requestedAt: "2026-10-01T00:00:00Z", graceEndsAt: "2026-10-15T00:00:00Z" } };
+    const dataWithDeletion = {
+      ...DATA,
+      deletion: { requestedAt: "2026-10-01T00:00:00Z", graceEndsAt: "2026-10-15T00:00:00Z" },
+    };
     const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url === "/bff/settings/data") {
-        return jsonResponse(200, { privacy: { analyticsOptOut: true }, data: dataWithDeletion, accountExport: { export: EXPORT } });
+        return jsonResponse(200, {
+          privacy: { analyticsOptOut: true },
+          data: dataWithDeletion,
+          accountExport: { export: EXPORT },
+        });
       }
       return makeFetch()(input);
     });
     await mountAt("/app/settings/data", BOOT, fetchImpl);
     const main = el()!;
     expect(main.querySelector("[data-deletion-banner]")).not.toBeNull();
-    const cancel = (await settled<HTMLFormElement>('form[action="/app/settings/account/delete/cancel"]'));
+    const cancel = await settled<HTMLFormElement>(
+      'form[action="/app/settings/account/delete/cancel"]',
+    );
     expect(cancel.querySelector("[data-deletion-cancel]")).not.toBeNull();
     expect(main.querySelector("[data-delete-account-form]")).toBeNull();
-    // The analytics toggle reflects the twin's opt-out state.
-    expect(main.querySelector<HTMLInputElement>("[data-analytics-toggle]")?.checked).toBe(true);
+    // The analytics toggle reflects the twin's opt-out state — R7KIT.3a: the Radix Checkbox's
+    // hidden form carrier holds the checked state (`data-analytics-toggle` is the button).
+    expect(main.querySelector("[data-analytics-toggle]")).not.toBeNull();
+    expect(main.querySelector<HTMLInputElement>('[name="analyticsOptOut"]')?.checked).toBe(true);
   });
 
   it("?saved=1 lands the saved flash + the privacy-saved line; ?p,v,f lands the import counts", async () => {
@@ -804,7 +917,11 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url === "/bff/settings/data") {
-        return jsonResponse(200, { privacy: { analyticsOptOut: false }, data: null, accountExport: { export: EXPORT } });
+        return jsonResponse(200, {
+          privacy: { analyticsOptOut: false },
+          data: null,
+          accountExport: { export: EXPORT },
+        });
       }
       return makeFetch()(input);
     });
@@ -816,10 +933,9 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     expect(main.querySelector("[data-account-export]")).not.toBeNull();
   });
 
-
   it("component axe on the mounted data section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/data", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 });
 
@@ -848,7 +964,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(main.querySelector("[data-approval-settings]")).not.toBeNull();
     expect(main.querySelector('[data-policy="named"]')).not.toBeNull();
     expect(main.querySelector('[name="policy"]')).not.toBeNull();
-    const grid = (await settled("[data-override-grid]"));
+    const grid = await settled("[data-override-grid]");
     expect(grid).not.toBeNull();
     expect(grid.querySelectorAll("[data-override-row]").length).toBe(3);
     // REQ-SPEC-1 — the non-overridable kind shows "always waits for you", never a control.
@@ -871,7 +987,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
   it("the settings form posts the flat vocabulary to /p/:slug/settings", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/settings`, BOOT, f);
-    await submit((await settled(`form[action="/p/${SLUG}/settings"]`)));
+    await submit(await settled(`form[action="/p/${SLUG}/settings"]`));
     const post = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings` && u[1] != null);
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
@@ -885,26 +1001,32 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
   it("the approvals form posts policy + ov_* + returnTo; guidance posts body + workflows", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/settings`, BOOT, f);
-    await submit((await settled(`form[action="/p/${SLUG}/settings/approvals"]`)));
-    const post = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings/approvals` && u[1] != null);
+    await submit(await settled(`form[action="/p/${SLUG}/settings/approvals"]`));
+    const post = f.mock.calls.find(
+      ([u]) => String(u) === `/p/${SLUG}/settings/approvals` && u[1] != null,
+    );
     expect(post).toBeDefined();
     const body = JSON.parse(String((post![1] as RequestInit).body)) as Record<string, string>;
     expect(body["policy"]).toBe("named");
     expect(body["ov_approve_scope"]).toBe("86400000");
     expect(body["returnTo"]).toBe(`/p/${SLUG}/settings`);
     // The guidance edit disclosure's save posts the replace vocabulary.
-    const editForm = (await settled(`form[action="/p/${SLUG}/settings/guidance/g1"]`));
+    const editForm = await settled(`form[action="/p/${SLUG}/settings/guidance/g1"]`);
     await submit(editForm);
-    const gPost = f.mock.calls.find(([u]) => String(u) === `/p/${SLUG}/settings/guidance/g1` && u[1] != null);
+    const gPost = f.mock.calls.find(
+      ([u]) => String(u) === `/p/${SLUG}/settings/guidance/g1` && u[1] != null,
+    );
     expect(gPost).toBeDefined();
     const gBody = JSON.parse(String((gPost![1] as RequestInit).body)) as Record<string, string>;
     expect(gBody["body"]).toBe("Keep openings under 700 words.");
     expect(gBody["workflows"]).toBe("review");
     expect(gBody["returnTo"]).toBe(`/p/${SLUG}/settings`);
     // The retire CTA posts to the shared retire path.
-    const retireForm = (await settled(`form[action="/p/${SLUG}/guidance/g1/retire"]`));
+    const retireForm = await settled(`form[action="/p/${SLUG}/guidance/g1/retire"]`);
     await submit(retireForm);
-    expect(f.mock.calls.some(([u]) => String(u) === `/p/${SLUG}/guidance/g1/retire` && u[1] != null)).toBe(true);
+    expect(
+      f.mock.calls.some(([u]) => String(u) === `/p/${SLUG}/guidance/g1/retire` && u[1] != null),
+    ).toBe(true);
     expect(docNavSpy).not.toHaveBeenCalled();
   });
 
@@ -914,11 +1036,9 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(el()!.querySelector("[data-settings-saved]")).not.toBeNull();
   });
 
-
-
   it("component axe on the mounted project settings (REQ-VFY-6 — the override grid carries)", async () => {
     await mountAt(`/p/${SLUG}/settings`, BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
   it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
@@ -939,7 +1059,7 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
     const gate = deferred<Response>();
     const f = makeFetch({ hold: { "/app/settings/preferences": gate.promise } });
     await mountAt("/app/settings/preferences", BOOT, f);
-    const form = (await settled<HTMLFormElement>('form[action="/app/settings/preferences"]'));
+    const form = await settled<HTMLFormElement>('form[action="/app/settings/preferences"]');
     await act(async () => {
       fireEvent.submit(form);
     });
@@ -952,7 +1072,9 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
     await act(async () => {
       fireEvent.submit(form);
     });
-    const posts = f.mock.calls.filter(([u, i]) => String(u) === "/app/settings/preferences" && i != null);
+    const posts = f.mock.calls.filter(
+      ([u, i]) => String(u) === "/app/settings/preferences" && i != null,
+    );
     expect(posts.length).toBe(1);
     // Settle — the envelope lands the flash, the affordance restores.
     await act(async () => {
@@ -968,11 +1090,14 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
 
   it("a mutation envelope with url= is a document navigation (server-validated external)", async () => {
     const f = makeFetch({
-      mutations: { "/app/settings/preferences": { ok: true, url: "https://billing.example.test/portal" } },
+      mutations: {
+        "/app/settings/preferences": { ok: true, url: "https://billing.example.test/portal" },
+      },
     });
     await mountAt("/app/settings/preferences", BOOT, f);
-    await submit((await settled('form[action="/app/settings/preferences"]')));
-    await vi.waitFor(() => expect(docNavSpy).toHaveBeenCalledWith("https://billing.example.test/portal"));
+    await submit(await settled('form[action="/app/settings/preferences"]'));
+    await vi.waitFor(() =>
+      expect(docNavSpy).toHaveBeenCalledWith("https://billing.example.test/portal"),
+    );
   });
 });
-
