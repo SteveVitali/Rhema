@@ -37,7 +37,8 @@ const nodeGlobals = {
 // `rhema.noRawControlsExemptions`); each entry names a file or component and its KIT-1-fallback
 // reason (RV-36).
 const NO_RAW_CONTROLS_ENABLED = [
-  // empty at authoring — 249's sweep + the batches' appends prove the mechanism works.
+  // R7TALK.1a — the first batch-d migration file (chat panel rebuilt on the 225a primitives).
+  "packages/ui/src/chat-panel.tsx",
 ];
 
 export default tseslint.config(

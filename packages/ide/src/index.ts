@@ -4,6 +4,7 @@ export {
   PANE_STORAGE_VERSION,
   DEFAULT_PANE_STATE,
   paneStorageKey,
+  paneTabRemembered,
   parsePaneState,
   serializePaneState,
 } from "./state.js";

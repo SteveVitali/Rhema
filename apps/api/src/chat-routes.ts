@@ -234,6 +234,103 @@ async function emitChat(
   }
 }
 
+/** R7TALK.1a (REQ-TALK-2; RV-21) — a turn's DEBITED credits: net `credit_ledger` debits for the
+ *  run (cap-clamped by construction — the ledger never nets a run above its cap). Read under the
+ *  request-scoped db like every other chat read; the two-tenant probe covers it. The metered
+ *  `spent_credits` is burn, never the charge — this field is the charge. */
+async function turnDebited(deps: ChatApiDeps, runIds: readonly string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (runIds.length === 0) return out;
+  const rows = (
+    await deps.db.query(
+      `select run_id,
+              sum(case when kind = 'debit' then credits when kind = 'refund' then -credits else 0 end)::int
+                as debited
+         from credit_ledger where run_id = any($1) group by run_id`,
+      [runIds],
+    )
+  ).rows as { run_id: string; debited: number }[];
+  for (const r of rows) out.set(r.run_id, r.debited);
+  return out;
+}
+
+/** The turn's `turn-result.json` sidecar (reply abstract + refs — REQ-DATA-37 keeps reply TEXT
+ *  out of every DTO; `replySummary` ≤600 chars is the distilled fact the bubble renders). */
+interface TurnReply {
+  readonly replySummary?: string;
+  readonly refs?: readonly string[];
+}
+
+async function turnReplies(deps: ChatApiDeps, runIds: readonly string[]): Promise<Map<string, TurnReply>> {
+  const out = new Map<string, TurnReply>();
+  if (runIds.length === 0 || !deps.contentStore) return out;
+  const rows = (
+    await deps.db.query(
+      `select s.run_id, av.content_sha256 from steps s
+         join artifact_versions av on av.id = any(s.produced_version_ids)
+         join artifacts a on a.id = av.artifact_id
+        where s.run_id = any($1) and a.mirror_path like '%turn-result.json'
+        order by s.ordinal desc`,
+      [runIds],
+    )
+  ).rows as { run_id: string; content_sha256: string }[];
+  const seen = new Set<string>();
+  for (const row of rows.slice(0, 40)) {
+    if (seen.has(row.run_id)) continue;
+    seen.add(row.run_id);
+    const bytes = await deps.contentStore.get(row.content_sha256).catch(() => null);
+    if (!bytes) continue;
+    try {
+      const sidecar = JSON.parse(new TextDecoder().decode(bytes)) as {
+        replySummary?: unknown;
+        refs?: unknown;
+      };
+      out.set(row.run_id, {
+        ...(typeof sidecar.replySummary === "string" ? { replySummary: sidecar.replySummary } : {}),
+        ...(Array.isArray(sidecar.refs)
+          ? { refs: sidecar.refs.filter((r): r is string => typeof r === "string").slice(0, 12) }
+          : {}),
+      });
+    } catch {
+      /* an unparsable sidecar never blocks the read */
+    }
+  }
+  return out;
+}
+
+/** The user's own words for one turn — the `<turnId>-user.md` session entry the send wrote
+ *  (`> message` blockquote). Strip the quote marker; bound the text a bubble can carry. */
+async function turnUserTexts(
+  deps: ChatApiDeps,
+  projectId: string,
+  messagePaths: ReadonlyMap<string, string>,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!deps.contentStore) return out;
+  for (const [runId, path] of [...messagePaths].slice(0, 20)) {
+    const row = (
+      await deps.db.query(
+        `select av.content_sha256 from artifacts a
+           join artifact_versions av on av.id = a.head_version_id
+          where a.project_id = $1 and a.mirror_path = $2`,
+        [projectId, path],
+      )
+    ).rows[0] as { content_sha256: string } | undefined;
+    if (!row) continue;
+    const bytes = await deps.contentStore.get(row.content_sha256).catch(() => null);
+    if (!bytes) continue;
+    const text = new TextDecoder()
+      .decode(bytes)
+      .split("\n")
+      .map((l) => l.replace(/^>\s?/, ""))
+      .join("\n")
+      .trim()
+      .slice(0, 4000);
+    if (text !== "") out.set(runId, text);
+  }
+  return out;
+}
+
 /** A turn's metered usage (the strip's truth): usage_records sums — never model text. */
 async function turnUsage(deps: ChatApiDeps, runId: string): Promise<TurnUsage & { credits: number }> {
   const row = (
@@ -303,15 +400,48 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const activeThreadId = c.req.query("thread") ?? defaultThread.id;
     const active = threads.find((t) => t.id === activeThreadId) ?? defaultThread;
 
-    // the thread's recent turns (runs where workflow='chat_turn' + this thread id in frozen inputs)
+    // the thread's recent turns (runs where workflow='chat_turn' + this thread id in frozen inputs).
+    // R7TALK.1a: `inputs` rides along — the bubble's user text + reply/ref facts resolve off the
+    // frozen `messagePath`; `debitedCredits` comes from the ledger (the CHARGE — spent_credits is
+    // burn, never rendered as the charge).
     const turns = (
       await deps.db.query(
-        `select id, state, created_at, spent_credits, cap_credits, model_tier from runs
+        `select id, state, created_at, spent_credits, cap_credits, model_tier, inputs from runs
           where project_id = $1 and workflow = 'chat_turn' and inputs->>'threadId' = $2
           order by created_at desc limit 20`,
         [projectId, active.id],
       )
-    ).rows as { id: string; state: string; created_at: string; spent_credits: number; cap_credits: number; model_tier: string }[];
+    ).rows as {
+      id: string; state: string; created_at: string; spent_credits: number; cap_credits: number;
+      model_tier: string; inputs: Record<string, unknown>;
+    }[];
+    const turnIds = turns.map((t) => t.id);
+    const messagePaths = new Map<string, string>();
+    for (const t of turns) {
+      const p = t.inputs?.["messagePath"];
+      if (typeof p === "string" && p !== "") messagePaths.set(t.id, p);
+    }
+    const [debited, replies, userTexts] = await Promise.all([
+      turnDebited(deps, turnIds),
+      turnReplies(deps, turnIds),
+      turnUserTexts(deps, projectId, messagePaths),
+    ]);
+    const enrichedTurns = turns.map((t) => {
+      const reply = replies.get(t.id);
+      const debitedCredits = debited.get(t.id);
+      return {
+        id: t.id,
+        state: t.state,
+        created_at: t.created_at,
+        spent_credits: t.spent_credits,
+        cap_credits: t.cap_credits,
+        model_tier: t.model_tier,
+        ...(debitedCredits != null ? { debited_credits: debitedCredits } : {}),
+        ...(userTexts.has(t.id) ? { user_text: userTexts.get(t.id) } : {}),
+        ...(reply?.replySummary != null ? { reply: reply.replySummary } : {}),
+        ...(reply?.refs != null && reply.refs.length > 0 ? { refs: reply.refs } : {}),
+      };
+    });
 
     // session files (the transcript entries the thread owns)
     const session = (
@@ -362,7 +492,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
         archived: t.archivedAt != null,
       })),
       activeThreadId: active.id,
-      turns,
+      turns: enrichedTurns,
       messages: session,
       pins: { pins: pinsFile.pins, footprint: pinsFootprint(pinsFile), cap: PINS_MAX_PER_THREAD },
       sources: sourceCards(index),
@@ -658,11 +788,15 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
       );
     }
 
+    // R7TALK.1a (REQ-TALK-2) — the turn's CHARGE: net cap-clamped ledger debits. Kept beside the
+    // metered strip so the footnote never presents burn as the charge.
+    const debitedCredits = (await turnDebited(deps, [runId])).get(runId) ?? null;
     return c.json({
       runId,
       state: run.state,
       strip,
       activity,
+      ...(debitedCredits != null ? { debitedCredits } : {}),
       result: sidecar ? { turnResultSha: sidecar.content_sha256 } : null,
     });
   });

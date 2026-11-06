@@ -28,6 +28,12 @@ module.exports = [
       "the public landing and signup forms are no-JS forms on the SSR funnel (RV-36: signup cannot use Radix Select).",
   },
   {
+    file: "packages/ui/src/chat-panel.tsx",
+    component: "ChatDesk",
+    reason:
+      "the no-JS SSR fallback forms (composer, notes, pins, plan card, corrections, Ask) keep hidden inputs carrying threadId/ref/version/block ids — the KIT-1-styled native-form leg stays (RV-36); every visible control is a primitive.",
+  },
+  {
     file: "apps/web/src/page-chrome.tsx",
     reason:
       "the forced-SSR Page family's no-JS form actions (rename, voice picker, approval overrides — the phone-reader approvals, RV-36).",

@@ -33,7 +33,7 @@ import { ApprovalRow, CompareView, WhatChangedView } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
-import { chatPanel } from "../../chat-pane.js";
+import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { runCardLabels, timelineHrefs, timelineLabels, type TriageSurfaceState } from "../../dossier-view.js";
 import {
   PageChrome,

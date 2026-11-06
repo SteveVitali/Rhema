@@ -115,6 +115,20 @@ export function parsePaneState(raw: string | null | undefined): PaneState {
   };
 }
 
+/** REQ-TALK-1 — whether the stored blob REMEMBERS a panel tab. A v1 blob always does (the
+ *  total migration maps the Desk's last tab); a v2 blob only when `panelTab` is present —
+ *  absent ⇒ the caller derives the default (Timeline when a run is active/unread, else Chat). */
+export function paneTabRemembered(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  try {
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    if (o?.["v"] === 1) return true;
+    return typeof o?.["panelTab"] === "string";
+  } catch {
+    return false;
+  }
+}
+
 export function serializePaneState(state: PaneState): string {
   // REQ-WRITE-4 — the session-scoped focus view is never written to pane storage; the absent
   // `panelOpen` stays absent (the default rule, not a stored value).

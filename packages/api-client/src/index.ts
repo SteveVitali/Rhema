@@ -2485,6 +2485,15 @@ export interface ChatTurnRowDto {
   readonly spent_credits: number;
   readonly cap_credits: number;
   readonly model_tier: string;
+  /** R7TALK.1a (REQ-TALK-2) — the CHARGE: net cap-clamped credit_ledger debits for the run.
+   *  `spent_credits` is metered burn, never the charge. Absent when no ledger row exists yet. */
+  readonly debited_credits?: number;
+  /** the user's own words for this turn (the `-user.md` session entry, ≤4000 chars). */
+  readonly user_text?: string;
+  /** the reply abstract from the turn-result sidecar (≤600 chars — never full reply text). */
+  readonly reply?: string;
+  /** the typed refs the reply relied on → citation chips. */
+  readonly refs?: readonly string[];
 }
 
 export interface ChatMessageDto {
@@ -2594,6 +2603,8 @@ export interface ChatTurnStatusDto {
     readonly artifactReads: number;
     readonly sourcesRead: number;
   };
+  /** R7TALK.1a — net cap-clamped ledger debits (the charge; the strip stays metered burn). */
+  readonly debitedCredits?: number;
   readonly result: { readonly turnResultSha: string } | null;
 }
 

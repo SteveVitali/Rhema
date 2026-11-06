@@ -26,6 +26,7 @@ import {
   paneDrag,
   paneLayout,
   paneStorageKey,
+  paneTabRemembered,
   parseAppTheme,
   parsePaperTheme,
   parsePaneState,
@@ -75,6 +76,9 @@ export interface IdeChromeControllerOpts {
   readonly ready: boolean;
   /** R7SHELL.1c — the palette moved to the AppShell; ⌘K dispatches `rhema:palette-open`. */
   readonly nav: IdeChromeNav;
+  /** REQ-TALK-1 — the tab the panel opens on when nothing is remembered: `"timeline"` when a run
+   *  is active or unread, `"chat"` otherwise. A remembered tab always wins (the codec keeps it). */
+  readonly defaultPanelTab?: "chat" | "timeline";
 }
 
 function safeGet(key: string): string | null {
@@ -486,10 +490,20 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const { slug } = latest.current;
 
     // stored arrangement wins; the leaf's focus stamp (a published `initialView`) seeds it once.
+    let storedBlob: string | null = null;
     try {
-      stateRef.current = parsePaneState(localStorage.getItem(storageKey));
+      storedBlob = localStorage.getItem(storageKey);
+      stateRef.current = parsePaneState(storedBlob);
     } catch {
       stateRef.current = { ...DEFAULT_PANE_STATE };
+    }
+    // REQ-TALK-1 — the default tab applies only when the blob remembers none: Timeline when a
+    // run is active or unread (the leaf's publish carries the fact), Chat otherwise.
+    if (!paneTabRemembered(storedBlob)) {
+      stateRef.current = {
+        ...stateRef.current,
+        panelTab: latest.current.defaultPanelTab ?? "chat",
+      };
     }
     try {
       authorshipRef.current = safeGet(`rhema:authorship:v1:${latest.current.projectId}`) === "1";

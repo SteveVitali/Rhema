@@ -1,0 +1,37 @@
+{
+  "comment": "R7TALK.1a (REQ-DACC-7 U6; REQ-TALK-3) — the committed stub-turn fixture. The leg intercepts /p/:slug/chat/turns (201 envelope), /p/:slug/r/:runId/events (this SSE stream) and the /bff project twin (a turn row carrying reply+refs+debitedCredits). paid:false, $0 — never a real turn.",
+  "created": {
+    "ok": true,
+    "data": {
+      "runId": "run_stub_u6_turn",
+      "state": "queued",
+      "deduped": false,
+      "planCard": {
+        "summary": "stub turn",
+        "steps": ["stub"],
+        "budget": { "credits": 40, "searches": 5, "fetches": 10 },
+        "modelTier": "base",
+        "actions": []
+      }
+    }
+  },
+  "events": [
+    { "seq": 1, "type": "chat.plan_card", "payload": { "threadId": "thr_stub", "capCredits": 40, "searches": 5, "fetches": 10, "modelTier": "base" } },
+    { "seq": 2, "type": "step.started", "payload": { "phase": "answer" } },
+    { "seq": 3, "type": "usage.tick", "payload": { "spentCredits": 3, "capCredits": 40 } },
+    { "seq": 4, "type": "step.finished", "payload": { "phase": "answer" } },
+    { "seq": 5, "type": "chat.turn.completed", "payload": { "threadId": "thr_stub" } }
+  ],
+  "turn": {
+    "id": "run_stub_u6_turn",
+    "state": "completed",
+    "created_at": "2026-11-06T00:00:00Z",
+    "spent_credits": 3,
+    "cap_credits": 40,
+    "model_tier": "base",
+    "debited_credits": 3,
+    "user_text": "stub question",
+    "reply": "Stub answer paragraph — the distilled reply the thread renders.",
+    "refs": ["@v1 §I", "agents/assistant/research/sources/stub.md"]
+  }
+}

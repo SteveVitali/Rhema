@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
-import { guard3Segment, plantGuard3Marker } from "./noreload.js";
+import { assertNoReload, guard3Segment, plantGuard3Marker } from "./noreload.js";
 import { gotoOk, settleClientNav, settleDocumentNav } from "./settle.js";
 import {
   assertBundleParity,
@@ -1075,6 +1075,30 @@ const U2_NORELOAD: StepFn = async (ctx) => {
     await leg("gate-approve", async () => undefined);
   }
 
+  // chat send — R7TALK.1a (REQ-RELOAD-1): the composer's JSON fetch adds no navigation entry.
+  // The panel opens on the Chat tab (the `]` chord / tab button both keep one document), the
+  // composer types and Send fires the JSON mutation, and the optimistic bubble renders — all
+  // inside the same document (the leg's own no-reload assert runs after).
+  const chatTab = page.locator('[data-ide-panel-tab="chat"], [data-ide-desk-tab="chat"]').first();
+  await leg("chat-send", async () => {
+    if ((await chatTab.count()) > 0) {
+      await chatTab.click();
+      const ide2 = page.locator(".ide").first();
+      if ((await ide2.getAttribute("data-panel")) !== "open") {
+        await page.keyboard.press("]");
+        await page.waitForSelector('.ide[data-panel="open"]', { timeout: 5_000 });
+      }
+      await chatTab.click().catch(() => undefined);
+    }
+    const input = page.locator('[data-chat-composer] textarea[name="message"]').first();
+    if ((await input.count()) > 0) {
+      await input.fill(`${ctx.marker("U2CHAT")}`);
+      await page.locator("[data-chat-composer] [data-chat-send], [data-chat-composer] button[type='submit']").first().click();
+      // the optimistic bubble renders client-side — the JSON leg, never a form post.
+      await page.locator('[data-chat-bubble="user"]').last().waitFor({ timeout: 10_000 }).catch(() => undefined);
+    }
+  });
+
   // project → Showcase → back: the Showcase is in-SPA (ReadOnlyProject), so both hops are
   // client navigations — never the REQ-ED-12 document swap.
   const showcaseLink = page
@@ -1101,6 +1125,107 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * R7TALK.1a (REQ-TALK-3, REQ-DACC-7 U6) — the real `U6.chat` body: a STUBBED turn (paid:false —
+ * the one paid leg is 250's act). `page.route` stubs the three seams: `/p/:slug/chat/turns`
+ * answers the committed fixture's JSON 201 (`{ok,data:{runId,state}}`), `/p/:slug/r/:runId/events`
+ * serves the fixture's run-event SSE, and the `/bff/p/:slug` twin is patched (route.fetch →
+ * mutate) so the terminal refetch carries the stub turn's reply. The walk asserts: Send posts
+ * JSON (no document load — the GUARD-3 marker survives), the optimistic bubble renders, progress
+ * events stream, the reply + citations + debited footnote render on completion, and an empty
+ * send issues no request. Held `ready-to-flip` — `expected:"red"`; 250 flips (D-R7TALK.1a-1).
+ */
+const U6_CHAT: StepFn = async (ctx) => {
+  const fixture = (await import("node:fs/promises")).readFile(
+    new URL("./u6-stub-turn.fixture.json", import.meta.url),
+    "utf8",
+  ).then((raw) => JSON.parse(raw) as {
+    created: { ok: true; data: { runId: string; state: string; deduped: boolean; planCard: unknown } };
+    events: { seq: number; type: string; payload: Record<string, unknown> }[];
+    turn: Record<string, unknown>;
+  });
+  const { page } = await ctx.returningUser("a");
+  const fx = await fixture;
+  let turnPosts = 0;
+  const RUN_ID = fx.created.data.runId;
+  // the JSON 201 (the mutation envelope carries the api body verbatim in `data`).
+  await page.route("**/p/*/chat/turns", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    turnPosts += 1;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fx.created) });
+  });
+  // the run-event SSE tail — the fixture's committed stream, replayed once.
+  await page.route(`**/p/*/r/${RUN_ID}/events**`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: fx.events
+        .map((e) => `id: ${e.seq}\nevent: ${e.type}\ndata: ${JSON.stringify({ seq: e.seq, type: e.type, payload: e.payload })}\n\n`)
+        .join(""),
+    }),
+  );
+  // the terminal refetch: patch the project twin's ide.chat.turns with the stub turn.
+  await page.route("**/bff/p/*", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const res = await route.fetch();
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      return route.fulfill({ response: res });
+    }
+    const o = body as { ide?: { chat?: { turns?: unknown[] } } };
+    if (o.ide?.chat && Array.isArray(o.ide.chat.turns)) {
+      o.ide.chat.turns = [fx.turn, ...o.ide.chat.turns];
+    }
+    return route.fulfill({ response: res, json: body });
+  });
+
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  const projectLink = page.locator("[data-shell-project] a, [data-shell-recent]").first();
+  if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
+  await settleClientNav(page, ctx, () => projectLink.click());
+  const marker = `u6-${ctx.nonce}`;
+  await plantGuard3Marker(page, marker);
+  const loadsAtEntry = ctx.documentLoads;
+  const ide = page.locator(".ide").first();
+  if ((await ide.getAttribute("data-panel")) !== "open") await page.keyboard.press("]");
+  await page.locator('[data-ide-panel-tab="chat"], [data-ide-desk-tab="chat"]').first().click();
+  const input = page.locator('[data-chat-composer] textarea[name="message"]').first();
+  if ((await input.count()) === 0) throw new Error("no chat composer on the project page");
+
+  // empty send — blocked client-side, NO request.
+  const postsBefore = turnPosts;
+  await input.fill("   ");
+  await page.locator("[data-chat-composer] [data-chat-send], [data-chat-composer] button[type='submit']").first().click();
+  await page.waitForTimeout(400);
+  if (turnPosts !== postsBefore) throw new Error("an empty send issued a request");
+
+  // the send: JSON 201 + optimistic bubble + no document load.
+  await input.fill(`${ctx.marker("CHAT")}`);
+  await page.locator("[data-chat-composer] [data-chat-send], [data-chat-composer] button[type='submit']").first().click();
+  await page.locator('[data-chat-bubble="user"]').last().waitFor({ timeout: 10_000 });
+  if (turnPosts === postsBefore) throw new Error("Send never posted the JSON mutation");
+  await assertNoReload(page, marker, "chat-send");
+  if (ctx.documentLoads !== loadsAtEntry) throw new Error("the chat send document-loaded");
+
+  // progress events stream over the run-event channel (the fixture's SSE).
+  await page.waitForTimeout(1_000);
+  // the reply + citations + the debited footnote render on completion.
+  await page
+    .locator('[data-chat-bubble="assistant"]', { hasText: "Stub answer paragraph" })
+    .waitFor({ timeout: 30_000 });
+  if ((await page.locator("[data-chat-cite]").count()) === 0) {
+    throw new Error("the reply's citation chips did not render");
+  }
+  if ((await page.locator(`[data-chat-footnote='${RUN_ID}']`).count()) === 0) {
+    throw new Error("the turn's debited cost footnote did not render");
+  }
+  await assertNoReload(page, marker, "chat-completion");
+  await page.screenshot({ path: join(ctx.outDir, "u6-chat.png"), fullPage: true });
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
   "U1.shell": U1_SHELL,
@@ -1109,6 +1234,7 @@ const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
   "U3.occlusion": U3_OCCLUSION,
+  "U6.chat": U6_CHAT,
   "R11.demo": R11_DEMO,
   "P1.demo": P1_DEMO,
   "D3.readonly": D3_READONLY,
