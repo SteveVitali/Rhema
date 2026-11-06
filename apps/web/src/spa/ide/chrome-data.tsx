@@ -58,6 +58,8 @@ export interface IdeChromeData {
   readonly palette?: PaletteData;
   readonly inboxCount?: number;
   readonly status?: IdeShellProps["status"];
+  /** R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`; only Page leaves publish. */
+  readonly pageHeader?: ReactNode;
 }
 
 const EMPTY: IdeChromeData = {};

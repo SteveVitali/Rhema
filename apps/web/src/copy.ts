@@ -2664,6 +2664,24 @@ export const COPY = {
     separator: "›",
   },
 
+  // R7WRITE.1a (REQ-WRITE-6) — the page header strip above the paper: crumb tails, the version
+  // badge and the menu labels.
+  pageStrip: {
+    /** The crumb's tail label on a draft Page (the surface name). */
+    pageCrumb: "Page",
+    /** The crumb's tail label on an artifact read. */
+    artifactCrumb: "Artifact",
+    /** The version chip's badges. */
+    workingBadge: "working",
+    frozenBadge: "frozen",
+    /** The Run ▾ menu's trigger + the ⋯ menu's aria-label. */
+    runLabel: "Run",
+    moreLabel: "More actions",
+    /** The ⋯ menu's Edit-source item (239 replaces it with the Rich text / Source toggle). */
+    editSource: "Edit source",
+    runDraft: "Draft",
+  },
+
   // R7SHELL.1a (REQ-SHELL-1/2; ADR-128) — the AppShell sidebar + account menu's chrome strings.
   appShell: {
     frameLabel: "Workspace navigation",

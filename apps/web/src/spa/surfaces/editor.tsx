@@ -26,7 +26,7 @@
 //     pagehide/visibility flushes, the frozen-fork `rhema.fork` → `registry.rekey` rebase.
 
 import { useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
 import { CompareView, ToastProvider, useToast, WhatChangedView } from "@rhema/ui";
@@ -39,6 +39,7 @@ import {
   PageChrome,
   ProjectOverviewBody,
   compareLabels,
+  pageStripFor,
   whatChangedLabels,
   type PageChromeBag,
 } from "../../page-chrome.js";
@@ -184,8 +185,17 @@ function useProposalSeams(viewRef: MutableRefObject<EditorView | null>): {
 } {
   const [dismissedIds, setDismissedIds] = useState<readonly string[]>([]);
   const dismissed = useMemo(() => new Set(dismissedIds), [dismissedIds]);
-  return {
-    accept: (p) => {
+  // R7WRITE.1a — stable callbacks: the header-strip memo (and the PageEditor's props) depends on
+  // them; fresh closures each render would re-publish the chrome context in a render loop.
+  const accept = useCallback(
+    (p: {
+      readonly id: string;
+      readonly kind: "replace" | "insert";
+      readonly from: number;
+      readonly to: number;
+      readonly markdown: string;
+      readonly origin: string;
+    }) => {
       const view = viewRef.current;
       if (!view) return;
       const proposal: Proposal = {
@@ -199,9 +209,11 @@ function useProposalSeams(viewRef: MutableRefObject<EditorView | null>): {
       view.dispatch(acceptProposalTr(view.state.doc, view.state.tr, proposal));
       setDismissedIds((ids) => [...ids, p.id]);
     },
-    reject: (id) => setDismissedIds((ids) => [...ids, id]),
-    filter: (id) => !dismissed.has(id),
-  };
+    [viewRef],
+  );
+  const reject = useCallback((id: string) => setDismissedIds((ids) => [...ids, id]), []);
+  const filter = useCallback((id: string) => !dismissed.has(id), [dismissed]);
+  return { accept, reject, filter };
 }
 
 /** The `findings` input the mount's decoration layer reads — the embed's verbatim shape
@@ -268,9 +280,11 @@ function useEditorChrome(
   slug: string,
   compact: boolean,
   readOnlyTitle?: string | null,
+  pageHeader?: ReactNode,
 ): void {
   const extras = useMemo<IdeChromeData>(
     () => ({
+      ...(pageHeader != null ? { pageHeader } : {}),
       ...(shell.ide.timelineView != null
         ? {
             timelineLabels,
@@ -283,7 +297,7 @@ function useEditorChrome(
         : {}),
       ...(shell.ide.chat != null ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact, readOnlyTitle) } : {}),
     }),
-    [shell.ide, slug, compact, readOnlyTitle],
+    [shell.ide, slug, compact, readOnlyTitle, pageHeader],
   );
   useShellChrome(shell, extras);
 }
@@ -314,10 +328,35 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
 
   // REQ-BETA-10 — the SSR document's `dwellSurface:"project"` heartbeat (the hook twin).
   useDwell("project");
-  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
-
   const page = usePageBag(data.page);
   const pageView = useFilteredPage(page, seams.filter);
+  // R7WRITE.1a (REQ-WRITE-6) — the header strip above `.paper`: crumb, version chip, sync,
+  // notice, Run ▾/Export/⋯. The ReadOnlyProject notice lives INSIDE the strip now (S-3's one
+  // notice); its write actions withhold under every reason.
+  // R7WRITE.1a — memoized: a fresh element every render would re-publish the chrome context
+  // each commit and spin the mount loop.
+  const strip = useMemo(
+    () =>
+      pageView
+        ? pageStripFor(pageView, {
+            projectTitle: data.project.title,
+            compact,
+            readOnlyReason: ro?.reason ?? null,
+            ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
+            editSourceToggle: true,
+            onProposalAccept: seams.accept,
+            onProposalReject: seams.reject,
+          })
+        : undefined,
+    [pageView, data.project.title, compact, ro, slug, seams.accept, seams.reject],
+  );
+  useEditorChrome(
+    data,
+    slug,
+    compact,
+    ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
+    strip,
+  );
 
   // ---- the URL echoes (the document's `c.req.query` reads verbatim — never payload) ----
   const project = useMemo(
@@ -349,7 +388,7 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
+      {/* R7WRITE.1a — the ReadOnlyProject notice moved into the page header strip (REQ-WRITE-6). */}
       <ProjectOverviewBody
         project={project}
         {...(ro != null ? { readOnly: ro.reason } : {})}
@@ -386,7 +425,6 @@ export function VersionPageSurface({
   const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const restoredQ = search["restored"];
   const restoredN = restoredQ != null ? Number(restoredQ) : null;
@@ -395,6 +433,30 @@ export function VersionPageSurface({
     ...(restoredN != null ? { restoredN } : {}),
   });
   const pageView = useFilteredPage(page, seams.filter);
+  // R7WRITE.1a — the version Page's header strip (the notice lives inside it now). Memoized —
+  // the chrome publish depends on a stable element (see the project leaf).
+  const strip = useMemo(
+    () =>
+      pageView
+        ? pageStripFor(pageView, {
+            ...(data.project?.title != null ? { projectTitle: data.project.title } : {}),
+            compact,
+            readOnlyReason: ro?.reason ?? null,
+            ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
+            editSourceToggle: true,
+            onProposalAccept: seams.accept,
+            onProposalReject: seams.reject,
+          })
+        : undefined,
+    [pageView, data.project?.title, compact, ro, slug, seams.accept, seams.reject],
+  );
+  useEditorChrome(
+    data,
+    slug,
+    compact,
+    ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
+    strip,
+  );
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   if (!pageView) return null;
@@ -403,7 +465,6 @@ export function VersionPageSurface({
       <ImportToast imported={search["imported"]} pn={search["pn"]} />
       <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
         {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-        {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={pageView}
         compact={compact}
@@ -435,15 +496,33 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
   const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
-
   const page = usePageBag(data.page);
+  // R7WRITE.1a — the artifact Page's header strip (the notice lives inside it now). Memoized —
+  // the chrome publish depends on a stable element (see the project leaf).
+  const strip = useMemo(
+    () =>
+      page
+        ? pageStripFor(page, {
+            ...(data.project?.title != null ? { projectTitle: data.project.title } : {}),
+            compact,
+            readOnlyReason: ro?.reason ?? null,
+            ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
+          })
+        : undefined,
+    [page, data.project?.title, compact, ro, slug],
+  );
+  useEditorChrome(
+    data,
+    slug,
+    compact,
+    ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
+    strip,
+  );
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   if (!page) return null;
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
-      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={page}
         compact={compact}

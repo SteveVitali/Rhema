@@ -37,5 +37,7 @@ export type { ChordSpec, ChordVerdict, ChordViolation, ReservedChords } from "./
 export { buildPalette, paletteModel, commandForVerb } from "./palette.js";
 export type { PaletteData, PaletteModel, PaletteRow, PaletteSection, PaletteTarget, CommandRowModel } from "./palette.js";
 // P1.06 — the selection popover + the Timeline context-menu item models (§7.4; REQ-CHAT-22).
-export { selectionMenuItems, contextMenuItems } from "./menus.js";
-export type { CommandMenuItem } from "./menus.js";
+export { selectionMenuItems, selectionMenuModel, contextMenuItems } from "./menus.js";
+export type { CommandMenuItem, SelectionMenuModel, SelectionMenuOpts } from "./menus.js";
+export { formatBubblePlacement } from "./bubble.js";
+export type { BubbleRect, BubblePlacement } from "./bubble.js";

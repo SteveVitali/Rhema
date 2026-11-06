@@ -876,6 +876,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@rhema/editor':
+        specifier: workspace:*
+        version: link:../editor
       '@rhema/tokens':
         specifier: workspace:*
         version: link:../tokens

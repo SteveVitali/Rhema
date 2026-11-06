@@ -22,7 +22,7 @@ import {
 } from "./spa/read-only.js";
 import { gateCardFor } from "./gate-card.js";
 import { findingControlsFor } from "./dossier-view.js";
-import { DecisionsList, PageEditor, VersionRail } from "@rhema/ui";
+import { DecisionsList, PageEditor, PageStrip, VersionRail } from "@rhema/ui";
 import { pageLabels, railLabels } from "./page-chrome.js";
 import type { GateCardDto } from "@rhema/api-client";
 
@@ -162,8 +162,41 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
     }
   });
 
-  it("PageEditor: proposals + Revise disable under any reason; the note form follows the reason", () => {
-    const base = {
+  it("PageStrip: proposals + Revise disable under any reason; the note form follows the reason", () => {
+    // R7WRITE.1a — the proposals/banners live in the header strip (`PageStrip`); the note form
+    // stays in `PageEditor` inside `.paper`. This test renders both halves of the surface.
+    const stripBase = {
+      crumbs: [{ label: "Demo", href: "/p/demo-project" }, { label: "Page" }],
+      draftN: 1,
+      baseDraftN: null,
+      origin: "human_revision" as const,
+      state: "open",
+      lock: null,
+      proposals: [
+        {
+          id: "prop_1",
+          label: "Swap it",
+          description: "d",
+          markdown: "m",
+          kind: "replace" as const,
+          from: 0,
+          to: 0,
+          origin: "agent:x",
+        },
+      ],
+      reviseUrl: "/p/demo-project/edit/d_1/revise",
+      cancelUrl: "/p/demo-project/edit/d_1/cancel-run",
+      labels: pageLabels,
+      stripLabels: {
+        breadcrumbAria: "Breadcrumb",
+        separator: "›",
+        workingBadge: "working",
+        frozenBadge: "frozen",
+        runLabel: "Run",
+        moreLabel: "More actions",
+      },
+    };
+    const editorBase = {
       docJson: { type: "doc", content: [] },
       docUrl: "/p/demo-project/edit/d_1/doc",
       draftId: "d_1",
@@ -172,11 +205,8 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
       sha256: "s",
       findings: [],
       provenance: null,
-      proposals: [
-        { id: "prop_1", label: "Swap it", description: "d", markdown: "m", kind: "replace" as const },
-      ],
+      proposals: [],
       origin: "human_revision" as const,
-      reviseUrl: "/p/demo-project/edit/d_1/revise",
       versionLabel: "v1",
       versionNote: "",
       danglingCites: [],
@@ -185,7 +215,10 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
     // showcase: proposals disabled w/ tooltip; the version banner — Revise included — is withheld
     // entirely (page.readOnly posture); the note form is withheld too.
     const { container } = render(
-      <PageEditor {...base} readOnly readOnlyReason="showcase" readOnlyTooltip={COPY.readOnly.reason.showcase} />,
+      <>
+        <PageStrip {...stripBase} readOnly readOnlyReason="showcase" readOnlyTooltip={COPY.readOnly.reason.showcase} />
+        <PageEditor {...editorBase} readOnly readOnlyReason="showcase" readOnlyTooltip={COPY.readOnly.reason.showcase} />
+      </>,
     );
     for (const hook of ["data-proposal-accept", "data-proposal-reject"]) {
       const b = container.querySelector(`[${hook}]`) as HTMLButtonElement | null;
@@ -200,30 +233,53 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
     expect(container.querySelector("[data-page-banner='readonly']")).not.toBeNull();
   });
 
-  it("PageEditor under run_lock keeps comments + Cancel (DS §5.4) while Revise withholds", () => {
+  it("the Page under run_lock keeps comments + Cancel (DS §5.4) while Revise withholds", () => {
     const { container } = render(
-      <PageEditor
-        docJson={{ type: "doc", content: [] }}
-        docUrl="/p/demo-project/edit/d_1/doc"
-        noteUrl="/p/demo-project/edit/d_1/note"
-        draftId="d_1"
-        draftN={1}
-        markdown="x"
-        sha256="s"
-        findings={[]}
-        provenance={null}
-        proposals={[]}
-        origin="human_revision"
-        baseDraftN={0}
-        reviseUrl="/p/demo-project/edit/d_1/revise"
-        versionLabel="v1"
-        versionNote=""
-        danglingCites={[]}
-        labels={pageLabels}
-        lock={{ runId: "run_1", kind: "reader", workflow: "review" }}
-        readOnlyReason="run_lock"
-        readOnlyTooltip={COPY.readOnly.reason.run_lock}
-      />,
+      <>
+        <PageStrip
+          crumbs={[{ label: "Demo", href: "/p/demo-project" }, { label: "Page" }]}
+          draftN={1}
+          baseDraftN={0}
+          origin="human_revision"
+          state="open"
+          lock={{ runId: "run_1", kind: "reader", workflow: "review" }}
+          proposals={[]}
+          reviseUrl="/p/demo-project/edit/d_1/revise"
+          cancelUrl="/p/demo-project/edit/d_1/cancel-run"
+          labels={pageLabels}
+          stripLabels={{
+            breadcrumbAria: "Breadcrumb",
+            separator: "›",
+            workingBadge: "working",
+            frozenBadge: "frozen",
+            runLabel: "Run",
+            moreLabel: "More actions",
+          }}
+          readOnlyReason="run_lock"
+          readOnlyTooltip={COPY.readOnly.reason.run_lock}
+        />
+        <PageEditor
+          docJson={{ type: "doc", content: [] }}
+          docUrl="/p/demo-project/edit/d_1/doc"
+          noteUrl="/p/demo-project/edit/d_1/note"
+          draftId="d_1"
+          draftN={1}
+          markdown="x"
+          sha256="s"
+          findings={[]}
+          provenance={null}
+          proposals={[]}
+          origin="human_revision"
+          baseDraftN={0}
+          versionLabel="v1"
+          versionNote=""
+          danglingCites={[]}
+          labels={pageLabels}
+          lock={{ runId: "run_1", kind: "reader", workflow: "review" }}
+          readOnlyReason="run_lock"
+          readOnlyTooltip={COPY.readOnly.reason.run_lock}
+        />
+      </>,
     );
     // §5.4: the lock banner + Cancel-run exit stay; the note field stays (comments are live).
     expect(container.querySelector("[data-page-banner='lock']")).not.toBeNull();

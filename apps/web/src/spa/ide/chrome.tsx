@@ -194,6 +194,7 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           {...(data.status != null ? { status: data.status } : {})}
           labels={IDE_CHROME_LABELS}
           {...(demo != null ? { demo: true } : {})}
+          {...(data.pageHeader != null ? { pageHeader: data.pageHeader } : {})}
         >
           {children}
         </IdeShell>

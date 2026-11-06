@@ -219,7 +219,9 @@ async function main(): Promise<void> {
   refreshDecorations();
 
   // ---- proposal cards --------------------------------------------------------
-  for (const card of root.querySelectorAll<HTMLElement>("[data-proposal-card]")) {
+  // R7WRITE.1a — the proposal cards moved out of the paper into the `.ide-page` header strip
+  // (outside [data-page-root]); scope the listener pass to the document.
+  for (const card of document.querySelectorAll<HTMLElement>("[data-proposal-card]")) {
     const proposal: Proposal = {
       id: card.dataset["proposalCard"] ?? "",
       kind: (card.dataset["proposalKind"] as "replace" | "insert") ?? "replace",
