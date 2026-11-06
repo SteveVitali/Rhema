@@ -43,3 +43,12 @@ Not run: any deployed/browser journey, preview, or production mutation (none owe
 - Entry JS: +0.0 kB ticket increment; +15.5 kB cumulative vs `04a4e98b` — parent deficit under `GD-KIT3A-BUDGET`, unchanged.
 - `uiCss()`: 23,162 B ≤ 24,576 — headroom ~1.4 kB.
 - DOM-contract hooks, no-JS form grammar (methods, action paths, field names, hidden carriers), severity `--d-sev`/`--d-fill` CSS vars, and journey selectors preserved.
+
+## Orchestrator note — CI red on the records head, repaired in-branch
+
+CI run 42303880120 failed `typecheck / lint / unit` on `u3-occlusion.local.test.ts` (the
+ready-to-flip PANE.1 geometry probe): the migrated `IconButton` close button's `.ui-btn--sm`
+box widened `.ide-panel-head` past the 320px panel, so the feed tab's center was occluded.
+Fix in `packages/tokens/src/ide-css.ts`: panel-head gap/padding s2→s1 / s3→s2, tab gap s2→s1,
+tab padding 8px→6px, close button pinned to 22×22 — all five probe sizes green + 88 chrome/
+tokens tests. Guardrails untouched (probe is the oracle).
