@@ -42,3 +42,13 @@ absences, unrelated. 250 re-checks at phase preview (D-R7KIT.3a-1).
 3 layers stated per AC · 4 protected records appended only · 5 gate words verbatim
 (GD-PREVIEW.R7/GD-PUBDELTA.R7) · 6 no secrets/PII · 7 harness in header · 8 no living-record pins ·
 9 ledger notes ride this push · 10 per-ticket boundary accepts fast-path.
+
+## CI boundary
+
+- First head `e9d41561`: `typecheck / lint / unit` FAIL — `spa-shell` pinned the ≤24 kB uiCss
+  bound (my batch-a block put it at 25,185). Compressed the block (shared selectors; `--xs`
+  merged into `--sm`) to **24,553 B**; `voice-surfaces.test.ts` static-parity updated (Radix
+  pickers emit `name` carriers but option labels only post-mount — RV-36 keeps the no-JS
+  grammar on pages.tsx anyway).
+- Final head `88968c5d`: **ci: pass #278@88968c5** — all seven legs green (run 42263071077).
+  `append-only OK`; `check-build-memory` 0 violations / 20 legacy warnings.
