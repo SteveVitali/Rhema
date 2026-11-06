@@ -56,11 +56,12 @@ export { MarginSurface, MarginTicks } from "./margin.js";
 export type { MarginSurfaceProps, MarginLabels } from "./margin.js";
 export { FindingsDesk } from "./findings-desk.js";
 export type { FindingsDeskProps, FindingsDeskLabels } from "./findings-desk.js";
-export { ChatDesk } from "./chat-panel.js";
+export { ChatDesk, renderAssistantText } from "./chat-panel.js";
 export type {
   ChatDeskProps,
   ChatDeskLabels,
   ChatDeskEndpoints,
+  ChatLiveWire,
   ChatThreadWire,
   ChatTurnWire,
   ChatMessageWire,
