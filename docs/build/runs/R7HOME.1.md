@@ -6,9 +6,9 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** e981ec5
 - **Started:** 2026-11-06T03:41Z
-- **Closed:** —
+- **Closed:** 2026-11-06T04:52Z
 - **Config:** Stage A only ($0 — unit/DOM tests + local build; no preview, GD-PREVIEW.R7). Stage B → DEFERRALS row owned by 250.
-- **ci:** —
+- **ci:** pass #272@`a0c57c95` (run 42162561863 — all seven legs + `ci-pass` anchor; first read fail `03fd0a55` → coverage-matrix REQ-HOME-1 row appended `a0c57c95`; `logs/ci-R7HOME.1.json`)
 
 ## Deferrals read
 `docs/tickets/DEFERRALS.md` read 2026-11-06. All OPEN rows are Stage-B preview legs owned by
@@ -114,4 +114,9 @@
 - `pnpm check:spa-entry-graph` — OK (only Tooltip/DropdownMenu may reach the entry).
 
 ## Evidence report
-(see PR record `docs/build/pr/R7HOME.1.md`)
+- First CI read on `03fd0a55`: FAIL — `check-coverage-matrix` flagged `REQ-HOME-1` missing a
+  matrix row (the spec banner introduced the id to the checked spec). Row appended `a0c57c95`
+  (MET-ENGINEERED(D-R7HOME.1-1)); `check-coverage-matrix` green locally; second CI read PASS.
+- `check-build-memory.sh`: 0 violations (19 legacy warnings). `check-append-only.mjs --base
+  stevevitali/r7talk-1b-tabs`: OK.
+- PR: #272 → `stevevitali/r7talk-1b-tabs`, OPEN, unmerged (OPERATOR).
