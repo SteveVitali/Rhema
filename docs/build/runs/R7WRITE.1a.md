@@ -50,9 +50,28 @@
 
 - build/typecheck/lint on `@rhema/editor`, `@rhema/ide`, `@rhema/ui`, `@rhema/tokens`, `@rhema/web`: PASS.
 - `pnpm turbo build --filter=@rhema/web...`: PASS (SPA bundle rebuilt).
-- `pnpm --filter @rhema/web typecheck`: PASS.
-- `pnpm exec vitest run apps/web/src`: FULL sweep — see results below.
-- `pnpm check:dom-contract`, `check:spa-budget`, `check:spa-env`, `check:protocol-markers`: see below.
+- `pnpm --filter @rhema/web typecheck`: PASS (all three tsconfigs).
+- `pnpm exec vitest run apps/web/src`: **PASS — 1541/1541** (89 files, 22.6 s). The first
+  full-sweep attempt exposed an infinite publish→re-render loop (fresh `pageHeader` element each
+  render destabilised the chrome memo — workers spun at 100 % CPU): fixed by `useMemo`-ing the
+  strip in the three Page leaves + `useCallback`-ing `useProposalSeams`'s returns. Real failures
+  fixed before commit: the demo mount's pill scope (pill/banner refs now resolve lazily per
+  write — the strip mounts via the leaf's chrome publish after the mount effect), the
+  copy-containment scan (`document.querySelector<…>` generic read as JSX text — the seam moved to
+  leaf opts), and `page-collab`/`ide-surfaces` re-scopes.
+- `pnpm exec vitest run packages/{editor,ide,ui,tokens}/src`: **PASS — 390/390** (36 files).
+- `pnpm check:dom-contract`: PASS — every new hook declared + emitted + asserted.
+- `pnpm check:spa-budget`: PASS — **entry delta +14.8 kB gz** of the ≤15.0 kB allowance vs
+  baseline `04a4e98b` (was +14.6 kB at ticket 236; total JS +57.6 kB, CSS +0.0 kB).
+- `pnpm check:spa-env`: PASS (52 banned server-env names, 142 client files scanned).
+- `pnpm check:protocol-markers`: PASS.
+- `node docs/build/tools/check-append-only.mjs --base stevevitali/r7home-2b-opens-to-page`: PASS.
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .`: 0 violations
+  (20 warnings — all pre-existing/legacy + ledger line-budget notes).
+- CI (`logs/ci-R7WRITE.1a.json`): first read FAIL `typecheck / lint / unit` — `linkCommand`
+  unused import in `format-commands.test.ts` → fixed `6546f595`; second read FAIL —
+  `document` is not defined in the server tsconfig (`page-chrome.tsx`'s `selectSourceToggle`)
+  → the DOM seam moved back to leaf `onEditSource` opts `c80340aa`; third read below.
 
 ## AC gap table (Stage A posture)
 
