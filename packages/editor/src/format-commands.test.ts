@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TextSelection, type EditorState } from "prosemirror-state";
-import { FORMAT_ACTIONS, formatCommand, linkCommand } from "./format-commands.js";
+import { FORMAT_ACTIONS, formatCommand } from "./format-commands.js";
 import { createCollabPageState, createPageState } from "./plugins.js";
 import { markdownToDoc } from "./md-to-pm.js";
 import { pageSchema } from "./schema.js";
