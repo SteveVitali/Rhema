@@ -8,7 +8,9 @@
 - Branch: `stevevitali/r7home-2a-imports`
 - Config: implement-spec defaults (ledger, self-review, gap-analysis, tests; live_verification =
   Stage A only — `GD-PREVIEW.R7` forbids a per-ticket preview; Stage B rides 250 via a DEFERRALS row)
-- Closed:
+- Closed: 2026-11-06T07:10Z
+- ci: pass #273@`9a5d320` (run 42175756719 — all seven legs + `ci-pass` anchor; first read fail
+  `5f15430d` → five test fixes landed `9a5d3200`; `logs/ci-R7HOME.2a.json`)
 
 ## Deferrals read
 
