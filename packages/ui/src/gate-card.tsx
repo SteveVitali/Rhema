@@ -1,5 +1,7 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { GateKind } from "@rhema/contracts";
+import { Button } from "./primitives/button.js";
+import { TextField } from "./primitives/fields.js";
 import {
   presenceCountdown,
   remainingParts,
@@ -102,16 +104,26 @@ export interface GateCardLabels {
   };
 }
 
-const actionButton: CSSProperties = {
-  padding: "8px 14px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-raised)",
-  color: "var(--shell-fg)",
-  fontSize: "13px",
-  fontWeight: 500,
-  cursor: "pointer",
-};
+// 243_R7KIT.3d — the card's action buttons are the kit's Button; the `ed.*` text/number fields
+// are TextFields (real inputs — the no-JS decision post keeps working). The checkbox + select
+// carriers stay KIT-1-styled natives inside `GateCheck`/`GateSelect` — named GUARD-1
+// exemptions: the card posts with zero client JS, so a Radix toggle is inert there (RV-36).
+
+/** The no-JS checkbox carrier — a native `ed.*`/standing checkbox inside the decision form. */
+function GateCheck({ name, defaultChecked, value, hook }: { name: string; defaultChecked?: boolean; value?: string; hook?: string }): ReactNode {
+  return <input type="checkbox" name={name} value={value ?? "1"} defaultChecked={defaultChecked} {...(hook ? { [hook]: "true" } : {})} />;
+}
+
+/** The no-JS select carrier — the per-run deadline override posts `ed.runOverride`. */
+function GateSelect({ name, options, hook }: { name: string; options: readonly { value: string; label: string }[]; hook?: string }): ReactNode {
+  return (
+    <select name={name} {...(hook ? { [hook]: "true" } : {})}>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
 
 const ACTION_ORDER: Record<GateCardAction, number> = {
   approve: 0,
@@ -210,71 +222,57 @@ vis();})();`;
 // grammar — findings-core `decodeGateEditFields` decodes it; the api applies it to the sidecar).
 // Prose stays read-only — an edit is a field, never free mutation of the artifact text. ----
 
-const fieldInput: CSSProperties = {
-  padding: "5px 8px",
-  borderRadius: "6px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "12px",
-};
-
-const fieldLabel: CSSProperties = {
-  fontSize: "12px",
-  color: "var(--shell-fg-muted)",
-};
-
 /** Approve-plan: spine claims (reorder/strike/add-with-note), section rows, the apparatus budget. */
 function PlanEditor({ plan, labels }: { plan: GatePlanView; labels: NonNullable<GateCardLabels["plan"]> }): ReactNode {
   return (
-    <div data-gate-plan="true" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
-        <legend style={fieldLabel}>{labels.spineHeading}</legend>
-        <ol data-spine="true" style={{ margin: "6px 0 0", paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div data-gate-plan="true" className="ui-d-g10" style={{ display: "flex", flexDirection: "column" }}>
+      <fieldset className="ui-os-fs">
+        <legend className="ui-d-l">{labels.spineHeading}</legend>
+        <ol data-spine="true" className="ui-d-ol" style={{ display: "flex", flexDirection: "column" }}>
           {plan.spine.map((claim, i) => (
             <li key={i} data-spine-claim={i} data-struck={claim.struck ? "true" : "false"}>
-              <span style={{ fontSize: "13px", color: "var(--shell-fg)", textDecoration: claim.struck ? "line-through" : "none" }}>
+              <span className="ui-d-fd" style={{ textDecoration: claim.struck ? "line-through" : "none" }}>
                 {claim.text}
               </span>
               {claim.note ? (
-                <span data-claim-note="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}> — {claim.note}</span>
+                <span data-claim-note="true" className="ui-d-i"> — {claim.note}</span>
               ) : null}
-              <span style={{ marginLeft: "8px", display: "inline-flex", gap: "8px", alignItems: "baseline" }}>
-                <label style={fieldLabel}>
+              <span className="ui-set-inline ui-d-acts" style={{ display: "inline-flex", alignItems: "baseline" }}>
+                <label className="ui-d-l">
                   {labels.orderLabel}
-                  <input type="number" name={`ed.spine.${i}.ord`} min={1} defaultValue={i + 1} style={{ ...fieldInput, width: "48px", marginLeft: "4px" }} />
+                  <TextField type="number" name={`ed.spine.${i}.ord`} min={1} defaultValue={i + 1} className="ui-os-ml1 ui-d-w48" />
                 </label>
-                <label style={fieldLabel}>
-                  <input type="checkbox" name={`ed.spine.${i}.strike`} value="1" defaultChecked={claim.struck === true} /> {labels.strikeLabel}
+                <label className="ui-d-l">
+                  <GateCheck name={`ed.spine.${i}.strike`} defaultChecked={claim.struck === true} /> {labels.strikeLabel}
                 </label>
-                <input type="text" name={`ed.spine.${i}.note`} placeholder={labels.notePlaceholder} defaultValue={claim.note ?? ""} style={fieldInput} />
+                <TextField type="text" name={`ed.spine.${i}.note`} placeholder={labels.notePlaceholder} defaultValue={claim.note ?? ""} />
               </span>
             </li>
           ))}
         </ol>
-        <div data-add-claim="true" style={{ marginTop: "6px", display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
-          <span style={fieldLabel}>{labels.addClaimLabel}</span>
-          <input type="text" name="ed.spine.new.text" placeholder={labels.addClaimPlaceholder} style={{ ...fieldInput, flex: "1 1 200px" }} />
-          <input type="text" name="ed.spine.new.note" placeholder={labels.addNotePlaceholder} style={{ ...fieldInput, flex: "1 1 160px" }} />
+        <div data-add-claim="true" className="ui-d-mt6 ui-d-acts" style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}>
+          <span className="ui-d-l">{labels.addClaimLabel}</span>
+          <TextField type="text" name="ed.spine.new.text" placeholder={labels.addClaimPlaceholder} style={{ flex: "1 1 200px" }} />
+          <TextField type="text" name="ed.spine.new.note" placeholder={labels.addNotePlaceholder} style={{ flex: "1 1 160px" }} />
         </div>
       </fieldset>
       {plan.sections.length > 0 ? (
-        <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
-          <legend style={fieldLabel}>{labels.sectionsHeading}</legend>
-          <table data-plan-sections="true" style={{ marginTop: "6px", borderCollapse: "collapse", fontSize: "12px" }}>
+        <fieldset className="ui-os-fs">
+          <legend className="ui-d-l">{labels.sectionsHeading}</legend>
+          <table data-plan-sections="true" className="ui-d-mt6 ui-d-fs" style={{ borderCollapse: "collapse" }}>
             <tbody>
               {plan.sections.map((sec, i) => (
                 <tr key={i} data-plan-section={sec.ref}>
-                  <td style={{ padding: "3px 8px 3px 0", color: "var(--shell-fg)" }}>{sec.ref}</td>
-                  <td style={{ padding: "3px 8px 3px 0", color: "var(--shell-fg-muted)" }}>{sec.title}</td>
-                  <td style={{ padding: "3px 8px 3px 0" }}>
-                    <input type="number" name={`ed.sec.${i}.ord`} min={1} defaultValue={i + 1} aria-label={labels.orderLabel} style={{ ...fieldInput, width: "44px" }} />
+                  <td className="ui-d-td">{sec.ref}</td>
+                  <td className="ui-d-td ui-d-l">{sec.title}</td>
+                  <td className="ui-d-td">
+                    <TextField type="number" name={`ed.sec.${i}.ord`} min={1} defaultValue={i + 1} aria-label={labels.orderLabel} className="ui-os-n4" />
                   </td>
-                  <td style={{ padding: "3px 8px 3px 0" }}>
-                    <input type="number" name={`ed.sec.${i}.targetWords`} min={0} defaultValue={sec.targetWords ?? ""} aria-label={labels.targetWordsLabel} style={{ ...fieldInput, width: "72px" }} />
+                  <td className="ui-d-td">
+                    <TextField type="number" name={`ed.sec.${i}.targetWords`} min={0} defaultValue={sec.targetWords ?? ""} aria-label={labels.targetWordsLabel} className="ui-os-n7" />
                   </td>
-                  <td style={{ padding: "3px 0" }}>
-                    <input type="text" name={`ed.sec.${i}.purpose`} defaultValue={sec.purpose ?? ""} aria-label={labels.purposeLabel} style={{ ...fieldInput, width: "180px" }} />
+                  <td>
+                    <TextField type="text" name={`ed.sec.${i}.purpose`} defaultValue={sec.purpose ?? ""} aria-label={labels.purposeLabel} className="ui-d-w180" />
                   </td>
                 </tr>
               ))}
@@ -284,8 +282,8 @@ function PlanEditor({ plan, labels }: { plan: GatePlanView; labels: NonNullable<
       ) : null}
       {plan.alternativesConsidered && plan.alternativesConsidered.length > 0 ? (
         <div data-alternatives="true">
-          <span style={fieldLabel}>{labels.alternativesHeading}</span>
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span className="ui-d-l">{labels.alternativesHeading}</span>
+          <ul className="ui-os-ul">
             {plan.alternativesConsidered.map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -294,17 +292,17 @@ function PlanEditor({ plan, labels }: { plan: GatePlanView; labels: NonNullable<
       ) : null}
       {plan.gaps && plan.gaps.length > 0 ? (
         <div data-gaps="true">
-          <span style={fieldLabel}>{labels.gapsHeading}</span>
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span className="ui-d-l">{labels.gapsHeading}</span>
+          <ul className="ui-os-ul">
             {plan.gaps.map((g, i) => (
               <li key={i}>{g}</li>
             ))}
           </ul>
         </div>
       ) : null}
-      <label style={fieldLabel}>
+      <label className="ui-d-l">
         {labels.apparatusLabel}
-        <input type="number" name="ed.values.apparatusBudget" min={0} defaultValue={plan.apparatusBudget ?? ""} style={{ ...fieldInput, width: "88px", marginLeft: "6px" }} />
+        <TextField type="number" name="ed.values.apparatusBudget" min={0} defaultValue={plan.apparatusBudget ?? ""} className="ui-os-ml1 ui-d-w88" />
       </label>
     </div>
   );
@@ -313,18 +311,18 @@ function PlanEditor({ plan, labels }: { plan: GatePlanView; labels: NonNullable<
 /** Approve-scope: the labeled correction fields (post as `ed.values.*` → recorded + composed). */
 function ScopeFields({ scope, labels }: { scope: GateScopeView; labels: GateCardLabels }): ReactNode {
   const field = (name: string): ReactNode => (
-    <label key={name} style={{ ...fieldLabel, display: "flex", flexDirection: "column", gap: "3px" }}>
+    <label key={name} className="ui-d-l ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
       {labels.scopeFieldLabel?.(name) ?? name}
-      <input type="text" name={`ed.values.${name}`} style={fieldInput} />
+      <TextField type="text" name={`ed.values.${name}`} />
     </label>
   );
   return (
-    <div data-gate-scope="true" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+    <div data-gate-scope="true" className="ui-d-acts" style={{ display: "flex", flexDirection: "column" }}>
       {scope.exceedsCap && labels.exceedsCapLine ? (
-        <p data-exceeds-cap="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{labels.exceedsCapLine}</p>
+        <p data-exceeds-cap="true" className="ui-c2-m0 ui-d-wn">{labels.exceedsCapLine}</p>
       ) : null}
-      {labels.scopeFieldsHeading ? <span style={fieldLabel}>{labels.scopeFieldsHeading}</span> : null}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+      {labels.scopeFieldsHeading ? <span className="ui-d-l">{labels.scopeFieldsHeading}</span> : null}
+      <div className="ui-d-acts" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
         {["stage", "venue", "audience", "concerns", "narrow"].map(field)}
       </div>
     </div>
@@ -335,20 +333,20 @@ function ScopeFields({ scope, labels }: { scope: GateScopeView; labels: GateCard
 function CutListToggles({ cutList, labels }: { cutList: GateCutListView; labels: NonNullable<GateCardLabels["cutList"]> }): ReactNode {
   return (
     <div data-gate-cutlist="true">
-      <span style={fieldLabel}>{labels.heading}</span>
+      <span className="ui-d-l">{labels.heading}</span>
       {cutList.targetWords != null ? (
-        <span data-cut-target="true" style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+        <span data-cut-target="true" className="ui-d-i ui-set-inline">
           {labels.targetLine(cutList.targetWords)}
         </span>
       ) : null}
-      <ul style={{ margin: "6px 0 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+      <ul className="ui-os-ul ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
         {cutList.cuts.map((cut, i) => (
-          <li key={i} data-cut={cut.ordinal} style={{ fontSize: "12px", color: "var(--shell-fg)" }}>
-            <label style={{ display: "inline-flex", gap: "6px", alignItems: "baseline" }}>
-              <input type="checkbox" name={`ed.cut.${i}.protect`} value="1" defaultChecked={cut.protect} />
+          <li key={i} data-cut={cut.ordinal} className="ui-d-fs">
+            <label className="ui-d-g6" style={{ display: "inline-flex", alignItems: "baseline" }}>
+              <GateCheck name={`ed.cut.${i}.protect`} defaultChecked={cut.protect} />
               {labels.protectLabel}
             </label>
-            <span style={{ marginLeft: "6px", color: "var(--shell-fg-muted)" }}>
+            <span className="ui-os-ml1 ui-d-l">
               {labels.wordsLabel(cut.words)} — {cut.reason}
             </span>
           </li>
@@ -361,9 +359,9 @@ function CutListToggles({ cutList, labels }: { cutList: GateCutListView; labels:
 /** Choose-thesis: the pick field posts `ed.values.thesis` (recorded + composed into guidance). */
 function ThesisPick({ label }: { label: string }): ReactNode {
   return (
-    <label data-gate-thesis="true" style={{ ...fieldLabel, display: "block" }}>
+    <label data-gate-thesis="true" className="ui-d-l" style={{ display: "block" }}>
       {label}
-      <input type="text" name="ed.values.thesis" style={{ ...fieldInput, display: "block", width: "100%", boxSizing: "border-box", marginTop: "3px" }} />
+      <TextField type="text" name="ed.values.thesis" className="ui-os-mr" />
     </label>
   );
 }
@@ -381,7 +379,7 @@ function GateStructuredFields({
   compact?: boolean;
 }): ReactNode {
   return (
-    <div data-gate-structured={kind} style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div data-gate-structured={kind} className="ui-d-mt10 ui-d-g10" style={{ display: "flex", flexDirection: "column" }}>
       {kind === "approve_plan" && structured.plan && labels.plan ? (
         <PlanEditor plan={structured.plan} labels={labels.plan} />
       ) : null}
@@ -399,8 +397,8 @@ function GateStructuredFields({
       {kind === "choose_thesis" && labels.thesisLabel ? <ThesisPick label={labels.thesisLabel} /> : null}
       {structured.facts && Object.keys(structured.facts).length > 0 ? (
         <div data-gate-facts="true">
-          {labels.factsHeading ? <span style={fieldLabel}>{labels.factsHeading}</span> : null}
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+          {labels.factsHeading ? <span className="ui-d-l">{labels.factsHeading}</span> : null}
+          <ul className="ui-os-ul ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
             {Object.entries(structured.facts).map(([key, value]) => (
               <li key={key} data-fact={key}>{labels.factLine?.(key, value) ?? `${key}: ${String(value)}`}</li>
             ))}
@@ -433,32 +431,27 @@ export function GateCard({
       data-compact={compact ? "true" : "false"}
       role="region"
       aria-label={labels.kindLabel(model.kind)}
+      className="ui-vc-card"
       style={{
         border: "1px solid var(--shell-border)",
         borderLeft: `3px solid ${model.blocking ? "var(--sev-major)" : "var(--shell-border)"}`,
-        borderRadius: "10px",
-        padding: "14px 16px",
-        marginBottom: "12px",
-        background: "var(--shell-raised)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
-        <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)" }}>
-          {labels.kindLabel(model.kind)}
-        </h3>
+      <div className="ui-d-acts" style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}>
+        <h3 className="ui-d-h">{labels.kindLabel(model.kind)}</h3>
         {artifact ? (
           artifact.href ? (
-            <a href={artifact.href} data-gate-artifact="true" style={{ fontSize: "13px", color: "var(--accent)" }}>
+            <a href={artifact.href} data-gate-artifact="true" className="ui-d-fd ui-c2-ca">
               {artifact.title}
             </a>
           ) : (
-            <span data-gate-artifact="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            <span data-gate-artifact="true" className="ui-d-t">
               {artifact.title}
             </span>
           )
         ) : null}
         {model.informational ? (
-          <span data-informational="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+          <span data-informational="true" className="ui-d-i">
             {labels.informationalNote}
           </span>
         ) : null}
@@ -467,24 +460,13 @@ export function GateCard({
       {/* P1.09 — the first-run inline explainer (§6.4/§5.11): shown once per user, dismissible via a
           plain form post — inline coaching, never a modal (§14.2). */}
       {labels.explainer && explainerDismissAction ? (
-        <aside
-          data-gate-explainer="true"
-          style={{
-            marginTop: "10px",
-            padding: "10px 12px",
-            border: "1px solid var(--shell-border)",
-            borderRadius: "8px",
-            background: "var(--shell-bg)",
-            fontSize: "12px",
-            color: "var(--shell-fg-muted)",
-          }}
-        >
-          <strong style={{ color: "var(--shell-fg)" }}>{labels.explainer.title}</strong>
-          <p style={{ margin: "4px 0 0" }}>{labels.explainer.body}</p>
-          <form method="post" action={explainerDismissAction} style={{ marginTop: "6px" }}>
-            <button type="submit" style={{ ...actionButton, padding: "3px 10px", fontSize: "12px" }}>
+        <aside data-gate-explainer="true" className="ui-set-card ui-d-l ui-d-eb">
+          <strong>{labels.explainer.title}</strong>
+          <p className="ui-set-note">{labels.explainer.body}</p>
+          <form method="post" action={explainerDismissAction} className="ui-d-mt6">
+            <Button type="submit" size="sm">
               {labels.explainer.dismissLabel}
-            </button>
+            </Button>
           </form>
         </aside>
       ) : null}
@@ -493,7 +475,7 @@ export function GateCard({
       {children}
 
       {/* deadline or "waiting for you" — wait-default gates never carry a countdown. */}
-      <p data-deadline-line="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "10px 0 0" }}>
+      <p data-deadline-line="true" className="ui-d-mt10 ui-d-t">
         {model.held
           ? labels.heldLine
           : model.deadline.deadlineAt == null
@@ -507,12 +489,12 @@ export function GateCard({
       </p>
 
       {/* the do-nothing sentence (§6.4 item 3). */}
-      <p data-do-nothing="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "6px 0 0" }}>
+      <p data-do-nothing="true" className="ui-d-mt6 ui-d-t">
         {labels.doNothingLine(model.doNothing)}
       </p>
 
       {/* cost so far + remaining (§6.4). */}
-      <p data-spend-line="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 0" }}>
+      <p data-spend-line="true" className="ui-d-mt6 ui-d-i">
         {labels.spendLine(model.spentCredits, model.capCredits, model.remainingEstimateCredits)}
       </p>
 
@@ -522,11 +504,11 @@ export function GateCard({
         <p
           data-presence-timer="true"
           data-paused={model.presence.paused ? "true" : "false"}
-          style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0 0" }}
+          className="ui-c2-mt ui-d-w"
         >
           {labels.presenceLine(presenceCountdown(model.presence.remainingMs ?? 0))}
           {model.presence.paused ? (
-            <span data-paused-note="true" style={{ color: "var(--shell-fg-muted)" }}>
+            <span data-paused-note="true" className="ui-d-t">
               {" "}
               {labels.pausedNote}
             </span>
@@ -535,75 +517,51 @@ export function GateCard({
       ) : null}
 
       {hasEscalations ? (
-        <p data-escalation-note="true" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "8px 0 0" }}>
+        <p data-escalation-note="true" className="ui-c2-mt ui-d-wn">
           {labels.escalationNote}
         </p>
       ) : null}
 
-      <form method="post" action={formAction} data-gate-form="true" style={{ marginTop: "12px" }}>
+      <form method="post" action={formAction} data-gate-form="true" className="ui-c2-mt3">
         {/* P1.09 — the kind's structured editable parts (§6.4 item 4): `ed.*` fields post WITH the
             decision button, the server applies them to the artifact's sidecar + records the edit. */}
         {structured ? <GateStructuredFields kind={model.kind} structured={structured} labels={labels} compact={compact} /> : null}
         <div
           data-gate-actions="true"
-          style={{ display: "flex", flexDirection: compact ? "column" : "row", gap: "8px", flexWrap: "wrap" }}
+          className="ui-d-acts"
+          style={{ display: "flex", flexDirection: compact ? "column" : "row", flexWrap: "wrap" }}
         >
           {model.actions
             .slice()
             .sort((a, b) => ACTION_ORDER[a] - ACTION_ORDER[b])
             .map((action) => (
-              <button
+              <Button
                 key={action}
                 type="submit"
                 name="action"
                 value={action}
                 data-action={action}
-                style={{
-                  ...actionButton,
-                  background: action === "approve" ? "var(--accent)" : "var(--shell-raised)",
-                  color: action === "approve" ? "var(--shell-bg)" : "var(--shell-fg)",
-                  border: action === "approve" ? "none" : "1px solid var(--shell-border)",
-                }}
+                variant={action === "approve" ? "primary" : "secondary"}
               >
                 {actionLabel(action, model.kind, labels)}
-              </button>
+              </Button>
             ))}
         </div>
 
         {!compact ? (
-          <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div className="ui-d-mt10 ui-d-g6" style={{ display: "flex", flexDirection: "column" }}>
             {runOverride ? (
-              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "inline-flex", gap: "6px", alignItems: "baseline" }}>
+              <label className="ui-d-l ui-d-g6" style={{ display: "inline-flex", alignItems: "baseline" }}>
                 {runOverride.label}
-                <select name="ed.runOverride" data-run-override="true" style={{ ...fieldInput }}>
-                  {runOverride.options.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                <GateSelect name="ed.runOverride" hook="data-run-override" options={runOverride.options} />
               </label>
             ) : null}
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            <label className="ui-d-l">
               {labels.guidanceLabel}
-              <input
-                type="text"
-                name="guidance"
-                data-guidance="true"
-                style={{
-                  display: "block",
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginTop: "3px",
-                  padding: "7px 10px",
-                  borderRadius: "7px",
-                  border: "1px solid var(--shell-border)",
-                  background: "var(--shell-bg)",
-                  color: "var(--shell-fg)",
-                  fontSize: "13px",
-                }}
-              />
+              <TextField type="text" name="guidance" data-guidance="true" className="ui-os-mr" />
             </label>
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "inline-flex", gap: "6px" }}>
-              <input type="checkbox" name="standing" value="true" data-standing="true" />
+            <label className="ui-d-l ui-d-g6" style={{ display: "inline-flex" }}>
+              <GateCheck name="standing" value="true" hook="data-standing" />
               {labels.standingLabel}
             </label>
           </div>
@@ -614,11 +572,11 @@ export function GateCard({
           this run renders one line — user-approved (with its change count), auto-continued, expired,
           or policy-skipped. Never editable, never removed. */}
       {decisions && decisions.length > 0 && labels.decisionLabel ? (
-        <div data-gate-decisions="true" style={{ marginTop: "12px", borderTop: "1px solid var(--shell-border)", paddingTop: "8px" }}>
+        <div data-gate-decisions="true" className="ui-d-sect">
           {labels.decisionsHeading ? (
-            <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{labels.decisionsHeading}</span>
+            <span className="ui-d-i">{labels.decisionsHeading}</span>
           ) : null}
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+          <ul className="ui-os-ul ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
             {decisions.map((d) => (
               <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
                 {labels.decisionLabel!(d)}
@@ -678,7 +636,7 @@ export function TriageLedger({
   readonly children?: (row: TriageLedgerRow) => ReactNode;
 }): ReactNode {
   return (
-    <ol data-triage-ledger="true" style={{ listStyle: "none", margin: "10px 0 0", padding: 0 }}>
+    <ol data-triage-ledger="true" className="ui-d-mt10 ui-d-p0" style={{ listStyle: "none" }}>
       {rows.map((row) => (
         <li
           key={row.findingId}
@@ -687,22 +645,18 @@ export function TriageLedger({
           data-disposition={row.disposition?.kind ?? "undecided"}
           data-actor={row.disposition?.actor ?? "drafter"}
           data-severity={row.severity}
-          style={{
-            padding: "8px 0",
-            borderBottom: "1px solid var(--shell-border)",
-            fontSize: "13px",
-          }}
+          className="ui-d-row"
         >
-          <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{row.ordinal}. </span>
-          <span style={{ color: "var(--shell-fg)", fontWeight: 500 }}>{row.title}</span>{" "}
-          <span style={{ fontSize: "11px", color: "var(--shell-fg-muted)" }}>
+          <span className="ui-d-i">{row.ordinal}. </span>
+          <span className="ui-d-tt">{row.title}</span>{" "}
+          <span className="ui-d-l">
             {labels.severityLabel(row.severity)}
           </span>{" "}
-          <span data-row-disposition="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span data-row-disposition="true" className="ui-d-l">
             {labels.dispositionLabel(row.disposition?.kind)}
             {row.disposition?.actor === "user" ? ` · ${labels.userActorLabel}` : ""}
           </span>
-          {children ? <div style={{ marginTop: "6px" }}>{children(row)}</div> : null}
+          {children ? <div className="ui-d-mt6">{children(row)}</div> : null}
         </li>
       ))}
     </ol>

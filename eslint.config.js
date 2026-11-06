@@ -57,6 +57,18 @@ const NO_RAW_CONTROLS_ENABLED = [
   "apps/web/src/spa/surfaces/outline.tsx",
   "apps/web/src/spa/surfaces/figures.tsx",
   "packages/ui/src/outline-sections.tsx",
+  // 243_R7KIT.3d — KIT-3 batch d: the IDE surfaces (gate card, run card + feed, timeline,
+  // findings desk, compare, page-editor + ide-shell chrome, approval-settings) + the ui run
+  // sheet's no-JS disposition (named exemptions; the dossier files are 243a's).
+  "packages/ui/src/gate-card.tsx",
+  "packages/ui/src/run-card.tsx",
+  "packages/ui/src/timeline.tsx",
+  "packages/ui/src/findings-desk.tsx",
+  "packages/ui/src/compare.tsx",
+  "packages/ui/src/page-editor.tsx",
+  "packages/ui/src/ide-shell.tsx",
+  "packages/ui/src/run-sheet.tsx",
+  "apps/web/src/approval-settings.tsx",
 ];
 
 export default tseslint.config(

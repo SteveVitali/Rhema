@@ -68,11 +68,11 @@ export function ideCss(): string {
     // ---- Right panel (docked | overlay | sheet | hidden) — REQ-PANE-1/2/3; the Desk retires ----
     `.ide-panel { flex: 0 0 var(--panel-w, ${B.timelinePx}px); width: var(--panel-w, ${B.timelinePx}px); background: var(--shell-surface); border-left: 1px solid var(--shell-border); overflow: hidden; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease, transform var(--dur-pane) ease; display: flex; flex-direction: column; }`,
     ".ide[data-panel='closed'] .ide-panel { display: none; }",
-    ".ide-panel .ide-panel-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); flex: 0 0 auto; }",
-    ".ide-panel .ide-panel-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; overflow-x: auto; }",
-    ".ide-panel .ide-panel-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }",
+    ".ide-panel .ide-panel-head { display: flex; align-items: center; gap: var(--s1); padding: var(--s1) var(--s2); border-bottom: 1px solid var(--shell-border); flex: 0 0 auto; }",
+    ".ide-panel .ide-panel-tabs { display: flex; gap: var(--s1); flex: 1; min-width: 0; overflow-x: auto; }",
+    ".ide-panel .ide-panel-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 3px 6px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }",
     ".ide-panel .ide-panel-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }",
-    ".ide-panel .ide-panel-close { color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; }",
+    ".ide-panel .ide-panel-close { color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; width: 22px; height: 22px; min-width: 0; padding: 0; flex: 0 0 auto; }",
     ".ide-panel .ide-panel-body { flex: 1; overflow: auto; padding: var(--s3); font-size: 13px; color: var(--shell-fg-muted); min-height: 0; }",
     ".ide-panel .ide-tl-body { font-size: 13px; }",
     // the active tab's panel is attribute-driven (same contract the Desk kept)

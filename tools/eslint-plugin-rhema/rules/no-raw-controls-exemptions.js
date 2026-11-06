@@ -104,4 +104,65 @@ module.exports = [
     reason:
       "the claim strike checkbox posts `ed.claim.*.strike` inside the Approve-outline gate card's no-JS decision form — the SSR gate card renders to static HTML where a Radix toggle is inert, so this stays the KIT-1-styled native checkbox (RV-36); every other field is a TextField primitive.",
   },
+  // ---- 243_R7KIT.3d (batch d) ----
+  {
+    file: "packages/ui/src/gate-card.tsx",
+    component: "GateCheck",
+    reason:
+      "the `ed.*`/standing checkboxes inside the gate card's no-JS decision form — the card posts with zero client JS where a Radix toggle is inert, so these stay the KIT-1-styled native checkbox (RV-36); every text/number field is a TextField primitive and every action a Button.",
+  },
+  {
+    file: "packages/ui/src/gate-card.tsx",
+    component: "GateSelect",
+    reason:
+      "the `ed.runOverride` deadline select inside the gate card's no-JS decision form — a Radix Select is inert without client JS, so the KIT-1-styled native select stays (RV-36).",
+  },
+  {
+    file: "packages/ui/src/run-sheet.tsx",
+    component: "RunSheet",
+    reason:
+      "the @rhema/ui run sheet IS the permanent no-JS/SSR fallback (RV-36): a plain <form> whose radios, native selects, checkboxes, inputs and textareas post without JS, and the inline recompute script queries the native `input[name=rigor]`/`select[name=modelTier]` carriers — KIT-1-styled natives by name.",
+  },
+  {
+    file: "packages/ui/src/run-sheet.tsx",
+    component: "RunButton",
+    reason:
+      "the no-JS paywall submit inside the SSR run sheet's native form (RV-36 — the require-estimate-prop contract still pins its estimate hooks).",
+  },
+  {
+    file: "packages/ui/src/run-sheet.tsx",
+    component: "AskButton",
+    reason:
+      "the no-JS Assistant submit inside the SSR run sheet's native form (RV-36).",
+  },
+  {
+    file: "packages/ui/src/findings-desk.tsx",
+    component: "FilterSelect",
+    reason:
+      "the findings filter bar's GET form filters server-side from the SSR document — a Radix Select is inert without client JS, so the KIT-1-styled native select stays (RV-36); Apply is a Button primitive.",
+  },
+  {
+    file: "packages/ui/src/page-editor.tsx",
+    component: "TaskMark",
+    reason:
+      "the task-list marker is document content — a disabled + readOnly native checkbox (not a form control), so the KIT-1-styled native input stays (RV-36).",
+  },
+  {
+    file: "apps/web/src/approval-settings.tsx",
+    component: "PolicyRadio",
+    reason:
+      "the policy radios post natively on the SSR /p/:slug settings page — a Radix RadioGroup is inert without client JS (RV-36).",
+  },
+  {
+    file: "apps/web/src/approval-settings.tsx",
+    component: "OverrideSelect",
+    reason:
+      "the per-kind `ov_<kind>` override select posts natively on the SSR settings page — a Radix Select is inert without client JS (RV-36).",
+  },
+  {
+    file: "apps/web/src/approval-settings.tsx",
+    component: "HiddenField",
+    reason:
+      "the hidden `returnTo` post-carrier — prior batches' named exemption shape for hidden form fields (RV-36).",
+  },
 ];
