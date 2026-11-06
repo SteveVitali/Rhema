@@ -59,23 +59,25 @@ async function assertClick(el: ReturnType<Page["locator"]>, label: string): Prom
   await assertActionable(el, label);
 }
 
-/** The Desk's findings panel renders SSR but CSS-hidden until the island's tab swaps
- *  `data-desk-tab` — and on a delivered dossier the Desk starts CLOSED (§5.1's bottom drawer:
- *  height 0 clips the tab strip, so the ONLY open affordance is the ⌘J chord / a live run's feed
- *  link). Press the real chord, then pick the Findings tab; returns whether the panel showed. */
+/** The desk/panel region's findings body renders CSS-hidden until the island's tab swap — and
+ *  it starts CLOSED (on R7a the bottom Desk, on R7b the right panel — `data-panel` marks the
+ *  new shape; this leg must walk both during the merge→250 window). Press the real chord —
+ *  ⌘J on the R7a surface, `]` on the R7b surface — then pick the Findings tab; returns whether
+ *  the panel showed. */
 async function openFindingsDesk(page: Page): Promise<boolean> {
   const ide = page.locator(".ide").first();
-  if ((await page.locator('button[data-ide-desk-tab="findings"]').count()) === 0) return false;
+  if ((await page.locator('button[data-ide-desk-tab="findings"], button[data-ide-panel-tab="findings"]').count()) === 0) return false;
   if ((await ide.getAttribute("data-desk").catch(() => null)) !== "open") {
+    const r7b = (await ide.getAttribute("data-panel").catch(() => null)) != null;
     // blur any field first — ⌘ chords dispatch globally EXCEPT in input focus (§5.12). The island
     // hydrates asynchronously after domcontentloaded, so a chord pressed too early is swallowed —
     // a real user re-presses; bounded retry keeps the leg honest (it still reports closed if the
-    // chord genuinely never opens the drawer).
+    // chord genuinely never opens the region).
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.()).catch(() => undefined);
     for (let attempt = 0; attempt < 3; attempt++) {
-      await page.keyboard.press("Control+j").catch(() => undefined);
+      await page.keyboard.press(r7b ? "]" : "Control+j").catch(() => undefined);
       const opened = await page
-        .locator('.ide[data-desk="open"]')
+        .locator('.ide[data-desk="open"], .ide[data-panel="open"]')
         .waitFor({ state: "attached", timeout: 4_000 })
         .then(() => true)
         .catch(() => false);
@@ -83,12 +85,15 @@ async function openFindingsDesk(page: Page): Promise<boolean> {
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.()).catch(() => undefined);
     }
   }
-  const tab = page.locator('button[data-ide-desk-tab="findings"]').first();
-  if ((await ide.getAttribute("data-desk-tab").catch(() => null)) !== "findings") {
+  const tab = page.locator('button[data-ide-panel-tab="findings"], button[data-ide-desk-tab="findings"]').first();
+  if (
+    (await ide.getAttribute("data-desk-tab").catch(() => null)) !== "findings" &&
+    (await ide.getAttribute("data-panel-tab").catch(() => null)) !== "findings"
+  ) {
     await tab.scrollIntoViewIfNeeded().catch(() => undefined);
     await tab.click({ timeout: 5_000 }).catch(() => undefined);
   }
-  const row = page.locator('[data-desk-panel="findings"] [data-desk-row]').first();
+  const row = page.locator('[data-desk-panel="findings"] [data-desk-row], [data-panel-body="findings"] [data-desk-row]').first();
   if (await row.isVisible().catch(() => false)) return true;
   await page.waitForTimeout(800);
   return row.isVisible().catch(() => false);

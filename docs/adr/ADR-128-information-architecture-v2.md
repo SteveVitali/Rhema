@@ -64,3 +64,14 @@ _(Filled by the owners: the rail-only alternative; modal tour; bottom panel vs r
 
 A surface cannot render inside the shell, a modal is genuinely required, the sidebar item set
 changes materially, or REQ-IDE-41's no-modal rule is amended.
+
+---
+
+**2026-11-05 — R7PANE.1 fills REQ-IDE-8's right-panel details (recorded, not amended):** the
+pane-collapse priority order this ADR left "recorded at 229" is: **(1) the Files pane falls to
+the 36-px strip, (2) the right panel closes, (3) the Margin hides** — before the Page drops
+below its 45-ch floor at ≥768 px. `paneLayout()` owns the verdict (`packages/ide/src/layout.ts`);
+the same order governs `paneDrag()` refusals. The right panel's tab order is Chat · Findings ·
+Claims · Timeline · Live feed; pane-state codec v2 (`rhema:panes:v2:u:p`) migrates the v1
+desk/timeline fields totally. Overlay/sheet open intent stays session-scoped at <1280 — never
+persisted (REQ-PANE-2).

@@ -10,7 +10,7 @@
 //     GETs inside the warm-return TTL (REQ-NAVC-18's `staleTime` leg exercised end-to-end);
 //   • the mark-read twin refetches on the SAME round-trip (per-open parity with document nav);
 //   • the `published`-flag wrong-projectId window is closed: between two project leaves the
-//     chrome's pane-storage bind can never run under `rhema:panes:v1:<u>:<slug>`;
+//     chrome's pane-storage bind can never run under `rhema:panes:v2:<u>:<slug>`;
 //   • listeners + intervals + the one EventSource balance — a leaf that leaves takes every
 //     listener/timer/source with it (StrictMode double-mount included);
 //   • `<html data-project>` follows the route; the per-document boot object is the same
@@ -425,17 +425,17 @@ describe("REQ-NAVC-22 — the chrome's published-flag wrong-projectId window", (
     const { router } = await mountAt(`/p/${SLUG_A}`, bootFor(), f.impl);
     expect(main()!.querySelector("[data-ide]")).not.toBeNull();
     // A's bind read the REAL projectId — never the slug.
-    expect(storageGet.mock.calls.map((c) => c[0])).toContain("rhema:panes:v1:u1:proj_alpha");
+    expect(storageGet.mock.calls.map((c) => c[0])).toContain("rhema:panes:v2:u1:proj_alpha");
 
     storageGet.mockClear();
     await nav(router, `/p/${SLUG_B}`);
     // The closed window: between A's unpublish and B's publish `published` is false, so the
     // bind effect can't run under `data.projectId ?? slug` — `beta-piece` as a projectId would
-    // have persisted a stray `rhema:panes:v1:u1:beta-piece` key (REQ-NAVC-22's F12(b) leg).
+    // have persisted a stray `rhema:panes:v2:u1:beta-piece` key (REQ-NAVC-22's F12(b) leg).
     const keys = storageGet.mock.calls.map((c) => c[0] as string);
-    expect(keys).not.toContain("rhema:panes:v1:u1:beta-piece");
+    expect(keys).not.toContain("rhema:panes:v2:u1:beta-piece");
     expect(keys).not.toContain("rhema:authorship:v1:beta-piece");
-    expect(keys).toContain("rhema:panes:v1:u1:proj_beta");
+    expect(keys).toContain("rhema:panes:v2:u1:proj_beta");
     expect(keys).toContain("rhema:authorship:v1:proj_beta");
   });
 });

@@ -1239,17 +1239,19 @@ const R4: StepFn = async (ctx) => {
   await pinCogsLevers(page, "R4", /\/p\/[^/]+\/chat\/turns(?:\?|$)/);
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   await followProjectLink(page, ctx);
-  // RUN.1 — the Desk renders closed unless a run is live (data-desk="closed"); ⌘J opens it (the
-  // × toggle is clipped inside the closed drawer) and a tab click pins the Chat panel.
+  // RUN.1 — the desk/panel region renders closed unless a run is live; on the R7a surface ⌘J
+  // opens the Desk, on the R7b surface `]` opens the right panel (the `data-panel` attr marks
+  // the new shape — this leg must walk both during the merge→250 window).
   const ide = page.locator(".ide").first();
   if ((await ide.getAttribute("data-desk")) !== "open") {
-    await page.keyboard.press("Control+j");
-    await page.waitForSelector('.ide[data-desk="open"]', { timeout: 5_000 });
-    await page.locator('[data-ide-desk-tab="chat"]').first().click();
+    const r7b = (await ide.getAttribute("data-panel").catch(() => null)) != null;
+    await page.keyboard.press(r7b ? "]" : "Control+j");
+    await page.waitForSelector('.ide[data-desk="open"], .ide[data-panel="open"]', { timeout: 5_000 });
+    await page.locator('[data-ide-desk-tab="chat"], [data-ide-panel-tab="chat"]').first().click();
   }
-  const input = page.locator('.ide-desk form[data-chat-composer] textarea[name="message"]').first();
+  const input = page.locator('form[data-chat-composer] textarea[name="message"]').first();
   if ((await input.count()) === 0) throw new Error("no chat composer on the project page");
-  const send = page.locator('.ide-desk form[data-chat-composer] button[type="submit"]').first();
+  const send = page.locator('form[data-chat-composer] button[type="submit"]').first();
   await assertActionable(send, "chat Send @1440×900"); // RUN.1 — was occluded by footer.ide-statusbar
   await input.fill(`${ctx.marker("CHAT")} — one-word reply please`);
   await send.click();
@@ -2203,12 +2205,16 @@ async function p1DesktopPillLeg(ctx: StepCtx): Promise<void> {
       }
     }
     if (!pill) throw new Error("no project in the first 12 renders the mounted-editor sync pill at 1440");
-    // open the Desk on chat (pane state is attr-driven: the island would set exactly this).
+    // open the desk/panel region on chat (pane state is attr-driven: stamp the R7b canonical
+    // attrs AND the R7a aliases so this leg walks both surfaces).
     await page.evaluate(() => {
       const ide = document.querySelector<HTMLElement>(".ide");
       if (ide) {
         ide.dataset["desk"] = "open";
         ide.dataset["deskTab"] = "chat";
+        ide.dataset["panel"] = "open";
+        ide.dataset["panelTab"] = "chat";
+        ide.querySelector(".ide-panel")?.setAttribute("data-open", "");
       }
     });
     const pillBox = await pill.evaluate((el) => {
@@ -2227,7 +2233,7 @@ async function p1DesktopPillLeg(ctx: StepCtx): Promise<void> {
     for (const [sel, name] of [
       ["footer.ide-statusbar", "the status bar"],
       [".chat-composer", "the chat composer"],
-      [".ide-desk", "the open desk"],
+      [".ide-panel, .ide-desk", "the open panel region"],
     ] as const) {
       if (await rectsOverlap(pillBox, await box(sel))) {
         throw new Error(`the sync pill overlaps ${name} at 1440×900`);

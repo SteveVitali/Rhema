@@ -30,71 +30,98 @@ const input = (over: Partial<LayoutInput> = {}): LayoutInput => ({
   ...over,
 });
 
-describe("paneLayout() — the §5.1 yield order", () => {
-  it("1600px: all regions up — files strip by default, margin cards, timeline pane", () => {
-    const l = paneLayout(1600, input());
+describe("paneLayout() — the REQ-PANE-2 breakpoint table", () => {
+  const hosted = (over: Partial<LayoutInput> = {}): LayoutInput =>
+    input({ hosted: true, sidebarOpen: true, ...over });
+  it("≥1440: sidebar expanded; the panel docks open by default when findings exist", () => {
+    const l = paneLayout(1600, hosted());
     expect(l.files).toBe("strip");
     expect(l.margin).toBe("cards");
-    expect(l.timeline).toBe("pane");
+    expect(l.panel).toBe("docked");
+    expect(l.panelOpen).toBe(true); // the derived default — never persisted until toggled
+    expect(l.sidebar).toBe("expanded");
     expect(l.rail).toBe("visible");
     expect(l.statusBar).toBe("visible");
-    expect(l.desk).toBe("closed");
+    // no findings ⇒ the default is closed, and the Margin hides
+    expect(paneLayout(1600, hosted({ hasFindings: false })).panelOpen).toBe(false);
+    // a stored intent always wins over the derived default
+    expect(paneLayout(1600, hosted({ panelOpen: false, hasFindings: true })).panelOpen).toBe(false);
+    expect(paneLayout(1600, hosted({ panelOpen: true, hasFindings: false })).panelOpen).toBe(true);
   });
-  it("1600px with Files open: Margin → ticks but the Timeline stays docked (R7FIX.1 — the Page reflows, B1)", () => {
-    const l = paneLayout(1600 - 1, input({ filesOpen: true }));
-    expect(l.files).toBe("open");
-    expect(l.margin).toBe("ticks");
-    expect(l.timeline).toBe("pane");
-    // …and at ≥1600 with files open, margin stays cards and timeline stays a pane
-    const wide = paneLayout(1600, input({ filesOpen: true }));
-    expect(wide.margin).toBe("cards");
-    expect(wide.timeline).toBe("pane");
+  it("1280–1439: the panel docks; an open panel rails the sidebar", () => {
+    const closed = paneLayout(1300, hosted({ panelOpen: false }));
+    expect(closed.panel).toBe("docked");
+    expect(closed.panelOpen).toBe(false);
+    expect(closed.sidebar).toBe("expanded");
+    const open = paneLayout(1300, hosted({ panelOpen: true }));
+    expect(open.panelOpen).toBe(true);
+    expect(open.sidebar).toBe("rail");
   });
-  it("1280px boundary: still full; below 1280 margin→ticks + timeline→overlay regardless of Files", () => {
-    const at = paneLayout(1280, input());
-    expect(at.margin).toBe("cards");
-    expect(at.timeline).toBe("pane");
-    const below = paneLayout(1280 - 1, input());
-    expect(below.margin).toBe("ticks");
-    expect(below.timeline).toBe("overlay");
+  it("1024–1279: sidebar rail; the panel is an overlay (session intent only)", () => {
+    const closed = paneLayout(1100, hosted({ panelOpen: true }));
+    expect(closed.panel).toBe("overlay");
+    expect(closed.sidebar).toBe("rail");
+    expect(closed.panelOpen).toBe(true); // the session intent passes through verbatim
+    expect(paneLayout(1100, hosted()).panelOpen).toBe(false); // closed by default
+    expect(paneLayout(1279, hosted()).margin).toBe("ticks");
   });
-  it("1024px boundary: below it the open Timeline becomes a sheet and open Files an overlay", () => {
-    const l = paneLayout(1024 - 1, input({ filesOpen: true }));
+  it("768–1023: sidebar drawer; Files overlay; the panel is a sheet", () => {
+    const l = paneLayout(820, hosted({ filesOpen: true, panelOpen: true }));
     expect(l.mode).toBe("single");
+    expect(l.sidebar).toBe("drawer");
     expect(l.files).toBe("overlay");
-    expect(l.timeline).toBe("sheet");
+    expect(l.panel).toBe("sheet");
+    expect(l.panelOpen).toBe(true);
   });
-  it("~768px: phone — reader-only Page; rail/files/timeline/desk/status all hide", () => {
-    const l = paneLayout(767, input({ filesOpen: true, deskOpen: true }));
-    expect(l.mode).toBe("phone");
-    expect(l.page).toBe("reader");
-    expect(l.rail).toBe("hidden");
-    expect(l.files).toBe("hidden");
-    expect(l.margin).toBe("hidden");
-    expect(l.timeline).toBe("hidden");
-    expect(l.desk).toBe("hidden");
-    expect(l.statusBar).toBe("hidden");
+  it("<768: phone — the non-hosted reader hides every pane; hosted panes become sheets", () => {
+    const ssr = paneLayout(390, input({ filesOpen: true, panelOpen: true }));
+    expect(ssr.mode).toBe("phone");
+    expect(ssr.page).toBe("reader");
+    expect(ssr.rail).toBe("hidden");
+    expect(ssr.files).toBe("hidden");
+    expect(ssr.margin).toBe("hidden");
+    expect(ssr.panel).toBe("hidden");
+    expect(ssr.panelOpen).toBe(false);
+    expect(ssr.statusBar).toBe("hidden");
+    const hostedPhone = paneLayout(390, hosted({ panelOpen: true }));
+    expect(hostedPhone.panel).toBe("sheet");
+    expect(hostedPhone.sidebar).toBe("drawer");
   });
   it("Focus view: only the Page + finding ticks remain", () => {
-    const l = paneLayout(1920, input({ view: "focus", filesOpen: true, deskOpen: true }));
+    const l = paneLayout(1920, hosted({ view: "focus", filesOpen: true, panelOpen: true }));
     expect(l.rail).toBe("hidden");
     expect(l.files).toBe("hidden");
-    expect(l.timeline).toBe("hidden");
-    expect(l.desk).toBe("hidden");
+    expect(l.panel).toBe("hidden");
+    expect(l.panelOpen).toBe(false);
     expect(l.statusBar).toBe("hidden");
     expect(l.margin).toBe("ticks");
     expect(l.page).toBe("reader");
   });
   it("no findings ⇒ the Margin is hidden, not tick-collapsed", () => {
-    expect(paneLayout(1600, input({ hasFindings: false })).margin).toBe("hidden");
+    expect(paneLayout(1600, hosted({ hasFindings: false })).margin).toBe("hidden");
   });
   it("View-menu 'finding cards off' forces ticks even when wide", () => {
-    expect(paneLayout(1600, input({ findingCards: false })).margin).toBe("ticks");
+    expect(paneLayout(1600, hosted({ findingCards: false })).margin).toBe("ticks");
   });
   it("Page measure clamps to the 80-ch ceiling", () => {
     // 4000px frame with everything closed → Page would exceed 80 ch; clamped.
-    const l = paneLayout(4000, input({ timelineOpen: false, hasFindings: false }));
+    const l = paneLayout(4000, hosted({ panelOpen: false, hasFindings: false }));
     expect(l.pageCh).toBe(80);
+  });
+  it("the ADR-128 collapse order: Files → strip, panel → closed, margin → hidden — before the page drops below 45 ch", () => {
+    // 1280 with an open panel at 480 + Files at 480: can't hold 45 ch — Files yields first.
+    const over = hosted({ filesOpen: true, filesWidth: 480, panelOpen: true, panelWidth: 480 });
+    const l = paneLayout(1280, over);
+    expect(l.filesOpen).toBe(false); // step 1 — the Files pane yields
+    expect(l.panelOpen).toBe(true);  // the panel keeps its open intent second
+    // squeeze harder: a still-too-narrow frame then closes the panel
+    const l2 = paneLayout(1280, { ...over, filesWidth: 240, panelWidth: 900 });
+    expect(l2.panelOpen).toBe(false);
+    // …and the floor is always restored at ≥768: the widest panes at the narrowest docked width
+    for (const w of [768, 1024, 1280, 1440]) {
+      const worst = paneLayout(w, hosted({ filesOpen: true, filesWidth: 480, panelOpen: true, panelWidth: 480 }));
+      expect(worst.pageCh).toBeGreaterThanOrEqual(LAYOUT.pageMinCh);
+    }
   });
 });
 
@@ -104,35 +131,34 @@ describe("paneDrag() — the Page clamp collapses the adjacent pane", () => {
     expect(paneDrag(st({ filesOpen: true }), "files", 100, 1920).filesOpen).toBe(false);
   });
   it("a Files drag that would shrink Page below 45ch collapses Files instead", () => {
-    // 1600px, timeline already at its widest pane (480): a 480-px Files leaves the Page ≈31ch.
-    const next = paneDrag(st({ timelineWidth: 480 }), "files", 480, 1600);
+    // 1600px, panel already at its widest (480): a 480-px Files leaves the Page <45ch.
+    const next = paneDrag(st({ panelWidth: 480 }), "files", 480, 1600);
     expect(next.filesOpen).toBe(false);
     // …and the same drag at a wider viewport is legal.
-    expect(paneDrag(st({ timelineWidth: 480 }), "files", 480, 2000).filesOpen).toBe(true);
+    expect(paneDrag(st({ panelWidth: 480 }), "files", 480, 2000).filesOpen).toBe(true);
   });
   it("a legal Files drag snaps to the snap points", () => {
     const next = paneDrag(st(), "files", 250, 1920);
     expect(next.filesOpen).toBe(true);
     expect(next.filesWidth).toBe(240); // snapped from 250 → 240
   });
-  it("a Timeline drag below the minimum closes it; a violating width collapses it", () => {
-    expect(paneDrag(st(), "timeline", 90, 1920).timelineOpen).toBe(false);
-    // 1600px with Files at its widest: a 480-px Timeline leaves the Page ≈31ch → collapse.
-    const next = paneDrag(st({ filesOpen: true, filesWidth: 480 }), "timeline", 480, 1600);
-    expect(next.timelineOpen).toBe(false);
-    expect(paneDrag(st({ filesOpen: true, filesWidth: 480 }), "timeline", 480, 2000).timelineOpen).toBe(true);
-  });
-  it("a Desk drag below the minimum closes the drawer", () => {
-    expect(paneDrag(st({ deskOpen: true }), "desk", 40, 1920).deskOpen).toBe(false);
+  it("a panel drag below the minimum closes it; the frame yields lower-priority panes first", () => {
+    expect(paneDrag(st(), "panel", 90, 1920).panelOpen).toBe(false);
+    // 1600px with Files at its widest: a 480-px panel fits once the Files pane yields (the
+    // ADR-128 order — Files → strip before the panel) — the drag survives.
+    const next = paneDrag(st({ filesOpen: true, filesWidth: 480 }), "panel", 480, 1600);
+    expect(next.panelOpen).toBe(true);
+    // …but a width the frame can't hold even after every yield refuses the dragged pane.
+    expect(paneDrag(st({ filesOpen: false }), "panel", 1100, 1600).panelOpen).toBe(false);
   });
 });
 
-describe("REQ-PANE-0 — the emitted CSS stays in parity with paneLayout() at every boundary", () => {
-  // The ideCss() media blocks render paneLayout()'s yield order with zero JS. This pins each arm
-  // against the function's own verdict at that width, so the two can never drift (R7FIX.1 AC).
+describe("REQ-PANE-2 — the emitted CSS stays in parity with paneLayout() at every boundary", () => {
+  // The ideCss() media blocks render paneLayout()'s table with zero JS. This pins each arm
+  // against the function's own verdict at that width, so the two can never drift.
   const css = ideCss();
-  const mediaBlock = (maxWidth: number): string => {
-    const start = css.indexOf(`@media (max-width: ${maxWidth}px) {`);
+  const mediaBlock = (maxWidth: number, minWidth?: number): string => {
+    const start = css.indexOf(minWidth != null ? `@media (min-width: ${minWidth}px) and (max-width: ${maxWidth}px) {` : `@media (max-width: ${maxWidth}px) {`);
     if (start < 0) return "";
     const rest = css.slice(start);
     const end = rest.indexOf("\n}");
@@ -143,60 +169,97 @@ describe("REQ-PANE-0 — the emitted CSS stays in parity with paneLayout() at ev
       expect(css).toContain(`max-width: ${bp - 1}px`);
     }
   });
-  it("<1600 + Files open: Margin → ticks and NO timeline overlay arm (the Page reflows, B1)", () => {
-    expect(paneLayout(1600 - 1, input({ filesOpen: true })).timeline).toBe("pane");
+  it("<1600 + Files open: Margin → ticks and NO panel overlay arm (the Page reflows)", () => {
+    expect(paneLayout(1600 - 1, input({ filesOpen: true })).panel).toBe("docked");
     const block = mediaBlock(1600 - 1);
     expect(block).toContain(".ide-margin");
-    expect(block).not.toContain(".ide-timeline");
+    expect(block).not.toContain(".ide-panel");
   });
-  it("<1280: Margin → ticks and Timeline → overlay regardless of Files", () => {
-    expect(paneLayout(1280 - 1, input()).timeline).toBe("overlay");
-    const block = mediaBlock(1280 - 1);
-    expect(block).toContain(".ide-margin");
-    expect(block).toContain(".ide-timeline[data-open] { position: absolute");
+  it("1024–1279: Margin → ticks and the panel → scrimmed overlay", () => {
+    expect(paneLayout(1280 - 1, input()).panel).toBe("overlay");
+    // margin→ticks rides the single <1280 arm (it also covers the hosted <768 narrow-desktop);
+    // the panel overlay arm is the ranged block.
+    const ticks = mediaBlock(1280 - 1);
+    expect(ticks).toContain(".ide-margin");
+    const block = mediaBlock(1280 - 1, 1024);
+    expect(block).toContain(".ide-panel[data-open] { position: absolute");
   });
-  it("<1024: Files → overlay drawer and Timeline → bottom sheet", () => {
+  it("768–1023: Files → overlay drawer and the panel → sheet", () => {
     expect(paneLayout(1024 - 1, input({ filesOpen: true })).files).toBe("overlay");
-    expect(paneLayout(1024 - 1, input({ filesOpen: true })).timeline).toBe("sheet");
+    expect(paneLayout(1024 - 1, input({ filesOpen: true })).panel).toBe("sheet");
+    // one <1024 arm covers the drawer+sheet pair (it also serves the hosted <768 surface; the
+    // SSR phone hides the regions outright in the <768 block).
     const block = mediaBlock(1024 - 1);
     expect(block).toContain(".ide-files { position: absolute");
-    expect(block).toContain(".ide-timeline[data-open] { position: absolute");
-    expect(block).toContain("height: 55%");
+    expect(block).toContain(".ide-panel[data-open] { position: absolute");
   });
-  it("<768: phone — every region display:none", () => {
+  it("<768: phone — every region display:none for the SSR reader", () => {
     expect(paneLayout(767, input()).mode).toBe("phone");
     const block = mediaBlock(768 - 1);
     expect(block).toContain("display: none !important");
   });
   it("the overlay/sheet scrim arms only under an open overlay-mode pane", () => {
     expect(css).toContain(".ide-scrim");
-    expect(css).toContain("[data-timeline='open'][data-timeline-mode='overlay'] .ide-scrim");
-    expect(css).toContain("[data-timeline='open'][data-timeline-mode='sheet'] .ide-scrim");
+    expect(css).toContain("[data-panel='open'][data-panel-mode='overlay'] .ide-scrim");
+    expect(css).toContain("[data-panel='open'][data-panel-mode='sheet'] .ide-scrim");
     expect(css).toContain("[data-files='open'][data-files-mode='overlay'] .ide-scrim");
+  });
+  it("the sidebar advisory CSS exists for rail + drawer (REQ-PANE-2)", () => {
+    expect(css).toContain(".app-shell[data-ide-sidebar='rail'] .app-shell-sidebar");
+    expect(css).toContain(".app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar");
   });
 });
 
 describe("pane persistence (per user + project, never the URL)", () => {
   it("round-trips the codec and keys storage by user+project", () => {
-    const s = { ...DEFAULT_PANE_STATE, filesOpen: true, deskTab: "feed" as const, advanced: true };
+    const s = { ...DEFAULT_PANE_STATE, filesOpen: true, panelTab: "feed" as const, panelOpen: true, advanced: true };
     expect(parsePaneState(serializePaneState(s))).toEqual(s);
     expect(paneStorageKey("u1", "p1")).not.toBe(paneStorageKey("u1", "p2"));
     expect(paneStorageKey("u1", "p1")).not.toBe(paneStorageKey("u2", "p1"));
+  });
+  it("panelOpen stays three-state: absent means 'derive the default'", () => {
+    const blob = serializePaneState(DEFAULT_PANE_STATE);
+    expect(JSON.parse(blob)).not.toHaveProperty("panelOpen");
+    expect(parsePaneState(blob).panelOpen).toBeUndefined();
+    // an explicit intent round-trips
+    expect(parsePaneState(serializePaneState({ ...DEFAULT_PANE_STATE, panelOpen: false })).panelOpen).toBe(false);
   });
   it("a malformed or wrong-version blob falls back to defaults — never throws", () => {
     expect(parsePaneState("not json")).toEqual(DEFAULT_PANE_STATE);
     expect(parsePaneState('{"v":99,"filesOpen":true}')).toEqual(DEFAULT_PANE_STATE);
     expect(parsePaneState(null)).toEqual(DEFAULT_PANE_STATE);
-    // partial keys merge over defaults
-    expect(parsePaneState('{"v":1,"filesOpen":true}').filesOpen).toBe(true);
-    expect(parsePaneState('{"v":1,"filesOpen":true}').timelineOpen).toBe(true);
+    // partial v2 keys merge over defaults
+    expect(parsePaneState('{"v":2,"filesOpen":true}').filesOpen).toBe(true);
+    expect(parsePaneState('{"v":2,"filesOpen":true}').panelOpen).toBeUndefined();
   });
-  it("REQ-WRITE-4 — view:\"focus\" is session-scoped: never serialized, never restored (R7FIX.1)", () => {
+  it("v1→v2 migration is total: an open Desk wins the tab; open Timeline maps the timeline tab", () => {
+    // both open ⇒ the Desk's tab + a concrete open intent; the Timeline width is the panel width
+    const m = parsePaneState('{"v":1,"view":"read","filesOpen":true,"filesWidth":320,"timelineOpen":true,"timelineWidth":400,"deskOpen":true,"deskHeight":280,"deskTab":"feed","findingCards":false,"advanced":true,"readerStep":2}');
+    expect(m).toEqual({
+      view: "read",
+      filesOpen: true,
+      filesWidth: 320,
+      panelOpen: true,
+      panelWidth: 400,
+      panelTab: "feed",
+      findingCards: false,
+      suggestionsInline: true,
+      advanced: true,
+      readerStep: 2,
+    });
+    // Desk closed + Timeline open ⇒ the timeline tab
+    expect(parsePaneState('{"v":1,"timelineOpen":true,"deskOpen":false,"deskTab":"claims"}')).toMatchObject({ panelOpen: true, panelTab: "timeline" });
+    // both closed ⇒ closed panel on the Desk's last tab
+    expect(parsePaneState('{"v":1,"timelineOpen":false,"deskOpen":false,"deskTab":"claims"}')).toMatchObject({ panelOpen: false, panelTab: "claims" });
+    // a v1 blob with garbage v2-era keys is ignored per-key
+    expect(parsePaneState('{"v":1,"panelTab":"bogus","deskTab":"feed","deskOpen":true}')).toMatchObject({ panelTab: "feed" });
+  });
+  it("REQ-WRITE-4 — view=focus is session-scoped: never serialized, never restored (R7FIX.1)", () => {
     // a stored blob carrying focus (written by pre-R7FIX.1 code or by ?focus=1) coerces to write —
     // the rest of the arrangement survives.
-    const stored = serializePaneState({ ...DEFAULT_PANE_STATE, view: "focus", deskOpen: true });
-    expect(JSON.parse(stored)).toMatchObject({ view: "write", deskOpen: true });
-    expect(parsePaneState('{"v":1,"view":"focus","filesOpen":true}')).toMatchObject({
+    const stored = serializePaneState({ ...DEFAULT_PANE_STATE, view: "focus", panelOpen: true });
+    expect(JSON.parse(stored)).toMatchObject({ view: "write", panelOpen: true });
+    expect(parsePaneState('{"v":2,"view":"focus","filesOpen":true}')).toMatchObject({
       view: "write",
       filesOpen: true,
     });
@@ -241,12 +304,12 @@ describe("theme policy (REQ-IDE-38 amended)", () => {
 });
 
 describe("the View menu (§5.1 — exact contents; Source absent)", () => {
-  it("is Write/Read/Focus + Timeline (R7FIX.1 on-demand path) + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
+  it("is Write/Read/Focus + the right panel (R7PANE.1 on-demand path) + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
     expect(viewMenuIds("write")).toEqual([
       "view.write",
       "view.read",
       "view.focus",
-      "timeline",
+      "panel",
       "findingCards",
       "suggestionsInline",
       "authorship",

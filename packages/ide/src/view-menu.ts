@@ -21,10 +21,11 @@ export const VIEW_MODES: readonly { id: ViewMode }[] = [
 
 /** The View menu's toggle rows, in order. `authorship` is P1.02's overlay (read-only decorations over
  *  the Page's blocks — off by default; it is session state, not pane state). R7FIX.1 (REQ-PANE-0)
- *  adds `timeline` first — the on-demand pointer path below 1280 where the Timeline is closed by
- *  default; the island renders it as `data-ide-timeline-toggle` (overlay modes never persist). */
+ *  adds `panel` first — R7PANE.1's right-panel toggle, the on-demand pointer path below 1280
+ *  where the panel is closed by default; the island renders it as `data-ide-panel-toggle`
+ *  (overlay modes never persist). */
 export const VIEW_MENU_TOGGLES: readonly ViewMenuItem[] = [
-  { id: "timeline" },
+  { id: "panel" },
   { id: "findingCards" },
   { id: "suggestionsInline", inViews: ["write", "read"] },
   { id: "authorship", inViews: ["write", "read"] },

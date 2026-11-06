@@ -173,6 +173,7 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}
           {...(data.status != null ? { status: data.status } : {})}
           labels={IDE_CHROME_LABELS}
+          {...(demo != null ? { demo: true } : {})}
         >
           {children}
         </IdeShell>

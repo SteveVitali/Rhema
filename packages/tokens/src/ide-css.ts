@@ -4,12 +4,14 @@
 // the yield order at the §5.1 breakpoints with zero JS, so SSR markup is correct at any viewport.
 //
 // Region attrs on .ide:
-//   data-files="strip|open"      (⌘1; strip default — the 36-px icon column)
-//   data-timeline="open|closed"  (⌘2; presentation mode — pane|overlay|sheet — is viewport-derived below)
-//   data-desk="closed|open"      (⌘J; bottom drawer)
+//   data-files="strip|open"      (strip default — the 36-px icon column; 230 removes the pane)
+//   data-panel="open|closed"     (the `]` chord; presentation mode — docked|overlay|sheet — is
+//                                  viewport-derived and stamped as data-panel-mode)
 //   data-view="write|read|focus" (⌘⇧M / ⌘⇧F — Focus hides everything but the Page and finding ticks)
 //   data-margin="cards|ticks|hidden"  (finding cards on/off from the View menu; hidden with no findings)
-//   data-desk-tab="chat|feed|findings|claims"
+//   data-panel-tab="chat|findings|claims|timeline|feed"  (the right panel's tab strip)
+//   R7PANE.1 aliases kept for the R7a journey legs: data-desk / data-desk-tab / data-timeline
+//   mirror the panel attrs (the legs resolve on this markup AND prod's R7a markup).
 
 import { LAYOUT, TYPOGRAPHY } from "./tokens.js";
 
@@ -67,39 +69,30 @@ export function ideCss(): string {
     "[data-desk-row][data-rejected='true'] td { opacity: 0.72; }",
     "[data-triage-mode] [data-triage-section] table { margin-bottom: var(--s2); }",
 
-    // ---- Timeline (pane | overlay | sheet | hidden) ----
-    `.ide-timeline { flex: 0 0 var(--timeline-w, ${B.timelinePx}px); width: var(--timeline-w, ${B.timelinePx}px); background: var(--shell-surface); border-left: 1px solid var(--shell-border); overflow: auto; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease, transform var(--dur-pane) ease; display: flex; flex-direction: column; }`,
-    ".ide[data-timeline='closed'] .ide-timeline { display: none; }",
-    ".ide-timeline .ide-pane-head { padding: var(--s3); font-size: 12px; font-weight: 600; color: var(--shell-fg-muted); border-bottom: 1px solid var(--shell-border); }",
-    ".ide-timeline .ide-tl-body { padding: var(--s3); font-size: 13px; }",
-
-    // ---- Desk (bottom drawer) ----
-    `.ide-desk { flex: 0 0 auto; height: var(--desk-h, ${B.deskHeightPx}px); border-top: 1px solid var(--shell-border); background: var(--shell-surface); display: flex; flex-direction: column; transition: height var(--dur-pane) ease; }`,
-    ".ide[data-desk='closed'] .ide-desk { height: 0; border-top: none; overflow: hidden; }",
-    // UX.2 — the desk head wraps the tablist + the (non-tab) close control; the row's padding and
-    // hairline moved here so the tablist stays a pure role=tablist container (aria-required-children).
-    // R7FIX.2 (REQ-PANE-0, B2 — "the Desk head stays actionable; the status bar may never cover
-    // it"): the drawer's height transition passes through a window where the box is shorter than
-    // this row — the head overflows downward over `.ide-statusbar`, and DOM order alone lets the
-    // bar's spans win hit-testing at the tabs' centers (the ⌘J-open dead zone 224's walk caught:
-    // `<span>` occluded the chat tab on pr-259). Positioned + z-indexed, the head rides its
-    // drawer ABOVE the bar while it slides — paint and clicks stay on the chrome.
-    ".ide-desk .ide-desk-head { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }",
-    ".ide-desk .ide-desk-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; }",
-    ".ide-desk .ide-desk-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; }",
-    ".ide-desk .ide-desk-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }",
-    ".ide-desk .ide-desk-body { flex: 1; overflow: auto; padding: var(--s3); font-size: 13px; color: var(--shell-fg-muted); }",
-    // the active tab's panel is attribute-driven
-    ".ide-desk [data-desk-panel] { display: none; }",
-    ".ide[data-desk-tab='chat'] [data-desk-panel='chat'], .ide[data-desk-tab='feed'] [data-desk-panel='feed'], .ide[data-desk-tab='findings'] [data-desk-panel='findings'], .ide[data-desk-tab='claims'] [data-desk-panel='claims'] { display: block; }",
-    // RUN.1 — the chat panel is a flex column pinned to the drawer's full height: `.chat-body` scrolls
-    // and `.chat-composer` is `flex:0 0 auto` at the drawer's bottom edge — the Send button can never
-    // slide under `footer.ide-statusbar` again (the desk body's own scroll no longer carries it).
-    ".ide[data-desk-tab='chat'] .ide-desk [data-desk-panel='chat'] { display: flex; flex-direction: column; height: 100%; min-height: 0; }",
+    // ---- Right panel (docked | overlay | sheet | hidden) — REQ-PANE-1/2/3; the Desk retires ----
+    `.ide-panel { flex: 0 0 var(--panel-w, ${B.timelinePx}px); width: var(--panel-w, ${B.timelinePx}px); background: var(--shell-surface); border-left: 1px solid var(--shell-border); overflow: hidden; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease, transform var(--dur-pane) ease; display: flex; flex-direction: column; }`,
+    ".ide[data-panel='closed'] .ide-panel { display: none; }",
+    ".ide-panel .ide-panel-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); flex: 0 0 auto; }",
+    ".ide-panel .ide-panel-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; overflow-x: auto; }",
+    ".ide-panel .ide-panel-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }",
+    ".ide-panel .ide-panel-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }",
+    ".ide-panel .ide-panel-close { color: var(--shell-fg-muted); background: none; border: none; cursor: pointer; }",
+    ".ide-panel .ide-panel-body { flex: 1; overflow: auto; padding: var(--s3); font-size: 13px; color: var(--shell-fg-muted); min-height: 0; }",
+    ".ide-panel .ide-tl-body { font-size: 13px; }",
+    // the active tab's panel is attribute-driven (same contract the Desk kept)
+    ".ide-panel [data-panel-body] { display: none; }",
+    ".ide[data-panel-tab='chat'] [data-panel-body='chat'], .ide[data-panel-tab='findings'] [data-panel-body='findings'], .ide[data-panel-tab='claims'] [data-panel-body='claims'], .ide[data-panel-tab='timeline'] [data-panel-body='timeline'], .ide[data-panel-tab='feed'] [data-panel-body='feed'] { display: block; }",
+    // RUN.1 — the chat panel is a flex column pinned to the pane's full height (the Send control
+    // can never slide under another region).
+    ".ide[data-panel-tab='chat'] .ide-panel [data-panel-body='chat'] { display: flex; flex-direction: column; height: 100%; min-height: 0; }",
     ".chat-desk { display: flex; flex-direction: column; height: 100%; min-height: 0; }",
     ".chat-desk .chat-body { flex: 1 1 auto; min-height: 0; }",
-    ".ide-desk .chat-desk .chat-body { overflow-y: auto; }",
+    ".ide-panel .chat-desk .chat-body { overflow-y: auto; }",
     ".chat-desk .chat-composer { flex: 0 0 auto; margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--shell-border); }",
+
+    // R7PANE.1 (REQ-PANE-3, B2/B16) — the bottom Desk is RETIRED: no `.ide-desk` rules remain.
+    // The moved tab bodies keep their own styles above under `.ide-panel`; the `data-desk-*`
+    // attributes still emitted are aliases only — they carry no CSS of their own.
 
     // ---- Status bar ----
     `.ide-statusbar { flex: 0 0 ${B.statusBarPx}px; display: flex; align-items: center; gap: var(--s4); padding: 0 var(--s3); font-size: 12px; color: var(--shell-fg-muted); background: var(--shell-surface); border-top: 1px solid var(--shell-border); font-variant-numeric: tabular-nums; }`,
@@ -111,7 +104,7 @@ export function ideCss(): string {
     ".ide-handle:hover, .ide-handle:focus-visible { background: var(--accent); opacity: 0.4; }",
 
     // ---- Focus view (⌘⇧F / ?focus=1): everything but the Page and finding ticks hides ----
-    ".ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-timeline, .ide[data-view='focus'] .ide-desk, .ide[data-view='focus'] .ide-statusbar { display: none; }",
+    ".ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-panel, .ide[data-view='focus'] .ide-statusbar { display: none; }",
     ".ide[data-view='focus'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
     // R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed. It is a
     // fixed button top-centre; outside focus view it never mounts an affordance (display:none).
@@ -129,22 +122,27 @@ export function ideCss(): string {
     ".ide .ide-actions { display: flex; flex-wrap: wrap; gap: var(--s3); }",
     ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
 
-    // ---- yield order (§5.1; the same breakpoints paneLayout() implements) ----
-    // Below 1600 with Files open: Margin → ticks. R7FIX.1 (REQ-PANE-0, B1): the Timeline stays
-    // docked at ≥1280 — the Page column reflows instead of sliding under it. Its overlay arm is
-    // the <1280 block below.
+    // ---- yield order (ADR-128; the same breakpoints paneLayout() implements) ----
+    // Below 1600 with Files open: Margin → ticks.
     `@media (max-width: ${B.bpFilesTicksMarginPx - 1}px) {`,
     "  .ide[data-files='open'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
     "}",
-    // Below 1280: Margin → ticks and Timeline → overlay regardless of Files.
+    // Below 1280: Margin → ticks regardless of Files (the same floor the base laid at <1280 —
+    // the hosted narrow-desktop keeps the tick strip; the SSR phone hides the region outright).
     `@media (max-width: ${B.bpNarrowPx - 1}px) {`,
     "  .ide .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
-    `  .ide .ide-timeline[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, ${B.timelinePx}px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     "}",
-    // Below 1024: single column — Files opens as an overlay drawer; Timeline open becomes a bottom sheet.
+    // REQ-PANE-2 — 1024–1279: the panel is an OVERLAY (scrimmed, session-only).
+    `@media (min-width: ${B.bpSingleColumnPx}px) and (max-width: ${B.bpNarrowPx - 1}px) {`,
+    `  .ide .ide-panel[data-open] { position: absolute; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 85vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
+    "}",
+    // Below 1024: Files opens as an overlay drawer and the panel is a full-height sheet on
+    // demand — one rule covers 768–1023 AND the hosted narrow-desktop floor (<768); the SSR
+    // phone reader hides the regions outright in the block below.
     `@media (max-width: ${B.bpSingleColumnPx - 1}px) {`,
     `  .ide[data-files='open'] .ide-files { position: absolute; left: ${B.railPx}px; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
-    `  .ide .ide-timeline[data-open] { position: absolute; left: ${B.railPx}px; right: 0; bottom: 0; top: auto; width: auto; height: 55%; z-index: 20; border-top: 1px solid var(--shell-border); box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }`,
+    `  .ide[data-ide-hosted][data-files='open'] .ide-files { left: 0; }`,
+    `  .ide .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     "}",
     // R7FIX.1 (REQ-PANE-0) — the scrim under every open overlay/sheet: the controller derives
     // `data-timeline-mode`/`data-files-mode` from paneLayout() (overlay|sheet only where the mode
@@ -152,7 +150,7 @@ export function ideCss(): string {
     // `.ide-main`; the rail (z 30) and the open pane (z 20) stay above it — outside clicks land
     // on it and dismiss.
     ".ide-scrim { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(0,0,0,0.45); }",
-    ".ide[data-timeline='open'][data-timeline-mode='overlay'] .ide-scrim, .ide[data-timeline='open'][data-timeline-mode='sheet'] .ide-scrim, .ide[data-files='open'][data-files-mode='overlay'] .ide-scrim { display: block; }",
+    ".ide[data-panel='open'][data-panel-mode='overlay'] .ide-scrim, .ide[data-panel='open'][data-panel-mode='sheet'] .ide-scrim, .ide[data-files='open'][data-files-mode='overlay'] .ide-scrim { display: block; }",
     // Below ~768: the phone layout — reader-only Page; the other regions hide. P1.19 (§10.1): the
     // §10.1 input set the regions carried re-mounts INSIDE the Page — elements stamped
     // `ide-phone-only` render only at this width (the compact chat surface is the one today).
@@ -162,7 +160,7 @@ export function ideCss(): string {
     // open as sheets from the top bar instead of being hidden — the hosted rules live in the
     // AppShell block below.
     `@media (max-width: ${B.bpPhonePx - 1}px) {`,
-    "  .ide:not([data-ide-hosted]) .ide-rail, .ide:not([data-ide-hosted]) .ide-files, .ide:not([data-ide-hosted]) .ide-timeline, .ide:not([data-ide-hosted]) .ide-desk, .ide:not([data-ide-hosted]) .ide-margin, .ide:not([data-ide-hosted]) .ide-statusbar { display: none !important; }",
+    "  .ide:not([data-ide-hosted]) .ide-rail, .ide:not([data-ide-hosted]) .ide-files, .ide:not([data-ide-hosted]) .ide-panel, .ide:not([data-ide-hosted]) .ide-margin, .ide:not([data-ide-hosted]) .ide-statusbar { display: none !important; }",
     "  .ide .ide-page { padding: 0; }",
     "  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }",
     "  .ide-phonebar { display: flex !important; }",
@@ -259,8 +257,8 @@ export function ideCss(): string {
     ".ide-skip:focus, .ide-skip:focus-visible { transform: none; outline: 2px solid var(--accent); outline-offset: 2px; }",
     ".ide-menu [role='menuitemradio']:hover, .ide-menu [role='menuitemcheckbox']:hover, .ide-menu .ide-menu-row:hover { background: var(--shell-bg); }",
     ".ide-menu [role='menuitemradio']:focus-visible, .ide-menu [role='menuitemcheckbox']:focus-visible, .ide-menu .ide-menu-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
-    ".ide-desk .ide-desk-tabs button:hover { color: var(--shell-fg); }",
-    ".ide-desk .ide-desk-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ide-panel .ide-panel-tabs button:hover { color: var(--shell-fg); }",
+    ".ide-panel .ide-panel-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
     ".ide-statusbar button { background: none; border: none; color: var(--shell-fg-muted); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: var(--radius-1); }",
     ".ide-statusbar button:hover { color: var(--shell-fg); background: var(--shell-raised); }",
     ".ide-statusbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }",
@@ -378,6 +376,20 @@ export function ideCss(): string {
     // phonebar is the shell top bar's. Suppression is DOM-level (the elements are never mounted
     // when hosted), so no capability hiding remains.
     ".ide[data-ide-hosted] .ide-rail, .ide[data-ide-hosted] .ide-phonebar { display: none !important; }",
+    // R7PANE.1 (REQ-PANE-2) — the IDE controller stamps `data-ide-sidebar` on `.app-shell` from
+    // paneLayout()'s sidebar ceiling: "rail" forces the icon column (1024–1279 always,
+    // 1280–1439 while the panel is open); "drawer" arms the off-canvas mechanism at 768–1023
+    // in IDE scope (the <768 block below covers the narrow-desktop floor). "expanded" stamps
+    // nothing — the user's collapse pref rules there.
+    `.app-shell[data-ide-sidebar='rail'] .app-shell-sidebar { flex-basis: ${B.sidebarCollapsedPx}px; width: ${B.sidebarCollapsedPx}px; }`,
+    ".app-shell[data-ide-sidebar='rail'] .app-shell-label, .app-shell[data-ide-sidebar='rail'] .app-shell-recents, .app-shell[data-ide-sidebar='rail'] .app-shell-credits { display: none; }",
+    `@media (min-width: ${B.bpPhonePx}px) and (max-width: ${B.bpSingleColumnPx - 1}px) {`,
+    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
+    "  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
+    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; }`,
+    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
+    "}",
     // <768 (desktop UA): off-canvas drawer behind a 48-px top bar; the IDE's side panes open as
     // full-height sheets — the CSS-phone `display:none` hiding is replaced (REQ-SHELL-6).
     `@media (max-width: ${B.bpPhonePx - 1}px) {`,
@@ -388,9 +400,8 @@ export function ideCss(): string {
     "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
     "  .app-shell[data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "  .app-shell-content { padding-top: 0; }",
-    `  .ide[data-ide-hosted] .ide-timeline[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
+    `  .ide[data-ide-hosted] .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
     `  .ide[data-ide-hosted][data-files='open'] .ide-files { position: absolute; left: 0; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
-    "  .ide[data-ide-hosted][data-desk='open'] .ide-desk { position: absolute; left: 0; right: 0; top: 0; bottom: 0; height: 100%; z-index: 20; }",
     "  .ide[data-ide-hosted] .ide-page { padding: 0; }",
     "}",
   ].join("\n");

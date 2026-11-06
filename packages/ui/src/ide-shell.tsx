@@ -5,8 +5,8 @@
 // any viewport before any script runs. Text-agnostic: every string is a prop from apps/web's COPY table.
 
 import type { ReactNode } from "react";
-import type { DeskTab, ViewMode } from "@rhema/ide";
-import { viewMenuModel, VIEW_MODES, CHEAT_SHEET } from "@rhema/ide";
+import type { PanelTab, ViewMode } from "@rhema/ide";
+import { viewMenuModel, VIEW_MODES, CHEAT_SHEET, PANEL_TABS } from "@rhema/ide";
 import { EmptyFindings } from "./ide-states.js";
 import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
 import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
@@ -14,12 +14,13 @@ import type { TimelineRun } from "@rhema/findings-core";
 
 export interface IdeLabels {
   rail: { home: string; inbox: string; settings: string; project: string };
-  files: { heading: string; empty: string; close: string; open: string; sourceFile: string };
+  files: { heading: string; empty: string; close: string; open: string; sourceFile: string; resize: string };
   margin: { heading: string; ticksLabel: string };
   timeline: { heading: string; empty: string; close: string };
-  desk: {
+  panel: {
     heading: string;
-    tabs: Record<DeskTab, string>;
+    tabs: Record<PanelTab, string>;
+    resize: string;
     emptyChat: string;
     emptyFeed: string;
     emptyFindings: string;
@@ -48,8 +49,8 @@ export interface IdeLabels {
     fontSans: string;
     readerBigger: string;
     readerSmaller: string;
-    /** R7FIX.1 (REQ-PANE-0) — the Timeline's on-demand open row in the View menu. */
-    timeline: string;
+    /** R7PANE.1 (REQ-PANE-1/2) — the right panel's on-demand open row in the View menu. */
+    panel: string;
   };
   themes: { dark: string; light: string; auto: string; paperLight: string; paperFollow: string; paperDark: string };
   /** P1.06 (§5.12) — the ⌘K palette's + the `?` cheat sheet's chrome labels (COPY-owned). */
@@ -160,6 +161,13 @@ export interface IdeShellProps {
    * documents (the phone reader) pass nothing and keep both.
    */
   readonly hosted?: boolean;
+  /**
+   * R7PANE.1 (deliverable 8; REQ-DWEB-7 re-asserted) — a demo boot: the Chat tab's trigger is
+   * hidden (its body would read workspace data — 232 owns the composer's demo clause) and
+   * `data-demo` stamps the gate fact. Findings/Claims/Timeline render from the demo twins;
+   * the feed tail can never construct (the island's `isDemo()` gate is the second wall).
+   */
+  readonly demo?: boolean;
   /** the Page region's content — the surface this route owns. */
   readonly children?: ReactNode;
 }
@@ -174,7 +182,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
   const findings = props.findings ?? [];
   const hasFindings = props.hasFindings ?? findings.length > 0;
   const marginMode = !hasFindings ? "hidden" : "auto"; // findingCards toggle flips auto↔ticks client-side
-  const deskOpen = props.activeRun != null; // a live run auto-opens the Desk on the Feed tab (§5.1)
+  const panelOpen = props.activeRun != null; // a live run auto-opens the panel on Live feed (§5.1)
 
   return (
     <div
@@ -185,14 +193,17 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.userId ? { "data-user": props.userId } : {})}
       data-view={view}
       data-files="strip"
-      // R7FIX.1 (REQ-PANE-0) — SSR emits the Timeline CLOSED: the controller derives the effective
-      // open state from paneLayout(viewport) at bind, so a document can never paint an
-      // un-scrimmed overlay (or a sheet) over the draft before script runs. At ≥1280 the pane
-      // opens on bind per the stored intent — a delayed docked open, never an open-then-close
-      // flash.
-      data-timeline="closed"
-      data-desk={deskOpen ? "open" : "closed"}
-      data-desk-tab={deskOpen ? "feed" : "chat"}
+      // R7PANE.1 (REQ-PANE-1/2) — SSR emits the right panel CLOSED: the controller derives the
+      // effective open state from paneLayout(viewport) at bind, so a document can never paint an
+      // un-scrimmed overlay (or a sheet) over the draft before script runs. The `data-desk`/
+      // `data-desk-tab`/`data-timeline` aliases keep the R7a journey hooks resolvable on this
+      // markup (the same change that migrates them through dom-contract.ts).
+      data-panel={panelOpen ? "open" : "closed"}
+      data-panel-tab={panelOpen ? "feed" : "chat"}
+      data-desk={panelOpen ? "open" : "closed"}
+      data-desk-tab={panelOpen ? "feed" : "chat"}
+      data-timeline={panelOpen ? "open" : "closed"}
+      {...(props.demo ? { "data-demo": "1" } : {})}
       data-margin={marginMode}
       data-finding-cards="1"
       data-paper-theme={props.paperTheme ?? "light"}
@@ -264,7 +275,9 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             )}
           </div>
         </aside>
-        <button type="button" className="ide-handle" data-ide-handle="files" aria-hidden="true" tabIndex={-1} />
+        <button type="button" className="ide-handle" data-ide-handle="files" role="separator"
+                aria-label={L.files.resize} aria-orientation="vertical"
+                aria-valuenow={240} aria-valuemin={160} aria-valuemax={480} />
 
         {/* Page + Margin */}
         <div className="ide-center">
@@ -291,114 +304,116 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           </aside>
         </div>
 
-        {/* Timeline — the round log (§5.1); overlay/sheet below the breakpoints. */}
-        <button type="button" className="ide-handle" data-ide-handle="timeline" aria-hidden="true" tabIndex={-1} />
+        {/* The right panel's drag handle — a real `separator` with keyboard resize (UXC-26). */}
+        <button type="button" className="ide-handle" data-ide-handle="panel" role="separator"
+                aria-label={L.panel.resize} aria-orientation="vertical"
+                aria-valuenow={320} aria-valuemin={160} aria-valuemax={480} />
         {/* R7FIX.1 (REQ-PANE-0) — the scrim an open overlay/sheet draws over the Page region;
             CSS shows it only while a pane is open in an overlay/sheet mode. */}
         <div className="ide-scrim" data-ide-scrim aria-hidden="true" />
-        <aside className="ide-timeline" data-pane="timeline" aria-label={L.timeline.heading}>
-          <div className="ide-pane-head">
-            <span>{L.timeline.heading}</span>
-            <button type="button" data-ide-timeline-toggle aria-label={L.timeline.close} style={{ marginLeft: "auto" }}>×</button>
+
+        {/* Right panel — the ADR-128 region (REQ-PANE-3): the Desk's four tab bodies and the
+            Timeline aside's content moved UNCHANGED into Chat · Findings · Claims · Timeline ·
+            Live feed (`]` toggles the pane; the tab strip keeps the Desk's attribute-driven
+            tablist so the island's pane-state contract never forks). */}
+        <aside className="ide-panel" data-pane="panel" aria-label={L.panel.heading}>
+          <div className="ide-panel-head">
+            <div className="ide-panel-tabs" role="tablist" aria-label={L.panel.heading}>
+              {PANEL_TABS.map((tab) => (
+                <button key={tab} type="button" role="tab" data-ide-panel-tab={tab} data-ide-desk-tab={tab}
+                        aria-selected={(panelOpen ? "feed" : "chat") === tab}
+                        {...(props.demo && tab === "chat" ? { hidden: true, disabled: true, "data-demo-gated": "1" } : {})}>
+                  {L.panel.tabs[tab]}
+                </button>
+              ))}
+            </div>
+            <button type="button" data-ide-panel-toggle data-ide-desk-toggle aria-label={L.panel.close} className="ide-panel-close">×</button>
           </div>
-          <div className="ide-tl-body">
-            {props.timelineView && props.timelineLabels && props.timelineCardLabels ? (
-              // P1.05 — the round log: next-step card, round cards (vN → runs → v(N+1)), origin chip.
-              <TimelinePane
-                view={props.timelineView}
-                labels={props.timelineLabels}
-                cardLabels={props.timelineCardLabels}
-                {...(props.timelineHrefs ? { hrefs: props.timelineHrefs } : {})}
-                {...(props.renderGateCard ? { renderGateCard: props.renderGateCard } : {})}
-              />
-            ) : (props.timeline ?? []).length === 0 ? (
-              <p style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>{L.timeline.empty}</p>
-            ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                {(props.timeline ?? []).map((r) => (
-                  <li key={r.id} style={{ padding: "4px 0", fontSize: 13 }}>
-                    {r.href ? <a href={r.href}>{r.label}</a> : r.label}
-                    <span style={{ color: "var(--shell-fg-faint)", fontSize: 12 }}> · {r.state}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="ide-panel-body" role="tabpanel">
+            {/* All five tab bodies render; data-panel-tab on .ide picks the visible one in CSS.
+                The `data-desk-panel` aliases keep R7a hooks resolvable (same migration change). */}
+            <div data-panel-body="chat" data-desk-panel="chat">
+              {props.chatBody ?? <p>{L.panel.emptyChat}</p>}
+            </div>
+            <div data-panel-body="findings" data-desk-panel="findings">
+              {/* The Findings body IS the screen-reader surface (§5.9 a11y) — a real <table>.
+                  P1.07: `deskFindingsBody` carries the full FindingsDesk (filters + triage
+                  queue + bulk actions); the flat table remains the fallback. */}
+              {props.deskFindingsBody ?? (findings.length === 0 ? (
+                <EmptyFindings label={L.panel.emptyFindings} />
+              ) : (
+                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+                      <th scope="col">{L.panel.findingsTable.finding}</th>
+                      <th scope="col">{L.panel.findingsTable.severity}</th>
+                      <th scope="col">{L.panel.findingsTable.kind}</th>
+                      <th scope="col">{L.panel.findingsTable.status}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {findings.map((f) => (
+                      <tr key={f.id} id={`finding-${f.id}`}>
+                        <td>{f.excerpt}</td>
+                        <td>{f.severity}</td>
+                        <td>{f.kind}</td>
+                        <td>open</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ))}
+            </div>
+            <div data-panel-body="claims" data-desk-panel="claims">
+              <p>{L.panel.emptyClaims}</p>
+            </div>
+            <div data-panel-body="timeline" data-desk-panel="timeline">
+              {/* the Timeline aside's content, moved unchanged (§5.5 the round log). */}
+              <div className="ide-tl-body">
+                {props.timelineView && props.timelineLabels && props.timelineCardLabels ? (
+                  <TimelinePane
+                    view={props.timelineView}
+                    labels={props.timelineLabels}
+                    cardLabels={props.timelineCardLabels}
+                    {...(props.timelineHrefs ? { hrefs: props.timelineHrefs } : {})}
+                    {...(props.renderGateCard ? { renderGateCard: props.renderGateCard } : {})}
+                  />
+                ) : (props.timeline ?? []).length === 0 ? (
+                  <p style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>{L.timeline.empty}</p>
+                ) : (
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {(props.timeline ?? []).map((r) => (
+                      <li key={r.id} style={{ padding: "4px 0", fontSize: 13 }}>
+                        {r.href ? <a href={r.href}>{r.label}</a> : r.label}
+                        <span style={{ color: "var(--shell-fg-faint)", fontSize: 12 }}> · {r.state}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <div
+              data-panel-body="feed"
+              data-desk-panel="feed"
+              aria-live="polite"
+              {...(props.feed
+                ? {
+                    "data-feed-run": props.feed.runId,
+                    "data-feed-events": props.feed.eventsUrl,
+                    "data-feed-labels": props.feed.labelMaps,
+                    ...(props.feed.lastSeq != null ? { "data-feed-last-seq": String(props.feed.lastSeq) } : {}),
+                  }
+                : {})}
+            >
+              {props.feed ? (
+                <LiveFeed density={props.feed.density} rows={props.feed.rows} labels={props.feed.labels} />
+              ) : (
+                <p>{props.activeRun ? props.activeRun.state : L.panel.emptyFeed}</p>
+              )}
+            </div>
           </div>
         </aside>
       </div>
-
-      {/* Desk — the bottom drawer (⌘J): Chat / Live feed / Findings / Claims (§5.1). */}
-      <section className="ide-desk" data-pane="desk" aria-label={L.desk.heading}>
-        {/* UX.2 (REQ-IDE-42) — the × must live OUTSIDE the tablist: role=tablist's required
-            children are tabs only (axe aria-required-children). The head row keeps the layout. */}
-        <div className="ide-desk-head">
-          <div className="ide-desk-tabs" role="tablist" aria-label={L.desk.heading}>
-            {(["chat", "feed", "findings", "claims"] as const).map((tab) => (
-              <button key={tab} type="button" role="tab" data-ide-desk-tab={tab}
-                      aria-selected={(deskOpen ? "feed" : "chat") === tab}>
-                {L.desk.tabs[tab]}
-              </button>
-            ))}
-          </div>
-          <button type="button" data-ide-desk-toggle aria-label={L.desk.close} style={{ color: "var(--shell-fg-muted)", background: "none", border: "none", cursor: "pointer" }}>×</button>
-        </div>
-        <div className="ide-desk-body" role="tabpanel">
-          {/* All four tab bodies render; data-desk-tab on .ide picks the visible one in CSS. */}
-          <div data-desk-panel="chat">
-            {props.chatBody ?? <p>{L.desk.emptyChat}</p>}
-          </div>
-          <div
-            data-desk-panel="feed"
-            aria-live="polite"
-            {...(props.feed
-              ? {
-                  "data-feed-run": props.feed.runId,
-                  "data-feed-events": props.feed.eventsUrl,
-                  "data-feed-labels": props.feed.labelMaps,
-                  ...(props.feed.lastSeq != null ? { "data-feed-last-seq": String(props.feed.lastSeq) } : {}),
-                }
-              : {})}
-          >
-            {props.feed ? (
-              <LiveFeed density={props.feed.density} rows={props.feed.rows} labels={props.feed.labels} />
-            ) : (
-              <p>{props.activeRun ? props.activeRun.state : L.desk.emptyFeed}</p>
-            )}
-          </div>
-          {/* The Desk findings table IS the screen-reader surface (§5.9 a11y) — a real <table>.
-              P1.07: `deskFindingsBody` carries the full FindingsDesk (filters + triage queue + bulk
-              actions); the flat table remains the fallback for callers without finding rows. */}
-          <div data-desk-panel="findings">
-            {props.deskFindingsBody ?? (findings.length === 0 ? (
-              <EmptyFindings label={L.desk.emptyFindings} />
-            ) : (
-              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
-                    <th scope="col">{L.desk.findingsTable.finding}</th>
-                    <th scope="col">{L.desk.findingsTable.severity}</th>
-                    <th scope="col">{L.desk.findingsTable.kind}</th>
-                    <th scope="col">{L.desk.findingsTable.status}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {findings.map((f) => (
-                    <tr key={f.id} id={`finding-${f.id}`}>
-                      <td>{f.excerpt}</td>
-                      <td>{f.severity}</td>
-                      <td>{f.kind}</td>
-                      <td>open</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ))}
-          </div>
-          <div data-desk-panel="claims">
-            <p>{L.desk.emptyClaims}</p>
-          </div>
-        </div>
-      </section>
 
       {/* Status bar — version / words / reading time / venue cap / credits (§5.1). The save state
           lives in the Page's [data-sync-pill] only (EDIT.1/ADR-049 — one indicator; this slot used
@@ -430,11 +445,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           <button key={t.id} type="button" role="menuitemcheckbox"
                   aria-checked={t.id === "advanced" || t.id === "authorship" || t.id === "timeline" ? "false" : "true"}
                   {...(t.id === "authorship" ? { "data-tier": "advanced" } : {})}
-                  // R7FIX.1 (REQ-PANE-0) — the Timeline row rides `data-ide-timeline-toggle`
-                  // (the island's overlay-aware path) rather than the boolean-pane toggle.
-                  {...(t.id === "timeline" ? { "data-ide-timeline-toggle": true } : { "data-ide-toggle": t.id })}
+                  // R7PANE.1 (REQ-PANE-1/2) — the panel row rides `data-ide-panel-toggle`
+                  // (the island's overlay-aware path) rather than the boolean-pane toggle;
+                  // `data-ide-timeline-toggle` stays emitted as the R7a alias.
+                  {...(t.id === "panel" ? { "data-ide-panel-toggle": true, "data-ide-timeline-toggle": true } : { "data-ide-toggle": t.id })}
                   className="ide-menu-row">
-            {t.id === "timeline" ? L.viewMenu.timeline
+            {t.id === "panel" ? L.viewMenu.panel
               : t.id === "findingCards" ? L.viewMenu.findingCards
               : t.id === "suggestionsInline" ? L.viewMenu.suggestionsInline
               : t.id === "authorship" ? L.viewMenu.authorship

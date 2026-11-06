@@ -1,5 +1,5 @@
-export type { ViewMode, DeskTab, PaneState, PaneLayout, LayoutInput } from "./layout.js";
-export { paneLayout, paneDrag, snapTo } from "./layout.js";
+export type { ViewMode, PanelTab, PaneState, PaneLayout, LayoutInput } from "./layout.js";
+export { paneLayout, paneDrag, snapTo, PANEL_TABS } from "./layout.js";
 export {
   PANE_STORAGE_VERSION,
   DEFAULT_PANE_STATE,

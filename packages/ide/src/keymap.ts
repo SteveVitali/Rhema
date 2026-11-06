@@ -25,7 +25,7 @@ export interface KeyChord {
 export type IdeAction =
   | { readonly kind: "palette" }
   | { readonly kind: "sidebar" }
-  | { readonly kind: "pane"; readonly pane: "files" | "timeline" | "desk" }
+  | { readonly kind: "pane"; readonly pane: "files" | "panel" }
   | { readonly kind: "view-menu" }
   | { readonly kind: "focus-mode" }
   | { readonly kind: "paper-theme" }
@@ -86,7 +86,7 @@ export const IDE_KEYMAP: readonly IdeBinding[] = [
   { chord: "mod+k", keys: "⌘K", actionKind: "palette", action: "Command palette" },
   { chord: "/", keys: "/", actionKind: "palette", action: "Command palette (command mode)" },
   { chord: "[", keys: "[", actionKind: "sidebar", action: "Toggle the sidebar" },
-  { chord: "]", keys: "]", actionKind: "pane:timeline", action: "Toggle the right-side pane" },
+  { chord: "]", keys: "]", actionKind: "pane:panel", action: "Toggle the right-side pane" },
   { chord: "mod+shift+m", keys: "⌘⇧M", actionKind: "view-menu", action: "View menu" },
   { chord: "mod+shift+f", keys: "⌘⇧F", actionKind: "focus-mode", action: "Focus view" },
   { chord: "mod+shift+l", keys: "⌘⇧L", actionKind: "paper-theme", action: "Paper theme" },
@@ -198,10 +198,9 @@ export function dispatchIdeKey(ev: KeyChord, zone: FocusZone): IdeAction | null 
   }
 
   if (k === "?" || (k === "/" && ev.shiftKey)) return { kind: "cheatsheet" };
-  // REQ-KEYS-1 — the sidebar/panel chords. `]` still targets the Timeline pane today;
-  // 229 retargets it to the right panel.
+  // REQ-KEYS-1 — the sidebar/panel chords. `]` toggles the right panel (R7PANE.1).
   if (k === "[") return { kind: "sidebar" };
-  if (k === "]") return { kind: "pane", pane: "timeline" };
+  if (k === "]") return { kind: "pane", pane: "panel" };
   if (k === "/") return { kind: "palette" }; // bare / opens the palette in command mode
 
   if (!FINDINGS_ZONES.includes(zone)) return null;

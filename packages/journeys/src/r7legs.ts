@@ -18,6 +18,7 @@ import {
   AXE_SOURCE,
   IPHONE_USER_AGENT,
 } from "./steps.js";
+import { u3ProbePage } from "./u3-probe.js";
 import { assertActionable } from "./occlusion.js";
 
 // R7DEM.4b — helpers shared by the two demo legs. Assertions derive every expectation from
@@ -416,6 +417,29 @@ const U3_STOPGAP: StepFn = async (ctx) => {
       throw new Error(`Esc did not leave focus view at ${w}×${h}`);
     }
     await page.screenshot({ path: `${ctx.outDir}/u3-stopgap-${w}x${h}.png` });
+  }
+  assertBundleParity(ctx);
+};
+
+/** R7PANE.1 (REQ-PANE-4, REQ-DACC-7) — the real `U3.occlusion` body: the five-size geometry
+ *  probe — the shared `u3ProbePage` over the signed-in surface at the four desktop sizes plus
+ *  the demo width at 390×844 (emulated). The leg stays `expected:"red"` — the staging/live
+ *  flip is D-R7PANE.1-1 at 250_R7DEP.2. */
+const U3_OCCLUSION: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  for (const [w, h] of [[1440, 900], [1280, 800], [1024, 768], [820, 1180]] as const) {
+    await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
+    await u3ProbePage(page, w, h, { shot: `${ctx.outDir}/u3-occlusion-${w}x${h}.png` });
+  }
+  {
+    const demo = await ctx.browser.newContext({
+      baseURL: ctx.webBaseUrl,
+      viewport: { width: 390, height: 844 },
+    });
+    const dpage = await demo.newPage();
+    await gotoOk(dpage, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}?src=jrn`, ctx);
+    await u3ProbePage(dpage, 390, 844, { demo: true, shot: `${ctx.outDir}/u3-occlusion-390x844.png` });
+    await demo.close();
   }
   assertBundleParity(ctx);
 };
@@ -942,6 +966,7 @@ const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D2.tour": D2_TOUR,
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
+  "U3.occlusion": U3_OCCLUSION,
   "R11.demo": R11_DEMO,
   "P1.demo": P1_DEMO,
   "D3.readonly": D3_READONLY,

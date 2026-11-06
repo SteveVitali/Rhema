@@ -210,10 +210,13 @@ describe("themeCss()", () => {
 
 describe("ideCss()", () => {
   const css = ideCss();
-  it("lays out all seven §5.1 regions", () => {
-    for (const region of [".ide-rail", ".ide-files", ".ide-page", ".ide-margin", ".ide-timeline", ".ide-desk", ".ide-statusbar"]) {
+  it("lays out the §5.1/ADR-128 regions (rail|files|page|margin|panel|statusbar)", () => {
+    const css = ideCss();
+    for (const region of [".ide-rail", ".ide-files", ".ide-page", ".ide-margin", ".ide-panel", ".ide-statusbar"]) {
       expect(css, region).toContain(region);
     }
+    // R7PANE.1 — the bottom Desk is retired: no desk rules remain.
+    expect(css).not.toContain(".ide-desk");
   });
   it("encodes the yield-order breakpoints from LAYOUT (no magic numbers)", () => {
     expect(css).toContain(`max-width: ${LAYOUT.bpFilesTicksMarginPx - 1}px`);
@@ -228,16 +231,13 @@ describe("ideCss()", () => {
   it("the only modal styling is the Cancel-run shell modal — no generic modal utilities", () => {
     expect(css).toContain(".ide-modal");
   });
-  it("R7FIX.2 (REQ-PANE-0, B2) — the desk head stays hit-testable above the statusbar", () => {
-    // The drawer's height transition passes through a window where the box is shorter than the
-    // head — the head overflows over `.ide-statusbar`, whose later DOM order would otherwise win
-    // elementFromPoint at the tabs' centers (the ⌘J dead zone 224 walked into). A positioned,
-    // z-indexed head rides its drawer above the bar.
-    const head = /\.ide-desk \.ide-desk-head \{([^}]*)\}/.exec(css)?.[1] ?? "";
-    expect(head).toContain("position: relative");
-    expect(head).toContain("z-index: 1");
-    const statusbar = /\.ide-statusbar \{([^}]*)\}/.exec(css)?.[1] ?? "";
-    expect(statusbar).not.toContain("position:");
+  it("R7PANE.1 — the desk/status-bar collision is gone WITH the drawer (B2/B16)", () => {
+    const css = ideCss();
+    // the B2 fix was the drawer's last defect; the region that owned it is retired.
+    expect(css).not.toContain("ide-desk-head");
+    // the panel's head is plain in-flow chrome — the status bar never overlaps it.
+    expect(css).toContain(".ide-statusbar");
+    expect(css).toContain(".ide-panel .ide-panel-head");
   });
   // D-CAP.2-3 (UX.2 / ADR-067) — the cascade seam: the phone override for `.ide .ide-actions a`
   // (≥44 px inside `@media (max-width: ${bpPhone-1}px)`) must be the LAST equal-specificity
