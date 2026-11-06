@@ -38,3 +38,9 @@
    registry under the nightly hazard, not this PR** (`GD-PREVIEW.R7` makes an in-ticket flip
    impossible). Assistant text renders through one seam (`renderAssistantText`) as sanitized plain
    paragraphs until 245's shared markdown renderer (D-R7TALK.1a-2).
+
+## Revisit trigger
+
+Revisit when a money-mode flip (`committed` → `metered`) is authorized, when the chat contract
+gains streamed token deltas (RV-3 backlog), or when 245's shared markdown renderer lands and the
+`renderAssistantText` seam swaps to it (D-R7TALK.1a-2).
