@@ -106,5 +106,5 @@ this ticket — both stay OPEN as owner-250 rows; my new row joins them.
 - PR: #270 (base `stevevitali/r7reload-1-forms`), head `6255e859`; unmerged — OPERATOR policy.
 - Entry delta: **+13.9 kB gz** vs `apps/web/spa-budget-baseline.json` (baseline `04a4e98b`) — inside the ≤15 kB REQ-KIT-5 allowance; chat lives in leaf chunks.
 - AC layers: every in-ticket criterion is met at the fixture-verified/engineered layer (unit + DOM + api tests); the deployed walk is `met-engineered(D-R7TALK.1a-1)` owner 250; markdown rendering `met-engineered(D-R7TALK.1a-2)` owner 245.
-- ci: pending at record time — `ci-boundary` JSON at `docs/build/logs/ci-R7TALK.1a.json` (bounded read follows).
+- ci: **pass #270@`b0c3e3f`** — run 42144375339, all seven legs + `ci-pass` anchor; JSON `docs/build/logs/ci-R7TALK.1a.json`.
 - Out of scope honoured: no token deltas, no new event shape, no paid run, no preview/deploy, no ledger write, no money-mode change, demo path stays read-free.
