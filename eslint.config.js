@@ -43,10 +43,12 @@ const NO_RAW_CONTROLS_ENABLED = [
   "packages/ui/src/project-list.tsx",
   "apps/web/src/spa/surfaces/project-home.tsx",
   "apps/web/src/spa/surfaces/inbox.tsx",
-  // R7KIT.3a — KIT-3 batch a (minus voices, 240a): settings / billing / usage migrated.
+  // R7KIT.3a — KIT-3 batch a: settings / billing / usage migrated.
   "apps/web/src/spa/surfaces/settings.tsx",
   "apps/web/src/spa/surfaces/billing.tsx",
   "apps/web/src/spa/surfaces/usage.tsx",
+  // 240a_R7KIT.3a2 — batch a part 2: voices joins batch a; batch a's surfaces are now fully on.
+  "apps/web/src/spa/surfaces/voices.tsx",
 ];
 
 export default tseslint.config(

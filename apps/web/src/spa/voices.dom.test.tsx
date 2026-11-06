@@ -60,7 +60,7 @@ const CARD_YOURS: VoiceListRowDto = {
   group: "your_voices",
   readOnly: false,
   sampleCount: 5,
-  sources: ["substack", "paste"],
+  sources: ["substack", "paste", "substack_export"],
   projectCount: 2,
   lastBuiltAt: "2026-10-01T00:00:00Z",
   tier: "quick",
@@ -513,8 +513,13 @@ describe("GET /voices mounted (REQ-SEQ-9)", () => {
     expect(card?.getAttribute("data-voice-group")).toBe("your_voices");
     expect(card?.querySelector(`[data-voice-pill]`)).not.toBeNull();
     expect(card?.querySelector(`[data-voice-tier]`)).not.toBeNull();
-    expect(card?.querySelector("[data-voice-sources]")).not.toBeNull();
+    // REQ-KIT-4 (D4) — source kinds render the `detail.sourceKind` labels: "Substack export",
+    // never the raw `substack_export` key (the fixture carries the key; the map renders it).
+    expect(card?.querySelector("[data-voice-sources]")?.textContent).toBe(
+      "Substack · Paste · Substack export",
+    );
     expect(card?.textContent).toContain("Voice One");
+    expect(card?.textContent).not.toContain("substack_export");
     // The house card is read-only + forkable.
     const house = main.querySelector('[data-voice-card="p2"]');
     expect(house?.querySelector("[data-read-only]")).not.toBeNull();
@@ -968,7 +973,8 @@ describe("GET /v/:persona?tab=… mounted", () => {
     await mountAt(`/v/${PID}?tab=runs`, BOOT, makeFetch());
     const main = el()!;
     expect(main.querySelector("[data-runs]")).not.toBeNull();
-    expect(main.querySelector('[data-run="r1"]')?.textContent).toContain("profile_voice");
+    expect(main.querySelector('[data-run="r1"]')?.textContent).toContain("Voice profile");
+    expect(main.querySelector('[data-run="r1"]')?.textContent).not.toContain("profile_voice");
     expect(main.querySelector('[data-profile="prof1"]')).not.toBeNull();
   });
 
@@ -1026,4 +1032,30 @@ describe("GET /p/:project/voice/reseed mounted (REQ-BFF-11)", () => {
     await mountAt(`/p/${SLUG}/voice/reseed`, BOOT, makeFetch());
     await axeCheck((await settled("[data-spa-surface]")));
   });
+});
+
+// ---- REQ-KIT-4 / REQ-GUARD-2 (D4) — the enum-key sweep --------------------------------------------
+
+describe("the voices surfaces never render an internal snake_case key", () => {
+  const SNAKE = /\b[a-z][a-z0-9]*_[a-z0-9_]+\b/;
+  const MOUNTS: { path: string; label: string }[] = [
+    { path: "/voices", label: "library" },
+    { path: "/voices/new", label: "creation sheet" },
+    { path: `/v/${PID}`, label: "overview" },
+    { path: `/v/${PID}?tab=description`, label: "description tab" },
+    { path: `/v/${PID}?tab=samples`, label: "samples tab" },
+    { path: `/v/${PID}?tab=samples&sample=s2`, label: "sample drawer" },
+    { path: `/v/${PID}?tab=profile`, label: "profile tab" },
+    { path: `/v/${PID}?tab=runs`, label: "runs tab" },
+    { path: `/p/${SLUG}/voice/reseed`, label: "reseed preview" },
+  ];
+  for (const m of MOUNTS) {
+    it(`${m.label}: rendered text carries no snake_case key (data-* keeps them)`, async () => {
+      await mountAt(m.path, bootFor({ ...SPA_ALL }), makeFetch());
+      const surface = await settled("[data-spa-surface]");
+      const text = surface.textContent ?? "";
+      const leak = text.match(SNAKE);
+      expect(leak, `${m.label} leaked "${leak?.[0]}"`).toBeNull();
+    });
+  }
 });
