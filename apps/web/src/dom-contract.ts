@@ -655,6 +655,30 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-conversion-form", "conditional", "ui/conversion.tsx", "import conversion preview"),
     a("data-conversion-action", "conditional", "ui/conversion.tsx"),
     a(
+      "data-conversion-title",
+      "conditional",
+      "ui/conversion.tsx",
+      "REQ-HOME-5 H1→title line on the preview",
+    ),
+    a(
+      "data-converted-pane",
+      "conditional",
+      "ui/conversion.tsx",
+      "REQ-HOME-5 typeset (paper) converted pane",
+    ),
+    a(
+      "data-import-dropzone",
+      "conditional",
+      "spa/surfaces/onboarding.tsx",
+      "REQ-HOME-5 styled dropzone (replaces native file input)",
+    ),
+    a(
+      "data-import-file-input",
+      "conditional",
+      "spa/surfaces/onboarding.tsx",
+      "the hidden file input the dropzone proxies",
+    ),
+    a(
       "data-conversion-pending",
       "conditional",
       "pages.tsx + ui/conversion",
@@ -685,6 +709,13 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     u("entry", "conditional", "server.ts/pages.tsx entry-point param"),
     u("qk", "conditional", "server.ts/pages.tsx + spa surfaces", "quarantine-key preview param"),
     u("src", "conditional", "server.ts/pages.tsx + spa surfaces", "source-label preview param"),
+    u(
+      "imported",
+      "conditional",
+      "server.ts + spa/routes p.$project.v.$v",
+      "REQ-DATA-14 import-outcome landing flash",
+    ),
+    u("pn", "conditional", "server.ts + spa/routes p.$project.v.$v", "superseded head's frozen n"),
   ],
   // ---- /app + /p/:slug feed (project list, run cards, Desk feed) ----
   "project-home": [

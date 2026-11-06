@@ -468,6 +468,16 @@ describe("GET /p/:slug/v/:v mounted (SPA.23)", () => {
     await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
     expect(el()!.querySelector("[data-version-rail]")).not.toBeNull();
   });
+
+  it("REQ-DATA-14 — the ?imported=superseded&pn landing flash pushes the freeze toast", async () => {
+    const f = makeFetch();
+    await mountAt(`/p/${SLUG}/v/2?imported=superseded&pn=1`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(el()!.querySelector(".ui-toast-viewport [role='status']")).not.toBeNull(),
+    );
+    expect(el()!.querySelector(".ui-toast-viewport")!.textContent).toContain("v1 was frozen");
+  });
 });
 
 // ---- /p/:slug/v/:n/diff/:m — the compare ----------------------------------------------------------

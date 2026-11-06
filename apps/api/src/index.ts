@@ -732,6 +732,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           createImportRoutes({
             principal: deps.principal,
             db,
+            txRunner: deps.txRunner,
             contentStore: deps.contentStore,
             converter: deps.importConverter,
             ids: deps.ids ?? (() => `id_${randomUUID()}`),

@@ -172,7 +172,8 @@ function makeFetch(opts: FetchOpts = {}) {
         redirect: `/p/${SLUG}/import/preview?qk=quarantine%2Fw1%2Fu1&src=paper.docx` });
     }
     if (url === `/p/${SLUG}/import/create`) {
-      return jsonResponse(200, opts.importCreatePost ?? { ok: true, redirect: `/p/${SLUG}` });
+      // R7HOME.2a — create lands on the editable Page with the REQ-DATA-14 outcome flash.
+      return jsonResponse(200, opts.importCreatePost ?? { ok: true, redirect: `/p/${SLUG}/v/1?imported=created` });
     }
     return jsonResponse(500, { error: "unstubbed_path", detail: url });
   });
@@ -349,7 +350,8 @@ describe("GET /app/new mounted (SPA.14)", () => {
       expect(create.innerHTML, field).toContain(field);
     }
     expect(el()!.querySelector('[data-conversion-action="create"]')).not.toBeNull();
-    expect(el()!.querySelector('[data-conversion-action="fix_now"]')).not.toBeNull();
+    // REQ-HOME-5 — a CLEAN conversion offers the single Create CTA (Fix now needs warnings).
+    expect(el()!.querySelector('[data-conversion-action="fix_now"]')).toBeNull();
   });
 
   it("a scratch validation refusal renders the alert, never a silent no-op", async () => {
@@ -485,6 +487,31 @@ describe("GET /p/:slug/import mounted (SPA.14)", () => {
     expect(main.querySelector(".ide")).not.toBeNull();
   });
 
+  it("REQ-HOME-5 — the styled dropzone replaces the native input and is keyboard-operable", async () => {
+    await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
+    const zone = (await settled<HTMLElement>("[data-import-dropzone]"));
+    // a real focusable button-ish region — Tab lands on it, Enter/Space opens the picker.
+    expect(zone.getAttribute("role")).toBe("button");
+    expect(zone.getAttribute("tabindex")).toBe("0");
+    const input = document.querySelector<HTMLInputElement>('input[name="file"]')!;
+    expect(input.hasAttribute("data-import-file-input")).toBe(true);
+    const clickSpy = vi.spyOn(input, "click").mockImplementation(() => {});
+    await act(async () => {
+      zone.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    });
+    expect(clickSpy).toHaveBeenCalled();
+    await act(async () => {
+      zone.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
+    });
+    expect(clickSpy).toHaveBeenCalledTimes(2);
+    // a picked file paints its name on the zone (the hidden input still carries it to the form).
+    setFile(input, new File(["x"], "paper.docx"));
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(zone.textContent).toContain("paper.docx");
+  });
+
   it("a file convert runs presign→PUT→quarantineKey and navigates to the server-owned poll URL", async () => {
     const puts: { url: string; init?: RequestInit }[] = [];
     const f = makeFetch({ puts });
@@ -544,7 +571,7 @@ describe("GET /p/:slug/import/preview mounted (SPA.14)", () => {
     await submit(form, create);
     const post = f.mock.calls.find(([u, i]) => String(u) === `/p/${SLUG}/import/create` && i?.method === "POST");
     expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ qk: "q1", action: "create" });
-    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}`);
+    expect(docNavSpy).toHaveBeenCalledWith(`/p/${SLUG}/v/1?imported=created`);
   });
 
   it("component axe on the mounted ready preview (REQ-VFY-6)", async () => {

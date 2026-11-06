@@ -29,7 +29,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
-import { ApprovalRow, CompareView, WhatChangedView } from "@rhema/ui";
+import { ApprovalRow, CompareView, ToastProvider, useToast, WhatChangedView } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
@@ -94,6 +94,34 @@ function useEditorWrite() {
 // `data-held-consumed` marker and runs the same token-matched delete the `landing.js` island
 // runs — the hold dies to a server-confirmed consumption, never to a page view.
 // ---------------------------------------------------------------------------------------------------------------------
+
+/** R7HOME.2a — the REQ-DATA-14 landing toast: `?imported=<outcome>&pn=<frozenN>` names which
+ *  overwrite-rule arm ran (URL flash, like `?noted`/`?restored`). Pushed once on mount. */
+function ImportToast({
+  imported,
+  pn,
+}: {
+  readonly imported: string | undefined;
+  readonly pn: string | undefined;
+}): ReactNode {
+  const toast = useToast();
+  useEffect(() => {
+    if (!imported) return;
+    if (imported === "overwrote") {
+      toast.push({ title: COPY.import.toastImportedOverwrote, tone: "ok" });
+    } else if (imported === "superseded") {
+      toast.push({
+        title: COPY.import.toastImportedSupersededFmt
+          .replace("{n}", pn ? `v${Number(pn) + 1}` : "the new version")
+          .replace("{m}", pn ? `v${pn}` : "the previous draft"),
+        tone: "ok",
+      });
+    } else {
+      toast.push({ title: COPY.import.toastImportedCreated, tone: "ok" });
+    }
+  }, [imported, pn, toast]);
+  return null;
+}
 
 function HeldConsumedMarker({ token }: { readonly token: string }): ReactNode {
   useEffect(() => {
@@ -417,9 +445,11 @@ export function VersionPageSurface({
 
   if (!pageView) return null;
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
-      {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-      {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
+    <ToastProvider dismissLabel={COPY.projectHome.undoLabel} viewportLabel={data.page.slug}>
+      <ImportToast imported={search["imported"]} pn={search["pn"]} />
+      <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
+        {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
+        {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={pageView}
         compact={compact}
@@ -429,12 +459,13 @@ export function VersionPageSurface({
         onProposalAccept={seams.accept}
         onProposalReject={seams.reject}
       />
-      {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
-          {mutError}
-        </p>
-      ) : null}
-    </div>
+        {mutError != null ? (
+          <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+            {mutError}
+          </p>
+        ) : null}
+      </div>
+    </ToastProvider>
   );
 }
 

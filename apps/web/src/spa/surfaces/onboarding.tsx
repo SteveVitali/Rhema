@@ -72,6 +72,84 @@ function convertingCopy(sourceLabel: string | undefined): string {
   return COPY.import.convertingUnknownFmt;
 }
 
+// ---- REQ-HOME-5 — the styled, keyboard-accessible dropzone replacing the native file input ------
+// The real `<input type="file" name="file">` stays mounted visually-hidden so `collectFields` and
+// the no-JS form path keep working; the region is a `role="button"` — Tab-focusable, Enter/Space
+// opens the picker, and a drop assigns `input.files` via DataTransfer (the hold-store's precedent).
+
+function FileDropzone({ compact }: { readonly compact?: boolean }): ReactNode {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
+  const accept = ".md,.txt,.html,.docx,.pdf";
+
+  const assign = (files: FileList | null) => {
+    const input = inputRef.current;
+    if (!input || !files || files.length === 0) return;
+    const dt = new DataTransfer();
+    dt.items.add(files[0]!);
+    input.files = dt.files;
+    setSelected(files[0]!.name);
+  };
+
+  return (
+    <div style={{ marginTop: "4px" }}>
+      <div
+        role="button"
+        tabIndex={0}
+        data-import-dropzone
+        aria-label={COPY.import.dropzoneLabel}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          assign(e.dataTransfer.files);
+        }}
+        style={{
+          display: "block",
+          maxWidth: compact ? "100%" : "560px",
+          padding: "18px 16px",
+          borderRadius: "8px",
+          border: `1px dashed ${over ? "var(--accent)" : "var(--shell-border)"}`,
+          background: over ? "var(--shell-raised)" : "var(--shell-surface)",
+          color: "var(--shell-fg)",
+          fontSize: "13px",
+          cursor: "pointer",
+          textAlign: "center",
+        }}
+      >
+        {selected ? fmt(COPY.import.dropzoneSelectedFmt, { name: selected }) : COPY.import.dropzoneLabel}
+        <span style={{ display: "block", marginTop: "4px", fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+          {COPY.import.dropzoneFormats}
+        </span>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        name="file"
+        accept={accept}
+        data-import-file-input
+        // the dropzone (role=button + aria-label) is the accessible control; this is its proxy.
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, overflow: "hidden" }}
+        onChange={(e) => setSelected(e.currentTarget.files?.[0]?.name ?? null)}
+      />
+    </div>
+  );
+}
+
 const textAreaStyle = {
   display: "block",
   marginTop: "4px",
@@ -616,10 +694,10 @@ export function NewProjectSurface({
             ) : null}
             {entry !== "scratch" ? (
               <>
-                <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
-                  {COPY.newProject.fileLabel}
-                  <input type="file" name="file" accept=".md,.txt,.html,.docx,.pdf" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
-                </label>
+                <div style={{ marginTop: "16px" }}>
+                  <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.newProject.fileLabel}</span>
+                  <FileDropzone />
+                </div>
                 <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px" }}>
                   {COPY.newProject.pasteLabel}
                   <textarea name="paste" style={textAreaStyle} />
@@ -697,11 +775,13 @@ export function NewProjectPreviewSurface({
             sourceLabel={pv.sourceLabel}
             sourceText={pv.sourceText}
             convertedMarkdown={pv.convertedMarkdown}
+            {...(pv.title ? { title: pv.title } : {})}
             countLine={pv.countLine}
             warnings={pv.warnings}
             actions={{
               formAction: "/app/new/create",
               createLabel: COPY.import.createLabel,
+              createCleanLabel: COPY.import.createCleanLabel,
               fixNowLabel: COPY.import.fixNowLabel,
               hiddenFields: {
                 entry,
@@ -771,10 +851,10 @@ export function ImportSurface({
             <p data-import-notice="failed" role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", marginTop: "8px" }}>{error}</p>
           ) : null}
           <form method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
-            <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
-              {COPY.import.fileLabel}
-              <input type="file" name="file" accept=".md,.txt,.html,.docx,.pdf" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
-            </label>
+            <div>
+              <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.import.fileLabel}</span>
+              <FileDropzone />
+            </div>
             <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
               {COPY.import.pasteLabel}
               <textarea name="paste" style={textAreaStyle} />
@@ -831,11 +911,13 @@ export function ImportPreviewSurface({
               sourceLabel={conversion.sourceLabel}
               sourceText={conversion.sourceText}
               convertedMarkdown={conversion.convertedMarkdown}
+              {...(conversion.title ? { title: conversion.title } : {})}
               countLine={conversion.countLine}
               warnings={conversion.warnings}
               actions={{
                 formAction: `/p/${slug}/import/create`,
                 createLabel: COPY.import.createLabel,
+                createCleanLabel: COPY.import.createCleanLabel,
                 fixNowLabel: COPY.import.fixNowLabel,
                 ...(conversion.quarantineKey ? { hiddenFields: { qk: conversion.quarantineKey } } : {}),
               }}

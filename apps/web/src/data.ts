@@ -251,7 +251,13 @@ export interface DataSource {
    *  `quarantineKey` to poll (no re-upload, no duplicate execution). */
   previewImport(session: SessionHeaders, input: ImportInput): Promise<ImportPreviewOutcome>;
   /** Create the imported draft from a preview's quarantine key; returns the new draft id. */
-  createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
+  createImport(session: SessionHeaders, input: ImportInput): Promise<{
+    draftId: string;
+    /** R7HOME.2a — the working head's version number + the REQ-DATA-14 arm (toast + landing). */
+    n: number;
+    outcome: "created" | "overwrote" | "superseded";
+    supersededN?: number;
+  }>;
   /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
   createRun(session: SessionHeaders, projectId: string, req: CreateRunDto): Promise<CreatedRunDto>;
   /**
@@ -1317,7 +1323,12 @@ export function apiDataSource(
       const projectId = await projectIdFor(session, input.projectSlug);
       const quarantineKey = await uploadKey(session, input);
       const draft = await client(session).createImport(projectId, { quarantineKey });
-      return { draftId: draft.draftId };
+      return {
+        draftId: draft.draftId,
+        n: draft.n,
+        outcome: draft.outcome ?? "created",
+        ...(draft.supersededN != null ? { supersededN: draft.supersededN } : {}),
+      };
     },
     // The estimate service is stateless + pure (no GCS/DB-write infra), so the Run click is a real api call:
     // the api's run-creation lifecycle needs a live worker to EXECUTE (D-P0.08-1), but creating the row +

@@ -2395,7 +2395,7 @@ export type ImportPreviewDto =
   | { readonly status: "ready"; readonly preview: ConversionResult }
   | { readonly status: "pending"; readonly quarantineKey: string };
 
-/** The imported draft the create endpoint returns (§5.3 "Create and fix later" → frozen draft 1). */
+/** The imported draft the create endpoint returns (R7HOME.2a — the working head + the REQ-DATA-14 arm). */
 export interface CreatedImportDraftDto {
   readonly draftId: string;
   readonly versionId: string;
@@ -2403,6 +2403,10 @@ export interface CreatedImportDraftDto {
   readonly n: number;
   readonly wordCount: number;
   readonly contentSha256: string;
+  /** REQ-DATA-14 — 'created' (no head stood), 'overwrote' (empty head replaced), 'superseded'
+   *  (head froze as `supersededN`, import = v(N+1)). */
+  readonly outcome?: "created" | "overwrote" | "superseded";
+  readonly supersededN?: number;
 }
 
 // ---- SPA.5 (REQ-DAT-13, REQ-BFF-12) — the run-events feed's wire row ----

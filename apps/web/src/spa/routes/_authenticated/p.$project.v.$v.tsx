@@ -24,6 +24,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
     hc: strParam,
     // `flagParam` — `?focus=1` parses to the NUMBER 1 under the JSON-shaped parse.
     focus: flagParam,
+    // R7HOME.2a — the import-landing toast's URL flash (`?imported=<outcome>&pn=<frozenN>`).
+    imported: strParam,
+    pn: strParam,
   }),
   pendingComponent: PendingShell,
   loader: async ({ context, params, location }) => {

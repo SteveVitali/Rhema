@@ -344,19 +344,24 @@ describe("GET /projects/:id/editor/resolve/:v — the editable head (EDIT.1)", (
     draftId = created.draftId;
   }
 
-  it("an import-only project resolves 'working' to its frozen human_upload head (was a 404)", async () => {
+  it("an import-only project resolves 'working' to its WORKING human_upload head (R7HOME.2a)", async () => {
     await seedImportedHead();
     const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
     expect(res.status).toBe(200);
     expect((await res.json()) as { draftId: string; draftN: number; state: string }).toMatchObject({
       draftId,
       draftN: 1,
-      state: "frozen",
+      state: "working",
     });
   });
 
-  it("resolving 'working' mints nothing — the lazy fork stays first-write (one draft, frozen bytes intact)", async () => {
+  it("resolving 'working' mints nothing — a save edits the imported head IN PLACE (no fork)", async () => {
     await seedImportedHead();
+    const importSha = (await db.pg.query(
+      `select av.content_sha256 from drafts d join artifact_versions av on av.id = d.promoted_version_id
+        where d.id = $1`,
+      [draftId],
+    )).rows[0] as { content_sha256: string };
     const before = (await db.pg.query(`select count(*)::int n from drafts where project_id = $1`, [
       seed.projectId,
     ])).rows[0] as { n: number };
@@ -366,23 +371,28 @@ describe("GET /projects/:id/editor/resolve/:v — the editable head (EDIT.1)", (
     ])).rows[0] as { n: number };
     expect(after.n).toBe(before.n);
 
-    // and the fork lands at the first save, exactly once, with the import's bytes preserved.
+    // R7HOME.2a (DS §5.4): the imported head is the WORKING head — the first keystroke edits it in
+    // place. One draft, no fork; the import's original bytes stay immutable in artifact_versions.
     const s1 = (await (await post(`${url("")}/save`, { markdown: EDITED_MD })).json()) as {
       draftId: string;
       draftN: number;
       forked: boolean;
     };
-    expect(s1).toMatchObject({ draftN: 2, forked: true });
+    expect(s1).toMatchObject({ draftId, draftN: 1, forked: false });
     const rows = (await db.pg.query(
       `select d.origin, d.state, d.base_draft_id, av.content_sha256
          from drafts d join artifact_versions av on av.id = d.promoted_version_id
         where d.project_id = $1 order by d.n`,
       [seed.projectId],
     )).rows as { origin: string; state: string; base_draft_id: string | null; content_sha256: string }[];
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ origin: "human_upload", state: "frozen" });
-    expect(rows[1]).toMatchObject({ origin: "human_revision", state: "working", base_draft_id: draftId });
-    expect(rows[0].content_sha256).not.toBe(rows[1].content_sha256);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ origin: "human_upload", state: "working" });
+    expect(rows[0].content_sha256).not.toBe(importSha.content_sha256); // promoted now points at the edit
+    const versions = (await db.pg.query(
+      `select count(*)::int n from artifact_versions where content_sha256 = $1`,
+      [importSha.content_sha256],
+    )).rows[0] as { n: number };
+    expect(versions.n).toBe(1); // the imported version row persists untouched
   });
 
   it("an agent-delivered frozen head resolves 'working' the same way (reviewed shape, no child yet)", async () => {
@@ -397,6 +407,11 @@ describe("GET /projects/:id/editor/resolve/:v — the editable head (EDIT.1)", (
 
   it("a working human_revision child wins over the frozen base; numeric resolve stays exact", async () => {
     await seedImportedHead();
+    // R7HOME.2a — the import is working now; a trigger must freeze it before a save can fork.
+    await db.pg.query(
+      `update drafts set state = 'frozen', frozen_by = '{"cause":"run_read","kind":"system"}'::jsonb where id = $1`,
+      [draftId],
+    );
     const s1 = (await (await post(`${url("")}/save`, { markdown: EDITED_MD })).json()) as {
       draftId: string;
     };

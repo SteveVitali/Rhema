@@ -123,7 +123,8 @@ describe("POST /projects — the three-entry create (§5.3)", () => {
     const draft = (
       await db.pg.query(`select n, origin, state from drafts where project_id=$1`, [project.id])
     ).rows[0] as { n: number; origin: string; state: string };
-    expect(draft).toEqual({ n: 3, origin: "human_upload", state: "frozen" });
+    // R7HOME.2a — the import lands as the working head (the project's editable surface).
+    expect(draft).toEqual({ n: 3, origin: "human_upload", state: "working" });
     const rows = await listProjectStates(sql, principal());
     expect(rows.find((r) => r.id === project.id)?.state.key).toBe("draft");
   });

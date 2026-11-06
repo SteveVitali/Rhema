@@ -6,7 +6,10 @@
 
 import type { SqlExecutor } from "./sql.js";
 
-export type FreezeCause = "run_read" | "dossier_ref" | "promote" | "export";
+// REQ-DATA-21/REQ-VIS-4's four triggers are run_read | dossier_ref | promote | export. R7HOME.2a adds a
+// fifth recorded cause for the REQ-DATA-14 overwrite rule: a non-empty working head an import supersedes
+// freezes with `superseded_by_import` — a distinct cause, not one of the four user/run triggers (ADR-136).
+export type FreezeCause = "run_read" | "dossier_ref" | "promote" | "export" | "superseded_by_import";
 
 export interface FreezeArgs {
   readonly draftId: string;

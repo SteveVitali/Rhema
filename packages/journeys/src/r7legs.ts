@@ -1226,6 +1226,100 @@ const U6_CHAT: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * U7.import (R7HOME.2a; REQ-HOME-4/5) — paste markdown with a leading `# H1`: the H1 becomes the
+ * title (never dropped, the Conversion-notes card lists the normalization), the preview is typeset
+ * (paper face, not mono), the created import is the project's WORKING draft, and typing on the Page
+ * edits in place — no fork, no v(N+1) from a keystroke. Runs against the live convert + collab
+ * seams at 250's preview SHA; held `ready-to-flip` (`expected:"red"` — 250 flips, D-R7HOME.2a-1).
+ */
+const U7_IMPORT: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  const projectLink = page.locator("[data-shell-project] a, [data-shell-recent]").first();
+  if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
+  await settleClientNav(page, ctx, () => projectLink.click());
+  // the project's slug from the landed URL — the import surface is sibling to it.
+  const slug = new URL(page.url()).pathname.match(/^\/p\/([^/]+)/)?.[1];
+  if (!slug) throw new Error(`could not read the project slug from ${page.url()}`);
+
+  // the import sheet — the styled dropzone is mounted (a native picker is not the surface).
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/import`, ctx);
+  if ((await page.locator("[data-import-dropzone]").count()) === 0) {
+    throw new Error("the styled dropzone did not mount on the import sheet");
+  }
+
+  // paste markdown whose first line is the title; the title must survive the conversion.
+  const title = ctx.marker("Imported essay");
+  const paste = page.locator(`form[action="/p/${slug}/import/preview"] textarea[name="paste"]`).first();
+  if ((await paste.count()) === 0) throw new Error("no paste field on the import sheet");
+  await paste.fill(`# ${title}\n\nBody paragraph — enough text to materialize.\n`);
+  const marker = `u7-${ctx.nonce}`;
+  await plantGuard3Marker(page, marker);
+  const loadsAtConvert = ctx.documentLoads;
+  await settleClientNav(page, ctx, () =>
+    page.locator(`form[action="/p/${slug}/import/preview"] button[type="submit"]`).first().click(),
+  );
+  if (ctx.documentLoads !== loadsAtConvert) throw new Error("the convert hop document-loaded");
+
+  // the preview — poll until the ready pane mounts (pending re-asks carry the poll cadence).
+  await page.locator("form[data-conversion-form]").first().waitFor({ timeout: 60_000 });
+  // REQ-HOME-5: the title line + the Conversion-notes card names the normalization, and the
+  // converted pane typesets (paper face — the computed family is not the mono stack).
+  if ((await page.locator("[data-conversion-title]").count()) === 0) {
+    throw new Error("the H1 title line did not render on the preview");
+  }
+  if (!(await page.locator("[data-conversion-title]").first().textContent())?.includes(title)) {
+    throw new Error("the H1 title was dropped, not kept");
+  }
+  const convFont = await page
+    .locator("[data-converted-pane]")
+    .first()
+    .evaluate((el) => getComputedStyle(el).fontFamily);
+  if (!convFont || /mono|JetBrains/i.test(convFont)) {
+    throw new Error(`the converted pane is not typeset — computed font: ${convFont}`);
+  }
+  // a clean H1 conversion lists its normalization note (title_extracted) in Conversion notes.
+  const notes = await page.locator("[data-conversion-form] section, [data-conversion-form]").allTextContents();
+  if (!notes.join(" ").includes(title)) {
+    throw new Error("Conversion notes do not name the title normalization");
+  }
+
+  // exactly one CTA on a clean conversion — Create draft (Fix now only exists with warnings).
+  const createBtns = page.locator('[data-conversion-action="create"]');
+  if ((await createBtns.count()) !== 1) {
+    throw new Error(`expected exactly one Create CTA, found ${await createBtns.count()}`);
+  }
+  const loadsAtCreate = ctx.documentLoads;
+  await settleClientNav(page, ctx, () => createBtns.first().click());
+  if (ctx.documentLoads !== loadsAtCreate) throw new Error("the import create document-loaded");
+
+  // the landing — /p/:slug/v/:n with the REQ-DATA-14 outcome flash + toast.
+  const landed = new URL(page.url());
+  if (!landed.pathname.match(new RegExp(`^/p/${slug}/v/\\d+`))) {
+    throw new Error(`the import did not land on the Page — ${landed.pathname}`);
+  }
+  if (!landed.searchParams.get("imported")) throw new Error("the imported outcome flash is missing");
+  await page.locator(".ui-toast-viewport [role='status']").first().waitFor({ timeout: 5_000 }).catch(() => {
+    throw new Error("the import toast did not render");
+  });
+  const n = landed.pathname.match(/\/v\/(\d+)/)?.[1];
+
+  // the imported draft is immediately editable — typing on the Page edits IN PLACE (no fork):
+  // the version label stays v{n}; a fork would mint v(N+1) on the first keystroke save.
+  const editor = page.locator(".ProseMirror").first();
+  await editor.click();
+  await page.keyboard.type(` typed ${ctx.nonce}`);
+  await page.waitForTimeout(6_000); // the debounced materialization window
+  await assertNoReload(page, marker, "import-typing");
+  const rail = await page.locator("[data-page-root], body").first().textContent();
+  if (rail?.includes(`v${Number(n) + 1}`)) {
+    throw new Error(`typing forked the import — v${Number(n) + 1} appeared on the Page`);
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u7-import.png"), fullPage: true });
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
   "U1.shell": U1_SHELL,
@@ -1235,6 +1329,7 @@ const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "U3.stopgap": U3_STOPGAP,
   "U3.occlusion": U3_OCCLUSION,
   "U6.chat": U6_CHAT,
+  "U7.import": U7_IMPORT,
   "R11.demo": R11_DEMO,
   "P1.demo": P1_DEMO,
   "D3.readonly": D3_READONLY,

@@ -274,7 +274,7 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
           ? body.startVersion
           : undefined;
       const created = await createImportedDraft(
-        { db: deps.db, contentStore: deps.contentStore!, ids: deps.ids },
+        { db: deps.db, contentStore: deps.contentStore!, ids: deps.ids, txRunner: deps.txRunner },
         { projectId, workspaceId: principal.workspaceId, actor, result, ...(declaredN != null ? { declaredN } : {}) },
       );
       draftId = created.draftId;

@@ -26,6 +26,7 @@ import {
   SPEC_FILENAME,
 } from "@rhema/contracts";
 import {
+  freezeDraft,
   renderProvenanceAppendix,
   PROVENANCE_APPENDIX_LABEL,
   type ContentStore,
@@ -553,6 +554,20 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
           : null);
       const text = await versionText(store, tx, versionId);
       if (!text || text.text.trim() === "") return { ok: false as const, reason: "empty_draft" };
+
+      // REQ-VIS-4/REQ-DATA-21 (R7HOME.2a) — an export freezes the WORKING head it targets: the
+      // export always targets the promoted version (the resolved `versionId`, the same bytes the
+      // download renders), so the head seals to exactly what was exported. Guarded on
+      // `state='working'` — an already-frozen head is a no-op.
+      if (versionId != null) {
+        await freezeDraft(tx, {
+          draftId: head.id,
+          promotedVersionId: versionId,
+          cause: "export",
+          frozenBy: { cause: "export", kind: "user", userId: principal.userId },
+          at: deps.clock.now(),
+        });
+      }
 
       // The export moment IS the pre_export horizon: sweep first so the statement's obligation sentence and
       // the dialog's count agree (§11.7; the sweep is informational, never a gate).
