@@ -229,7 +229,6 @@ export interface PageData {
      * run sheet's GET — the palette never launches a run.
      */
     readonly palette?: string;
-    readonly paletteSearchUrl?: string;
     readonly status?: {
       readonly version?: string;
       readonly words?: number;

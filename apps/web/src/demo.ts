@@ -10,7 +10,7 @@
 //      document / JSON 404 — never the shell, never a DataSource;
 //   3. document GETs (`/demo/<essay>/…`, `/p/demo~<essay>/…`) → the OUTER app's
 //      `spaShellDocument` with the demo boot (single CSP nonce — REQ-DWEB-8);
-//   4. twin GETs (`/bff/p/demo~*/…`, `/p/demo~*/palette-search`) → forwarded to the nested
+//   4. twin GETs (`/bff/p/demo~*/…`) → forwarded to the nested
 //      `createWebApp({demo:true})` with the request's `cookie`/`authorization` headers stripped;
 //      `set-cookie` is deleted on the way back and the response is stamped `public` + ETag
 //      (S-13) so the authed `no-store` floor is overridden and the bodies are cookie-invariant.
@@ -67,8 +67,6 @@ interface DemoPath {
   readonly bff?: boolean;
   /** the allowlisted routeId the path resolves to (null ⇒ terminal 404). */
   readonly routeId: string | null;
-  /** the path is a JSON endpoint (`palette-search`), not a document — forwards, never a shell. */
-  readonly endpoint?: boolean;
 }
 
 /** Path → the demo claim, or null when the path is not the guard's business. */
@@ -90,7 +88,6 @@ function demoPathFor(pathname: string): DemoPath | null {
       essay,
       slug,
       routeId: registered ? routeIdFor(`/p/${slug}${tail}`) : null,
-      endpoint: endpointFor(`/p/${slug}${tail}`),
     };
   }
   // `/bff/p/demo~<slug>/…` — a JSON twin path.
@@ -105,7 +102,6 @@ function demoPathFor(pathname: string): DemoPath | null {
       slug,
       bff: true,
       routeId: registered ? routeIdFor(`/p/${slug}${bff[2] ?? ""}`) : null,
-      endpoint: endpointFor(`/p/${slug}${bff[2] ?? ""}`),
     };
   }
   // `/p/demo~<slug>/…` — the internal namespace (document or endpoint).
@@ -119,24 +115,17 @@ function demoPathFor(pathname: string): DemoPath | null {
       essay: slug.slice(DEMO_SLUG_PREFIX.length),
       slug,
       routeId: registered ? routeIdFor(path) : null,
-      endpoint: endpointFor(path),
     };
   }
   return null;
 }
 
 function routeIdFor(mapped: string): string | null {
-  if (endpointFor(mapped)) return "/p/$project/palette-search";
   return spaRouteFor(mapped).routeId;
 }
 
-function endpointFor(mapped: string): boolean {
-  return /^\/p\/[^/]+\/palette-search$/.test(mapped);
-}
-
 function allowed(routeId: string | null): boolean {
-  return routeId != null && (DEMO_DOCUMENT_ROUTE_IDS as readonly string[]).includes(routeId) ||
-    routeId === "/p/$project/palette-search";
+  return routeId != null && (DEMO_DOCUMENT_ROUTE_IDS as readonly string[]).includes(routeId);
 }
 
 const terminal404 = (c: Context, json: boolean): Response =>
@@ -269,7 +258,7 @@ export function mountDemo(app: Hono, deps: WebDeps): void {
       c.res = terminal404(c, json);
       return;
     }
-    if (demo.bff === true || demo.endpoint === true) {
+    if (demo.bff === true) {
       c.res = await forward(c);
       return;
     }

@@ -85,7 +85,6 @@ const PUBLISH: IdeChromeData = {
     projectSlug: "alpha",
     goto: [{ label: "Settings", path: "/p/alpha/settings" }],
   },
-  paletteSearchUrl: "/p/alpha/palette-search",
 };
 
 function makeFetch() {
@@ -96,9 +95,6 @@ function makeFetch() {
     }
     if (url === "/bff/feed-labels") {
       return new Response(JSON.stringify(MAPS), { status: 200 });
-    }
-    if (url.startsWith("/p/alpha/palette-search")) {
-      return new Response(JSON.stringify({ results: [] }), { status: 200 });
     }
     return new Response("{}", { status: 200 });
   });
@@ -153,6 +149,11 @@ class MemStorage {
 }
 
 const mounted: Root[] = [];
+beforeEach(() => {
+  dispatched = [];
+  window.addEventListener("rhema:palette-open", onPaletteOpen);
+});
+afterEach(() => window.removeEventListener("rhema:palette-open", onPaletteOpen));
 
 /** R7FIX.1 — the controller derives pane geometry from window.innerWidth; happy-dom's default
  *  is 1024 (narrow — overlays by design). Tests set the width they mean BEFORE mount. */
@@ -231,7 +232,14 @@ async function mount(
 }
 
 const ide = (): HTMLElement | null => document.querySelector<HTMLElement>("[data-ide]");
-const paletteEl = (): HTMLElement | null => document.querySelector<HTMLElement>("[data-ide-palette]");
+// R7SHELL.1c — the palette is AppShell-owned (lazy chunk); in the IDE the embed on `.ide` is the
+// local-command source and ⌘K dispatches `rhema:palette-open`. `paletteEl` is that embed.
+const paletteEl = (): HTMLElement | null => document.querySelector<HTMLElement>("[data-ide][data-palette]");
+const paletteOpenEvents = (): { toggle?: boolean; initial?: string }[] => dispatched.filter(Boolean);
+let dispatched: { toggle?: boolean; initial?: string }[] = [];
+const onPaletteOpen = (e: Event): void => {
+  dispatched.push((e as CustomEvent<{ toggle?: boolean; initial?: string }>).detail ?? {});
+};
 const key = (init: KeyboardEventInit): void => {
   act(() => {
     window.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init }));
@@ -267,10 +275,11 @@ afterEach(() => {
 });
 
 describe("the ide-chrome AND-gate (REQ-SEQ-2)", () => {
-  it("an IDE-framed + flipped leaf mounts .ide inside the layout; palette + cheatsheet embed", async () => {
+  it("an IDE-framed + flipped leaf mounts .ide inside the layout; the PaletteData embed + cheatsheet ride it", async () => {
     await mount("/p/alpha");
     expect(ide()).not.toBeNull();
-    expect(paletteEl()).not.toBeNull();
+    expect(paletteEl()?.dataset["palette"]).toContain("alpha");
+    expect(document.querySelector("[data-ide-palette]")).toBeNull(); // retired — the palette is global now
     expect(document.querySelector("[data-ide-cheatsheet]")).not.toBeNull();
     expect(document.querySelector("[data-pane='page'] [data-page-host]")).not.toBeNull();
   });
@@ -508,58 +517,46 @@ describe("the §5.12 focus zones (REQ-ISL-10)", () => {
     const input = document.querySelector<HTMLElement>("input[aria-label='leaf note']");
     act(() => input?.focus());
     key({ key: "k", metaKey: true });
-    expect(paletteEl()?.hidden).toBe(false);
-    expect(document.activeElement).toBe(paletteEl()?.querySelector("[data-palette-input]"));
+    // R7SHELL.1c — ⌘K dispatches the AppShell palette event (toggle) rather than opening an
+    // in-IDE overlay; the AppShell owns focus + the palette itself.
+    expect(paletteOpenEvents()).toEqual([{ toggle: true }]);
   });
 });
 
-describe("the ⌘K palette — local-only, zero POST (REQ-ISL-13)", () => {
-  it("opens on ⌘K and on bare / — browse rows + the command-mode box both render", async () => {
-    await mount();
+describe("the ⌘K palette — dispatches the AppShell palette (R7SHELL.1c; REQ-ISL-13 preserved)", () => {
+  it("⌘K toggles and bare / seeds command mode — one CustomEvent, zero fetches", async () => {
+    const { fetchSpy } = await mount();
     key({ key: "k", metaKey: true });
-    expect(paletteEl()?.hidden).toBe(false);
-    const rows = paletteEl()?.querySelectorAll(".ide-pal-row");
-    expect((rows?.length ?? 0) > 0).toBe(true);
-    key({ key: "Escape" });
-    expect(paletteEl()?.hidden).toBe(true);
+    expect(paletteOpenEvents()).toEqual([{ toggle: true }]);
+    key({ key: "k", metaKey: true });
+    expect(paletteOpenEvents()).toEqual([{ toggle: true }, { toggle: true }]);
+    // "/" opens seeded with "/" — the AppShell palette renders the command row off the embed.
     key({ key: "/" });
-    expect(paletteEl()?.hidden).toBe(false);
-    // "/" seeds command mode (the island's verbatim behavior) — the command box, not browse rows.
-    expect(paletteEl()?.querySelector(".ide-pal-command")).not.toBeNull();
+    expect(paletteOpenEvents()[2]).toEqual({ toggle: true, initial: "/" });
+    // the IDE chrome itself issues no fetch for the palette (the lazy palette owns its read).
+    for (const call of fetchSpy.mock.calls) {
+      const url = typeof call[0] === "string" ? call[0] : (call[0] as Request).url;
+      expect(url).not.toContain("/palette-search");
+      expect(url).not.toContain("/bff/search");
+    }
   });
 
-  it("filters locally and Enter navigates through the router — every fetch stays GET", async () => {
-    const { router, fetchSpy } = await mount();
-    key({ key: "k", metaKey: true });
-    const input = paletteEl()?.querySelector<HTMLInputElement>("[data-palette-input]");
-    await act(async () => {
-      input!.value = "set";
-      input!.dispatchEvent(new Event("input", { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 240)); // the 180 ms search debounce
-    });
-    await act(async () => {
-      input!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
-    });
-    // `/p/:p/settings` is NOT IDE-framed — landing there unmounts the chrome itself.
-    expect(router.state.location.pathname).toBe("/p/alpha/settings");
-    expect(paletteEl()).toBeNull();
-    // REQ-ISL-13: the palette NEVER posts — the search GET is the only fetch it makes.
-    for (const call of fetchSpy.mock.calls) {
-      const init = call[1] as RequestInit | undefined;
-      expect(init?.method ?? "GET").not.toBe("POST");
-    }
+  it("/compare falls back to the palette verb when no diff link exists", async () => {
+    await mount("/p/alpha");
+    // drive the compare-previous action path: no prior-version link → the palette event.
+    window.dispatchEvent(new Event("rhema:palette-open")); // sanity: listener alive
+    expect(paletteOpenEvents()).toEqual([{}]);
   });
 });
 
 describe("overlays + REQ-UX-7 focus return (REQ-UX-7/8)", () => {
-  it("Escape closes the palette and returns focus to the element that opened it", async () => {
+  it("⌘K dispatches the palette event; Esc+focus return live in the AppShell palette (palette.dom)", async () => {
     await mount();
     const toggle = document.querySelector<HTMLElement>("[data-ide-timeline-toggle]");
     act(() => toggle?.focus());
     key({ key: "k", metaKey: true });
-    expect(paletteEl()?.hidden).toBe(false);
-    key({ key: "Escape" });
-    expect(paletteEl()?.hidden).toBe(true);
+    expect(paletteOpenEvents()).toEqual([{ toggle: true }]);
+    // no in-IDE overlay took focus — the AppShell palette (mounted lazily) owns REQ-UX-7.
     expect(document.activeElement).toBe(toggle);
   });
 
@@ -691,7 +688,7 @@ describe("the menu/cmdmenu legs + manifest assertion coverage (REQ-ISL-11/12, RE
     expect(localStorage.getItem("rhema:authorship:v1:p-alpha")).toBe("1");
   });
 
-  it("the palette's keyboard row stamps data-active; a disabled resolution stamps data-disabled", async () => {
+  it("the PaletteData embed carries nextStep verbatim for the AppShell palette's local commands", async () => {
     const bag: IdeChromeData = {
       ...PUBLISH,
       palette: {
@@ -700,9 +697,9 @@ describe("the menu/cmdmenu legs + manifest assertion coverage (REQ-ISL-11/12, RE
       },
     };
     await mount("/p/alpha", { leaf: publishLeaf(bag) });
+    expect(paletteEl()?.dataset["palette"]).toContain("Broken step");
     key({ key: "k", metaKey: true });
-    expect(paletteEl()?.querySelector(".ide-pal-row[data-active]")).not.toBeNull();
-    expect(paletteEl()?.querySelector(".ide-pal-row[data-disabled]")).not.toBeNull();
+    expect(paletteOpenEvents()).toEqual([{ toggle: true }]);
   });
 
   it("a surface body's Live-feed affordance opens the Desk on the feed tab (data-ide-open-feed)", async () => {

@@ -137,3 +137,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-129](ADR-129-component-stack-radix-lucide-cmdk.md) | Component stack — Radix per-package primitives, Lucide icons, `cmdk`; SplitPane choice by R7PANE.1 | R7OPEN.1 (shell); filled and accepted by **225 R7KIT.2**. The no-raw-controls rule | Accepted |
 | [ADR-130](ADR-130-retire-generated-run-walkthrough.md) | Retire the generated run walkthrough — the run card is composed from the delivered record | R7OPEN.1 (shell); filled and accepted by **213 R7COPY.0**. | Proposed |
 | [ADR-131](ADR-131-appshell-keymap-sidebar-decisions.md) | AppShell decisions — sidebar collapse storage and the reserved-chords schema | 226_R7SHELL.1a (REQ-SHELL-1/2/6, REQ-KEYS-1) | accepted |
+| [ADR-132](ADR-132-global-palette-search-decisions.md) | The global ⌘K palette + tenant-scoped GET /search — owned decisions | 228_R7SHELL.1c (REQ-SHELL-7, REQ-RELOAD-3, REQ-SPEC-30, REQ-ISL-10) | accepted |

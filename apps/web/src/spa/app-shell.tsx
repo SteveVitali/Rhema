@@ -20,7 +20,7 @@
 // document link out of the demo, the demo top bar hosting the R7a banner verbatim, and the static
 // sidebar frame — no workspace item renders and no session/workspace/credits/account read issues.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -43,6 +43,12 @@ import { navigateDocument } from "./dom.js";
 import { inboxQuery, projectHomeQuery, sessionQuery } from "./queries.js";
 
 const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
+
+// R7SHELL.1c (REQ-SHELL-7) — the global palette is a LAZY chunk: the entry graph carries only
+// this binding (`check:spa-entry-graph` denies cmdk + the palette module in entry chunks).
+const GlobalPalette = lazy(() =>
+  import("./palette.js").then((m) => ({ default: m.GlobalPalette })),
+);
 
 /**
  * "Inside the shell already" — states.tsx's boundary components (404/error) consult this so a
@@ -190,6 +196,21 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
   const home = useQuery({ ...projectHomeQuery(), enabled: spaNow });
   const inbox = useQuery({ ...inboxQuery, enabled: spaNow });
 
+  // R7SHELL.1c — ⌘K opens the ONE palette on every signed-in page (the IDE controller
+  // dispatches the same `rhema:palette-open` event for its `palette` action).
+  const [palette, setPalette] = useState<{ open: boolean; initial?: string }>({ open: false });
+  useEffect(() => {
+    const onPaletteOpen = (e: Event) => {
+      const d = (e as CustomEvent<{ toggle?: boolean; initial?: string }>).detail ?? {};
+      setPalette((p) =>
+        d.toggle === true ? { open: !p.open, initial: d.initial } : { open: true, initial: d.initial },
+      );
+    };
+    window.addEventListener("rhema:palette-open", onPaletteOpen);
+    return () => window.removeEventListener("rhema:palette-open", onPaletteOpen);
+  }, []);
+  const closePalette = useCallback(() => setPalette({ open: false }), []);
+
   const toggleSidebar = useCallback(() => {
     setCollapsed((c) => {
       writeCollapsed(userId, !c);
@@ -220,6 +241,11 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
       if (action?.kind === "sidebar") {
         e.preventDefault();
         toggleSidebar();
+      } else if (action?.kind === "palette") {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("rhema:palette-open", {
+          detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
+        }));
       }
     };
     window.addEventListener(SIDEBAR_TOGGLE_EVENT, onToggle);
@@ -230,6 +256,17 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     };
   }, [toggleSidebar]);
 
+  // R7SHELL.1c — the palette's theme rows dispatch `rhema:app-theme` here (the same apply +
+  // fire-and-forget POST as the account menu — the palette itself issues no write).
+  useEffect(() => {
+    const onTheme = (e: Event) => {
+      const pref = (e as CustomEvent<{ pref?: string }>).detail?.pref;
+      if (pref != null) setThemeRef.current?.(pref);
+    };
+    window.addEventListener("rhema:app-theme", onTheme);
+    return () => window.removeEventListener("rhema:app-theme", onTheme);
+  }, []);
+  const setThemeRef = useRef<((pref: string) => void) | null>(null);
   const setTheme = useCallback((pref: string) => {
     const p = parseAppTheme(pref);
     const doc = document.documentElement;
@@ -247,16 +284,18 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
       credentials: "same-origin",
     }).catch(() => undefined);
   }, []);
+  setThemeRef.current = setTheme;
 
   const recents = useMemo(
     () => (home.data?.rows ?? []).filter((r) => r.archivedAt == null).slice(0, 8),
     [home.data],
   );
-  // Search renders ONLY where a palette provider is registered (the IDE palette in project
-  // scope today; the global palette is 228's). No dead control ships.
+  // R7SHELL.1c — the global palette is available on every signed-in page; Search always shows
+  // (project scope is decided inside the palette from the location). `paletteHere` now only
+  // gates the <768 pane-sheet toggle (an IDE-only control).
   const paletteHere = routeId != null && FRAMED.has(routeId);
   const openPalette = useCallback(() => {
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+    window.dispatchEvent(new CustomEvent("rhema:palette-open", { detail: {} }));
   }, []);
   const push = useCallback((href: string) => router.history.push(href), [router]);
   const signOutForm = useRef<HTMLFormElement>(null);
@@ -288,9 +327,7 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
           </button>
           <div className="app-shell-nav" role="group" aria-label={COPY.appShell.frameLabel}>
             <ShellItem hook="data-shell-new-project" href="/app/new" icon={<FilePlus2 size={18} aria-hidden />} label={COPY.appShell.newProject} collapsed={collapsed} />
-            {paletteHere ? (
-              <ShellItem hook="data-shell-search" onClick={openPalette} icon={<Search size={18} aria-hidden />} label={COPY.appShell.search} chord={shortcutFor("palette")} collapsed={collapsed} />
-            ) : null}
+            <ShellItem hook="data-shell-search" onClick={openPalette} icon={<Search size={18} aria-hidden />} label={COPY.appShell.search} chord={shortcutFor("palette")} collapsed={collapsed} />
             <ShellItem hook="data-shell-inbox" href="/app/inbox" icon={<InboxIcon size={18} aria-hidden />} label={COPY.appShell.inbox} badge={inbox.data?.badge ?? null} collapsed={collapsed} current={loc.pathname === "/app/inbox"} />
             <ShellItem hook="data-shell-voices" href="/voices" icon={<Mic size={18} aria-hidden />} label={COPY.appShell.voices} collapsed={collapsed} current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")} />
             <ShellItem hook="data-shell-usage" href="/usage" icon={<Gauge size={18} aria-hidden />} label={COPY.appShell.usage} collapsed={collapsed} current={loc.pathname === "/usage"} />
@@ -372,6 +409,11 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             ) : null}
           </div>
           <div className="app-shell-content">{children}</div>
+          {palette.open ? (
+            <Suspense fallback={null}>
+              <GlobalPalette {...(palette.initial != null ? { initial: palette.initial } : {})} onClose={closePalette} />
+            </Suspense>
+          ) : null}
           {drawerOpen ? (
             <button type="button" className="app-shell-scrim" data-shell-scrim aria-label={COPY.appShell.closeMenu} onClick={() => setDrawerOpen(false)} />
           ) : null}

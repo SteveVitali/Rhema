@@ -43,6 +43,7 @@ export * from "./domain/rates.js";
 export * from "./domain/debit-mode.js";
 export * from "./domain/refund-window.js";
 export * from "./domain/durations.js";
+export * from "./domain/workspace-search.js";
 export * from "./domain/estimate.js";
 
 // P1.16 — the plan ladder + pricing.json publication (§14.2; REQ-GROWTH-4/7/8), the trial entitlement

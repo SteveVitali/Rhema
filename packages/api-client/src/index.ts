@@ -29,6 +29,7 @@ import type {
   UserPrefs,
   NotificationPrefs,
   QuietHours,
+  WorkspaceSearchGroups,
 } from "@rhema/contracts";
 export type {
   AccountSettingsDto,
@@ -2975,6 +2976,13 @@ export interface ApiClient {
     init?: RequestInitLite,
     opts?: { projectId?: string },
   ): Promise<ProjectSearchHitDto[]>;
+  /** R7SHELL.1c — `GET /search?q=&project=` — the global palette's tenant-scoped workspace read:
+   *  grouped hits (projects/drafts/letters/Voices). `projectId` narrows every group to a project. */
+  workspaceSearch(
+    q: string,
+    init?: RequestInitLite,
+    opts?: { projectId?: string },
+  ): Promise<WorkspaceSearchGroups>;
   /** The per-user grouping preference (GET /settings/project-grouping). */
   getProjectGrouping(init?: RequestInitLite): Promise<ProjectGroupByDto>;
   /** Set the per-user grouping preference. */
@@ -5377,6 +5385,15 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       if (opts?.projectId) qs.set("project", opts.projectId);
       const body = await json<{ results: ProjectSearchHitDto[] }>(
         `/projects/search?${qs.toString()}`,
+        { headers: { ...(init?.headers as Record<string, string> | undefined) } },
+      );
+      return body.results;
+    },
+    async workspaceSearch(q, init, opts): Promise<WorkspaceSearchGroups> {
+      const qs = new URLSearchParams({ q });
+      if (opts?.projectId) qs.set("project", opts.projectId);
+      const body = await json<{ results: WorkspaceSearchGroups }>(
+        `/search?${qs.toString()}`,
         { headers: { ...(init?.headers as Record<string, string> | undefined) } },
       );
       return body.results;

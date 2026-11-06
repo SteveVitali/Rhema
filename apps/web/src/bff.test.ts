@@ -2219,7 +2219,7 @@ describe("GET /bff/p/:slug/export — the export twin (SPA.17; REQ-BFF-1/8/9/11,
         dialog: typeof DIALOG;
         project: { title: string; pill: string; slug: string };
         paperTheme: string;
-        ide: { projectId?: string; paletteSearchUrl?: string; themeUrl?: string };
+        ide: { projectId?: string; themeUrl?: string };
       };
     };
     expect(body.export.slug).toBe("the-politics-of-visibility");
@@ -2233,7 +2233,6 @@ describe("GET /bff/p/:slug/export — the export twin (SPA.17; REQ-BFF-1/8/9/11,
     expect(body.export.paperTheme).toBe("light");
     // the chrome publish bag — the ideContext fields the leaf republishes (REQ-SEQ-12).
     expect(body.export.ide.projectId).toBe("proj_pv");
-    expect(body.export.ide.paletteSearchUrl).toBe("/p/the-politics-of-visibility/palette-search");
     expect(body.export.ide.themeUrl).toBe("/ide/theme");
     expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
   });

@@ -523,7 +523,7 @@ export function PageMount(props: PageMountProps): ReactNode {
         const el = document.activeElement as HTMLElement | null;
         const inInput =
           el != null &&
-          (el.closest("[data-ide-palette]") != null ||
+          (el.closest("[data-app-palette]") != null ||
             ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
         // the dispatcher's mod-chord table: ⌘S ⇒ restore-point in every non-input zone.
         return !inInput;

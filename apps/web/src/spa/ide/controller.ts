@@ -26,7 +26,6 @@ import {
   paneDrag,
   paneLayout,
   paneStorageKey,
-  paletteModel,
   parseAppTheme,
   parsePaperTheme,
   parsePaneState,
@@ -38,11 +37,8 @@ import {
   type FocusZone,
   type PaneLayout,
   type PaneState,
-  type PaletteData,
-  type PaletteRow,
   type PaperTheme,
 } from "@rhema/ide";
-import { COPY } from "../../copy.js";
 import { isDemo } from "../demo.js";
 
 const FONT_KEY = "rhema:font:v1";
@@ -77,8 +73,7 @@ export interface IdeChromeControllerOpts {
    * projectId placeholder and rebound mid-mount — the leaf's publish supplies the real projectId.
    */
   readonly ready: boolean;
-  readonly palette?: PaletteData;
-  readonly paletteSearchUrl?: string;
+  /** R7SHELL.1c — the palette moved to the AppShell; ⌘K dispatches `rhema:palette-open`. */
   readonly nav: IdeChromeNav;
 }
 
@@ -113,12 +108,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   const readerStepRef = useRef(0);
   const suggestionNodesRef = useRef<HTMLElement[]>([]);
   const findingIxRef = useRef(-1);
-  const paletteHitsRef = useRef<{ label: string; path: string }[]>([]);
-  const sectionLabelsRef = useRef<Record<string, string>>({});
   // REQ-UX-7 — every overlay remembers its opener; closing returns focus to it (the trigger still
   // in the DOM). The island left focus stranded on hidden rows.
   const menuTriggerRef = useRef<HTMLElement | null>(null);
-  const paletteTriggerRef = useRef<HTMLElement | null>(null);
   const cheatTriggerRef = useRef<HTMLElement | null>(null);
 
   const ideEl = useCallback(
@@ -296,181 +288,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     [ideEl, closeMenus],
   );
 
-  // ---------- the ⌘K palette (§5.12; zero-POST — rows navigate or open the sheet GET) ----------
-  const paletteEl = useCallback(
-    () => ideEl()?.querySelector<HTMLElement>("[data-ide-palette]") ?? null,
-    [ideEl],
-  );
-  const paletteQRef = useRef("");
-  const paletteActiveRef = useRef(0);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const paletteData = useCallback((): PaletteData => {
-    const data = latest.current.palette;
-    return data ? { ...data, projectSlug: latest.current.slug } : { projectSlug: latest.current.slug };
-  }, []);
-
-  const flatPaletteRows = useCallback((): PaletteRow[] => {
-    const model = paletteModel(paletteData(), paletteQRef.current);
-    const rows = model.sections.flatMap((s) => s.rows);
-    return [
-      ...rows,
-      ...paletteHitsRef.current.map((h, i) => ({
-        id: `hit:${i}`,
-        label: h.label,
-        action: { kind: "navigate", path: h.path } as const,
-      })),
-    ];
-  }, [paletteData]);
-
-  const renderPalette = useCallback((): void => {
-    const el = paletteEl();
-    const results = el?.querySelector<HTMLElement>("[data-palette-results]");
-    const empty = el?.querySelector<HTMLElement>("[data-palette-empty]");
-    if (!results) return;
-    const model = paletteModel(paletteData(), paletteQRef.current);
-    results.textContent = "";
-    if (model.commandRow) {
-      const c = model.commandRow;
-      const box = document.createElement("div");
-      box.className = `ide-pal-command${c.ok ? "" : " err"}`;
-      const chips = document.createElement("div");
-      chips.className = "ide-pal-chips";
-      for (const text of c.chips) {
-        const chip = document.createElement("span");
-        chip.className = "ide-pal-chip";
-        chip.textContent = text;
-        chips.appendChild(chip);
-      }
-      if (c.ok && chips.childElementCount === 0) {
-        const chip = document.createElement("span");
-        chip.className = "ide-pal-chip";
-        chip.textContent = c.raw;
-        chips.appendChild(chip);
-      }
-      box.appendChild(chips);
-      if (!c.ok) {
-        const err = document.createElement("p");
-        err.className = "ide-pal-error";
-        err.textContent = c.suggestions?.length
-          ? `${c.error ?? ""} Try: ${c.suggestions.join(", ")}`
-          : (c.error ?? "");
-        box.appendChild(err);
-      } else if (c.resolution?.kind === "disabled") {
-        const err = document.createElement("p");
-        err.className = "ide-pal-error";
-        err.textContent = c.resolution.reason;
-        box.appendChild(err);
-      }
-      results.appendChild(box);
-      empty?.setAttribute("hidden", "");
-      return;
-    }
-    let i = 0;
-    const activate = (index: number): void => {
-      const row = flatPaletteRows()[index];
-      if (!row) return;
-      if (row.action.kind === "sheet" || row.action.kind === "navigate") {
-        // every activation is a GET-side navigation — the palette never launches a run.
-        closePalette();
-        latest.current.nav.push(row.action.path);
-      }
-      // disabled rows sit inert — their reason is the row's hint
-    };
-    const renderRow = (row: PaletteRow, hostEl: HTMLElement): void => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "ide-pal-row";
-      b.toggleAttribute("data-active", i === paletteActiveRef.current);
-      b.setAttribute("role", "option");
-      const label = document.createElement("span");
-      label.textContent = row.label;
-      b.appendChild(label);
-      if (row.pinned) {
-        const pin = document.createElement("span");
-        pin.className = "ide-pal-pinned";
-        pin.textContent = COPY.ide.palette.nextStep;
-        b.appendChild(pin);
-      }
-      if (row.action.kind === "disabled") {
-        b.toggleAttribute("data-disabled", true);
-        b.setAttribute("aria-disabled", "true");
-        const hint = document.createElement("span");
-        hint.className = "ide-pal-hint";
-        hint.textContent = row.action.reason;
-        b.appendChild(hint);
-      } else if (row.hint) {
-        const hint = document.createElement("span");
-        hint.className = "ide-pal-hint";
-        hint.textContent = row.hint;
-        b.appendChild(hint);
-      }
-      const index = i;
-      b.addEventListener("click", () => activate(index));
-      hostEl.appendChild(b);
-      i += 1;
-    };
-    for (const section of model.sections) {
-      const sec = document.createElement("div");
-      const cap = document.createElement("p");
-      cap.className = "ide-pal-section";
-      cap.textContent = sectionLabelsRef.current[section.key] ?? section.label;
-      sec.appendChild(cap);
-      for (const row of section.rows) renderRow(row, sec);
-      results.appendChild(sec);
-    }
-    if (paletteHitsRef.current.length > 0) {
-      const sec = document.createElement("div");
-      const cap = document.createElement("p");
-      cap.className = "ide-pal-section";
-      cap.textContent = sectionLabelsRef.current["goto"] ?? "Go to";
-      sec.appendChild(cap);
-      for (const h of paletteHitsRef.current)
-        renderRow({ id: "", label: h.label, action: { kind: "navigate", path: h.path } }, sec);
-      results.appendChild(sec);
-    }
-    const total = flatPaletteRows().length;
-    if (paletteActiveRef.current >= total) paletteActiveRef.current = Math.max(0, total - 1);
-    if (empty) empty.hidden = total > 0;
-    results.querySelector<HTMLElement>(".ide-pal-row[data-active]")?.scrollIntoView({ block: "nearest" });
-  }, [paletteEl, paletteData, flatPaletteRows]);
-
-  const closePalette = useCallback((): void => {
-    const el = paletteEl();
-    if (el) el.hidden = true;
-    el?.querySelector<HTMLInputElement>("[data-palette-input]")?.blur();
-    const trig = paletteTriggerRef.current;
-    paletteTriggerRef.current = null;
-    const active = document.activeElement;
-    if (trig?.isConnected && (active === document.body || (el != null && el.contains(active)))) {
-      trig.focus();
-    }
-  }, [paletteEl]);
-
-  const openPalette = useCallback(
-    (initial = ""): void => {
-      const el = paletteEl();
-      if (!el) return;
-      paletteTriggerRef.current = document.activeElement as HTMLElement | null;
-      paletteQRef.current = initial;
-      paletteActiveRef.current = 0;
-      paletteHitsRef.current = [];
-      el.hidden = false;
-      const input = el.querySelector<HTMLInputElement>("[data-palette-input]");
-      if (input) {
-        input.value = initial;
-        input.focus();
-        input.setSelectionRange(initial.length, initial.length);
-      }
-      renderPalette();
-    },
-    [paletteEl, renderPalette],
-  );
-  const paletteOpen = useCallback((): boolean => {
-    const el = paletteEl();
-    return el != null && !el.hidden;
-  }, [paletteEl]);
-
   const closeCheat = useCallback((): void => {
     const el = ideEl()?.querySelector<HTMLElement>("[data-ide-cheatsheet]");
     if (el && !el.hidden) {
@@ -583,7 +400,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
   const focusZone = useCallback((): FocusZone => {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return "none";
-    if (el.closest("[data-ide-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
+    if (el.closest("[data-app-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
     if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
     if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
     if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
@@ -689,15 +506,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     apply();
     applyAuthorship();
     applyFont();
-
-    // section labels ride the IdeShell embed — the island read them the same way.
-    const palette = ide.querySelector<HTMLElement>("[data-ide-palette]");
-    try {
-      sectionLabelsRef.current = JSON.parse(palette?.dataset["paletteSections"] ?? "{}") as Record<string, string>;
-    } catch {
-      sectionLabelsRef.current = {};
-    }
-    const paletteSearchUrl = latest.current.paletteSearchUrl ?? `/p/${slug}/palette-search`;
 
     // ---- delegated clicks (React owns the DOM — delegation survives inner re-renders) ----
     const onIdeClick = (e: MouseEvent): void => {
@@ -957,65 +765,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       openCmdMenu(contextMenuItems(n != null ? Number(n) : undefined), e.clientX, e.clientY, "context");
     };
 
-    // ---- palette input listeners ----
-    const paletteInput = palette?.querySelector<HTMLInputElement>("[data-palette-input]");
-    const onPaletteInput = (): void => {
-      if (!paletteInput) return;
-      paletteQRef.current = paletteInput.value;
-      paletteActiveRef.current = 0;
-      renderPalette();
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-      const q = paletteQRef.current.trim();
-      if (q && !q.startsWith("/") && paletteSearchUrl) {
-        searchTimerRef.current = setTimeout(() => {
-          void fetch(`${paletteSearchUrl}?q=${encodeURIComponent(q)}`, { credentials: "same-origin" })
-            .then((r) => (r.ok ? r.json() : { results: [] }))
-            .then((body: { results?: { label: string; path: string }[] }) => {
-              paletteHitsRef.current = body.results ?? [];
-              renderPalette();
-            })
-            .catch(() => undefined);
-        }, 180);
-      } else if (paletteHitsRef.current.length > 0) {
-        paletteHitsRef.current = [];
-        renderPalette();
-      }
-    };
-    const onPaletteKeydown = (e: KeyboardEvent): void => {
-      const rows = flatPaletteRows();
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        paletteActiveRef.current = Math.min(rows.length - 1, paletteActiveRef.current + 1);
-        renderPalette();
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        paletteActiveRef.current = Math.max(0, paletteActiveRef.current - 1);
-        renderPalette();
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const model = paletteModel(paletteData(), paletteQRef.current);
-        if (model.mode === "command") {
-          const r = model.commandRow?.resolution;
-          if (r && (r.kind === "sheet" || r.kind === "navigate")) {
-            closePalette();
-            latest.current.nav.push(r.path);
-          }
-        } else {
-          const row = flatPaletteRows()[paletteActiveRef.current];
-          if (row && (row.action.kind === "sheet" || row.action.kind === "navigate")) {
-            closePalette();
-            latest.current.nav.push(row.action.path);
-          }
-        }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        closePalette();
-      }
-    };
-    const onPaletteBackdrop = (e: MouseEvent): void => {
-      if (e.target === palette) closePalette();
-    };
     const onCheatBackdrop = (e: MouseEvent): void => {
       const el = ide.querySelector<HTMLElement>("[data-ide-cheatsheet]");
       if (e.target === el) closeCheat();
@@ -1040,16 +789,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
 
     // ---- the §5.12 keymap dispatcher ----
     const onKeydown = (e: KeyboardEvent): void => {
-      if (paletteOpen()) {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-          e.preventDefault();
-          closePalette();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          closePalette();
-        }
-        return;
-      }
+      if (e.defaultPrevented) return;
       const action = dispatchIdeKey(
         {
           key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
@@ -1086,8 +826,12 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const { nav } = latest.current;
       switch (action.kind) {
         case "palette":
+          // R7SHELL.1c — the one global palette lives in the AppShell; the IDE's local
+          // commands ride its embedded `data-palette` JSON (REQ-SHELL-7).
           e.preventDefault();
-          openPalette(e.key === "/" ? "/" : "");
+          window.dispatchEvent(new CustomEvent("rhema:palette-open", {
+            detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
+          }));
           break;
         case "pane":
           e.preventDefault();
@@ -1163,7 +907,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           const link = document.querySelector<HTMLAnchorElement>("[data-compare-previous]");
           const href = link?.getAttribute("href");
           if (href) nav.push(href);
-          else openPalette("/compare ");
+          else
+            window.dispatchEvent(new CustomEvent("rhema:palette-open", {
+              detail: { initial: "/compare " },
+            }));
           break;
         }
         case "triage": {
@@ -1274,9 +1021,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     ide.addEventListener("pointerdown", onPointerDown);
     ide.addEventListener("contextmenu", onContextMenu);
     ide.addEventListener("click", onCheatBackdrop);
-    palette?.addEventListener("click", onPaletteBackdrop);
-    paletteInput?.addEventListener("input", onPaletteInput);
-    paletteInput?.addEventListener("keydown", onPaletteKeydown);
     document.addEventListener("click", onDocClick);
     document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("mouseup", onDocMouseUp);
@@ -1289,9 +1033,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       ide.removeEventListener("pointerdown", onPointerDown);
       ide.removeEventListener("contextmenu", onContextMenu);
       ide.removeEventListener("click", onCheatBackdrop);
-      palette?.removeEventListener("click", onPaletteBackdrop);
-      paletteInput?.removeEventListener("input", onPaletteInput);
-      paletteInput?.removeEventListener("keydown", onPaletteKeydown);
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("mouseup", onDocMouseUp);
@@ -1302,7 +1043,6 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       window.removeEventListener("resize", onResize);
       mq?.removeEventListener?.("change", onThemeChange);
       if (selTimer) clearTimeout(selTimer);
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       closeCmdMenu();
     };
   }, [ideEl, storageKey, ready, opts.slug]);

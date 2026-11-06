@@ -80,13 +80,10 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
     "data-ide-timeline-toggle",
     "data-ide-cheatsheet",
     "data-ide-cheatsheet-close",
-    "data-ide-palette",
+    // R7SHELL.1c — `data-palette` moved onto `.ide` (the AppShell palette's local-command
+    // embed); the dialog's own hooks (input/results/empty/…) are emitted by spa/palette.tsx
+    // and asserted in spa/palette.dom.test.tsx.
     "data-palette",
-    "data-palette-sections",
-    "data-palette-search",
-    "data-palette-input",
-    "data-palette-results",
-    "data-palette-empty",
     "data-theme-url",
     "data-paper-url",
     "data-paper-theme",
@@ -128,7 +125,6 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
       projectId="p1"
       themeUrl="/p/demo/ide/theme"
       paperThemeUrl="/p/demo/ide/paper-theme"
-      paletteSearchUrl="/p/demo/ide/palette-search"
       palette={JSON.stringify({ commands: [] })}
       activeRun={{ runId: "run_1", state: "running" }}
       runNextHref="/p/demo/r/run_1"
