@@ -71,7 +71,9 @@
 - CI (`logs/ci-R7WRITE.1a.json`): first read FAIL `typecheck / lint / unit` — `linkCommand`
   unused import in `format-commands.test.ts` → fixed `6546f595`; second read FAIL —
   `document` is not defined in the server tsconfig (`page-chrome.tsx`'s `selectSourceToggle`)
-  → the DOM seam moved back to leaf `onEditSource` opts `c80340aa`; third read below.
+  → the DOM seam moved back to leaf `onEditSource` opts `c80340aa`; third read FAIL —
+  `Element.click` needs the `HTMLElement` cast `01fb82d9`; **fourth read PASS #275@`01fb82d`**
+  (run 42225507586 — all seven legs + `ci-pass` anchor).
 
 ## AC gap table (Stage A posture)
 
