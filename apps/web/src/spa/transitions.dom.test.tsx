@@ -116,7 +116,6 @@ const reportTwin = (slug: string): BffRunReportTwin =>
     ide: { projectId: `proj_${slug}`, inboxCount: 0, feed: FEED_SLICE },
   }) as unknown as BffRunReportTwin;
 
-const NEW_PROJECT_TWIN = { newProject: { protocols: [], voices: [] } };
 
 // ---- the fetch stub + the mount harness (the surface-test grammar) --------------------------------
 
@@ -147,7 +146,7 @@ function makeFetch() {
     if (path === `/bff/p/${SLUG_B}`) return jsonResponse(200, pageTwin(SLUG_B, "proj_beta", "d_b3"));
     if (path === `/bff/p/${SLUG_A}/r/${RUN}`) return jsonResponse(200, reportTwin(SLUG_A));
     if (path === `/bff/p/${SLUG_B}/r/${RUN}`) return jsonResponse(200, reportTwin(SLUG_B));
-    if (path === "/bff/app/new") return jsonResponse(200, NEW_PROJECT_TWIN);
+    if (path === "/bff/app/inbox") return jsonResponse(200, { items: [], badge: 0, gateCards: {} });
     return jsonResponse(500, { error: `unstubbed_path:${path}` });
   });
   return { impl, gets, posts };
@@ -255,7 +254,7 @@ const mounted: Root[] = [];
 const ALL_SPA = {
   "/p/$project": "spa",
   "/p/$project/r/$runId": "spa",
-  "/app/new": "spa",
+  "/app/inbox": "spa",
 } as const;
 
 function bootFor(): SpaBoot {
@@ -361,7 +360,7 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
 
     // Leave to an unframed leaf — the entry parks idle inside the keep-alive window and the
     // stamp leaves with the DOM (the root subtree is gone).
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     expect(main()!.querySelector("[data-page-root]")).toBeNull();
     expect(pageSessionRegistry.entry("d_a7")?.refs).toBe(0);
     expect(pageSessionRegistry.entry("d_a7")?.sessionId).toBe(stamp); // still the SAME entry
@@ -388,7 +387,7 @@ describe("REQ-NAVC-22 — the page-session registry across real router hops", ()
     // the parity invariant is monotone: each landing adds GETs, none are ever absorbed by cache.
     const afterFirstLanding = reads();
     expect(afterFirstLanding).toBeGreaterThanOrEqual(1);
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     await nav(router, `/p/${SLUG_A}/r/${RUN}`);
     // REQ-NAVC-18 compensate-by-refetch: every mount re-fires the twin GET — the read-receipt
     // leg (`markInboxRunRead` + view telemetry) sees a landing per open, document-nav parity.
@@ -459,7 +458,7 @@ describe("REQ-NAVC-22 — listeners, timers, and the one EventSource", () => {
     expect(intervalsWhileMounted).toBeGreaterThanOrEqual(1); // lock poll + dwell heartbeat
     // leave → every LEAF-owned listener and interval retracts; the two per-boot singletons are
     // the only survivors (named explicitly — anything else left over IS a leak).
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     const afterLeave = netSince(baseline);
     expect(afterLeave).toEqual({
       "window:keydown": 1,        // R7SHELL.1a — the AppShell's `[`/`]` arm — per-boot lifetime
@@ -483,7 +482,7 @@ describe("REQ-NAVC-22 — listeners, timers, and the one EventSource", () => {
     expect(live()[0]!.url).toContain("?after=41");
 
     // a leaf swap closes the tail before the next leaf settles — zero live in between hops.
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     expect(live().length).toBe(0);
     expect(FakeEventSource.instances[0]!.closed).toBe(true);
 
@@ -502,7 +501,7 @@ describe("REQ-NAVC-20 — per-document boot + the document-level stamps", () => 
     const boot = bootFor();
     const { router } = await mountAt(`/p/${SLUG_A}`, boot, f.impl);
     expect(getSpaBoot()).toBe(boot);
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     expect(getSpaBoot()).toBe(boot);
     await nav(router, `/p/${SLUG_B}/r/${RUN}`);
     expect(getSpaBoot()).toBe(boot);
@@ -519,7 +518,7 @@ describe("REQ-NAVC-20 — per-document boot + the document-level stamps", () => 
     await nav(router, `/p/${SLUG_B}`);
     expect(document.documentElement.getAttribute("data-project")).toBe(SLUG_B);
     // outside /p/:slug space the attr leaves entirely — the SSR parity answer.
-    await nav(router, "/app/new");
+    await nav(router, "/app/inbox");
     expect(document.documentElement.getAttribute("data-project")).toBeNull();
   });
 });

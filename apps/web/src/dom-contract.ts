@@ -403,7 +403,6 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-voice-picker", "conditional", "spa/surfaces/settings.tsx", "persona select + pin hatches"),
     a("data-register-pick", "conditional", "spa/surfaces/settings.tsx", "ONE register pick on a multi-register voice"),
     a("data-adopt-voice", "conditional", "spa/surfaces/settings.tsx", "stale-pin adopt hatch"),
-    a("data-approval-opt-in", "conditional", "spa/surfaces/settings.tsx", "approve_triage 24-h opt-in form"),
     n("register", "conditional", "spa/surfaces/settings.tsx register select"),
     n("approve_triage_24h", "conditional", "spa/surfaces/settings.tsx opt-in checkbox"),
     a("data-notification-matrix", "conditional", "pages.tsx"),

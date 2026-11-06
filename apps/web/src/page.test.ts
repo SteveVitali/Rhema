@@ -311,8 +311,8 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR phone arm —
     const html = await res.text();
     expect(html).toContain('data-page-mount="working"');
     expect(html).toContain('data-page-root="1"');
-    // the Edit CTA points at the Page route, not the dormant CodeMirror surface
-    expect(html).toContain('href="/p/the-piece/v/working"');
+    // R7HOME.2b — there is no Edit CTA: the overview IS the head draft's Page (REQ-HOME-2).
+    expect(html).not.toContain('href="/p/the-piece/v/working"');
   });
 
   it("the status bar carries the server-computed meters", async () => {
