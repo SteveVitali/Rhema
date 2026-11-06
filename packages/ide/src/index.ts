@@ -28,8 +28,11 @@ export type { DisclosureTier } from "./disclosure.js";
 export { feedTabForContractDensity, feedRowVisible, formatFeedRow } from "./feed-row.js";
 export type { FeedDensityTab, FeedLabelMaps } from "./feed-row.js";
 // P1.06 — the §5.12 keymap dispatcher + the ⌘K palette model (REQ-IDE-49, REQ-CHAT-28).
-export { dispatchIdeKey, CHEAT_SHEET } from "./keymap.js";
-export type { FocusZone, KeyChord, IdeAction } from "./keymap.js";
+// R7SHELL.1a (REQ-KEYS-1) — the binding table + the reserved-chords checker the map is pinned by.
+export { dispatchIdeKey, CHEAT_SHEET, IDE_KEYMAP, shortcutFor } from "./keymap.js";
+export type { FocusZone, KeyChord, IdeAction, IdeBinding } from "./keymap.js";
+export { RESERVED_CHORDS, canonicalChord, checkChord, chordViolations } from "./reserved-chords.js";
+export type { ChordSpec, ChordVerdict, ChordViolation, ReservedChords } from "./reserved-chords.js";
 export { buildPalette, paletteModel, commandForVerb } from "./palette.js";
 export type { PaletteData, PaletteModel, PaletteRow, PaletteSection, PaletteTarget, CommandRowModel } from "./palette.js";
 // P1.06 — the selection popover + the Timeline context-menu item models (§7.4; REQ-CHAT-22).

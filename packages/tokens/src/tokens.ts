@@ -266,6 +266,10 @@ export const LAYOUT = {
   timelineSnapPx: [280, 320, 400] as const,
   deskHeightPx: 280,
   statusBarPx: 28,
+  /** R7SHELL.1a (REQ-SHELL-1/6; ADR-128) — the persistent AppShell sidebar + narrow-desktop bar. */
+  sidebarExpandedPx: 248,
+  sidebarCollapsedPx: 56,
+  topBarPx: 48,
   /** Yield-order breakpoints (§5.1). */
   bpFilesTicksMarginPx: 1600, // Files open below this ⇒ Margin collapses to ticks; Timeline → overlay
   bpNarrowPx: 1280, // below: Margin → ticks, Timeline → overlay (regardless of Files)

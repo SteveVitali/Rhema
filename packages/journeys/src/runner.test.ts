@@ -90,7 +90,14 @@ describe("runJourneys — the expected-flag semantics", () => {
     const r = await run(steps, ALL_IMPLS);
     for (const res of r.results) {
       expect(res.outcome, res.id).toBe("owed");
-      expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
+      // R7SHELL.1a authored the real U1.shell body while the row stays red — a held authored
+      // leg's error is its own offline failure, never the stub signature; the nightly still
+      // classifies it `owed` (the row cannot re-redden or go green silently).
+      if (res.id !== "U1.shell") {
+        expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
+      } else {
+        expect(res.error, res.id).toBeTruthy();
+      }
     }
     expect(r.passed).toBe(true); // owed is a debt report, never a run failure
   });

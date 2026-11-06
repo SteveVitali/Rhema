@@ -156,8 +156,13 @@ export function ideCss(): string {
     // Below ~768: the phone layout — reader-only Page; the other regions hide. P1.19 (§10.1): the
     // §10.1 input set the regions carried re-mounts INSIDE the Page — elements stamped
     // `ide-phone-only` render only at this width (the compact chat surface is the one today).
+    // R7SHELL.1a (REQ-SHELL-6; F4, UXC-21) — the CSS-phone hiding now scopes to documents that
+    // are NOT hosted inside the AppShell (the SSR island documents — the phone reader, S-5). A
+    // narrow DESKTOP window hosts `.ide` inside the shell (`data-ide-hosted`), where the panes
+    // open as sheets from the top bar instead of being hidden — the hosted rules live in the
+    // AppShell block below.
     `@media (max-width: ${B.bpPhonePx - 1}px) {`,
-    "  .ide .ide-rail, .ide .ide-files, .ide .ide-timeline, .ide .ide-desk, .ide .ide-margin, .ide .ide-statusbar { display: none !important; }",
+    "  .ide:not([data-ide-hosted]) .ide-rail, .ide:not([data-ide-hosted]) .ide-files, .ide:not([data-ide-hosted]) .ide-timeline, .ide:not([data-ide-hosted]) .ide-desk, .ide:not([data-ide-hosted]) .ide-margin, .ide:not([data-ide-hosted]) .ide-statusbar { display: none !important; }",
     "  .ide .ide-page { padding: 0; }",
     "  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }",
     "  .ide-phonebar { display: flex !important; }",
@@ -337,5 +342,56 @@ export function ideCss(): string {
     ".rm-page-host .ProseMirror-gapcursor { position: relative; }",
     ".rm-page-host .ProseMirror-selectednode { outline: 2px solid var(--accent); }",
     ".rm-page-host .ProseMirror-hideselection *::selection { background: transparent; }",
+
+    // ---- R7SHELL.1a (REQ-SHELL-1/2/6; ADR-128) — the AppShell: persistent left sidebar, the
+    // <768 top bar + drawer, and the hosted-IDE adjustments (rail/phonebar suppressed; panes
+    // become sheets under the top bar instead of the CSS-phone hiding). ----
+    ".app-shell { display: flex; height: 100vh; height: 100dvh; overflow: hidden; background: var(--shell-bg); color: var(--shell-fg); font-family: var(--font-shell); }",
+    `.app-shell-sidebar { flex: 0 0 ${B.sidebarExpandedPx}px; width: ${B.sidebarExpandedPx}px; display: flex; flex-direction: column; background: var(--shell-surface); border-right: 1px solid var(--shell-border); z-index: 30; overflow-y: auto; }`,
+    `.app-shell[data-sidebar='collapsed'] .app-shell-sidebar { flex-basis: ${B.sidebarCollapsedPx}px; width: ${B.sidebarCollapsedPx}px; }`,
+    ".app-shell[data-sidebar='collapsed'] .app-shell-label, .app-shell[data-sidebar='collapsed'] .app-shell-recents, .app-shell[data-sidebar='collapsed'] .app-shell-credits { display: none; }",
+    ".app-shell-wordmark { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s3) var(--s2); font-size: var(--fs-lead, 16px); font-weight: 600; color: var(--shell-fg); text-decoration: none; }",
+    ".app-shell-wordmark:hover { color: var(--accent); }",
+    ".app-shell-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 var(--s2); }",
+    ".app-shell-item { display: flex; align-items: center; gap: var(--s2); min-height: 32px; padding: 0 var(--s2); border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); font-size: var(--fs-dense, 13px); font-family: var(--font-shell); text-decoration: none; cursor: pointer; }",
+    ".app-shell-item:hover { background: var(--shell-raised); color: var(--shell-fg); }",
+    ".app-shell-item[aria-current] { color: var(--shell-fg); background: var(--shell-raised); }",
+    ".app-shell-item svg { flex: 0 0 18px; }",
+    ".app-shell-section { padding: var(--s3) var(--s3) var(--s1); font-size: var(--fs-caption, 11px); text-transform: uppercase; letter-spacing: 0.04em; color: var(--shell-fg-faint); }",
+    ".app-shell-recent { display: flex; align-items: center; gap: var(--s2); }",
+    ".app-shell-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--shell-fg-faint); }",
+    ".app-shell-dot[data-tone='needs_you'], .app-shell-dot[data-tone='error'] { background: var(--state-needs-you); }",
+    ".app-shell-dot[data-tone='running'] { background: var(--accent); }",
+    ".app-shell-dot[data-tone='ready_to_read'] { background: var(--state-ok, #4a8); }",
+    ".app-shell-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }",
+    ".app-shell-spacer { flex: 1; }",
+    ".app-shell-account { display: flex; align-items: center; gap: var(--s2); margin: var(--s2); padding: var(--s2); border: 1px solid var(--shell-border); border-radius: var(--radius-2); background: none; color: var(--shell-fg); font-family: var(--font-shell); font-size: var(--fs-dense, 13px); cursor: pointer; }",
+    ".app-shell-avatar { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--shell-bg); font-size: 11px; font-weight: 700; }",
+    ".app-shell-credits { color: var(--shell-fg-muted); font-variant-numeric: tabular-nums; }",
+    ".app-shell-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }",
+    ".app-shell-content { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; position: relative; }",
+    ".app-shell .ide { height: auto; flex: 1; min-height: 0; }",
+    ".app-shell-topbar { display: none; }",
+    ".app-shell-scrim { display: none; }",
+    ".app-shell-demo-bar { flex: 0 0 auto; }",
+    // The hosted IDE: the global rail is the sidebar's job (REQ-IDE-2 amended — UXC-10); the
+    // phonebar is the shell top bar's. Suppression is DOM-level (the elements are never mounted
+    // when hosted), so no capability hiding remains.
+    ".ide[data-ide-hosted] .ide-rail, .ide[data-ide-hosted] .ide-phonebar { display: none !important; }",
+    // <768 (desktop UA): off-canvas drawer behind a 48-px top bar; the IDE's side panes open as
+    // full-height sheets — the CSS-phone `display:none` hiding is replaced (REQ-SHELL-6).
+    `@media (max-width: ${B.bpPhonePx - 1}px) {`,
+    `  .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
+    "  .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
+    "  .app-shell-topbar button:hover { background: var(--shell-raised); color: var(--shell-fg); }",
+    `  .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; box-shadow: none; }`,
+    "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    "  .app-shell[data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
+    "  .app-shell-content { padding-top: 0; }",
+    `  .ide[data-ide-hosted] .ide-timeline[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--timeline-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
+    `  .ide[data-ide-hosted][data-files='open'] .ide-files { position: absolute; left: 0; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
+    "  .ide[data-ide-hosted][data-desk='open'] .ide-desk { position: absolute; left: 0; right: 0; top: 0; bottom: 0; height: 100%; z-index: 20; }",
+    "  .ide[data-ide-hosted] .ide-page { padding: 0; }",
+    "}",
   ].join("\n");
 }

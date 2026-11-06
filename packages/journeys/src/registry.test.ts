@@ -127,6 +127,11 @@ describe("the journey step registry", () => {
       "U4.controls": "R7KIT.3e", "U5.write": "R7WRITE.1b", "U6.chat": "R7TALK.1a",
       "U7.import": "R7HOME.2a",
     };
+    // R7SHELL.1a authored the real `U1.shell` body while the row stays `expected:"red"` (the
+    // ticket's held `ready-to-flip` disposition — 250 flips it). An authored body is no longer
+    // an owed stub, so it rejects with its own offline failure rather than the stub signature;
+    // the remaining R7 legs still carry the wired stub and must fail owed-loudly verbatim.
+    const AUTHORED_HELD = new Set(["U1.shell"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();
@@ -134,9 +139,13 @@ describe("the journey step registry", () => {
       expect(s!.paid, id).toBe(false);
       expect(s!.capUsd, id).toBeUndefined();
       expect(s!.owner, id).toBe(OWNERS[id]);
-      await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
-        `${id} owed — owner ${OWNERS[id]}`,
-      );
+      if (AUTHORED_HELD.has(id)) {
+        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow();
+      } else {
+        await expect(ALL_IMPLS[id]!({} as never), id).rejects.toThrow(
+          `${id} owed — owner ${OWNERS[id]}`,
+        );
+      }
     }
     // no round-7 leg silently became a paid row (the weekly cron would sweep it in).
     const r7paid = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id) && s.paid);

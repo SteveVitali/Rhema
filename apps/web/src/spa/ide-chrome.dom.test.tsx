@@ -294,6 +294,7 @@ describe("REQ-TST-2 — manifest parity with the SSR twin", () => {
   it("every ide-chrome hook the SSR IdeShell emits is emitted by the mounted React chrome", async () => {
     const ssrMarkup = renderToStaticMarkup(
       <IdeShell
+        hosted
         project={{ slug: "alpha", title: "Alpha" }}
         userId="u1"
         projectId="p-alpha"
@@ -323,10 +324,12 @@ describe("REQ-TST-2 — manifest parity with the SSR twin", () => {
 });
 
 describe("panes + the verbatim pane codec (REQ-ISL-9, REQ-SEQ-11)", () => {
-  it("⌘1 collapses Files and persists rhema:panes:v1:u1:p-alpha", async () => {
+  // R7SHELL.1a (REQ-KEYS-1) — ⌘1 is retired (Rule 2's number-key row); the pointer path is
+  // the pane's own toggle — the persisted token set is unchanged.
+  it("the Files toggle collapses Files and persists rhema:panes:v1:u1:p-alpha", async () => {
     await mount();
     expect(ide()?.dataset["files"]).toBe("strip"); // filesOpen=false ⇒ the collapsed strip
-    key({ key: "1", metaKey: true });
+    click(document.querySelector("[data-ide-files-toggle]"));
     expect(ide()?.dataset["files"]).toBe("open");
     const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
     expect(raw).not.toBeNull();
@@ -414,7 +417,7 @@ describe("R7FIX.1 — the pane stopgap (REQ-PANE-0)", () => {
     key({ key: "Escape" });
     expect(ide()?.dataset["timeline"]).toBe("closed");
     // reopen, then an outside click (the scrim) closes it too.
-    key({ key: "2", metaKey: true });
+    key({ key: "]" });
     expect(ide()?.dataset["timeline"]).toBe("open");
     act(() => {
       document.querySelector<HTMLElement>("[data-ide-scrim]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -845,30 +848,32 @@ describe("NAVC.4 — native hash hops + the scroll-preserving navs (REQ-NAVM-10,
     expect(document.querySelector("[data-selected='true']")).toBeNull();
   });
 
-  it("`[`/`]` version stepping commits through navigate({resetScroll:false}) — never a scroll reset (REQ-NAVC-16)", async () => {
+  // R7SHELL.1a (REQ-KEYS-1) — version stepping moved to the provisional ⌥-bracket pair;
+  // bare `[`/`]` now own the sidebar and the right-side pane.
+  it("`⌥[`/`⌥]` version stepping commits through navigate({resetScroll:false}) — never a scroll reset (REQ-NAVC-16)", async () => {
     // the `/v/$v` leaf must carry a "spa" verdict or the layout mounts it unframed (no chrome).
     const { router } = await mount("/p/alpha/v/3", {
       boot: bootFor({ "/p/$project/v/$v": "spa" }),
     });
     const navSpy = vi.spyOn(router, "navigate");
-    key({ key: "[" });
+    key({ key: "[", altKey: true });
     await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/2"));
     expect(navSpy).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/p/alpha/v/2", resetScroll: false }),
     );
     navSpy.mockClear();
-    key({ key: "]" });
+    key({ key: "]", altKey: true });
     await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/3"));
     expect(navSpy).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/p/alpha/v/3", resetScroll: false }),
     );
   });
 
-  it("`[`/`]` are inert off a /v/:n path — no malformed nav", async () => {
+  it("`⌥[`/`⌥]` are inert off a /v/:n path — no malformed nav", async () => {
     const { router } = await mount("/p/alpha");
     const navSpy = vi.spyOn(router, "navigate");
-    key({ key: "[" });
-    key({ key: "]" });
+    key({ key: "[", altKey: true });
+    key({ key: "]", altKey: true });
     expect(navSpy).not.toHaveBeenCalled();
     expect(router.state.location.pathname).toBe("/p/alpha");
   });
