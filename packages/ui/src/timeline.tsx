@@ -31,6 +31,14 @@ export interface TimelineViewWire {
      *  else the per-phase prior — identical to the run sheet's figure). */
     readonly duration?: { readonly lowMinutes: number; readonly highMinutes: number } | null;
     readonly headDraftN: number | null;
+    /**
+     * R7HOME.2b (REQ-HOME-2) — the card is dismissible per user per project: `true` ⇒ the card
+     *  stays hidden; `dismissAction` is the dismiss form's POST target (server-authored).
+     */
+    readonly dismissed?: boolean;
+    readonly dismissAction?: string;
+    /** the dismiss control's accessible label + tooltip (app copy, never a literal here). */
+    readonly dismissLabel?: string;
   };
   readonly rounds: readonly TimelineRoundWire[];
   readonly ungrouped: readonly TimelineRun[];
@@ -221,8 +229,11 @@ export function TimelinePane({
           ))}
         </div>
       ) : null}
-      {/* the next-step card (§5.5 — above the newest round) */}
-      {next.verb !== "none" ? (
+      {/* the next-step card (§5.5 — above the newest round). R7HOME.2b (REQ-HOME-2): it lives
+          here in the Timeline tab and is dismissible per user per project — the dismiss is a
+          plain form POST (the delegated submit re-issues it as JSON) to the server-authored
+          `dismissAction`; a dismissed card never renders. */}
+      {next.verb !== "none" && next.dismissed !== true ? (
         <div
           data-next-step={next.verb}
           style={{
@@ -233,6 +244,23 @@ export function TimelinePane({
             background: "var(--shell-raised)",
           }}
         >
+          {next.dismissAction ? (
+            <form
+              method="post"
+              action={next.dismissAction}
+              data-next-step-dismiss="true"
+              style={{ float: "right", margin: 0 }}
+            >
+              <button
+                type="submit"
+                aria-label={next.dismissLabel ?? "Dismiss"}
+                title={next.dismissLabel ?? "Dismiss"}
+                style={{ background: "none", border: "none", padding: "0 0 0 8px", color: "var(--shell-fg-faint)", cursor: "pointer", fontSize: "14px", lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </form>
+          ) : null}
           {hrefs?.nextStep ? (
             <a href={hrefs.nextStep} style={{ fontWeight: 600, color: "var(--shell-fg)" }}>
               {nextLabel}

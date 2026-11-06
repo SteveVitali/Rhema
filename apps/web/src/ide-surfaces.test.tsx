@@ -57,6 +57,20 @@ function makeDeps(dataSource: Partial<DataSource> = {}): WebDeps {
       listDecisions: async () => [],
       getApprovalOverrides: async () => ({}),
       getPretriage: async () => ({ triaged: 0, total: 0 }),
+      // R7HOME.2b — the head draft's doc so `/p/:slug` mounts the working Page (REQ-HOME-2).
+      getEditorDoc: async () => ({
+        draftId: "d_1",
+        draftN: 1,
+        origin: "human_revision",
+        state: "working",
+        baseDraftId: null,
+        baseDraftN: null,
+        markdown: "# Hello\n\nA paragraph.\n",
+        sha256: "s",
+        lock: null,
+        findings: [],
+        provenance: {},
+      }),
       ...dataSource,
     },
     session: () => ({}),
@@ -134,28 +148,19 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
   });
 });
 
-describe("UX.2 — /app/new is a workspace surface (ADR-065)", () => {
-  it("SPA.27 — serves the SPA shell at desktop: the SSR workspace sheet is deleted", async () => {
+describe("R7HOME.2b — GET /app/new is a server redirect (the sheet is retired; a GET never creates)", () => {
+  it("the desktop document GET answers 302 → /app", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/app/new");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // the SSR workspace sheet is gone — the shell answers and the onboarding leaf renders the
-    // styled Shell (the ADR-065 "never IdeFrame markup" surface is covered by the leaf's dom test).
-    expect(html).toContain('data-renderer="spa"');
-    expect(html).toContain('<div id="spa-root" data-spa-root></div>');
-    expect(html).not.toContain('data-ide="1"');
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app");
   });
 
-  it("SPA.27 — the phone request still answers the shell; the §10.1 withhold moved to the leaf (boot deviceClass)", async () => {
+  it("the phone request answers the same redirect — the create path is uniform", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/app/new", MOBILE);
-    const html = await res.text();
-    // /app/new is not a pageMount route, so no forced-SSR arm fires — the leaf reads
-    // `deviceClass: "phone"` off the boot payload and renders the blocked note itself.
-    expect(res.status).toBe(200);
-    expect(html).toContain('data-renderer="spa"');
-    expect(html).toContain('data-device="phone"');
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app");
   });
 });
 
@@ -166,8 +171,10 @@ describe("UX.2 — the phone project page (REQ-MOBILE-3 amended)", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('class="ide-actions"');
-    // the reader link survives — every §10.1 ✗ affordance stays absent.
-    expect(html).toContain('data-edit-source="true"');
+    // R7HOME.2b — "Edit source" is gone everywhere (the mounted Page IS the head draft); the
+    // phone reader keeps the Page mount while every §10.1 ✗ affordance stays absent.
+    expect(html).toContain('data-page-mount="working"');
+    expect(html).not.toContain('data-edit-source');
     expect(html).not.toContain('href="/p/seed-essay/import"');
     expect(html).not.toContain('href="/p/seed-essay/run"');
     expect(html).not.toContain('href="/p/seed-essay/export"');

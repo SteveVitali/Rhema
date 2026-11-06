@@ -302,6 +302,55 @@ describe("GET /projects/:id/outline — the editor DTO", () => {
   });
 });
 
+describe("REQ-HOME-6 (R7HOME.2b, G5) — one 'outline exists' source", () => {
+  it("a kind='outline' artifact at a non-author mirror path is the outline — route and Files tree agree", async () => {
+    // the uploaded-outline home (`mirror_path = 'outline.md'`): the Files tree lists it (its
+    // `kind='outline'` row) while the OLD route's `agents/author/outline/%` scan answered 404 —
+    // the disagreement this ticket removes.
+    await seedMirrorFile("outline.md", "outline", "# Uploaded outline\n\n- one\n- two\n", "up_outline");
+    const res = await get(`/projects/${seed.projectId}/outline`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as { artifactId: string; slug: string | null; mirrorPath: string };
+    expect(dto.mirrorPath).toBe("outline.md");
+    // slug-less outside the author-outline namespace — saves resolve it by recency.
+    expect(dto.slug).toBeNull();
+    // the Files tree's own read lists the same artifact (one source, never a disagreement).
+    const files = await get(`/projects/${seed.projectId}/files`);
+    expect(files.status).toBe(200);
+    const filesDto = (await files.json()) as {
+      sections?: { rows?: { artifactId?: string }[]; advancedRows?: { artifactId?: string }[] }[];
+    };
+    const flat = (filesDto.sections ?? []).flatMap((s) => [
+      ...(s.rows ?? []),
+      ...(s.advancedRows ?? []),
+    ]);
+    expect(flat.some((i) => i.artifactId === dto.artifactId)).toBe(true);
+  });
+
+  it("the reverse direction agrees too: NO kind='outline' row → the route 404s even when author-namespace bytes exist", async () => {
+    // a non-outline artifact under the author namespace must not conjure an outline — the route
+    // keys on `kind`, the same fact the tree lists.
+    await seedMirrorFile("agents/author/outline/stale.md", "note", "# stale\n", "stale_note");
+    expect((await get(`/projects/${seed.projectId}/outline`)).status).toBe(404);
+  });
+
+  it("the newest outline wins across both namespaces; a named slug still resolves verbatim", async () => {
+    await seedOutlineArtifact("the-piece");
+    // a NEWER uploaded outline outranks the older author one (created_at desc).
+    await new Promise((r) => setTimeout(r, 5));
+    await seedMirrorFile("outline.md", "outline", "# Newer outline\n", "newer_outline");
+    const res = await get(`/projects/${seed.projectId}/outline`);
+    const dto = (await res.json()) as { mirrorPath: string; slug: string | null };
+    expect(dto.mirrorPath).toBe("outline.md");
+    expect(dto.slug).toBeNull();
+    const named = await get(`/projects/${seed.projectId}/outline?slug=the-piece`);
+    const namedDto = (await named.json()) as { mirrorPath: string; slug: string | null };
+    expect(named.status).toBe(200);
+    expect(namedDto.mirrorPath).toBe("agents/author/outline/the-piece.md");
+    expect(namedDto.slug).toBe("the-piece");
+  });
+});
+
 describe("PATCH /projects/:id/outline — the autosave's version pair", () => {
   it("a structured `edit` delta applies through the shared gate-edit apply", async () => {
     await seedOutlineArtifact("the-piece");

@@ -2476,6 +2476,10 @@ export interface TimelineNextStepDto {
   readonly label: string | null;
   readonly estimateCredits: number | null;
   readonly headDraftN: number | null;
+  /** R7HOME.2b (REQ-HOME-2) — web-side dismissal fields (never emitted by the api read itself). */
+  readonly dismissed?: boolean;
+  readonly dismissAction?: string;
+  readonly dismissLabel?: string;
 }
 
 /** `GET /projects/:id/timeline` — the full Timeline pane read. */
@@ -2752,7 +2756,9 @@ export interface OutlineClaimDto {
 /** The editor DTO (GET /projects/:id/outline): the artifact's head + its parsed outline.json twin. */
 export interface OutlineDto {
   readonly artifactId: string;
-  readonly slug: string;
+  /** R7HOME.2b — the slug exists only for `agents/author/outline/<slug>.md` artifacts; a root
+   *  `outline.md` (the uploaded-outline home) is slug-less and resolves by recency. */
+  readonly slug: string | null;
   readonly mirrorPath: string;
   readonly versionId: string | null;
   readonly ordinal: number | null;

@@ -125,21 +125,25 @@ async function gotoOk(page: Page, url: string, scope?: SettleScope): Promise<voi
   await gotoSettled(page, url, scope ?? { webBaseUrl: url });
 }
 
-/** Create a minimal scratch project through the real UI and return its slug (from the redirect). */
+/** Create a minimal scratch project and return its slug. R7HOME.2b (REQ-HOME-3) — the create is
+ *  one `POST /app/new {entry:"scratch"}` (no dialog); the pasted arm rides `createDraftProject`'s
+ *  real two-step ingest onto the blank head. */
 async function createScratchProject(
   page: Page,
   ctx: StepCtx,
   name: string,
   paste?: string,
 ): Promise<string> {
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=${paste ? "draft" : "scratch"}`);
-  await page.fill('input[name="title"]', ctx.marker(name));
-  if (paste) await page.fill('textarea[name="paste"]', paste);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
-  const m = /\/p\/([a-z0-9-]+)/i.exec(page.url());
+  if (paste) return createDraftProject(page, ctx.webBaseUrl, ctx.marker(name), paste);
+  const created = (await (
+    await page.request.post(`${ctx.webBaseUrl}/app/new`, {
+      headers: { "content-type": "application/json" },
+      data: { entry: "scratch", title: ctx.marker(name) },
+    })
+  ).json()) as { redirect?: string };
+  const m = /\/p\/([a-z0-9-]+)/i.exec(created.redirect ?? "");
   if (!m?.[1])
-    throw new Error(`scratch project did not redirect to /p/<slug> (landed ${page.url()})`);
+    throw new Error(`scratch project did not redirect to /p/<slug> (got ${JSON.stringify(created)})`);
   return m[1];
 }
 
@@ -289,14 +293,18 @@ const N1: StepFn = async (ctx) => {
   // the magic link is the one cross-auth nav — status + the settle markers (REQ-VFY-4), never a
   // bare load-state wait.
   await gotoOk(page, link, ctx);
-  // post-auth the intent lands on /app/new?entry=draft&held=1 — the FIRST hydrated load
-  await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
+  // post-auth the intent lands on /app/new?entry=draft&held=1 — R7HOME.2b: the leaf issues the ONE
+  // blank create and hands the intent to the new project's import surface (`?held=1`), which
+  // hydrates the hold into the file input — the FIRST hydrated load.
+  await page.waitForURL(/\/p\/[^/]+\/import/, { timeout: 30_000 });
   const name = await awaitHeldFile(page);
   if (name !== "n1-held-draft.md") throw new Error(`post-signin hydration attached ${JSON.stringify(name)}`);
-  // …and two further /app/new loads — the hold persists, the input re-populates each time (ONB.1:
-  // no claim-on-attach; a hold dies only to a token-matched consumed marker or Discard).
+  // …and two further /app/new loads — the hold persists, the input re-populates on each new
+  // project's import surface (ONB.1: no claim-on-attach; a hold dies only to a confirmed
+  // consumption or Discard).
   for (let visit = 1; visit <= 2; visit++) {
     await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft&held=1`);
+    await page.waitForURL(/\/p\/[^/]+\/import/, { timeout: 30_000 });
     const again = await awaitHeldFile(page);
     if (again !== "n1-held-draft.md") {
       throw new Error(`visit ${visit + 1}: the held file did not re-populate (got ${JSON.stringify(again)})`);
@@ -341,7 +349,9 @@ const N3: StepFn = async (ctx) => {
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
   const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
   await gotoOk(page, link, ctx);
-  await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
+  // R7HOME.2b — post-auth the held intent lands on the NEW project's import surface (`?held=1`
+  // through the immediate create), which hydrates the hold.
+  await page.waitForURL(/\/p\/[^/]+\/import/, { timeout: 30_000 });
   if ((await awaitHeldFile(page)) !== "n3-held.md") {
     throw new Error("the held file did not hydrate on the post-auth load");
   }
@@ -353,17 +363,15 @@ const N3: StepFn = async (ctx) => {
   await page.waitForSelector("[data-conversion-form]", { timeout: 20_000 });
   const ms = Date.now() - t0;
   if (ms > 20_000) throw new Error(`preview took ${ms}ms (> 20 s)`);
-  // Create → the project lands and the `?hc=` consumed marker echoes the hold's token.
+  // Create → the project lands. The hold dies to the confirmed submit (the import surface's
+  // server-confirmed consumption — the `?hc=` handshake's replacement), so a return trip through
+  // /app/new lands on a FRESH project's import page with an EMPTY file input.
   await page.click('[data-conversion-action="create"]');
-  await page.waitForURL(/\/p\/[a-z0-9-]+.*created=/, { timeout: 30_000 });
+  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 30_000 });
   await settleNav(page, ctx);
-  const landed = new URL(page.url());
-  if (!landed.searchParams.get("hc")) {
-    throw new Error(`create landing carried no consumed marker (?hc= missing): ${page.url()}`);
-  }
-  // the consumed handshake actually ran: a return to /app/new shows an EMPTY file input.
   await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft&held=1`);
-  await page.waitForTimeout(2_000); // the island's delete is async — give it a beat, then assert
+  await page.waitForURL(/\/p\/[^/]+\/import/, { timeout: 30_000 });
+  await page.waitForTimeout(2_000); // hydration is async — give it a beat, then assert
   const stillAttached = await page.evaluate(
     () => (document.querySelector('input[name="file"]') as HTMLInputElement | null)?.files?.length ?? 0,
   );
@@ -446,16 +454,19 @@ async function sheetFigure(
 const N4: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("n4");
 
-  // 1 — the protocol cards' figures at their labelled typical lengths.
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  const cards = await page.$$eval("[data-protocol-card]", (els) =>
-    els.map((el) => ({
-      id: el.getAttribute("data-protocol-card") ?? "?",
-      text: el.querySelector(".tnum")?.textContent?.replace(/\s+/g, " ").trim() ?? "",
-      words: Number(el.querySelector(".tnum")?.getAttribute("data-typical-words") ?? "0"),
-    })),
-  );
-  const priced = cards.filter((card) => /credits/.test(card.text) && card.words > 0);
+  // 1 — the create flow's protocol estimates at their labelled typical lengths. R7HOME.2b retired
+  // the sheet's cards (the create is one POST now); the SAME `GET /bff/app/new` twin carries the
+  // api-computed typical Review figures verbatim — the estimate surface the comparison needs.
+  const twin = (await (
+    await page.request.get(`${ctx.webBaseUrl}/bff/app/new`)
+  ).json()) as {
+    newProject?: { protocols?: { id: string; typicalWords?: number; typicalReviewCredits?: number }[] | null };
+  };
+  const cards = (twin.newProject?.protocols ?? [])
+    .filter((p): p is { id: string; typicalWords: number; typicalReviewCredits: number } =>
+      typeof p.typicalReviewCredits === "number" && typeof p.typicalWords === "number" && p.typicalWords > 0)
+    .map((p) => ({ id: p.id, text: `${p.typicalReviewCredits} credits`, words: p.typicalWords }));
+  const priced = cards;
   if (priced.length === 0) throw new Error("no protocol-card estimates rendered");
 
   // a real draft so the sheet + Timeline have something to price (≤300-word fixture). The draft
@@ -643,12 +654,13 @@ const N8: StepFn = async (ctx) => {
   // ---------- leg A — the fresh import ----------
   const { page } = await ctx.freshUser("n8");
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("n8"), PAID_FIXTURE);
-  // the Edit source IS the /v/working entry — click it, never type the URL
-  const edit = page.locator('a[data-edit-source]').first();
+  // the Versions sidebar item IS the /v/working entry (R7HOME.2b — /p/:slug IS the head draft now;
+  // the retired "Edit source" link's destination). Click it, never type the URL.
+  const edit = page.locator('[data-project-item="versions"]').first();
   // SPA timing: the URL changes on the client-side nav while the leaf's twin is still loading —
   // the affordance attaches on the first data paint (~1 s live). Wait for it, never a bare count.
   await edit.waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
-  if ((await edit.count()) === 0) throw new Error("the project page has no Edit source affordance");
+  if ((await edit.count()) === 0) throw new Error("the project page has no Versions affordance");
   await edit.click();
   await page.waitForURL(/\/v\/working/, { timeout: 15_000 });
   // a 404 here renders no [data-page-root] — n8TypeForkSave's selector wait is the assertion
@@ -1015,13 +1027,20 @@ export async function createDraftProject(
   title: string,
   text: string,
 ): Promise<string> {
-  await gotoOk(page, `${webBaseUrl}/app/new?entry=draft`, { webBaseUrl });
-  await page.fill('input[name="title"]', title);
+  // R7HOME.2b (REQ-HOME-3) — the draft-paste ingest's home moved: one `POST /app/new` creates the
+  // blank project (no dialog), then the project's own import surface (`/p/:slug/import`) runs the
+  // same two-step conversion preview → Create onto the blank head (235's overwrite rule).
+  const created = (await (
+    await page.request.post(`${webBaseUrl}/app/new`, {
+      headers: { "content-type": "application/json" },
+      data: { entry: "scratch", title },
+    })
+  ).json()) as { redirect?: string };
+  const slug = /^\/p\/([^/?]+)/.exec(created.redirect ?? "")?.[1];
+  if (!slug) throw new Error(`scratch create did not land on /p/<slug> (got ${JSON.stringify(created)})`);
+  await gotoOk(page, `${webBaseUrl}/p/${slug}/import`, { webBaseUrl });
   await page.fill('textarea[name="paste"]', text);
-  // REQ-VFY-4 — data hooks, not POST actions (the SPA mounts the same hooks).
-  await page.click(
-    'form[data-new-project-form] button[type="submit"], form[data-new-project-form] button:not([type])',
-  );
+  await page.click('form button[type="submit"], form button:not([type])');
   // pending → re-poll (5 s cadence) → preview: wait for the preview's Create control. A cold
   // convert Job runs ~2.5–4 min (PRB.21's own note), so the budget is 5 min — never a stale page.
   const create = page.locator('[data-conversion-action="create"]').first();
@@ -1206,10 +1225,7 @@ const R1: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   const title = ctx.marker("R1PROJ");
   // create a scratch project so a marker row exists, then list it.
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await page.fill('input[name="title"]', title);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
+  await createScratchProject(page, ctx, "R1PROJ");
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   const heading = page.locator('h1, h2, [role="heading"]', { hasText: "Your projects" });
   if ((await heading.count()) === 0) throw new Error('project list heading "Your projects" absent');
@@ -1831,7 +1847,6 @@ const P1_PROJECT: StepFn = async (ctx) => {
         'a[href$="/export"]',
         "[data-rename-form]",
         "[data-new-project]",
-        "form[data-new-project-form]",
       ]) {
         if (document.querySelector(sel)) hits.push(sel);
       }
@@ -2138,34 +2153,41 @@ const P1_DOSSIER: StepFn = async (ctx) => {
     }
 };
 
-/** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
- *  cards, axe clean. */
+/** P1.app-new — R7HOME.2b (REQ-HOME-3): "New project" is an immediate blank create now — no
+ *  dialog. The leg proves the new flow end to end at 1440×900: the sidebar's New-project click
+ *  mints the project and lands on its Page with the focused inline "Untitled" title, the empty
+ *  Page's affordance row visible, axe clean. */
 const P1_APP_NEW: StepFn = async (ctx) => {
     const { page } = await ctx.returningUser("a");
     await page.setViewportSize(DESKTOP_VIEWPORT);
-    await gotoOk(page, `${ctx.webBaseUrl}/app/new`);
-    // ADR-065: a workspace surface — no IDE markup at all, and the chrome renders STYLED (the
-    // review's symptom was the stacked unstyled shell).
-    if ((await page.locator('.ide[data-ide="1"]').count()) > 0) {
-      throw new Error("/app/new still renders the IDE frame for a workspace surface");
+    await gotoOk(page, `${ctx.webBaseUrl}/app`);
+    const newProject = page.locator("[data-shell-new-project]").first();
+    if ((await newProject.count()) === 0) {
+      throw new Error("the workspace chrome carries no New project affordance");
     }
-    if ((await page.locator('a[href="/app"]').count()) === 0) {
-      throw new Error("/app/new renders no workspace chrome (no back link)");
+    await settleClientNav(page, ctx, () => newProject.click());
+    await page.waitForURL(/\/p\/[a-z0-9-]+\?created=scratch/i, { timeout: 30_000 });
+    // the inline title IS the heading (I2 — no placeholder heading above a real one) and focused.
+    const inlineTitle = page.locator("[data-inline-title] input[name='title']");
+    await inlineTitle.waitFor({ state: "visible", timeout: 15_000 });
+    const [focused, value] = await page.evaluate(() => {
+      const el = document.activeElement;
+      return [
+        el instanceof HTMLInputElement && el.name === "title",
+        el instanceof HTMLInputElement ? el.value : "",
+      ];
+    });
+    if (!focused) throw new Error("the inline title did not focus on the create landing");
+    if (value !== "Untitled") throw new Error(`the inline title is ${JSON.stringify(value)}, not "Untitled"`);
+    // no IDE frame confusion: the workspace surface mounts the Page, never a second title.
+    if ((await page.locator("[data-page-mount]").count()) === 0) {
+      throw new Error("the new project's Page did not mount");
     }
-    const headerBorder = await page
-      .locator("header")
-      .first()
-      .evaluate((el) => getComputedStyle(el).borderBottomWidth);
-    if (headerBorder === "0px" || headerBorder === "") {
-      throw new Error("/app/new's chrome header is unstyled (no border — the unstyled-shell symptom)");
+    if ((await page.locator("[data-empty-page-actions]").count()) === 0) {
+      throw new Error("the blank Page lacks the affordance row");
     }
-    for (const entry of ["scratch", "outline", "draft"]) {
-      if ((await page.locator(`[data-entry="${entry}"]`).count()) === 0) {
-        throw new Error(`/app/new lacks the "${entry}" entry card`);
-      }
-    }
-    await assertNoOverflow(page, "desktop /app/new");
-    await assertAxeClean(page, "desktop /app/new");
+    await assertNoOverflow(page, "desktop new project Page");
+    await assertAxeClean(page, "desktop new project Page");
     await page.screenshot({ path: join(ctx.outDir, "p1-app-new-1440.png"), fullPage: true });
 };
 
@@ -2317,11 +2339,14 @@ async function x1Fixture(ctx: StepCtx): Promise<X1Fixture> {
       if (!((await a.page.textContent("body")) ?? "").includes(aVoice)) {
         throw new Error("tenant A's own voice is absent from /voices (vacuous check)");
       }
-      await gotoOk(a.page, `${ctx.webBaseUrl}/app/new?entry=scratch`, ctx);
-      await a.page.fill('input[name="title"]', aMarker);
-      await a.page.click('button[type="submit"], button:not([type])');
-      await a.page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 15_000 });
-      const aSlug = /\/p\/([a-z0-9-]+)/i.exec(a.page.url())?.[1] ?? "";
+      // R7HOME.2b — the create is one POST (no dialog); the marker title rides the body.
+      const aCreated = (await (
+        await a.page.request.post(`${ctx.webBaseUrl}/app/new`, {
+          headers: { "content-type": "application/json" },
+          data: { entry: "scratch", title: aMarker },
+        })
+      ).json()) as { redirect?: string };
+      const aSlug = /\/p\/([a-z0-9-]+)/i.exec(aCreated.redirect ?? "")?.[1] ?? "";
       // sanity: A sees its own marker on /app (the isolation asserts aren't vacuous).
       await gotoOk(a.page, `${ctx.webBaseUrl}/app`, ctx);
       const aBody = (await a.page.textContent("body")) ?? "";
@@ -2852,11 +2877,11 @@ async function r10ClientChain(
     throw new Error(`R10 — data-nav-count ${nav0} → ${nav1} across the project-link hop (want +1)`);
   }
 
-  // hop 2 — the Edit-source affordance: /p/:slug → /p/:slug/v/working (the ticket's arm —
-  // typed-URL navigation is explicitly not this leg).
-  const edit = page.locator("a[data-edit-source]").first();
+  // hop 2 — the Versions sidebar item: /p/:slug → /p/:slug/v/working (R7HOME.2b — /p/:slug IS the
+  // head draft now; the retired "Edit source" link's destination lives on the Versions item).
+  const edit = page.locator('[data-project-item="versions"]').first();
   if ((await edit.count()) === 0) {
-    throw new Error(`R10 — /p/${slug} carries no a[data-edit-source] affordance`);
+    throw new Error(`R10 — /p/${slug} carries no data-project-item="versions" affordance`);
   }
   await edit.waitFor({ state: "visible", timeout: 15_000 });
   await settleClientNav(page, ctx, () => edit.click(), { route: "/p/$project/v/$v" });
@@ -2879,7 +2904,7 @@ async function r10ClientChain(
 
 /**
  * R10 (NAVC.4, REQ-NAVT-4) — the SPA-navigation acceptance leg, $0. `/app → click the project
- * link → click a[data-edit-source] → /p/:slug/v/working → Back`: every hop pinned client-side
+ * link → click a[data-project-item="versions"] → /p/:slug/v/working → Back`: every hop pinned client-side
  * (monotone `data-nav-count`, zero document loads past the /app baseline), then the Back pop
  * proves the warm return — the project-page twin GET (`/bff/p/:slug`, NAVC.3's
  * `staleTime`-windowed query) must NOT re-fire, while the handoff POST still may.

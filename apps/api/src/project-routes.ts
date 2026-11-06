@@ -233,36 +233,86 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
           .catch(() => ({ rows: [] }))
       ).rows[0] as { prefs: unknown } | undefined,
     );
-    await deps.db.query(
-      `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, venue, persona_id,
-                             persona_profile_snapshot_id, persona_locked_at,
-                             approval_policy, model_tier_default, paper_theme)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9, case when $8::text is null then null else now() end,
-               $10,$11,$12)`,
-      [
-        projectId,
-        principal.workspaceId,
-        principal.userId,
-        title,
-        slug,
-        protocolId,
-        venue,
-        personaId,
-        snapshotId,
-        accountPrefs.approvalPolicy ?? "named",
-        // NULL = "inherit the account default live" — stamping the current default here would
-        // freeze it into a project override and sever later account-level changes.
-        null,
-        accountPrefs.editor?.paperTheme ?? "light",
-      ],
-    );
-    await deps.db.query(
-      `insert into project_members (project_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
-      [projectId, principal.userId],
-    );
-
     let draftId: string | null = null;
     let draftN: number | null = null;
+    if (entry === "scratch") {
+      // R7HOME.2b (REQ-HOME-3, ADR-128's REQ-IDE-5 item) — a scratch create is born with its blank
+      // editable head: ONE tenant transaction writes the project row, the admin member, the
+      // `working` draft (`human_revision` — the person's editable lineage, the same origin the
+      // Page's own save path writes), and the seeded live_docs row (the collab extension's
+      // `'\\x'` insert shape verbatim), so the first keystroke edits in place through the standard
+      // wire — never a lazy second write, never a fork, never a half-created project.
+      await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        await tx.query(
+          `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, venue, persona_id,
+                                 persona_profile_snapshot_id, persona_locked_at,
+                                 approval_policy, model_tier_default, paper_theme)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9, case when $8::text is null then null else now() end,
+                   $10,$11,$12)`,
+          [
+            projectId,
+            principal.workspaceId,
+            principal.userId,
+            title,
+            slug,
+            protocolId,
+            venue,
+            personaId,
+            snapshotId,
+            accountPrefs.approvalPolicy ?? "named",
+            // NULL = "inherit the account default live" — stamping the current default here would
+            // freeze it into a project override and sever later account-level changes.
+            null,
+            accountPrefs.editor?.paperTheme ?? "light",
+          ],
+        );
+        await tx.query(
+          `insert into project_members (project_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
+          [projectId, principal.userId],
+        );
+        const newDraftId = deps.ids();
+        const liveDocId = deps.ids();
+        await tx.query(
+          `insert into drafts (id, project_id, n, origin, state) values ($1,$2,1,'human_revision','working')`,
+          [newDraftId, projectId],
+        );
+        await tx.query(
+          `insert into live_docs (id, draft_id, y_state, state_vector) values ($1,$2,'\\x'::bytea,'\\x'::bytea)`,
+          [liveDocId, newDraftId],
+        );
+        await tx.query(`update drafts set live_doc_id = $2 where id = $1`, [newDraftId, liveDocId]);
+        draftId = newDraftId;
+        draftN = 1;
+      });
+    } else {
+      await deps.db.query(
+        `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, venue, persona_id,
+                               persona_profile_snapshot_id, persona_locked_at,
+                               approval_policy, model_tier_default, paper_theme)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9, case when $8::text is null then null else now() end,
+                 $10,$11,$12)`,
+        [
+          projectId,
+          principal.workspaceId,
+          principal.userId,
+          title,
+          slug,
+          protocolId,
+          venue,
+          personaId,
+          snapshotId,
+          accountPrefs.approvalPolicy ?? "named",
+          // NULL = "inherit the account default live" — stamping the current default here would
+          // freeze it into a project override and sever later account-level changes.
+          null,
+          accountPrefs.editor?.paperTheme ?? "light",
+        ],
+      );
+      await deps.db.query(
+        `insert into project_members (project_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
+        [projectId, principal.userId],
+      );
+    }
     if (entry === "outline" && result) {
       await createOutlineArtifact(
         { db: deps.db, contentStore: deps.contentStore!, ids: deps.ids },

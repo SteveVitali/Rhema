@@ -1881,6 +1881,21 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     );
   });
 
+  it("R7HOME.2b — POST /app/new scratch with NO title still creates ('Untitled' is the server default, the writer renames inline)", async () => {
+    const createProject = vi.fn(async () => ({ id: "p_new", slug: "my-essay" }));
+    const app = createWebApp(homeDeps({ createProject }));
+    const res = await app.request("/app/new", {
+      method: "POST",
+      ...form({ entry: "scratch" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/my-essay?created=scratch");
+    expect(createProject).toHaveBeenCalledWith(
+      expect.objectContaining(SESSION),
+      expect.objectContaining({ title: "Untitled", entry: "scratch" }),
+    );
+  });
+
   it("POST /app/new draft runs the conversion preview FIRST — nothing is created until Create", async () => {
     const createProject = vi.fn(async () => ({ id: "p_new", slug: "my-essay" }));
     const previewWorkspaceImport = vi.fn(async () => ({
@@ -1951,15 +1966,15 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(plain.headers.get("location")).toContain("/p/my-essay?created=outline");
   });
 
-  it("GET /p/:slug?created=draft renders the next-step card + the conversion-notes line", async () => {
-    // R7RO.1 — the desktop document is the shell; the next-step card render survives on the Page
-    // family's forced-SSR PHONE arm (the `?ssr=1` escape is gone). §10.1 suppresses the
-    // "Review v" verb CTA at phone width — the card + conversion notes are the arm's asserts.
+  it("GET /p/:slug?created=draft renders the conversion-notes line (the next-step card is retired — REQ-HOME-2)", async () => {
+    // R7HOME.2b — the `?created` next-step card is retired (the Timeline tab's next-step card is
+    // its home); the conversion-notes line survives as the quiet echo above the document. The
+    // forced-SSR PHONE arm is where the document still renders the body.
     const app = createWebApp(homeDeps({ listProjects: async () => SHOWCASE_PROJECTS }));
     const html = await (
       await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1", PHONE)
     ).text();
-    expect(html).toContain('data-next-step-card="draft"');
+    expect(html).not.toContain('data-next-step-card');
     expect(html).toContain("Conversion notes");
   });
 

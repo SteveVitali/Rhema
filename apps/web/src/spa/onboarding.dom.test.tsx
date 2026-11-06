@@ -175,6 +175,16 @@ function makeFetch(opts: FetchOpts = {}) {
       // R7HOME.2a — create lands on the editable Page with the REQ-DATA-14 outcome flash.
       return jsonResponse(200, opts.importCreatePost ?? { ok: true, redirect: `/p/${SLUG}/v/1?imported=created` });
     }
+    // R7HOME.2b — the immediate-create leaf's landing legs: the handoff POST every p.index
+    // beforeLoad issues, and the redirect target's twin (a bare 404 — the notFound boundary is
+    // the honest settle for a fixture slug).
+    if (url === "/bff/p/fresh/handoff" && init?.method === "POST") {
+      return jsonResponse(200, { ok: true, data: { handoff: null } });
+    }
+    if (url === "/bff/p/fresh/import") {
+      return jsonResponse(200, { import: { ...IMPORT_SHELL, project: { ...IMPORT_SHELL.project, slug: "fresh" } } });
+    }
+    if (url === "/bff/p/fresh") return jsonResponse(404, { error: "not_found" });
     return jsonResponse(500, { error: "unstubbed_path", detail: url });
   });
 }
@@ -257,152 +267,78 @@ afterEach(() => {
 
 // ---- /app/new — the sheet ------------------------------------------------------------------------
 
-describe("GET /app/new mounted (SPA.14)", () => {
-  it("renders the sheet's hook vocabulary verbatim — entries, fields, the held sentinel", async () => {
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch());
-    const main = el()!;
-    expect(main.querySelector("h1")?.textContent).toBe(COPY.newProject.heading);
-    for (const entry of ["scratch", "outline", "draft"]) {
-      expect(main.querySelector(`[data-entry="${entry}"]`), entry).not.toBeNull();
-    }
-    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
-    expect(form.getAttribute("data-held")).toBe("1");
-    expect(form.getAttribute("data-new-project-form")).toBe("true");
-    for (const field of ['name="entry"', 'name="heldToken"', 'name="title"', 'name="protocolId"', 'name="venue"', 'name="personaId"', 'name="file"', 'name="paste"', 'name="startVersion"']) {
-      expect(form.innerHTML, field).toContain(field);
-    }
-    expect(form.querySelector("[data-held-token]")).not.toBeNull();
-    expect(form.querySelector("[data-protocol-card]")).not.toBeNull();
-    expect(main.querySelector("[data-held-notice]")).not.toBeNull();
-  });
-
-
-  it("renders the §16.4 stale-venue note on an unverified venue row (data-venue-stale)", async () => {
-    const staleProto = {
-      ...PROTO,
-      venueBar: { kind: "venues", table: [{ venue: "Preprint", verified_at: null, as_of: "2025-06-01" }], prompt: "" } };
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch({ proto: staleProto }));
-    const note = el()!.querySelector("[data-venue-stale]");
-    expect(note).not.toBeNull();
-    expect(note!.textContent).toContain("2025-06-01");
-  });
-
-  it("a scratch submit posts the JSON vocabulary and rides the envelope's redirect", async () => {
+describe("GET /app/new mounted (R7HOME.2b — the immediate create)", () => {
+  it("one create POST mints the blank project and the router lands on its Page — never a dialog", async () => {
     const f = makeFetch();
-    await mountAt("/app/new", BOOT, f);
-    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
-    form.querySelector<HTMLInputElement>('[name="title"]')!.value = "Fresh";
-    await submit(form);
+    const { router } = await mountAt("/app/new", BOOT, f);
     const post = f.mock.calls.find(([u, i]) => String(u) === "/app/new" && i?.method === "POST");
     expect(post).toBeDefined();
-    expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({
-      entry: "scratch",
-      title: "Fresh" });
-    // the envelope redirect goes through the router → the unflipped /p leaf hands the
-    // document back to the server (SsrHandoff) — verbatim flash parameters preserved.
-    expect(docNavSpy).toHaveBeenCalledWith("/p/fresh?created=scratch");
+    expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ entry: "scratch" });
+    // exactly ONE create call.
+    expect(f.mock.calls.filter(([u, i]) => String(u) === "/app/new" && i?.method === "POST").length).toBe(1);
+    // the envelope redirect becomes an in-router nav to the new Page — no document navigation,
+    // no sheet/dialog mounted.
+    expect(router.state.location.pathname).toBe("/p/fresh");
+    expect(router.state.location.search).toMatchObject({ created: "scratch" });
+    // the create hop committed in-router (the fixture's 404 twin then settles notFound → a
+    // document nav to the same URL; that fallback is not the create flow's hop).
+    expect(docNavSpy.mock.calls.every(([u]) => String(u).startsWith("/p/fresh"))).toBe(true);
+    expect(el()!.querySelector("[data-new-project-form], [data-entry], [role='dialog'], [aria-modal]")).toBeNull();
+    expect(f.mock.calls.some(([u]) => String(u) === "/bff/app/new")).toBe(false);
   });
 
-  it("an upload entry runs presign→direct-PUT→quarantineKey — bytes never ride the JSON body", async () => {
-    const puts: { url: string; init?: RequestInit }[] = [];
-    const f = makeFetch({ puts });
-    await mountAt("/app/new?entry=draft", BOOT, f);
-    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
-    setFile(
-      form.querySelector<HTMLInputElement>('input[name="file"]')!,
-      new File(["# Draft\n\nbody"], "draft.md", { type: "text/markdown" }),
-    );
-    await submit(form);
-    const presign = f.mock.calls.find(([u, i]) => String(u) === "/bff/import/presign" && i?.method === "POST");
-    expect(presign).toBeDefined();
-    expect(puts.length).toBe(1);
-    expect(puts[0]!.init?.method).toBe("PUT");
-    const post = f.mock.calls.find(([u, i]) => String(u) === "/app/new" && i?.method === "POST");
-    const body = JSON.parse(String((post![1] as RequestInit).body));
-    expect(body.quarantineKey).toBe("quarantine/w1/u1");
-    expect(body.fileName).toBe("draft.md");
-    expect(String(post![1]!.body)).not.toContain("# Draft");
-  });
-
-  it("{ok,data} paints the §5.3 ready preview inline — data-conversion-form + the replay fields", async () => {
-    const inline = {
-      ok: true,
-      data: {
-        form: { title: "Draft", protocolId: "essay", venue: null, personaId: null, startVersion: null, heldToken: null },
-        preview: {
-          quarantineKey: "q1",
-          sourceLabel: "draft.md",
-          sourceText: "(2 bytes)",
-          convertedMarkdown: "# Draft",
-          countLine: "1 word",
-          warnings: [] } } };
-    const f = makeFetch({ newPost: inline });
-    await mountAt("/app/new?entry=draft", BOOT, f);
-    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
-    setFile(
-      form.querySelector<HTMLInputElement>('input[name="file"]')!,
-      new File(["x"], "draft.md", { type: "text/markdown" }),
-    );
-    await submit(form);
-    const create = (await settled<HTMLFormElement>('form[data-conversion-form]'));
-    expect(create.getAttribute("action")).toBe("/app/new/create");
-    for (const field of ['name="entry"', 'name="title"', 'name="protocolId"', 'name="qk"']) {
-      expect(create.innerHTML, field).toContain(field);
-    }
-    expect(el()!.querySelector('[data-conversion-action="create"]')).not.toBeNull();
-    // REQ-HOME-5 — a CLEAN conversion offers the single Create CTA (Fix now needs warnings).
-    expect(el()!.querySelector('[data-conversion-action="fix_now"]')).toBeNull();
-  });
-
-  it("a scratch validation refusal renders the alert, never a silent no-op", async () => {
-    const f = makeFetch();
-    await mountAt("/app/new", BOOT, f);
-    const form = (await settled<HTMLFormElement>('form[action="/app/new"]'));
-    const base = f;
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  it("a refused create lands back on /app — never a half-created project", async () => {
+    const base = makeFetch();
+    const refusing = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url === "/app/new" && init?.method === "POST") {
-        return jsonResponse(400, { error: "title_required", detail: "A title is required." });
+        return jsonResponse(400, { error: "refused" });
       }
       return base(input, init);
-    }));
-    await submit(form);
-    expect(el()!.querySelector('[role="alert"]')?.textContent).toContain("title");
+    });
+    const { router } = await mountAt("/app/new", BOOT, refusing);
+    expect(router.state.location.pathname).toBe("/app");
   });
 
-  it("component axe on the mounted sheet (REQ-VFY-6)", async () => {
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+  it("?held=1 lands the NEW project's import surface, which hydrates the held file", async () => {
+    holdState.record = HOLD;
+    const f = makeFetch();
+    const { router } = await mountAt("/app/new?entry=draft&held=1", BOOT, f);
+    expect(router.state.location.pathname).toBe("/p/fresh/import");
+    await act(async () => {});
+    const main = el()!;
+    expect(main.querySelector("[data-held-notice]")?.textContent ?? "").toContain("n1-held-draft.md");
   });
 
-  it("an unflipped verdict hands the document back — no surface, no BFF read", async () => {
+  it("an unflipped verdict is a server redirect — the document GET answers /app, no create issues", async () => {
     const f = makeFetch();
     await mountAt("/app/new", bootFor({ ...SPA_ALL, "/app/new": "ssr" }), f);
     expect(docNavSpy).toHaveBeenCalledWith("/app/new");
-    expect(el()?.querySelector("[data-new-project-form]")).toBeNull();
-    expect(f.mock.calls.some(([u]) => String(u) === "/bff/app/new")).toBe(false);
+    expect(f.mock.calls.some(([u, i]) => String(u) === "/app/new" && i?.method === "POST")).toBe(false);
   });
 });
 
-// ---- the ONB.1 hold legs -------------------------------------------------------------------------
+// ---- the ONB.1 hold legs (R7HOME.2b — the contract's home moved to /p/:slug/import) ---------------
+
+const HOLD = { token: "hold_abc123", name: "n1-held-draft.md", type: "text/markdown", size: 40, bytes: new TextEncoder().encode("# Held\n\nbody").buffer as ArrayBuffer };
 
 describe("the held-draft contract (ONB.1)", () => {
-  const HOLD = { token: "hold_abc123", name: "n1-held-draft.md", type: "text/markdown", size: 40, bytes: new TextEncoder().encode("# Held\n\nbody").buffer as ArrayBuffer };
-
   it("hydrates the file input on EVERY mount — notice names the file, Discard exists, token stamped", async () => {
     holdState.record = HOLD;
-    await mountAt("/app/new?entry=draft&held=1", BOOT, makeFetch());
+    await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
     // allow the async hydration effect to settle
     await act(async () => {});
     const main = el()!;
     const notice = main.querySelector("[data-held-notice]")?.textContent ?? "";
     expect(notice).toContain("n1-held-draft.md");
     expect(main.querySelector("[data-held-discard]")).not.toBeNull();
-    const token = (await settled<HTMLInputElement>('input[name="heldToken"]')).value;
     // DataTransfer may be absent under happy-dom — the attach branch is honest either way:
     // when the file attached, the token stamps; otherwise the reattach notice paints.
-    const files = (await settled<HTMLInputElement>('input[name="file"]')).files?.length ?? 0;
-    if (files === 1) expect(token).toBe("hold_abc123");
+    const files = (main.querySelector<HTMLInputElement>('input[name="file"]'))?.files?.length ?? 0;
+    if (files === 1) {
+      const token = main.querySelector<HTMLInputElement>('input[name="heldToken"]');
+      expect(token?.value).toBe("hold_abc123");
+    }
     // the record itself is never touched by hydration (no claim-on-attach)
     expect(holdState.record).not.toBeNull();
     expect(holdState.deleted).toBe(0);
@@ -410,7 +346,7 @@ describe("the held-draft contract (ONB.1)", () => {
 
   it("a second mount re-populates — the hold persists until consumed (no claim-on-attach)", async () => {
     holdState.record = HOLD;
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch());
+    await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
     await act(async () => {});
     expect(el()!.querySelector("[data-held-notice]")?.textContent).toContain("n1-held-draft.md");
     expect(holdState.record).not.toBeNull();
@@ -418,7 +354,7 @@ describe("the held-draft contract (ONB.1)", () => {
 
   it("Discard is the other writer — deletes the hold, clears the token, repaints the notice", async () => {
     holdState.record = HOLD;
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch());
+    await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
     await act(async () => {});
     const discard = (await settled<HTMLElement>("[data-held-discard]"));
     await act(async () => {
@@ -427,6 +363,17 @@ describe("the held-draft contract (ONB.1)", () => {
     expect(holdState.deleted).toBe(1);
     expect(holdState.record).toBeNull();
     expect(el()!.querySelector("[data-held-discard]")).toBeNull();
+  });
+
+  it("a confirmed submit consumes the hold — the server-confirmed consumption deletes it", async () => {
+    holdState.record = HOLD;
+    await mountAt(`/p/${SLUG}/import`, BOOT, makeFetch());
+    await act(async () => {});
+    const form = (await settled<HTMLFormElement>(`form[action="/p/${SLUG}/import/preview"]`));
+    await submit(form);
+    // the preview POST is server-confirmed consumption — the hold deletes.
+    expect(holdState.deleted).toBe(1);
+    expect(holdState.record).toBeNull();
   });
 });
 

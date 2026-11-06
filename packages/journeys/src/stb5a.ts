@@ -394,11 +394,11 @@ const T3: StepFn = async (ctx) => {
   const a = await ctx.freshUser("exa");
   const { page } = a;
   const title = ctx.marker("T3PROJ");
-  // a real project + a voice so the parity spot-check has cargo.
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await page.fill('input[name="title"]', title);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
+  // a real project + a voice so the parity spot-check has cargo. R7HOME.2b — one POST create.
+  await page.request.post(`${ctx.webBaseUrl}/app/new`, {
+    headers: { "content-type": "application/json" },
+    data: { entry: "scratch", title },
+  });
   const voiceName = ctx.marker("T3VOICE");
   await createVoice(page, ctx, "T3VOICE");
 
@@ -751,11 +751,14 @@ const T5: StepFn = async (ctx) => {
 const T6: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("t6");
   const title = ctx.marker("T6DEL");
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await page.fill('input[name="title"]', title);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
-  const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
+  // R7HOME.2b — one POST create (no dialog); the slug rides the envelope's redirect.
+  const created6 = (await (
+    await page.request.post(`${ctx.webBaseUrl}/app/new`, {
+      headers: { "content-type": "application/json" },
+      data: { entry: "scratch", title },
+    })
+  ).json()) as { redirect?: string };
+  const slug = /\/p\/([a-z0-9-]+)/i.exec(created6.redirect ?? "")?.[1];
   if (!slug) throw new Error(`scratch project did not land on /p/<slug> (${page.url()})`);
 
   // the delete control rides the /app row's ⋯ menu (a formAction item labelled Delete).
@@ -791,11 +794,14 @@ const T6: StepFn = async (ctx) => {
 const T7: StepFn = async (ctx) => {
   const { page, context } = await ctx.freshUser("t7");
   const title = ctx.marker("T7DEL");
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await page.fill('input[name="title"]', title);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
-  const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
+  // R7HOME.2b — one POST create (no dialog); the slug rides the envelope's redirect.
+  const created7 = (await (
+    await page.request.post(`${ctx.webBaseUrl}/app/new`, {
+      headers: { "content-type": "application/json" },
+      data: { entry: "scratch", title },
+    })
+  ).json()) as { redirect?: string };
+  const slug = /\/p\/([a-z0-9-]+)/i.exec(created7.redirect ?? "")?.[1];
   if (!slug) throw new Error(`scratch project did not land on /p/<slug> (${page.url()})`);
   const projectId = await apiProjectId(ctx, context, slug);
 
@@ -1721,10 +1727,12 @@ const T14: StepFn = async (ctx) => {
       throw new Error(`pre_export defer on ${fid} → ${resp.status}: ${resp.text.slice(0, 160)}`);
     }
     // the export dialog's open IS the pre_export horizon — the sweep returns the obligation and
-    // lands its Decisions row. The list is oldest-first and escalate asks (decide/dismiss) may sit
-    // ahead — the swept obligation row is the one offering re-defer.
+    // lands its Decisions row. R7HOME.2b (REQ-HOME-2) — decisions surface in the Inbox + Timeline,
+    // never under the document: the row is read on /app/inbox. The list is oldest-first and
+    // escalate asks (decide/dismiss) may sit ahead — the swept obligation row is the one offering
+    // re-defer.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`);
-    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+    await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
     const row = page
       .locator('[data-decisions-list] [data-decision]:has(button[data-decision-option="re-defer"])')
       .first();

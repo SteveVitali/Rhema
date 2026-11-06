@@ -277,7 +277,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "R10",
     journey: "returning",
     asserts:
-      "/app → click the project link → click a[data-edit-source] → /p/:slug/v/working → Back is one document: every hop commits client-side (monotone data-nav-count, zero added document loads) and the warm return re-issues no /bff/p/:slug twin GET inside NAVC.3's freshness window",
+      "/app → click the project link → click a[data-project-item="versions"] → /p/:slug/v/working → Back is one document: every hop commits client-side (monotone data-nav-count, zero added document loads) and the warm return re-issues no /bff/p/:slug twin GET inside NAVC.3's freshness window",
     owner: "NAVC.4",
     // NAVC.4 — flips green on the first live leg over a deployed build carrying the NAVC.1–3 machinery.
     // VERIF.2 — flipped green 2026-10-16 on pr-186 @ e7b21aecb (ready-to-flip on two legs:
@@ -494,7 +494,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "P1.app-new",
     journey: "phone",
     asserts:
-      "/app/new at 1440×900 renders the styled workspace chrome — no IDE frame, the three entry cards, axe clean",
+      "R7HOME.2b — the sidebar's New-project click mints a blank project and lands on its Page at 1440×900: the focused inline 'Untitled' title (no dialog, no duplicate heading), the empty Page's affordance row, axe clean",
     owner: "UX.2",
     expected: "green",
     paid: false,

@@ -29,22 +29,19 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
-import { ApprovalRow, CompareView, ToastProvider, useToast, WhatChangedView } from "@rhema/ui";
+import { CompareView, ToastProvider, useToast, WhatChangedView } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
 import { chatPanelLive as chatPanel } from "../chat-live.js";
-import { runCardLabels, timelineHrefs, timelineLabels, type TriageSurfaceState } from "../../dossier-view.js";
+import { runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import {
   PageChrome,
   ProjectOverviewBody,
   compareLabels,
   whatChangedLabels,
-  type ApprovalRowSpec,
   type PageChromeBag,
 } from "../../page-chrome.js";
-import { approvalRowLabels } from "../../gate-card.js";
-import { useGatePresence } from "../gate-presence.js";
 import { BffError } from "../bff.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData, IdeTwinShell } from "../ide/chrome-data.js";
@@ -291,28 +288,10 @@ function useEditorChrome(
   useShellChrome(shell, extras);
 }
 
-/** One Needs-you row under the React renderer — `useGatePresence` carries REQ-SPEC-18's
- *  `activity: present|blur|reading` pings (the inline `<script>` never executes inside a React
- *  mount); only `model.autoProceed` cards arm a live `activityUrl`, matching the SSR emission. */
-function SpaApprovalRow({ slug, spec }: { readonly slug: string; readonly spec: ApprovalRowSpec }): ReactNode {
-  const presenceRef = useGatePresence<HTMLDetailsElement>(
-    spec.model.autoProceed ? `/p/${slug}/gates/${spec.gateId}/activity` : null,
-  );
-  return (
-    <ApprovalRow
-      gateId={spec.gateId}
-      model={spec.model}
-      {...(spec.artifact ? { artifact: spec.artifact } : {})}
-      labels={approvalRowLabels}
-      card={spec.card}
-      rowRef={presenceRef}
-    />
-  );
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
-// `/p/:slug` — the project overview leaf (the working-head Page mount + Needs-you + the §6.4
-// settings + the voice picker verbatim).
+// `/p/:slug` — the project Page leaf (R7HOME.2b, REQ-HOME-2): the head draft's Page IS the
+// surface — the Needs-you rows/approval settings/voice picker moved to the Project settings
+// page + the Inbox/Timeline.
 // ---------------------------------------------------------------------------------------------------------------------
 
 export interface EditorSurfaceProps<T> {
@@ -365,21 +344,6 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
     }),
     [data.project, search],
   );
-  const triage = useMemo<TriageSurfaceState | undefined>(
-    () =>
-      search["derror"]
-        ? { dispositionError: { findingId: search["derror"], message: COPY.triage.noteRequired } }
-        : undefined,
-    [search],
-  );
-  const projectVoice = useMemo(
-    () =>
-      data.projectVoice
-        ? { ...data.projectVoice, ...(search["voice_locked"] === "1" ? { locked: true as const } : {}) }
-        : undefined,
-    [data.projectVoice, search],
-  );
-
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   return (
@@ -388,19 +352,9 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <ProjectOverviewBody
         project={project}
-        spa
         {...(ro != null ? { readOnly: ro.reason } : {})}
-        renderApprovalRow={(spec) => <SpaApprovalRow slug={slug} spec={spec} />}
-        gates={data.gates}
-        decisions={data.decisions}
-        approvalOverrides={data.approvalOverrides}
-        {...(data.approvalSettings ? { approvalSettings: data.approvalSettings } : {})}
-        explainersDismissed={data.explainersDismissed}
         compact={compact}
-        {...(triage ? { triage } : {})}
-        {...(projectVoice ? { projectVoice } : {})}
         {...(pageView ? { page: pageView } : {})}
-        {...(data.ide.timelineView ? { timelineView: data.ide.timelineView } : {})}
         {...(page ? { pageHost: <PageHost page={page} compact={compact} viewRef={viewRef} /> } : {})}
         pageEmbeds={false}
         onProposalAccept={seams.accept}
