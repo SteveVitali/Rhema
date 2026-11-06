@@ -7,9 +7,11 @@ export const PACKAGE_NAME = "@rhema/ui" as const;
 // R7KIT.2 (REQ-KIT-2; ADR-129) — the component-kit directory: the moved Pill/Chip/FetchedUrlChip/
 // ActionLink exports plus the shell-critical primitives (Button/IconButton, Badge, Kbd, Skeleton,
 // Toast queue, Tooltip, DropdownMenu, Dialog + Sheet) and the generated `uiCss()` stylesheet the
-// shell inlines beside `themeCss()`/`ideCss()`. The form/menu primitives land in 225a.
-export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor, Button, IconButton, Badge, Kbd, Skeleton, Tooltip, TooltipProvider, DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, Dialog, DialogClose, Sheet, ToastProvider, useToast } from "./primitives/index.js";
-export type { Tone, Severity, ButtonProps, ButtonVariant, ButtonSize, IconButtonProps, BadgeProps, BadgeTone, KbdProps, SkeletonProps, TooltipProps, DropdownMenuProps, DropdownMenuItemProps, DropdownMenuLabelProps, DropdownMenuSeparatorProps, DialogProps, SheetProps, SheetSide, ToastProviderProps, ToastQueue, ToastInput, ToastTone } from "./primitives/index.js";
+// shell inlines beside `themeCss()`/`ideCss()`. 225a_R7KIT.2b adds the form/menu primitives:
+// Popover, ContextMenu, Select, Tabs, Checkbox, RadioGroup, Switch, the cmdk Combobox +
+// PaletteList, TextField/TextArea/RadioCards, the two-variant Chip, EmptyState and Accordion.
+export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor, Button, IconButton, Badge, Kbd, Skeleton, Tooltip, TooltipProvider, DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, Dialog, DialogClose, Sheet, ToastProvider, useToast, Popover, PopoverClose, ContextMenu, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, Select, Tabs, TabsList, TabsTrigger, TabsContent, Checkbox, RadioGroup, RadioGroupItem, Switch, Combobox, PaletteList, TextField, TextArea, RadioCards, EmptyState, Accordion } from "./primitives/index.js";
+export type { Tone, Severity, ButtonProps, ButtonVariant, ButtonSize, IconButtonProps, BadgeProps, BadgeTone, KbdProps, SkeletonProps, TooltipProps, DropdownMenuProps, DropdownMenuItemProps, DropdownMenuLabelProps, DropdownMenuSeparatorProps, DialogProps, SheetProps, SheetSide, ToastProviderProps, ToastQueue, ToastInput, ToastTone, ChipProps, PopoverProps, ContextMenuProps, ContextMenuItemProps, ContextMenuLabelProps, ContextMenuSeparatorProps, SelectProps, SelectItemView, TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps, CheckboxProps, RadioGroupProps, RadioGroupItemProps, SwitchProps, ComboboxProps, PaletteListProps, CommandItemView, CommandGroupView, TextFieldProps, TextAreaProps, RadioCardsProps, RadioCardsOption, EmptyStateProps, AccordionProps, AccordionItemView } from "./primitives/index.js";
 export { uiCss } from "./ui-css.js";
 export { Shell, PageTitle, SectionTitle } from "./shell.js";
 export { ProjectList, ProjectRow, ProjectGroupList, VoiceGroupList } from "./project-list.js";

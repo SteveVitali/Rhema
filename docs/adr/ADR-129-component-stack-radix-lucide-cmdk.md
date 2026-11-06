@@ -105,3 +105,37 @@ replacement. The sheet keeps REQ-IDE-41: `Sheet` mounts on Radix Dialog with `mo
 
 `check:licenses` fails a candidate, the budget rule rejects both SplitPane options, a needed
 primitive has no Radix implementation, or the icon set changes.
+
+## Dated note — 2026-11-05 (225a_R7KIT.2b)
+
+**The form/menu half of REQ-KIT-2 landed on the same pins** — no new dependency: the Radix
+wrappers Popover (`primitives/popover.tsx`), ContextMenu (`context-menu.tsx`), Select
+(`select.tsx`, items-as-data with the trigger carrying the DOM-contract hooks), Tabs
+(`tabs.tsx`, Radix composition), and the toggles (`toggles.tsx` — Checkbox / RadioGroup+Item /
+Switch, Lucide check glyph). The cmdk pair is `combobox.tsx`: `Combobox` (filter input + list;
+`inputLabel` required — cmdk's hidden `<label>`+`aria-labelledby` is what assistive tech reads)
+and `PaletteList` (the grouped `Command.List`/`Group`/`Item`/`Empty` base 228's palette surface
+composes inside its own `Command` root). In-house (`fields.tsx`/`surfaces.tsx`): TextField,
+auto-grow TextArea (measured `scrollHeight` imperative write, not a style literal), RadioCards
+(APG radiogroup over `role="radio"` cards, optional hidden input for no-JS posts), the
+two-variant Chip (C6 — static `<span>`: no interactive role/tabindex/pointer, existing
+call-site markup byte-identical; `href`⇒link, `onSelect`⇒button; `variant` is the explicit
+escape), EmptyState, Accordion (in-house — no `@radix-ui/react-accordion` in the stack).
+
+**REQ-GUARD-1 mechanism (this ticket owns):** rule name `rhema/no-raw-controls`
+(`tools/eslint-plugin-rhema/rules/no-raw-controls.js`) — bans raw
+`<button|input|select|textarea>` and inline spacing/type/colour/radius literals in `style={…}`
+props (`--*` custom-property keys pass, matching the primitives' no-inline-literals scan; a
+spread is conservatively accepted, the require-estimate-prop precedent). **Enablement:** the
+committed `NO_RAW_CONTROLS_ENABLED` files-list in `eslint.config.js` — the rule registers `off`
+over its whole scope (`packages/ui/src/**` except `primitives/**`, `apps/web/src/**/*.tsx`),
+each KIT-3 batch appends its migrated files, 249_R7GUARD.1 collapses the list into one global
+`error` block. Empty at authoring. **Exemptions:** the committed data module
+`no-raw-controls-exemptions.js` (`{file, component?, reason}` — file suffix-match; `component`
+narrows to that component's JSX), consumed as the rule's default option and exposed as
+`rhema.noRawControlsExemptions`; seeded with the permanent no-JS/SSR surfaces
+(`apps/web/src/pages.tsx`, `marketing.tsx`, `page-chrome.tsx` — funnel/signup/phone-reader
+controls, RV-36). Batches append hidden-input/no-JS-form entries with a reason each.
+
+**No React-19 incompatibility surfaced** — every wrapper mounts on the repo's React 19.3 pin
+under happy-dom tests, so the DEFERRALS fallback path was not needed.

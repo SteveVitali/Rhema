@@ -6,6 +6,8 @@
 import type { IconButtonProps, ButtonProps } from "./button.js";
 import type { DialogProps, SheetProps } from "./dialog.js";
 import type { ToastProviderProps } from "./toast.js";
+import type { ComboboxProps } from "./combobox.js";
+import type { RadioCardsProps } from "./fields.js";
 
 // @ts-expect-error — IconButton without `aria-label` must not typecheck (icon-only ⇒ name required).
 export const iconButtonMissingLabel: IconButtonProps = { children: null };
@@ -24,5 +26,13 @@ export const sheetMissingTitle: SheetProps = {};
 // @ts-expect-error — ToastProvider without `dismissLabel` must not typecheck (REQ-UX-12: even the
 // dismiss button's accessible name comes from the app's copy table, never a primitive default).
 export const toastProviderMissingDismissLabel: ToastProviderProps = {};
+
+// @ts-expect-error — Combobox without `inputLabel` must not typecheck (225a: the filter input
+// needs an accessible name — REQ-UX-12).
+export const comboboxMissingLabel: ComboboxProps = { items: [] };
+
+// @ts-expect-error — RadioCards without `aria-label` must not typecheck (225a: the radiogroup
+// needs an accessible name).
+export const radioCardsMissingLabel: RadioCardsProps = { options: [] };
 
 export const okButtonProps: ButtonProps = { variant: "primary", children: null };

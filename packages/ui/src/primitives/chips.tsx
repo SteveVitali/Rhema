@@ -3,9 +3,10 @@
 // behaviour UNCHANGED: every inline declaration moved verbatim into the `.ui-*` rules in
 // `../ui-css.ts` (the moved-values legs in `ui-css.test.ts`/`chips.dom.test.tsx` pin the
 // equivalence). Every user-facing string is still a prop — no copy lives here (REQ-UX-12).
-// 225a_R7KIT.2b turns `Chip` into the two-variant Chip.
+// 225a_R7KIT.2b turns `Chip` into the two-variant Chip (C6): static never looks clickable —
+// the pre-existing call-site markup is byte-identical (the before/after snapshot pins it).
 
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, CSSProperties, ReactNode, Ref } from "react";
 
 /** Semantic tone → a §5.9 state/severity colour (the `.ui-pill--*` modifiers in uiCss). */
 export type Tone = "running" | "needs_you" | "ready" | "attention" | "neutral";
@@ -40,28 +41,76 @@ export function Pill({ label, tone = "neutral" }: { label: string; tone?: Tone }
   );
 }
 
-/** A generic chip. `href` makes it a link; otherwise a static tag. */
+export interface ChipProps extends Omit<
+  ComponentPropsWithRef<"span">,
+  "children" | "color" | "onSelect" | "ref"
+> {
+  label: string;
+  /**
+   * The two variants (C6): `"static"` renders a `<span>` — never an interactive role, tabindex or
+   * pointer affordance; `"action"` renders a real control (a link for `href`, a `<button>` for
+   * `onSelect`). Inferred from the props when omitted — `href`/`onSelect` ⇒ action.
+   */
+  variant?: "static" | "action";
+  /** Renders the action variant as a link. */
+  href?: string;
+  /** Renders the action variant as a button. */
+  onSelect?: () => void;
+  color?: string;
+  /** Forwarded to the rendered element (span/a/button — DOM-contract hooks). */
+  ref?: Ref<HTMLElement>;
+}
+
+/**
+ * A generic chip (two variants, C6). `href` renders a link, `onSelect` a button; otherwise a
+ * static `<span>` with no interactive affordance. Existing call-site markup is unchanged.
+ */
 export function Chip({
   label,
   title,
   href,
+  onSelect,
+  variant,
   color = "var(--shell-fg-muted)",
-}: {
-  label: string;
-  title?: string;
-  href?: string;
-  color?: string;
-}): ReactNode {
-  const style = { "--ui-chip-fg": color } as CSSProperties;
-  if (href) {
+  className,
+  ref,
+  ...rest
+}: ChipProps): ReactNode {
+  const style = { "--ui-chip-fg": color, ...rest.style } as CSSProperties;
+  const cls = ["ui-chip", className ?? ""].filter(Boolean).join(" ");
+  const kind = variant ?? (href != null || onSelect != null ? "action" : "static");
+  if (kind === "action") {
+    if (href != null) {
+      return (
+        <a
+          href={href}
+          title={title ?? href}
+          style={style}
+          className={cls}
+          rel="noreferrer"
+          ref={ref as Ref<HTMLAnchorElement>}
+          {...rest}
+        >
+          {label}
+        </a>
+      );
+    }
     return (
-      <a href={href} title={title ?? href} style={style} className="ui-chip" rel="noreferrer">
+      <button
+        type="button"
+        title={title}
+        style={style}
+        className={cls}
+        onClick={onSelect}
+        ref={ref as Ref<HTMLButtonElement>}
+        {...rest}
+      >
         {label}
-      </a>
+      </button>
     );
   }
   return (
-    <span title={title} style={style} className="ui-chip">
+    <span title={title} style={style} className={cls} ref={ref as Ref<HTMLSpanElement>} {...rest}>
       {label}
     </span>
   );

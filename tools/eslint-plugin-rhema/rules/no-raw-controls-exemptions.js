@@ -1,0 +1,35 @@
+"use strict";
+
+/**
+ * REQ-GUARD-1 (225a_R7KIT.2b; RV-16; RV-36) — the committed no-JS/SSR exemption list for
+ * `rhema/no-raw-controls`, kept as DATA so the rule, its tests and the batches all read the same
+ * source. Each entry:
+ *
+ *   file      — repo-relative path (suffix-matched against the linted filename)
+ *   component — OPTIONAL: narrows the exemption to JSX inside the named function/component
+ *   reason    — why these raw controls stay; only a no-JS/SSR justification is legitimate —
+ *               KIT-1's `themeCss()` element rules style these native controls permanently and
+ *               Radix wrappers need client JS (RV-36). An exemption is never for residue: 249's
+ *               global sweep fails an unlisted raw control even in an exempt-looking file.
+ *
+ * The KIT-3 batches append entries as they migrate (hidden inputs and no-JS-only forms inside
+ * otherwise-migrated files get an entry with a reason each — narrow to `component` where the
+ * rest of the file is migrated).
+ */
+module.exports = [
+  {
+    file: "apps/web/src/pages.tsx",
+    reason:
+      "SSR funnel (the login magic-link/Google forms) + the forced-SSR Page-family documents mount these controls without client JS — KIT-1-styled natives are the permanent fallback (RV-36).",
+  },
+  {
+    file: "apps/web/src/marketing.tsx",
+    reason:
+      "the public landing and signup forms are no-JS forms on the SSR funnel (RV-36: signup cannot use Radix Select).",
+  },
+  {
+    file: "apps/web/src/page-chrome.tsx",
+    reason:
+      "the forced-SSR Page family's no-JS form actions (rename, voice picker, approval overrides — the phone-reader approvals, RV-36).",
+  },
+];

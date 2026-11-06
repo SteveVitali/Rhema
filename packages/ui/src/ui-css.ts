@@ -1,15 +1,16 @@
-// `uiCss()` — the stylesheet for the `primitives/**` component kit (R7KIT.2; REQ-KIT-2, REQ-KIT-5;
-// ADR-129; UXC-15). Like `themeCss()`/`ideCss()` it is GENERATED: one function emits every `.ui-*`
-// rule, so the primitives carry zero inline spacing/type/colour/radius literals — their JSX names
-// classes, this file owns the values. Values come from the tokens two ways: `var(--…)` references
-// (spacing `--s*`, type `--fs-*`, radius `--radius-*`, palette `--shell-*`/`--state-*`/`--sev-*` —
-// so light and dark both resolve through the one token layer) and the typed maps (`LAYOUT`,
-// `MOTION`) where the token is a value, not a var.
+// `uiCss()` — the stylesheet for the `primitives/**` component kit (R7KIT.2 + 225a_R7KIT.2b;
+// REQ-KIT-2, REQ-KIT-5; ADR-129; UXC-15). Like `themeCss()`/`ideCss()` it is GENERATED: one
+// function emits every `.ui-*` rule, so the primitives carry zero inline spacing/type/colour/
+// radius literals — their JSX names classes, this file owns the values. Values come from the
+// tokens two ways: `var(--…)` references (spacing `--s*`, type `--fs-*`, radius `--radius-*`,
+// palette `--shell-*`/`--state-*`/`--sev-*` — so light and dark both resolve through the one
+// token layer) and the typed maps (`LAYOUT`, `MOTION`) where the token is a value, not a var.
 //
 // The moved `primitives.tsx` exports (Pill/Chip/FetchedUrlChip/ActionLink — `primitives/chips.tsx`)
 // emit the SAME declaration values their inline styles did; the `.ui-pill*`/`.ui-chip*`/
 // `.ui-fetch-chip*`/`.ui-action-link` rules are pinned against those values by test, which is the
-// rendered-behaviour-unchanged proof.
+// rendered-behaviour-unchanged proof. C6 lives here: `.ui-chip` carries no cursor — only the
+// interactive `button.ui-chip` gets `cursor: pointer`.
 //
 // Bound: inlined verbatim into every SPA shell + SSR document — asserted ≤ 24 kB raw (REQ-KIT-5);
 // 225a's additions must fit the same bound.
@@ -109,5 +110,103 @@ export function uiCss(): string {
     ".ui-toast-title { font-size: var(--fs-dense); font-weight: 600; }",
     ".ui-toast-body { margin-top: 2px; color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
     ".ui-toast-dismiss { flex: none; }",
+
+    // ---- 225a_R7KIT.2b — the form/menu primitives ----
+    // Shared Lucide icon sizing (the check/chevron glyphs render at text size).
+    ".ui-icon { width: 1em; height: 1em; }",
+
+    // C6 — the interactive chip variant is the ONLY chip with a pointer affordance (a static
+    // `.ui-chip` keeps none); the button resets to the chip's own typography.
+    "button.ui-chip { cursor: pointer; font-family: var(--font-shell); }",
+
+    // ---- Popover (Radix) ----
+    ".ui-popover { z-index: 60; min-width: 180px; max-width: 320px; padding: var(--s2); border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); box-shadow: 0 6px 24px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
+    '.ui-popover[data-state="open"] { animation: ui-fade-in 120ms ease-out; }',
+    ".ui-popover-arrow { fill: var(--shell-raised); }",
+
+    // ---- Select (Radix) ----
+    ".ui-select-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s1) var(--s3); border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-family: var(--font-shell); font-size: var(--fs-dense); line-height: 1.4; cursor: pointer; }",
+    ".ui-select-trigger[data-placeholder] { color: var(--shell-fg-faint); }",
+    ".ui-select-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }",
+    ".ui-select-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-select-icon { display: inline-flex; color: var(--shell-fg-muted); }",
+    ".ui-select-content { z-index: 60; min-width: var(--radix-select-trigger-width); padding: var(--s1); border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); box-shadow: 0 6px 24px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
+    '.ui-select-content[data-state="open"] { animation: ui-fade-in 120ms ease-out; }',
+    ".ui-select-item { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s1) var(--s2); border-radius: var(--radius-1); color: var(--shell-fg); font-size: var(--fs-dense); line-height: 1.4; cursor: default; outline: none; user-select: none; }",
+    ".ui-select-item[data-highlighted] { background: var(--shell-border); }",
+    ".ui-select-item[data-disabled] { opacity: 0.55; pointer-events: none; }",
+    ".ui-select-item-indicator { display: inline-flex; color: var(--accent); }",
+
+    // ---- Tabs (Radix) ----
+    ".ui-tabs-list { display: flex; gap: var(--s1); border-bottom: 1px solid var(--shell-border); }",
+    ".ui-tabs-trigger { padding: var(--s1) var(--s3); border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--shell-fg-muted); font-family: var(--font-shell); font-size: var(--fs-dense); cursor: pointer; }",
+    '.ui-tabs-trigger[data-state="active"] { color: var(--shell-fg); border-bottom-color: var(--accent); }',
+    ".ui-tabs-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ui-tabs-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-tabs-content { padding-top: var(--s3); }",
+
+    // ---- Checkbox / RadioGroup / Switch (Radix) ----
+    ".ui-checkbox { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border-radius: var(--radius-1); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); cursor: pointer; }",
+    '.ui-checkbox[data-state="checked"] { background: var(--accent); border-color: var(--accent); color: var(--shell-bg); }',
+    ".ui-checkbox:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    ".ui-checkbox[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-checkbox-indicator { display: inline-flex; }",
+    ".ui-radio-group { display: flex; flex-direction: column; gap: var(--s2); }",
+    ".ui-radio-item { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); cursor: pointer; }",
+    '.ui-radio-item[data-state="checked"] { border-color: var(--accent); }',
+    ".ui-radio-indicator { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--accent); }",
+    ".ui-radio-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    ".ui-radio-item[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-switch { position: relative; display: inline-flex; align-items: center; width: 32px; height: 18px; padding: 0; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-border); cursor: pointer; }",
+    '.ui-switch[data-state="checked"] { background: var(--accent); border-color: var(--accent); }',
+    ".ui-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    ".ui-switch[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-switch-thumb { display: block; width: 12px; height: 12px; border-radius: var(--radius-pill); background: var(--shell-fg); transform: translateX(3px); transition: transform 120ms ease-out; }",
+    '.ui-switch[data-state="checked"] .ui-switch-thumb { transform: translateX(16px); background: var(--shell-bg); }',
+
+    // ---- cmdk Combobox + palette list base ----
+    ".ui-command { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); }",
+    ".ui-command-input { width: 100%; padding: var(--s2) var(--s3); border: none; border-bottom: 1px solid var(--shell-border); background: transparent; color: var(--shell-fg); font-family: var(--font-shell); font-size: var(--fs-dense); outline: none; }",
+    ".ui-command-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ui-command-list { max-height: 280px; overflow-y: auto; padding: var(--s1); }",
+    ".ui-command-item { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s2); border-radius: var(--radius-1); color: var(--shell-fg); font-size: var(--fs-dense); line-height: 1.4; cursor: default; user-select: none; }",
+    '.ui-command-item[data-selected="true"] { background: var(--shell-border); }',
+    '.ui-command-item[data-disabled="true"] { opacity: 0.55; pointer-events: none; }',
+    ".ui-command-empty { padding: var(--s3); color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
+    ".ui-command-group [cmdk-group-heading] { padding: var(--s1) var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
+
+    // ---- TextField / TextArea ----
+    ".ui-field { display: block; width: 100%; padding: var(--s1) var(--s3); border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-family: var(--font-shell); font-size: var(--fs-dense); line-height: 1.4; }",
+    ".ui-field:hover:not(:disabled) { border-color: var(--shell-fg-faint); }",
+    ".ui-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }",
+    ".ui-field:disabled { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-field--invalid, .ui-field[aria-invalid='true'] { border-color: var(--sev-blocking); }",
+    // Auto-grow TextArea: the JS writes height, so manual resize is off to avoid a tug-of-war.
+    ".ui-field--area { resize: none; }",
+
+    // ---- RadioCards (in-house) ----
+    ".ui-radio-cards { display: grid; gap: var(--s2); }",
+    ".ui-radio-card { display: flex; flex-direction: column; gap: var(--s1); padding: var(--s2) var(--s3); border-radius: var(--radius-2); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-dense); cursor: pointer; }",
+    ".ui-radio-card[aria-checked='true'] { border-color: var(--accent); }",
+    ".ui-radio-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    ".ui-radio-card[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-radio-card-desc { color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
+
+    // ---- EmptyState ----
+    ".ui-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s6) var(--s4); text-align: center; color: var(--shell-fg-muted); }",
+    ".ui-empty-icon { color: var(--shell-fg-faint); }",
+    ".ui-empty-title { margin: 0; color: var(--shell-fg); font-size: var(--fs-lead); font-weight: 600; }",
+    ".ui-empty-body { margin: 0; max-width: 46ch; font-size: var(--fs-dense); }",
+    ".ui-empty-action { margin-top: var(--s2); }",
+
+    // ---- Accordion (in-house) ----
+    ".ui-accordion { overflow: hidden; border-radius: var(--radius-2); border: 1px solid var(--shell-border); }",
+    ".ui-accordion-item + .ui-accordion-item { border-top: 1px solid var(--shell-border); }",
+    ".ui-accordion-trigger { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); width: 100%; padding: var(--s2) var(--s3); border: none; background: transparent; color: var(--shell-fg); font-family: var(--font-shell); font-size: var(--fs-dense); font-weight: 600; text-align: left; cursor: pointer; }",
+    ".ui-accordion-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ui-accordion-trigger:disabled { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-accordion-chevron { color: var(--shell-fg-muted); transition: transform 120ms ease-out; }",
+    ".ui-accordion-trigger[aria-expanded='true'] .ui-accordion-chevron { transform: rotate(180deg); }",
+    ".ui-accordion-panel { padding: 0 var(--s3) var(--s3); color: var(--shell-fg); font-size: var(--fs-dense); }",
   ].join("\n");
 }
