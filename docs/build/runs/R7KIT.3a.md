@@ -17,8 +17,10 @@ untouched, no money-mode change). Public `/pricing` delta accepted under GD-PUBD
 - `vitest` — settings/billing/usage dom 74/74; ua-label table 21 legs; pricing-page.test
   (floor/<1/hidden legs); no-raw-controls.test 68/68
 - `check:dom-contract` · `check:spa-budget` · `check:spa-env` · `check:protocol-markers` · `check:licenses` (873) all green
-- Entry delta vs baseline 04a4e98b: see PR body (primitives land in leaf chunks; Radix
-  select/checkbox/radio-group denied in entry by check:spa-entry-graph design — leaf-only)
+- Entry delta vs baseline 04a4e98b: **+15.3 kB gz — +0.3 kB over the ≤15.0 allowance** (running
+  total was already +15.0; the increment is the COPY label maps on the entry-graph copy.ts —
+  check:spa-entry-graph clean, Radix leaf-chunked). Honestly declared deficit — operator ruling.
+- `check:spa-entry-graph` clean; `check:spa-budget` ceilings OK with the allowance WARN above.
 
 ## Evidence — public-ssr-baseline (REQ-DACC-6, GD-PUBDELTA.R7)
 Local `node apps/web/dist/main.js` (dead API_BASE_URL), baseline script before (pricing-page.ts +

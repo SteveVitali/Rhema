@@ -28,9 +28,11 @@ REQ-DACC-6 (/pricing delta under GD-PUBDELTA.R7)**. Findings: **D3, D4, D8, RV-2
 ### Verification (all local, exit 0)
 `turbo build --filter=@rhema/web...` · typecheck · lint · vitest dom 74/74 + ua-label 21 legs +
 pricing-page formatter + no-raw-controls 68 · check:dom-contract · check:spa-budget ·
-check:spa-env · check:protocol-markers · check:licenses. **Entry delta vs 04a4e98b:** ~0 kB gz —
-new Radix deps resolve into leaf chunks only (entry-graph guard denies them in entry by design);
-the ui-css growth is inlined text, not entry JS. `public-ssr-baseline` local re-capture: /pricing
+check:spa-env · check:protocol-markers · check:licenses. **Entry delta vs 04a4e98b: +15.3 kB gz — +0.3 kB over the ≤15.0 kB per-ticket allowance** (the
+running total at ticket 239 was already +15.0 — zero headroom, as the ticket warned). The ~0.3 kB
+is the COPY-owned label maps (workflowLabels/stateLabels/sourceKind) riding the entry graph's
+copy.ts; every new Radix dep is leaf-chunked (check:spa-entry-graph clean). The ticket anticipates
+'an honestly declared deficit' — flagged for an operator ruling, not hidden. `public-ssr-baseline` local re-capture: /pricing
 differs only in the plan-value lines (evidence + method in `docs/build/runs/R7KIT.3a.md`).
 
 ### Owed to 250_R7DEP.2 — never green here
