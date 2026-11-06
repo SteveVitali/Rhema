@@ -136,6 +136,16 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
     expect(html).toContain('<div id="spa-root"');
     expect(html).not.toContain('type="module"');
   });
+  it("inlines the kit stylesheet (REQ-KIT-2/5) — uiCss() beside theme/ide, ≤ 24 kB raw per document", () => {
+    const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry });
+    expect(html).toContain(".ui-btn");
+    expect(html).toContain(".ui-tooltip");
+    // The bound is asserted on the DOCUMENT: the inlined <style> block carrying the kit rules.
+    const blocks = [...html.matchAll(/<style>([^]*?)<\/style>/g)].map((m) => m[1]);
+    const uiBlock = blocks.find((b) => b.includes(".ui-btn"))!;
+    expect(uiBlock.length).toBeLessThanOrEqual(24 * 1024);
+    expect(blocks.length).toBeGreaterThanOrEqual(3); // theme + ide + ui
+  });
 });
 
 describe("spaManifestEntry — the Vite manifest resolution (REQ-TL-4/5)", () => {

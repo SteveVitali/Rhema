@@ -1,7 +1,7 @@
 # ADR-129: Component stack — Radix per-package primitives, Lucide icons, `cmdk`; SplitPane choice by R7PANE.1
 
-- **Status:** Proposed
-- **Date:** 2026-11-03
+- **Status:** Accepted
+- **Date:** 2026-11-03 (shell by R7OPEN.1); filled and accepted **2026-11-05** by 225_R7KIT.2.
 - **Ticket:** R7OPEN.1 (shell); filled and accepted by **225 R7KIT.2**. The no-raw-controls rule
   item is **225a R7KIT.2b**'s; the SplitPane choice (`react-resizable-panels` vs in-house, under
   the REQ-KIT-5 budget rule) is **229 R7PANE.1**'s.
@@ -17,21 +17,89 @@ R7PANE.1 ticket chooses under the budget rule; all candidates are MIT/ISC and `c
 verifies; styling comes from a generated `uiCss()` in `@rhema/ui`; the no-raw-controls rule
 (REQ-GUARD-1) and the per-ticket entry-delta allowance (REQ-KIT-5) apply.
 
+R6's code audit (§4) counted 70 distinct padding literals, 7 radius values and zero shared
+controls across the surfaces — every surface invents its own buttons (UXC-15) — and RV-15
+measured the entry headroom thinner than the spec implied (~44 kB gz stale, re-measured at the
+tip before any dependency landed: **216,153 B gz ≈ 211.1 kB** of the 250 kB ceiling at
+`04a4e98b`).
+
 ## Decision
 
-_(Shell — written by R7OPEN.1 from spec §3.2. 225 R7KIT.2 fills the dependency list with exact
-pins (REQ-DOPS-8) and the `uiCss()` contract; 225a R7KIT.2b fills the primitive inventory and
-the no-raw-controls rule's scope/exemptions; 229 R7PANE.1 records the SplitPane choice.)_
+**The dependency stack, pinned once in `packages/ui/package.json`** (REQ-DOPS-8; `pnpm
+check:licenses` green — every package MIT except `lucide-react` ISC, both allowlisted, no
+exception rows):
+
+| Package | Pin | Licence |
+|---|---|---|
+| `@radix-ui/react-dialog` | 1.3.1 | MIT |
+| `@radix-ui/react-popover` | 1.3.1 | MIT |
+| `@radix-ui/react-dropdown-menu` | 2.2.1 | MIT |
+| `@radix-ui/react-context-menu` | 2.4.1 | MIT |
+| `@radix-ui/react-select` | 2.4.1 | MIT |
+| `@radix-ui/react-tabs` | 1.2.1 | MIT |
+| `@radix-ui/react-tooltip` | 1.4.1 | MIT |
+| `@radix-ui/react-checkbox` | 1.4.1 | MIT |
+| `@radix-ui/react-radio-group` | 1.5.1 | MIT |
+| `@radix-ui/react-switch` | 1.4.1 | MIT |
+| `lucide-react` | 1.68.0 | ISC |
+| `cmdk` | 1.1.1 | MIT |
+
+All pins exact (no `^`/`~`); the Radix packages all declare React-19 peer support, so the
+repo's React 19.3 pin is satisfied without a substitution. The whole stack lands in one ticket
+even though the Select/Popover/ContextMenu/Tabs/Checkbox/RadioGroup/Switch/cmdk wrappers are
+225a's — licence evidence and this listing happen in one place.
+
+**Per-package import policy** (lint-enforced in `eslint.config.js`): the `radix-ui`
+meta-package and any barrel/subpath of it are banned; `lucide-react` is named-icon-imports
+only (deep `lucide-react/*`/`dist/*` paths are banned); `@radix-ui/react-icons` is banned —
+Lucide is the one icon set.
+
+**Entry-delta discipline** (REQ-KIT-5): the tip budget was re-measured BEFORE the stack
+landed — `apps/web/spa-budget-baseline.json` (`04a4e98b`: entry 216,153 B / total JS 566,807 B
+/ total CSS 0 B gz). `scripts/check-spa-budget.mjs` prints each run's entry delta against the
+committed baseline keyed to the **≤ 15 kB gz per-ticket allowance**; every Stream-U PR states
+its actual. The report flags an over-allowance delta loudly; the hard gate stays the
+`entryGzipBytes` ceiling, which no ticket may raise without a ruling. This ticket's own entry
+delta is reported in its PR.
+
+**Entry-graph guard** (`scripts/check-spa-entry-graph.mjs`, `pnpm check:spa-entry-graph`,
+wired into the `public-safe` CI job): Dialog/Select/Popover/ContextMenu-class primitives load
+in leaf chunks only. The guard walks the manifest's transitive static entry graph and reads
+each chunk's sourcemap `sources`; any `@radix-ui/react-{dialog,select,popover,context-menu,
+tabs,checkbox,radio-group,switch}` path in the entry fails. The shell's allowance is exactly
+Tooltip + DropdownMenu; shared internals (popper/menu/dismissable-layer…) are exempt — the map
+proves only presence and the allowed parents legitimately pull them in.
+
+**`uiCss()` lives in `@rhema/ui`** (the spec wins over R6 WP1's `@rhema/tokens` suggestion):
+one generated stylesheet emitted beside `themeCss()`/`ideCss()` in the SPA shell and every SSR
+head, driven by the token layer (`var(--s*)`, `var(--fs-*)`, `var(--radius-*)`, palette vars —
+light and dark resolve through the one token set, no `[data-theme]` fork) plus the typed maps
+(`LAYOUT.timelinePx`, `MOTION.paneMs`). Bound **≤ 24 kB raw** inlined per shell document,
+asserted on the rendered document; primitives carry no inline spacing/type/colour/radius
+literals (a source-scan test fails on any `style={…}` non-`--*` prop under `primitives/`).
+
+**Native-fallback doctrine (RV-36):** KIT-1's token-styled native controls remain the
+permanent no-JS/SSR control layer — Radix wrappers are enhancements over them, never a
+replacement. The sheet keeps REQ-IDE-41: `Sheet` mounts on Radix Dialog with `modal={false}`
+(no overlay, no focus trap, outside content stays focusable).
 
 ## Consequences
 
-_(Filled by the owners: SPA budget headroom measured at the tip (REQ-KIT-5), chunk-loading
-boundaries, the migration-batch order, licence evidence.)_
+- The dependency stack lands once; 225a's form/menu primitives reuse these exact pins.
+- Bundle cost is bounded by mechanism, not discipline: per-package imports +
+  `sideEffects:false` keep unused primitives out of chunks; the entry-graph guard + the delta
+  report make a violation loud at CI, not at review.
+- The moved `primitives.tsx` exports keep their rendered declarations byte-for-byte (now in
+  `.ui-*` rules) — the equivalence is test-pinned.
+- 229 R7PANE.1 still chooses SplitPane; 225a still authors GUARD-1's mechanism.
 
 ## Alternatives considered
 
-_(Filled by the owners: meta-package vs per-package Radix; react-resizable-panels vs in-house;
-generated CSS vs per-component styles.)_
+- **Radix meta-package (`radix-ui`)** — rejected: one import pulls every primitive into the
+  consumer's chunk, defeating the leaf-chunk budget rule.
+- **`react-resizable-panels` vs in-house SplitPane** — open; 229 decides under the ≤ 15 kB rule.
+- **Per-component CSS-in-JS / inline styles** — rejected: R6's 70-padding sprawl is the bug
+  being fixed; one generated stylesheet gives the token layer a single owner.
 
 ## Revisit trigger
 

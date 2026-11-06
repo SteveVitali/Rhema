@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 
 // The §5.3 conversion preview + Conversion-notes card. Source-beside-converted, a count line, an anchored
 // warnings list, and the two actions (Create and fix later / Fix now). Text-agnostic — all copy is a prop.

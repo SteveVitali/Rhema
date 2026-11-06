@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Pill, Chip, ActionLink, type Tone } from "./primitives.js";
+import { Pill, Chip, ActionLink, type Tone } from "./primitives/chips.js";
 
 // The §5.2 project list (P1.04). One row per project — the state icon, title, current version, the
 // ≤120-char status line, the Voice chip (or Unfiled) + staleness pill, the one state-matched primary

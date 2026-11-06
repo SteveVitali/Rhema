@@ -307,6 +307,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "spa/surfaces/* non-document GET links (usage.csv, export/download, export/ai-use/*)",
       "REQ-NAVM-8/REQ-NAVC-13 — opts an anchor out of the delegated click interceptor so the GET stays a native document request; inert on SSR (no listener installed)",
     ),
+    a(
+      "data-highlighted",
+      "conditional",
+      "ui/primitives (Radix roving-highlight state on menu items; styled by uiCss)",
+      "R7KIT.2 (REQ-KIT-2) — Radix marks the pointer/keyboard-highlighted menu row",
+    ),
   ],
   // ---- /usage + /p/:p/usage ----
   usage: [
@@ -1079,7 +1085,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-letter-section", "conditional", "ui/letter.tsx", "one letter section, value = the section id (verdict, major-issues…)"),
     a("data-verdict", "conditional", "ui/claims.tsx + dossier", "per-claim verdict"),
     a("data-tier", "conditional", "ui/claims/dossier/pages", "claim tier chip"),
-    a("data-fetched", "conditional", "ui/primitives.tsx"),
+    a("data-fetched", "conditional", "ui/primitives/chips.tsx (moved primitives.tsx export, R7KIT.2)"),
     a("data-fetched-chip", "conditional", "ui/findings.tsx"),
     a("data-claim", "conditional", "ui/claims.tsx"),
     a("data-claim-url", "conditional", "ui/claims.tsx"),

@@ -63,6 +63,16 @@ describe("route-aware document meta (UX.1)", () => {
     expect(without).not.toContain('property="og:url"');
   });
 
+  it("every SSR document inlines the kit stylesheet (REQ-KIT-2/5, ADR-129)", () => {
+    for (const html of [
+      renderDocument("/", landingElement, {}),
+      renderDocument("/app", pageElement, {}),
+      renderDocument("/nope", landingElement, {}),
+    ]) {
+      expect(html).toContain(".ui-btn");
+    }
+  });
+
   it("every document links the favicon (svg + ico fallback)", () => {
     for (const html of [
       renderDocument("/", landingElement, {}),

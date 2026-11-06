@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import { canDispose, type FindingGroup, type TriageQueueView } from "@rhema/findings-core";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 import { ObligationChip, type ObligationStateKind } from "./chips.js";
 
 // The Desk's Findings tab (§5.7; REQ-IDE-23/24): the screen-reader landmark — a REAL <table> — fed by the

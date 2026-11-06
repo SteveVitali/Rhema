@@ -32,6 +32,7 @@ import {
   type ReadOnlyProject,
 } from "@rhema/contracts";
 import { themeCss, ideCss } from "@rhema/tokens";
+import { uiCss } from "@rhema/ui";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
 import type { SpaBoot } from "./spa-boot.js";
@@ -40,6 +41,9 @@ import type { DataSource, SessionHeaders } from "./data.js";
 
 const THEME_CSS = themeCss();
 const IDE_CSS = ideCss();
+// R7KIT.2 (REQ-KIT-2/5; ADR-129) — the component-kit stylesheet, inlined beside theme/ide in every
+// shell document (bound ≤ 24 kB raw, asserted).
+const UI_CSS = uiCss();
 const BOOT = themeBootScript();
 
 /**
@@ -252,7 +256,7 @@ export function renderSpaShell(
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `<title>${escapeHtml(doc.title)}</title>` +
     `<script>${BOOT}</script>` +
-    `<style>${THEME_CSS}</style><style>${IDE_CSS}</style>` +
+    `<style>${THEME_CSS}</style><style>${IDE_CSS}</style><style>${UI_CSS}</style>` +
     entry.preloads.map((f) => `<link rel="modulepreload" href="${assetHref(f)}">`).join("") +
     entry.stylesheets.map((f) => `<link rel="stylesheet" href="${assetHref(f)}">`).join("") +
     `</head>`;

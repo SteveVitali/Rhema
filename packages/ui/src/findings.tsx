@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import { canDispose, type FindingGroup, type ReconciliationConflict } from "@rhema/findings-core";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 import { ObligationChip, type ObligationStateKind } from "./chips.js";
 
 // The findings list (§5.7 "three surfaces, one list", beta = the Desk list; REQ-IDE-23/24). Reading surface:

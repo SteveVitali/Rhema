@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { ClaimUrlView } from "@rhema/findings-core";
-import { Chip, FetchedUrlChip } from "./primitives.js";
+import { Chip, FetchedUrlChip } from "./primitives/chips.js";
 
 // The claim ledger table (§5.7; REQ-IDE-25, REQ-OBJ-18/19). Tier, the ClaimVerdict chip, URL + accessed date,
 // a per-URL "fetched ✓" chip from the proxy fetch log, and multi-source stance rows. A non-checkable

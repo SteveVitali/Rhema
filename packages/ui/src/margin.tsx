@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import type { MarginItem } from "@rhema/findings-core";
-import { severityColor } from "./primitives.js";
+import { severityColor } from "./primitives/chips.js";
 import { FindingCard, type FindingCardLabels, type FindingCardProps } from "./findings.js";
 import type { ObligationStateKind } from "./chips.js";
 

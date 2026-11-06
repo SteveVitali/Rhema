@@ -69,6 +69,44 @@ export default tseslint.config(
       "rhema/no-system-pool-in-user-route": "error",
       // REQ-GROWTH-16: <RunButton> requires an `estimate` prop (a run is never launched without a shown estimate).
       "rhema/require-estimate-prop": "error",
+      // REQ-KIT-5 / ADR-129 (R7KIT.2): the component stack is per-package Radix (`@radix-ui/react-*`,
+      // the wrapper per primitive) — the `radix-ui` meta/barrel package is banned so leaf chunking
+      // survives; `lucide-react` is named-icon-imports only (deep `dist/` paths defeat tree-shaking);
+      // `@radix-ui/react-icons` is a different icon set — Lucide is the one set.
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "radix-ui",
+              message:
+                "ADR-129: no Radix meta-package — import the per-package primitive (@radix-ui/react-<primitive>) so leaf chunking holds (REQ-KIT-5).",
+            },
+            {
+              name: "@radix-ui",
+              message:
+                "ADR-129: no @radix-ui barrel — import the per-package primitive (@radix-ui/react-<primitive>).",
+            },
+            {
+              name: "@radix-ui/react-icons",
+              message:
+                "ADR-129: the icon set is lucide-react — named imports from 'lucide-react' only.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["radix-ui/*"],
+              message:
+                "ADR-129: no Radix meta-package subpaths — per-package @radix-ui/react-<primitive> imports only.",
+            },
+            {
+              group: ["lucide-react/*", "lucide-react/dist/*"],
+              message:
+                "REQ-KIT-5: named imports from 'lucide-react' only — deep icon paths defeat tree-shaking.",
+            },
+          ],
+        },
+      ],
       // Underscore-prefixed args/vars are intentional placeholders (skeleton stubs, unimplemented seams).
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -198,6 +236,21 @@ export default tseslint.config(
               name: "@rhema/evals",
               message: "private eval IP must never enter a client bundle (REQ-ARCH-33 / REQ-SAFE-9).",
             },
+            {
+              name: "radix-ui",
+              message:
+                "ADR-129: no Radix meta-package — per-package @radix-ui/react-<primitive> imports only (REQ-KIT-5).",
+            },
+            {
+              name: "@radix-ui",
+              message:
+                "ADR-129: no @radix-ui barrel — per-package @radix-ui/react-<primitive> imports only.",
+            },
+            {
+              name: "@radix-ui/react-icons",
+              message:
+                "ADR-129: the icon set is lucide-react — named imports from 'lucide-react' only.",
+            },
           ],
           patterns: [
             {
@@ -210,6 +263,16 @@ export default tseslint.config(
               allowTypeImports: true,
               message:
                 "@rhema/api-client is type-only in client bundles — runtime data rides the boot JSON / BFF fetches.",
+            },
+            {
+              group: ["radix-ui/*"],
+              message:
+                "ADR-129: no Radix meta-package subpaths — per-package @radix-ui/react-<primitive> imports only.",
+            },
+            {
+              group: ["lucide-react/*", "lucide-react/dist/*"],
+              message:
+                "REQ-KIT-5: named imports from 'lucide-react' only — deep icon paths defeat tree-shaking.",
             },
           ],
         },

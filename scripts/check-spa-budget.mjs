@@ -28,6 +28,7 @@ import { gzipSync } from "node:zlib";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT_DIR = "apps/web/public/spa";
 const DEFAULT_BUDGET_FILE = "apps/web/spa-budget.json";
+const DEFAULT_BASELINE_FILE = "apps/web/spa-budget-baseline.json";
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -163,13 +164,50 @@ export function evaluateSpaBudget(manifest, artifacts, budget) {
     `  total CSS: ${kb(totalCss)} / ${kb(c.totalCssGzipBytes)}`,
   );
 
-  return { ok: violations.length === 0, violations, report };
+  return {
+    ok: violations.length === 0,
+    violations,
+    report,
+    measured: { entryGz, editorGz, codemirrorGz, totalJs, totalCss },
+  };
 }
 
 /**
- * Load manifest + measure artifacts under outDirAbs and evaluate. Exported for tests.
+ * REQ-KIT-5 (225_R7KIT.2) — the entry-delta report. Stream-U tickets declare a per-ticket
+ * entry-graph allowance of ≤ 15 kB gz against the committed tip baseline
+ * (`apps/web/spa-budget-baseline.json`, measured at `04a4e98b` before the ADR-129 stack landed)
+ * and state the printed actual in their PR. The report is informational — the hard gate stays the
+ * `entryGzipBytes` ceiling (no ceiling is raised without an operator ruling) — but an
+ * over-allowance delta is flagged loudly so it cannot slide past review.
+ *
+ * @param measured the `measured` block evaluateSpaBudget returns
+ * @param baseline parsed spa-budget-baseline.json
+ * @returns {string[]} report lines
  */
-export function checkSpaBudget(outDirAbs, budgetPath) {
+export function spaDeltaReport(measured, baseline) {
+  const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
+  const sign = (n) => `${n < 0 ? "−" : "+"}${kb(Math.abs(n))}`;
+  const allowance = baseline.entryDeltaAllowanceGzipBytes ?? 15360;
+  const entryDelta = measured.entryGz - baseline.entryGzipBytes;
+  const lines = [
+    `  entry delta vs baseline ${String(baseline.sha).slice(0, 8)} (${baseline.measuredAt}): ${sign(entryDelta)} of the ≤ ${kb(allowance)} per-ticket allowance (REQ-KIT-5 — state this in the PR)`,
+    `  total JS delta: ${sign(measured.totalJs - baseline.totalJsGzipBytes)} · total CSS delta: ${sign(measured.totalCss - baseline.totalCssGzipBytes)}`,
+  ];
+  if (entryDelta > allowance) {
+    lines.push(
+      `  WARN: entry delta exceeds the ≤ ${kb(allowance)} per-ticket allowance — reduce or record an operator ruling`,
+    );
+  }
+  return lines;
+}
+
+/**
+ * Load manifest + measure artifacts under outDirAbs and evaluate. When a committed
+ * REQ-KIT-5 baseline file exists (baselinePath), the result carries `delta` — the
+ * informational entry-delta report lines (absent ⇒ `delta: []`, never a violation).
+ * Exported for tests.
+ */
+export function checkSpaBudget(outDirAbs, budgetPath, baselinePath = null) {
   const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
   const manifestPath = join(outDirAbs, ".vite", "manifest.json");
   if (!existsSync(outDirAbs) || !existsSync(manifestPath)) {
@@ -179,6 +217,7 @@ export function checkSpaBudget(outDirAbs, budgetPath) {
         `SPA output missing — ${manifestPath} not found (run \`pnpm --filter @rhema/web build:spa\` first; the gate is fail-closed)`,
       ],
       report: [],
+      delta: [],
     };
   }
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -189,7 +228,16 @@ export function checkSpaBudget(outDirAbs, budgetPath) {
     const rel = file.slice(outDirAbs.length + 1);
     artifacts.push({ file: rel, gzipBytes: gzipSync(readFileSync(file)).length });
   }
-  return evaluateSpaBudget(manifest, artifacts, budget);
+  const result = evaluateSpaBudget(manifest, artifacts, budget);
+  let delta = [];
+  if (baselinePath != null && existsSync(baselinePath)) {
+    try {
+      delta = spaDeltaReport(result.measured, JSON.parse(readFileSync(baselinePath, "utf8")));
+    } catch (err) {
+      delta = [`  WARN: baseline unreadable (${err.message}) — entry-delta report skipped`];
+    }
+  }
+  return { ...result, delta };
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -201,10 +249,14 @@ if (isMain) {
   };
   const outDir = resolve(root, opt("--out", DEFAULT_OUT_DIR));
   const budgetFile = resolve(root, opt("--budget", DEFAULT_BUDGET_FILE));
-  const { ok, violations, report } = checkSpaBudget(outDir, budgetFile);
+  const baselineFile = resolve(root, opt("--baseline", DEFAULT_BASELINE_FILE));
+  const { ok, violations, report, delta } = checkSpaBudget(outDir, budgetFile, baselineFile);
   if (report.length > 0) {
     console.log(`SPA bundle budget (gzip) — ${outDir}:`);
     for (const line of report) console.log(line);
+  }
+  if (delta.length > 0) {
+    for (const line of delta) console.log(line);
   }
   if (!ok) {
     console.error(`SPA bundle budget FAILED — ${violations.length} violation(s):`);

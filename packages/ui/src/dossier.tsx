@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FetchedUrlChip, severityColor } from "./primitives.js";
+import { FetchedUrlChip, severityColor } from "./primitives/chips.js";
 
 // The read-only sample dossier (REQ-POS-3): an Editor's letter, a claim ledger, and the findings — rendered
 // with NO triage/disposition controls (the public invite page is read-only). Its point is the 60-second proof
