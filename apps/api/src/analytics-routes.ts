@@ -177,6 +177,41 @@ export function createAnalyticsRoutes(deps: AnalyticsApiDeps): Hono {
         .catch(() => undefined); // analytics never 500s the funnel
       return c.json({ ok: true });
     });
+
+    // 223 R7DEM.6b (REQ-TOUR-9; ADR-126) — the ONE sanctioned demo write. The web relay posts
+    // the demo funnel beacon here; the row lands in `demo_events` through the SECURITY DEFINER
+    // `rhema_demo_event_insert` (the user-serving pool holds EXECUTE, never a table grant).
+    // Anonymous by construction: no principal, no session, no cookie, no header reads (the IP
+    // and UA are deliberately never touched — the 0061 schema has nowhere to put them).
+    // Everything unusual is a quiet 204 — the funnel never 4xxs a visitor.
+    const DEMO_EVENT_NAMES = new Set([
+      "demo.hub_viewed",
+      "demo.tour_started",
+      "demo.tour_completed_or_cta",
+    ]);
+    app.post("/analytics/demo", async (c) => {
+      const raw = await c.req.text().catch(() => "");
+      const body = (() => {
+        try {
+          return raw.length <= 256 ? (JSON.parse(raw) as Record<string, unknown>) : null;
+        } catch {
+          return null;
+        }
+      })();
+      const event = typeof body?.event === "string" ? body.event : null;
+      const essay = typeof body?.essay === "string" && body.essay.length <= 80 ? body.essay : null;
+      const step =
+        typeof body?.step === "number" && Number.isInteger(body.step) && body.step >= 1 && body.step <= 99
+          ? body.step
+          : null;
+      const src = typeof body?.src === "string" && body.src.length <= 40 ? body.src : null;
+      if (event != null && DEMO_EVENT_NAMES.has(event)) {
+        await db
+          .query(`select public.rhema_demo_event_insert($1,$2,$3,$4)`, [event, essay, step, src])
+          .catch(() => undefined); // telemetry is lossy — a write failure is silently dropped
+      }
+      return c.body(null, 204);
+    });
   }
 
   // ---- the privacy flag (the Settings toggle's bind) ---------------------------------

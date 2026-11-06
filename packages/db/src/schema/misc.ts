@@ -114,6 +114,19 @@ export const acquisitionEvents = pgTable("acquisition_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// 223 R7DEM.6b (0061; REQ-TOUR-9; ADR-126) — the anonymous demo funnel: the ONE sanctioned
+// demo write. No identity columns of any kind (no user/workspace/ip/ua) — the envelope differs
+// from `analyticsEvents` by design. Reachable only through the SECURITY DEFINER
+// `rhema_demo_event_insert`; the user-serving role holds no table privilege (rls-catalog `-`).
+export const demoEvents = pgTable("demo_events", {
+  id: text("id").primaryKey(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  event: text("event").notNull(),
+  essay: text("essay"),
+  step: integer("step"),
+  src: text("src"),
+});
+
 export const figures = pgTable("figures", {
   id: text("id").primaryKey(),
   projectId: text("project_id"),

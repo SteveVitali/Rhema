@@ -133,6 +133,14 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   // P1.17 — REQ-CHAT-30's instrumentation half: the scratch cohort's first gate decision emits
   // `outline.approved` at the gate-decision seam (an approve_outline gate resolving approve).
   "outline.approved": { status: "emitted", source: "apps/api/src/run-routes.ts" },
+  // 223 R7DEM.6b (REQ-TOUR-9) — the anonymous demo funnel: `emitDemoEvent` (the hub's inline
+  // beacon + the tour's lifecycle callbacks) → `POST /a/demo` → `POST /analytics/demo` →
+  // `rhema_demo_event_insert` → `demo_events`. The anonymous-channel representation decision
+  // is recorded on ADR-126: catalogue registration for audit completeness, a `demo_events`
+  // envelope of bounded {event, essay, step, src} and NO user/workspace identity.
+  "demo.hub_viewed": { status: "emitted", source: "apps/web/src/spa/demo-beacon.ts" },
+  "demo.tour_started": { status: "emitted", source: "apps/web/src/spa/demo-beacon.ts" },
+  "demo.tour_completed_or_cta": { status: "emitted", source: "apps/web/src/spa/demo-beacon.ts" },
 };
 
 /** The audit grouped by status — the report/PR render this verbatim. */

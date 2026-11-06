@@ -220,7 +220,22 @@ export function DemoHubPage({ cards = [] }: { cards?: readonly DemoCardFactsDto[
 
 /** The element the guard's hub arm renders (demo.ts is .ts — the JSX lives here). */
 export function demoHubDocument(cards: readonly DemoCardFactsDto[]): ReactNode {
-  return <DemoHubPage cards={cards} />;
+  return (
+    <>
+      <DemoHubPage cards={cards} />
+      {/* 223 R7DEM.6b (REQ-TOUR-9) — the anonymous `demo.hub_viewed` beacon. Inline script is
+       *  CSP-nonced by the middleware; sendBeacon only, ≤ 256 B, `src` from the URL. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            `(function(){try{var s=new URLSearchParams(location.search).get("src");` +
+            `var b={event:"demo.hub_viewed"};if(s){b.src=s.slice(0,40);}` +
+            `navigator.sendBeacon("/a/demo",new Blob([JSON.stringify(b)],{type:"text/plain"}));` +
+            `}catch(e){}})();`,
+        }}
+      />
+    </>
+  );
 }
 
 /**

@@ -77,7 +77,7 @@ const R11_DEMO: StepFn = async (ctx) => {
     [signedIn.page, true],
     [anon.page, false],
   ] as const) {
-    await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+    await gotoOk(page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
     const h1 = await page.locator("h1").count();
     if (h1 !== 1) throw new Error(`signedIn=${want} /demo hub rendered ${h1} h1s (want 1)`);
     // 221a — the filled hub: the four ordered essay cards render identically either side of
@@ -103,7 +103,7 @@ const R11_DEMO: StepFn = async (ctx) => {
       [signedIn.page, true],
       [anon.page, false],
     ] as const) {
-      await gotoOk(page, `${ctx.webBaseUrl}/demo/${essay.essay}`, ctx);
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${essay.essay}?src=jrn`, ctx);
       const renderer = await page.locator("html").getAttribute("data-renderer");
       if (renderer !== "spa") {
         throw new Error(`/demo/${essay.essay} signedIn=${want} served data-renderer=${renderer ?? "(absent)"}`);
@@ -138,7 +138,7 @@ const R11_DEMO: StepFn = async (ctx) => {
     .first()
     .waitFor({ timeout: 30_000 })
     .catch(() => undefined);
-  await gotoOk(signedIn.page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}/figures`, ctx);
+  await gotoOk(signedIn.page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}/figures?src=jrn`, ctx);
   await signedIn.page.locator("[data-demo-banner]").first().waitFor({ timeout: 30_000 });
   await signedIn.page.screenshot({ path: join(ctx.outDir, "r11-demo.png"), fullPage: true });
   assertBundleParity(ctx);
@@ -162,7 +162,7 @@ const P1_DEMO: StepFn = async (ctx) => {
     });
     try {
       const page = await phone.newPage();
-      await gotoOk(page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}`, ctx);
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}?src=jrn`, ctx);
       const html = page.locator("html");
       const [renderer, device] = await Promise.all([
         html.getAttribute("data-renderer"),
@@ -188,7 +188,7 @@ const P1_DEMO: StepFn = async (ctx) => {
       await assertNoOverflow(page, `demo Page @${w}`);
       // 221a — the hub extension: the filled /demo SSR page at phone widths carries the four
       // essay cards with no horizontal overflow (the provenance paragraph rides along).
-      await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+      await gotoOk(page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
       if ((await page.locator("[data-demo-essay-card]").count()) !== DEMO_HUB_ESSAYS.length) {
         throw new Error(`/demo @${w} rendered the wrong card set`);
       }
@@ -492,8 +492,9 @@ const D3_READONLY: StepFn = async (ctx) => {
     ["returning", await ctx.returningUser("a")],
   ] as const) {
     const collect = attachDemoRecord(arm.page, origin);
-    // the hub — a public document, still inside the allowlist.
-    await gotoOk(arm.page, `${ctx.webBaseUrl}/demo`, ctx);
+    // the hub — a public document, still inside the allowlist. `?src=jrn` tags journey
+    // traffic so its `demo_events` rows never read as organic (cohort hygiene, R4 §6).
+    await gotoOk(arm.page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
     for (const essay of essays) {
       // Seeds derived from the essay's OWN twins (versions → /v/n + diffs, figures → cards,
       // the timeline's runIds → dossier/report): every route shape the corpus actually holds
@@ -530,6 +531,49 @@ const D3_READONLY: StepFn = async (ctx) => {
     if (collect.websockets.length > 0) {
       throw new Error(`D3.readonly ${tag}: ${collect.websockets.length} WebSocket(s) opened`);
     }
+    // 223 R7DEM.6b (REQ-TOUR-9; REQ-DACC-3) — the ONE non-GET proof, sharpened: every non-GET
+    // the page emitted is `POST /a/demo` AND its body matches the anonymous event shape
+    // {event ∈ the three demo.* names, essay? ≤80, step? 1–99 int, src? ≤40} within 256 B —
+    // never an identity, never a different write.
+    const DEMO_EVENTS = new Set([
+      "demo.hub_viewed",
+      "demo.tour_started",
+      "demo.tour_completed_or_cta",
+    ]);
+    for (const r of collect.requests.filter((x) => x.method !== "GET" && x.method !== "HEAD")) {
+      const path = new URL(r.url).pathname;
+      if (path !== "/a/demo") {
+        throw new Error(`D3.readonly ${tag}: non-carve-out write ${r.method} ${r.url}`);
+      }
+    }
+    // …and every /a/demo body the walk emitted (route-captured — sendBeacon bodies never
+    // surface on the request event) matches the anonymous event shape: {event ∈ the three
+    // demo.* names, essay? ≤80, step? 1–99 int, src? ≤40} within 256 B, no identity keys.
+    // (The hub beacon makes the set non-empty on every walk; a zero-set is asserted below.)
+    for (const pd of collect.demoPostBodies) {
+      const body = (() => {
+        try {
+          return pd.length <= 256 ? (JSON.parse(pd) as Record<string, unknown>) : null;
+        } catch {
+          return null;
+        }
+      })();
+      if (
+        body == null ||
+        typeof body.event !== "string" ||
+        !DEMO_EVENTS.has(body.event) ||
+        (body.essay != null && (typeof body.essay !== "string" || body.essay.length > 80)) ||
+        (body.step != null &&
+          (typeof body.step !== "number" || !Number.isInteger(body.step) || body.step < 1 || body.step > 99)) ||
+        (body.src != null && (typeof body.src !== "string" || body.src.length > 40)) ||
+        ["user_id", "workspace_id", "ip", "ua", "cookie", "session"].some((k) => k in body)
+      ) {
+        throw new Error(`D3.readonly ${tag}: /a/demo body out of shape: ${pd.slice(0, 200)}`);
+      }
+    }
+    if (collect.demoPostBodies.length === 0) {
+      throw new Error(`D3.readonly ${tag}: no /a/demo body captured — the shape leg is vacuous`);
+    }
   }
   assertBundleParity(ctx);
 };
@@ -547,7 +591,7 @@ const D1_HUB: StepFn = async (ctx) => {
   const { page } = await ctx.anon();
   for (const w of [1440, 1024, 390] as const) {
     await page.setViewportSize({ width: w, height: 900 });
-    await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+    await gotoOk(page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
     // N10 invariants on /demo
     const title = await page.title();
     if (!title || !/Rhēma/.test(title)) throw new Error(`D1.hub @${w}: <title> "${title}" unbranded/empty`);
@@ -677,7 +721,7 @@ const D2_TOUR: StepFn = async (ctx) => {
   if ((await footerEntry.getAttribute("data-spa-native")) == null) {
     throw new Error("the footer entry is missing data-spa-native");
   }
-  await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+  await gotoOk(page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
 
   for (const w of [1440, 1024, 390] as const) {
     await page.setViewportSize({ width: w, height: 900 });
@@ -687,7 +731,7 @@ const D2_TOUR: StepFn = async (ctx) => {
         await page.locator("[data-demo-tour-entry]").first().click();
       });
     } else {
-      await gotoOk(page, `${ctx.webBaseUrl}/demo/${TOUR_ESSAY}?tour=published`, ctx);
+      await gotoOk(page, `${ctx.webBaseUrl}/demo/${TOUR_ESSAY}?tour=published&src=jrn`, ctx);
     }
     for (const [i, step] of TOUR_STEPS.entries()) {
       // 1024 walks each step via its own URL (fresh document per step — the mount + placement +
@@ -759,7 +803,7 @@ const D2_TOUR: StepFn = async (ctx) => {
     }
     if (w !== 1440) {
       // re-enter cleanly for the next width — the tour state rides the URL, so a fresh GET suffices.
-      await gotoOk(page, `${ctx.webBaseUrl}/demo`, ctx);
+      await gotoOk(page, `${ctx.webBaseUrl}/demo?src=jrn`, ctx);
     }
   }
   const violations = [

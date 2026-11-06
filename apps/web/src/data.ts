@@ -765,6 +765,17 @@ export interface DataSource {
     ip?: string;
   }): Promise<{ ok: boolean }>;
   /**
+   * R7DEM.6b (REQ-TOUR-9) — the anonymous demo funnel beacon (demo_events; no session, no
+   * identity). The relay STRIPS cookie/authorization before this call — a signed-in demo
+   * visitor stays anonymous. `demoDataSource` never implements it (DemoUnsupported).
+   */
+  recordDemoEvent?(req: {
+    event: "demo.hub_viewed" | "demo.tour_started" | "demo.tour_completed_or_cta";
+    essay?: string;
+    step?: number;
+    src?: string;
+  }): Promise<{ ok: boolean }>;
+  /**
    * P1.17 (§15.4) — the workspace's Showcase entry + signup intent (the `GET /app` precedence
    * redirect's read; absent ⇒ no redirect, the list renders).
    */
@@ -1621,6 +1632,10 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f }).recordLandingEvent(req, {
         headers: req.ip ? { "x-forwarded-for": req.ip } : {},
       }),
+    // R7DEM.6b — the anonymous demo beacon: the client is built with NO session headers, so
+    // cookie/authorization can never reach the api even if the caller's context carried one.
+    recordDemoEvent: (req) =>
+      createApiClient({ baseUrl, fetch: f }).recordDemoEvent(req),
     getShowcaseEntry: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getShowcase(),
     getPrivacySettings: (session) =>

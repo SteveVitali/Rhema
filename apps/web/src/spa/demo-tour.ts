@@ -216,10 +216,18 @@ export function tourStepFor(value: string | null): DemoTourStep | null {
   return DEMO_TOUR_STEPS.find((s) => s.id === value) ?? null;
 }
 
-/** The public-path href for a step (`?tour=<id>` carried verbatim). */
+/** The public-path href for a step (`?tour=<id>` carried verbatim; a live `?src=` is
+ *  propagated so the funnel tag survives the whole tour — REQ-TOUR-9 cohort hygiene). */
 export function tourStepHref(step: DemoTourStep): string {
   const q = step.search != null ? `${step.search}&` : "";
-  return `/demo/${TOUR_ESSAY}${step.route}?${q}tour=${step.id}`;
+  let src = "";
+  try {
+    const v = new URLSearchParams(window.location.search).get("src");
+    if (v != null && v !== "") src = `&src=${encodeURIComponent(v.slice(0, 40))}`;
+  } catch {
+    /* non-DOM callers (step tables, tests) carry no src */
+  }
+  return `/demo/${TOUR_ESSAY}${step.route}?${q}tour=${step.id}${src}`;
 }
 
 /** The CSS selector a step's target resolves to. */

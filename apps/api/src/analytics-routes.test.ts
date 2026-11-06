@@ -119,6 +119,60 @@ describe("POST /analytics/events — the client whitelist (AC1/AC5)", () => {
   });
 });
 
+// 223 R7DEM.6b (REQ-TOUR-9) — POST /analytics/demo: the ONE sanctioned demo write, pre-auth
+// on `deps.db` exactly like /analytics/landing. Always 204, never a Set-Cookie, never reads
+// an identity header; a valid event lands exactly one demo_events row through the
+// SECURITY DEFINER channel; everything else is a silent drop.
+describe("POST /analytics/demo — the anonymous demo funnel carve-out", () => {
+  const post = (app: ReturnType<typeof analyticsApp>, body: unknown, headers: Record<string, string> = {}) =>
+    app.request("/analytics/demo", {
+      method: "POST",
+      headers: { "content-type": "text/plain", ...headers },
+      body: typeof body === "string" ? body : JSON.stringify(body),
+    });
+  const demoRows = async () =>
+    (await db.client.query("select event, essay, step, src from demo_events")).rows;
+
+  it("a valid event inserts exactly one row — signed out AND signed in", async () => {
+    const app = analyticsApp({ db: db.client });
+    for (const headers of [{}, { cookie: "rhema.session_token=x", authorization: "Bearer y" }]) {
+      const res = await post(app, { event: "demo.hub_viewed", src: "jrn" }, headers);
+      expect(res.status).toBe(204);
+      expect(res.headers.get("set-cookie")).toBeNull();
+    }
+    expect(await demoRows()).toHaveLength(2);
+  });
+
+  it("oversize, out-of-enum, malformed and non-JSON bodies are 204 with no row", async () => {
+    const app = analyticsApp({ db: db.client });
+    const res1 = await post(app, { event: "demo.evil" });
+    const res2 = await post(app, { event: "demo.hub_viewed", essay: "x".repeat(400) });
+    const res3 = await post(app, "not json at all");
+    const res4 = await post(app, JSON.stringify({ event: "demo.hub_viewed" }).padEnd(300, " "));
+    for (const r of [res1, res2, res3, res4]) {
+      expect(r.status).toBe(204);
+      expect(r.headers.get("set-cookie")).toBeNull();
+    }
+    expect(await demoRows()).toHaveLength(0);
+  });
+
+  it("bounded fields land; an out-of-bounds optional field is dropped, not the event", async () => {
+    const app = analyticsApp({ db: db.client });
+    await post(app, { event: "demo.tour_completed_or_cta", essay: "structure-of-political-difference", step: 11, src: "jrn" });
+    const [row] = await demoRows();
+    expect(row).toMatchObject({
+      event: "demo.tour_completed_or_cta",
+      essay: "structure-of-political-difference",
+      step: 11,
+      src: "jrn",
+    });
+    // a bad step clears the field, the event still lands (essay/src stay).
+    await post(app, { event: "demo.tour_started", essay: "x", step: 1000, src: "s" });
+    const rows = await demoRows();
+    expect(rows[1]).toMatchObject({ event: "demo.tour_started", essay: "x", step: null, src: "s" });
+  });
+});
+
 describe("GET|POST /settings/privacy — the opt-out flag (REQ-PROD-15)", () => {
   it("defaults off, then the POST flips it and the GET reflects it", async () => {
     expect(await (await analyticsApp().request("/settings/privacy")).json()).toEqual({ analyticsOptOut: false });
