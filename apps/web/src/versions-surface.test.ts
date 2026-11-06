@@ -409,28 +409,21 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
 });
 
 describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () => {
-  it("renders typed sections: SE/SR rows, I behind Advanced, H as a sealed count — never a row", async () => {
+  // R7SHELL.2 — the pane is deleted: the typed-sections DTO now feeds the SIDEBAR's project
+  // tree via `?view=tree` (covered by the app-shell DOM tests). The SSR phone document renders
+  // none of it (the reader never did show Files).
+  it("the SSR document carries no Files pane markup (R7SHELL.2 — the region is deleted)", async () => {
     const app = createWebApp(makeDeps());
     const html = await (await app.request(`/p/${SLUG}/v/2`, PHONE)).text();
-    expect(html).toContain("data-files-pane");
-    expect(html).toContain('data-files-section="drafts"');
-    expect(html).toContain('data-file-row="art_d2"');
-    expect(html).toContain('data-file-row="art_letter"');
-    // locks + provenance badges + the freshness note (stale against its subject draft).
-    expect(html).toContain('data-lock="editable"');
-    expect(html).toContain('data-lock="immutable"');
-    expect(html).toContain('data-run="run_1"');
-    expect(html).toContain('data-freshness="true" data-stale="1"');
-    // the I row rides the section's Advanced disclosure.
-    expect(html).toContain('data-file-row="art_dossier"');
-    expect(html).toContain("data-files-advanced");
-    // H kinds: a sealed count, no row, no link.
-    expect(html).toContain('data-sealed-count="3"');
-    expect(html).not.toContain('data-level="H"');
-    // links: drafts hop to /v/:n, artifacts to /a/:id, provenance to /r/:runId.
-    expect(html).toContain(`href="/p/${SLUG}/v/2"`);
-    expect(html).toContain(`href="/p/${SLUG}/a/art_letter"`);
-    expect(html).toContain(`href="/p/${SLUG}/r/run_1"`);
+    expect(html).not.toContain("data-files-pane");
+    expect(html).not.toContain("ide-files");
+    expect(html).not.toContain("ide-rail");
+    // the `?view=tree` twin still serves the sections for the sidebar tree.
+    const tree = await (await app.request(`/bff/p/${SLUG}?view=tree`, PHONE)).json();
+    expect(tree.files).not.toBeNull();
+    expect(tree.project.slug).toBe(SLUG);
+    const sections = (tree.files.sections as { key: string }[]).map((s) => s.key);
+    expect(sections).toContain("drafts");
   });
 
   it("the artifact deep link renders the read-only Page inside the IDE shell", async () => {

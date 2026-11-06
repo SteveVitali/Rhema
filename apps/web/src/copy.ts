@@ -905,6 +905,8 @@ export const COPY = {
   // P1.08 — the §5.13 Files pane (REQ-IDE-35/36/37, REQ-VIS-3): the typed artifact Browser's chrome.
   // Never a filesystem — sections are kinds, rows are artifacts, H kinds surface as a count only.
   files: {
+    // R7SHELL.2 (UXC-30) — the tree's aria-label; the "Files" label is COPY-owned.
+    heading: "Files",
     sectionLabel: {
       outline: "Outline",
       drafts: "Drafts",
@@ -922,10 +924,11 @@ export const COPY = {
       immutable: "Immutable",
       inspect: "Inspect only",
     } as Record<string, string>,
-    lockIcon: {
-      editable: "✎",
-      immutable: "🔒",
-      inspect: "👁",
+    // R7SHELL.2 (B10) — the frozen/working Badge text replacing the lock glyphs.
+    lockBadge: {
+      editable: "Working",
+      immutable: "Frozen",
+      inspect: "Inspect only",
     } as Record<string, string>,
     freshnessFmt: "describes v{n}",
     freshnessStaleFmt: "describes v{n} — since edited",
@@ -1785,19 +1788,13 @@ export const COPY = {
   // menu, and the theme/paper controls. Canonical nouns only (Appendix D.2): "Files", never "Browser";
   // the view values are Write / Read / Focus; "Source" is not a View-menu entry.
   ide: {
+    // R7SHELL.2 — `rail` survives only for the SSR phone bar (`!hosted`); the `files` bag is
+    // gone with the Files pane (the tree's labels live in `COPY.files`).
     rail: {
       home: "Home",
       inbox: "Inbox",
       settings: "Settings",
       project: "Project navigation",
-    },
-    files: {
-      heading: "Files",
-      open: "Files ⌘1",
-      close: "Close Files",
-      empty: "Import a draft to add files to this project.",
-      sourceFile: "Source",
-      resize: "Resize Files",
     },
     margin: {
       heading: "Findings",
@@ -2634,6 +2631,16 @@ export const COPY = {
     menuTip: "Open the menu",
     paneTip: "Toggle the pane",
     closeMenu: "Close the menu",
+    // R7SHELL.2 (REQ-SHELL-4) — the project-scope section's item labels.
+    project: {
+      page: "Page",
+      outline: "Outline",
+      figures: "Figures",
+      versions: "Versions",
+      reviews: "Reviews",
+      export: "Export",
+      settings: "Project settings",
+    },
   },
   appShellThemes: {
     dark: "Dark",

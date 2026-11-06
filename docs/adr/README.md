@@ -138,3 +138,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-130](ADR-130-retire-generated-run-walkthrough.md) | Retire the generated run walkthrough — the run card is composed from the delivered record | R7OPEN.1 (shell); filled and accepted by **213 R7COPY.0**. | Proposed |
 | [ADR-131](ADR-131-appshell-keymap-sidebar-decisions.md) | AppShell decisions — sidebar collapse storage and the reserved-chords schema | 226_R7SHELL.1a (REQ-SHELL-1/2/6, REQ-KEYS-1) | accepted |
 | [ADR-132](ADR-132-global-palette-search-decisions.md) | The global ⌘K palette + tenant-scoped GET /search — owned decisions | 228_R7SHELL.1c (REQ-SHELL-7, REQ-RELOAD-3, REQ-SPEC-30, REQ-ISL-10) | accepted |
+| [ADR-133](ADR-133-project-scope-sidebar-decisions.md) | R7SHELL.2 project-scope sidebar decisions | 230_R7SHELL.2 (REQ-SHELL-4, REQ-KIT-5) | accepted |

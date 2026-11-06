@@ -333,36 +333,52 @@ describe("REQ-TST-2 — manifest parity with the SSR twin", () => {
 });
 
 describe("panes + the verbatim pane codec (REQ-ISL-9, REQ-SEQ-11)", () => {
-  // R7SHELL.1a (REQ-KEYS-1) — ⌘1 is retired (Rule 2's number-key row); the pointer path is
-  // the pane's own toggle — the persisted token set is unchanged.
-  it("the Files toggle collapses Files and persists rhema:panes:v1:u1:p-alpha", async () => {
+  // R7SHELL.1a (REQ-KEYS-1) — ⌘1 is retired (Rule 2's number-key row); R7SHELL.2 — the Files
+  // pane is deleted, so the right panel's `]`/toggle path is the only persisted pane intent.
+  it("the panel toggle persists rhema:panes:v1:u1:p-alpha", async () => {
     await mount();
-    expect(ide()?.dataset["files"]).toBe("strip"); // filesOpen=false ⇒ the collapsed strip
-    click(document.querySelector("[data-ide-files-toggle]"));
-    expect(ide()?.dataset["files"]).toBe("open");
+    click(document.querySelector("[data-ide-panel-toggle]"));
+    expect(ide()?.dataset["panel"]).toBe("closed");
     const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
     expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw!) as { filesOpen?: boolean };
-    expect(parsed.filesOpen).toBe(true);
+    const parsed = JSON.parse(raw!) as { panelOpen?: boolean };
+    expect(parsed.panelOpen).toBe(false);
+    // R7SHELL.2 — the persisted blob never carries the removed keys.
+    expect(raw).not.toContain("filesOpen");
+    expect(raw).not.toContain("filesWidth");
   });
 
   it("a stored arrangement wins — the same codec the island wrote restores verbatim", async () => {
     localStorage.setItem(
       paneStorageKey("u1", "p-alpha"),
-      serializePaneState({ ...DEFAULT_PANE_STATE, filesOpen: true, panelOpen: true, panelTab: "findings" }),
+      serializePaneState({ ...DEFAULT_PANE_STATE, panelOpen: true, panelTab: "findings" }),
     );
     await mount();
-    expect(ide()?.dataset["files"]).toBe("open");
     expect(ide()?.dataset["panel"]).toBe("open");
     expect(ide()?.dataset["panelTab"]).toBe("findings");
+    // …and a pre-change blob's removed keys are tolerated (never thrown, never re-emitted).
+    document.body.innerHTML = "";
+    for (const r of mounted.splice(0)) act(() => r.unmount());
+    localStorage.setItem(
+      paneStorageKey("u1", "p-alpha"),
+      '{"v":2,"filesOpen":true,"filesWidth":480,"panelOpen":false,"panelTab":"chat"}',
+    );
+    await mount();
+    expect(ide()?.dataset["panel"]).toBe("closed");
+    // the stale blob parses without throwing (the mount already proved it); the NEXT commit
+    // writes a clean token set — the removed keys never re-serialize.
+    click(document.querySelector("[data-ide-panel-toggle]"));
+    expect(JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha"))!)).not.toHaveProperty("filesOpen");
+    expect(JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha"))!)).not.toHaveProperty("filesWidth");
   });
 
-  it("the pane toggles write the same token set the SSR island stamped", async () => {
+  it("the Files strip is gone from the DOM (R7SHELL.2 — a re-introduction fails here)", async () => {
     await mount();
-    click(document.querySelector("[data-ide-panel-toggle]"));
-    expect(ide()?.dataset["panel"]).toBe("closed");
-    click(document.querySelector("[data-ide-files-toggle]"));
-    expect(ide()?.dataset["files"]).toBe("open");
+    expect(document.querySelector(".ide-rail")).toBeNull();
+    expect(document.querySelector(".ide-files")).toBeNull();
+    expect(document.querySelector("[data-ide-files-toggle]")).toBeNull();
+    expect(ide()?.dataset["files"]).toBeUndefined();
+    expect(ide()?.dataset["filesMode"]).toBeUndefined();
   });
 });
 
@@ -437,15 +453,15 @@ describe("R7FIX.1 — the pane stopgap (REQ-PANE-0)", () => {
     expect(ide()?.dataset["panel"]).toBe("closed");
   });
 
-  it("the <1024 drawer: Files opens as a session overlay (scrimmed) and never persists", async () => {
+  it("the <1024 sheet: the panel opens as a session overlay (scrimmed) and never persists", async () => {
     setWidth(820);
     await mount();
-    expect(ide()?.dataset["filesMode"]).toBe("overlay");
-    expect(ide()?.dataset["files"]).toBe("strip"); // closed by default
-    click(document.querySelector("[data-ide-files-toggle]"));
-    expect(ide()?.dataset["files"]).toBe("open");
+    expect(ide()?.dataset["panelMode"]).toBe("sheet");
+    expect(ide()?.dataset["panel"]).toBe("closed"); // closed by default
+    key({ key: "]" });
+    expect(ide()?.dataset["panel"]).toBe("open");
     const raw = localStorage.getItem(paneStorageKey("u1", "p-alpha"));
-    expect(raw == null || !raw.includes('"filesOpen":true')).toBe(true);
+    expect(raw == null || !raw.includes('"panelOpen":true')).toBe(true);
   });
 });
 

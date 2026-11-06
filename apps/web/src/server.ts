@@ -1523,9 +1523,6 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(principal?.userId ? { userId: principal.userId } : {}),
         projectId: row.id,
         ...(c.req.query("focus") === "1" ? { initialView: "focus" as const } : {}),
-        // EDIT.1 — the Files-pane Source row is an edit entry point: it rides the one resolver
-        // (`/v/working` → the editable head) instead of the legacy /edit/:id redirect hop.
-        ...(row.headDraftId ? { sourceHref: `/p/${row.slug}/v/working` } : {}),
         ...(row.activeRun ? { activeRun: row.activeRun } : {}),
         ...(opts.inboxCount != null ? { inboxCount: opts.inboxCount } : {}),
         ...(opts.findings ? { findings: opts.findings } : {}),
@@ -6159,6 +6156,32 @@ export function createWebApp(deps: WebDeps): Hono {
       const slug = c.req.param("slug") ?? "";
       const row = await bffProjectRow(c, deps.dataSource, session, slug);
       if (!row) return c.json({ error: "not_found" }, 404);
+      // R7SHELL.2 (REQ-SHELL-4) — `?view=tree` answers the sidebar project section's light twin:
+      // the current project's facts + its `getFiles` tree. The full aggregate below stays the
+      // default arm; `run_lock` is page-level (the tree twin reports document-level carriers
+      // only — the sidebar's write-only gating is showcase/demo-scoped anyway).
+      if (c.req.query("view") === "tree") {
+        const files = await Promise.resolve()
+          .then(() => deps.dataSource.getFiles?.(session, row.id))
+          .catch(() => undefined);
+        return c.json({
+          project: {
+            title: row.title,
+            pill: row.state.pill,
+            slug,
+            headDraftId: row.headDraftId ?? null,
+            headDraftN: row.headDraftN ?? null,
+            ...(row.showcase === true ? { showcase: true } : {}),
+            readOnlyProject:
+              row.showcase === true
+                ? { reason: "showcase" as const }
+                : deps.demo === true
+                  ? { reason: "demo" as const }
+                  : null,
+          },
+          files: files ?? null,
+        });
+      }
       const comp = await projectOverviewComposition(c, session, row);
       const ctx = await ideContext(c, session, { ...row, slug }, overviewIdeOpts(slug, comp, row));
       const { projectVoice, pageLoad } = comp;

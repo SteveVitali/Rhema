@@ -13,6 +13,7 @@ function fmt(template: string, vars: Record<string, string | number>): string {
 const FP = COPY.files;
 
 export const filesLabels: FilesPaneLabels = {
+  heading: FP.heading,
   sectionLabel: (key) => FP.sectionLabel[key] ?? key,
   provenanceLabel: (p) =>
     p.actor === "you"
@@ -25,7 +26,7 @@ export const filesLabels: FilesPaneLabels = {
           })
         : FP.provenanceSystem,
   lockTitle: (lock) => FP.lockTitle[lock] ?? lock,
-  lockIcon: (lock) => FP.lockIcon[lock] ?? "🔒",
+  lockBadge: (lock) => FP.lockBadge[lock] ?? lock,
   freshnessLabel: (n, stale) => fmt(stale ? FP.freshnessStaleFmt : FP.freshnessFmt, { n }),
   sealedFmt: (n) => fmt(FP.sealedFmt, { n }),
   advancedDisclosure: FP.advanced,

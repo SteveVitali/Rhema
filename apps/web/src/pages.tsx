@@ -14,7 +14,6 @@ import {
   WhatChangedView,
   IdeShell,
   CompareView,
-  FilesPane,
   type DossierLabels,
 } from "@rhema/ui";
 import {
@@ -29,7 +28,6 @@ import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
 // SPA.14 — the FilesPane label bag moved to its own module (gate-card precedent): the SSR pages
 // AND the onboarding SPA surface render the same composition.
-import { filesLabels } from "./files-labels.js";
 import { usePageData } from "./page-data.js";
 import { publicFooter } from "./legal.js";
 // SPA.21 — the dossier's shared view module: the Timeline/Feed/run-report/dossier label bags and
@@ -103,7 +101,6 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(data.paperTheme ? { paperTheme: data.paperTheme } : {})}
       {...(data.theme?.pref ? { appTheme: data.theme.pref } : {})}
       {...(ide.initialView ? { initialView: ide.initialView } : {})}
-      {...(ide.sourceHref ? { sourceHref: ide.sourceHref } : {})}
       {...(ide.findings ? { findings: ide.findings, hasFindings: true } : {})}
       {...(ide.timeline ? { timeline: ide.timeline } : {})}
       {...(ide.timelineView
@@ -142,22 +139,6 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(ide.status ? { status: ide.status } : {})}
       {...(ide.themeUrl ? { themeUrl: ide.themeUrl } : {})}
       {...(ide.paperThemeUrl ? { paperThemeUrl: ide.paperThemeUrl } : {})}
-      {...(ide.files
-        ? {
-            filesBody: (
-              <FilesPane
-                sections={ide.files.sections}
-                hrefs={{
-                  artifact: (id) => `/p/${slug}/a/${id}`,
-                  draft: (n) => `/p/${slug}/v/${n}`,
-                  run: (id) => `/p/${slug}/r/${id}`,
-                  figure: (id) => `/p/${slug}/figures/${id}`,
-                }}
-                labels={filesLabels}
-              />
-            ),
-          }
-        : {})}
       {...(ide.chat ? { chatBody: chatPanel(ide.chat, slug, ide, data.compact === true) } : {})}
       {...dossierSurfaces(data)}
       labels={{

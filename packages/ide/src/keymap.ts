@@ -25,7 +25,7 @@ export interface KeyChord {
 export type IdeAction =
   | { readonly kind: "palette" }
   | { readonly kind: "sidebar" }
-  | { readonly kind: "pane"; readonly pane: "files" | "panel" }
+  | { readonly kind: "pane"; readonly pane: "panel" }
   | { readonly kind: "view-menu" }
   | { readonly kind: "focus-mode" }
   | { readonly kind: "paper-theme" }

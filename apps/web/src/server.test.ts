@@ -1617,18 +1617,18 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
     const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    // the seven §5.1 regions
+    // the surviving regions — R7SHELL.2 deleted the rail and the Files strip outright.
     for (const cls of [
-      "ide-rail",
-      "ide-files",
       "ide-page",
       "ide-margin",
-      "ide-timeline",
-      "ide-desk",
+      "ide-panel",
       "ide-statusbar",
+      "ide-phonebar",
     ]) {
       expect(html).toContain(cls);
     }
+    expect(html).not.toContain("ide-rail");
+    expect(html).not.toContain("ide-files");
     expect(html).toContain('data-ide="1"');
     expect(html).toContain('src="/assets/ide.js"');
     // REQ-IDE-38: the stored pref stamps data-app-theme; auto resolves dark SSR-side (re-resolved pre-paint).

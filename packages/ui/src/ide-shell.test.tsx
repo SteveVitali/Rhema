@@ -22,7 +22,7 @@ import {
 
 const LABELS: IdeLabels = {
   rail: { home: "Home", inbox: "Inbox", settings: "Settings", project: "Project" },
-  files: { heading: "Files", empty: "No files yet.", close: "Close files", open: "Open files", sourceFile: "Source", resize: "Resize files" },
+  // R7SHELL.2 — `labels.files` is gone with the pane; `rail` survives for the SSR phone bar.
   margin: { heading: "Margin", ticksLabel: "Finding ticks" },
   timeline: { heading: "Timeline", empty: "No runs yet.", close: "Close timeline" },
   panel: {
@@ -84,17 +84,21 @@ const shell = (extra: Partial<Parameters<typeof IdeShell>[0]> = {}) =>
 describe("IdeShell — the §5.1/ADR-128 layout (REQ-IDE-8/42 + REQ-PANE-1/3)", () => {
   it("renders the regions as ARIA landmarks, SSR-correct with zero script — and the bottom Desk is gone", () => {
     const html = shell();
-    for (const cls of ["ide-rail", "ide-files", "ide-page", "ide-margin", "ide-panel", "ide-statusbar"]) {
+    for (const cls of ["ide-page", "ide-margin", "ide-panel", "ide-statusbar"]) {
       expect(html).toContain(cls);
+    }
+    // R7SHELL.2 — the icon rail AND the Files strip are deleted (not hidden): reintroducing
+    // either fails here. (`!hosted` keeps only the phone bar.)
+    for (const gone of ["ide-rail", "ide-files", "data-files", "data-ide-files-toggle"]) {
+      expect(html).not.toContain(gone);
     }
     // B2/B16 — the desk drawer and its status-bar collision are retired with the region (the
     // `data-ide-desk-*` ALIASES stay emitted for the R7a legs — the .ide-desk element is gone).
     expect(html).not.toContain('class="ide-desk');
     expect(html).not.toContain('class="ide-timeline');
     expect(html).toContain('data-ide="1"');
-    // landmarks: nav (rail), aside ×2 (files, panel), main (page), complementary (margin),
+    // landmarks: aside (panel), main (page), complementary (margin),
     // footer (status bar); the live regions the spec names.
-    expect(html).toContain("<nav");
     expect(html).toContain("<main");
     expect(html).toContain("<footer");
     expect(html).toContain('role="complementary"');

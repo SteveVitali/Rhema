@@ -66,13 +66,16 @@ describe("§5.9 tokens", () => {
     }
   });
 
-  it("the §5.1 reference math is the literal comment's: 56 + 240/36 + 660 + 280 + 320", () => {
-    expect(LAYOUT.railPx).toBe(56);
-    expect(LAYOUT.filesOpenPx).toBe(240);
-    expect(LAYOUT.filesStripPx).toBe(36);
+  it("the §5.1 reference math keeps the surviving regions (R7SHELL.2: rail/files widths removed)", () => {
+    // R7SHELL.2 — the rail's 56 px and the Files widths are gone: the AppShell sidebar is the
+    // only left column. The constants must NOT come back (a re-added rail/files width fails here).
+    expect("railPx" in LAYOUT).toBe(false);
+    expect("filesOpenPx" in LAYOUT).toBe(false);
+    expect("filesStripPx" in LAYOUT).toBe(false);
+    expect("filesSnapPx" in LAYOUT).toBe(false);
+    expect("bpFilesTicksMarginPx" in LAYOUT).toBe(false);
     expect(LAYOUT.marginPx).toBe(280);
     expect(LAYOUT.timelinePx).toBe(320);
-    expect(LAYOUT.bpFilesTicksMarginPx).toBe(1600);
     expect(LAYOUT.bpNarrowPx).toBe(1280);
     expect(LAYOUT.bpSingleColumnPx).toBe(1024);
     expect(LAYOUT.bpPhonePx).toBe(768);
@@ -210,16 +213,20 @@ describe("themeCss()", () => {
 
 describe("ideCss()", () => {
   const css = ideCss();
-  it("lays out the §5.1/ADR-128 regions (rail|files|page|margin|panel|statusbar)", () => {
+  it("lays out the §5.1/ADR-128 regions (page|margin|panel|statusbar; rail+files deleted by R7SHELL.2)", () => {
     const css = ideCss();
-    for (const region of [".ide-rail", ".ide-files", ".ide-page", ".ide-margin", ".ide-panel", ".ide-statusbar"]) {
+    for (const region of [".ide-page", ".ide-margin", ".ide-panel", ".ide-statusbar"]) {
       expect(css, region).toContain(region);
     }
     // R7PANE.1 — the bottom Desk is retired: no desk rules remain.
     expect(css).not.toContain(".ide-desk");
+    // R7SHELL.2 — the icon rail and the Files strip are DELETED (not hidden): a reintroduced
+    // rule fails here (the acceptance criterion's removal-catching test).
+    expect(css).not.toContain(".ide-rail");
+    expect(css).not.toContain(".ide-files");
+    expect(css).not.toContain("data-files");
   });
   it("encodes the yield-order breakpoints from LAYOUT (no magic numbers)", () => {
-    expect(css).toContain(`max-width: ${LAYOUT.bpFilesTicksMarginPx - 1}px`);
     expect(css).toContain(`max-width: ${LAYOUT.bpNarrowPx - 1}px`);
     expect(css).toContain(`max-width: ${LAYOUT.bpSingleColumnPx - 1}px`);
     expect(css).toContain(`max-width: ${LAYOUT.bpPhonePx - 1}px`);

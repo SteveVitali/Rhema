@@ -305,6 +305,11 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-shell-pricing", "conditional", "spa/app-shell.tsx", "account menu → /pricing (document nav until 249a)"),
     a("data-shell-theme", "conditional", "spa/app-shell.tsx", "account menu theme item (dark|light|auto)"),
     a("data-shell-signout", "conditional", "spa/app-shell.tsx", "account menu sign-out (document nav)"),
+    // R7SHELL.2 (REQ-SHELL-4) — the project scope: the current project's expanded entry.
+    a("data-shell-project", "conditional", "spa/app-shell.tsx", "current-project scope root (slug-valued)"),
+    a("data-shell-current-project", "conditional", "spa/app-shell.tsx", "the current-project entry row"),
+    a("data-project-item", "conditional", "spa/app-shell.tsx", "the seven project items (page|outline|figures|versions|reviews|export|settings)"),
+    a("data-project-tree", "conditional", "spa/app-shell.tsx + ui/files-pane.tsx", "the Files tree under the project entry"),
     a("data-drawer", "conditional", "spa/app-shell.tsx", "the <768 off-canvas drawer state (open|closed)"),
     a("data-tone", "conditional", "spa/app-shell.tsx", "recent-project status dot tone (attention group|error|running|quiet)"),
     a("data-demo", "conditional", "spa/app-shell.tsx", "the demo-boot shell variant marker"),
@@ -327,6 +332,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("heading", "every document", "asserted via getByRole + implicit <h*>"),
     r("button", "every document", "asserted via getByRole + implicit <button>"),
     u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
+    u("view", "conditional", "server.ts /bff/p/:slug + spa/queries.ts", "R7SHELL.2 — ?view=tree, the sidebar project twin"),
     u("saved", "conditional", "server.ts redirects"),
     u(
       "cogsLevers",
@@ -1580,11 +1586,11 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-ide-sidebar", "conditional", "spa ide controller", "paneLayout() sidebar ceiling stamped on .app-shell (expanded|rail|drawer)"),
     // …and the R7a aliases the migrated journey legs still resolve (emitted alongside).
     a("data-timeline", "conditional", "ui/ide-shell.tsx", "R7a alias of data-panel"),
-    a("data-files", "conditional", "ui/ide-shell.tsx", "files pane mode state"),
+    // R7SHELL.2 — `data-files` / `data-files-mode` / `data-ide-files-toggle` retired with the
+    // Files pane (the tree's hooks are the `data-files-pane` family below).
     // R7FIX.1 (REQ-PANE-0) — the controller's paneLayout() verdicts on the shell.
     a("data-pane-mode", "conditional", "spa ide controller", "paneLayout() viewport mode (wide|narrow|single|phone)"),
     a("data-timeline-mode", "conditional", "spa ide controller", "R7a alias of data-panel-mode (docked→pane)"),
-    a("data-files-mode", "conditional", "spa ide controller", "paneLayout() files presentation (open|strip|overlay|hidden)"),
     a("data-ide-scrim", "conditional", "ui/ide-shell.tsx", "overlay/sheet scrim (outside-click dismiss target)"),
     a("data-ide-focus-exit", "conditional", "ui/ide-shell.tsx", "REQ-WRITE-4 focus-view exit pill"),
     a("data-finding-cards", "conditional", "ui/ide-shell.tsx", "finding-cards view state"),
@@ -1600,7 +1606,6 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-ide-handle", "conditional", "ui/ide-shell.tsx", "pane separator (drag + arrow-key resize; UXC-26)"),
     a("data-ide-panel-toggle", "conditional", "ui/ide-shell + ide island", "the ] chord / View-menu row / head × — right-panel toggle"),
     a("data-ide-desk-toggle", "conditional", "ui/ide-shell + ide island", "R7a alias of data-ide-panel-toggle"),
-    a("data-ide-files-toggle", "conditional", "ui/ide-shell + ide island"),
     a("data-ide-timeline-toggle", "conditional", "ui/ide-shell + ide island", "R7a alias of data-ide-panel-toggle (View-menu row + head ×)"),
     a("data-ide-panel-tab", "conditional", "ui/ide-shell + ide island", "right-panel tab triggers"),
     a("data-demo", "conditional", "ui/ide-shell.tsx", "R7PANE.1 — demo boot stamped on .ide (Chat trigger hidden; REQ-DWEB-7)"),
@@ -1626,7 +1631,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-open", "conditional", "ui/ide-shell + island", "menu/popover open state"),
     a("data-view", "conditional", "ui/ide-shell.tsx"),
     a("data-count", "conditional", "ui/ide-shell.tsx + spa/app-shell.tsx"),
-    a("data-current", "conditional", "ui/ide-shell.tsx"),
+    // R7SHELL.2 — `data-current` retired with the Files pane's current-row marker.
     a("data-run-next", "conditional", "ui/ide-shell.tsx"),
     a("data-feed-run", "conditional", "ui/ide-shell.tsx"),
     a("data-desk", "conditional", "ui/ide-shell.tsx", "R7a alias of data-panel"),
@@ -1636,10 +1641,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-desk-row", "conditional", "ui/findings-desk + ide island"),
     a("data-timeline-pane", "conditional", "ui/timeline.tsx"),
     a("data-timeline-verbs", "conditional", "ui/timeline.tsx"),
+    // R7SHELL.2 — the Files tree (the sidebar project tree re-uses this component's hooks).
     a("data-files-pane", "conditional", "ui/files-pane.tsx"),
     a("data-files-section", "conditional", "ui/files-pane.tsx"),
     a("data-files-advanced", "conditional", "ui/files-pane.tsx"),
-    a("data-file-row", "conditional", "pages.tsx"),
+    a("data-file-row", "conditional", "ui/files-pane.tsx"),
+    a("data-lock-badge", "conditional", "ui/files-pane.tsx", "B10 — frozen/working Badge (replaces the lock glyph)"),
     a("data-next-step", "conditional", "ui/timeline.tsx"),
     a("data-next-step-duration", "conditional", "ui/timeline.tsx"),
     a("data-version-chip", "conditional", "ui/version-rail + timeline"),
@@ -1655,6 +1662,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-skip-link", "required", "spa ide chrome", "REQ-UX-16 skip-to-Page affordance"),
     r("menuitemradio", "ui/ide-shell + spa chrome", "view/theme menu radio rows"),
     r("separator", "ui/ide-shell.tsx", "R7PANE.1 — the pane resize handles (UXC-26 arrow-key resize)"),
+    r("treeitem", "ui/files-pane.tsx + spa/app-shell.tsx", "R7SHELL.2 — the Files tree's rows (ARIA treeview)"),
     u("q", "conditional", "/bff/search + api /search GET query"),
     u("after", "conditional", "SSE ?after= resume cursor"),
   ],

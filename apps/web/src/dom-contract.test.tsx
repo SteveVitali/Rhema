@@ -64,7 +64,6 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
     "data-ide-desk-toggle",
     "data-margin",
     "data-timeline",
-    "data-files",
     "data-finding-cards",
     "data-ide-menu",
     "data-ide-view-menu",
@@ -76,7 +75,6 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
     "data-ide-font",
     "data-ide-toggle",
     "data-ide-handle",
-    "data-ide-files-toggle",
     "data-ide-timeline-toggle",
     "data-ide-cheatsheet",
     "data-ide-cheatsheet-close",
@@ -95,7 +93,6 @@ describe("ide-chrome emission parity — the SSR shell emits the manifest's hook
     // the island + the controller still emit it, and journeys still assert it.
     "data-view",
     "data-count",
-    "data-current",
     "data-project-id",
     "data-run-state",
     "data-run-next",

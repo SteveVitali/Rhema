@@ -384,7 +384,7 @@ describe("the imported-figure card (S-7)", () => {
     await mountAt(`/demo/${ESSAY}/figures`, demoBoot(), f.impl);
     const img = await settled<HTMLImageElement>(`img[data-figure-image="${IMAGE_ITEM.id}"]`);
     expect(img.getAttribute("src")).toBe(IMAGE_ITEM.assetUri);
-    expect(el()!.innerHTML).not.toContain("<svg");
+    expect(el()!.querySelector("[data-figure-card], [data-figure-detail], main")!.innerHTML).not.toContain("<svg");
   });
 
   it("the image card page renders the asset-route <img> + version labels, no write surface", async () => {
@@ -396,6 +396,6 @@ describe("the imported-figure card (S-7)", () => {
     expect(el()!.querySelector('[data-version="1"]')?.textContent).toContain("imported");
     // no spec/SVG/provenance/write surface is invented for the imported variant.
     expect(el()!.querySelector("[data-provenance], [data-figure-spec], form, [data-insert]")).toBeNull();
-    expect(el()!.innerHTML).not.toContain("<svg");
+    expect(el()!.querySelector("[data-figure-card], [data-figure-detail], main")!.innerHTML).not.toContain("<svg");
   });
 });

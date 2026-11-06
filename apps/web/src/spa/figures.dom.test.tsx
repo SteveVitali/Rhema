@@ -240,8 +240,9 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
     expect(crumb?.textContent).toContain(COPY.figuresPage.heading);
     expect(main.querySelector('[data-page-header] [data-page-breadcrumb]')).not.toBeNull();
     expect(main.querySelector(`a[href="/p/${SLUG}/visualize"][data-new-figure]`)).not.toBeNull();
-    // No body-level back link remains (REQ-SHELL-3).
-    expect([...main.querySelectorAll(`a[href="/p/${SLUG}"]`)].every((a) => a.closest("[data-page-breadcrumb]") != null)).toBe(true);
+    // No body-level back link remains (REQ-SHELL-3). R7SHELL.2 — the sidebar's project-entry
+    // link (`data-shell-project`) is the current project's home, never a body-level back link.
+    expect([...main.querySelectorAll(`a[href="/p/${SLUG}"]`)].every((a) => a.closest("[data-page-breadcrumb]") != null || a.closest("[data-shell-project]") != null)).toBe(true);
     const row = await settled(`[data-figure-row="fig01"]`);
     expect(row).not.toBeNull();
     expect(row.querySelector(`a[href="/p/${SLUG}/figures/fig01"]`)?.textContent).toBe("Visibility scores");

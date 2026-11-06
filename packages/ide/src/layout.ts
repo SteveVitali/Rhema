@@ -27,10 +27,6 @@ export const PANEL_TABS: readonly PanelTab[] = ["chat", "findings", "claims", "t
  *  exist, closed otherwise), so the REQ-PANE-2 default survives a user never touching it. */
 export interface PaneState {
   view: ViewMode;
-  /** the Files pane — the strip is the default; 230_R7SHELL.2 removes the region. */
-  filesOpen: boolean;
-  /** files width when open (snap-constrained; LAYOUT.filesSnapPx). */
-  filesWidth: number;
   /** `]` — the right panel's open intent at docked widths; undefined = derive from the table. */
   panelOpen?: boolean;
   /** the right panel's docked width (snap-constrained; LAYOUT.timelineSnapPx set is reused). */
@@ -56,7 +52,6 @@ export interface PaneLayout {
    *  icon column, "drawer" moves it off-canvas (the REQ-SHELL-6 mechanism, extended to
    *  768–1023 in IDE scope). */
   sidebar: "expanded" | "rail" | "drawer";
-  files: "open" | "strip" | "overlay" | "hidden";
   /** Page is always present — the reader surface (phone mode is reader-only). */
   page: "reader";
   margin: "cards" | "ticks" | "hidden";
@@ -66,8 +61,7 @@ export interface PaneLayout {
   statusBar: "visible" | "hidden";
   /** the Page measure in ch the frame leaves — clamped to [45, 80]. */
   pageCh: number;
-  /** effective open verdicts AFTER the default rule and the 45-ch priority collapse. */
-  filesOpen: boolean;
+  /** effective open verdict AFTER the default rule and the 45-ch priority collapse. */
   panelOpen: boolean;
 }
 
@@ -83,11 +77,13 @@ export interface LayoutInput extends PaneState {
 }
 
 /**
- * REQ-PANE-2's breakpoint table, exactly (R7PANE.1 — replaces 212's stopgap yield order):
+ * REQ-PANE-2's breakpoint table, exactly (R7PANE.1 — replaces 212's stopgap yield order).
+ * R7SHELL.2 (REQ-SHELL-4): the Files pane is DELETED — its tree lives in the AppShell sidebar's
+ * expanded project entry, so the sidebar width is the only left-column occupancy the math reads.
  *  - <768: phone — the SSR reader hides every pane; the HOSTED narrow-desktop arm keeps the
  *    panel as a full-height sheet (the REQ-SHELL-6 content) and the sidebar as a drawer.
  *  - Focus view: everything but the Page + finding ticks hides.
- *  - 768–1023: sidebar drawer; Files drawer (overlay); the panel is a sheet on demand.
+ *  - 768–1023: sidebar drawer; the panel is a sheet on demand.
  *  - 1024–1279: sidebar rail; the panel is an overlay — scrim, Esc / outside-click, session
  *    state only (the controller passes the session intent as `panelOpen`).
  *  - 1280–1439: the panel docks; an open panel auto-collapses the sidebar to the rail.
@@ -125,16 +121,12 @@ export function paneLayout(width: number, input: LayoutInput): PaneLayout {
   let margin: PaneLayout["margin"] =
     !input.hasFindings || mode === "phone"
       ? "hidden"
-      : focus ||
-          !input.findingCards ||
-          width < LAYOUT.bpNarrowPx ||
-          (input.filesOpen && width < LAYOUT.bpFilesTicksMarginPx)
+      : focus || !input.findingCards || width < LAYOUT.bpNarrowPx
         ? "ticks"
         : "cards";
 
-  // Effective open verdicts. Overlay/sheet intent is session-scoped — the caller passes it
+  // Effective open verdict. Overlay/sheet intent is session-scoped — the caller passes it
   // through `panelOpen`; the docked default is REQ-PANE-2's ≥1440-when-findings rule.
-  let filesOpen = input.filesOpen;
   let panelOpen =
     panelMode === "hidden"
       ? false
@@ -161,47 +153,40 @@ export function paneLayout(width: number, input: LayoutInput): PaneLayout {
   };
 
   // Occupancy is what the panes actually take from the Page column — only in-flow regions
-  // count (overlays, sheets and hidden panes float). The Files pane is in-flow at narrow+.
+  // count (overlays, sheets and hidden panes float). The AppShell sidebar is the only
+  // in-flow left column (R7SHELL.2 — the Files pane is gone).
   const inFlow = mode === "narrow" || mode === "wide";
-  const pageChFor = (fo: boolean, m: PaneLayout["margin"], po: boolean, sbPx: number): number => {
-    const filesPx = fo ? (inFlow ? input.filesWidth : 0) : focus || mode === "phone" ? 0 : LAYOUT.filesStripPx;
+  const pageChFor = (m: PaneLayout["margin"], po: boolean, sbPx: number): number => {
     const marginPx = m === "cards" ? LAYOUT.marginPx : m === "ticks" ? 36 : 0;
     const panelPx = panelMode === "docked" && po ? input.panelWidth : 0;
-    return Math.floor((width - sbPx - filesPx - marginPx - panelPx) / LAYOUT.chPx);
+    return Math.floor((width - sbPx - marginPx - panelPx) / LAYOUT.chPx);
   };
 
   // The ADR-128 priority collapse — at widths where panes are in flow the frame must hold the
-  // 45-ch floor: (1) Files → strip, (2) the right panel → closed, (3) the Margin → hidden.
+  // 45-ch floor: (1) the right panel → closed, (2) the Margin → hidden.
   // Overlays/sheets consume no Page width, so the pass is a no-op at single/phone.
   if (inFlow && !focus) {
     for (;;) {
       const { px: sbPx } = sidebarFor(panelOpen);
-      if (pageChFor(filesOpen, margin, panelOpen, sbPx) >= LAYOUT.pageMinCh) break;
-      if (filesOpen) filesOpen = false;
-      else if (panelOpen) panelOpen = false;
+      if (pageChFor(margin, panelOpen, sbPx) >= LAYOUT.pageMinCh) break;
+      if (panelOpen) panelOpen = false;
       else if (margin !== "hidden") margin = "hidden";
       else break;
     }
   }
 
   const { mode: sidebar, px: sidebarPx } = sidebarFor(panelOpen);
-  // `files` is the presentation MODE token (what the pane would do at this width) — "overlay"
-  // below 1024 open or closed, "strip"/"open" elsewhere; the open VERDICT is `filesOpen`.
-  const files: PaneLayout["files"] =
-    focus || mode === "phone" ? "hidden" : mode === "single" ? "overlay" : filesOpen ? "open" : "strip";
-  const pageCh = Math.max(0, Math.min(LAYOUT.pageMaxCh, pageChFor(filesOpen, margin, panelOpen, sidebarPx)));
+  const pageCh = Math.max(0, Math.min(LAYOUT.pageMaxCh, pageChFor(margin, panelOpen, sidebarPx)));
 
   return {
     mode,
     rail,
     sidebar,
-    files,
     page: "reader",
     margin,
     panel: panelMode,
     statusBar,
     pageCh,
-    filesOpen,
     panelOpen,
   };
 }
@@ -221,26 +206,16 @@ export function snapTo(snaps: readonly number[], px: number, threshold = 24): nu
 }
 
 /**
- * A drag on Files or the right panel (REQ-IDE-9): a width that would push the Page below
+ * A drag on the right panel (REQ-IDE-9): a width that would push the Page below
  * the 45-ch clamp collapses the pane instead of violating the measure; below the minimum
- * drag, the pane collapses (Files → the 36-px strip, the panel → closed).
+ * drag, the pane collapses (R7SHELL.2 — the Files drag is gone with its pane).
  */
 export function paneDrag(
   state: PaneState,
-  pane: "files" | "panel",
+  pane: "panel",
   px: number,
   viewportWidth: number,
 ): PaneState {
-  if (pane === "files") {
-    if (px < 160) return { ...state, filesOpen: false };
-    const w = snapTo(LAYOUT.filesSnapPx, px);
-    const next = { ...state, filesOpen: true, filesWidth: w };
-    // Would this violate the Page's 45-ch floor? Then the pane collapses instead — the check
-    // asks paneLayout() whether the DRAGGED pane survives the priority collapse in the hosted
-    // frame (the only drag caller) at the expanded-sidebar occupancy.
-    const l = paneLayout(viewportWidth, { ...next, hasFindings: true, hosted: true, sidebarOpen: true });
-    return l.filesOpen ? next : { ...state, filesOpen: false };
-  }
   // panel — below the minimum the panel closes.
   if (px < 160) return { ...state, panelOpen: false };
   const w = snapTo(LAYOUT.timelineSnapPx, px);

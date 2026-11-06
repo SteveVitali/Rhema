@@ -23,8 +23,8 @@ export function paneStorageKey(userId: string, projectId: string): string {
 
 export const DEFAULT_PANE_STATE: PaneState = {
   view: "write",
-  filesOpen: false, // the 36-px strip is the default (§5.1)
-  filesWidth: 240,
+  // R7SHELL.2 — the Files pane is deleted; stored `filesOpen`/`filesWidth` keys are ignored
+  // on read (the codec is total over KNOWN keys — removed keys fall back to "absent").
   // panelOpen deliberately ABSENT — the ≥1440-when-findings default lives in paneLayout()
   // (REQ-PANE-2), so the codec must preserve "never touched" as "undefined".
   panelWidth: 320,
@@ -50,8 +50,6 @@ function oneOf<T extends string>(v: unknown, allowed: readonly T[], d: T): T {
 
 interface ParsedBase {
   view: ViewMode;
-  filesOpen: boolean;
-  filesWidth: number;
   findingCards: boolean;
   suggestionsInline: boolean;
   advanced: boolean;
@@ -62,10 +60,9 @@ function parseBase(o: Record<string, unknown>, d: PaneState): ParsedBase {
   const view = oneOf(o["view"], VIEWS, d.view);
   return {
     // REQ-WRITE-4 — focus never survives a reload (legacy blobs may carry it; coerce, don't drop
-    // the rest of the arrangement).
+    // the rest of the arrangement). R7SHELL.2 — `filesOpen`/`filesWidth` are retired keys: the
+    // tolerant read simply never consults them (a pre-change v2 blob yields the defaults).
     view: view === "focus" ? "write" : view,
-    filesOpen: bool(o["filesOpen"], d.filesOpen),
-    filesWidth: num(o["filesWidth"], d.filesWidth, 160, 480),
     findingCards: bool(o["findingCards"], d.findingCards),
     suggestionsInline: bool(o["suggestionsInline"], d.suggestionsInline),
     advanced: bool(o["advanced"], d.advanced),

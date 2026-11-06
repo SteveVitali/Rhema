@@ -194,8 +194,6 @@ export interface PageData {
     readonly projectId?: string;
     /** ?focus=1 — the ONE shareable pane flag (applied, then stripped from the address bar). */
     readonly initialView?: "write" | "read" | "focus";
-    /** the Advanced-tier source file row's link (PRB.07 editor). */
-    readonly sourceHref?: string;
     /** a non-terminal run — the Desk auto-opens on its Live feed (§5.1). */
     readonly activeRun?: { readonly runId: string; readonly state: string } | null;
     /** the Inbox badge = open gates + open decisions for the project. */
