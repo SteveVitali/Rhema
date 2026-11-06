@@ -244,9 +244,11 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     const v = c.req.param("v");
     const row = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       if (v === "working") {
+        // R7WRITE.1b — a discarded head keeps its number but is never the working view: the
+        // resolution falls to the parent (the highest-n non-discarded draft).
         return (
           (await tx.query(
-            `select id, n, state, origin from drafts where project_id = $1
+            `select id, n, state, origin from drafts where project_id = $1 and discarded_at is null
              order by (state = 'working') desc, n desc limit 1`,
             [c.req.param("id")],
           )).rows[0] as { id: string; n: number; state: string; origin: string } | undefined
@@ -329,6 +331,17 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       const meters = statusMeters(markdown);
       const venueCap = await venueCapFor(tx, c.req.param("id"), meters.words);
 
+      // R7WRITE.1b (REQ-WRITE-2) — the anchored inline comments on THIS draft, newest last; the
+      // Page renders each as a margin card at its anchor.
+      const comments = (
+        await tx.query(
+          `select id, body, anchors, created_at from guidance
+             where project_id = $1 and draft_id = $2 and source = 'inline_comment' and active = true
+             order by created_at, id`,
+          [c.req.param("id"), head.id],
+        )
+      ).rows as { id: string; body: string; anchors: unknown; created_at: Date | string }[];
+
       return {
         ok: true as const,
         dto: {
@@ -341,6 +354,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
           markdown,
           sha256: text?.sha256 ?? null,
           lock,
+          comments: comments.map((r) => ({
+            id: r.id,
+            text: r.body,
+            anchor: Array.isArray(r.anchors) && r.anchors.length > 0 ? r.anchors[0] : null,
+            createdAt: new Date(r.created_at).toISOString(),
+          })),
           findings: findingsDto(findingRows, markdown),
           provenance: Object.keys(provenance).length > 0 ? provenance : null,
           blockIdMap,
@@ -444,8 +463,11 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
-    const body = (await c.req.json().catch(() => ({}))) as { text?: string };
+    const body = (await c.req.json().catch(() => ({}))) as { text?: string; anchors?: unknown };
     if (!body.text || !body.text.trim()) return c.json({ error: "text required" }, 400);
+    // R7WRITE.1b (REQ-WRITE-2) — the bubble's Comment carries the selection's anchor through to
+    // the Guidance row (anchored Guidance rendered as the margin card); `draft_id` keys the read.
+    const anchors = Array.isArray(body.anchors) && body.anchors.length > 0 ? body.anchors : null;
     const g = await captureGuidance(deps, {
       workspaceId: principal.workspaceId,
       projectId: c.req.param("id"),
@@ -454,6 +476,8 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       text: body.text.trim(),
       scope: "project",
       workflows: ["revise"],
+      ...(anchors != null ? { anchors } : {}),
+      draftId: c.req.param("draftId"),
     });
     return c.json({ guidanceId: g.guidanceId }, 201);
   });

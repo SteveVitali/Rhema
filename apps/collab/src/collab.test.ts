@@ -1055,4 +1055,44 @@ describe("collab service (P1.03)", () => {
       await conn2.disconnect();
     }
   });
+
+  // R7WRITE.1b (REQ-WRITE-7) — a discarded head refuses EVERY attach with the frozen_fork payload
+  // back to the resolved head: a second open session rekeys to the parent and no write lands on
+  // the discarded row (the mirror's not_editable refusal is the write-side proof).
+  it("write intent on a discarded draft refuses with frozen_fork → the resolved head (the parent)", async () => {
+    // v2 was forked then discarded: the resolved head is the seeded working v1 (its base).
+    const D2 = uid(30);
+    await fx.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id,
+         discarded_at, discarded_by, frozen_at, frozen_by)
+       values ($1,$2,2,'human_revision','frozen',$3,$4,now(),'{"kind":"user","userId":"u"}',now(),
+         '{"cause":"discard"}')`,
+      [D2, PROJ, AV, DRAFT],
+    );
+    await expect(
+      authenticateConnection({ db: fx.db, ids, clock }, {
+        documentName: `draft:${D2}`,
+        cookieHeader: null,
+        token: TOKEN,
+        intent: null,
+      }),
+    ).rejects.toSatisfy(
+      (e: unknown) =>
+        e instanceof AuthRefusal &&
+        (JSON.parse(e.reason) as { code: string; draftId: string; draftN: number }).code ===
+          FORK_REASON_CODE &&
+        (JSON.parse(e.reason) as { draftId: string }).draftId === DRAFT &&
+        (JSON.parse(e.reason) as { draftN: number }).draftN === 1,
+    );
+    // a second open session on the discarded head thus rekeys to the parent — no write lands.
+    // (The mirror's not_editable refusal is the write-side proof; this is the attach-side.)
+    await expect(
+      authenticateConnection({ db: fx.db, ids, clock }, {
+        documentName: `draft:${D2}`,
+        cookieHeader: null,
+        token: TOKEN,
+        intent: "ro",
+      }),
+    ).rejects.toBeInstanceOf(AuthRefusal);
+  });
 });

@@ -256,6 +256,33 @@ describe("POST …/note — the one note field becomes Guidance (REQ-DATA-41 bet
     ])).rows[0] as { source: string; body: string; standing: boolean; workflows: string[] };
     expect(g).toMatchObject({ source: "inline_comment", body: "watch the middle section", standing: true });
   });
+
+  it("R7WRITE.1b (REQ-WRITE-2) — an anchored comment stores anchors + draft_id and surfaces on the doc read", async () => {
+    await seedReviewedHead();
+    const anchor = {
+      blockId: "blk_mid",
+      quote: "A middle section that stays.",
+      startOffset: 7,
+      endOffset: 35,
+      confidence: 1,
+    };
+    const res = await post(`${url("")}/note`, { text: "tighten this claim", anchors: [anchor] });
+    expect(res.status).toBe(201);
+    const g = (
+      await db.pg.query(
+        "select source, body, anchors, draft_id from guidance where project_id = $1",
+        [seed.projectId],
+      )
+    ).rows[0] as { source: string; body: string; anchors: unknown; draft_id: string };
+    expect(g).toMatchObject({ source: "inline_comment", body: "tighten this claim", draft_id: draftId });
+    expect(g.anchors).toEqual([anchor]);
+    // the Page's margin-card read: the doc carries the anchored comment keyed to its block.
+    const doc = await app.request(url(""));
+    expect(doc.status).toBe(200);
+    const dto = (await doc.json()) as { comments?: { id: string; text: string; anchor: unknown }[] };
+    expect(dto.comments).toHaveLength(1);
+    expect(dto.comments![0]).toMatchObject({ text: "tighten this claim", anchor });
+  });
 });
 
 describe("POST …/revise — 'Revise using your edits' (REQ-DATA-26)", () => {

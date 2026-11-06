@@ -746,3 +746,96 @@ describe("showcase rows mount the Page family in the SPA read-only (R7RO.1)", ()
     expect(docNavSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("R7WRITE.1b — anchored comments + the fork-undo toast (REQ-WRITE-2/7)", () => {
+  it("the SPA Page carries NO bottom note form — the margin renders the twin's comment card", async () => {
+    const commented = {
+      ...VERSION_TWIN,
+      page: {
+        ...(VERSION_TWIN.page as Record<string, unknown>),
+        doc: {
+          ...DOC,
+          comments: [
+            {
+              id: "g_1",
+              text: "tighten this claim",
+              anchor: { blockId: "b_1", quote: "Body text.", startOffset: 2, endOffset: 12, confidence: 1 },
+              createdAt: "2026-10-02T00:00:00Z",
+            },
+          ],
+        },
+      },
+    } as BffVersionPageTwin;
+    const f = makeFetch({ version: commented });
+    await mountAt(`/p/${SLUG}/v/7`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    const main = el()!;
+    // REQ-WRITE-2 — the SPA's bottom-of-page note form is gone (the phone SSR keeps its own).
+    expect(main.querySelector('form[action$="/note"]')).toBeNull();
+    // the anchored Guidance renders as the margin card keyed to its block anchor.
+    const card = main.querySelector<HTMLElement>("[data-comment-card]");
+    expect(card).not.toBeNull();
+    expect(card?.dataset["commentCard"]).toBe("g_1");
+    expect(main.querySelector("[data-anchor-block]")).toBe(card);
+    expect(card?.dataset["anchorBlock"]).toBe("b_1");
+    expect(card?.textContent).toContain("tighten this claim");
+  });
+
+  it("rhema:fork-toast pushes the 'reviewed version' toast with the Undo action (REQ-WRITE-7)", async () => {
+    const f = makeFetch();
+    await mountAt(`/p/${SLUG}/v/7`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("rhema:fork-toast", { detail: { draftId: "d_7", draftN: 7, baseN: 6 } }),
+      );
+    });
+    await vi.waitFor(() =>
+      expect(el()!.querySelector(".ui-toast-viewport [role='status']")).not.toBeNull(),
+    );
+    const toast = el()!.querySelector(".ui-toast-viewport")!;
+    expect(toast.textContent).toContain("You're editing a reviewed version, so this starts v7");
+    const undo = toast.querySelector<HTMLElement>("[data-fork-undo]");
+    expect(undo).not.toBeNull();
+    // the Undo arm POSTs the guarded discard mutation through the BFF (one request, JSON).
+    const postsBefore = f.posts.length;
+    await act(async () => {
+      undo!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(f.posts.map((p) => p.url)).toContain(`/p/${SLUG}/drafts/7/discard-fork`);
+    expect(f.posts.length).toBe(postsBefore + 1);
+  });
+
+  it("a refused Undo explains why — the refusal toast maps the api's stable code", async () => {
+    const impl = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const path = url.split("?")[0]!;
+      if (init?.method === "POST" && path.endsWith("/discard-fork")) {
+        return jsonResponse(409, { error: "fork_read_by_run" });
+      }
+      return makeFetch().impl(input, init);
+    };
+    const f = makeFetch();
+    void f;
+    await mountAt(`/p/${SLUG}/v/7`, bootFor(SPA_EDITOR), impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("rhema:fork-toast", { detail: { draftId: "d_7", draftN: 7, baseN: 6 } }),
+      );
+    });
+    await vi.waitFor(() => expect(el()!.querySelector("[data-fork-undo]")).not.toBeNull());
+    await act(async () => {
+      el()!
+        .querySelector<HTMLElement>("[data-fork-undo]")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    await vi.waitFor(() =>
+      expect(el()!.querySelector(".ui-toast-viewport")!.textContent).toContain(
+        "a run already read",
+      ),
+    );
+  });
+});

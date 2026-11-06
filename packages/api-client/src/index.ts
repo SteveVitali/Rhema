@@ -1222,6 +1222,13 @@ export interface EditorDocDto {
   readonly sha256: string | null;
   readonly lock: EditorLockDto | null;
   readonly findings: EditorFindingDto[];
+  /** R7WRITE.1b (REQ-WRITE-2) — the draft's anchored inline comments (the margin cards). */
+  readonly comments?: {
+    id: string;
+    text: string;
+    anchor: unknown;
+    createdAt: string;
+  }[];
   // ---- P1.02 — the Page's sidecar reads (all absent on older servers; the client degrades) ----
   /** the displayed version's block-level provenance (`{blockId → ProvenanceSource}` — the overlay + the
    *  provenance plugin's init state). */
@@ -1296,6 +1303,15 @@ export interface EditorSaveDto {
 /** The note field → a `Guidance` row (§6.3's comment path; REQ-DATA-41's beta form). */
 export interface EditorNoteDto {
   readonly guidanceId: string;
+}
+
+/** R7WRITE.1b (REQ-WRITE-7) — the discard-fork response: the parent's restored working view. */
+export interface DiscardForkDto {
+  readonly ok: true;
+  readonly discardedDraftId: string;
+  readonly discardedN: number;
+  readonly parentDraftId: string;
+  readonly parentN: number;
 }
 
 /** The Cancel-run release (§6.3). */
@@ -3296,7 +3312,15 @@ export interface ApiClient {
     draftId: string,
     text: string,
     init?: RequestInitLite,
+    /** R7WRITE.1b (REQ-WRITE-2) — the selection anchor an anchored comment carries. */
+    anchors?: readonly unknown[],
   ): Promise<EditorNoteDto>;
+  /** R7WRITE.1b (REQ-WRITE-7) — Undo for the frozen-fork toast: discard the just-created head. */
+  discardFork(
+    projectId: string,
+    n: number,
+    init?: RequestInitLite,
+  ): Promise<DiscardForkDto>;
   /** "Cancel run to edit" — cancels the run holding the head (§6.3 banner release). */
   cancelEditorRun(
     projectId: string,
@@ -4465,7 +4489,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         },
       );
     },
-    async postEditorNote(projectId, draftId, text, init): Promise<EditorNoteDto> {
+    async postEditorNote(projectId, draftId, text, init, anchors): Promise<EditorNoteDto> {
       return json<EditorNoteDto>(
         `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/note`,
         {
@@ -4474,7 +4498,23 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
             "content-type": "application/json",
             ...(init?.headers as Record<string, string> | undefined),
           },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({
+            text,
+            ...(anchors != null ? { anchors: [...anchors] } : {}),
+          }),
+        },
+      );
+    },
+    async discardFork(projectId, n, init): Promise<DiscardForkDto> {
+      return json<DiscardForkDto>(
+        `/projects/${encodeURIComponent(projectId)}/drafts/${encodeURIComponent(n)}/discard-fork`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+          body: "{}",
         },
       );
     },

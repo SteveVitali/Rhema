@@ -19,6 +19,8 @@ export interface RailVersion {
   readonly words: number | null;
   readonly reviewed: boolean;
   readonly answered: boolean;
+  /** R7WRITE.1b (REQ-SYNC-4) — a discarded fork renders "v(N+1) · discarded"; the number is kept. */
+  readonly discarded?: boolean;
   readonly claimsPendingVerification: boolean;
   readonly obligations: { readonly open: number; readonly addressed: number };
 }
@@ -47,6 +49,8 @@ export interface VersionRailLabels {
   readonly originLabel: (origin: string) => string;
   readonly workingLabel: string;
   readonly frozenTitle: string;
+  /** R7WRITE.1b — the discarded marker's caption: "discarded". */
+  readonly discardedLabel: string;
   readonly reviewedFlag: string;
   readonly answeredFlag: string;
   readonly claimsPending: string;
@@ -139,6 +143,7 @@ function Chip({
         }}
       >
         v{v.n}
+        {v.discarded === true ? <span data-discarded> · {labels.discardedLabel}</span> : null}
         {v.frozen ? (
           <span data-lock title={labels.frozenTitle} aria-label={labels.frozenTitle}>
             {" "}

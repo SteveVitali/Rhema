@@ -437,4 +437,44 @@ describe("saveManualRevision (PRB.07)", () => {
     });
     expect(r).toEqual({ ok: false, reason: "not_editable" });
   });
+
+  // R7WRITE.1b (REQ-WRITE-7) — a save addressed to a DISCARDED draft is not_editable: nothing
+  // forks off a discarded head and no write lands on it (the route's own discard write is proven
+  // in apps/api's legs; the collab attach refusal is proven in apps/collab's leg).
+  it("a discarded head refuses saves; the frozen base re-forks v(N+2) — the number is never reused", async () => {
+    // fork v2 off the frozen v1, then mark it discarded (the route's own write is exercised in
+    // apps/api's discard-fork legs; here the save path must refuse the stale binding).
+    const fork = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: "# MR\n\nThe forking keystroke.\n",
+      userId: USER,
+    });
+    if (!fork.ok) throw new Error(`fork failed: ${JSON.stringify(fork)}`);
+    await db.exec.query(
+      `update drafts set state = 'frozen', frozen_at = now(), frozen_by = '{"cause":"discard"}',
+         discarded_at = now(), discarded_by = $2 where id = $1`,
+      [fork.draftId, JSON.stringify({ kind: "user", userId: USER })],
+    );
+    const stale = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: fork.draftId,
+      markdown: "# MR\n\nA write on the discarded head.\n",
+      userId: USER,
+    });
+    expect(stale).toEqual({ ok: false, reason: "not_editable" });
+    // …and a save on the discarded head's frozen BASE still re-forks under the ordinary rule —
+    // v(N+2): the discarded number is never reused (REQ-SYNC-4).
+    const refork = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: "# MR\n\nA fresh first keystroke.\n",
+      userId: USER,
+    });
+    if (!refork.ok) throw new Error(`re-fork failed: ${JSON.stringify(refork)}`);
+    expect(refork).toMatchObject({ forked: true, draftN: 3 });
+  });
 });

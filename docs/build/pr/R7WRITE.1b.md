@@ -1,0 +1,27 @@
+## R7WRITE.1b — Comment → anchored Guidance + frozen-fork toast with Undo (ticket 238)
+
+- **REQ ids:** REQ-WRITE-2, REQ-WRITE-7, REQ-SYNC-4 (discarded marker + label), REQ-DACC-7 (U5.write), REQ-DACC-8 (flip by 250). Consumes REQ-RELOAD-2/4, REQ-DWEB-14. Kept: REQ-IDE-32, REQ-DATA-41. Findings: UXC-23, I5, B18, RV-27.
+- **Base:** `stevevitali/r7write-1a-format-bubble` @ `63418514` · **Layer:** engineered, $0 Stage A (GD-PREVIEW.R7 — no preview; Stage-B walk owed to `D-R7WRITE.1b-1`, owner 250_R7DEP.2).
+
+### What ships
+
+1. **Comment → anchored Guidance (REQ-WRITE-2; UXC-23, I5).** Comment is the format bubble's FIRST item (the slot 237 reserved). It opens an inline composer in the bubble's own box (textarea + Post, ⌘⏎/Esc); PageMount derives the §11.3 selection anchor from the live view (blockId/quote/from→to/confidence=1) and POSTs `{text, anchors}` to the existing `…/edit/:draftId/note` — now an anchored Guidance row (`captureGuidance` gains `anchors` + a new `guidance.draft_id`). The Page's margin renders `data-comment-card` keyed to `data-anchor-block` and the comment projects into the shell findings ticks so the margin opens when comments alone exist. The SPA Page's bottom-of-page note form is REMOVED — gated on `embeds === false`, so the forced-SSR phone reader (same component) keeps its form; that reader's disposition is recorded for 247_R7RO.2.
+2. **Frozen-fork toast with Undo (REQ-WRITE-7; B18).** The existing `onFork` flow (collab `rhema.fork`/auth refusal → `registry.rekey`) now also emits `rhema:fork-toast` → a leaf bridge pushes the shared Toast queue's `"You're editing a reviewed version, so this starts v(N+1) · Undo"`. Undo POSTs `/p/:slug/drafts/:n/discard-fork` (JSON mutation through the 231 outcome conventions — no reload); a refusal explains why (`fork_has_edits` / `fork_read_by_run` / `not_a_fork`). On success the leaf invalidates `["bff"]` — the twin refetches `doc.draftId` = the parent and PageMount remounts on a fresh session: the typed keystrokes die with the discarded head (a real undo — no stale-Y.Doc push that would phantom-fork v(N+2)).
+3. **`POST /projects/:id/drafts/:n/discard-fork` (guarded).** Session + `ownProject` (404 cross-workspace) + `withTenant`. Discards the just-created working head iff (a) its `drafts/v<N>.md` artifact carries ≤1 `artifact_versions` row — the measurable "no edits beyond the forking keystroke(s)" — and (b) no `runs.lock_set`/`inputs.draftId`/`nextDraftId` references it and no `correspondence_items` row does (S-4's read triggers; promote/export already fail `state='working'`). On success the head becomes `frozen` + `frozen_by={cause:'discard'}` + `discarded_at/by` — marked, never deleted, the number kept — and `promoted_version_id` coalesces to the base's so the frozen invariant holds. The parent is the working view again: `editor/resolve 'working'` and head resolution exclude `discarded_at`, `saveManualRevision` refuses the stale binding `not_editable`, and a collab attach on `draft:<discarded>` refuses with the `frozen_fork` payload to the resolved head (open sessions rekey to the parent through the existing rebase path). `project_search_docs` fallout is reconciled (the discarded head's draft row deleted).
+4. **`· discarded` history (REQ-SYNC-4).** `drafts.discarded_at/by` (additive migration 0062 — lint pass) flows to the rail DTO; the version rail renders `data-discarded` " · discarded". A re-fork off the base mints v(N+2) — the discarded number is never reused.
+5. **ReadOnlyProject preserved (REQ-DWEB-14/S-3).** Frozen versions still edit + fork; `run_lock`/demo/showcase withhold the whole bubble + composer before any request (the read-only mount never submits a comment; the note POST's JSON arm is authenticated the same way).
+6. **U5.write** authored locally and held `expected:"red"`/`AUTHORED_HELD` (ready-to-flip → 250): new project → inline title focused → type commits → bubble ABOVE → Comment first → margin card → ⌘⇧F in / Esc out → Source toggle. `AUTHORED_HELD` += `U5.write` (registry + runner arms).
+7. **Two-tenant probe:** `POST /projects/<foreign>/drafts/1/discard-fork` must 404; own seeded head refuses 409 (route mounted, fail-closed ≠ dead).
+
+### Evidence (Stage A — deterministic)
+
+- vitest: apps/api **605/605** (incl. the discard-fork describe: success/marker/restore-parent/kept-number + `fork_has_edits`/`fork_read_by_run` (lock_set + correspondence) + `not_a_fork` + 404) · apps/web **1547/1547** (incl. the margin card + fork-undo + refusal legs) · collab/mirror/ide/journeys **53/53** · ui/orchestrator/api-client/db **273/273** · two-tenant probe PASS.
+- `turbo build`/`typecheck` all green; `lint` clean (one pre-existing `chat-live.tsx` warning, untouched).
+- `check:dom-contract` OK (new hooks `data-comment-input|composer|submit|card|anchor-block|fork-undo|discarded|placed` declared+emitted+asserted) · `check:spa-env` OK · `check:protocol-markers` OK.
+- `check:spa-budget` OK — **entry delta +14.9 kB gz vs baseline `04a4e98b` (≤15 kB allowance)** — 0.1 kB headroom; U5/deck additions stay under the ceiling.
+- `scripts/check-additive-migrations.mjs --files 0062` pass (additive: `discarded_at`/`discarded_by`/`guidance.draft_id`).
+- append-only + build-memory checks run on the stacked base.
+
+### Deferred (`D-R7WRITE.1b-1` → owner 250_R7DEP.2)
+
+Stage-B deployed proof at the R7b phase preview: the margin comment card, the fork toast + Undo, the `· discarded` history label, and U5.write's registry flip on provenance evidence.
