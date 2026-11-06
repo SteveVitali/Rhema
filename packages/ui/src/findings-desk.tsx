@@ -1,8 +1,25 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import { canDispose, type FindingGroup, type TriageQueueView } from "@rhema/findings-core";
 import { severityColor } from "./primitives/chips.js";
 import { ObligationChip, type ObligationStateKind } from "./chips.js";
+import { Button } from "./primitives/button.js";
+
+// 243_R7KIT.3d — the filter bar's selects stay the KIT-1-styled native control inside `FilterSelect`
+// (a named GUARD-1 exemption): the bar is a GET form whose SSR document filters server-side with
+// zero client JS, where a Radix Select is inert (RV-36). Everything else is kit chrome.
+
+/** A no-JS filter select — a native `<select>` the GET form posts without client JS. */
+function FilterSelect({ name, defaultValue, allLabel, options }: { name: string; defaultValue: string; allLabel: string; options: readonly { value: string; label: string }[] }): ReactNode {
+  return (
+    <select name={name} defaultValue={defaultValue}>
+      <option value="">{allLabel}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
 
 // The Desk's Findings tab (§5.7; REQ-IDE-23/24): the screen-reader landmark — a REAL <table> — fed by the
 // SAME FindingView[] as the Margin and the triage queue. The shared filter bar is a GET form (no-JS);
@@ -81,11 +98,11 @@ function DeskRow({
       style={{ scrollMarginTop: "24px" }}
     >
       <td>
-        <a href={`#finding-${view.id}`} data-finding-link={view.id} style={{ color: "inherit" }}>
+        <a href={`#finding-${view.id}`} data-finding-link={view.id} className="ui-d-inh">
           {view.title}
         </a>
       </td>
-      <td style={{ color: severityColor(view.severity) }}>{labels.severityLabel(view.severity)}</td>
+      <td className="ui-d-sc" style={{ "--d-sev": severityColor(view.severity) } as CSSProperties}>{labels.severityLabel(view.severity)}</td>
       <td>{labels.kindLabel(view.kind)}</td>
       <td>
         {labels.statusLabel(view)}
@@ -105,54 +122,40 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
     <div data-findings-desk="true">
       {props.filterAction ? (
         <form method="get" action={props.filterAction} data-findings-filters="true"
-              style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
-          <label style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
+              className="ui-c2-g2 ui-d-mb10"
+              style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+          <label className="ui-d-l">
             {L.filters.severity}{" "}
-            <select name="sev" defaultValue={props.filters?.severity ?? ""}>
-              <option value="">{L.filters.allLabel}</option>
-              {(props.severityOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <FilterSelect name="sev" defaultValue={props.filters?.severity ?? ""} allLabel={L.filters.allLabel} options={props.severityOptions ?? []} />
           </label>
-          <label style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
+          <label className="ui-d-l">
             {L.filters.kind}{" "}
-            <select name="kind" defaultValue={props.filters?.kind ?? ""}>
-              <option value="">{L.filters.allLabel}</option>
-              {(props.kindOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <FilterSelect name="kind" defaultValue={props.filters?.kind ?? ""} allLabel={L.filters.allLabel} options={props.kindOptions ?? []} />
           </label>
-          <label style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
+          <label className="ui-d-l">
             {L.filters.status}{" "}
-            <select name="disp" defaultValue={props.filters?.status ?? ""}>
-              <option value="">{L.filters.allLabel}</option>
-              {(props.statusOptions ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <FilterSelect name="disp" defaultValue={props.filters?.status ?? ""} allLabel={L.filters.allLabel} options={props.statusOptions ?? []} />
           </label>
-          <button type="submit" style={{ fontSize: 12 }}>{L.filters.apply}</button>
-          <a href={props.filterAction} style={{ fontSize: 12 }}>{L.filters.clear}</a>
+          <Button type="submit" size="sm">{L.filters.apply}</Button>
+          <a href={props.filterAction} className="ui-d-l">{L.filters.clear}</a>
         </form>
       ) : null}
 
       {props.triage ? (
         <div data-triage-mode="true">
-          <p data-triage-progress="true" role="status" style={{ fontSize: 12, color: "var(--shell-fg-muted)" }}>
+          <p data-triage-progress="true" role="status" className="ui-d-l">
             {L.progressFmt(props.triage.decided, props.triage.total)}
             {" · "}
             <a href="?">{L.triageExit}</a>
           </p>
           {props.triage.sections.map((s) => (
-            <section key={s.key} data-triage-section={s.key} style={{ marginBottom: 14 }}>
-              <h4 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", margin: "8px 0 4px" }}>
+            <section key={s.key} data-triage-section={s.key} className="ui-d-mb16">
+              <h4 className="ui-d-cap ui-d-l ui-c2-mt ui-c2-mb">
                 {L.sectionLabels?.[s.key] ?? s.label}
               </h4>
-              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+              <table className="ui-vc-w ui-d-fd" style={{ borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+                  <tr className="ui-d-t" style={{ textAlign: "left" }}>
                     <th scope="col">{L.table.finding}</th>
                     <th scope="col">{L.table.severity}</th>
                     <th scope="col">{L.table.kind}</th>
@@ -173,11 +176,11 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
           ))}
         </div>
       ) : total === 0 ? (
-        <p data-findings-empty="true" style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>{L.empty}</p>
+        <p data-findings-empty="true" className="ui-d-t">{L.empty}</p>
       ) : (
-        <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+        <table className="ui-vc-w ui-d-fd" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+            <tr className="ui-d-t" style={{ textAlign: "left" }}>
               <th scope="col">{L.table.finding}</th>
               <th scope="col">{L.table.severity}</th>
               <th scope="col">{L.table.kind}</th>
@@ -190,7 +193,7 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
               <Fragment key={g.key}>
                 {groups.length > 1 ? (
                   <tr key={`h-${g.key}`} data-desk-group={g.key}>
-                    <td colSpan={5} style={{ paddingTop: 8, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>
+                    <td colSpan={5} className="ui-d-pt ui-d-cap ui-d-l">
                       {g.label}
                     </td>
                   </tr>
@@ -207,7 +210,7 @@ export function FindingsDesk(props: FindingsDeskProps): ReactNode {
         </table>
       )}
 
-      {props.bulkActions ? <div data-bulk-actions="true" style={{ marginTop: 10 }}>{props.bulkActions}</div> : null}
+      {props.bulkActions ? <div data-bulk-actions="true" className="ui-d-mt10">{props.bulkActions}</div> : null}
     </div>
   );
 }

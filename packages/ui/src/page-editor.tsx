@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Button } from "./primitives/button.js";
+import { TextArea } from "./primitives/fields.js";
 
 // The Page — the schema-first editor surface (P1.02; §5.4; REQ-SPEC-19, REQ-DATA-28/29 amended,
 // REQ-POS-8/9, REQ-PROD-14). SSR renders the full chrome + a STATIC typeset render of the document
@@ -156,7 +158,14 @@ interface JsonNode {
   content?: JsonNode[];
 }
 
-const SPAN_STYLE: CSSProperties = { fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "0.92em" };
+// 243_R7KIT.3d — the preview's monospace span is `.ui-d-mono`; the task-list marker stays the
+// KIT-1-styled native checkbox inside `TaskMark` (a named GUARD-1 exemption — the marker is
+// document content, disabled + readOnly, so a Radix toggle would be wrong chrome; RV-36).
+
+/** The task-list marker — a disabled native checkbox rendered as document content. */
+function TaskMark({ checked }: { checked: boolean }): ReactNode {
+  return <input type="checkbox" disabled checked={checked} readOnly style={{ marginRight: "0.4em" }} />;
+}
 
 function previewInline(n: JsonNode, key: number): ReactNode {
   let el: ReactNode;
@@ -223,7 +232,7 @@ export interface PmPreviewContext {
 function previewBlock(n: JsonNode, key: number, ctx?: PmPreviewContext): ReactNode {
   switch (n.type) {
     case "front_matter":
-      return <pre key={key} className="rm-frontmatter" style={SPAN_STYLE}>{`---\n${String(n.attrs?.["value"] ?? "")}\n---`}</pre>;
+      return <pre key={key} className="rm-frontmatter ui-d-mono">{`---\n${String(n.attrs?.["value"] ?? "")}\n---`}</pre>;
     case "paragraph":
       return <p key={key}>{previewInlineAll(n.content)}</p>;
     case "heading": {
@@ -261,7 +270,7 @@ function previewBlock(n: JsonNode, key: number, ctx?: PmPreviewContext): ReactNo
       const items = (n.content ?? []).map((item, i) => (
         <li key={i} {...(item.attrs?.["checked"] != null ? { "data-task": item.attrs["checked"] ? "done" : "todo" } : {})}>
           {item.attrs?.["checked"] != null ? (
-            <input type="checkbox" disabled checked={!!item.attrs["checked"]} readOnly style={{ marginRight: "0.4em" }} />
+            <TaskMark checked={!!item.attrs["checked"]} />
           ) : null}
           {(item.content ?? []).map((c, i) => previewBlock(c, i, ctx))}
         </li>
@@ -301,12 +310,12 @@ function previewBlock(n: JsonNode, key: number, ctx?: PmPreviewContext): ReactNo
     }
     case "link_definition":
       return (
-        <pre key={key} className="rm-link-def" style={SPAN_STYLE}>
+        <pre key={key} className="rm-link-def ui-d-mono">
           {`[${String(n.attrs?.["label"] || n.attrs?.["identifier"] || "")}]: ${String(n.attrs?.["url"] ?? "")}${n.attrs?.["title"] ? ` "${String(n.attrs["title"])}"` : ""}`}
         </pre>
       );
     case "html_block":
-      return <pre key={key} className="rm-html-block" style={SPAN_STYLE}>{String(n.attrs?.["value"] ?? "")}</pre>;
+      return <pre key={key} className="rm-html-block ui-d-mono">{String(n.attrs?.["value"] ?? "")}</pre>;
     default:
       return <p key={key}>{previewInlineAll(n.content)}</p>;
   }
@@ -401,20 +410,21 @@ export function PageEditor(props: PageEditorProps): ReactNode {
 
       {/* the findings rail — the minimal card affordance the shell shows (the Margin's full surface is P1.07) */}
       {props.findings.length > 0 || props.danglingCites.length > 0 ? (
-        <div data-findings-rail data-lost-note-text={L.lostNote} style={{ marginTop: "18px", borderTop: "1px solid var(--shell-border)", paddingTop: "10px" }}>
-          <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{L.findingsHeading}</h2>
+        <div data-findings-rail data-lost-note-text={L.lostNote} className="ui-d-sect">
+          <h2 className="ui-c2-m0 ui-c2-mb ui-d-b ui-d-fd">{L.findingsHeading}</h2>
           {props.findings.map((f) => (
             <div key={f.findingId} data-finding-id={f.findingId} {...(f.lost ? { "data-lost": "true" } : {})}
-                 style={{ borderLeft: "3px solid", borderLeftColor: `var(--sev-${f.severity})`, paddingLeft: "10px", marginBottom: "8px", fontSize: "13px" }}>
-              <div style={{ fontWeight: 600 }}>{f.title}</div>
-              <div style={{ color: "var(--shell-fg-muted)", fontSize: "12px" }}>{f.sourceLabel}</div>
-              {f.quote ? <blockquote style={{ margin: "4px 0 0", fontStyle: "italic" }}>{f.quote}</blockquote> : null}
-              {f.lost ? <div data-lost-note style={{ fontSize: "12px", color: "var(--sev-major)" }}>{L.lostNote}</div> : null}
+                 className="ui-d-pl ui-c2-mb ui-d-fd"
+                 style={{ borderLeft: "3px solid", borderLeftColor: `var(--sev-${f.severity})` }}>
+              <div className="ui-d-b">{f.title}</div>
+              <div className="ui-d-l">{f.sourceLabel}</div>
+              {f.quote ? <blockquote className="ui-d-q">{f.quote}</blockquote> : null}
+              {f.lost ? <div data-lost-note className="ui-d-wn">{L.lostNote}</div> : null}
             </div>
           ))}
           {props.danglingCites.length > 0 ? (
-            <div data-dangling-cites style={{ fontSize: "12px", color: "var(--sev-major)", marginTop: "6px" }}>
-              {L.danglingCiteNote}: {props.danglingCites.map((k) => <code key={k} style={{ marginRight: "6px" }}>@{k}</code>)}
+            <div data-dangling-cites className="ui-d-mt6 ui-d-wn">
+              {L.danglingCiteNote}: {props.danglingCites.map((k) => <code key={k}>@{k}</code>)}
             </div>
           ) : null}
         </div>
@@ -426,14 +436,13 @@ export function PageEditor(props: PageEditorProps): ReactNode {
           (`embeds={false}`): the forced-SSR phone reader shares this component and keeps the
           form until 247_R7RO.2 dispositions it. */}
       {!props.readOnly && (props.embeds ?? true) ? (
-        <form method="post" action={props.noteUrl} style={{ marginTop: "16px", borderTop: "1px solid var(--shell-border)", paddingTop: "10px" }}>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+        <form method="post" action={props.noteUrl} className="ui-d-sect">
+          <label className="ui-d-t" style={{ display: "block" }}>
             {L.noteLabel}
-            <textarea name="text" required rows={2} placeholder={L.notePlaceholder}
-                      style={{ display: "block", width: "100%", marginTop: "4px", font: "inherit", background: "var(--shell-bg)", color: "var(--shell-fg)", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "8px" }} />
+            <TextArea name="text" required rows={2} placeholder={L.notePlaceholder} className="ui-os-mr" />
           </label>
-          <button type="submit" style={{ fontSize: "12px", marginTop: "6px" }}>{L.noteSubmit}</button>
-          {props.noteSaved ? <span style={{ fontSize: "12px", color: "var(--sev-minor)", marginLeft: "8px" }}>{L.noteSaved}</span> : null}
+          <Button type="submit" size="sm" className="ui-d-mt6">{L.noteSubmit}</Button>
+          {props.noteSaved ? <span className="ui-d-ok ui-d-fs ui-vc-tag">{L.noteSaved}</span> : null}
         </form>
       ) : null}
 

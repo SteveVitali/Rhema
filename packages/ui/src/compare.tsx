@@ -1,7 +1,9 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { BlockDiff, DiffBlock, DiffHunk } from "@rhema/findings-core";
 import type { WhatChangedView as WhatChangedViewModel } from "@rhema/findings-core";
 import { WhatChangedView, type WhatChangedLabels } from "./what-changed.js";
+import { Button } from "./primitives/button.js";
+import { TextField } from "./primitives/fields.js";
 
 // The §5.8 compare page (P1.08; REQ-IDE-33): three read-only layouts over the ONE server-projected
 // diff — `side` (before/after block columns), `inline` (the hunk list), `moves` ("What changed and
@@ -41,25 +43,14 @@ export interface CompareProps {
   readonly labels: CompareLabels;
 }
 
-const muted: CSSProperties = { color: "var(--paper-fg-muted, var(--shell-fg-muted))" };
-
 function BlockCell({ block, side }: { block: DiffBlock | null; side: "before" | "after" }): ReactNode {
   return (
     <div
       data-diff-block={block?.blockId ?? "empty"}
       data-diff-side={side}
+      className={`ui-d-cell ui-vc-grow${block ? (side === "before" ? " ui-d-cell--del" : " ui-d-cell--add") : ""}`}
       style={{
-        flex: 1,
-        minWidth: 0,
-        padding: "6px 9px",
-        fontSize: "12.5px",
-        lineHeight: 1.5,
         whiteSpace: "pre-wrap",
-        background: !block
-          ? "transparent"
-          : side === "before"
-            ? "var(--paper-diff-del)"
-            : "var(--paper-diff-add)",
         borderLeft: block
           ? `2px solid ${side === "before" ? "var(--sev-major, #b33)" : "var(--accent, #3a7)"}`
           : "2px solid transparent",
@@ -87,35 +78,35 @@ function SideBySide({
       {diff.hunks.map((h) => {
         const rows = Math.max(h.before.length, h.after.length);
         return (
-          <div key={h.id} data-hunk={h.id} data-hunk-kind={h.kind} style={{ margin: "8px 0" }}>
-            <div style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.05em", ...muted }}>
+          <div key={h.id} data-hunk={h.id} data-hunk-kind={h.kind} className="ui-c2-mt ui-c2-mb">
+            <div className="ui-d-cap ui-d-cm ui-d-s">
               {labels.hunkKindLabel(h.kind)}
             </div>
             {Array.from({ length: rows }, (_, i) => (
-              <div key={i} style={{ display: "flex", gap: "8px" }}>
+              <div key={i} className="ui-d-acts" style={{ display: "flex" }}>
                 <BlockCell block={h.before[i] ?? null} side="before" />
                 <BlockCell block={h.after[i] ?? null} side="after" />
               </div>
             ))}
             {commentFormAction ? (
-              <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} style={{ marginTop: "6px", display: "flex", gap: "6px" }}>
-                <input
+              <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} className="ui-d-mt6 ui-d-g6" style={{ display: "flex" }}>
+                <TextField
                   type="text"
                   name="text"
                   required
                   placeholder={labels.commentPlaceholder}
                   aria-label={labels.commentLabel}
-                  style={{ flex: 1, padding: "5px 8px", fontSize: "12px", border: "1px solid var(--paper-rule)", borderRadius: "4px", background: "transparent" }}
+                  style={{ flex: 1 }}
                 />
-                <button type="submit" style={{ padding: "5px 10px", fontSize: "12px" }}>
+                <Button type="submit" size="sm">
                   {labels.commentSubmit}
-                </button>
+                </Button>
               </form>
             ) : null}
           </div>
         );
       })}
-      {diff.hunks.length === 0 ? <p style={muted}>{labels.noChanges}</p> : null}
+      {diff.hunks.length === 0 ? <p className="ui-d-cm">{labels.noChanges}</p> : null}
     </div>
   );
 }
@@ -133,8 +124,8 @@ function InlineDiff({
   return (
     <div data-compare-layout="inline">
       {diff.hunks.map((h) => (
-        <div key={h.id} data-hunk={h.id} data-hunk-kind={h.kind} style={{ margin: "10px 0" }}>
-          <div style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.05em", ...muted }}>
+        <div key={h.id} data-hunk={h.id} data-hunk-kind={h.kind} className="ui-c2-mt ui-c2-mb">
+          <div className="ui-d-cap ui-d-cm ui-d-s">
             {labels.hunkKindLabel(h.kind)}
           </div>
           {h.before.map((b) => (
@@ -144,23 +135,23 @@ function InlineDiff({
             <BlockCell key={`a-${b.blockId}`} block={b} side="after" />
           ))}
           {commentFormAction ? (
-            <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} style={{ marginTop: "6px", display: "flex", gap: "6px" }}>
-              <input
+            <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} className="ui-d-mt6 ui-d-g6" style={{ display: "flex" }}>
+              <TextField
                 type="text"
                 name="text"
                 required
                 placeholder={labels.commentPlaceholder}
                 aria-label={labels.commentLabel}
-                style={{ flex: 1, padding: "5px 8px", fontSize: "12px", border: "1px solid var(--paper-rule)", borderRadius: "4px", background: "transparent" }}
+                style={{ flex: 1 }}
               />
-              <button type="submit" style={{ padding: "5px 10px", fontSize: "12px" }}>
+              <Button type="submit" size="sm">
                 {labels.commentSubmit}
-              </button>
+              </Button>
             </form>
           ) : null}
         </div>
       ))}
-      {diff.hunks.length === 0 ? <p style={muted}>{labels.noChanges}</p> : null}
+      {diff.hunks.length === 0 ? <p className="ui-d-cm">{labels.noChanges}</p> : null}
     </div>
   );
 }
@@ -169,31 +160,29 @@ export function CompareView(props: CompareProps): ReactNode {
   const L = props.labels;
   return (
     <section data-compare data-layout={props.layout} aria-label={L.heading}>
-      <header style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
-        <h3 style={{ margin: 0, fontSize: "15px" }}>{L.heading}</h3>
-        <span data-version-line style={{ fontSize: "12.5px", ...muted }}>
+      <header className="ui-c2-g3" style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}>
+        <h3 className="ui-c2-m0 ui-d-h">{L.heading}</h3>
+        <span data-version-line className="ui-d-cm ui-d-fs">
           {L.versionLabel(props.beforeN, props.afterN)}
         </span>
-        <nav aria-label={L.heading} style={{ display: "inline-flex", gap: "6px", fontSize: "12px" }}>
+        <nav aria-label={L.heading} className="ui-d-g6 ui-d-fs" style={{ display: "inline-flex" }}>
           {(["side", "inline", "moves"] as const).map((l) => (
             <a
               key={l}
               href={props.layoutHref(l)}
               data-layout-link={l}
               aria-current={props.layout === l ? "true" : undefined}
+              className="ui-d-tab ui-d-inh"
               style={{
-                padding: "2px 8px",
-                borderRadius: "999px",
                 border: `1px solid ${props.layout === l ? "var(--accent)" : "var(--paper-rule)"}`,
                 textDecoration: "none",
-                color: "inherit",
               }}
             >
               {L.layouts[l]}
             </a>
           ))}
         </nav>
-        <span style={{ fontSize: "11.5px", ...muted }}>{L.unchangedFmt(props.diff.unchanged)}</span>
+        <span className="ui-d-cm ui-d-s">{L.unchangedFmt(props.diff.unchanged)}</span>
       </header>
 
       {props.layout === "side" ? (
@@ -204,7 +193,7 @@ export function CompareView(props: CompareProps): ReactNode {
       ) : null}
       {props.layout === "moves" ? (
         <>
-          {!props.linked ? <p data-unlinked-note style={{ fontSize: "12px", ...muted }}>{L.unlinkedNote}</p> : null}
+          {!props.linked ? <p data-unlinked-note className="ui-d-cm ui-d-fs">{L.unlinkedNote}</p> : null}
           <WhatChangedView
             view={props.view}
             beforeN={props.beforeN}

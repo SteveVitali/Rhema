@@ -2195,9 +2195,10 @@ describe("P1.05 — timeline, run page, steering", () => {
     expect(html).toContain("data-timeline-pane");
     // §5.5's three verbs row — each opens the run sheet for that workflow
     expect(html).toContain("data-timeline-verbs");
-    expect(html).toContain(
-      'href="/p/the-politics-of-visibility/run?workflow=draft" data-verb="draft"',
-    );
+    // R7KIT.3d — the verbs are now Chip action links: the hook + href ride the same anchor
+    // but React emits `data-verb` after `rel`, so assert both facts separately.
+    expect(html).toContain('href="/p/the-politics-of-visibility/run?workflow=draft"');
+    expect(html).toContain('data-verb="draft"');
     expect(html).toContain('data-verb="review"');
     expect(html).toContain('data-verb="revise"');
     expect(html).toContain('data-next-step="revise"');
