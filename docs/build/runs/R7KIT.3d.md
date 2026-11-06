@@ -30,7 +30,7 @@
 | `pnpm check:spa-budget` | PASS (ceilings held) — entry delta **+15.5 kB vs baseline `04a4e98b`**, ticket increment **+0.0 kB**; the WARN is the parent's accumulated `GD-KIT3A-BUDGET` deficit, unchanged by this ticket |
 | `uiCss()` raw size | **23,162 B ≤ 24,576** (was ~26,800 before the hoisted-dedup pass) |
 | `node docs/build/tools/check-append-only.mjs --base <PR base>` / build-memory structural check | recorded in the PR evidence |
-| Exact-head CI | recorded in the PR evidence — never inferred |
+| Exact-head CI | run `42303234177` on `5ac978e4` — observed **in_progress** at write time; re-read before any green claim (never inferred) |
 
 Not run: any deployed/browser journey, preview, or production mutation (none owed — Stage A).
 

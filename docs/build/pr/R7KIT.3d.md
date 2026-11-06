@@ -17,6 +17,6 @@ Migrates the round-7 batch-d surfaces to the 225/225a `@rhema/ui` primitives and
 - `server.test.ts` verb-row leg updated — Chip emits `data-verb` after `rel`; hook + href unchanged
 - Changed lines: **+721/−924** (over the ~600 estimate — the `ui-css.ts` decl-hoist regeneration drives ~470 of them; honestly reported)
 - Run record: `docs/build/runs/R7KIT.3d.md` · Deferral: `D-R7KIT.3d-1` (Stage-B walk → 250_R7DEP.2, OPEN)
-- Exact-head CI: see run-record evidence table — not inferred
+- Exact-head CI: run `42303234177` @ `5ac978e4` — observed in-progress at write time; re-read before any green claim
 
 Owed at Stage B (never claimed here): screenshots + computed-style probe at the 250 preview SHA.
