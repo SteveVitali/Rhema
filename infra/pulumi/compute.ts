@@ -872,13 +872,13 @@ export function createCompute(args: ComputeArgs): Compute {
                     ...(requires("anthropic-api-key")
                       ? [{ name: "INGEST_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }]
                       : []),
-                    // RUN.1 — the walkthrough generator's model key: the same anthropic-api-key secret
-                    // VERSION the proxy reads (worker SA holds secretAccessor — iam.ts `worker-reads-
-                    // anthropic`; ADR-052). Never the value — the worker `access`es the name at boot;
-                    // unset on stages without the provider key ⇒ the failing stub binds.
-                    ...(requires("anthropic-api-key")
-                      ? [{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }]
-                      : []),
+                    // R7DEP.1 (D-R7COPY.0-2) — the WALKTHROUGH_MODEL_KEY_SECRET binding is REMOVED:
+                    // R7COPY.0/ADR-130 retired the only reader (the walkthrough generator), so the env
+                    // was dead config on every deployed worker template. `ingest.reconstruct` keeps
+                    // its own INGEST_MODEL_KEY_SECRET binding above; the worker's env.ts also retains
+                    // the old name as a read-side legacy fallback, so no stage can lose the key it
+                    // resolved before. Removing the binding is the whole point of the deploy diff —
+                    // ADR-052's worker exception now narrows to `ingest.reconstruct` alone.
                   ],
                 }
               : {}),

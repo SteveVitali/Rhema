@@ -32,3 +32,27 @@ changed but ~2,279 are `packages/demo-corpus` (corpus data).
 per ticket deliverable 7's second arm. If Part B's deploy SHA changes from `8f6ef478…` (e.g.
 the operator merges and the payload grows), this classification is re-derived on the new range
 before any `pulumi up`.
+
+## Addendum 2026-11-05 — re-derived on the Part-B deploy SHA `4bc8cf4a`
+
+Part B's deploy SHA advanced: `8f6ef478` → `4bc8cf4a73402aed782546fe233235e9807cc990` (the
+R7a chain tip, now carrying run-time insert `223b` — the `0061` owner-portability fix — Part A's
+records, and insert `223c`/R7FIX.2's two leg fixes). This file's own consequence clause requires
+re-derivation on the new range **before any `pulumi up`**.
+
+**Delta `8f6ef478..4bc8cf4a`, non-docs/non-workflow paths (complete):**
+`apps/web/src/spa/nav-intercept.ts` + `intercept.dom.test.tsx` (the same-location commit fix),
+`packages/tokens/src/ide-css.ts` + `tokens.test.ts` (the desk-head stacking fix),
+`packages/journeys/src/{registry,registry.test,runner.test}.ts` (the seven leg flips + census
+pins), `packages/db/migrations/0061_demo_events.sql` (223b's `ROLE postgres` membership +
+transient `GRANT/REVOKE CREATE` — the SAME already-classified insert-only channel, a portability
+amendment inside it), `scripts/live/cdn-invalidate-demo.mjs` + test (this deploy's one authored
+ops tool), `infra/pulumi/Pulumi.pr-259.yaml` (preview IaC), plus `docs/**` records/screenshots.
+Zero `packages/protocols`, zero new `packages/orchestrator`, zero `apps/run-task`, zero
+`apps/egress-proxy` paths in the delta.
+
+**Verdict: still NOT protocol-affecting — no golden re-run, $0.** The full payload
+`a34eb51..4bc8cf4a` adds nothing to any item of the rule's list beyond what the 2026-11-04
+classification already cleared (the walkthrough removal stays cited per 213's ADR-130 argument:
+a lazy post-delivery call outside the Review output — the delta touches no dispatch, phase,
+URL-policy or delivery path).

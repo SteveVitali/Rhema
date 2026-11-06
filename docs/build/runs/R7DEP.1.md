@@ -248,3 +248,165 @@ R7a phase preview (`staging-verified at the R7a phase preview (224)`):
   set gained the five; the owed census dropped them), 28/28 local.
 - **CI final: pass #259@`6bb1901`** (run 41925840062 — all seven legs + ci-pass anchor;
   `logs/ci-R7DEP.1.json`).
+
+---
+
+# PART B — prod deploy of the R7a chain (resumed 2026-11-05 after HUMAN-H14+H15 SIGNED)
+
+- **Branch:** `stevevitali/r7dep-1b-prod` (forked off `stevevitali/r7fix-2-demo-legs` @ `4bc8cf4a`)
+- **Deploy SHA:** `4bc8cf4a73402aed782546fe233235e9807cc990` — the R7a chain tip incl.
+  R7FIX.2's two leg fixes (web code changed → the SHA advances from Part A's `4f66cebc`).
+  The operator has NOT merged the R7a stack (PRs #240–#260 open, mergePolicy OPERATOR), so this
+  is the chain tip, not a post-merge `main` HEAD (deliverable 4's first arm). Later commits on
+  this branch are records/IaC pins — non-image (the R6DEP.4 pattern).
+- **Operator posture (verbatim, 2026-11-04):** "fix first and then deploy and continue" —
+  HUMAN-H14 + H15 SIGNED (readouts committed); the fix landed (223c, PR #260, both legs
+  live-green on pr-259 @ `18a0df79`).
+- **Golden classification:** re-derived on `a34eb51..4bc8cf4a` — still **NOT protocol-affecting
+  → no re-run, $0** (addendum in `reports/2026-11-04_R7DEP.1/golden-classification.md`,
+  committed before any pulumi act; the delta carries zero protocol/dispatch/harness/proxy paths).
+
+## Part B — pre-state (captured before any mutation, 2026-11-05T01:5xZ)
+
+- prod `/healthz`: web + api `build.gitSha = 4938b8e4024777417c5a8ed9f518f9afb4bebd08` (R6DEP.4).
+- prod `_migrations` max: `0060_stripe_event_redrive.sql` (60 applied; `0061_demo_events.sql` the
+  only newer file) — via IAP tunnel `rhema-prod-proxy-rwjl` → `127.0.0.1:15433→10.46.0.3:5432`.
+- prod stack export: `logs/r7dep1b-prod-stack-export-prestore.json` (182 resources).
+- prod digests: `Pulumi.prod.yaml` serviceImages/run-task/egress-proxy set at the `4938b8e`
+  build (c6d7dedb) — the rollback pin set.
+- prod engine: Cloud SQL **PostgreSQL 16.15** (the engine `0061`'s `createrole_self_grant`
+  comment was written for; the 223b `ROLE postgres` membership makes `OWNER TO` work here).
+
+## Part B — conditioned acts (GD-DEPLOY.R7, each evidenced before the act it guards)
+
+| # | Condition | Evidence | Status |
+|---|---|---|---|
+| 1 | preview first | Part A green + R7FIX.2 re-walk on pr-259 (all 7 R7a legs `expected:"green"`) | DONE |
+| 2 | all-service image build at the deploy SHA | Cloud Build `02a947ec` @ `4bc8cf4a`, all-10 `_TAG=r7dep-1` → `rhema-prod` AR | running |
+| 3 | classified `pulumi preview --diff` | pending | — |
+| 4 | provenance all-PASS web+api | pending | — |
+| 5 | `deployments` row | pending | — |
+| 6 | committed rollback recipe | this ledger § Part B rollback | DONE (recipe below; never executed without the operator) |
+| 7 | image-content assertion (corpus + snapshots in web image) | in-build `RUN test -s` (web Dockerfile L25–27) + post-build digest check | pending |
+| 8 | CDN invalidation `/bff/p/demo~*` | pending (dry-run == act, committed) | — |
+
+**Prod migration (Production mutation #1) — DONE 2026-11-05T01:5xZ:**
+`prod-migrate-seed.mjs` over the IAP tunnel (system `postgres` DSN; prod has NO migrate Job —
+`cfg.kind !== "prod"`, the operator-tunnel path IS the sanctioned one, PROD-BRINGUP §7). In-band
+additive lint vs prod max `0060` → **PASS** (`0061_demo_events.sql` only); `[migrate] applied
+0061_demo_events.sql` → 61 recorded (log `logs/r7dep1b-prod-migrate.log`). Post-state census via
+the tunnel (same checks as the preview): owner `rhema_demo_writer` (NOLOGIN, no
+super/createdb/createrole), `prosecdef=true`, `proconfig search_path=""`, table grants =
+`rhema_demo_writer:INSERT` only (`rhema_app`/`rhema_app_login`: select=false, insert=false),
+EXECUTE granted to `rhema_app` (`rhema_app_login` member), columns `id/at/event/essay/step/src`
+(no ip/user/cookie/UA), 0 rows.
+
+## Part B — rollback recipe (committed; NOT executed — the operator's go)
+
+1. Re-pin `Pulumi.prod.yaml` to the pre-deploy digests: serviceImages api `7fa61aa9…`, web
+   `ad5d5cd1…`, worker `aaefca88…`, fetcher `ff23f011…`, convert `3db54baa…`, export `f4e9fa77…`,
+   collab `34e9300a…`, turbo-cache `8bf03ad3…`; run-task `f8d4c6d8…`; egress-proxy `5237d8f9…`
+   (all `@sha256:` in `rhema-prod` AR — verbatim from the pre-state file).
+2. `pulumi up --stack prod` — rolls services back to the `4938b8e` images.
+3. The `0061` migration is additive and STAYS: the `demo_events` table + insert-only role +
+   definer function are inert — the `POST /a/demo` route in the old web image drops silently
+   (the route does not exist pre-R7a). No migration rollback.
+4. Re-run the CDN invalidation `/bff/p/demo~*` (evicts any post-deploy twin bodies).
+5. `check-deploy-provenance --expect 4938b8e… --healthz https://rhema.tools --healthz
+   https://api.rhema.tools` → all-PASS.
+6. Optionally `git revert` of the R7a range for the source rollback (operator's call).
+   Full code rollback = `git revert a34eb51..4bc8cf4a` + rebuild + redeploy (gotcha 7:
+   renderer rollback is a code rollback — never a flag flip).
+
+## Part B — the classified `pulumi preview --diff` (condition 3) — 2026-11-05T02:0xZ
+
+`pulumi preview --diff --stack prod` (full log `logs/r7dep1b-pulumi-preview.log`,
+live view `…/previews/73f7e6bb-…`):
+
+- **~10 updates** — image rolls only: convert Job + convert-svc, collab, fetcher, export,
+  web, api, worker, turbo-cache, proxy MIG `versions[0].instanceTemplate` pointer.
+- **+-1 replace** — `gcp:compute/instanceTemplate rhema-prod-proxy-tmpl` ONLY: instance
+  templates are immutable, so the egress-proxy image bump forces a new template (the same
+  class of stateless replace R6DEP.4 classified). The MIG rolls instances onto it.
+- **0 deletes; zero stateful resources touched** — no Cloud SQL, Memorystore, GCS, secrets,
+  IAM, or network object appears in the diff.
+- **Worker env diff** — `WALKTHROUGH_MODEL_KEY_SECRET` removal (deployed template env[34]
+  confirmed via `gcloud run services describe` — D-R7COPY.0-2's deploy-plan half lands here);
+  `INGEST_MODEL_KEY_SECRET` stays bound.
+- **Cost Δ ≈ $0/month** (image rolls + one template replace) — ≤ $15. **Migrations:** none in
+  the program; `0061` applied via the operator path, additive lint PASS in-band.
+
+**Classification: PASS — every GD-DEPLOY.R7 condition-3 criterion holds → `pulumi up` proceeds.**
+
+## Part B — the deploy (2026-11-05T02:0xZ)
+
+- **`pulumi up --stack prod` update 173 — SUCCEEDED in 1m43s** (log
+  `logs/r7dep1b-pulumi-up.log`): ~10 updated (all-service image rolls + worker env) + +-1
+  replaced (`rhema-prod-proxy-tmpl` — stateless template, MIG rolled `rwjl`/`bvpb` →
+  `5bv1`/`09s4`; the IAP tunnel dropped mid-deploy with the MIG roll, re-established on
+  `5bv1`). Zero deletes, zero stateful changes — exactly the classified diff.
+- **Provenance all-PASS (condition 4):** `check-deploy-provenance --expect 4bc8cf4a…` →
+  web `https://rhema.tools` + api `https://api.rhema.tools` both serve
+  `4bc8cf4a73402aed782546fe233235e9807cc990`.
+- **`deployments` row (condition 5):** `record-deployment` wrote
+  `prod:4bc8cf4a…` `protocols_version=0.4.0+9c2b880dbee74bd8` + all 10 digests.
+- **Worker env verified live:** `gcloud run services describe` — `WALKTHROUGH_MODEL_KEY_SECRET`
+  absent, `INGEST_MODEL_KEY_SECRET` present (D-R7COPY.0-2 discharged).
+- **CDN invalidation (condition 8):** dry-run output == act output verbatim —
+  `gcloud compute url-maps invalidate-cdn-cache rhema-prod-urlmap-6f2b86e --path
+  /bff/p/demo~* --project rhema-507501 --host rhema.tools` (logs
+  `r7dep1b-cdn-dryrun.txt` / `r7dep1b-cdn-act.txt`).
+- **Golden re-run:** none — classified non-affecting, $0 (GD-GOLDEN.R7 discharged).
+
+## Part B — prod Stage B (2026-11-05T02:1xZ)
+
+- **All seven R7a legs PASS on prod at `--expect-sha 4bc8cf4a…`**
+  (`reports/2026-11-05_R7DEP.1-prod/`): D1.hub, D2.tour (all 11 steps ×3 widths — 40+
+  screenshots), D3.readonly, P1.demo, R11.demo (returningUser session, `jrn-a` cached),
+  plus the two R7FIX.2 legs re-proven on prod: U3.stopgap, R8.showcase.spa.
+- **Smoke legs PASS:** N10, P1.public, R8.showcase — provenance match, $0 spend.
+- **Beacon end-to-end on prod:** the leg walk's `src=jrn` visits produced `demo_events`
+  rows read through the system DSN — 14 `src='jrn'` rows (incl. `demo.hub_viewed`),
+  plus organic `src=null` hub_viewed rows from the raw curl checks.
+- **Public routes all 200:** `/ /demo /pricing /signup /login /showcase /invite`.
+- **Twin cache + CDN hit proven:** `GET /bff/p/demo~<essay>/v/dossier` →
+  `cache-control: public,max-age=300,s-maxage=86400` + SHA-stamped ETag + no Set-Cookie;
+  repeated GET shows `age: 3` → `age: 6` (an actual Cloud CDN HIT post-invalidation).
+  Note: the project twin `/bff/p/demo~<essay>` serves `s-maxage=3600` — TTLs differ per
+  twin class (both `public` + ETag); recorded honestly, not claimed uniform.
+- **Worker consuming:** pgboss census on the prod DB (system tunnel) — healthy
+  completed-job volumes across queues.
+- **Worker env:** verified above (walkthrough binding gone).
+
+## Part B — preview teardown + spend (2026-11-05T02:4xZ)
+
+- `preview-stack.mjs destroy pr-259` — 198 resources deleting (three-act teardown:
+  destroy → orphan sweep → `rm`). pr-259 lifetime ≈ 7.2 h (19:5xZ→02:4xZ).
+- **Preview spend (list-price inventory, honestly labelled — no billing export exists,
+  D-OPS.2-1):** components × ~7.2h uptime — AlloyDB 2vCPU/16GiB ≈ $0.60/h → ~$4.3;
+  2× e2-standard-2 GKE ≈ $0.13/h → ~$1.0; 2× e2-small proxy ≈ $0.03/h → ~$0.24;
+  Redis BASIC 1GB ≈ $0.05/h → ~$0.35; worker Cloud Run instance-billed ≈ $0.06/h →
+  ~$0.45; NAT+LB ≈ $0.10/h → ~$0.7; 3 Cloud Builds (~36 min E2_HIGHCPU_8) ≈ $1.0;
+  **≈ $8 total list-price estimate** (bound: even at ×2 SKU error, < $20).
+  **Round-7 preview spend ≈ $8 of the $20 cap** — legs $0 inference throughout.
+  250's R7b preview headroom: ~$12 remaining.
+
+## Part B — teardown tail (2026-11-05T02:5xZ, honest residual)
+
+`preview-stack.mjs destroy pr-259`: 132 deleted on pass 1 + 15 on pass 2 — **all resources
+destroyed except `rhema-pr-259-private-app`**, blocked by GCP-internal serverless-VPC-access
+address reservation `serverless-ipv4-cloudrun-1793821352011819136` (auto-created by Cloud Run
+VPC egress; NOT a pulumi resource; releases on its own clock after the services die — delete
+attempts refused `resourceInUseByAnotherResource` at ~02:5xZ). The reservation is $0; the
+subnetwork is the only pulumi resource left. **Carry:** re-run
+`node scripts/live/preview-stack.mjs destroy pr-259` once the reservation drains, then the
+orphan sweep + `rm pr-259`. Recorded; not claimed complete.
+- checks: `check-build-memory.sh` warnings-only (legacy classes, 0 violations);
+  `check-append-only.mjs --base stevevitali/r7fix-2-demo-legs` OK.
+
+## Part B — close
+
+- **Closed:** 2026-11-05T02:5xZ (`date -u`).
+- **PR:** #261 (`stevevitali/r7dep-1b-prod` → base `stevevitali/r7fix-2-demo-legs`; unmerged — mergePolicy OPERATOR).
+- **ci:** `pending #261` at report time — `fast-path` PASS 48s; `typecheck / lint / unit` running (run 41956703273; JSON `logs/ci-R7DEP.1-partb.json` written by the bounded boundary poll).
+- **Carry (honest, $0):** `rhema-pr-259-private-app` subnetwork remains — GCP's auto-created `serverless-ipv4-cloudrun-1793821352011819136` address reservation holds it; every other resource (147) destroyed. Re-run `preview-stack.mjs destroy pr-259` then `rm pr-259` once the reservation drains (~hour).
