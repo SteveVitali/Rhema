@@ -19,12 +19,18 @@ import { createRoot, type Root } from "react-dom/client";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { FigureCardDto, FigureListItemDto } from "@rhema/api-client";
+import type { FigureCardDto, FigureImageCardDto, FigureListItemDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
+import {
+  axeCheck,
+  restoreDocumentNav,
+  SETTLE_TIMEOUT,
+  settled,
+  stubDocumentNav,
+} from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -50,7 +56,8 @@ const FIGURE_ITEM: FigureListItemDto = {
   hasRender: true,
   insertedInDraftId: null,
   pendingProposal: false,
-  latestRunId: "run_fig" };
+  latestRunId: "run_fig",
+};
 
 const FIGURE_CARD: FigureCardDto = {
   id: "fig01",
@@ -69,23 +76,68 @@ const FIGURE_CARD: FigureCardDto = {
   insertedAtVersionId: null,
   pendingProposal: null,
   versions: [
-    { n: 1, request: "initial", renderStatus: "rendered", renderError: null, createdAt: "2026-01-01T00:00:00Z" },
-    { n: 2, request: "make it a bar chart", renderStatus: "rendered", renderError: null, createdAt: "2026-01-02T00:00:00Z" },
+    {
+      n: 1,
+      request: "initial",
+      renderStatus: "rendered",
+      renderError: null,
+      createdAt: "2026-01-01T00:00:00Z",
+    },
+    {
+      n: 2,
+      request: "make it a bar chart",
+      renderStatus: "rendered",
+      renderError: null,
+      createdAt: "2026-01-02T00:00:00Z",
+    },
   ],
   files: {
     spec: '{"mark":"bar"}',
     dataCsv: "group,score\na,0.7",
-    svgLight: "<svg data-fig=\"light\"></svg>",
+    svgLight: '<svg data-fig="light"></svg>',
     svgDark: null,
-    tableSource: null },
+    tableSource: null,
+  },
   render: { lightAvailable: true, darkAvailable: false, pngAvailable: false },
-  readiness: { ok: true, missing: [] } };
+  readiness: { ok: true, missing: [] },
+};
 
 const FIGURES_TWIN: BffFiguresTwin = {
-  figures: { slug: SLUG, items: [FIGURE_ITEM] } };
+  figures: { slug: SLUG, items: [FIGURE_ITEM] },
+};
 
 const CARD_TWIN: BffFigureCardTwin = {
-  figure: { slug: SLUG, card: FIGURE_CARD, headDraftId: "d_head" } };
+  figure: { slug: SLUG, card: FIGURE_CARD, headDraftId: "d_head" },
+};
+
+// S-7 / P4-21 — the imported-image variant: `specKind:"image"`, `provenance:"imported"`, no spec,
+// SVG, run provenance, or chart controls. The list DTO's specKind union predates the variant, so
+// the row carries the runtime value through a cast (the leaf's own `(… as unknown as string)` arm).
+const IMAGE_ITEM: FigureListItemDto = {
+  ...FIGURE_ITEM,
+  id: "figimg",
+  assetUri: "/bff/demo/asset/the-politics-of-visibility/figimg.png",
+  title: "Site plan",
+  caption: "Imported plan image.",
+  specKind: "image" as FigureListItemDto["specKind"],
+  badge: null,
+  badgeText: null,
+  n: 1,
+  hasRender: false,
+  latestRunId: null,
+};
+
+const IMAGE_CARD: FigureImageCardDto = {
+  id: "figimg",
+  assetUri: "/bff/demo/asset/the-politics-of-visibility/figimg.png",
+  title: "Site plan",
+  caption: "Imported plan image.",
+  alt: "A plan drawing",
+  sourceLine: "Imported asset.",
+  specKind: "image",
+  provenance: "imported",
+  versions: [{ n: 1, label: "imported" }],
+};
 
 const VISUALIZE_TWIN: BffVisualizeTwin = {
   visualize: {
@@ -94,7 +146,9 @@ const VISUALIZE_TWIN: BffVisualizeTwin = {
     specKind: "vega_lite",
     entryPoint: "chat",
     estimateCredits: 24,
-    capCredits: 48 } };
+    capCredits: 48,
+  },
+};
 
 /** The page-data bags the SSR pages consume — the twins' fields verbatim. */
 // ---- the mount substrate -------------------------------------------------------------------------
@@ -102,7 +156,8 @@ const VISUALIZE_TWIN: BffVisualizeTwin = {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" } });
+    headers: { "content-type": "application/json" },
+  });
 }
 
 interface FetchOpts {
@@ -141,14 +196,22 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(200, { ok: true, redirect: `/p/${SLUG}/figures/fig01` });
     }
     if (path === `/bff/p/${SLUG}/figures`) {
-      return jsonResponse(200, posts.length > 0 && opts.figuresAfter != null ? opts.figuresAfter : (opts.figures ?? FIGURES_TWIN));
+      return jsonResponse(
+        200,
+        posts.length > 0 && opts.figuresAfter != null
+          ? opts.figuresAfter
+          : (opts.figures ?? FIGURES_TWIN),
+      );
     }
     if (path.startsWith(`/bff/p/${SLUG}/figures/`)) {
       // REQ-ENG-1 — `cardAfter` is the POST-MUTATION refetch's truth, gated on a recorded
       // POST (not read #2): a StrictMode/staleTime-0 mount refetch used to consume the
       // pending-proposal fixture before the propose POST ever fired, hiding the form the
       // settled() wait was looking for — the iter-1 flake arm.
-      return jsonResponse(200, posts.length > 0 && opts.cardAfter != null ? opts.cardAfter : (opts.card ?? CARD_TWIN));
+      return jsonResponse(
+        200,
+        posts.length > 0 && opts.cardAfter != null ? opts.cardAfter : (opts.card ?? CARD_TWIN),
+      );
     }
     if (path === `/bff/p/${SLUG}/visualize`) {
       return jsonResponse(200, opts.visualize ?? VISUALIZE_TWIN);
@@ -158,26 +221,35 @@ function makeFetch(opts: FetchOpts = {}) {
   return { impl, posts };
 }
 
-function bootFor(surfaces: Record<string, "spa" | "ssr">, deviceClass: "desktop" | "phone" = "desktop"): SpaBoot {
+function bootFor(
+  surfaces: Record<string, "spa" | "ssr">,
+  deviceClass: "desktop" | "phone" = "desktop",
+): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass, surfaces };
 }
 
 const SPA_FIGURES = {
   "/p/$project/figures": "spa",
   "/p/$project/figures/$figureId": "spa",
-  "/p/$project/visualize": "spa" } as const;
+  "/p/$project/visualize": "spa",
+} as const;
 
 let docNavSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
-async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
+async function mountAt(
+  path: string,
+  boot: SpaBoot,
+  fetchImpl: ReturnType<typeof makeFetch>["impl"],
+) {
   vi.stubGlobal("fetch", fetchImpl);
   const rootEl = document.createElement("div");
   rootEl.setAttribute("data-spa-root", "");
   document.body.appendChild(rootEl);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }) });
+    history: createMemoryHistory({ initialEntries: [path] }),
+  });
   const root = createRoot(rootEl);
   mounted.push(root);
   await act(async () => {
@@ -192,14 +264,16 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   // router's settled-leaf stamp (REQ-NAVT-2 — a pending transition carries no stamp). The
   // bare post-mount selector reads below raced that commit and flaked in CI (BL-87 /
   // D-R5REC.1-1's sibling arm — the non-null-asserted propose-form lookup ~L435).
-  await vi.waitFor(() => {
-    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
-    }, { timeout: SETTLE_TIMEOUT });
+  await vi.waitFor(
+    () => {
+      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    },
+    { timeout: SETTLE_TIMEOUT },
+  );
   return { router, queryClient, rootEl };
 }
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
-
 
 /** Submit one form inside an act — fireEvent + the mutation's microtask flush. */
 async function submit(form: Element) {
@@ -235,24 +309,35 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
     expect(main.querySelector("h1")?.textContent).toBe(COPY.figuresPage.heading);
     // R7SHELL.1b — the title row + Project › Surface crumb replace the back-link header.
     const crumb = main.querySelector("[data-page-breadcrumb]");
-    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector("[data-breadcrumb-link]")?.getAttribute("href")).toBe(`/p/${SLUG}`);
     expect(crumb?.textContent).toContain(SLUG);
     expect(crumb?.textContent).toContain(COPY.figuresPage.heading);
-    expect(main.querySelector('[data-page-header] [data-page-breadcrumb]')).not.toBeNull();
+    expect(main.querySelector("[data-page-header] [data-page-breadcrumb]")).not.toBeNull();
     expect(main.querySelector(`a[href="/p/${SLUG}/visualize"][data-new-figure]`)).not.toBeNull();
     // No body-level back link remains (REQ-SHELL-3). R7SHELL.2 — the sidebar's project-entry
     // link (`data-shell-project`) is the current project's home, never a body-level back link.
-    expect([...main.querySelectorAll(`a[href="/p/${SLUG}"]`)].every((a) => a.closest("[data-page-breadcrumb]") != null || a.closest("[data-shell-project]") != null)).toBe(true);
+    expect(
+      [...main.querySelectorAll(`a[href="/p/${SLUG}"]`)].every(
+        (a) =>
+          a.closest("[data-page-breadcrumb]") != null || a.closest("[data-shell-project]") != null,
+      ),
+    ).toBe(true);
     const row = await settled(`[data-figure-row="fig01"]`);
     expect(row).not.toBeNull();
-    expect(row.querySelector(`a[href="/p/${SLUG}/figures/fig01"]`)?.textContent).toBe("Visibility scores");
+    expect(row.querySelector(`a[href="/p/${SLUG}/figures/fig01"]`)?.textContent).toBe(
+      "Visibility scores",
+    );
     expect(row.textContent).toContain("[unverified data]");
     expect(row.textContent).toContain("v2");
     expect(row.textContent).toContain("Scores by group.");
   });
 
   it("an empty pane renders the designed empty arm; a degraded list lands the same", async () => {
-    await mountAt(`/p/${SLUG}/figures`, BOOT, makeFetch({ figures: { figures: { slug: SLUG, items: [] } } }).impl);
+    await mountAt(
+      `/p/${SLUG}/figures`,
+      BOOT,
+      makeFetch({ figures: { figures: { slug: SLUG, items: [] } } }).impl,
+    );
     expect(el()!.querySelector("[data-figures-empty]")?.textContent).toBe(COPY.figuresPage.empty);
     expect(el()!.querySelector("[data-figure-row]")).toBeNull();
   });
@@ -264,8 +349,18 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
           slug: SLUG,
           items: [
             { ...FIGURE_ITEM, insertedInDraftId: "d_head" },
-            { ...FIGURE_ITEM, id: "fig02", title: "Pending", insertedInDraftId: null, pendingProposal: true, hasRender: false },
-          ] } } });
+            {
+              ...FIGURE_ITEM,
+              id: "fig02",
+              title: "Pending",
+              insertedInDraftId: null,
+              pendingProposal: true,
+              hasRender: false,
+            },
+          ],
+        },
+      },
+    });
     await mountAt(`/p/${SLUG}/figures`, BOOT, f.impl);
     const first = await settled('[data-figure-row="fig01"]');
     expect(first.textContent).toContain(COPY.figuresPage.insertedChip);
@@ -274,11 +369,25 @@ describe("GET /p/:slug/figures mounted (SPA.19)", () => {
     expect(second.textContent).toContain(COPY.figuresPage.renderingChip);
   });
 
+  it("an imported-image row renders the image + caption, never chart controls (S-7 / P4-21)", async () => {
+    const f = makeFetch({
+      figures: { figures: { slug: SLUG, items: [IMAGE_ITEM] } },
+    });
+    await mountAt(`/p/${SLUG}/figures`, BOOT, f.impl);
+    const row = await settled('[data-figure-row="figimg"]');
+    const img = row.querySelector<HTMLImageElement>('img[data-figure-image="figimg"]');
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain("/bff/demo/asset/");
+    expect(row.textContent).toContain("Imported plan image.");
+    // no chart-spec controls on the imported variant's row.
+    expect(row.querySelector("[data-type-chips]")).toBeNull();
+    expect(row.querySelector("[data-figure-preview]")).toBeNull();
+  });
+
   it("component axe on the mounted pane (REQ-VFY-6)", async () => {
     await mountAt(`/p/${SLUG}/figures`, BOOT, makeFetch().impl);
     await axeCheck(await settled("[data-spa-surface]"));
   });
-
 
   it("unflipped → SsrHandoff — the leaf document-navigates and never fetches the twin", async () => {
     const f = makeFetch();
@@ -304,7 +413,9 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     expect(main.querySelector("h1")?.textContent).toBe("Visibility scores");
     // The retired "Back to figures" affordance survives as the crumb's middle link.
     const crumb = main.querySelector("[data-page-breadcrumb]");
-    expect(crumb?.querySelector(`a[href="/p/${SLUG}/figures"][data-breadcrumb-link]`)?.textContent).toBe(COPY.figuresPage.heading);
+    expect(
+      crumb?.querySelector(`a[href="/p/${SLUG}/figures"][data-breadcrumb-link]`)?.textContent,
+    ).toBe(COPY.figuresPage.heading);
     expect(crumb?.querySelector(`a[href="/p/${SLUG}"][data-breadcrumb-link]`)).not.toBeNull();
     // the persisted server-side render — inlined SVG, never browser-produced.
     expect(main.querySelector("[data-figure-preview]")?.innerHTML).toContain('data-fig="light"');
@@ -335,6 +446,37 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     expect(main.querySelector('form[action$="/spec-edit"] input[name="mark"]')).not.toBeNull();
   });
 
+  it("an imported-image card renders the image + version arc — no chart-spec surfaces (S-7 / P4-21)", async () => {
+    await mountAt(
+      `/p/${SLUG}/figures/figimg`,
+      BOOT,
+      makeFetch({ card: { figure: { slug: SLUG, card: IMAGE_CARD, headDraftId: "d_head" } } }).impl,
+    );
+    const main = el()!;
+    expect(main.querySelector("h1")?.textContent).toBe("Site plan");
+    const img = main.querySelector<HTMLImageElement>('img[data-figure-image="figimg"]');
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain("/bff/demo/asset/");
+    expect(img!.alt).toBe("A plan drawing");
+    expect(main.textContent).toContain(COPY.figureCard.importedChip);
+    expect(main.querySelector('[data-version="1"]')?.textContent).toContain("imported");
+    expect(main.textContent).toContain("Imported asset.");
+    // the variant carries no spec/SVG/run provenance — none of those surfaces mount.
+    for (const hook of [
+      "[data-figure-preview]",
+      "[data-figure-preview-pending]",
+      "[data-type-chips]",
+      "form[data-figure-fields]",
+      "[data-provenance]",
+      "[data-figure-data]",
+      "[data-figure-spec]",
+      "[data-insert]",
+      'select[name="specKind"]',
+    ]) {
+      expect(main.querySelector(hook), hook).toBeNull();
+    }
+  });
+
   it("a still-rendering card lands the pending-preview arm (never a blank)", async () => {
     await mountAt(
       CARD_URL,
@@ -346,9 +488,21 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
             headDraftId: "d_head",
             card: {
               ...FIGURE_CARD,
-              files: { spec: null, dataCsv: null, svgLight: null, svgDark: null, tableSource: null } } } } }).impl,
+              files: {
+                spec: null,
+                dataCsv: null,
+                svgLight: null,
+                svgDark: null,
+                tableSource: null,
+              },
+            },
+          },
+        },
+      }).impl,
     );
-    expect(el()!.querySelector("[data-figure-preview-pending]")?.textContent).toBe(COPY.figuresPage.renderingChip);
+    expect(el()!.querySelector("[data-figure-preview-pending]")?.textContent).toBe(
+      COPY.figuresPage.renderingChip,
+    );
     expect(el()!.querySelector("[data-figure-preview]")).toBeNull();
   });
 
@@ -365,8 +519,18 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
               ...FIGURE_CARD,
               versions: [
                 ...FIGURE_CARD.versions,
-                { n: 3, request: "restyle", renderStatus: "declined", renderError: "data is empty", createdAt: "2026-01-03T00:00:00Z" },
-              ] } } } }).impl,
+                {
+                  n: 3,
+                  request: "restyle",
+                  renderStatus: "declined",
+                  renderError: "data is empty",
+                  createdAt: "2026-01-03T00:00:00Z",
+                },
+              ],
+            },
+          },
+        },
+      }).impl,
     );
     expect(el()!.querySelector("[data-declined-note]")).not.toBeNull();
   });
@@ -374,12 +538,18 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
   it("the field edit posts the JSON map and rides {ok,redirect:?saved=1} in-router", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/figures/fig01`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01?saved=1` } } },
+        [`/p/${SLUG}/figures/fig01`]: {
+          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01?saved=1` },
+        },
+      },
       cardAfter: {
         figure: {
           slug: SLUG,
           headDraftId: "d_head",
-          card: { ...FIGURE_CARD, caption: "New caption." } } } });
+          card: { ...FIGURE_CARD, caption: "New caption." },
+        },
+      },
+    });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
     const form = await settled<HTMLFormElement>("form[data-figure-fields]");
     const caption = form.querySelector<HTMLInputElement>('input[name="caption"]')!;
@@ -392,14 +562,17 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     expect(f.posts[0]!.json).toEqual({
       caption: "New caption.",
       alt: "Bar chart of visibility scores for three groups.",
-      sourceLine: "The review's claim ledger." });
+      sourceLine: "The review's claim ledger.",
+    });
     await vi.waitFor(() => {
       expect(router.state.location.pathname).toBe(`/p/${SLUG}/figures/fig01`);
       // the validated search (flagParam → "1") — the serialized form JSON-quotes it.
       expect((router.state.location.search as Record<string, unknown>).saved).toBe("1");
     });
     await vi.waitFor(() => {
-      expect(el()!.querySelector("[data-saved-note]")?.textContent).toBe(COPY.outlinePage.savedNote);
+      expect(el()!.querySelector("[data-saved-note]")?.textContent).toBe(
+        COPY.outlinePage.savedNote,
+      );
     });
   });
 
@@ -407,11 +580,19 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     const f = makeFetch({
       mutations: {
         [`/p/${SLUG}/figures/fig01`]: {
-          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01?notice=${encodeURIComponent("alt text is limited to 250 characters")}` } } } });
+          body: {
+            ok: true,
+            redirect: `/p/${SLUG}/figures/fig01?notice=${encodeURIComponent("alt text is limited to 250 characters")}`,
+          },
+        },
+      },
+    });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
     await submit(await settled("form[data-figure-fields]"));
     await vi.waitFor(() => {
-      expect((router.state.location.search as Record<string, unknown>).notice).toContain("alt text is limited");
+      expect((router.state.location.search as Record<string, unknown>).notice).toContain(
+        "alt text is limited",
+      );
       expect(el()!.querySelector("[data-notice]")?.textContent).toContain("alt text is limited");
     });
   });
@@ -419,7 +600,11 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
   it("a type chip posts {mark} to spec-edit and refetches the card", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/figures/fig01/spec-edit`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
+        [`/p/${SLUG}/figures/fig01/spec-edit`]: {
+          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` },
+        },
+      },
+    });
     await mountAt(CARD_URL, BOOT, f.impl);
     const chipForm = (await settled('[data-chip="line"]')).closest("form")!;
     await submit(chipForm);
@@ -427,14 +612,22 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     expect(f.posts[0]!.json).toEqual({ mark: "line" });
     // the invalidation's refetch re-read the card twin.
     await vi.waitFor(() => {
-      expect(f.impl.mock.calls.filter(([u]) => String(u).split("?")[0] === `/bff/p/${SLUG}/figures/fig01`).length).toBeGreaterThanOrEqual(2);
+      expect(
+        f.impl.mock.calls.filter(
+          ([u]) => String(u).split("?")[0] === `/bff/p/${SLUG}/figures/fig01`,
+        ).length,
+      ).toBeGreaterThanOrEqual(2);
     });
   });
 
   it("a restore posts to versions/:n/restore and lands back on the card", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/figures/fig01/versions/1/restore`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
+        [`/p/${SLUG}/figures/fig01/versions/1/restore`]: {
+          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` },
+        },
+      },
+    });
     await mountAt(CARD_URL, BOOT, f.impl);
     await submit((await settled('[data-restore="1"]')).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/versions/1/restore`);
@@ -443,12 +636,22 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
   it("propose posts the anchor and lands back on the card (the pending arm refetches in)", async () => {
     const pendingCard: FigureCardDto = {
       ...FIGURE_CARD,
-      pendingProposal: { draftId: "d_head", afterBlockId: "b7", version: 2, markdown: "![a](asset://fig_fig01)", at: "2026-01-01T00:00:00Z" } };
+      pendingProposal: {
+        draftId: "d_head",
+        afterBlockId: "b7",
+        version: 2,
+        markdown: "![a](asset://fig_fig01)",
+        at: "2026-01-01T00:00:00Z",
+      },
+    };
     const f = makeFetch({
       mutations: {
         [`/p/${SLUG}/figures/fig01/propose`]: {
-          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01`, data: { ok: true } } } },
-      cardAfter: { figure: { slug: SLUG, card: pendingCard, headDraftId: "d_head" } } });
+          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01`, data: { ok: true } },
+        },
+      },
+      cardAfter: { figure: { slug: SLUG, card: pendingCard, headDraftId: "d_head" } },
+    });
     const { router } = await mountAt(CARD_URL, BOOT, f.impl);
     const form = await settled<HTMLFormElement>("form[data-propose-form]");
     const anchor = form.querySelector<HTMLInputElement>('input[name="afterBlockId"]')!;
@@ -460,7 +663,9 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     await vi.waitFor(() => {
       expect(router.state.location.pathname).toBe(`/p/${SLUG}/figures/fig01`);
       expect(el()!.querySelector("[data-pending-proposal]")).not.toBeNull();
-      expect(el()!.querySelector("[data-proposal-block]")?.textContent).toContain("asset://fig_fig01");
+      expect(el()!.querySelector("[data-proposal-block]")?.textContent).toContain(
+        "asset://fig_fig01",
+      );
       expect(el()!.querySelector("[data-accept]")).not.toBeNull();
       expect(el()!.querySelector("[data-reject]")).not.toBeNull();
       expect(el()!.querySelector("[data-propose-form]")).toBeNull();
@@ -475,10 +680,26 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           headDraftId: "d_head",
           card: {
             ...FIGURE_CARD,
-            pendingProposal: { draftId: "d_head", afterBlockId: "b7", version: 2, markdown: "![a](asset://fig_fig01)", at: "2026-01-01T00:00:00Z" } } } },
+            pendingProposal: {
+              draftId: "d_head",
+              afterBlockId: "b7",
+              version: 2,
+              markdown: "![a](asset://fig_fig01)",
+              at: "2026-01-01T00:00:00Z",
+            },
+          },
+        },
+      },
       mutations: {
         [`/p/${SLUG}/figures/fig01/proposals/accept`]: {
-          body: { ok: true, redirect: `/p/${SLUG}/v/4`, data: { ok: true, inserted: { draftN: 4 } } } } } });
+          body: {
+            ok: true,
+            redirect: `/p/${SLUG}/v/4`,
+            data: { ok: true, inserted: { draftN: 4 } },
+          },
+        },
+      },
+    });
     await mountAt(CARD_URL, BOOT, f.impl);
     await submit((await settled("[data-accept]")).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/proposals/accept`);
@@ -495,9 +716,22 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           headDraftId: "d_head",
           card: {
             ...FIGURE_CARD,
-            pendingProposal: { draftId: "d_head", afterBlockId: null, version: 2, markdown: "![a](x)", at: "2026-01-01T00:00:00Z" } } } },
+            pendingProposal: {
+              draftId: "d_head",
+              afterBlockId: null,
+              version: 2,
+              markdown: "![a](x)",
+              at: "2026-01-01T00:00:00Z",
+            },
+          },
+        },
+      },
       mutations: {
-        [`/p/${SLUG}/figures/fig01/proposals/reject`]: { body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` } } } });
+        [`/p/${SLUG}/figures/fig01/proposals/reject`]: {
+          body: { ok: true, redirect: `/p/${SLUG}/figures/fig01` },
+        },
+      },
+    });
     await mountAt(CARD_URL, BOOT, f.impl);
     await submit((await settled("[data-reject]")).closest("form")!);
     expect(f.posts[0]!.url).toBe(`/p/${SLUG}/figures/fig01/proposals/reject`);
@@ -512,9 +746,14 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           figure: {
             slug: SLUG,
             headDraftId: "d_head",
-            card: { ...FIGURE_CARD, alt: "", readiness: { ok: false, missing: ["alt"] } } } } }).impl,
+            card: { ...FIGURE_CARD, alt: "", readiness: { ok: false, missing: ["alt"] } },
+          },
+        },
+      }).impl,
     );
-    expect(el()!.querySelector("[data-not-ready]")?.textContent).toContain(COPY.figureCard.missingAlt);
+    expect(el()!.querySelector("[data-not-ready]")?.textContent).toContain(
+      COPY.figureCard.missingAlt,
+    );
     expect(el()!.querySelector("[data-propose-form]")).toBeNull();
   });
 
@@ -527,9 +766,14 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
           figure: {
             slug: SLUG,
             headDraftId: "d_head",
-            card: { ...FIGURE_CARD, insertedInDraftId: "d_head" } } } }).impl,
+            card: { ...FIGURE_CARD, insertedInDraftId: "d_head" },
+          },
+        },
+      }).impl,
     );
-    expect(el()!.querySelector("[data-inserted-note]")?.textContent).toBe(COPY.figureCard.insertedNote);
+    expect(el()!.querySelector("[data-inserted-note]")?.textContent).toBe(
+      COPY.figureCard.insertedNote,
+    );
     expect(el()!.querySelector("[data-propose-form]")).toBeNull();
   });
 
@@ -569,7 +813,6 @@ describe("GET /p/:slug/figures/:figureId mounted (SPA.19)", () => {
     await axeCheck(await settled("[data-spa-surface]"));
   });
 
-
   it("unflipped → SsrHandoff — no BFF spend", async () => {
     const f = makeFetch();
     await mountAt(
@@ -593,22 +836,30 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.visualize.heading);
     const crumb = main.querySelector("[data-page-breadcrumb]");
-    expect(crumb?.querySelector('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector("[data-breadcrumb-link]")?.getAttribute("href")).toBe(`/p/${SLUG}`);
     expect(crumb?.textContent).toContain(COPY.visualize.heading);
     const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     expect(form.getAttribute("action")).toBe(`/p/${SLUG}/visualize`);
-    expect(form.querySelector<HTMLTextAreaElement>('textarea[name="request"]')!.value).toBe("a chart of the visibility scores");
-    expect(form.querySelector<HTMLSelectElement>('select[name="specKind"]')!.value).toBe("vega_lite");
+    expect(form.querySelector<HTMLTextAreaElement>('textarea[name="request"]')!.value).toBe(
+      "a chart of the visibility scores",
+    );
+    expect(form.querySelector<HTMLSelectElement>('select[name="specKind"]')!.value).toBe(
+      "vega_lite",
+    );
     expect(form.querySelector('input[name="insist"]')).not.toBeNull();
     expect(main.querySelector("[data-insist]")).not.toBeNull();
     expect(main.querySelector("[data-estimate]")?.textContent).toContain("24");
-    expect(main.querySelector('button[type="submit"]')?.textContent).toBe(COPY.visualize.startLabel);
+    expect(main.querySelector('button[type="submit"]')?.textContent).toBe(
+      COPY.visualize.startLabel,
+    );
   });
 
   it("iterate mode replays figureId/priorVersion/entryPoint as hidden fields + the note", async () => {
     const f = makeFetch({
       visualize: {
-        visualize: { ...VISUALIZE_TWIN.visualize, figureId: "fig01", priorVersion: 1, request: "" } } });
+        visualize: { ...VISUALIZE_TWIN.visualize, figureId: "fig01", priorVersion: 1, request: "" },
+      },
+    });
     await mountAt(`/p/${SLUG}/visualize?figure=fig_fig01&prior=1`, BOOT, f.impl);
     const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     expect(form.querySelector('input[name="figureId"]')?.getAttribute("value")).toBe("fig01");
@@ -620,7 +871,9 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
   it("the Visualize click posts the field map JSON and rides {ok,redirect:/p/:slug/figures} in-router", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/visualize`]: { body: { ok: true, redirect: `/p/${SLUG}/figures` } } } });
+        [`/p/${SLUG}/visualize`]: { body: { ok: true, redirect: `/p/${SLUG}/figures` } },
+      },
+    });
     const { router } = await mountAt(VIZ_URL, BOOT, f.impl);
     await submit(await settled("form[data-visualize-form]"));
     expect(f.posts.length).toBe(1);
@@ -641,12 +894,19 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
   it("a refused click (request_required 422) repaints the sheet's notice arm — no navigation", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/visualize`]: { status: 422, body: { error: "request_required", detail: COPY.visualize.requestRequired } } } });
+        [`/p/${SLUG}/visualize`]: {
+          status: 422,
+          body: { error: "request_required", detail: COPY.visualize.requestRequired },
+        },
+      },
+    });
     const { router } = await mountAt(VIZ_URL, BOOT, f.impl);
     const form = await settled<HTMLFormElement>("form[data-visualize-form]");
     await submit(form);
     await vi.waitFor(() => {
-      expect(el()!.querySelector("[data-notice]")?.textContent).toBe(COPY.visualize.requestRequired);
+      expect(el()!.querySelector("[data-notice]")?.textContent).toBe(
+        COPY.visualize.requestRequired,
+      );
       expect(router.state.location.pathname).toBe(`/p/${SLUG}/visualize`);
       // REQ-UX-16 — the controls re-enable on settle.
       expect(form.getAttribute("aria-busy")).toBeNull();
@@ -656,7 +916,9 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
   it("an upstream refusal renders its stable code as the notice (the document's re-render verbatim)", async () => {
     const f = makeFetch({
       mutations: {
-        [`/p/${SLUG}/visualize`]: { status: 402, body: { error: "insufficient_balance" } } } });
+        [`/p/${SLUG}/visualize`]: { status: 402, body: { error: "insufficient_balance" } },
+      },
+    });
     await mountAt(VIZ_URL, BOOT, f.impl);
     await submit(await settled("form[data-visualize-form]"));
     await vi.waitFor(() => {
@@ -669,14 +931,9 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     await axeCheck(await settled("[data-spa-surface]"));
   });
 
-
   it("unflipped → SsrHandoff — the leaf document-navigates with its search intact, no BFF spend", async () => {
     const f = makeFetch();
-    await mountAt(
-      VIZ_URL,
-      bootFor({ ...SPA_FIGURES, "/p/$project/visualize": "ssr" }),
-      f.impl,
-    );
+    await mountAt(VIZ_URL, bootFor({ ...SPA_FIGURES, "/p/$project/visualize": "ssr" }), f.impl);
     await vi.waitFor(() => {
       expect(docNavSpy).toHaveBeenCalled();
     });

@@ -17,14 +17,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
-import { OutlineSections } from "@rhema/ui";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Button, OutlineSections, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { outlineLabels } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
@@ -37,6 +31,21 @@ const { outlinePage: O, promote: P } = COPY;
 /** Replace `{key}` placeholders in a copy template with string/number values. */
 function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
+}
+
+/**
+ * The no-JS post grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (the promote sheet's `scope`/`threadId`/`turnId` replays ride a raw input, RV-36; every
+ * visible control is a 225/225a primitive).
+ */
+function HiddenField({
+  name,
+  value,
+}: {
+  readonly name: string;
+  readonly value: string;
+}): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
 }
 
 /** The dual-mode mutation envelope's narrow read (`{ok, redirect?, …}`; a patch result rides `data`
@@ -107,23 +116,41 @@ export interface OutlineSurfaceProps {
  * The explicit Save click posts immediately (the no-JS path's semantic), and delete's 409 answers
  * the `?notice=cited` flash through an in-router nav — never a document reload.
  */
-export function OutlineSurface({ data, saved, notice, compact, contentKey }: OutlineSurfaceProps): ReactNode {
+export function OutlineSurface({
+  data,
+  saved,
+  notice,
+  compact,
+  contentKey,
+}: OutlineSurfaceProps): ReactNode {
   const router = useRouter();
   const queryClient = useQueryClient();
   const formRef = useRef<HTMLFormElement | null>(null);
   const [autosave, setAutosave] = useState<AutosaveState>("idle");
-  const autosaveCtl = useRef<{ timer?: ReturnType<typeof setTimeout>; inflight: boolean; again: boolean }>({
+  const autosaveCtl = useRef<{
+    timer?: ReturnType<typeof setTimeout>;
+    inflight: boolean;
+    again: boolean;
+  }>({
     inflight: false,
     again: false,
   });
 
-  const saveMutation = useMutation<MutationReply, unknown, { form: HTMLFormElement; action: string }>({
+  const saveMutation = useMutation<
+    MutationReply,
+    unknown,
+    { form: HTMLFormElement; action: string }
+  >({
     mutationFn: async ({ action, form }) => {
       return bffFetch<MutationReply>(action, { method: "POST", json: collectJsonFields(form) });
     },
   });
 
-  const deleteMutation = useMutation<MutationReply, unknown, { form: HTMLFormElement; action: string }>({
+  const deleteMutation = useMutation<
+    MutationReply,
+    unknown,
+    { form: HTMLFormElement; action: string }
+  >({
     mutationFn: async ({ action }) => {
       return bffFetch<MutationReply>(action, { method: "POST", json: {} });
     },
@@ -214,7 +241,7 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
       <div data-spa-surface>
         <PageBody>
           <PageHeader title={O.heading} />
-          <p style={{ color: "var(--shell-fg-muted)" }}>{O.notFound}</p>
+          <p className="ui-set-t--m">{O.notFound}</p>
         </PageBody>
       </div>
     );
@@ -227,17 +254,21 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
           title={O.heading}
           crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: O.heading }]}
         />
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <p className="ui-set-t ui-set-t--m">
           {data.draftEstimateCredits != null ? (
-            <span data-draft-estimate="true" style={{ marginLeft: "12px" }}>
+            <span data-draft-estimate="true" className="ui-c2-ml">
               {fmt(O.draftEstimateFmt, { n: data.draftEstimateCredits.toLocaleString("en-US") })}
             </span>
           ) : null}
           {saved ? (
-            <span data-saved-note="true" style={{ marginLeft: "12px", color: "var(--state-ok)" }}>{O.savedNote}</span>
+            <span data-saved-note="true" className="ui-c2-ml ui-tok">
+              {O.savedNote}
+            </span>
           ) : null}
           {notice ? (
-            <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{notice}</span>
+            <span data-notice="true" className="ui-c2-ml ui-set-t--warn">
+              {notice}
+            </span>
           ) : null}
         </p>
         <form
@@ -254,25 +285,37 @@ export function OutlineSurface({ data, saved, notice, compact, contentKey }: Out
         >
           <OutlineSections outline={data.outline} editable={editable} labels={outlineLabels} />
           {editable ? (
-            <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-              <button type="submit" style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 500 }}>
+            <div className="ui-c2-act" style={{ display: "flex" }}>
+              <Button type="submit" variant="primary">
                 {O.saveLabel}
-              </button>
-              <span data-autosave-status="true" style={{ marginLeft: "12px", fontSize: "12px", color: "var(--shell-fg-muted)", alignSelf: "center" }}>
-                {autosave === "saving" ? O.savingNote : autosave === "saved" ? O.savedNote : autosave === "failed" ? O.saveFailedNote : ""}
+              </Button>
+              <span
+                data-autosave-status="true"
+                className="ui-c2-ml ui-c2-ts"
+                style={{ alignSelf: "center" }}
+              >
+                {autosave === "saving"
+                  ? O.savingNote
+                  : autosave === "saved"
+                    ? O.savedNote
+                    : autosave === "failed"
+                      ? O.saveFailedNote
+                      : ""}
               </span>
             </div>
           ) : null}
         </form>
         {editable && !data.cited ? (
-          <form method="post" action={data.deleteAction} style={{ marginTop: "16px" }}>
-            <button type="submit" data-outline-delete="true" style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--sev-major)", background: "transparent", color: "var(--sev-major)", fontSize: "12px" }}>
+          <form method="post" action={data.deleteAction} className="ui-c2-mt4">
+            <Button type="submit" variant="danger" size="sm" data-outline-delete="true">
               {O.deleteLabel}
-            </button>
+            </Button>
           </form>
         ) : null}
         {data.cited ? (
-          <p data-cited-note="true" style={{ marginTop: "16px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{O.citedNote}</p>
+          <p data-cited-note="true" className="ui-c2-mt4 ui-c2-ts">
+            {O.citedNote}
+          </p>
         ) : null}
       </PageBody>
     </div>
@@ -328,7 +371,7 @@ export function OutlinePromoteSurface({ data }: OutlinePromoteSurfaceProps): Rea
       <div data-spa-surface>
         <PageBody>
           <PageHeader title={P.heading} />
-          <p style={{ color: "var(--shell-fg-muted)" }}>{P.notFound}</p>
+          <p className="ui-set-t--m">{P.notFound}</p>
         </PageBody>
       </div>
     );
@@ -342,32 +385,54 @@ export function OutlinePromoteSurface({ data }: OutlinePromoteSurfaceProps): Rea
           crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: P.heading }]}
         />
         {data.started ? (
-          <p data-started="true" style={{ fontSize: "13px", color: "var(--shell-fg)" }}>{P.startedFmt}</p>
+          <p data-started="true" className="ui-c2-p0">
+            {P.startedFmt}
+          </p>
         ) : (
-          <form method="post" action={`/p/${data.slug}/outline/promote`} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "520px" }}>
-            <input type="hidden" name="scope" defaultValue={data.scope} />
-            {data.threadId ? <input type="hidden" name="threadId" defaultValue={data.threadId} /> : null}
-            {data.turnId ? <input type="hidden" name="turnId" defaultValue={data.turnId} /> : null}
-            <p style={{ margin: 0, fontSize: "13px", color: "var(--shell-fg)" }}>
-              {P.scopeLabel[data.scope] ?? data.scope}
-            </p>
-            <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+          <form
+            method="post"
+            action={`/p/${data.slug}/outline/promote`}
+            className="ui-c2-col ui-c2-mw"
+            style={{ display: "flex", flexDirection: "column" }}
+          >
+            <HiddenField name="scope" value={data.scope} />
+            {data.threadId ? <HiddenField name="threadId" value={data.threadId} /> : null}
+            {data.turnId ? <HiddenField name="turnId" value={data.turnId} /> : null}
+            <p className="ui-c2-p0">{P.scopeLabel[data.scope] ?? data.scope}</p>
+            <ul className="ui-c2-facts" style={{ display: "flex", flexDirection: "column" }}>
               <li data-promotion-sources="true">{fmt(P.sourcesFmt, { n: String(f.sources) })}</li>
               <li data-promotion-urls="true">{fmt(P.urlsFmt, { n: String(f.urls.length) })}</li>
-              <li data-promotion-estimate="true">{fmt(P.estimateFmt, { estimate: f.estimateCredits.toLocaleString("en-US"), cap: f.capCredits.toLocaleString("en-US") })}</li>
+              <li data-promotion-estimate="true">
+                {fmt(P.estimateFmt, {
+                  estimate: f.estimateCredits.toLocaleString("en-US"),
+                  cap: f.capCredits.toLocaleString("en-US"),
+                })}
+              </li>
             </ul>
-            {f.existing ? <p data-existing="true" style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{P.existingNote}</p> : null}
-            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {f.existing ? (
+              <p data-existing="true" className="ui-c2-m0 ui-vc-faint">
+                {P.existingNote}
+              </p>
+            ) : null}
+            <label className="ui-vc-lab">
               {P.slugLabel}
-              <input type="text" name="slug" defaultValue={f.slug} pattern="[a-z0-9][a-z0-9-]{0,47}" title={P.slugHint} style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+              <TextField
+                type="text"
+                name="slug"
+                defaultValue={f.slug}
+                pattern="[a-z0-9][a-z0-9-]{0,47}"
+                title={P.slugHint}
+              />
             </label>
             {(notice ?? null) != null ? (
-              <p data-notice="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{notice}</p>
+              <p data-notice="true" className="ui-c2-m0 ui-c2-w">
+                {notice}
+              </p>
             ) : null}
             <div>
-              <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+              <Button type="submit" variant="primary">
                 {P.promoteLabel}
-              </button>
+              </Button>
             </div>
           </form>
         )}
