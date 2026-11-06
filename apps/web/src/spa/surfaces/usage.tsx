@@ -16,7 +16,7 @@
 
 import type { ReactNode } from "react";
 import type { UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
-import { PRICING } from "@rhema/contracts";
+import { PRICING, bucketExpiryLine, formatCredits, includedCreditsLine } from "@rhema/contracts";
 import { COPY } from "../../copy.js";
 import { useDwell } from "../dwell.js";
 import { PageBody, PageHeader } from "../page-header.js";
@@ -54,7 +54,7 @@ export function UsageSurface({
   // REQ-BETA-10 — the same `dwellSurface:"usage"` heartbeat the SSR document carries (the beat
   // posts only while this surface is mounted, mirroring the document's script lifetime).
   useDwell("usage");
-  const credits = (n: number) => `${n.toLocaleString()} ${U.creditsSuffix}`;
+  const credits = (n: number) => `${formatCredits(n)} ${U.creditsSuffix}`;
   return (
     <div data-spa-surface>
       <PageBody>
@@ -79,13 +79,16 @@ export function UsageSurface({
               ) : null}
             </p>
             <p className="ui-set-t" data-usage-mtd="true">
-              {U.monthToDateFmt.replace("{n}", account.monthToDateCredits.toLocaleString())}
+              {U.monthToDateFmt.replace("{n}", formatCredits(account.monthToDateCredits))}
               {account.includedMonthly > 0 ? (
                 <>
                   {" · "}
-                  {U.includedFmt
-                    .replace("{remaining}", account.includedRemaining.toLocaleString())
-                    .replace("{monthly}", account.includedMonthly.toLocaleString())}
+                  {includedCreditsLine({
+                    remaining: account.includedRemaining,
+                    monthly: account.includedMonthly,
+                    fitFmt: U.includedFmt,
+                    overFmt: U.includedOverFmt,
+                  })}
                 </>
               ) : null}
             </p>
@@ -120,10 +123,12 @@ export function UsageSurface({
             ) : null}
             {account.nextExpiry ? (
               <p className="ui-set-t ui-set-t--m" data-usage-next-expiry="true">
-                {U.nextExpiryFmt
-                  .replace("{n}", account.nextExpiry.credits.toLocaleString())
-                  .replace("{bucket}", enumLabel(U.bucketLabels, account.nextExpiry.bucket))
-                  .replace("{at}", account.nextExpiry.at.slice(0, 10))}
+                {bucketExpiryLine({
+                  credits: account.nextExpiry.credits,
+                  bucketLabel: enumLabel(U.expiryBucketLabels, account.nextExpiry.bucket),
+                  at: account.nextExpiry.at.slice(0, 10),
+                  fmt: U.nextExpiryFmt,
+                })}
               </p>
             ) : null}
             <p className="ui-set-t ui-set-sec">
@@ -198,7 +203,7 @@ export function ProjectUsageSurface({
         />
         <p className="ui-set-h2 ui-set-sec" data-project-usage-total="true">
           {P.totalFmt
-            .replace("{n}", usageProject.totalCredits.toLocaleString())
+            .replace("{n}", formatCredits(usageProject.totalCredits))
             .replace("{runs}", String(usageProject.runs.length))}
         </p>
         {usageProject.runs.length === 0 ? (
@@ -225,7 +230,7 @@ export function ProjectUsageSurface({
                   <td>
                     <a href={`/app/usage/r/${encodeURIComponent(r.runId)}`}>{P.runReportCta}</a>
                   </td>
-                  <td className="ui-matrix-r">{r.credits.toLocaleString()} cr</td>
+                  <td className="ui-matrix-r">{formatCredits(r.credits)} cr</td>
                 </tr>
               ))}
             </tbody>

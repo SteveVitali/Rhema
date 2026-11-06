@@ -19,17 +19,29 @@
 //     in-router), `{ok,redirect:"…?notice=purchase_paused"}` the closed-switch arm.
 //   • `?notice=purchase_paused` stays URL flash state — validated search, never payload.
 
+// R7KIT.3b (REQ-KIT-3 batch b, REQ-GUARD-1, REQ-COPY-5): the sheet renders on the 225/225a
+// primitives (Button / Checkbox / RadioGroup / Select / TextField / TextArea) with `uiCss()`
+// classes — every number routes through the ONE `@rhema/contracts` formatter.
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import {
   useRef,
   useState,
-  type CSSProperties,
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { PageTitle } from "@rhema/ui";
+import {
+  Button,
+  Checkbox,
+  PageTitle,
+  RadioGroup,
+  RadioGroupItem,
+  Select,
+  TextArea,
+  TextField,
+} from "@rhema/ui";
 import {
   CONSENT_ABSOLUTE_CREDITS,
   CONSENT_BALANCE_FRACTION,
@@ -38,6 +50,8 @@ import {
   PRICING,
   creditsLine,
   estimateLine,
+  formatCredits,
+  formatUsd,
   type ModelTier,
   type Rigor,
 } from "@rhema/contracts";
@@ -104,31 +118,26 @@ function collectJsonFields(form: HTMLFormElement): Record<string, string> {
 /** P1.19's phone-width note — verbatim from pages.tsx `PhoneBlockedNote`. */
 function PhoneBlockedNote(): ReactNode {
   return (
-    <p
-      data-phone-blocked="true"
-      style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}
-    >
+    <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
       {COPY.phoneBlocked.note}
     </p>
   );
 }
 
-const buttonBase: CSSProperties = {
-  padding: "9px 16px",
-  borderRadius: "8px",
-  border: "none",
-  fontSize: "14px",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const boxStyle: CSSProperties = {
-  border: "1px solid var(--shell-border)",
-  borderRadius: "10px",
-  padding: "14px 16px",
-  background: "var(--shell-raised)",
-  margin: "12px 0",
-};
+/**
+ * The no-JS form grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (Radix's own hidden radio/checkbox/select carriers post the named lever fields; the id/scope/
+ * counter carriers it does not own ride this, RV-36).
+ */
+function HiddenField({
+  name,
+  value,
+}: {
+  readonly name: string;
+  readonly value: string | number;
+}): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
 
 const RESOLUTION_FALLBACK_LABELS: Record<string, string> = {
   turn_off_fact_check: "Turn off fact-check",
@@ -230,43 +239,39 @@ export function RunSheetSurface({ data, notice, compact, contentKey }: RunSheetS
   return (
     <div data-spa-surface>
       <PageTitle>{R.heading}</PageTitle>
-      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{R.lede}</p>
-      {/* R6MNY.1 (REQ-LCH-5a) — the metered-charge explanation a new user reads before their first
-          run; the same claim the paid-account notice carries (GD-LAUNCH-MONEY.R6). */}
-      <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", maxWidth: "68ch" }}>
-        {R.meteredNote}
+      {/* E1 dedup + R6MNY.1 (REQ-LCH-5a) — one paragraph: the rigor lede plus the metered-charge
+          explanation (the "never more than the cap" claim appears once, in meteredNote). */}
+      <p className="ui-set-t ui-set-t--m ui-set-t--meas">
+        {R.lede} {R.meteredNote}
       </p>
       {pretriage && runSheet.view.workflow === "revise" ? (
-        <p
-          data-pretriage-line="true"
-          style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "8px" }}
-        >
+        <p data-pretriage-line="true" className="ui-set-t ui-set-t--m">
           {fmt(COPY.triage.pretriageFmt, { n: pretriage.triaged, m: pretriage.total })}
         </p>
       ) : null}
       {started ? (
-        <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
+        <p role="status" className="ui-set-t ui-set-t--ok">
           {R.started}
         </p>
       ) : null}
       {notice != null ? (
-        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>
+        <p role="alert" className="ui-set-t ui-set-t--warn">
           {notice}
         </p>
       ) : mutNotice !== null ? (
-        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>
+        <p role="alert" className="ui-set-t ui-set-t--warn">
           {mutNotice}
         </p>
       ) : null}
       {runSheet.activeRun ? (
         // PRB.21 / D-PRB.20-1 — a non-terminal run exists ⇒ the in-progress state REPLACES the Run
         // affordance (the api 409s a second create; this is the honest first screen + its link).
-        <section style={{ maxWidth: "68ch" }}>
-          <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
+        <section className="ui-set-t--meas">
+          <p role="status" className="ui-set-t ui-set-t--lead">
             {R.inProgress}
           </p>
           {runSheet.activeRun.runId !== "" ? (
-            <p style={{ marginTop: "12px" }}>
+            <p className="ui-set-t">
               <a href={`/p/${slug}/review/${runSheet.activeRun.runId}`}>{R.openRun}</a>
             </p>
           ) : null}
@@ -417,75 +422,56 @@ function SpaRunSheetForm({
       data-run-sheet={view.workflow}
       onSubmit={onSubmit}
     >
-      <input type="hidden" name="workflow" value={view.workflow} readOnly />
-      <input type="hidden" name="idempotencyKey" value={view.idempotencyKey} readOnly />
+      <HiddenField name="workflow" value={view.workflow} />
+      <HiddenField name="idempotencyKey" value={view.idempotencyKey} />
       {/* the repainted estimate posts — the script's `eh.value=String(est)` update. */}
-      <input type="hidden" name="estimateCredits" value={String(shown.e)} readOnly />
+      <HiddenField name="estimateCredits" value={String(shown.e)} />
       {/* EST.1 — `modelTier` submits from the collapsed-row <select> below (the user's choice rides
           the form verbatim; the api's plan gate stays the enforcer). */}
       {/* P1.06 (§7.2) — the command scope round-trips verbatim (canonical serialized form); the cap's
           editable field lives in the collapsed row (upward-only), so NO hidden capCredits here. */}
       {view.commandScope ? (
-        <input type="hidden" name="scope" value={view.commandScope.serialized} readOnly />
+        <HiddenField name="scope" value={view.commandScope.serialized} />
       ) : null}
       {/* REQ-BILL-6: the run record freezes rate-table version + the word/claim counts the estimate was for. */}
-      <input type="hidden" name="rateTableVersion" value={est.rateTableVersion} readOnly />
-      <input type="hidden" name="words" value={view.title.words} readOnly />
+      <HiddenField name="rateTableVersion" value={est.rateTableVersion} />
+      <HiddenField name="words" value={view.title.words} />
       {view.title.claims != null ? (
-        <input type="hidden" name="claims" value={view.title.claims} readOnly />
+        <HiddenField name="claims" value={view.title.claims} />
       ) : null}
       {/* PRB.23 — the sentinel listing every toggle this form rendered. An UNCHECKED checkbox
           submits no field, so the run POST cannot otherwise distinguish "user turned it off"
           from "not on this sheet": the server resolves each listed key as on/off. */}
-      <input
-        type="hidden"
-        name="toggleKeys"
-        value={view.toggleDeltas.map((d) => d.toggle).join(",")}
-        readOnly
-      />
+      <HiddenField name="toggleKeys" value={view.toggleDeltas.map((d) => d.toggle).join(",")} />
       {/* ECON.1 (§6.5) — the rigor these checkboxes were RENDERED for (the twin's resolved rigor —
           the lever pick can move without re-rendering the boxes, so a stale-marked set drops
           server-side exactly like the form post). */}
-      <input type="hidden" name="toggleRigor" value={view.rigor} readOnly />
+      <HiddenField name="toggleRigor" value={view.rigor} />
       {/* ACT.1 — the included-Review claim rides the Run form: the entitlement's row id POSTs back so
           the api's unlock gate + hold claim it. Absent when no claimable entitlement exists. */}
       {view.entitlementId ? (
-        <input type="hidden" name="entitlementId" value={view.entitlementId} readOnly />
+        <HiddenField name="entitlementId" value={view.entitlementId} />
       ) : null}
 
       {/* title line: "Review v2 · 5,180 words · 21 claims" + the §7.2 scope pills (P1.06 — the typed
           @scope renders as human labels; the grammar syntax never reaches the surface). */}
-      <h2 style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>
+      <h2 className="ui-set-h2 ui-rs-h">
         {view.title.verbLabel} {view.title.targetVersion} ·{" "}
         {est.missing ? (
           "—"
         ) : (
           <>
-            {view.title.words.toLocaleString("en-US")} words
+            {formatCredits(view.title.words)} words
             {view.title.claims != null
-              ? ` · ${view.title.claims.toLocaleString("en-US")} claims`
+              ? ` · ${formatCredits(view.title.claims)} claims`
               : ""}
           </>
         )}
       </h2>
       {view.commandScope ? (
-        <div
-          data-command-scope
-          style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}
-        >
+        <div data-command-scope className="ui-set-form ui-rs-mt">
           {view.commandScope.labels.map((label) => (
-            <span
-              key={label}
-              data-scope-pill
-              style={{
-                fontSize: "12px",
-                padding: "2px 8px",
-                borderRadius: "10px",
-                border: "1px solid var(--shell-border)",
-                background: "var(--shell-raised)",
-                color: "var(--shell-fg-muted)",
-              }}
-            >
+            <span key={label} data-scope-pill className="ui-pill ui-rs-pill">
               {label}
             </span>
           ))}
@@ -493,57 +479,50 @@ function SpaRunSheetForm({
       ) : null}
       {/* P1.06 (§5.6 item 7) — the promote-on-launch line: a working head freezes to vN with the run. */}
       {view.promoteLine ? (
-        <p data-promote-line style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>
+        <p data-promote-line className="ui-set-note ui-set-t--f">
           {view.promoteLine}
         </p>
       ) : null}
 
       {/* Rigor — the one first-class lever (§5.6 item 2). */}
-      <fieldset style={{ border: "none", padding: 0, margin: "14px 0 0" }}>
-        <legend style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{labels.rigorLegend}</legend>
-        <div style={{ display: "flex", gap: "16px", marginTop: "6px" }}>
+      <fieldset className="ui-set-fs">
+        <legend>{labels.rigorLegend}</legend>
+        <RadioGroup
+          name="rigor"
+          value={rigor}
+          onValueChange={(v) => {
+            setRigor(v as Rigor);
+            setLeverDirty(true);
+          }}
+          className="ui-set-form"
+          aria-label={labels.rigorLegend}
+        >
           {view.rigorOptions.map((o) => (
-            <label
-              key={o.rigor}
-              style={{ fontSize: "14px", display: "inline-flex", gap: "6px", alignItems: "center" }}
-            >
-              <input
-                type="radio"
-                name="rigor"
-                value={o.rigor}
-                checked={rigor === o.rigor}
-                onChange={() => {
-                  setRigor(o.rigor);
-                  setLeverDirty(true);
-                }}
-              />
+            <label key={o.rigor} className="ui-rs-radio">
+              <RadioGroupItem value={o.rigor} aria-label={o.display} />
               {o.display}
             </label>
           ))}
-        </div>
+        </RadioGroup>
       </fieldset>
 
       {/* the estimate box — dollars first, credits/cap/balance second (§5.6 item 5) — OR the resolution panel. */}
       <div data-paywall="run-sheet" role="group" aria-label={R.paywallAriaLabel}>
         {(() => {
           if (view.suspended) return (
-          <div style={boxStyle} role="alert" data-suspended="true">
-            <p style={{ margin: 0, fontSize: "14px", color: "var(--sev-major)" }}>
+          <div className="ui-set-card ui-rs-box" role="alert" data-suspended="true">
+            <p className="ui-set-t ui-set-t--warn">
               {labels.suspendedNotice ??
                 "This account is suspended while a payment dispute is open. No runs can start until it resolves."}
             </p>
           </div>
           );
           if (view.insufficient) return (
-          <div style={boxStyle} role="alert" data-insufficient="true">
+          <div className="ui-set-card ui-rs-box" role="alert" data-insufficient="true">
             {view.insufficient.sentences.map((s, i) => (
               <p
                 key={i}
-                style={{
-                  margin: i === 0 ? 0 : "6px 0 0",
-                  fontSize: "14px",
-                  color: i === 0 ? "var(--sev-major)" : "var(--shell-fg)",
-                }}
+                className={i === 0 ? "ui-set-t ui-set-t--warn" : "ui-set-t ui-rs-mt"}
               >
                 {s}
               </p>
@@ -551,10 +530,7 @@ function SpaRunSheetForm({
             {/* EST.1 — the §14.6 levers are CLICKABLE: each option re-renders the sheet with the
                 lever applied (rigor ↓ / Base / fact-check off), cheapest-fitting first as primary.
                 `add_credits` has no lever href — the Payment Link below is its action. */}
-            <p
-              style={{ margin: "8px 0 0", display: "flex", gap: "12px", flexWrap: "wrap" }}
-              data-resolution-options
-            >
+            <p className="ui-set-form ui-rs-mt" data-resolution-options>
               {view.insufficient.options.map((o) => {
                 const href = resolutionHref(`/p/${slug}/run`, view, o.action);
                 if (!href) return null;
@@ -563,11 +539,7 @@ function SpaRunSheetForm({
                     key={o.action}
                     href={href}
                     data-resolution={o.action}
-                    style={{
-                      fontSize: "13px",
-                      color: o.primary ? "var(--accent)" : "var(--shell-fg)",
-                      fontWeight: o.primary ? 600 : 400,
-                    }}
+                    className={o.primary ? "ui-vc-acc ui-rs-bold" : "ui-vc-link"}
                   >
                     {labels.resolutionLabels?.[o.action] ??
                       RESOLUTION_FALLBACK_LABELS[o.action] ??
@@ -583,26 +555,23 @@ function SpaRunSheetForm({
                 honest state (the exhausted POST would refuse the redirect anyway). */}
             {(() => {
               if (view.purchaseClosed) return (
-              <p
-                style={{ margin: "10px 0 0", fontSize: "13px", color: "var(--shell-fg-muted)" }}
-                data-purchase-paused="true"
-              >
+              <p className="ui-set-t ui-set-t--m ui-rs-mt" data-purchase-paused="true">
                 {labels.purchasePausedLabel ?? "Purchases are paused — your balance and work are safe."}
               </p>
               );
               if (view.paymentLinkUrl) return (
-              <p style={{ margin: "10px 0 0" }}>
-                <button
+              <p className="ui-set-t ui-rs-mt">
+                <Button
                   type="submit"
+                  variant="primary"
                   formAction={`/p/${slug}/exhausted`}
                   name="action_taken"
                   value="open_payment_link"
                   onClick={trackAction}
                   data-payment-link={view.paymentLinkUrl}
-                  style={{ ...buttonBase, background: "var(--accent)", color: "var(--shell-bg)" }}
                 >
                   {labels.buyCreditsLabel ?? "Add credits"}
-                </button>
+                </Button>
               </p>
               );
               return null;
@@ -612,40 +581,28 @@ function SpaRunSheetForm({
           if (view.included) return (
           /* P1.06 (§14.3; REQ-BILL-4) — the trial entitlement renders `Included`: no dollar/cap
              arithmetic, no consent click, no cap line. The entitlement covers the run. */
-          <div style={boxStyle} data-estimate-box data-included="true">
-            <div style={{ fontSize: "16px", fontWeight: 600 }}>
+          <div className="ui-set-card ui-rs-box" data-estimate-box data-included="true">
+            <div className="ui-bill-head ui-rs-h">
               {labels.includedLabel ?? "Included"}
-              <span
-                style={{ float: "right", color: "var(--shell-fg-muted)", fontWeight: 400 }}
-                data-time-line
-              >
+              <span className="ui-rs-time" data-time-line>
                 ~{shown.lo}–{shown.hi} min
               </span>
             </div>
-            <div
-              style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }}
-              data-entitlement-line
-            >
+            <div className="ui-set-t ui-set-t--m ui-rs-mt" data-entitlement-line>
               {view.entitlementLine}
             </div>
           </div>
           );
           if (est.missing) return (
           /* EST.1 — unmeasured inputs render "—" + an estimating hint (never a fabricated figure). */
-          <div style={boxStyle} data-estimate-box data-estimate-missing="true">
-            <div style={{ fontSize: "16px", fontWeight: 600 }} data-dollars-line>
+          <div className="ui-set-card ui-rs-box" data-estimate-box data-estimate-missing="true">
+            <div className="ui-bill-head ui-rs-h" data-dollars-line>
               {repainted && !R0.entitlement ? dollarsText : "—"}
-              <span
-                style={{ float: "right", color: "var(--shell-fg-muted)", fontWeight: 400 }}
-                data-time-line
-              >
+              <span className="ui-rs-time" data-time-line>
                 ~{repainted ? `${shown.lo}–${shown.hi} min` : "~"}
               </span>
             </div>
-            <div
-              style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }}
-              data-credits-line
-            >
+            <div className="ui-set-t ui-set-t--m ui-rs-mt" data-credits-line>
               {repainted && !R0.entitlement
                 ? creditsText
                 : labels.estimatingLabel ?? "Estimate pending — the draft is still being measured."}
@@ -653,35 +610,26 @@ function SpaRunSheetForm({
           </div>
           );
           return (
-          <div style={boxStyle} data-estimate-box>
-            <div style={{ fontSize: "16px", fontWeight: 600 }} data-dollars-line>
+          <div className="ui-set-card ui-rs-box" data-estimate-box>
+            <div className="ui-bill-head ui-rs-h" data-dollars-line>
               {dollarsText}
               {est.provisional ? (
-                <span style={{ color: "var(--shell-fg-faint)", fontWeight: 400 }}>{R.refiningSuffix}</span>
+                <span className="ui-rs-time">{R.refiningSuffix}</span>
               ) : null}
-              <span
-                style={{ float: "right", color: "var(--shell-fg-muted)", fontWeight: 400 }}
-                data-time-line
-              >
+              <span className="ui-rs-time" data-time-line>
                 ~{shown.lo}–{shown.hi} min
               </span>
             </div>
-            <div
-              style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }}
-              data-credits-line
-            >
+            <div className="ui-set-t ui-set-t--m ui-rs-mt" data-credits-line>
               {creditsText}
             </div>
             {/* P1.06 (§5.6) — the scoped sheet shows the whole-draft figure beside the scoped price. */}
             {view.commandScope?.wholeEstimateCredits != null ? (
-              <div
-                style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}
-                data-whole-line
-              >
-                {labels.wholeDraftPrefix ?? "Whole draft:"} ≈ $
-                {(view.commandScope.wholeEstimateCredits / 100).toFixed(2)}
+              <div className="ui-set-note ui-set-t--f ui-rs-mt" data-whole-line>
+                {labels.wholeDraftPrefix ?? "Whole draft:"} ≈{" "}
+                {formatUsd(view.commandScope.wholeEstimateCredits)}
                 {view.commandScope.wholeCapCredits != null
-                  ? ` · cap $${(view.commandScope.wholeCapCredits / 100).toFixed(2)}`
+                  ? ` · cap ${formatUsd(view.commandScope.wholeCapCredits)}`
                   : ""}
               </div>
             ) : null}
@@ -689,33 +637,28 @@ function SpaRunSheetForm({
           );
         })()}
 
-        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-          <button
+        <div className="ui-rs-end">
+          <Button
             type="submit"
+            variant="primary"
             disabled={runDisabled}
             data-run-button="true"
             data-estimate-credits={shown.e}
             data-needs-consent={consent ? "true" : "false"}
             data-run-label={labels.runLabel}
             data-confirm-label={labels.confirmLabel ?? labels.runLabel}
-            style={{
-              ...buttonBase,
-              background: runDisabled ? "var(--shell-raised)" : "var(--accent)",
-              color: runDisabled ? "var(--shell-fg-faint)" : "var(--shell-bg)",
-              cursor: runDisabled ? "not-allowed" : "pointer",
-            }}
           >
             {consent && labels.confirmLabel ? labels.confirmLabel : labels.runLabel}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* PRB.08 — the final-month beta-plan offer: copy + a link only (no subscription machinery;
           REQ-BETA-14). */}
       {view.planOfferUrl && labels.planOffer ? (
-        <p data-plan-offer style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }}>
+        <p data-plan-offer className="ui-set-note ui-set-t--m">
           {labels.planOffer.text}{" "}
-          <a href={view.planOfferUrl} style={{ color: "var(--shell-fg)" }}>
+          <a href={view.planOfferUrl} className="ui-vc-link">
             {labels.planOffer.linkLabel}
           </a>
         </p>
@@ -723,14 +666,14 @@ function SpaRunSheetForm({
 
       {/* the obligation scope line (REQ-OBJ-6). */}
       {view.scopeLine ? (
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-line>
+        <p className="ui-set-t ui-set-t--m ui-rs-mt" data-scope-line>
           {view.scopeLine}
         </p>
       ) : null}
 
       {/* P1.20 (§6.7) — the settings-page protocol-change marker on the Review's scope card. */}
       {view.protocolChangedLine ? (
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-protocol-changed>
+        <p className="ui-set-t ui-set-t--m ui-rs-mt" data-protocol-changed>
           {view.protocolChangedLine}
         </p>
       ) : null}
@@ -738,17 +681,14 @@ function SpaRunSheetForm({
       {/* P1.21 (§6.7/REQ-WF-8) — the Memo confidentiality statement: user-supplied sources mount
           read-only and are never fetched over the web (enforced at the proxy, not just advised). */}
       {view.memoConfidentialityLine ? (
-        <p
-          style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }}
-          data-memo-confidentiality
-        >
+        <p className="ui-set-t ui-set-t--m ui-rs-mt" data-memo-confidentiality>
           {view.memoConfidentialityLine}
         </p>
       ) : null}
 
       {/* P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence at launch: informational /
           blocking-2h / waits-for-you, from the same gate-policy facts the run freezes. */}
-      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-approval>
+      <p className="ui-set-t ui-set-t--m ui-rs-mt" data-scope-approval>
         {view.scopeApprovalLine}
       </p>
 
@@ -757,7 +697,7 @@ function SpaRunSheetForm({
           `update_voice` the priced chained action renders beside it (its submit retargets via
           formAction — the same dual-submit pattern as the exhaustion button). */}
       {view.voice && labels.voiceLabels ? (
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-voice-line>
+        <p className="ui-set-t ui-set-t--m ui-rs-mt" data-voice-line>
           {labels.voiceLabels.lineLabel}:{" "}
           {view.voice.mode === "ad_hoc" ? (
             <span data-voice-mode="ad_hoc">{labels.voiceLabels.adHocLabel}</span>
@@ -775,26 +715,20 @@ function SpaRunSheetForm({
           {view.voice.updateAction && view.voice.updateEstimateCredits != null ? (
             <>
               {" · "}
-              <input type="hidden" name="voice_persona" value={view.voice.personaId ?? ""} readOnly />
-              <button
+              <HiddenField name="voice_persona" value={view.voice.personaId ?? ""} />
+              <Button
                 type="submit"
+                variant="ghost"
+                size="sm"
                 formAction={view.voice.updateAction}
                 onClick={trackAction}
                 data-update-voice="true"
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--accent)",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  padding: 0,
-                }}
               >
                 {labels.voiceLabels.updateFirstFmt.replace(
                   "{n}",
                   String(view.voice.updateEstimateCredits),
                 )}
-              </button>
+              </Button>
             </>
           ) : null}
         </p>
@@ -802,76 +736,85 @@ function SpaRunSheetForm({
 
       {/* the collapsed row → expands to the scope summary + the editable rows (Approvals · budget cap ·
           don't-ask pref · Guidance) + Advanced per-phase toggles with signed deltas (§5.6). */}
-      <details style={{ marginTop: "10px" }}>
-        <summary style={{ fontSize: "13px", color: "var(--shell-fg-muted)", cursor: "pointer" }}>
+      <details className="ui-rs-det">
+        <summary className="ui-vc-sum ui-set-t--m">
           {view.collapsedSummary} · {labels.changeLabel}
         </summary>
-        <div style={{ fontSize: "13px", marginTop: "8px", display: "grid", gap: "10px" }} data-sheet-fields>
+        <div className="ui-set-list ui-set-t" data-sheet-fields>
           {/* the editable scope facts (§5.6 collapsed row): Protocol · Venue · Stage ride the form and
               freeze into the run's inputs — a changed protocol/venue also flips REQ-SPEC-17's
               scope gate to blocking (the api re-derives the flag server-side, never client-trusted). */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.protocolLabel ?? "Protocol"}
             </span>
             {/* P1.21 — the four §6.7 protocols render as a select when the context supplied the card
                 list; a free-text input remains the no-context fallback (a typed value still works —
                 the api validates the id server-side either way). */}
             {view.scope.protocolOptions && view.scope.protocolOptions.length > 0 ? (
-              <select name="protocol" defaultValue={view.scope.protocol} data-protocol-select>
-                {view.scope.protocolOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
+              <Select
                 name="protocol"
                 defaultValue={view.scope.protocol}
-                style={{ width: "180px" }}
+                data-protocol-select
+                aria-label={labels.protocolLabel ?? "Protocol"}
+                items={view.scope.protocolOptions.map((o) => ({ value: o.id, label: o.name }))}
+              />
+            ) : (
+              <TextField
+                name="protocol"
+                defaultValue={view.scope.protocol}
+                aria-label={labels.protocolLabel ?? "Protocol"}
+                className="ui-field--w"
               />
             )}
           </label>
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.venueLabel ?? "Venue"}
             </span>
-            <input type="text" name="venue" defaultValue={view.scope.venue ?? ""} style={{ width: "180px" }} />
+            <TextField
+              name="venue"
+              defaultValue={view.scope.venue ?? ""}
+              aria-label={labels.venueLabel ?? "Venue"}
+              className="ui-field--w"
+            />
           </label>
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.stageLabel ?? "Stage"}
             </span>
-            <input type="text" name="stage" defaultValue={view.scope.stage ?? ""} style={{ width: "180px" }} />
+            <TextField
+              name="stage"
+              defaultValue={view.scope.stage ?? ""}
+              aria-label={labels.stageLabel ?? "Stage"}
+              className="ui-field--w"
+            />
           </label>
           {/* EST.1 (ADR-035) — the Model-tier select: a USER choice inside plan rules. A locked tier
               renders disabled with its repriced estimate for context; the repaint's `cells` table
               covers every rigor|tier|toggle state. */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.modelTierLabel ?? "Model tier"}
             </span>
-            <select
+            <Select
               name="modelTier"
               value={tier}
               data-tier-select
-              onChange={(e) => {
-                setTier(e.target.value as ModelTier);
+              aria-label={labels.modelTierLabel ?? "Model tier"}
+              onValueChange={(v) => {
+                setTier(v as ModelTier);
                 setLeverDirty(true);
               }}
-            >
-              {view.modelTierOptions.map((o) => (
-                <option key={o.tier} value={o.tier} disabled={!o.allowed && !o.selected}>
-                  {o.display} · ≈{o.estimateCredits.toLocaleString("en-US")} cr
-                  {!o.allowed ? ` ${labels.tierLockedSuffix ?? "(not on your plan)"}` : ""}
-                </option>
-              ))}
-            </select>
+              items={view.modelTierOptions.map((o) => ({
+                value: o.tier,
+                disabled: !o.allowed && !o.selected,
+                label: `${o.display} · ≈${formatCredits(o.estimateCredits)} cr${!o.allowed ? ` ${labels.tierLockedSuffix ?? "(not on your plan)"}` : ""}`,
+              }))}
+            />
           </label>
           {view.clampedFromModelTier ? (
-            <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }} data-tier-clamped>
+            <p className="ui-set-note ui-set-t--f" data-tier-clamped>
               {(labels.tierClampedFmt ?? "{requested} isn't on your plan — priced on {resolved}.")
                 .replace(
                   "{requested}",
@@ -884,72 +827,66 @@ function SpaRunSheetForm({
           {/* P1.21 (§6.7/REQ-GENRE-6) — the memo run's user_sources field: one `name :: url-or-text`
               per line; the api validates + freezes them and denies web fetches to their domains. */}
           {view.userSourcesField ? (
-            <label style={{ display: "block" }} data-user-sources-field>
-              <span style={{ color: "var(--shell-fg-muted)" }}>
+            <label data-user-sources-field>
+              <span className="ui-set-t--m">
                 {labels.userSourcesLabel ?? "User sources"}
               </span>
-              <textarea
+              <TextArea
                 name="userSources"
                 rows={3}
                 defaultValue={view.userSourcesText ?? ""}
                 placeholder={labels.userSourcesPlaceholder ?? "Q3 forecast :: https://internal.example/q3"}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  marginTop: "4px",
-                  font: "inherit",
-                  background: "var(--shell-bg)",
-                  color: "var(--shell-fg)",
-                  border: "1px solid var(--shell-border)",
-                  borderRadius: "6px",
-                  padding: "6px 8px",
-                }}
+                className="ui-rs-mt"
               />
-              <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+              <span className="ui-set-note ui-set-t--f">
                 {labels.userSourcesHint ??
                   "One per line — name :: url or name :: pasted text (up to 8). Never fetched over the web."}
               </span>
             </label>
           ) : null}
           {/* Approvals — the project's policy, edited here (§5.6 collapsed row; the run POST persists it). */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.approvalsLabel ?? "Approvals"}
             </span>
-            <select name="approval" defaultValue={view.approvalPolicy}>
-              {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
-                <option key={p} value={p}>
-                  {labels.approvalsDisplay?.[p] ??
-                    (p === "named"
-                      ? "Named approvals"
-                      : p === "wait_each"
-                        ? "Wait for me at each approval"
-                        : "Run to completion")}
-                </option>
-              ))}
-            </select>
+            <Select
+              name="approval"
+              defaultValue={view.approvalPolicy}
+              aria-label={labels.approvalsLabel ?? "Approvals"}
+              items={(["named", "wait_each", "run_to_completion"] as const).map((p) => ({
+                value: p,
+                label:
+                  labels.approvalsDisplay?.[p] ??
+                  (p === "named"
+                    ? "Named approvals"
+                    : p === "wait_each"
+                      ? "Wait for me at each approval"
+                      : "Run to completion"),
+              }))}
+            />
           </label>
           {/* P1.09 — the per-run override ("this run only, autonomously"): freezes gates_off on THIS
               run — named approvals skip by policy; spend/refusal cards still wait (REQ-SPEC-1). */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }} data-auto-run="true">
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}></span>
-            <input type="checkbox" name="autoRun" />
-            <span style={{ fontSize: "13px" }}>
+          <label className="ui-set-row" data-auto-run="true">
+            <span className="ui-rs-lab"></span>
+            <Checkbox name="autoRun" aria-label={labels.autoRunLabel ?? "This run only — run it to completion"} />
+            <span className="ui-set-t">
               {labels.autoRunLabel ?? "This run only — run it to completion"}
             </span>
           </label>
           {/* Budget cap — editable UPWARD only (§5.6): the input's floor is the computed cap; a lower
               value can never submit (min=, and the submit handler floors it again). */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.capLabel ?? "Budget cap (credits)"}
             </span>
-            <input
+            <TextField
               type="number"
               name="capCredits"
               min={shown.c}
               value={capShown}
               data-cap-input
+              aria-label={labels.capLabel ?? "Budget cap (credits)"}
               onChange={(e) => {
                 setCapTouched(true);
                 setCapText(e.target.value);
@@ -958,49 +895,40 @@ function SpaRunSheetForm({
                 const n = Number(capText);
                 if (!Number.isFinite(n) || n < shown.c) setCapText(String(shown.c));
               }}
-              style={{ width: "90px" }}
+              className="ui-field--w"
             />
           </label>
           {/* "Don't ask me to confirm runs under N credits" — the per-user pref (REQ-BILL-4; ≤1,000). */}
-          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>
+          <label className="ui-set-row">
+            <span className="ui-rs-lab">
               {labels.dontAskLabel ?? "Confirm runs under (credits)"}
             </span>
-            <input
+            <TextField
               type="number"
               name="dontAskUnder"
               min={0}
               max={1000}
               defaultValue={view.dontAskUnder}
-              style={{ width: "90px" }}
+              aria-label={labels.dontAskLabel ?? "Confirm runs under (credits)"}
+              className="ui-field--w"
             />
           </label>
           {/* Guidance — the grammar's free-text tail, run-scope (§6.5; delivered at phase boundaries). */}
-          <label style={{ display: "block" }}>
-            <span style={{ color: "var(--shell-fg-muted)" }}>
+          <label>
+            <span className="ui-set-t--m">
               {labels.guidanceLabel ?? "Guidance"}
             </span>
-            <textarea
+            <TextArea
               name="guidance"
               rows={2}
               defaultValue={view.guidance ?? ""}
               placeholder={labels.guidancePlaceholder ?? "Anything this run should know?"}
-              style={{
-                display: "block",
-                width: "100%",
-                marginTop: "4px",
-                font: "inherit",
-                background: "var(--shell-bg)",
-                color: "var(--shell-fg)",
-                border: "1px solid var(--shell-border)",
-                borderRadius: "6px",
-                padding: "6px 8px",
-              }}
+              className="ui-rs-mt"
             />
           </label>
           {/* §5.6 — "N standing notes apply" beside the guidance box (standing guidance is server-scoped). */}
           {view.standingNotes != null && view.standingNotes > 0 ? (
-            <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: 0 }} data-standing-notes>
+            <p className="ui-set-note ui-set-t--f" data-standing-notes>
               {labels.standingNotesFmt
                 ? labels.standingNotesFmt.replace("{n}", String(view.standingNotes))
                 : `${view.standingNotes} standing notes apply`}
@@ -1008,22 +936,24 @@ function SpaRunSheetForm({
           ) : null}
         </div>
         {view.toggleDeltas.length > 0 ? (
-          <fieldset style={{ border: "none", padding: "8px 0 0", margin: 0 }}>
-            <legend style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{labels.advancedLegend}</legend>
+          <fieldset className="ui-set-fs">
+            <legend className="ui-set-t--f">{labels.advancedLegend}</legend>
             {view.toggleDeltas.map((d) => (
-              <label key={d.toggle} style={{ display: "block", fontSize: "13px", marginTop: "6px" }}>
-                <input
-                  type="checkbox"
+              <label key={d.toggle} className="ui-set-row">
+                <Checkbox
                   name={`toggle.${d.toggle}`}
                   checked={!!toggles[d.toggle]}
-                  onChange={(e) => {
-                    setToggles((t) => ({ ...t, [d.toggle]: e.target.checked }));
+                  onCheckedChange={(c) => {
+                    setToggles((t) => ({ ...t, [d.toggle]: c === true }));
                     setLeverDirty(true);
                   }}
-                />{" "}
-                {labels.toggleLabels[d.toggle] ?? d.toggle}{" "}
-                <span style={{ color: "var(--shell-fg-faint)" }} data-delta={d.toggle}>
-                  ({d.deltaLabel} credits)
+                  aria-label={labels.toggleLabels[d.toggle] ?? d.toggle}
+                />
+                <span className="ui-set-t">
+                  {labels.toggleLabels[d.toggle] ?? d.toggle}{" "}
+                  <span className="ui-set-t--f" data-delta={d.toggle}>
+                    ({d.deltaLabel} credits)
+                  </span>
                 </span>
               </label>
             ))}
@@ -1033,7 +963,7 @@ function SpaRunSheetForm({
 
       {/* "Why this estimate?" (§5.6). */}
       {view.whyLine ? (
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "8px" }} data-why-line>
+        <p className="ui-set-note ui-set-t--f ui-rs-mt" data-why-line>
           {labels.whyPrefix} {view.whyLine}
         </p>
       ) : null}

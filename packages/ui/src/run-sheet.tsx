@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { MODEL_TIER_DISPLAY, type ModelTier } from "@rhema/contracts";
+import { MONEY_FMT_INLINE_JS, MODEL_TIER_DISPLAY, formatCredits, formatUsd, type ModelTier } from "@rhema/contracts";
 import type { RunSheetView } from "@rhema/run-sheet";
 
 // The run sheet (§5.6) — the launcher, and the product's ONLY paywall (REQ-GROWTH-13) and consent gate.
@@ -256,8 +256,8 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
           "—"
         ) : (
           <>
-            {view.title.words.toLocaleString("en-US")} words
-            {view.title.claims != null ? ` · ${view.title.claims.toLocaleString("en-US")} claims` : ""}
+            {formatCredits(view.title.words)} words
+            {view.title.claims != null ? ` · ${formatCredits(view.title.claims)} claims` : ""}
           </>
         )}
       </h2>
@@ -408,9 +408,9 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
             {/* P1.06 (§5.6) — the scoped sheet shows the whole-draft figure beside the scoped price. */}
             {view.commandScope?.wholeEstimateCredits != null ? (
               <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }} data-whole-line>
-                {labels.wholeDraftPrefix ?? "Whole draft:"} ≈ ${(view.commandScope.wholeEstimateCredits / 100).toFixed(2)}
+                {labels.wholeDraftPrefix ?? "Whole draft:"} ≈ ${formatUsd(view.commandScope.wholeEstimateCredits)}
                 {view.commandScope.wholeCapCredits != null
-                  ? ` · cap $${(view.commandScope.wholeCapCredits / 100).toFixed(2)}`
+                  ? ` · cap ${formatUsd(view.commandScope.wholeCapCredits)}`
                   : ""}
               </div>
             ) : null}
@@ -546,7 +546,7 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
             <select name="modelTier" defaultValue={view.modelTier} data-tier-select>
               {view.modelTierOptions.map((o) => (
                 <option key={o.tier} value={o.tier} disabled={!o.allowed && !o.selected}>
-                  {o.display} · ≈{o.estimateCredits.toLocaleString("en-US")} cr
+                  {o.display} · ≈{formatCredits(o.estimateCredits)} cr
                   {!o.allowed ? ` ${labels.tierLockedSuffix ?? "(not on your plan)"}` : ""}
                 </option>
               ))}
@@ -680,7 +680,7 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
 function recomputeScript(recompute: RunSheetView["recompute"]): string {
   const R = JSON.stringify(recompute);
   return `(function(){var R=${R};var f=document.currentScript.closest('form');if(!f)return;
-function usd(c){return '$'+(c/100).toFixed(2);}function cr(c){return Math.round(c).toLocaleString('en-US');}
+${MONEY_FMT_INLINE_JS}
 function consent(e){if(R.entitlement)return false;if(e<R.dontAskUnder)return false;if(e>500)return true;return e>200&&e>0.25*R.spendableCredits;}
 var ci=f.querySelector('[data-cap-input]');if(ci)ci.addEventListener('change',function(){if(Number(ci.value)<Number(ci.min))ci.value=ci.min;else ci.setAttribute('data-touched','1');});
 function onT(){var o=[];f.querySelectorAll('input[name^="toggle."]').forEach(function(b){if(b.checked)o.push(b.name.slice(7));});o.sort();return o.join(',');}
