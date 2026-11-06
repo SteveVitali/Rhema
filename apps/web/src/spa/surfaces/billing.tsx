@@ -369,7 +369,7 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
                       <Button type="submit" size="sm">
                         {B.teamCta}
                       </Button>
-                      <span className="ui-set-t--xs ui-set-t--f">{B.waitlistBadge}</span>
+                      <span className="ui-set-t--sm ui-set-t--f">{B.waitlistBadge}</span>
                     </form>
                   );
                   const cancelForm = (
@@ -382,7 +382,7 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
                       <Button type="submit" size="sm" variant="danger">
                         {B.cancelCta}
                       </Button>
-                      <span className="ui-set-t--xs ui-set-t--f">{B.cancelNote}</span>
+                      <span className="ui-set-t--sm ui-set-t--f">{B.cancelNote}</span>
                     </form>
                   );
                   const subscribeForm = (
@@ -543,13 +543,13 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
                   <Button type="submit" size="sm">
                     {B.manageCta}
                   </Button>
-                  <span className="ui-set-t--xs ui-set-t--f">{B.manageNote}</span>
+                  <span className="ui-set-t--sm ui-set-t--f">{B.manageNote}</span>
                 </form>
               ) : null}
               {/* BILL.3 — no stripe_customer yet ⇒ name the reason instead of hiding the affordance silently
             only when purchase is open (while closed the paused note already explains). */}
               {!sub.hasStripeCustomer && purchaseOpen ? (
-                <p data-no-customer="true" className="ui-set-t--xs ui-set-t--f ui-set-sec">
+                <p data-no-customer="true" className="ui-set-t--sm ui-set-t--f ui-set-sec">
                   {B.noStripeCustomerNote}
                 </p>
               ) : null}

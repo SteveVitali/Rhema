@@ -323,7 +323,7 @@ export function AccountSection({
           {acct.user.email}{" "}
           <span
             className={
-              acct.user.emailVerified ? "ui-set-t--xs ui-set-t--ok" : "ui-set-t--xs ui-set-t--f"
+              acct.user.emailVerified ? "ui-set-t--sm ui-set-t--ok" : "ui-set-t--sm ui-set-t--f"
             }
           >
             {acct.user.emailVerified ? S.emailVerified : S.emailUnverified}
@@ -370,7 +370,7 @@ export function AccountSection({
                   an absent UA falls back to the ip/id the SSR printed. */}
               {sessionAgentLabel(s.userAgent) ?? s.ipAddress ?? s.id}
               {s.current ? ` · ${S.sessionThisDeviceInline}` : null}
-              <span className="ui-set-t--xs ui-set-t--f ui-set-inline">
+              <span className="ui-set-t--sm ui-set-t--f ui-set-inline">
                 {fmt(S.sessionExpiresFmt, { at: s.expiresAt.slice(0, 10) })}
               </span>
               {!s.current ? (
@@ -679,7 +679,7 @@ export function NotificationsSection({
               <tr key={t} data-notification-row={t}>
                 <td>
                   {S.notificationEvents[t] ?? humanizeKey(t)}
-                  {locked ? <span className="ui-set-t--xs ui-set-t--f">{S.lockedNote}</span> : null}
+                  {locked ? <span className="ui-set-t--sm ui-set-t--f">{S.lockedNote}</span> : null}
                 </td>
                 <td>{emailCell}</td>
                 <td>{inAppCell}</td>
