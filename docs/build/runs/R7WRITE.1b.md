@@ -48,3 +48,10 @@
 - mergePolicy OPERATOR — PR on `stevevitali/r7write-1a-format-bubble` is left unmerged for the stack.
 - $0 Stage A — no preview, no prod mutation (GD-PREVIEW.R7); Stage-B evidence owed at 250.
 - Append-only records; the discarded marker is an additive column, never a rewrite.
+
+## Orchestrator note — first CI read red, repaired in-branch
+
+CI run 42235343549 on `0baf77c9` failed `typecheck / lint / unit` on ONE leg the worker's local
+sweep could not see from a stale fixture: `scripts/check-additive-migrations.test.mjs` pins the
+`--newer-than 0044` file list by name — the new `0062_drafts_discard.sql` had to be appended
+(15/15 local). Everything else the worker ran held (api 605, web 1547, contracts).
