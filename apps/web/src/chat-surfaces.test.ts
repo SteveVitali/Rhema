@@ -170,8 +170,12 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
       method: "POST",
       ...json({ threadId: "thr_1", message: "hi" }),
     });
-    expect(res.status).toBe(201);
-    expect(((await res.json()) as { runId: string }).runId).toBe("run_2");
+    // REQ-RELOAD-4 — the JSON arm is the mutationOutcome envelope (200, {ok,redirect,data}).
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; redirect?: string; data?: { runId: string } };
+    expect(body.ok).toBe(true);
+    expect(body.redirect).toBe("/p/demo#chat");
+    expect(body.data?.runId).toBe("run_2");
   });
 
   it("a plan-decision run_research redirects to the research_burst SHEET (never a run create)", async () => {
@@ -218,7 +222,8 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
       method: "POST",
       ...json({ threadId: "thr_1", text: "Actually ICML." }),
     });
-    expect(corr.status).toBe(201);
+    expect(corr.status).toBe(200);
+    expect(((await corr.json()) as { ok: boolean }).ok).toBe(true);
     expect(postChatCorrection).toHaveBeenCalledWith(expect.anything(), "proj_1", "thr_1", { text: "Actually ICML." });
   });
 
@@ -239,7 +244,8 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
       method: "POST",
       ...json({ ref: "@v3 ¶4", version: 3, block: "¶4", replacement: "tighter" }),
     });
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { ok: boolean }).ok).toBe(true);
     expect(postChatSuggestion).toHaveBeenCalledWith(
       expect.anything(),
       "proj_1",
@@ -268,6 +274,27 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
       ...json({ threadId: "thr_1", message: "hi" }),
     });
     expect(res.status).toBe(401);
+  });
+
+  it("REQ-RELOAD-4 — a no-JS empty chat send lands a flash redirect, never a raw JSON page", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...form({ threadId: "thr_1", message: "" }),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/demo#chat");
+  });
+
+  it("REQ-RELOAD-4 — the same failure in JSON is the stable code, 422", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "" }),
+    });
+    expect(res.status).toBe(422);
+    expect((await res.json()) as { error: string }).toEqual({ error: "chat_turn_required" });
   });
 });
 

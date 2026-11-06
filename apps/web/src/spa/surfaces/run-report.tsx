@@ -26,16 +26,14 @@
 //     and their `wantsJson` branches server-side keep the envelope for any JSON caller
 //     (the dossier.tsx precedent).
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { TimelineRun } from "@rhema/findings-core";
 import { RunReport } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { chatPanel } from "../../chat-pane.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
-import { BffError, bffFetch } from "../bff.js";
-import { navigateDocument } from "../dom.js";
+import { BffError } from "../bff.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData } from "../ide/chrome-data.js";
@@ -49,142 +47,19 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-/** The mutation success envelope (`{ok:true, redirect?, url?}` — `url` is the allowlist hand-off). */
-interface MutationReply {
-  readonly ok: true;
-  readonly redirect?: string;
-  readonly url?: string;
-}
-
 /**
- * The run-report surface's JSON write path — the §14.4 refund form is the only write control the
- * leaf renders (it carries a `wantsJson` branch server-side, SPA.22). Anything outside this
- * grammar — the §6.5 steering verbs living on chrome-owned run cards included — stays a native
- * form post (the strangler's document nav still answers it).
+ * R7RELOAD.1 (REQ-RELOAD-2) — the run-report's write grammar is retired into the shared
+ * `SPA_WRITE` allowlist (`../write-paths.js`): the §14.4 refund form plus every pane-body post
+ * (gate decide, steering, explainer dismiss) answer through the ONE delegated submit — the
+ * leaf's own `onSubmit` claims its forms, the IdeChrome host's identical handler covers the
+ * chrome-owned pane bodies. Anything outside the grammar keeps its native leg.
  */
-const RUN_REPORT_WRITE = /^\/p\/[^/]+\/r\/[^/]+\/refund$/;
+import { delegatedSubmitHandler, usePaneWrite } from "../write-paths.js";
 
-/** A form `action` to its same-origin pathname (null ⇒ not interceptable). */
-function actionPath(action: string): string | null {
-  try {
-    const u = new URL(action, "https://rhema.invalid");
-    return u.origin === "https://rhema.invalid" ? u.pathname : null;
-  } catch {
-    return null;
-  }
-}
-
-/** REQ-UX-16's in-flight affordance — `aria-busy` + disabled controls, restored on settle
- *  (the dossier.tsx/run-sheet.tsx precedent — imperative because the field map stays form-native). */
-function setFormBusy(form: HTMLFormElement, busy: boolean): void {
-  if (busy) form.setAttribute("aria-busy", "true");
-  else form.removeAttribute("aria-busy");
-  for (const el of form.querySelectorAll("button, input, select, textarea")) {
-    if (el instanceof HTMLElement && "disabled" in el) {
-      (el as HTMLButtonElement).disabled = busy;
-    }
-  }
-}
-
-/** The form's named fields as a flat map — dossier.tsx's collector verbatim. Read BEFORE any
- *  busy-disable pass — disabled controls contribute nothing. */
-function collectJsonFields(form: HTMLFormElement): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {};
-  const push = (name: string, value: string): void => {
-    const prev = out[name];
-    if (prev == null) out[name] = value;
-    else if (Array.isArray(prev)) prev.push(value);
-    else out[name] = [prev, value];
-  };
-  for (const el of form.querySelectorAll("input, select, textarea")) {
-    const name = el.getAttribute("name");
-    if (name == null || name === "") continue;
-    if (el instanceof HTMLInputElement) {
-      if (el.disabled) continue;
-      if (el.type === "checkbox" || el.type === "radio") {
-        if (el.checked) push(name, el.value === "" ? "on" : el.value);
-        continue;
-      }
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLTextAreaElement && !el.disabled) {
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLSelectElement && !el.disabled) {
-      if (el.multiple) {
-        for (const opt of el.selectedOptions) push(name, opt.value);
-      } else {
-        push(name, el.value);
-      }
-    }
-  }
-  return out;
-}
-
-/** The delegated submit leg — the one interception rule: a `method="post"` form whose action
- *  names the refund write path becomes the JSON envelope call; everything else keeps its
- *  native leg (off-origin, non-`/p/`, `defaultPrevented`, the steering/chat submits). */
-function runReportSubmitHandler(opts: {
-  readonly write: (vars: {
-    form: HTMLFormElement;
-    action: string;
-    json: Record<string, string | string[]>;
-  }) => void;
-}): (e: SyntheticEvent) => void {
-  return (e) => {
-    if (e.defaultPrevented) return;
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
-    const actionAttr = form.getAttribute("action") ?? "";
-    if (!actionAttr.startsWith("/p/")) return;
-    if ((form.getAttribute("method") ?? "get").toLowerCase() !== "post") return;
-    const path = actionPath(actionAttr);
-    if (path == null || !RUN_REPORT_WRITE.test(path)) return;
-    e.preventDefault();
-    if (form.getAttribute("aria-busy") === "true") return;
-    const json = collectJsonFields(form);
-    // A clicked submitter's name/value rides the post — the native submit semantics the
-    // collector can't see (the refund button is unnamed today; kept for grammar parity).
-    const submitter = (e.nativeEvent as Partial<SubmitEvent>).submitter;
-    if (submitter instanceof HTMLElement) {
-      const n = submitter.getAttribute("name");
-      if (n != null && n !== "") json[n] = submitter.getAttribute("value") ?? "on";
-    }
-    opts.write({ form, action: path, json });
-  };
-}
-
-/** One run-report write — mutation + busy settle + the `{ok,redirect}`/`{error}` envelope read. */
+/** One run-report write — the shared mutation with the refund's stale-state error arm. */
 function useRunReportWrite() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [mutError, setMutError] = useState<string | null>(null);
-  const mutation = useMutation<
-    MutationReply,
-    unknown,
-    { form: HTMLFormElement; action: string; json: Record<string, string | string[]> }
-  >({
-    mutationFn: async ({ action, json }) => {
-      return bffFetch<MutationReply>(action, { method: "POST", json });
-    },
-    onMutate: ({ form }) => {
-      setMutError(null);
-      setFormBusy(form, true);
-    },
-    onSuccess: (env) => {
-      if (env.url != null) {
-        // The allowlist-validated external hand-off — a real document navigation, never in-router.
-        navigateDocument(env.url);
-        return;
-      }
-      if (env.redirect != null) {
-        // The 302's identical twin — `…/r/:runId#report` lands the fresh twin read + the fragment.
-        void router.navigate({ href: env.redirect });
-        return;
-      }
-    },
+  const { pending, write } = usePaneWrite({
     onError: (err) => {
       // Stale-state writes (design/22 §3): a refused refund — window closed/already decided
       // (400/403/404/409) — is the SSR's silent re-render: `onSettled`'s invalidate re-reads the
@@ -192,12 +67,8 @@ function useRunReportWrite() {
       if (err instanceof BffError && [400, 403, 404, 409].includes(err.status)) return;
       setMutError(err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body);
     },
-    onSettled: (_env, _err, vars) => {
-      setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
-    },
   });
-  return { mutation, mutError, write: mutation.mutate };
+  return { pending, mutError, write };
 }
 
 export interface RunReportSurfaceProps {
@@ -208,7 +79,8 @@ export interface RunReportSurfaceProps {
 }
 
 export function RunReportSurface({ data, compact }: RunReportSurfaceProps): ReactNode {
-  const { mutation, mutError, write } = useRunReportWrite();
+  const router = useRouter();
+  const { pending: busy, mutError, write } = useRunReportWrite();
   const runReport = data.runReport;
   const slug = runReport.slug;
   // R7RO.1 (REQ-DWEB-14) — the read-only fact (the twin's carrier, else the boot slot); the
@@ -220,8 +92,7 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
   // REQ-BETA-10 — the SSR document's `dwellSurface:"report"` heartbeat (the hook twin).
   useDwell("report");
 
-  const onSubmit = useMemo(() => runReportSubmitHandler({ write }), [write]);
-  const busy = mutation.isPending;
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   // The chrome slice — the SSR IdeFrame's pane extras verbatim: the Timeline's label/href maps +
   // the waiting run's identical §6.4 gate card (presence via the hook twin), and the Desk's chat

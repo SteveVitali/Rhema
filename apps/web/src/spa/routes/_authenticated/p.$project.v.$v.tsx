@@ -34,7 +34,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
       );
       // EDIT.1's `working`-miss arm — the document's `302 /p/:slug` verbatim.
       if (twin.ok === true && twin.redirect != null) {
-        throw redirect({ href: twin.redirect, reloadDocument: true });
+        // R7RELOAD.1 (REQ-RELOAD-3, UXC-5) — the `working`-miss target is `/p/:slug`, in-tree:
+        // the redirect commits in-router, never a document load.
+        throw redirect({ href: twin.redirect });
       }
     } catch (e) {
       if (e instanceof BffError && e.status === 404) throw notFound();
@@ -57,7 +59,7 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
     if (q.data == null) return <SurfaceShell />;
     if (q.data.ok === true && q.data.redirect != null) {
       // a stale cache re-read landed the redirect arm — the document's 302 verbatim.
-      throw redirect({ href: q.data.redirect, reloadDocument: true });
+      throw redirect({ href: q.data.redirect });
     }
     // R7RO.1 — a showcase row mounts the SAME SPA Page read-only (the twin's `readOnlyProject`
     // names the reason); only a phone request still lands the server-rendered Page.

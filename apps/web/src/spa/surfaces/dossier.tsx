@@ -38,7 +38,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import type { GateCardDto } from "@rhema/api-client";
 import type { GateDecisionView, TimelineRun } from "@rhema/findings-core";
 import { COPY } from "../../copy.js";
@@ -54,7 +54,6 @@ import {
 import { chatPanel } from "../../chat-pane.js";
 import { gateCardFor, gateCardModel } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
-import { navigateDocument } from "../dom.js";
 import { useGatePresence } from "../gate-presence.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
 import { PageBody, PageHeader } from "../page-header.js";
@@ -64,169 +63,23 @@ import type { IdeChromeData } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
 import { useShowcaseAnchorBeacon } from "../showcase-beacon.js";
 import type { BffDossierTwin, BffObligationNewTwin } from "../queries.js";
+// R7RELOAD.1 (REQ-RELOAD-2) — the ONE shared write grammar + delegated submit: the surface's
+// own `onSubmit` claims its leaf forms and the IdeChrome host's identical handler covers the
+// pane bodies (`PaneBusy` is the wrapper half; the per-surface `DOSSIER_WRITE` is retired).
+import {
+  collectJsonFields,
+  delegatedSubmitHandler,
+  setFormBusy,
+  usePaneWrite,
+  PaneBusy,
+  type MutationReply,
+} from "../write-paths.js";
 
-/** The mutation success envelope (`{ok:true, redirect?, url?}` — `url` is the allowlist hand-off). */
-interface MutationReply {
-  readonly ok: true;
-  readonly redirect?: string;
-  readonly url?: string;
-}
-
-/**
- * The dossier surface's JSON write paths — every one carries a `wantsJson` branch server-side
- * (SPA.21): per-finding disposition/apply/promote/obligations on BOTH mounts (the dossier's
- * runId path and the project-scoped path a pane form posts), the consolidated bulk
- * preview/dispatch, the gate card's decide POST, and the free-form obligation create. Anything
- * outside this grammar stays a native form post (the strangler's document nav still answers it).
- */
-const DOSSIER_WRITE =
-  /^\/p\/[^/]+\/(?:review\/[^/]+\/findings\/[^/]+\/(?:disposition|apply|promote|obligations)|findings\/[^/]+\/(?:disposition|apply|promote|obligations)|review\/[^/]+\/findings\/bulk(?:-preview)?|gates\/[^/]+|obligations)$/;
-
-/** A form `action` to its same-origin pathname (null ⇒ not interceptable). */
-function actionPath(action: string): string | null {
-  try {
-    const u = new URL(action, "https://rhema.invalid");
-    return u.origin === "https://rhema.invalid" ? u.pathname : null;
-  } catch {
-    return null;
-  }
-}
-
-/** REQ-UX-16's in-flight affordance — `aria-busy` + disabled controls, restored on settle
- *  (the run-sheet.tsx/outline.tsx precedent — imperative because the field map stays form-native). */
-function setFormBusy(form: HTMLFormElement, busy: boolean): void {
-  if (busy) form.setAttribute("aria-busy", "true");
-  else form.removeAttribute("aria-busy");
-  for (const el of form.querySelectorAll("button, input, select, textarea")) {
-    if (el instanceof HTMLElement && "disabled" in el) {
-      (el as HTMLButtonElement).disabled = busy;
-    }
-  }
-}
-
-/** The form's named fields as a flat map — run-sheet.tsx's collector plus the multi-value case the
- *  bulk confirm's `only[]` checkboxes (and a multi-select `ed.*`) need: a repeated name becomes a
- *  `string[]`, which `bodyFields` reads as the array the document's parseBody would have produced.
- *  Read BEFORE any busy-disable pass — disabled controls contribute nothing. */
-function collectJsonFields(form: HTMLFormElement): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {};
-  const push = (name: string, value: string): void => {
-    const prev = out[name];
-    if (prev == null) out[name] = value;
-    else if (Array.isArray(prev)) prev.push(value);
-    else out[name] = [prev, value];
-  };
-  for (const el of form.querySelectorAll("input, select, textarea")) {
-    const name = el.getAttribute("name");
-    if (name == null || name === "") continue;
-    if (el instanceof HTMLInputElement) {
-      if (el.disabled) continue;
-      if (el.type === "checkbox" || el.type === "radio") {
-        if (el.checked) push(name, el.value === "" ? "on" : el.value);
-        continue;
-      }
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLTextAreaElement && !el.disabled) {
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLSelectElement && !el.disabled) {
-      if (el.multiple) {
-        for (const opt of el.selectedOptions) push(name, opt.value);
-      } else {
-        push(name, el.value);
-      }
-    }
-  }
-  return out;
-}
-
-/**
- * The shared delegated submit leg — the dossier's two interception rules:
- *   1. a same-origin `method="get"` form (the Desk's `data-findings-filters` bar) becomes an
- *      in-router nav to the `action?fields` URL the native submit would have built;
- *   2. a `method="post"` form whose action names a `wantsJson` dossier write path becomes the
- *      JSON envelope call.
- * Everything else — off-origin, non-`/p/`, a component that already handled the submit
- * (`defaultPrevented`), the Showcase duplicate, steering POSTs — keeps its native leg.
- */
-export function dossierSubmitHandler(opts: {
-  readonly router: ReturnType<typeof useRouter>;
-  readonly write: (vars: {
-    form: HTMLFormElement;
-    action: string;
-    json: Record<string, string | string[]>;
-  }) => void;
-}): (e: SyntheticEvent) => void {
-  return (e) => {
-    if (e.defaultPrevented) return;
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
-    const actionAttr = form.getAttribute("action") ?? "";
-    if (!actionAttr.startsWith("/p/")) return;
-    const method = (form.getAttribute("method") ?? "get").toLowerCase();
-    if (method === "get") {
-      e.preventDefault();
-      const fields = collectJsonFields(form);
-      const q = new URLSearchParams();
-      for (const [k, v] of Object.entries(fields)) {
-        for (const value of Array.isArray(v) ? v : [v]) {
-          if (value !== "") q.append(k, value);
-        }
-      }
-      const qs = q.toString();
-      void opts.router.navigate({ href: qs === "" ? actionAttr : `${actionAttr}?${qs}` });
-      return;
-    }
-    if (method !== "post") return;
-    const path = actionPath(actionAttr);
-    if (path == null || !DOSSIER_WRITE.test(path)) return;
-    e.preventDefault();
-    if (form.getAttribute("aria-busy") === "true") return;
-    const json = collectJsonFields(form);
-    // A clicked submitter's name/value rides the post (the disposition verb button's `verb=accept`,
-    // the gate card's `action=approve`) — the native submit semantics the collector can't see.
-    const submitter = (e.nativeEvent as Partial<SubmitEvent>).submitter;
-    if (submitter instanceof HTMLElement) {
-      const n = submitter.getAttribute("name");
-      if (n != null && n !== "") json[n] = submitter.getAttribute("value") ?? "on";
-    }
-    opts.write({ form, action: path, json });
-  };
-}
-
-/** One dossier write — mutation + busy settle + the `{ok,redirect}`/`{error}` envelope read. */
+/** One dossier write — the shared mutation with the dossier's `?ferr`-parity error arm. */
 function useDossierWrite() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [mutError, setMutError] = useState<{ findingId: string; message: string } | null>(null);
-  const mutation = useMutation<
-    MutationReply,
-    unknown,
-    { form: HTMLFormElement; action: string; json: Record<string, string | string[]> }
-  >({
-    mutationFn: async ({ action, json }) => {
-      return bffFetch<MutationReply>(action, { method: "POST", json });
-    },
-    onMutate: ({ form }) => {
-      setMutError(null);
-      setFormBusy(form, true);
-    },
-    onSuccess: (env) => {
-      if (env.url != null) {
-        // The allowlist-validated external hand-off — a real document navigation, never in-router.
-        navigateDocument(env.url);
-        return;
-      }
-      if (env.redirect != null) {
-        // The 302's identical twin — `?disposed=`/`?applied=`/`?bulkdone=` land as validated
-        // search on the same route; the twin refetches the changed server truth.
-        void router.navigate({ href: env.redirect });
-        return;
-      }
-    },
+  const { pending, write } = usePaneWrite({
     onError: (err, vars) => {
       // The SSR's `?ferr=<fid>&fmsg=<msg>` arm verbatim: the notice line carries the api's stable
       // detail/code (never a client literal); the card's under-form error shows when the refused
@@ -236,31 +89,8 @@ function useDossierWrite() {
         err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body;
       setMutError({ findingId: fid, message });
     },
-    onSettled: (_env, _err, vars) => {
-      setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
-    },
   });
-  return { mutation, mutError, write: mutation.mutate, router };
-}
-
-/** A pane body wrapper — intercepts the dossier write forms the Margin/Desk bodies carry (the
- *  chrome owns their containers, so the delegated handler rides the body itself) + marks the
- *  pane `aria-busy` while a write is in flight (REQ-UX-16). */
-function PaneIntercept({
-  busy,
-  onSubmit,
-  children,
-}: {
-  readonly busy: boolean;
-  readonly onSubmit: (e: SyntheticEvent) => void;
-  readonly children: ReactNode;
-}): ReactNode {
-  return (
-    <div aria-busy={busy || undefined} onSubmit={onSubmit}>
-      {children}
-    </div>
-  );
+  return { busy: pending, mutError, write, router };
 }
 
 /** The Timeline run-card's gate mount — `renderGateCard` verbatim from the SSR `IdeFrame`, with
@@ -309,7 +139,7 @@ export interface DossierSurfaceProps {
 }
 
 export function DossierSurface({ data, search, compact }: DossierSurfaceProps): ReactNode {
-  const { mutation, mutError, write, router } = useDossierWrite();
+  const { busy, mutError, write, router } = useDossierWrite();
   const dossier = data.dossier;
   const slug = dossier.slug;
   // R7RO.1 — the read-only fact (the twin's carrier, else the boot slot); `run_lock` never arms
@@ -357,7 +187,7 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
   );
 
   const onSubmit = useMemo(
-    () => dossierSubmitHandler({ router, write }),
+    () => delegatedSubmitHandler({ router, write }),
     [router, write],
   );
 
@@ -391,19 +221,20 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
     [dossier, view, data.triage?.dispositionError, data.triage?.savedFindingId, dispositionError, compact, roTip],
   );
 
-  const busy = mutation.isPending;
   const extras = useMemo<IdeChromeData>(
     () => ({
       // The ticks echo the SHARED filtered list (the SSR handler's `comp.filteredRows` overlay).
       findings: visible.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+      // R7RELOAD.1 — the pane bodies no longer carry their own submit intercepts: the IdeChrome
+      // host's ONE delegated handler covers them (the wrapper now only marks aria-busy).
       ...(panes.marginBody != null
-        ? { marginBody: <PaneIntercept busy={busy} onSubmit={onSubmit}>{panes.marginBody}</PaneIntercept> }
+        ? { marginBody: <PaneBusy busy={busy}>{panes.marginBody}</PaneBusy> }
         : {}),
       ...(panes.deskFindingsBody != null
-        ? { deskFindingsBody: <PaneIntercept busy={busy} onSubmit={onSubmit}>{panes.deskFindingsBody}</PaneIntercept> }
+        ? { deskFindingsBody: <PaneBusy busy={busy}>{panes.deskFindingsBody}</PaneBusy> }
         : {}),
       ...(data.ide.chat != null
-        ? { chatBody: <PaneIntercept busy={busy} onSubmit={onSubmit}>{chatPanel(data.ide.chat, slug, data.ide, compact)}</PaneIntercept> }
+        ? { chatBody: <PaneBusy busy={busy}>{chatPanel(data.ide.chat, slug, data.ide, compact)}</PaneBusy> }
         : {}),
       ...(data.ide.timelineView != null
         ? {

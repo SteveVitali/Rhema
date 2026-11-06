@@ -25,9 +25,8 @@
 //     chrome legs — the live sync pill, the 10 s visible-only lock poll, ⌘S restore points,
 //     pagehide/visibility flushes, the frozen-fork `rhema.fork` → `registry.rekey` rebase.
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
 import { ApprovalRow, CompareView, WhatChangedView } from "@rhema/ui";
@@ -46,8 +45,7 @@ import {
 } from "../../page-chrome.js";
 import { approvalRowLabels } from "../../gate-card.js";
 import { useGatePresence } from "../gate-presence.js";
-import { BffError, bffFetch } from "../bff.js";
-import { navigateDocument } from "../dom.js";
+import { BffError } from "../bff.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData, IdeTwinShell } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -63,142 +61,23 @@ import { isDemo } from "../demo.js";
 import { PageMount } from "../page-mount.js";
 import { useReadOnlyProject, ReadOnlyNotice, readOnlyReasonText } from "../read-only.js";
 import { TimelineGateCard } from "./dossier.js";
-
-/** The mutation success envelope (`{ok:true, redirect?, url?}` — the document's 302 twin). */
-interface MutationReply {
-  readonly ok: true;
-  readonly redirect?: string;
-  readonly url?: string;
-}
+import { delegatedSubmitHandler, usePaneWrite } from "../write-paths.js";
 
 /**
  * The editor surface's write grammar — every same-origin POST a control inside these leaves can
  * issue. Each has a `wantsJson` branch on the server (SPA.23); anything outside this grammar
  * keeps its native leg (the document nav still answers it — the dossier.tsx precedent).
  */
-const EDITOR_WRITE = /^\/p\/[^/]+\/(edit\/[^/]+\/(?:note|cancel-run|revise)|v\/[^/]+\/restore\/[^/]+|v\/[^/]+\/diff\/[^/]+\/hunks\/[^/]+\/comments|revisions\/[^/]+\/hunks\/[^/]+\/comments|rename|approval-overrides|voice|voice\/adopt|voice\/fork|gates\/[^/]+|decisions\/[^/]+)$/;
+/**
+ * R7RELOAD.1 (REQ-RELOAD-2) — the editor's write grammar is retired into the shared
+ * `SPA_WRITE` allowlist (`../write-paths.js`). The leaf's own `onSubmit` claims its forms via
+ * the ONE delegated handler; the IdeChrome host's identical handler covers the pane bodies.
+ */
 
-/** A form `action` to its same-origin pathname (null ⇒ not interceptable). */
-function actionPath(action: string): string | null {
-  try {
-    const u = new URL(action, "https://rhema.invalid");
-    return u.origin === "https://rhema.invalid" ? u.pathname : null;
-  } catch {
-    return null;
-  }
-}
-
-/** REQ-UX-16's in-flight affordance — `aria-busy` + disabled controls, restored on settle. */
-function setFormBusy(form: HTMLFormElement, busy: boolean): void {
-  if (busy) form.setAttribute("aria-busy", "true");
-  else form.removeAttribute("aria-busy");
-  for (const el of form.querySelectorAll("button, input, select, textarea")) {
-    if (el instanceof HTMLElement && "disabled" in el) {
-      (el as HTMLButtonElement).disabled = busy;
-    }
-  }
-}
-
-/** The form's named fields as a flat map — read BEFORE any busy-disable pass. */
-function collectJsonFields(form: HTMLFormElement): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {};
-  const push = (name: string, value: string): void => {
-    const prev = out[name];
-    if (prev == null) out[name] = value;
-    else if (Array.isArray(prev)) prev.push(value);
-    else out[name] = [prev, value];
-  };
-  for (const el of form.querySelectorAll("input, select, textarea")) {
-    const name = el.getAttribute("name");
-    if (name == null || name === "") continue;
-    if (el instanceof HTMLInputElement) {
-      if (el.disabled) continue;
-      if (el.type === "checkbox" || el.type === "radio") {
-        if (el.checked) push(name, el.value === "" ? "on" : el.value);
-        continue;
-      }
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLTextAreaElement && !el.disabled) {
-      push(name, el.value);
-      continue;
-    }
-    if (el instanceof HTMLSelectElement && !el.disabled) {
-      if (el.multiple) {
-        for (const opt of el.selectedOptions) push(name, opt.value);
-      } else {
-        push(name, el.value);
-      }
-    }
-  }
-  return out;
-}
-
-/** The delegated submit leg — a `method="post"` form whose action names an editor-surface write
- *  becomes the JSON envelope call; everything else keeps its native leg. */
-function editorSubmitHandler(opts: {
-  readonly write: (vars: {
-    form: HTMLFormElement;
-    action: string;
-    json: Record<string, string | string[]>;
-  }) => void;
-}): (e: SyntheticEvent) => void {
-  return (e) => {
-    if (e.defaultPrevented) return;
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
-    const actionAttr = form.getAttribute("action") ?? "";
-    if (!actionAttr.startsWith("/p/")) return;
-    if ((form.getAttribute("method") ?? "get").toLowerCase() !== "post") return;
-    const path = actionPath(actionAttr);
-    if (path == null || !EDITOR_WRITE.test(path)) return;
-    e.preventDefault();
-    if (form.getAttribute("aria-busy") === "true") return;
-    const json = collectJsonFields(form);
-    const submitter = (e.nativeEvent as Partial<SubmitEvent>).submitter;
-    if (submitter instanceof HTMLElement) {
-      const n = submitter.getAttribute("name");
-      if (n != null && n !== "") json[n] = submitter.getAttribute("value") ?? "on";
-    }
-    opts.write({ form, action: path, json });
-  };
-}
-
-/** One editor-surface write — mutation + busy settle + the `{ok,redirect}`/`{error}` envelope read. */
+/** One editor-surface write — the shared mutation with the editor's stale-state error arm. */
 function useEditorWrite() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [mutError, setMutError] = useState<string | null>(null);
-  const mutation = useMutation<
-    MutationReply,
-    unknown,
-    { form: HTMLFormElement; action: string; json: Record<string, string | string[]> }
-  >({
-    mutationFn: async ({ action, json }) => {
-      return bffFetch<MutationReply>(action, { method: "POST", json });
-    },
-    onMutate: ({ form }) => {
-      setMutError(null);
-      setFormBusy(form, true);
-    },
-    onSuccess: (env) => {
-      if (env.url != null) {
-        navigateDocument(env.url);
-        return;
-      }
-      if (env.redirect != null) {
-        // The 302's identical twin — `…/v/:n?restored=`/`?noted=1`/`?commented=` land the fresh
-        // twin read + the echo, verbatim. Off-route hrefs (the `/edit/:draftId` hop — not an SPA
-        // route) degrade to the document nav, which still answers them.
-        try {
-          void router.navigate({ href: env.redirect });
-        } catch {
-          navigateDocument(env.redirect);
-        }
-        return;
-      }
-    },
+  const { pending, write } = usePaneWrite({
     onError: (err) => {
       // Stale-state writes (design/22 §3): a refused write — lock held/canceled/frozen (400/403/
       // 404/409) — is the SSR's silent re-render: `onSettled`'s invalidate re-reads the twin and
@@ -206,12 +85,8 @@ function useEditorWrite() {
       if (err instanceof BffError && [400, 403, 404, 409].includes(err.status)) return;
       setMutError(err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body);
     },
-    onSettled: (_env, _err, vars) => {
-      setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
-    },
   });
-  return { mutation, mutError, write: mutation.mutate };
+  return { pending, mutError, write };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -421,7 +296,8 @@ export interface EditorSurfaceProps<T> {
 }
 
 export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps<BffProjectTwin>): ReactNode {
-  const { mutation, mutError, write } = useEditorWrite();
+  const router = useRouter();
+  const { pending, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
   const seams = useProposalSeams(viewRef);
   const slug = data.project.slug;
@@ -476,10 +352,10 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
     [data.projectVoice, search],
   );
 
-  const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <ProjectOverviewBody
@@ -520,7 +396,8 @@ export function VersionPageSurface({
   compact,
   search,
 }: EditorSurfaceProps<Exclude<BffVersionPageTwin, { readonly ok: true }>>): ReactNode {
-  const { mutation, mutError, write } = useEditorWrite();
+  const router = useRouter();
+  const { pending, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
   const seams = useProposalSeams(viewRef);
   const slug = data.page.slug;
@@ -536,11 +413,11 @@ export function VersionPageSurface({
     ...(restoredN != null ? { restoredN } : {}),
   });
   const pageView = useFilteredPage(page, seams.filter);
-  const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   if (!pageView) return null;
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
@@ -566,7 +443,8 @@ export function VersionPageSurface({
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArtifactTwin>): ReactNode {
-  const { mutation, mutError, write } = useEditorWrite();
+  const router = useRouter();
+  const { pending, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
   const slug = data.page.slug;
   const ro = useReadOnlyProject(data);
@@ -575,11 +453,11 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
   useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const page = usePageBag(data.page);
-  const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   if (!page) return null;
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <PageChrome
         page={page}
@@ -602,7 +480,8 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function CompareSurface({ data, compact, search }: EditorSurfaceProps<BffCompareTwin>): ReactNode {
-  const { mutation, mutError, write } = useEditorWrite();
+  const router = useRouter();
+  const { pending, mutError, write } = useEditorWrite();
   const { compare } = data;
   const slug = compare.slug;
   const ro = useReadOnlyProject(data);
@@ -613,10 +492,10 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
   const layoutQ = search["layout"];
   const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
   const commented = search["commented"] || undefined;
-  const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <CompareView
         beforeN={compare.data.before.n}
@@ -656,7 +535,8 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<BffRevisionTwin>): ReactNode {
-  const { mutation, mutError, write } = useEditorWrite();
+  const router = useRouter();
+  const { pending, mutError, write } = useEditorWrite();
   const { revision } = data;
   const slug = revision.slug;
   const ro = useReadOnlyProject(data);
@@ -665,10 +545,10 @@ export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<Bf
   useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
 
   const commented = search["commented"] || undefined;
-  const onSubmit = useMemo(() => editorSubmitHandler({ write }), [write]);
+  const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={mutation.isPending || undefined}>
+    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {ro != null ? <ReadOnlyNotice reason={ro.reason} slug={slug} /> : null}
       <WhatChangedView
         // the wire shape is the findings-core view model modulo `unlinked.entries` being unknown[].

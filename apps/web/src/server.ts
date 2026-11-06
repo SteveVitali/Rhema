@@ -1823,9 +1823,15 @@ export function createWebApp(deps: WebDeps): Hono {
     );
     return row ?? null;
   };
-  /** A form POST redirects back to the project page (the Desk reopens on Chat); a JSON call gets the DTO. */
-  const chatReply = (c: Context, slug: string, payload: unknown, status = 200) =>
-    wantsJson(c) ? c.json(payload, status as never) : c.redirect(`/p/${slug}#chat`);
+  /** R7RELOAD.1 (REQ-RELOAD-4; UXC-28) — every chat write answers through `mutationOutcome`:
+   *  a form POST takes the flash redirect back to the project page (the Desk reopens on Chat),
+   *  a JSON call gets the `{ok:true, redirect, data}` envelope. */
+  const chatReply = (c: Context, slug: string, payload: unknown) =>
+    mutationOutcome(c, { redirect: `/p/${slug}#chat`, data: payload });
+  /** A field-validation failure: the JSON arm keeps a STABLE code at 422; a no-JS form lands
+   *  the same flash redirect as a success (the Desk reopens on Chat) — never a raw JSON page. */
+  const chatInvalid = (c: Context, slug: string, code: string) =>
+    wantsJson(c) ? c.json({ error: code }, 422) : mutationOutcome(c, { redirect: `/p/${slug}#chat` });
 
   /**
    * RUN.1 (BL-55) — the chat proxy's truthful error path. The api's refusal statuses pass through
@@ -1889,20 +1895,23 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const message = typeof body.message === "string" ? body.message : "";
-    if (!threadId || !message.trim()) return c.json({ error: "threadId + message required" }, 422);
+    if (!threadId || !message.trim()) return chatInvalid(c, row.slug, "chat_turn_required");
     // P1.12 — the `/outline` verb never runs inline (REQ-CHAT-25's consent rule): it resolves to the
     // promotion SHEET — the sheet's Promote click is the only outline-run creator. `/outline @turn:id`
     // scopes to one turn; bare `/outline` promotes the whole thread.
     const outlineCmd = /^\/outline(?:\s+@turn:([^\s]+))?\s*$/.exec(message.trim());
     if (outlineCmd) {
       const turn = outlineCmd[1];
-      return c.redirect(
-        `/p/${row.slug}/outline/promote?scope=${turn ? "turn" : "thread"}&threadId=${encodeURIComponent(threadId)}${turn ? `&turnId=${encodeURIComponent(turn)}` : ""}`,
-      );
+      return mutationOutcome(c, {
+        redirect: `/p/${row.slug}/outline/promote?scope=${turn ? "turn" : "thread"}&threadId=${encodeURIComponent(threadId)}${turn ? `&turnId=${encodeURIComponent(turn)}` : ""}`,
+      });
     }
     // P1.13 — the `/visualize` verb never runs inline either (the same REQ-CHAT-25 consent rule):
     // it resolves to the visualize SHEET with the typed request prefilled — the sheet's Visualize
@@ -1911,9 +1920,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const vizCmd = /^\/visualize(?:\s+(.*))?$/s.exec(message.trim());
     if (vizCmd) {
       const request = vizCmd[1]?.trim() ?? "";
-      return c.redirect(
-        `/p/${row.slug}/visualize${request ? `?request=${encodeURIComponent(request)}` : ""}`,
-      );
+      return mutationOutcome(c, {
+        redirect: `/p/${row.slug}/visualize${request ? `?request=${encodeURIComponent(request)}` : ""}`,
+      });
     }
     const res = await chatCall(c, () =>
       deps.dataSource.postChatTurn?.(session, row.id, threadId, {
@@ -1928,14 +1937,17 @@ export function createWebApp(deps: WebDeps): Hono {
       }),
     );
     if (!("out" in res)) return chatFail(c, res);
-    return chatReply(c, row.slug, res.out, 201);
+    return chatReply(c, row.slug, res.out);
   });
 
   app.post("/p/:project/chat/plan-decision", async (c) => {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const action = body.action;
@@ -1946,7 +1958,7 @@ export function createWebApp(deps: WebDeps): Hono {
         action !== "edit" &&
         action !== "cancel")
     )
-      return c.json({ error: "threadId + action required" }, 422);
+      return chatInvalid(c, row.slug, "chat_action_required");
     const res = await chatCall(c, () =>
       deps.dataSource.postChatPlanDecision?.(session, row.id, threadId, {
         action,
@@ -1956,8 +1968,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
     // run_research resolves to the SHEET href — the sheet's Run click is the only run creator.
-    if (action === "run_research" && out.sheet?.href && !wantsJson(c))
-      return c.redirect(out.sheet.href);
+    if (action === "run_research" && out.sheet?.href)
+      return mutationOutcome(c, { redirect: out.sheet.href, data: out });
     return chatReply(c, row.slug, out);
   });
 
@@ -1965,27 +1977,33 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (!name) return c.json({ error: "name required" }, 422);
+    if (!name) return chatInvalid(c, row.slug, "chat_name_required");
     const res = await chatCall(c, () =>
       deps.dataSource.createChatThread?.(session, row.id, { name }),
     );
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, out);
   });
 
   app.post("/p/:project/chat/pins", async (c) => {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const summary = typeof body.summary === "string" ? body.summary.trim() : "";
-    if (!threadId || !summary) return c.json({ error: "threadId + summary required" }, 422);
+    if (!threadId || !summary) return chatInvalid(c, row.slug, "chat_pin_required");
     const res = await chatCall(c, () =>
       deps.dataSource.addChatPin?.(session, row.id, threadId, {
         summary,
@@ -1996,17 +2014,20 @@ export function createWebApp(deps: WebDeps): Hono {
     );
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, out);
   });
 
   app.post("/p/:project/chat/pins/:pinId/remove", async (c) => {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
-    if (!threadId) return c.json({ error: "threadId required" }, 422);
+    if (!threadId) return chatInvalid(c, row.slug, "chat_thread_required");
     const res = await chatCall(c, () =>
       deps.dataSource.removeChatPin?.(session, row.id, threadId, c.req.param("pinId")),
     );
@@ -2019,17 +2040,20 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const text = typeof body.text === "string" ? body.text.trim() : "";
-    if (!threadId || !text) return c.json({ error: "threadId + text required" }, 422);
+    if (!threadId || !text) return chatInvalid(c, row.slug, "chat_correction_required");
     const res = await chatCall(c, () =>
       deps.dataSource.postChatCorrection?.(session, row.id, threadId, { text }),
     );
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, out);
   });
 
   // §7.4 — "Ask about this draft": the anchored suggestion. A refusal (over one paragraph) re-renders
@@ -2038,11 +2062,14 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const ref = typeof body.ref === "string" ? body.ref : "";
     const replacement = typeof body.replacement === "string" ? body.replacement : "";
-    if (!ref || !replacement.trim()) return c.json({ error: "ref + replacement required" }, 422);
+    if (!ref || !replacement.trim()) return chatInvalid(c, row.slug, "chat_suggestion_required");
     const res = await chatCall(c, () =>
       deps.dataSource.postChatSuggestion?.(session, row.id, {
         anchor: {
@@ -2061,10 +2088,10 @@ export function createWebApp(deps: WebDeps): Hono {
       // §7.4 — an over-paragraph refusal is a caller-correctable 422 (the code names /lineedit·/revise);
       // every other refusal keeps the api's truthful status + the structured log line.
       if (res.code === "suggestion_too_large" && !wantsJson(c))
-        return c.redirect(`/p/${row.slug}#chat`);
+        return mutationOutcome(c, { redirect: `/p/${row.slug}#chat` });
       return chatFail(c, res);
     }
-    return chatReply(c, row.slug, res.out, 201);
+    return chatReply(c, row.slug, res.out);
   });
 
   // §7.6 — the "Paste my notes" scratch write (lands at agents/author/notes.md — the author intake).
@@ -2072,14 +2099,17 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const text = typeof body.text === "string" ? body.text : "";
-    if (!text.trim()) return c.json({ error: "text required" }, 422);
+    if (!text.trim()) return chatInvalid(c, row.slug, "chat_note_required");
     const res = await chatCall(c, () => deps.dataSource.postChatNote?.(session, row.id, { text }));
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, out);
   });
 
   // §7.1 — attachments: the island presigns + PUTs to quarantine first, then posts the key here
@@ -2088,13 +2118,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const body = await chatBody(c);
     const quarantineKey = typeof body.quarantineKey === "string" ? body.quarantineKey : "";
     const filename = typeof body.filename === "string" ? body.filename : "";
     const mediaType = typeof body.mediaType === "string" ? body.mediaType : "";
     if (!quarantineKey || !filename || !mediaType)
-      return c.json({ error: "quarantineKey + filename + mediaType required" }, 422);
+      return chatInvalid(c, row.slug, "chat_attachment_required");
     const res = await chatCall(c, () =>
       deps.dataSource.postChatAttachment?.(session, row.id, {
         quarantineKey,
@@ -2105,7 +2138,7 @@ export function createWebApp(deps: WebDeps): Hono {
     );
     if (!("out" in res)) return chatFail(c, res);
     const out = res.out;
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, out);
   });
 
   // The island's turn-status poll — JSON only (the metered strip; never model prose).
@@ -2113,7 +2146,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const row = await chatProject(c, session);
-    if (!row) return c.json({ error: "project not found" }, 404);
+    if (!row)
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const threadId = c.req.query("thread") ?? "";
     const res = await chatCall(c, () =>
       deps.dataSource.getChatTurn?.(session, row.id, threadId, c.req.param("runId")),
@@ -2997,7 +3033,9 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/logout", async (c) => {
     await deps.endSession?.(c);
-    return c.redirect("/");
+    // The sanctioned exit — a document navigation by name (GUARD-3's `logout` slot); routed
+    // through mutationOutcome so the census holds (a JSON caller gets the envelope's redirect).
+    return mutationOutcome(c, { redirect: "/" });
   });
 
   // Auth-gated: the §5.2 workspace home (P1.04). The attention-grouped list (Needs you / Running /
@@ -3856,7 +3894,7 @@ export function createWebApp(deps: WebDeps): Hono {
     if (appTheme === "dark" || appTheme === "light" || appTheme === "auto") {
       await deps.dataSource.setTheme(session, appTheme).catch(() => undefined);
     }
-    return c.redirect("/app/settings/preferences?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/preferences?saved=1" });
   });
   app.post("/settings/privacy", async (c) => {
     const session = deps.session(c);
@@ -3866,7 +3904,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // The canonical endpoint is /app/settings/data/privacy now; this legacy post keeps working.
     const optOut = form.analytics !== "on";
     await deps.dataSource.setAnalyticsOptOut(session, optOut);
-    return c.redirect("/app/settings/data?saved=1");
+    return mutationOutcome(c, { redirect: "/app/settings/data?saved=1" });
   });
 
   // ---- P1.20 — `/p/:project/settings` (§4.2): the REQ-GENRE-2 safe fields + P1.09's approvals ----
@@ -4905,7 +4943,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     await deps.dataSource.dismissExplainer?.(session, c.req.param("name")).catch(() => undefined);
-    return c.redirect(`/p/${slug}`);
+    // R7RELOAD.1 (REQ-RELOAD-4) — the explainer dismiss answers through mutationOutcome: the
+    // chrome-host delegated submit's JSON post gets the envelope; a no-JS form keeps the 302.
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // PRB.05 — a gate card's decision (§6.4). The card's action buttons POST here; the api resolves/holds.
@@ -5037,28 +5077,19 @@ export function createWebApp(deps: WebDeps): Hono {
       // gets the pending contract: `redirect` is the SAME server-owned poll URL the meta-refresh
       // carries; the leaf navigates there and its twin's `refetchInterval` keeps the cadence.
       const pollUrl = importPollUrl(slug, out.quarantineKey, input.fileName);
-      if (json) {
-        return c.json({
-          ok: true,
-          pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
-          redirect: pollUrl,
-        });
-      }
-      // SPA.27 — the meta-refresh document is deleted: a form post follows the SAME poll URL the
-      // JSON envelope carries (the leaf's refetchInterval keeps the server-owned cadence).
-      return c.redirect(pollUrl);
-    }
-    if (json) {
-      // The ready preview the document renders on the POST — non-addressable state the leaf
-      // paints in place (the GET twin's `qk` leg stays the poll/refresh target).
-      return c.json({
-        ok: true,
-        data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) },
+      // R7RELOAD.1 (REQ-RELOAD-4) — mutationOutcome owns both arms: JSON gets the pending
+      // envelope (the SAME poll URL + server-owned cadence), a form post follows the 302.
+      return mutationOutcome(c, {
+        redirect: pollUrl,
+        pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
       });
     }
     // SPA.27 — the SSR preview leg is deleted: the poll URL round-trips the quarantine key so the
     // preview leaf recomposes the ready card off the /bff twin.
-    return c.redirect(importPollUrl(slug, out.quarantineKey, input.fileName));
+    return mutationOutcome(c, {
+      redirect: importPollUrl(slug, out.quarantineKey, input.fileName),
+      data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) },
+    });
   });
 
   // PRB.21 — the pending preview's poll leg (the page's meta-refresh target): re-preview the SAME
@@ -6849,10 +6880,14 @@ export function createWebApp(deps: WebDeps): Hono {
         .postEditorNote(session, t.row.id, t.draftId, text)
         .catch(() => undefined);
     }
-    const href = `/p/${t.slug}/edit/${t.draftId}?noted=1`;
-    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect (the
-    // /edit/:draftId GET still resolves to its /v/:n hop for both — mutationOutcome owns the
-    // wantsJson fork).
+    // R7RELOAD.1 (REQ-RELOAD-3, UXC-4): the success target is `/v/:n` DIRECTLY — the write
+    // resolves the draft's n through the same non-exact `getEditorDoc` read the `/edit/:draftId`
+    // stub hops through, so no response ever produces `/edit/:id` (the stub stays for old
+    // bookmarks only). An unresolvable draft falls back to the project page — in-tree either way.
+    const doc = await deps.dataSource
+      .getEditorDoc(session, t.row.id, t.draftId)
+      .catch(() => null);
+    const href = doc ? `/p/${t.slug}/v/${doc.draftN}?noted=1` : `/p/${t.slug}`;
     return mutationOutcome(c, { redirect: href });
   });
 
@@ -6869,9 +6904,11 @@ export function createWebApp(deps: WebDeps): Hono {
         : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     await deps.dataSource.cancelEditorRun(session, t.row.id, t.draftId).catch(() => undefined);
-    const href = `/p/${t.slug}/edit/${t.draftId}`;
-    // SPA.23 — the leaf's delegated submit posts JSON; the form post keeps the redirect
-    // (mutationOutcome owns the wantsJson fork).
+    // R7RELOAD.1 (REQ-RELOAD-3, UXC-4): straight to `/v/:n` — no write produces `/edit/:id`.
+    const doc = await deps.dataSource
+      .getEditorDoc(session, t.row.id, t.draftId)
+      .catch(() => null);
+    const href = doc ? `/p/${t.slug}/v/${doc.draftN}` : `/p/${t.slug}`;
     return mutationOutcome(c, { redirect: href });
   });
 
